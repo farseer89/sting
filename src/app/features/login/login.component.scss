@@ -1,7 +1,104 @@
-.login-card {
-  max-width: 28rem;
+// Mirror Alpha login layout/look
+.surface-ground { height: 100vh; overflow-y: auto; padding: 0 !important; margin: 0 !important; display: flex; align-items: center; justify-content: center; }
+.welcomeImage { background-repeat: no-repeat; background-size: cover; background-position: right center; position: relative; display: flex; flex-direction: row; flex-wrap: wrap; overflow: hidden; }
+.welcomeImage::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 1; }
+.w-full { width: 100%; }
+@media (min-width: 992px) { .lg\:w-6 { width: 50%; height: 100%; } .welcomeImage { height: 600px; max-width: 1000px; width: 90%; margin: 0 auto; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); } }
+@media (max-width: 991px) { .welcomeImage { height: 100vh; width: 100%; margin: 0; border-radius: 0; } }
+.surface-card { background-color: white; position: relative; z-index: 2; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); }
+@media (min-width: 992px) { .surface-card { height: 100%; overflow-y: auto; display: flex; flex-direction: column; justify-content: center; padding: 2rem !important; border-top-right-radius: 12px; border-bottom-right-radius: 12px; } }
+.centerText { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; position: relative; z-index: 2; color: #ffffff; text-align: center; padding: 1.5rem; }
+.centerText h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: 0.75rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+.centerText p { font-size: 1.1rem; text-shadow: 1px 1px 3px rgba(0,0,0,0.3); max-width: 600px; margin: 0 auto; }
+
+// Inputs and buttons matching Alpha
+input.p-inputtext { width: 100%; padding: 0.75rem; border-radius: 4px; height: auto; font-size: 0.95rem; }
+input.p-inputtext:focus { border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(var(--primary-rgb, 220, 38, 38), 0.25); }
+button[type="submit"], .p-button.p-button-primary { background-color: var(--primary-color); border-color: var(--primary-color); width: 100%; padding: 0.75rem; font-weight: 500; height: auto; font-size: 0.95rem; }
+button[type="submit"]:hover, .p-button.p-button-primary:hover { background-color: var(--primary-900, #b91c1c); border-color: var(--primary-900, #b91c1c); }
+
+// Password visibility toggle
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  
+  input.p-inputtext {
+    padding-right: 2.75rem;
+  }
+  
+  .password-toggle-btn {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    color: var(--text-color-secondary, #6b7280);
+    transition: color 0.2s ease;
+    
+    &:hover {
+      color: var(--primary-color, #dc2626);
+    }
+    
+    &:focus {
+      outline: none;
+    }
+    
+    i {
+      font-size: 1.1rem;
+    }
+  }
 }
 
-.login-page {
-  min-height: 100vh;
+// Theme awareness
+:host-context(.dark-theme) .surface-card { background: rgba(31,41,55,0.95); color: #f9fafb; }
+:host-context(.dark-theme) input.p-inputtext { background: rgba(55,65,81,0.5); border-color: #4b5563; color: #f9fafb; }
+:host-context(.dark-theme) .password-toggle-btn { color: #9ca3af; &:hover { color: var(--primary-color, #ef4444); } }
+
+// SSO Section - subtle and centered
+.sso-divider-section {
+  margin-top: 1.25rem;
+  
+  ::ng-deep .p-divider {
+    margin: 0.75rem 0;
+    
+    .p-divider-content {
+      background: transparent;
+    }
+  }
+}
+
+.sso-options {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sso-link-button {
+  color: var(--text-color-secondary) !important;
+  font-size: 0.875rem !important;
+  padding: 0.5rem 1rem !important;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    color: var(--primary-color) !important;
+    background: rgba(var(--primary-rgb, 99, 102, 241), 0.08) !important;
+  }
+  
+  i {
+    font-size: 1rem;
+  }
+}
+
+:host-context(.dark-theme) .sso-link-button {
+  color: #9ca3af !important;
+  
+  &:hover {
+    color: var(--primary-color) !important;
+    background: rgba(99, 102, 241, 0.15) !important;
+  }
 }

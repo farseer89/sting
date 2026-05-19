@@ -4,9 +4,9 @@ Greenfield Angular 21 MVP starter: AuthMicro login, app shell, blank home, Fireb
 
 ## Prerequisites
 
-- Node 20 (`nvm use`)
+- Node 20+ (any install — `nvm` optional)
 - bagend micro API URL
-- Firebase CLI (`npm i -g firebase-tools`) for deploy
+- Firebase CLI (`npm install -g firebase-tools`) and `firebase login`
 
 ## Setup
 
@@ -28,11 +28,25 @@ npm start
 
 ## Build & deploy
 
+### Create Firebase project from the CLI
+
+Hosting config is already in `firebase.json`. Create the GCP/Firebase project and `.firebaserc`:
+
 ```bash
-cp .firebaserc.example .firebaserc   # set your Firebase project id
-npm run build:prod
-npm run deploy:firebase
+firebase login
+npm run setup:firebase -- stingweb   # pick a unique project id
 ```
+
+This runs `firebase projects:create` and writes `.firebaserc`. New projects may still need billing enabled once in the [Firebase console](https://console.firebase.google.com).
+
+### Deploy
+
+```bash
+npm run deploy:firebase
+# → https://<project-id>.web.app
+```
+
+Manual alternative: copy `.firebaserc.example` to `.firebaserc` and set an existing project id.
 
 ## Add a feature
 

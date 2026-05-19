@@ -7,6 +7,7 @@
     "build": "ng build",
     "build:prod": "node scripts/replace-env.js && ng build --configuration production",
     "configure-env": "node scripts/replace-env.js",
+    "setup:firebase": "bash scripts/setup-firebase.sh",
     "deploy:firebase": "npm run build:prod && firebase deploy --only hosting",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"

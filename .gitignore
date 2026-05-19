@@ -41,6 +41,11 @@ __screenshots__/
 
 # Firebase
 .firebase/
+.firebaserc
+src/environments/environment.prod.ts
+
+# Firebase (keep example in repo)
+!.firebaserc.example
 
 # Design (large Figma — keep local)
 design/*.fig

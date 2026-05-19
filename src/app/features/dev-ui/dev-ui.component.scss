@@ -1,4 +1,119 @@
-.snippet {
-  white-space: pre-wrap;
-  overflow-x: auto;
+@use '../dev-shared/blocks-studio' as studio;
+
+@include studio.blocks-studio-host;
+@include studio.blocks-studio-layout;
+
+.blocks-toolbar-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.blocks-rail-dot {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: var(--text-color-secondary);
+  opacity: 0.45;
+  flex-shrink: 0;
+}
+
+.block-card--hive {
+  border-color: color-mix(in srgb, var(--p-primary-color) 35%, var(--surface-border));
+}
+
+:host ::ng-deep .block-tag {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.4rem;
+}
+
+.block-preview-stage {
+  min-height: 10rem;
+  padding: 2.5rem 2rem;
+  background: var(--surface-ground);
+  background-image: radial-gradient(var(--surface-border) 1px, transparent 1px);
+  background-size: 16px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.block-preview-stage--hive {
+  min-height: auto;
+  padding: 1.5rem 2rem;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.block-preview-stage--snippet {
+  min-height: 5rem;
+  background-image: none;
+}
+
+.block-preview-frame {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  &:has(p-table),
+  &:has(p-tabs),
+  &:has(p-menubar),
+  &:has(p-card) {
+    display: block;
+  }
+}
+
+.hive-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+.hive-step {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+}
+
+.hive-step-num {
+  flex-shrink: 0;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: var(--p-primary-color);
+  color: var(--p-primary-contrast-color, #fff);
+}
+
+.block-card--pattern-intro {
+  border-color: color-mix(in srgb, var(--p-primary-color) 30%, var(--surface-border));
+}
+
+.block-doc-stage {
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.block-preview-stage--pattern {
+  display: block;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 1rem;
+  min-height: 12rem;
+  max-height: 420px;
+  overflow: auto;
 }

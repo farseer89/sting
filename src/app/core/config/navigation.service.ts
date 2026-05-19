@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { environment } from '@env/environment';
 
 /** Mirrors probe NavigationService menu shape for alpha-layout. */
 export interface NavMenuItem {
@@ -20,7 +21,7 @@ export interface NavMenuItem {
 @Injectable({ providedIn: 'root' })
 export class NavigationService {
   getMenuItems(): NavMenuItem[] {
-    return [
+    const items: NavMenuItem[] = [
       {
         id: 'home',
         label: 'Home',
@@ -28,6 +29,28 @@ export class NavigationService {
         routerLink: '/home',
         visible: true,
       },
+    ];
+
+    if (environment.enableDevRoutes) {
+      items.push(
+        {
+          id: 'dev-docs',
+          label: 'Dev Docs',
+          icon: 'pi pi-book',
+          routerLink: '/dev/docs',
+          visible: true,
+        },
+        {
+          id: 'dev-ui',
+          label: 'UI Playground',
+          icon: 'pi pi-palette',
+          routerLink: '/dev/ui',
+          visible: true,
+        },
+      );
+    }
+
+    items.push(
       {
         id: 'incentivize',
         label: 'Incentivize',
@@ -102,7 +125,9 @@ export class NavigationService {
           { id: 'invoicing-home', label: 'Invoices', icon: 'pi pi-file', disabled: true, visible: true },
         ],
       },
-    ];
+    );
+
+    return items;
   }
 
   /** Default expanded submenu ids (matches probe: groups open on load). */

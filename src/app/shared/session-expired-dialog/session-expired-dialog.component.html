@@ -1,0 +1,86 @@
+<p-dialog
+  header="Session Expired"
+  [(visible)]="visible"
+  [modal]="true"
+  [closable]="false"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '420px' }"
+  styleClass="session-expired-dialog"
+>
+  <div class="session-expired-content">
+    <div class="text-center mb-4">
+      <i class="pi pi-lock session-lock-icon"></i>
+    </div>
+
+    <p class="text-center text-600 mb-4 m-0">
+      Your session has expired for security reasons. Please sign in again to continue where you left
+      off.
+    </p>
+
+    @if (errorMessage) {
+      <div class="p-message p-message-error mb-3">
+        <i class="pi pi-times-circle mr-2"></i>
+        <span>{{ errorMessage }}</span>
+      </div>
+    }
+
+    @if (authProvider === 'email') {
+      <div class="email-reauth-form">
+        <div class="field mb-3">
+          <label for="reauth-email" class="block text-900 font-medium mb-2">Email</label>
+          <input
+            id="reauth-email"
+            type="email"
+            pInputText
+            [(ngModel)]="email"
+            class="w-full"
+            [disabled]="isSubmitting"
+            placeholder="Enter your email"
+            (keydown.enter)="onEmailReAuth()"
+          />
+        </div>
+        <div class="field mb-4">
+          <label for="reauth-password" class="block text-900 font-medium mb-2">Password</label>
+          <input
+            id="reauth-password"
+            type="password"
+            pInputText
+            [(ngModel)]="password"
+            class="w-full"
+            [disabled]="isSubmitting"
+            placeholder="Enter your password"
+            (keydown.enter)="onEmailReAuth()"
+          />
+        </div>
+        <button
+          pButton
+          type="button"
+          class="w-full p-button p-button-primary mb-2"
+          [disabled]="!email || !password || isSubmitting"
+          (click)="onEmailReAuth()"
+        >
+          @if (isSubmitting) {
+            <i class="pi pi-spin pi-spinner mr-2"></i>
+            Signing In...
+          } @else {
+            <i class="pi pi-sign-in mr-2"></i>
+            Sign In
+          }
+        </button>
+      </div>
+    }
+
+    <div class="text-center mt-3">
+      <a
+        class="text-600 cursor-pointer hover:text-primary transition-colors"
+        (click)="onLogout()"
+        (keydown.enter)="onLogout()"
+        tabindex="0"
+        role="button"
+      >
+        Sign out and return to login
+      </a>
+    </div>
+  </div>
+</p-dialog>

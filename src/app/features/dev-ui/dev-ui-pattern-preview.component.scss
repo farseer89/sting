@@ -1,0 +1,20 @@
+.pattern-preview-root {
+  width: 100%;
+  text-align: left;
+}
+
+.fw-pattern-equipment-list.pattern-preview-root {
+  .fw-excel-view {
+    max-height: 320px;
+  }
+
+  .fw-excel-table {
+    max-height: 280px;
+  }
+}
+
+.fw-datatable-equipment.pattern-preview-root {
+  .p-datatable {
+    font-size: 0.875rem;
+  }
+}

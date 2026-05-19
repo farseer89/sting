@@ -2,15 +2,17 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import type {
-  RefreshResponse,
+  RefreshResponseV2,
   SignInRequest,
-  SignInResponse,
-  StoredUserSession,
+  SignInResponseV2,
+  StoredUserProfile,
   UserPublic,
 } from '@hive/contracts';
-import { BehaviorSubject, Observable, throwError } from 'rxjs';
+import { AuthV2Endpoints } from '@hive/contracts';
+import { BehaviorSubject, Observable, firstValueFrom, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { environment } from '@env/environment';
+import { isAccessTokenValid } from './jwt.util';
 
 /** UI-facing subset derived from {@link UserPublic}. */
 export interface AuthUserInfo {
@@ -21,12 +23,19 @@ export interface AuthUserInfo {
   userAccountType?: string;
 }
 
+const PROFILE_STORAGE_KEY = 'stingUserProfile';
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
 
-  private readonly microLoginUrl = environment.MICRO_USER_SIGNIN;
+  private readonly signInUrl = environment.MICRO_USER_SIGNIN;
+  private readonly refreshUrl = `${environment.MICRO_BASE_URL}${AuthV2Endpoints.refresh.path}`;
+  private readonly logoutUrl = `${environment.MICRO_BASE_URL}${AuthV2Endpoints.logout.path}`;
+
+  /** Short-lived access JWT — memory only, never persisted. */
+  private accessToken: string | null = null;
 
   currentUserEmail = '';
   currentUserFirstName = '';
@@ -41,97 +50,107 @@ export class AuthService {
   readonly sessionExpired$ = this.sessionExpiredSubject.asObservable();
 
   constructor() {
-    if (this.isLoggedIn()) {
-      this.loadFromStorage();
-      this.authStateSubject.next(true);
+    if (this.hasStoredProfile()) {
+      this.loadProfileFromStorage();
     }
   }
 
   loginUser(email: string, password: string, rememberMe: boolean): Promise<AuthUserInfo> {
     const body: SignInRequest = { email, password };
     return new Promise((resolve, reject) => {
-      this.http.post<SignInResponse>(this.microLoginUrl, body, { withCredentials: true }).subscribe({
-        next: (data) => {
-          this.persistUser(data, rememberMe);
-          this.authStateSubject.next(true);
-          resolve(this.buildUserInfo(data));
-        },
-        error: (err) => {
-          const message =
-            err?.error?.errors?.[0]?.message ||
-            err?.error?.message ||
-            err?.message ||
-            'Login failed';
-          reject(new Error(message));
-        },
-      });
+      this.http
+        .post<SignInResponseV2>(this.signInUrl, body, { withCredentials: true })
+        .subscribe({
+          next: (data) => {
+            this.applySession(data, rememberMe);
+            this.authStateSubject.next(true);
+            resolve(this.buildUserInfo(data));
+          },
+          error: (err) => {
+            const message =
+              err?.error?.errors?.[0]?.message ||
+              err?.error?.message ||
+              err?.message ||
+              'Login failed';
+            reject(new Error(message));
+          },
+        });
     });
   }
 
   logout(): void {
-    this.clearTokens();
-    this.currentUserId = '';
-    this.currentUserEmail = '';
-    this.currentUserFirstName = '';
-    this.currentUserLastName = '';
-    this.currentUserPhoto = '';
-    localStorage.removeItem('currentUserData');
-    sessionStorage.removeItem('currentUserData');
-    localStorage.removeItem('userId');
-    sessionStorage.removeItem('userId');
-    this.authStateSubject.next(false);
+    this.http.post(this.logoutUrl, {}, { withCredentials: true }).subscribe({
+      error: () => {
+        /* clear local state even if network fails */
+      },
+    });
+    this.clearSession();
     this.router.navigate(['/login']);
   }
 
-  isLoggedIn(): boolean {
-    return !!localStorage.getItem('currentUserData') || !!sessionStorage.getItem('currentUserData');
+  /** True when a user profile is persisted (may still need silent refresh). */
+  hasStoredProfile(): boolean {
+    return !!this.readProfileRaw('local') || !!this.readProfileRaw('session');
   }
 
-  getSession(): StoredUserSession | null {
-    const raw = localStorage.getItem('currentUserData') || sessionStorage.getItem('currentUserData');
+  isLoggedIn(): boolean {
+    return this.hasValidAccessToken() || this.hasStoredProfile();
+  }
+
+  hasValidAccessToken(): boolean {
+    return isAccessTokenValid(this.accessToken);
+  }
+
+  getToken(): string | null {
+    return this.hasValidAccessToken() ? this.accessToken : null;
+  }
+
+  getStoredProfile(): StoredUserProfile | null {
+    const raw = this.readProfileRaw('local') || this.readProfileRaw('session');
     if (!raw) return null;
     try {
-      return JSON.parse(raw) as StoredUserSession;
+      return JSON.parse(raw) as StoredUserProfile;
     } catch {
       return null;
     }
   }
 
-  getToken(): string | null {
-    return this.getSession()?.tokens?.accessToken ?? null;
-  }
-
-  getRefreshToken(): string | null {
-    return this.getSession()?.tokens?.refreshToken ?? null;
-  }
-
-  setTokens(accessToken: string, refreshToken: string, rememberMe = true): void {
-    const session = this.getSession();
-    if (!session) return;
-    const updated: StoredUserSession = {
-      ...session,
-      tokens: { accessToken, refreshToken },
-    };
-    const store = rememberMe ? localStorage : sessionStorage;
-    store.setItem('currentUserData', JSON.stringify(updated));
-  }
-
-  refreshToken(): Observable<RefreshResponse> {
-    const refreshToken = this.getRefreshToken();
-    if (!refreshToken) {
-      return throwError(() => new Error('No refresh token'));
+  /** Restore access token from httpOnly refresh cookie on app boot. */
+  bootstrapSession(): Promise<boolean> {
+    if (!this.hasStoredProfile()) {
+      return Promise.resolve(false);
     }
+    this.loadProfileFromStorage();
+    if (this.hasValidAccessToken()) {
+      this.authStateSubject.next(true);
+      return Promise.resolve(true);
+    }
+    return firstValueFrom(
+      this.refreshAccessToken({ silent: true }).pipe(
+        tap(() => this.authStateSubject.next(true)),
+        catchError(() => {
+          this.clearSession();
+          return throwError(() => new Error('Session expired'));
+        }),
+      ),
+    )
+      .then(() => true)
+      .catch(() => false);
+  }
+
+  refreshAccessToken(options?: { silent?: boolean }): Observable<RefreshResponseV2> {
     return this.http
-      .post<RefreshResponse>(`${environment.MICRO_BASE_URL}/api/users/refresh`, { refreshToken })
+      .post<RefreshResponseV2>(this.refreshUrl, {}, { withCredentials: true })
       .pipe(
         tap((response) => {
-          if (response?.tokens) {
-            const rememberMe = !!localStorage.getItem('currentUserData');
-            this.setTokens(response.tokens.accessToken, response.tokens.refreshToken, rememberMe);
+          if (response?.accessToken) {
+            this.accessToken = response.accessToken;
           }
         }),
         catchError((err) => {
-          this.emitSessionExpired();
+          if (!options?.silent) {
+            this.emitSessionExpired();
+          }
           return throwError(() => err);
         }),
       );
@@ -157,18 +176,21 @@ export class AuthService {
     return this.currentUserPhoto || 'assets/images/blocks/avatars/circle/avatar-f-1.png';
   }
 
-  private persistUser(data: SignInResponse, rememberMe: boolean): void {
-    this.applyUserFields(data);
-    const session: StoredUserSession = data;
+  private applySession(data: SignInResponseV2, rememberMe: boolean): void {
+    const { accessToken, authProvider, ...user } = data;
+    this.accessToken = accessToken;
+    this.applyUserFields(user);
+    const profile: StoredUserProfile = { ...user, authProvider };
     const store = rememberMe ? localStorage : sessionStorage;
-    store.setItem('currentUserData', JSON.stringify(session));
+    store.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
     store.setItem('userId', this.currentUserId);
+    this.migrateLegacySession(rememberMe);
   }
 
-  private loadFromStorage(): void {
-    const session = this.getSession();
-    if (!session) return;
-    this.applyUserFields(session);
+  private loadProfileFromStorage(): void {
+    const profile = this.getStoredProfile();
+    if (!profile) return;
+    this.applyUserFields(profile);
   }
 
   private applyUserFields(user: UserPublic): void {
@@ -179,9 +201,31 @@ export class AuthService {
     this.currentUserId = user.id ?? '';
   }
 
-  private clearTokens(): void {
+  private clearSession(): void {
+    this.accessToken = null;
+    this.currentUserId = '';
+    this.currentUserEmail = '';
+    this.currentUserFirstName = '';
+    this.currentUserLastName = '';
+    this.currentUserPhoto = '';
+    localStorage.removeItem(PROFILE_STORAGE_KEY);
+    sessionStorage.removeItem(PROFILE_STORAGE_KEY);
     localStorage.removeItem('currentUserData');
     sessionStorage.removeItem('currentUserData');
+    localStorage.removeItem('userId');
+    sessionStorage.removeItem('userId');
+    this.authStateSubject.next(false);
+  }
+
+  /** Drop legacy v1 `currentUserData` after successful v2 login. */
+  private migrateLegacySession(rememberMe: boolean): void {
+    const legacyStore = rememberMe ? localStorage : sessionStorage;
+    legacyStore.removeItem('currentUserData');
+  }
+
+  private readProfileRaw(store: 'local' | 'session'): string | null {
+    const storage = store === 'local' ? localStorage : sessionStorage;
+    return storage.getItem(PROFILE_STORAGE_KEY);
   }
 
   private buildUserInfo(data: UserPublic): AuthUserInfo {

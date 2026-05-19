@@ -1,0 +1,202 @@
+<div class="blocks-studio">
+  <nav class="blocks-rail" aria-label="Documentation navigation">
+    <div class="blocks-rail-head">
+      <span class="blocks-rail-title">On this page</span>
+      <span class="blocks-rail-count">{{ stats().shown }}</span>
+    </div>
+
+    <p-iconfield class="blocks-rail-search">
+      <p-inputicon class="pi pi-search" />
+      <input
+        pInputText
+        class="w-full"
+        placeholder="Search docs…"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+      />
+    </p-iconfield>
+
+    <div class="blocks-rail-categories">
+      @for (cat of categoryNav; track cat.value) {
+        <button
+          type="button"
+          class="blocks-rail-cat"
+          [class.blocks-rail-cat--active]="activeCategory() === cat.value"
+          (click)="setCategory(cat.value)"
+        >
+          {{ cat.label }}
+        </button>
+      }
+    </div>
+
+    <div class="blocks-rail-list">
+      <ul class="blocks-rail-items">
+        <li>
+          <button
+            type="button"
+            class="blocks-rail-item"
+            [class.blocks-rail-item--active]="isNavActive('doc-hero')"
+            (click)="scrollToBlock('doc-hero')"
+          >
+            Stinger checklist
+          </button>
+        </li>
+      </ul>
+      @for (group of navGroups(); track group.category.id) {
+        <section class="blocks-rail-group">
+          <span class="blocks-rail-group-label">
+            <i [class]="group.category.icon"></i>
+            {{ group.category.label }}
+          </span>
+          <ul class="blocks-rail-items">
+            @for (doc of group.docs; track doc.id) {
+              <li>
+                <button
+                  type="button"
+                  class="blocks-rail-item"
+                  [class.blocks-rail-item--active]="isNavActive('doc-' + doc.id)"
+                  (click)="scrollToBlock('doc-' + doc.id)"
+                >
+                  {{ doc.title }}
+                </button>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    </div>
+  </nav>
+
+  <main class="blocks-canvas">
+    <header class="blocks-toolbar surface-card">
+      <div class="blocks-toolbar-start">
+        <h1 class="blocks-toolbar-title">Dev Docs</h1>
+        <p class="blocks-toolbar-sub">Starting line for development with Sting</p>
+      </div>
+      <div class="blocks-toolbar-end">
+        <a routerLink="/dev/ui">
+          <p-button label="UI Playground" icon="pi pi-palette" [outlined]="true" size="small" />
+        </a>
+        <p-tag value="Dev" severity="warn" />
+      </div>
+    </header>
+
+    <article
+      id="doc-hero"
+      class="block-card block-card--hero"
+      data-doc-id="doc-hero"
+    >
+      <div class="stinger-hero">
+        <div class="stinger-hero-badge">
+          <i class="pi pi-bolt"></i>
+          <span>Stinger</span>
+        </div>
+        <h2 class="stinger-hero-title">Your starting line</h2>
+        <p class="stinger-hero-lead m-0">
+          Ship an MVP from Sting in order: setup → build → UI → deploy. Use the checklist below,
+          then scroll the docs or jump to the playground.
+        </p>
+        <div class="stinger-checklist">
+          @for (item of stingerChecklist; track item; let i = $index) {
+            <div class="stinger-check-item">
+              <span class="stinger-check-num">{{ i + 1 }}</span>
+              <span>{{ item }}</span>
+            </div>
+          }
+        </div>
+        <div class="stinger-hero-actions">
+          <a routerLink="/dev/ui">
+            <p-button label="Open UI Playground" icon="pi pi-palette" />
+          </a>
+          <p-button
+            label="Copy launch commands"
+            icon="pi pi-copy"
+            [outlined]="true"
+            (onClick)="copyText('npm install\nnpm start', $event)"
+          />
+        </div>
+      </div>
+    </article>
+
+    @if (navGroups().length === 0) {
+      <section class="blocks-empty">
+        <i class="pi pi-search text-4xl text-400 mb-3"></i>
+        <p class="m-0 text-600">No docs match. Try another search or category.</p>
+      </section>
+    }
+
+    @for (group of navGroups(); track group.category.id) {
+      <section class="blocks-category" [id]="'section-' + group.category.id">
+        <header class="blocks-category-header">
+          <h2 class="blocks-category-title">
+            <i [class]="group.category.icon"></i>
+            {{ group.category.label }}
+          </h2>
+          <span class="blocks-category-rule"></span>
+        </header>
+
+        @for (doc of group.docs; track doc.id) {
+          <article class="block-card" [id]="'doc-' + doc.id" [attr.data-doc-id]="'doc-' + doc.id">
+            <header class="block-header">
+              <div class="block-header-main">
+                <h3 class="block-title">{{ doc.title }}</h3>
+                <p class="block-desc m-0">{{ doc.description }}</p>
+              </div>
+              @if (doc.links?.length) {
+                <div class="block-actions">
+                  @for (link of doc.links; track link.label) {
+                    @if (link.routerLink) {
+                      <a [routerLink]="link.routerLink">
+                        <p-button [label]="link.label" [text]="true" size="small" />
+                      </a>
+                    } @else if (link.href) {
+                      <a [href]="link.href" target="_blank" rel="noopener noreferrer">
+                        <p-button
+                          [label]="link.label"
+                          icon="pi pi-external-link"
+                          [text]="true"
+                          size="small"
+                        />
+                      </a>
+                    }
+                  }
+                </div>
+              }
+            </header>
+
+            <div class="block-doc-stage">
+              @for (p of doc.paragraphs ?? []; track p) {
+                <p class="doc-paragraph">{{ p }}</p>
+              }
+              @if (doc.steps?.length) {
+                <ol class="doc-steps">
+                  @for (step of doc.steps; track step.title) {
+                    <li class="doc-step">
+                      <strong>{{ step.title }}</strong>
+                      <span>{{ step.body }}</span>
+                    </li>
+                  }
+                </ol>
+              }
+              @if (doc.code) {
+                <div class="block-code-panel doc-code-inline">
+                  <div class="doc-code-toolbar">
+                    <span>Commands</span>
+                    <p-button
+                      icon="pi pi-copy"
+                      [text]="true"
+                      size="small"
+                      (onClick)="copyText(doc.code!, $event)"
+                      ariaLabel="Copy"
+                    />
+                  </div>
+                  <pre class="block-code">{{ doc.code }}</pre>
+                </div>
+              }
+            </div>
+          </article>
+        }
+      </section>
+    }
+  </main>
+</div>

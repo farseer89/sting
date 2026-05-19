@@ -1,0 +1,57 @@
+// PrimeNG table variant — wrap p-table parent with .fw-datatable-equipment
+.fw-datatable-equipment {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--fw-pattern-radius);
+  box-shadow: var(--fw-shadow-card-md);
+  overflow: hidden;
+
+  .fw-table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: var(--surface-section, var(--surface-ground));
+    border-bottom: 1px solid var(--surface-border);
+    flex-wrap: wrap;
+    gap: 1rem;
+
+    .fw-table-title {
+      font-weight: 600;
+      color: var(--text-color);
+      font-size: 0.875rem;
+    }
+  }
+
+  .p-datatable {
+    .fw-equipment-code {
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+
+    .fw-equipment-name {
+      font-weight: 500;
+    }
+
+    .fw-equipment-id {
+      color: var(--text-color-secondary);
+      font-size: 0.75rem;
+    }
+
+    .p-datatable-thead > tr > th {
+      background: linear-gradient(135deg, var(--fw-primary-tint-04), var(--fw-primary-tint-08));
+      font-size: 0.8125rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+    }
+
+    .p-datatable-tbody > tr {
+      transition: background 0.15s ease;
+
+      &:hover {
+        background: var(--fw-primary-tint-04) !important;
+      }
+    }
+  }
+}

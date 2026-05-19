@@ -1,0 +1,32 @@
+// Probe dashboard-style-guide card chrome
+.fw-dashboard-card {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--fw-pattern-radius);
+  box-shadow: var(--fw-shadow-card);
+  overflow: hidden;
+
+  .fw-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--surface-border);
+    background: var(--surface-ground);
+
+    h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      flex: 1;
+    }
+
+    .pi {
+      color: var(--primary-color);
+    }
+  }
+
+  .fw-card-content {
+    padding: 1.25rem;
+  }
+}

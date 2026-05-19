@@ -23,17 +23,17 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       if (!(error instanceof HttpErrorResponse) || error.status !== 401 || !isApi) {
         return throwError(() => error);
       }
-      if (!auth.getRefreshToken()) {
+      if (!auth.hasStoredProfile()) {
         auth.emitSessionExpired();
         return throwError(() => error);
       }
       if (!isRefreshing) {
         isRefreshing = true;
         refreshTokenSubject.next(null);
-        return auth.refreshToken().pipe(
-          switchMap((response: { tokens?: { accessToken: string } }) => {
+        return auth.refreshAccessToken({ silent: false }).pipe(
+          switchMap((response) => {
             isRefreshing = false;
-            const newToken = response?.tokens?.accessToken;
+            const newToken = response?.accessToken;
             if (!newToken) {
               auth.emitSessionExpired();
               return throwError(() => error);
@@ -45,14 +45,14 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
             isRefreshing = false;
             auth.emitSessionExpired();
             return throwError(() => err);
-          })
+          }),
         );
       }
       return refreshTokenSubject.pipe(
         filter((t): t is string => t != null),
         take(1),
-        switchMap((t) => next(req.clone({ setHeaders: { Authorization: `Bearer ${t}` } })))
+        switchMap((t) => next(req.clone({ setHeaders: { Authorization: `Bearer ${t}` } }))),
       );
-    })
+    }),
   );
 };

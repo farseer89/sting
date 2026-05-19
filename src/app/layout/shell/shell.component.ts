@@ -10,6 +10,7 @@ import { Tooltip } from 'primeng/tooltip';
 import { filter, Subscription } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { NavMenuItem, NavigationService } from '../../core/config/navigation.service';
+import { SessionExpiredDialogComponent } from '../../shared/session-expired-dialog/session-expired-dialog.component';
 
 export interface ShellBreadcrumb {
   label: string;
@@ -29,6 +30,7 @@ export interface ShellBreadcrumb {
     StyleClass,
     Toast,
     Tooltip,
+    SessionExpiredDialogComponent,
   ],
   providers: [MessageService],
   templateUrl: './shell.component.html',
@@ -40,7 +42,6 @@ export class ShellComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly messages = inject(MessageService);
 
-  private sessionSub?: Subscription;
   private routerSub?: Subscription;
 
   readonly logoSrc = 'assets/images/blocks/logos/fieldwave.png';
@@ -71,23 +72,9 @@ export class ShellComponent implements OnInit, OnDestroy {
     this.routerSub = this.router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
       .subscribe((e) => this.updateBreadcrumbs(e.urlAfterRedirects));
-
-    this.sessionSub = this.auth.sessionExpired$.subscribe((expired) => {
-      if (expired) {
-        this.messages.add({
-          severity: 'warn',
-          summary: 'Session expired',
-          detail: 'Please sign in again.',
-          life: 5000,
-        });
-        this.auth.dismissSessionExpired();
-        this.auth.logout();
-      }
-    });
   }
 
   ngOnDestroy(): void {
-    this.sessionSub?.unsubscribe();
     this.routerSub?.unsubscribe();
   }
 
@@ -154,6 +141,20 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   private updateBreadcrumbs(url: string): void {
     const path = url.split('?')[0];
+    if (path === '/dev/docs') {
+      this.breadcrumbs = [
+        { label: 'Home', routerLink: '/home' },
+        { label: 'Dev Docs' },
+      ];
+      return;
+    }
+    if (path === '/dev/ui') {
+      this.breadcrumbs = [
+        { label: 'Home', routerLink: '/home' },
+        { label: 'UI Playground' },
+      ];
+      return;
+    }
     if (path === '/home' || path === '/' || path === '') {
       this.breadcrumbs = [{ label: 'Home' }];
       return;

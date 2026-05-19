@@ -17,14 +17,18 @@ cp src/environments/environment.template.ts src/environments/environment.prod.ts
 STING_APP_NAME="My App" STING_MICRO_URL="https://droppin.shop" npm run configure-env
 ```
 
-Dev uses `src/environments/environment.ts` (defaults to droppin.shop).
+Dev uses `src/environments/environment.ts` (API: `https://droppin.shop`). Auth against remote bagend only works from **deployed** origins in bagend’s CORS list (e.g. https://stingbase.web.app).
 
 ## Run
 
 ```bash
 npm start
-# http://localhost:4200/login
 ```
+
+| URL | Notes |
+|-----|--------|
+| http://localhost:4200/dev/ui | Alpha shell + **UI Playground** nav (`enableDevRoutes`; no remote login in dev) |
+| https://stingbase.web.app | Production — sign in required; playground hidden |
 
 ## Build & deploy
 

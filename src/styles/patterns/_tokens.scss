@@ -1,0 +1,14 @@
+// FieldWave UI pattern tokens (probe dashboard / equipment list parity)
+
+:root {
+  --fw-pattern-radius: 12px;
+  --fw-pattern-radius-sm: 8px;
+  --fw-toolbar-height: 34px;
+  --fw-primary-tint-04: color-mix(in srgb, var(--primary-color) 4%, transparent);
+  --fw-primary-tint-05: color-mix(in srgb, var(--primary-color) 5%, transparent);
+  --fw-primary-tint-08: color-mix(in srgb, var(--primary-color) 8%, transparent);
+  --fw-primary-tint-10: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  --fw-primary-tint-12: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  --fw-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --fw-shadow-card-md: 0 1px 3px rgba(0, 0, 0, 0.08);
+}

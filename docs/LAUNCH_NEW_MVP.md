@@ -4,10 +4,20 @@
 2. **Install** `npm install`
 3. **Environment** `cp src/environments/environment.template.ts src/environments/environment.prod.ts` then `STING_APP_NAME="My MVP" npm run configure-env`
 4. **Firebase** `npm run setup:firebase -- my-mvp-id` then `npm run deploy:firebase`
-5. **bagend CORS** Add `https://my-mvp-id.web.app` to bagend allowlist
+5. **bagend CORS** Add `https://my-mvp-id.web.app` to bagend allowlist. Sting uses **Auth v2** (`/api/v2/auth/*`) with `withCredentials: true` — bagend must allow your origin and set `credentials: true` (already on bagend). For local dev against remote API, include `http://localhost:4200`.
 6. **Hive** Keep `@hive/contracts` in sync (`file:../hive-contracts` or published package)
 7. **Feature** `ng g component features/my-idea --standalone` — register in `app.routes.ts` and `navigation.service.ts`
 8. **UI** Copy from `features/_templates/dashboard-kpi` or use `/dev/ui` playground (dev only)
 9. **Lint** `npm run lint` before deploy
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) and [ADDING_A_FEATURE.md](./ADDING_A_FEATURE.md).
+## Local dev
+
+```bash
+npm start
+```
+
+- **Dev Docs:** `/dev/docs` — Stinger starting line (setup → build → ship)
+- **UI Playground:** `/dev/ui` — PrimeNG block gallery (dev build only; no remote login required locally)
+- **Production:** https://stingbase.web.app — playground nav hidden (`enableDevRoutes: false`)
+
+See [ARCHITECTURE.md](./ARCHITECTURE.md), [SECURITY.md](./SECURITY.md), and [ADDING_A_FEATURE.md](./ADDING_A_FEATURE.md).

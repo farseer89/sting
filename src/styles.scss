@@ -1,6 +1,7 @@
 /* Global styles — aligned with probe (lara-light + Inter + layout tokens) */
 @import 'primeicons/primeicons.css';
 @import 'primeflex/primeflex.css';
+@import 'styles/patterns/index.scss';
 
 :root {
   --app-font-family: 'Inter', 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,

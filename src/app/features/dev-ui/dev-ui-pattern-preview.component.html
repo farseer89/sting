@@ -1,0 +1,178 @@
+@switch (patternKey()) {
+  @case ('equipment-list-full') {
+    <div class="fw-pattern-equipment-list pattern-preview-root">
+      <ng-container [ngTemplateOutlet]="toolbarTpl" />
+      <ng-container [ngTemplateOutlet]="excelTpl" />
+    </div>
+  }
+  @case ('equipment-excel-table') {
+    <div class="fw-pattern-equipment-list pattern-preview-root">
+      <ng-container [ngTemplateOutlet]="excelTpl" />
+    </div>
+  }
+  @case ('equipment-toolbar') {
+    <div class="fw-pattern-equipment-list pattern-preview-root">
+      <ng-container [ngTemplateOutlet]="toolbarTpl" />
+    </div>
+  }
+  @case ('equipment-datatable') {
+    <div class="fw-datatable-equipment pattern-preview-root">
+      <ng-container [ngTemplateOutlet]="datatableTpl" />
+    </div>
+  }
+  @case ('dashboard-card') {
+    <div class="fw-dashboard-card pattern-preview-root" style="max-width: 28rem">
+      <div class="fw-card-header">
+        <i class="pi pi-chart-bar"></i>
+        <h3>Dispatch overview</h3>
+      </div>
+      <div class="fw-card-content">
+        <p class="m-0 text-sm text-600">Wrap KPIs, charts, or nested tables inside dashboard cards.</p>
+        <p-tag class="mt-2" value="12 active jobs" severity="success" />
+      </div>
+    </div>
+  }
+}
+
+<ng-template #toolbarTpl>
+  <div class="fw-toolbar advanced-bar">
+    <div class="fw-toolbar-section">
+      <span class="fw-compact-input">
+        <i class="pi pi-search"></i>
+        <input pInputText type="text" placeholder="Search equipment…" [(ngModel)]="search" />
+      </span>
+      <span class="fw-toolbar-divider">|</span>
+      <span class="fw-toolbar-label">Group: All</span>
+    </div>
+    <div class="fw-toolbar-section">
+      <button type="button" class="fw-icon-btn" title="Refresh">
+        <i class="pi pi-refresh"></i>
+      </button>
+    </div>
+  </div>
+  <div class="fw-secondary-toolbar">
+    <div class="fw-filter-pills">
+      <button
+        type="button"
+        class="fw-filter-pill"
+        [class.active]="activeFilter === 'all'"
+        (click)="activeFilter = 'all'"
+      >
+        All
+      </button>
+      <button
+        type="button"
+        class="fw-filter-pill"
+        [class.active]="activeFilter === 'active'"
+        (click)="activeFilter = 'active'"
+      >
+        Active
+      </button>
+      <button
+        type="button"
+        class="fw-filter-pill"
+        [class.active]="activeFilter === 'inactive'"
+        (click)="activeFilter = 'inactive'"
+      >
+        Other
+      </button>
+    </div>
+    <span class="fw-equipment-count-badge">
+      <i class="pi pi-cog"></i>
+      {{ filteredRows.length }} / {{ rows.length }} Equipment
+    </span>
+  </div>
+</ng-template>
+
+<ng-template #excelTpl>
+  <div class="fw-excel-view">
+    <div class="fw-excel-container">
+      <div class="fw-excel-table">
+        <div class="fw-excel-header">
+          <div class="fw-header-cell sortable col-code">
+            <i class="pi pi-sort-alt"></i>
+            <span>Code</span>
+          </div>
+          <div class="fw-header-cell sortable col-name">
+            <i class="pi pi-sort-alt"></i>
+            <span>Name</span>
+          </div>
+          <div class="fw-header-cell col-status"><span>Status</span></div>
+          <div class="fw-header-cell col-group"><span>Group</span></div>
+          <div class="fw-header-cell col-location"><span>Location</span></div>
+          <div class="fw-header-cell col-update"><span>Updated</span></div>
+          <div class="fw-header-cell col-actions"><span></span></div>
+        </div>
+        @for (row of filteredRows; track row.id) {
+          <div class="fw-excel-row" [class.selected]="row.id === '1'">
+            <div class="fw-cell col-code">
+              <span class="fw-equipment-code">{{ row.code }}</span>
+            </div>
+            <div class="fw-cell col-name">
+              <span class="fw-equipment-name">{{ row.name }}</span>
+            </div>
+            <div class="fw-cell col-status">
+              <span class="fw-status-badge" [class]="statusClass(row.status)">{{ row.status }}</span>
+            </div>
+            <div class="fw-cell col-group">
+              <span class="fw-equipment-meta">{{ row.group }}</span>
+            </div>
+            <div class="fw-cell col-location">
+              <span class="fw-equipment-meta">{{ row.location }}</span>
+            </div>
+            <div class="fw-cell col-update">
+              <span class="fw-equipment-meta">{{ row.updated }}</span>
+            </div>
+            <div class="fw-cell col-actions">
+              <button type="button" class="fw-icon-btn" style="width: 28px; height: 28px">
+                <i class="pi pi-ellipsis-v"></i>
+              </button>
+            </div>
+          </div>
+        }
+        @if (filteredRows.length === 0) {
+          <div class="fw-excel-empty">
+            <i class="pi pi-inbox"></i>
+            <p>No equipment found</p>
+            <small>Adjust filters or search</small>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #datatableTpl>
+  <div class="fw-table-header">
+    <span class="fw-table-title">{{ rows.length }} equipment</span>
+    <input pInputText placeholder="Search…" [(ngModel)]="search" style="max-width: 12rem" />
+  </div>
+  <p-table
+    [value]="filteredRows"
+    styleClass="p-datatable-sm p-datatable-striped"
+    [paginator]="true"
+    [rows]="5"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Code</th>
+        <th>Name</th>
+        <th>Status</th>
+        <th>Group</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-row>
+      <tr>
+        <td><span class="fw-equipment-code">{{ row.code }}</span></td>
+        <td>
+          <span class="fw-equipment-name">{{ row.name }}</span>
+          <div class="fw-equipment-id">{{ row.id }}</div>
+        </td>
+        <td>
+          <span class="fw-status-badge" [class]="statusClass(row.status)">{{ row.status }}</span>
+        </td>
+        <td>{{ row.group }}</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</ng-template>

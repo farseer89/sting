@@ -1,0 +1,266 @@
+<p-toast />
+
+@switch (demoKey()) {
+  @case ('hive-user-card') {
+    <div class="flex align-items-center gap-3 p-3 surface-ground border-round">
+      <p-avatar [label]="demoUser.firstName.charAt(0) + demoUser.lastName.charAt(0)" shape="circle" size="large" />
+      <p-card styleClass="flex-1 shadow-none border-none">
+        <p class="m-0 font-semibold">{{ demoUser.firstName }} {{ demoUser.lastName }}</p>
+        <p class="m-0 text-sm text-600">{{ demoUser.email }}</p>
+        <p-tag class="mt-2" [value]="demoUser.userAccountType ?? 'user'" severity="info" />
+      </p-card>
+    </div>
+  }
+  @case ('hive-sign-in-flow') {
+    <p-card header="SignInResponse (fixture)" styleClass="w-full">
+      <pre class="m-0 text-sm overflow-auto">{{ signInFixture | json }}</pre>
+    </p-card>
+  }
+  @case ('button') {
+    <div class="flex flex-wrap gap-2">
+      <p-button label="Primary" icon="pi pi-check" />
+      <p-button label="Outlined" [outlined]="true" />
+      <p-button label="Text" [text]="true" />
+      <p-button icon="pi pi-trash" severity="danger" [rounded]="true" ariaLabel="Delete" />
+    </div>
+  }
+  @case ('buttongroup') {
+    <p-buttonGroup>
+      <p-button label="One" />
+      <p-button label="Two" />
+      <p-button label="Three" />
+    </p-buttonGroup>
+  }
+  @case ('splitbutton') {
+    <p-splitButton label="Save" [model]="splitItems" />
+  }
+  @case ('selectbutton') {
+    <p-selectbutton [options]="categoryOptions" [(ngModel)]="demoCategoryFilter" optionLabel="label" optionValue="value" />
+  }
+  @case ('inputtext') {
+    <div class="flex flex-column gap-2" style="max-width: 20rem">
+      <input pInputText [(ngModel)]="demoText" placeholder="Type here" />
+      <span class="text-sm text-600">Value: {{ demoText }}</span>
+    </div>
+  }
+  @case ('textarea') {
+    <textarea pTextarea [(ngModel)]="demoText" rows="3" class="w-full" style="max-width: 24rem"></textarea>
+  }
+  @case ('inputnumber') {
+    <p-inputNumber [(ngModel)]="demoQty" [min]="0" [max]="999" />
+  }
+  @case ('password') {
+    <p-password [(ngModel)]="demoPwd" [toggleMask]="true" [feedback]="false" placeholder="Password" />
+  }
+  @case ('select') {
+    <p-select
+      [options]="demoCities"
+      [(ngModel)]="demoCity"
+      optionLabel="name"
+      placeholder="Select a city"
+      styleClass="w-full"
+      [style]="{ 'max-width': '16rem' }"
+    />
+  }
+  @case ('multiselect') {
+    <p-multiselect
+      [options]="demoCities"
+      [(ngModel)]="demoMulti"
+      optionLabel="name"
+      placeholder="Select cities"
+      display="chip"
+      [style]="{ 'max-width': '20rem' }"
+    />
+  }
+  @case ('checkbox') {
+    <p-checkbox [(ngModel)]="demoChecked" [binary]="true" inputId="demo-check" />
+    <label for="demo-check" class="ml-2">Accept terms</label>
+  }
+  @case ('toggleswitch') {
+    <p-toggleswitch [(ngModel)]="demoEnabled" />
+    <span class="ml-2 text-sm">{{ demoEnabled ? 'On' : 'Off' }}</span>
+  }
+  @case ('radiobutton') {
+    <div class="flex flex-wrap gap-3">
+      @for (opt of ['A', 'B', 'C']; track opt) {
+        <div class="flex align-items-center">
+          <p-radiobutton [value]="opt" [(ngModel)]="demoRadio" [inputId]="'r-' + opt" />
+          <label [for]="'r-' + opt" class="ml-2">{{ opt }}</label>
+        </div>
+      }
+    </div>
+  }
+  @case ('datepicker') {
+    <p-datepicker [(ngModel)]="demoDate" [showIcon]="true" />
+  }
+  @case ('iconfield') {
+    <p-iconfield>
+      <p-inputicon class="pi pi-search" />
+      <input pInputText placeholder="Search components…" />
+    </p-iconfield>
+  }
+  @case ('floatlabel') {
+    <p-floatlabel>
+      <input pInputText id="demo-email" [(ngModel)]="demoEmail" autocomplete="off" />
+      <label for="demo-email">Email</label>
+    </p-floatlabel>
+  }
+  @case ('rating') {
+    <p-rating [(ngModel)]="demoStars" />
+  }
+  @case ('slider') {
+    <div style="max-width: 16rem" class="w-full">
+      <p-slider [(ngModel)]="demoRange" class="w-full" />
+      <span class="text-sm text-600">{{ demoRange }}</span>
+    </div>
+  }
+  @case ('table') {
+    <p-table [value]="tableRows" [paginator]="true" [rows]="5" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Name</th>
+          <th>Status</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>{{ row.name }}</td>
+          <td><p-tag [value]="row.status" [severity]="row.status === 'Active' ? 'success' : 'secondary'" /></td>
+        </tr>
+      </ng-template>
+    </p-table>
+  }
+  @case ('paginator') {
+    <p-paginator [rows]="10" [totalRecords]="120" [first]="pageFirst" (onPageChange)="onPage($event)" />
+  }
+  @case ('card') {
+    <p-card header="Equipment" subheader="Dispatch overview">
+      <p class="m-0">Sample card body for dashboard panels.</p>
+    </p-card>
+  }
+  @case ('panel') {
+    <p-panel header="Filters" [toggleable]="true">
+      <p class="m-0">Collapsible panel content.</p>
+    </p-panel>
+  }
+  @case ('fieldset') {
+    <p-fieldset legend="Address">
+      <p class="m-0">Grouped form fields go here.</p>
+    </p-fieldset>
+  }
+  @case ('divider') {
+    <div>
+      <p class="m-0">Above</p>
+      <p-divider />
+      <p class="m-0">Below</p>
+    </div>
+  }
+  @case ('tabs') {
+    <p-tabs value="0">
+      <p-tablist>
+        <p-tab value="0">Overview</p-tab>
+        <p-tab value="1">Details</p-tab>
+      </p-tablist>
+      <p-tabpanels>
+        <p-tabpanel value="0"><p class="m-0">Tab one content.</p></p-tabpanel>
+        <p-tabpanel value="1"><p class="m-0">Tab two content.</p></p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
+  }
+  @case ('accordion') {
+    <p-accordion value="0">
+      <p-accordion-panel value="0">
+        <p-accordion-header>Section 1</p-accordion-header>
+        <p-accordion-content><p class="m-0">Accordion content.</p></p-accordion-content>
+      </p-accordion-panel>
+    </p-accordion>
+  }
+  @case ('toolbar') {
+    <p-toolbar>
+      <ng-template #start>
+        <p-button label="New" icon="pi pi-plus" />
+      </ng-template>
+      <ng-template #end>
+        <p-button label="Export" icon="pi pi-upload" [outlined]="true" />
+      </ng-template>
+    </p-toolbar>
+  }
+  @case ('dialog') {
+    <p-button label="Open dialog" icon="pi pi-external-link" (onClick)="dialogVisible = true" />
+    <p-dialog header="Dialog" [(visible)]="dialogVisible" [modal]="true" [style]="{ width: '24rem' }">
+      <p class="m-0">Modal dialog body.</p>
+    </p-dialog>
+  }
+  @case ('drawer') {
+    <p-button label="Open drawer" (onClick)="drawerVisible = true" />
+    <p-drawer [(visible)]="drawerVisible" header="Drawer">
+      <p class="m-0">Slide-in panel content.</p>
+    </p-drawer>
+  }
+  @case ('popover') {
+    <p-button label="Show popover" (onClick)="pop.toggle($event)" />
+    <p-popover #pop>
+      <p class="m-0">Popover content anchored to the button.</p>
+    </p-popover>
+  }
+  @case ('tooltip') {
+    <p-button label="Hover me" pTooltip="Tooltip help text" tooltipPosition="top" />
+  }
+  @case ('breadcrumb') {
+    <p-breadcrumb [model]="breadcrumbItems" [home]="breadcrumbHome" />
+  }
+  @case ('menu') {
+    <p-menu #demoMenu [model]="menuItems" [popup]="true" />
+    <p-button label="Open menu" icon="pi pi-bars" (onClick)="demoMenu.toggle($event)" />
+  }
+  @case ('menubar') {
+    <p-menubar [model]="menubarItems" />
+  }
+  @case ('toast') {
+    <p-button label="Show toast" icon="pi pi-bell" (onClick)="showToast()" />
+  }
+  @case ('message') {
+    <p-message severity="info">Inline informational message.</p-message>
+  }
+  @case ('tag') {
+    <div class="flex flex-wrap gap-2">
+      <p-tag value="Info" severity="info" />
+      <p-tag value="Success" severity="success" />
+      <p-tag value="Warn" severity="warn" />
+      <p-tag value="Danger" severity="danger" />
+    </div>
+  }
+  @case ('badge') {
+    <p-button label="Inbox" icon="pi pi-inbox" badge="3" badgeSeverity="danger" />
+  }
+  @case ('chip') {
+    <p-chip label="Equipment" icon="pi pi-cog" [removable]="true" />
+  }
+  @case ('progressbar') {
+    <p-progressBar [value]="65" />
+  }
+  @case ('progressspinner') {
+    <p-progressSpinner ariaLabel="Loading" />
+  }
+  @case ('skeleton') {
+    <div class="w-full" style="max-width: 20rem">
+      <p-skeleton width="100%" height="2rem" />
+      <p-skeleton width="75%" height="1rem" class="mt-2" />
+    </div>
+  }
+  @case ('avatar') {
+    <div class="flex gap-2">
+      <p-avatar label="MS" shape="circle" />
+      <p-avatar icon="pi pi-user" shape="circle" />
+    </div>
+  }
+  @case ('fileupload') {
+    <p-fileUpload mode="basic" chooseLabel="Choose file" name="demo" />
+  }
+  @default {
+    <p-message severity="secondary">
+      Live preview not wired yet — copy the snippet below or check
+      <a [href]="'https://primeng.org/' + demoKey()" target="_blank" rel="noopener">primeng.org</a>.
+    </p-message>
+  }
+}

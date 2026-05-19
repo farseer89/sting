@@ -1,21 +1,307 @@
-<p-toast />
-<div class="surface-card p-4 border-round shadow-2">
-  <h2 class="m-0">PrimeNG playground</h2>
-  <p class="mt-2 mb-4 text-600">Copy imports and snippets into new features. See docs/primeng/ for full API.</p>
-
-  <section class="mb-4">
-    <h3 class="mt-0">Live</h3>
-    <div class="flex flex-wrap align-items-center gap-3 mb-3">
-      <input pInputText [(ngModel)]="demoInput" placeholder="Demo input" />
-      <p-button label="Toast" icon="pi pi-bell" (onClick)="showToast()" />
-      <p-tag [value]="demoInput || 'Tag'" severity="success" />
+<div class="blocks-studio">
+  <nav class="blocks-rail" [attr.aria-label]="isPatternsMode() ? 'Pattern navigation' : 'Component navigation'">
+    <div class="blocks-rail-head">
+      <span class="blocks-rail-title">{{ isPatternsMode() ? 'Patterns' : 'Components' }}</span>
+      <span class="blocks-rail-count">{{ stats().shown }}</span>
     </div>
-  </section>
 
-  @for (ex of examples; track ex.title) {
-    <section class="mb-4">
-      <h3 class="mt-0">{{ ex.title }}</h3>
-      <pre class="snippet surface-ground p-3 border-round text-sm">{{ ex.snippet }}</pre>
-    </section>
-  }
+    <p-iconfield class="blocks-rail-search">
+      <p-inputicon class="pi pi-search" />
+      <input
+        pInputText
+        class="w-full"
+        placeholder="Search…"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+      />
+    </p-iconfield>
+
+    @if (!isPatternsMode()) {
+      <div class="blocks-rail-categories">
+        @for (cat of categoryNav; track cat.value) {
+          <button
+            type="button"
+            class="blocks-rail-cat"
+            [class.blocks-rail-cat--active]="activeCategory() === cat.value"
+            (click)="setCategory(cat.value)"
+          >
+            {{ cat.label }}
+          </button>
+        }
+      </div>
+    }
+
+    <div class="blocks-rail-list">
+      @if (isPatternsMode()) {
+        <ul class="blocks-rail-items">
+          @for (pattern of filteredPatterns(); track pattern.id) {
+            <li>
+              <button
+                type="button"
+                class="blocks-rail-item"
+                [class.blocks-rail-item--active]="isNavActive(pattern.id)"
+                (click)="scrollToBlock(pattern.id)"
+              >
+                {{ pattern.name }}
+              </button>
+            </li>
+          }
+        </ul>
+      }
+      @if (!isPatternsMode()) {
+      @for (group of navGroups(); track group.category.id) {
+        <section class="blocks-rail-group">
+          <span class="blocks-rail-group-label">
+            <i [class]="group.category.icon"></i>
+            {{ group.category.label }}
+          </span>
+          <ul class="blocks-rail-items">
+            @for (ex of group.examples; track ex.id) {
+              <li>
+                <button
+                  type="button"
+                  class="blocks-rail-item"
+                  [class.blocks-rail-item--active]="isNavActive(ex.id)"
+                  (click)="scrollToBlock(ex.id)"
+                >
+                  {{ ex.name }}
+                  @if (!ex.demoKey) {
+                    <span class="blocks-rail-dot" title="Snippet only"></span>
+                  }
+                </button>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+      }
+    </div>
+  </nav>
+
+  <main class="blocks-canvas">
+    <header class="blocks-toolbar surface-card">
+      <div class="blocks-toolbar-start">
+        <h1 class="blocks-toolbar-title">UI Library</h1>
+        <p class="blocks-toolbar-sub">
+          @if (isPatternsMode()) {
+            FieldWave layout patterns from probe · {{ stats().shown }} patterns
+          } @else {
+            PrimeNG components · {{ stats().shown }} blocks · {{ stats().live }} live
+          }
+        </p>
+      </div>
+      <div class="blocks-toolbar-end">
+        <p-selectbutton
+          [options]="studioModeOptions"
+          [ngModel]="studioMode()"
+          (ngModelChange)="setStudioMode($event)"
+          optionLabel="label"
+          optionValue="value"
+          size="small"
+        />
+        @if (!isPatternsMode()) {
+        <p-selectbutton
+          [options]="viewFilterOptions"
+          [ngModel]="viewFilter()"
+          (ngModelChange)="viewFilter.set($event)"
+          optionLabel="label"
+          optionValue="value"
+          size="small"
+        />
+        }
+        <label class="blocks-toolbar-toggle">
+          <p-toggleswitch [ngModel]="showAllCode()" (ngModelChange)="showAllCode.set($event)" />
+          <span>Show code</span>
+        </label>
+        <p-tag value="Dev" severity="warn" />
+      </div>
+    </header>
+
+    @if (isPatternsMode()) {
+      @if (filteredPatterns().length === 0) {
+        <section class="blocks-empty">
+          <i class="pi pi-search text-4xl text-400 mb-3"></i>
+          <p class="m-0 text-600">No patterns match your search.</p>
+        </section>
+      }
+
+      <section class="blocks-category">
+        <header class="blocks-category-header">
+          <h2 class="blocks-category-title">
+            <i class="pi pi-table"></i>
+            Equipment &amp; dashboard patterns
+          </h2>
+          <span class="blocks-category-rule"></span>
+        </header>
+        <article class="block-card block-card--pattern-intro">
+          <div class="block-doc-stage">
+            <p class="m-0 mb-2">
+              Apply <code>fw-*</code> classes from <code>src/styles/patterns/</code> (loaded globally).
+              Wrap your feature root with the pattern’s root class — e.g.
+              <code>fw-pattern-equipment-list</code> for probe-style equipment tables.
+            </p>
+            <p class="m-0 text-sm text-600">See <code>docs/UI_PATTERNS.md</code> for column overrides and PrimeNG table variant.</p>
+          </div>
+        </article>
+        @for (pattern of filteredPatterns(); track pattern.id) {
+          <article class="block-card" [id]="'block-' + pattern.id" [attr.data-block-id]="pattern.id">
+            <div class="block-header">
+              <div class="block-header-main">
+                <h3 class="block-title">{{ pattern.name }}</h3>
+                <p class="block-desc m-0">{{ pattern.description }}</p>
+              </div>
+              <div class="block-actions">
+                <p-tag [value]="pattern.rootClass" severity="info" styleClass="block-tag" />
+                <p-button
+                  icon="pi pi-copy"
+                  [text]="true"
+                  size="small"
+                  pTooltip="Copy root class"
+                  (onClick)="copyRootClass(pattern, $event)"
+                />
+                <p-button
+                  [icon]="copiedId() === pattern.id ? 'pi pi-check' : 'pi pi-code'"
+                  [text]="true"
+                  size="small"
+                  [severity]="isCodeVisible(pattern.id) ? 'primary' : 'secondary'"
+                  pTooltip="Toggle markup"
+                  (onClick)="toggleCode(pattern.id)"
+                />
+                <p-button
+                  [icon]="copiedId() === pattern.id ? 'pi pi-check' : 'pi pi-copy'"
+                  [text]="true"
+                  size="small"
+                  pTooltip="Copy snippet"
+                  (onClick)="copyPatternSnippet(pattern, $event)"
+                />
+              </div>
+            </div>
+            <div class="block-preview-stage block-preview-stage--pattern">
+              <app-dev-ui-pattern-preview [patternKey]="pattern.demoKey" />
+            </div>
+            @if (isCodeVisible(pattern.id)) {
+              <div class="block-code-panel">
+                <pre class="block-code">{{ pattern.snippet }}</pre>
+              </div>
+            }
+          </article>
+        }
+      </section>
+    }
+
+    @if (!isPatternsMode() && groupedBlocks().length === 0) {
+      <section class="blocks-empty">
+        <i class="pi pi-search text-4xl text-400 mb-3"></i>
+        <p class="m-0 text-600">No blocks match. Try another search or filter.</p>
+      </section>
+    }
+
+    @if (!isPatternsMode()) {
+    @for (group of groupedBlocks(); track group.category.id) {
+      <section class="blocks-category" [id]="'section-' + group.category.id">
+        <header class="blocks-category-header">
+          <h2 class="blocks-category-title">
+            <i [class]="group.category.icon"></i>
+            {{ group.category.label }}
+          </h2>
+          <span class="blocks-category-rule"></span>
+        </header>
+
+        @if (group.category.id === 'hive') {
+          <article class="block-card block-card--hive">
+            <div class="block-header">
+              <div>
+                <h3 class="block-title">Build with @hive/contracts</h3>
+                <p class="block-desc m-0">
+                  Presentational components use typed <code>input()</code> from shared contracts.
+                  See <code>docs/BUILDING_UI_WITH_HIVE.md</code>.
+                </p>
+              </div>
+            </div>
+            <div class="block-preview-stage block-preview-stage--hive">
+              <ol class="hive-steps m-0 p-0 list-none">
+                @for (step of workflowSteps; track step.step) {
+                  <li class="hive-step">
+                    <span class="hive-step-num">{{ step.step }}</span>
+                    <div>
+                      <strong>{{ step.title }}</strong>
+                      <p class="m-0 mt-1 text-sm text-600">{{ step.body }}</p>
+                    </div>
+                  </li>
+                }
+              </ol>
+            </div>
+          </article>
+        }
+
+        @for (ex of group.examples; track ex.id) {
+          <article class="block-card" [id]="'block-' + ex.id" [attr.data-block-id]="ex.id">
+            <div class="block-header">
+              <div class="block-header-main">
+                <h3 class="block-title">{{ ex.name }}</h3>
+                <p class="block-desc m-0">{{ ex.description }}</p>
+              </div>
+              <div class="block-actions">
+                @if (ex.demoKey) {
+                  <p-tag value="Live" severity="success" styleClass="block-tag" />
+                }
+                <p-tag [value]="ex.module" severity="secondary" styleClass="block-tag" />
+                <p-button
+                  [icon]="copiedId() === ex.id ? 'pi pi-check' : 'pi pi-copy'"
+                  [text]="true"
+                  size="small"
+                  [pTooltip]="copiedId() === ex.id ? 'Copied' : 'Copy code'"
+                  tooltipPosition="top"
+                  (onClick)="copySnippetExample(ex, $event)"
+                  [attr.aria-label]="'Copy ' + ex.name + ' snippet'"
+                />
+                <p-button
+                  icon="pi pi-code"
+                  [text]="true"
+                  size="small"
+                  [severity]="isCodeVisible(ex.id) ? 'primary' : 'secondary'"
+                  pTooltip="Toggle code"
+                  tooltipPosition="top"
+                  (onClick)="toggleCode(ex.id)"
+                  ariaLabel="Toggle code"
+                />
+                <a [href]="docUrl(ex)" target="_blank" rel="noopener noreferrer">
+                  <p-button
+                    icon="pi pi-external-link"
+                    [text]="true"
+                    size="small"
+                    pTooltip="Open docs"
+                    tooltipPosition="top"
+                    ariaLabel="Open documentation"
+                  />
+                </a>
+              </div>
+            </div>
+
+            @if (ex.demoKey) {
+              <div class="block-preview-stage">
+                <div class="block-preview-frame">
+                  <app-dev-ui-preview [demoKey]="ex.demoKey" />
+                </div>
+              </div>
+            } @else {
+              <div class="block-preview-stage block-preview-stage--snippet">
+                <p class="m-0 text-600 text-sm">
+                  <i class="pi pi-file-edit mr-2"></i>
+                  Snippet only — toggle code or open docs to implement.
+                </p>
+              </div>
+            }
+
+            @if (isCodeVisible(ex.id)) {
+              <div class="block-code-panel">
+                <pre class="block-code">{{ ex.snippet }}</pre>
+              </div>
+            }
+          </article>
+        }
+      </section>
+    }
+    }
+  </main>
 </div>

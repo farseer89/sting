@@ -1,0 +1,158 @@
+@use 'tokens';
+
+// Probe: telematics-toolbar.advanced-bar + secondary-toolbar
+.fw-toolbar.advanced-bar {
+  position: sticky;
+  top: 0;
+  z-index: 9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--surface-card);
+  border-radius: var(--fw-pattern-radius);
+  border: 1px solid var(--surface-border);
+  margin-bottom: 0.5rem;
+  box-shadow: var(--fw-shadow-card);
+  min-height: 52px;
+  flex-wrap: wrap;
+
+  .fw-toolbar-section {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    min-height: var(--fw-toolbar-height);
+    flex-wrap: wrap;
+  }
+
+  .fw-toolbar-divider {
+    color: var(--surface-border);
+    font-weight: 300;
+    font-size: 1.2rem;
+    line-height: 1;
+    padding: 0 0.25rem;
+  }
+
+  .fw-toolbar-label {
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .fw-compact-input {
+    display: inline-flex;
+    align-items: center;
+    position: relative;
+
+    .pi-search {
+      position: absolute;
+      left: 10px;
+      font-size: 0.875rem;
+      color: var(--text-color-secondary);
+      z-index: 1;
+    }
+
+    .p-inputtext {
+      height: var(--fw-toolbar-height);
+      padding: 6px 12px 6px 2rem;
+      border: 1px solid var(--surface-border);
+      border-radius: var(--fw-pattern-radius-sm);
+      background: var(--surface-ground);
+      font-size: 0.875rem;
+      font-weight: 500;
+      min-width: 180px;
+
+      &:hover {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.1rem var(--fw-primary-tint-10);
+      }
+
+      &:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem var(--fw-primary-tint-12);
+        outline: none;
+      }
+    }
+  }
+
+  .fw-icon-btn {
+    border: 1px solid var(--surface-border);
+    background: var(--surface-ground);
+    height: var(--fw-toolbar-height);
+    width: var(--fw-toolbar-height);
+    border-radius: var(--fw-pattern-radius-sm);
+    color: var(--primary-color);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--fw-primary-tint-08);
+      border-color: var(--primary-color);
+    }
+
+    &.active {
+      background: var(--primary-color);
+      border-color: var(--primary-color);
+      color: var(--primary-color-text, #fff);
+    }
+  }
+}
+
+.fw-secondary-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1.25rem;
+  margin-bottom: 1rem;
+
+  .fw-filter-pills {
+    display: inline-flex;
+    gap: 0.375rem;
+    align-items: center;
+  }
+
+  .fw-filter-pill {
+    padding: 5px 14px;
+    height: 28px;
+    border: 1px solid var(--surface-border);
+    border-radius: 16px;
+    background: var(--surface-ground);
+    color: var(--text-color-secondary);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+
+    &:hover {
+      border-color: var(--primary-color);
+      background: var(--fw-primary-tint-05);
+      color: var(--primary-color);
+    }
+
+    &.active {
+      background: var(--primary-color);
+      border-color: var(--primary-color);
+      color: var(--primary-color-text, #fff);
+      font-weight: 600;
+    }
+  }
+
+  .fw-equipment-count-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    background: var(--fw-primary-tint-08);
+    color: var(--primary-color);
+    border-radius: var(--fw-pattern-radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+}

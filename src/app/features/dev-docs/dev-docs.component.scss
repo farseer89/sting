@@ -1,0 +1,148 @@
+@use '../dev-shared/blocks-studio' as studio;
+
+@include studio.blocks-studio-host;
+@include studio.blocks-studio-layout;
+
+.block-card--hero {
+  border-color: color-mix(in srgb, var(--p-primary-color) 40%, var(--surface-border));
+  margin-bottom: 2.5rem;
+}
+
+.stinger-hero {
+  padding: 2rem 2.25rem;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--p-primary-color) 8%, var(--surface-card)) 0%,
+    var(--surface-card) 55%
+  );
+}
+
+.stinger-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--p-primary-color);
+  background: color-mix(in srgb, var(--p-primary-color) 12%, transparent);
+  padding: 0.25rem 0.65rem;
+  border-radius: 1rem;
+  margin-bottom: 0.75rem;
+
+  .pi {
+    font-size: 0.85rem;
+  }
+}
+
+.stinger-hero-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.stinger-hero-lead {
+  max-width: 40rem;
+  font-size: 1rem;
+  color: var(--text-color-secondary);
+  line-height: 1.55;
+}
+
+.stinger-checklist {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 0.65rem;
+  margin: 1.5rem 0;
+}
+
+.stinger-check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--border-radius);
+  background: var(--surface-ground);
+  border: 1px solid var(--surface-border);
+}
+
+.stinger-check-num {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: var(--p-primary-color);
+  color: var(--p-primary-contrast-color, #fff);
+}
+
+.stinger-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.block-doc-stage {
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.doc-paragraph {
+  margin: 0 0 0.85rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-color);
+  max-width: 48rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.doc-steps {
+  margin: 0 0 1rem;
+  padding-left: 1.25rem;
+  max-width: 48rem;
+
+  .doc-step {
+    margin-bottom: 0.65rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+
+    strong {
+      display: block;
+      margin-bottom: 0.15rem;
+    }
+
+    span {
+      color: var(--text-color-secondary);
+    }
+  }
+}
+
+.doc-code-inline {
+  margin-top: 1rem;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.doc-code-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.75rem;
+  background: var(--surface-800, #2d2d2d);
+  color: var(--surface-200, #ccc);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.doc-code-inline .block-code {
+  max-height: none;
+}

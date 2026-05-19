@@ -26,4 +26,8 @@ curl -fsSL https://primeng.org/llms/llms.txt -o docs/primeng/llms.txt
 curl -fsSL https://primeng.org/llms/llms-full.txt -o docs/primeng/llms-full.txt
 ```
 
+**Dev Docs (local dev):** `/dev/docs` — Stinger onboarding and launch checklist.
+
+**UI Playground (local dev):** `/dev/ui` — searchable catalog of PrimeNG components + Hive contract examples. See `docs/BUILDING_UI_WITH_HIVE.md`.
+
 Dashboard UI patterns for Sting features: see `src/app/features/home/` and probe `src/dashboard-style-guide.md`.

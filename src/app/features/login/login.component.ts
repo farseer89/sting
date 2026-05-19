@@ -12,7 +12,7 @@ import { MessageService } from 'primeng/api';
 import { Toast } from 'primeng/toast';
 import { AuthService } from '../../core/auth/auth.service';
 import { validationMessages } from '../../core/validation/validation-messages';
-import { environment } from '../../../environments/environment';
+import { environment } from '@env/environment';
 
 @Component({
   selector: 'app-login',

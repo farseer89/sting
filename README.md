@@ -56,8 +56,14 @@ See [docs/ADDING_A_FEATURE.md](docs/ADDING_A_FEATURE.md).
 
 Local LLM docs: [docs/primeng/](docs/primeng/) (from [primeng.org/llms](https://primeng.org/llms/llms.txt)).
 
-The `/home` route is the **dashboard starter** (KPI cards, quick actions, activity table) — modern equivalent of probe `alpha-home` + layout shell.
+The `/home` route is **alpha-home** (simple welcome card). Copy the KPI dashboard from `src/app/features/_templates/dashboard-kpi/`. Dev PrimeNG examples: `/dev/ui` (non-prod only).
 
 ## Relation to probe
 
 Probe is the full FieldWave product. Sting is the minimal template — see probe `ai_context/active/STING_STARTER.md`.
+
+## Launch pad
+
+- [LAUNCH_NEW_MVP.md](docs/LAUNCH_NEW_MVP.md)
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- [@hive/contracts](../hive-contracts) shared API types

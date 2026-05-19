@@ -1,10 +1,18 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import type {
+  RefreshResponse,
+  SignInRequest,
+  SignInResponse,
+  StoredUserSession,
+  UserPublic,
+} from '@hive/contracts';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
-import { environment } from '../../../environments/environment';
+import { environment } from '@env/environment';
 
+/** UI-facing subset derived from {@link UserPublic}. */
 export interface AuthUserInfo {
   firstName: string;
   lastName: string;
@@ -40,24 +48,23 @@ export class AuthService {
   }
 
   loginUser(email: string, password: string, rememberMe: boolean): Promise<AuthUserInfo> {
+    const body: SignInRequest = { email, password };
     return new Promise((resolve, reject) => {
-      this.http
-        .post(this.microLoginUrl, { email, password }, { withCredentials: true })
-        .subscribe({
-          next: (data: unknown) => {
-            this.persistUser(data, rememberMe);
-            this.authStateSubject.next(true);
-            resolve(this.buildUserInfo(data));
-          },
-          error: (err) => {
-            const message =
-              err?.error?.errors?.[0]?.message ||
-              err?.error?.message ||
-              err?.message ||
-              'Login failed';
-            reject(new Error(message));
-          },
-        });
+      this.http.post<SignInResponse>(this.microLoginUrl, body, { withCredentials: true }).subscribe({
+        next: (data) => {
+          this.persistUser(data, rememberMe);
+          this.authStateSubject.next(true);
+          resolve(this.buildUserInfo(data));
+        },
+        error: (err) => {
+          const message =
+            err?.error?.errors?.[0]?.message ||
+            err?.error?.message ||
+            err?.message ||
+            'Login failed';
+          reject(new Error(message));
+        },
+      });
     });
   }
 
@@ -70,6 +77,8 @@ export class AuthService {
     this.currentUserPhoto = '';
     localStorage.removeItem('currentUserData');
     sessionStorage.removeItem('currentUserData');
+    localStorage.removeItem('userId');
+    sessionStorage.removeItem('userId');
     this.authStateSubject.next(false);
     this.router.navigate(['/login']);
   }
@@ -78,52 +87,53 @@ export class AuthService {
     return !!localStorage.getItem('currentUserData') || !!sessionStorage.getItem('currentUserData');
   }
 
-  getToken(): string | null {
+  getSession(): StoredUserSession | null {
     const raw = localStorage.getItem('currentUserData') || sessionStorage.getItem('currentUserData');
     if (!raw) return null;
     try {
-      return JSON.parse(raw).tokens?.accessToken ?? null;
+      return JSON.parse(raw) as StoredUserSession;
     } catch {
       return null;
     }
+  }
+
+  getToken(): string | null {
+    return this.getSession()?.tokens?.accessToken ?? null;
   }
 
   getRefreshToken(): string | null {
-    const raw = localStorage.getItem('currentUserData') || sessionStorage.getItem('currentUserData');
-    if (!raw) return null;
-    try {
-      return JSON.parse(raw).tokens?.refreshToken ?? null;
-    } catch {
-      return null;
-    }
+    return this.getSession()?.tokens?.refreshToken ?? null;
   }
 
   setTokens(accessToken: string, refreshToken: string, rememberMe = true): void {
-    const raw = localStorage.getItem('currentUserData') || sessionStorage.getItem('currentUserData');
-    if (!raw) return;
-    const parsed = JSON.parse(raw);
-    parsed.tokens = { accessToken, refreshToken };
+    const session = this.getSession();
+    if (!session) return;
+    const updated: StoredUserSession = {
+      ...session,
+      tokens: { accessToken, refreshToken },
+    };
     const store = rememberMe ? localStorage : sessionStorage;
-    store.setItem('currentUserData', JSON.stringify(parsed));
+    store.setItem('currentUserData', JSON.stringify(updated));
   }
 
-  refreshToken(): Observable<{ tokens?: { accessToken: string; refreshToken: string } }> {
+  refreshToken(): Observable<RefreshResponse> {
     const refreshToken = this.getRefreshToken();
     if (!refreshToken) {
       return throwError(() => new Error('No refresh token'));
     }
     return this.http
-      .post(`${environment.MICRO_BASE_URL}/api/users/refresh`, { refreshToken })
+      .post<RefreshResponse>(`${environment.MICRO_BASE_URL}/api/users/refresh`, { refreshToken })
       .pipe(
-        tap((response: { tokens?: { accessToken: string; refreshToken: string } }) => {
+        tap((response) => {
           if (response?.tokens) {
-            this.setTokens(response.tokens.accessToken, response.tokens.refreshToken);
+            const rememberMe = !!localStorage.getItem('currentUserData');
+            this.setTokens(response.tokens.accessToken, response.tokens.refreshToken, rememberMe);
           }
         }),
         catchError((err) => {
           this.emitSessionExpired();
           return throwError(() => err);
-        })
+        }),
       );
   }
 
@@ -144,34 +154,29 @@ export class AuthService {
   }
 
   getCurrentUserPhoto(): string {
-    return this.currentUserPhoto || 'assets/avatar-placeholder.png';
+    return this.currentUserPhoto || 'assets/images/blocks/avatars/circle/avatar-f-1.png';
   }
 
-  private persistUser(data: unknown, rememberMe: boolean): void {
-    const user = data as Record<string, string>;
-    this.currentUserEmail = user['email'] ?? '';
-    this.currentUserFirstName = user['firstName'] ?? '';
-    this.currentUserLastName = user['lastName'] ?? '';
-    this.currentUserPhoto = user['userPhoto'] ?? '';
-    this.currentUserId = user['id'] ?? '';
+  private persistUser(data: SignInResponse, rememberMe: boolean): void {
+    this.applyUserFields(data);
+    const session: StoredUserSession = data;
     const store = rememberMe ? localStorage : sessionStorage;
-    store.setItem('currentUserData', JSON.stringify(data));
+    store.setItem('currentUserData', JSON.stringify(session));
     store.setItem('userId', this.currentUserId);
   }
 
   private loadFromStorage(): void {
-    const raw = localStorage.getItem('currentUserData') || sessionStorage.getItem('currentUserData');
-    if (!raw) return;
-    try {
-      const data = JSON.parse(raw);
-      this.currentUserEmail = data.email ?? '';
-      this.currentUserFirstName = data.firstName ?? '';
-      this.currentUserLastName = data.lastName ?? '';
-      this.currentUserPhoto = data.userPhoto ?? '';
-      this.currentUserId = data.id ?? '';
-    } catch {
-      /* ignore */
-    }
+    const session = this.getSession();
+    if (!session) return;
+    this.applyUserFields(session);
+  }
+
+  private applyUserFields(user: UserPublic): void {
+    this.currentUserEmail = user.email ?? '';
+    this.currentUserFirstName = user.firstName ?? '';
+    this.currentUserLastName = user.lastName ?? '';
+    this.currentUserPhoto = user.userPhoto ?? '';
+    this.currentUserId = user.id ?? '';
   }
 
   private clearTokens(): void {
@@ -179,14 +184,13 @@ export class AuthService {
     sessionStorage.removeItem('currentUserData');
   }
 
-  private buildUserInfo(data: unknown): AuthUserInfo {
-    const u = data as Record<string, string>;
+  private buildUserInfo(data: UserPublic): AuthUserInfo {
     return {
-      firstName: u['firstName'] ?? '',
-      lastName: u['lastName'] ?? '',
-      userId: u['id'] ?? '',
-      userPhoto: u['userPhoto'],
-      userAccountType: u['userAccountType'],
+      firstName: data.firstName ?? '',
+      lastName: data.lastName ?? '',
+      userId: data.id ?? '',
+      userPhoto: data.userPhoto,
+      userAccountType: data.userAccountType,
     };
   }
 }

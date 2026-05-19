@@ -3,7 +3,7 @@ import { inject } from '@angular/core';
 import { BehaviorSubject, throwError } from 'rxjs';
 import { catchError, filter, switchMap, take } from 'rxjs/operators';
 import { AuthService } from '../auth/auth.service';
-import { environment } from '../../../environments/environment';
+import { environment } from '@env/environment';
 
 let isRefreshing = false;
 const refreshTokenSubject = new BehaviorSubject<string | null>(null);

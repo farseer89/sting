@@ -1,0 +1,25 @@
+# Sting — AI context
+
+Documentation for AI agents (and humans) working on Sting. Goal: **learn from production mistakes once**, not rediscover them every session.
+
+## Start here
+
+| Doc | Purpose |
+|-----|---------|
+| [active/SECURITY_TODO.md](./active/SECURITY_TODO.md) | **Security roadmap** — shipped vs remaining (checkboxes) |
+| [improvements/INDEX.md](./improvements/INDEX.md) | Registry of lessons — **read before auth, CI, or deploy work** |
+| [improvements/TEMPLATE.md](./improvements/TEMPLATE.md) | Copy when adding a new lesson |
+| [../docs/SECURITY.md](../docs/SECURITY.md) | Auth v2, tokens, CSP |
+| [../docs/LAUNCH_NEW_MVP.md](../docs/LAUNCH_NEW_MVP.md) | Deploy and CORS |
+
+Probe’s full `ai_context` tree lives in [probe/ai_context](https://github.com/farseer89/probe/tree/main/ai_context). Sting keeps a **small, high-signal** set focused on this repo.
+
+## How to maintain
+
+After fixing a non-obvious bug or a bad agent loop:
+
+1. Add an entry under `improvements/` using [TEMPLATE.md](./improvements/TEMPLATE.md).
+2. Link it from [improvements/INDEX.md](./improvements/INDEX.md).
+3. One sentence in commit or PR: `ai_context: IMP-00N <title>`.
+
+Prefer **concrete wrong/right code** over long prose.

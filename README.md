@@ -66,6 +66,8 @@ The `/home` route is **alpha-home** (simple welcome card). Copy the KPI dashboar
 
 Probe is the full FieldWave product. Sting is the minimal template — see probe `ai_context/active/STING_STARTER.md`.
 
+**AI agents:** [`ai_context/active/SECURITY_TODO.md`](./ai_context/active/SECURITY_TODO.md) (roadmap) · [`ai_context/improvements/INDEX.md`](./ai_context/improvements/INDEX.md) (lessons) before auth, CI, or deploy changes.
+
 ## Launch pad
 
 - [LAUNCH_NEW_MVP.md](docs/LAUNCH_NEW_MVP.md)

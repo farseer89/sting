@@ -1,0 +1,37 @@
+<p-toast />
+<div class="shell min-h-screen flex surface-ground">
+  <aside class="shell-sidebar surface-section border-right-1 surface-border">
+    <div class="shell-brand p-3 font-bold text-xl">{{ appName }}</div>
+    <nav class="p-2">
+      @for (item of navItems; track item.label) {
+        @if (item.separator) {
+          <hr class="my-2 border-top-1 surface-border" />
+        } @else if (item.routerLink) {
+          <a
+            pRipple
+            [routerLink]="item.routerLink"
+            routerLinkActive="shell-nav-active"
+            class="shell-nav-link flex align-items-center gap-2 p-2 border-round text-color no-underline"
+          >
+            @if (item.icon) {
+              <i [class]="item.icon"></i>
+            }
+            <span>{{ item.label }}</span>
+          </a>
+        }
+      }
+    </nav>
+  </aside>
+
+  <div class="flex-1 flex flex-column min-w-0">
+    <header class="shell-header surface-section border-bottom-1 surface-border p-3 flex align-items-center justify-content-end gap-2">
+      <span class="text-sm text-color-secondary hidden sm:inline">{{ userName() }}</span>
+      <p-avatar [label]="userName().charAt(0)" shape="circle" />
+      <p-button icon="pi pi-user" [text]="true" (onClick)="userMenu.toggle($event)" ariaLabel="User menu" />
+      <p-menu #userMenu [model]="userMenuItems" [popup]="true" />
+    </header>
+    <main class="flex-1 overflow-auto">
+      <router-outlet />
+    </main>
+  </div>
+</div>

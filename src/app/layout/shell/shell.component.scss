@@ -1,0 +1,20 @@
+.shell-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+}
+
+.shell-nav-link:hover {
+  background: var(--surface-hover);
+}
+
+.shell-nav-active {
+  background: var(--highlight-bg);
+  color: var(--highlight-text-color);
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .shell-sidebar {
+    width: 200px;
+  }
+}

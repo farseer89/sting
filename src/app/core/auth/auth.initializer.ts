@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { AuthService } from './auth.service';
 
-export function authInitializer(): Promise<boolean> {
-  return inject(AuthService).bootstrapSession();
+/** APP_INITIALIZER factory must return a function that returns the async work. */
+export function authInitializer(): () => Promise<boolean> {
+  return () => inject(AuthService).bootstrapSession();
 }

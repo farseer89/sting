@@ -16,7 +16,7 @@
           },
           {
             "key": "Content-Security-Policy-Report-Only",
-            "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://droppin.shop https://*.droppin.shop https://*.fieldwave.ai; font-src 'self'; frame-ancestors 'none'; base-uri 'self'"
+            "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; connect-src 'self' https://droppin.shop https://*.droppin.shop https://*.fieldwave.ai; font-src 'self' https://fonts.gstatic.com data:; frame-ancestors 'none'; base-uri 'self'"
           }
         ]
       }

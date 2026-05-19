@@ -1,6 +1,14 @@
 .shell-sidebar {
-  width: 260px;
+  width: 280px;
   flex-shrink: 0;
+}
+
+.shell-brand {
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.shell-breadcrumb {
+  min-width: 0;
 }
 
 .shell-nav-link:hover {

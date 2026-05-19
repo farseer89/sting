@@ -8,7 +8,7 @@ import { Avatar } from 'primeng/avatar';
 import { Button } from 'primeng/button';
 import { Menu } from 'primeng/menu';
 import { Ripple } from 'primeng/ripple';
-import { AuthMicroService } from '../../core/auth/auth-micro.service';
+import { AuthService } from '../../core/auth/auth.service';
 import { NavigationService, NavItem } from '../../core/config/navigation.service';
 import { environment } from '../../../environments/environment';
 
@@ -21,7 +21,7 @@ import { environment } from '../../../environments/environment';
   styleUrl: './shell.component.scss',
 })
 export class ShellComponent implements OnInit, OnDestroy {
-  private readonly auth = inject(AuthMicroService);
+  private readonly auth = inject(AuthService);
   private readonly nav = inject(NavigationService);
   private readonly router = inject(Router);
   private readonly messages = inject(MessageService);

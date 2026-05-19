@@ -24,7 +24,10 @@
   </aside>
 
   <div class="flex-1 flex flex-column min-w-0">
-    <header class="shell-header surface-section border-bottom-1 surface-border p-3 flex align-items-center justify-content-end gap-2">
+    <header class="shell-header surface-section border-bottom-1 surface-border p-3 flex align-items-center justify-content-between gap-2">
+      <nav class="shell-breadcrumb hidden md:flex align-items-center gap-2 text-sm text-color-secondary">
+        <span class="font-medium text-color">Dashboard</span>
+      </nav>
       <span class="text-sm text-color-secondary hidden sm:inline">{{ userName() }}</span>
       <p-avatar [label]="userName().charAt(0)" shape="circle" />
       <p-button icon="pi pi-user" [text]="true" (onClick)="userMenu.toggle($event)" ariaLabel="User menu" />

@@ -14,7 +14,7 @@ export interface AuthUserInfo {
 }
 
 @Injectable({ providedIn: 'root' })
-export class AuthMicroService {
+export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
 

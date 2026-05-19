@@ -2,14 +2,14 @@ import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { BehaviorSubject, throwError } from 'rxjs';
 import { catchError, filter, switchMap, take } from 'rxjs/operators';
-import { AuthMicroService } from '../auth/auth-micro.service';
+import { AuthService } from '../auth/auth.service';
 import { environment } from '../../../environments/environment';
 
 let isRefreshing = false;
 const refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const auth = inject(AuthMicroService);
+  const auth = inject(AuthService);
   const apiBase = environment.MICRO_SOCKET_ENDPOINT || environment.MICRO_BASE_URL || '';
   const isApi = !!apiBase && req.url.startsWith(apiBase);
   const token = auth.getToken();

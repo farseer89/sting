@@ -21,3 +21,5 @@ ng generate component features/my-feature --standalone
 4. Add a nav item in `src/app/core/config/navigation.service.ts`.
 
 5. Run `npm run build:prod` and deploy.
+
+Use `src/app/features/home/` as the dashboard layout reference (KPI grid, quick actions, activity table). PrimeNG component docs: `docs/primeng/`.

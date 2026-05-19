@@ -2,7 +2,7 @@
 
 ## Safe to port (patterns)
 
-- `AuthMicroService` login/logout/token/refresh logic
+- `auth.micro.service` login/logout/token/refresh logic (Sting: `auth.service.ts`)
 - `auth.interceptor` 401 + refresh behavior
 - `alpha-layout` / `alpha-home` HTML structure (simplify nav)
 - `environment` micro URL fields

@@ -10,7 +10,7 @@ import { InputText } from 'primeng/inputtext';
 import { Ripple } from 'primeng/ripple';
 import { MessageService } from 'primeng/api';
 import { Toast } from 'primeng/toast';
-import { AuthMicroService } from '../../core/auth/auth-micro.service';
+import { AuthService } from '../../core/auth/auth.service';
 import { validationMessages } from '../../core/validation/validation-messages';
 import { environment } from '../../../environments/environment';
 
@@ -35,7 +35,7 @@ import { environment } from '../../../environments/environment';
 })
 export class LoginComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
-  private readonly auth = inject(AuthMicroService);
+  private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly messages = inject(MessageService);
 

@@ -1,6 +1,6 @@
 # Sting
 
-Greenfield Angular 21 MVP starter: AuthMicro login, app shell, blank home, Firebase deploy.
+Greenfield Angular 21 MVP starter: auth service login, app shell, blank home, Firebase deploy.
 
 ## Prerequisites
 
@@ -51,6 +51,12 @@ Manual alternative: copy `.firebaserc.example` to `.firebaserc` and set an exist
 ## Add a feature
 
 See [docs/ADDING_A_FEATURE.md](docs/ADDING_A_FEATURE.md).
+
+## PrimeNG reference
+
+Local LLM docs: [docs/primeng/](docs/primeng/) (from [primeng.org/llms](https://primeng.org/llms/llms.txt)).
+
+The `/home` route is the **dashboard starter** (KPI cards, quick actions, activity table) — modern equivalent of probe `alpha-home` + layout shell.
 
 ## Relation to probe
 

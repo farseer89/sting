@@ -2,6 +2,14 @@
 
 Sting uses **PrimeNG 21** with `providePrimeNG()` and per-component imports.
 
+**Theme:** Lara preset via `src/app/core/theme/fieldwave-preset.ts` (matches probe `lara-light-*` + FieldWave green `#059669`). Do not use Aura unless you intentionally want a different look.
+
+Required setup (already in repo):
+
+- `providePrimeNG({ theme: { preset: FieldwavePreset } })` in `app.config.ts`
+- `primeicons` + `primeflex` in `src/styles.scss`
+- Inter/Poppins in `index.html`
+
 | File | Purpose |
 |------|---------|
 | [llms.txt](./llms.txt) | Compact index — component list + guide links |

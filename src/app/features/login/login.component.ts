@@ -55,7 +55,6 @@ export class LoginComponent implements OnInit, OnDestroy {
     if (this.auth.isLoggedIn()) {
       void this.router.navigate(['/home']);
     }
-    this.applyThemeColors('#059669', '#064e3b', '#f59e0b');
     this.createForm();
   }
 
@@ -161,26 +160,4 @@ export class LoginComponent implements OnInit, OnDestroy {
     });
   }
 
-  private applyThemeColors(primaryColor: string, secondaryColor: string, accentColor: string): void {
-    document.documentElement.style.setProperty('--primary-color', primaryColor);
-    document.documentElement.style.setProperty('--secondary-color', secondaryColor);
-    document.documentElement.style.setProperty('--accent-color', accentColor);
-
-    const hex = primaryColor.replace(/^#/, '');
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    document.documentElement.style.setProperty('--primary-rgb', `${r}, ${g}, ${b}`);
-    document.documentElement.style.setProperty('--primary-900', this.darken(primaryColor, 15));
-  }
-
-  private darken(hex: string, percent: number): string {
-    let r = parseInt(hex.substring(1, 3), 16);
-    let g = parseInt(hex.substring(3, 5), 16);
-    let b = parseInt(hex.substring(5, 7), 16);
-    r = Math.max(0, Math.floor(r * (1 - percent / 100)));
-    g = Math.max(0, Math.floor(g * (1 - percent / 100)));
-    b = Math.max(0, Math.floor(b * (1 - percent / 100)));
-    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-  }
 }

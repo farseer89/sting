@@ -1,17 +1,19 @@
 <p-toast />
-<div class="shell min-h-screen flex surface-ground">
-  <aside class="shell-sidebar surface-section border-right-1 surface-border">
-    <div class="shell-brand p-3 font-bold text-xl">{{ appName }}</div>
+<div id="app-shell-root" class="shell-root min-h-screen flex surface-ground light-theme">
+  <aside class="shell-sidebar alpha-sidebar">
+    <div class="sidebar-logo-wrap flex align-items-center" style="height: 60px">
+      <img [src]="logoSrc" alt="FieldWave" height="30" />
+    </div>
     <nav class="p-2">
       @for (item of navItems; track item.label) {
         @if (item.separator) {
-          <hr class="my-2 border-top-1 surface-border" />
+          <hr class="my-2 border-top-1 surface-border mx-2" />
         } @else if (item.routerLink) {
           <a
             pRipple
             [routerLink]="item.routerLink"
             routerLinkActive="shell-nav-active"
-            class="shell-nav-link flex align-items-center gap-2 p-2 border-round text-color no-underline"
+            class="shell-nav-link sidebar-menu-item flex align-items-center gap-2 p-2 mx-2 border-round text-color no-underline"
           >
             @if (item.icon) {
               <i [class]="item.icon"></i>
@@ -24,16 +26,21 @@
   </aside>
 
   <div class="flex-1 flex flex-column min-w-0">
-    <header class="shell-header surface-section border-bottom-1 surface-border p-3 flex align-items-center justify-content-between gap-2">
-      <nav class="shell-breadcrumb hidden md:flex align-items-center gap-2 text-sm text-color-secondary">
-        <span class="font-medium text-color">Dashboard</span>
+    <header
+      class="shell-header surface-0 border-bottom-1 surface-border flex align-items-center justify-content-between px-4"
+      style="height: 60px; min-height: 60px"
+    >
+      <nav class="shell-breadcrumb top-breadcrumbs hidden md:flex align-items-center gap-2">
+        <span class="crumb current">Dashboard</span>
       </nav>
-      <span class="text-sm text-color-secondary hidden sm:inline">{{ userName() }}</span>
-      <p-avatar [label]="userName().charAt(0)" shape="circle" />
-      <p-button icon="pi pi-user" [text]="true" (onClick)="userMenu.toggle($event)" ariaLabel="User menu" />
-      <p-menu #userMenu [model]="userMenuItems" [popup]="true" />
+      <div class="flex align-items-center gap-2">
+        <span class="text-sm text-color-secondary hidden sm:inline">{{ userName() }}</span>
+        <p-avatar [label]="userInitials" shape="circle" />
+        <p-button icon="pi pi-user" [text]="true" (onClick)="userMenu.toggle($event)" ariaLabel="User menu" />
+        <p-menu #userMenu [model]="userMenuItems" [popup]="true" />
+      </div>
     </header>
-    <main class="flex-1 overflow-auto">
+    <main class="shell-main flex-1 overflow-auto">
       <router-outlet />
     </main>
   </div>

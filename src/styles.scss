@@ -1,5 +1,23 @@
+/* Global styles — aligned with probe (lara-light + Inter + layout tokens) */
 @import 'primeicons/primeicons.css';
 @import 'primeflex/primeflex.css';
+
+:root {
+  --app-font-family: 'Inter', 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  --brand-primary: var(--p-primary-500, #059669);
+  /* Probe / universal-login compat (legacy var names) */
+  --primary-color: var(--p-primary-color, #059669);
+  --primary-color-text: var(--p-primary-contrast-color, #fff);
+  --primary-900: var(--p-primary-700, #047857);
+  --text-color: var(--p-text-color);
+  --text-color-secondary: var(--p-text-muted-color);
+  --surface-border: var(--p-content-border-color);
+  --surface-ground: var(--p-surface-ground, #eff3f8);
+  --surface-hover: var(--p-content-hover-background);
+  --highlight-bg: var(--p-primary-50);
+  --highlight-text-color: var(--p-primary-700);
+}
 
 html,
 body {
@@ -7,6 +25,40 @@ body {
   margin: 0;
 }
 
+body,
+.p-component,
+.p-inputtext,
+.p-button,
+.p-card,
+.p-datatable,
+.p-panel,
+.p-tag {
+  font-family: var(--app-font-family);
+  font-size: 14px;
+}
+
 body {
-  font-family: var(--font-family);
+  background: var(--p-surface-ground, #eff3f8);
+  color: var(--p-text-color, #495057);
+}
+
+/* Probe-style active nav (sidebar) */
+.shell-nav-link.shell-nav-active {
+  background: var(--p-primary-color, #059669) !important;
+  color: var(--p-primary-contrast-color, #fff) !important;
+  font-weight: 600;
+}
+
+/* Cards match probe surface-card */
+.surface-card {
+  background: var(--p-content-background, #fff);
+  color: var(--p-text-color);
+}
+
+.surface-ground {
+  background: var(--p-surface-ground, #eff3f8);
+}
+
+.text-600 {
+  color: var(--p-text-muted-color, #6c757d);
 }

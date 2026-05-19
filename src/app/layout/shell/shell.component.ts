@@ -10,7 +10,6 @@ import { Menu } from 'primeng/menu';
 import { Ripple } from 'primeng/ripple';
 import { AuthService } from '../../core/auth/auth.service';
 import { NavigationService, NavItem } from '../../core/config/navigation.service';
-import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-shell',
@@ -23,11 +22,10 @@ import { environment } from '../../../environments/environment';
 export class ShellComponent implements OnInit, OnDestroy {
   private readonly auth = inject(AuthService);
   private readonly nav = inject(NavigationService);
-  private readonly router = inject(Router);
   private readonly messages = inject(MessageService);
   private sessionSub?: Subscription;
 
-  readonly appName = environment.appName;
+  readonly logoSrc = 'assets/images/blocks/logos/fieldwave.png';
   readonly navItems: NavItem[] = this.nav.getMenuItems();
 
   readonly userMenuItems: MenuItem[] = [
@@ -55,6 +53,15 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   userName(): string {
     return this.auth.getCurrentUserFullName();
+  }
+
+  get userInitials(): string {
+    const name = this.userName().trim();
+    const parts = name.split(/\s+/);
+    if (parts.length >= 2) {
+      return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
+    }
+    return name.charAt(0).toUpperCase() || 'U';
   }
 
   logout(): void {

@@ -1,5 +1,10 @@
+:host {
+  display: block;
+  font-family: var(--app-font-family);
+}
+
 .dashboard-page {
-  padding: 1.5rem;
+  padding: 1.25rem;
   max-width: 1400px;
   margin: 0 auto;
   display: flex;
@@ -13,24 +18,28 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--p-content-border-color);
 }
 
 .dashboard-eyebrow {
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
+  color: var(--p-text-muted-color);
 }
 
 .dashboard-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  line-height: 1.2;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--p-text-color);
 }
 
 .dashboard-subtitle {
   font-size: 0.95rem;
+  color: var(--p-text-muted-color);
 }
 
 .stats-grid {
@@ -41,13 +50,14 @@
 
 .stat-card {
   padding: 1.25rem;
+  border: 1px solid var(--p-content-border-color);
 }
 
 .stat-icon-wrap {
   width: 2.5rem;
   height: 2.5rem;
-  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
-  color: var(--primary-color);
+  background: var(--p-primary-50, #ecfdf5);
+  color: var(--p-primary-color, #059669);
 
   i {
     font-size: 1.15rem;
@@ -58,6 +68,12 @@
   font-size: 1.75rem;
   font-weight: 700;
   line-height: 1;
+  color: var(--p-text-color);
+}
+
+.stat-hint {
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
 }
 
 .dashboard-grid {
@@ -69,20 +85,17 @@
 
 .dashboard-card {
   padding: 1.25rem;
+  border: 1px solid var(--p-content-border-color);
 }
 
 .quick-action-item {
-  border: 1px solid var(--surface-border);
+  border: 1px solid var(--p-content-border-color);
   cursor: default;
   transition: background 0.15s ease, border-color 0.15s ease;
 
   &:hover:not(.quick-action-item--disabled) {
-    background: var(--surface-hover);
-    border-color: color-mix(in srgb, var(--primary-color) 25%, var(--surface-border));
-  }
-
-  &--disabled {
-    opacity: 0.55;
+    background: var(--p-content-hover-background);
+    border-color: var(--p-primary-200, #a7f3d0);
   }
 }
 
@@ -90,8 +103,8 @@
   width: 2.25rem;
   height: 2.25rem;
   flex-shrink: 0;
-  background: var(--surface-100);
-  color: var(--primary-color);
+  background: var(--p-surface-100, #f5f5f5);
+  color: var(--p-primary-color);
 
   i {
     font-size: 1rem;
@@ -100,9 +113,9 @@
 
 .empty-state {
   min-height: 12rem;
-  border: 1px dashed var(--surface-border);
-  border-radius: var(--border-radius, 6px);
-  background: var(--surface-50, #fafafa);
+  border: 1px dashed var(--p-content-border-color);
+  border-radius: var(--p-content-border-radius, 6px);
+  background: var(--p-surface-50, #fafafa);
 }
 
 .dashboard-footer code {
@@ -116,9 +129,5 @@
 
   .dashboard-page {
     padding: 1rem;
-  }
-
-  .dashboard-title {
-    font-size: 1.4rem;
   }
 }

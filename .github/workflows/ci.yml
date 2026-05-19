@@ -14,12 +14,13 @@ jobs:
       - name: Checkout Sting
         uses: actions/checkout@v4
 
-      - name: Checkout hive-contracts
-        uses: actions/checkout@v4
-        with:
-          repository: farseer89/hive-contracts
-          path: ../hive-contracts
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout hive-contracts (sibling for file:../hive-contracts)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git clone --depth 1 \
+            "https://x-access-token:${GH_TOKEN}@github.com/farseer89/hive-contracts.git" \
+            ../hive-contracts
 
       - uses: actions/setup-node@v4
         with:

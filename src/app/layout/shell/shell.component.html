@@ -1,47 +1,256 @@
 <p-toast />
-<div id="app-shell-root" class="shell-root min-h-screen flex surface-ground light-theme">
-  <aside class="shell-sidebar alpha-sidebar">
-    <div class="sidebar-logo-wrap flex align-items-center" style="height: 60px">
-      <img [src]="logoSrc" alt="FieldWave" height="30" />
-    </div>
-    <nav class="p-2">
-      @for (item of navItems; track item.label) {
-        @if (item.separator) {
-          <hr class="my-2 border-top-1 surface-border mx-2" />
-        } @else if (item.routerLink) {
-          <a
-            pRipple
-            [routerLink]="item.routerLink"
-            routerLinkActive="shell-nav-active"
-            class="shell-nav-link sidebar-menu-item flex align-items-center gap-2 p-2 mx-2 border-round text-color no-underline"
-          >
-            @if (item.icon) {
-              <i [class]="item.icon"></i>
-            }
-            <span>{{ item.label }}</span>
-          </a>
-        }
-      }
-    </nav>
-  </aside>
+<div
+  id="alpha-layout-root"
+  class="min-h-screen flex relative lg:static surface-ground light-theme"
+>
+  <div class="mobile-menu-overlay lg:hidden" [class.active]="mobileMenuOpen" (click)="closeMobileMenu()"></div>
 
-  <div class="flex-1 flex flex-column min-w-0">
-    <header
-      class="shell-header surface-0 border-bottom-1 surface-border flex align-items-center justify-content-between px-4"
-      style="height: 60px; min-height: 60px"
-    >
-      <nav class="shell-breadcrumb top-breadcrumbs hidden md:flex align-items-center gap-2">
-        <span class="crumb current">Dashboard</span>
-      </nav>
-      <div class="flex align-items-center gap-2">
-        <span class="text-sm text-color-secondary hidden sm:inline">{{ userName() }}</span>
-        <p-avatar [label]="userInitials" shape="circle" />
-        <p-button icon="pi pi-user" [text]="true" (onClick)="userMenu.toggle($event)" ariaLabel="User menu" />
-        <p-menu #userMenu [model]="userMenuItems" [popup]="true" />
+  <div
+    id="app-sidebar-alpha"
+    class="alpha-sidebar h-screen lg:block flex-shrink-0 absolute lg:static left-0 top-0 z-1 select-none"
+    [class.mobile-sidebar-open]="mobileMenuOpen"
+    [class.mobile-sidebar-closed]="!mobileMenuOpen"
+    style="width: 280px"
+  >
+    <div class="flex flex-column h-full">
+      <div
+        class="flex align-items-center justify-content-between sidebar-logo-wrap flex-shrink-0"
+        style="height: 60px"
+      >
+        <img [src]="logoSrc" alt="Fieldwave" height="30" />
+        <button
+          pRipple
+          type="button"
+          class="mobile-sidebar-close lg:hidden"
+          (click)="closeMobileMenu()"
+          aria-label="Close menu"
+        >
+          <i class="pi pi-times"></i>
+        </button>
       </div>
-    </header>
-    <main class="shell-main flex-1 overflow-auto">
+
+      <div class="overflow-y-auto">
+        <ul class="list-none p-3 m-0">
+          @for (item of navigationItems; track item.id) {
+            @if (item.separator) {
+              <li class="sidebar-separator">
+                <hr class="my-3 mx-0 surface-border" />
+              </li>
+            }
+            @if (!item.separator && !item.items) {
+              <li>
+                <a
+                  pRipple
+                  class="sidebar-menu-item"
+                  [routerLink]="item.disabled ? null : item.routerLink"
+                  [ngClass]="{ 'menu-item-disabled': item.disabled }"
+                  [pTooltip]="item.disabled ? 'Coming soon' : undefined"
+                  tooltipPosition="right"
+                  (click)="item.disabled ? $event.preventDefault() : onNavClick()"
+                  routerLinkActive="sidebar-menu-item-active"
+                >
+                  <i [class]="item.icon + ' mr-2'"></i>
+                  <span class="font-medium">{{ item.label }}</span>
+                  @if (item.disabled) {
+                    <i class="pi pi-lock ml-auto text-400" style="font-size: 0.75rem"></i>
+                  }
+                </a>
+              </li>
+            }
+            @if (!item.separator && item.items) {
+              <li class="sidebar-submenu" [ngClass]="{ 'submenu-open': isOpen(item.id) }">
+                <div
+                  class="sidebar-menu-item sidebar-submenu-header"
+                  (click)="toggleMenu(item.id)"
+                >
+                  <i [class]="item.icon + ' mr-2'"></i>
+                  <span class="font-medium">{{ item.label }}</span>
+                  <i class="pi pi-chevron-down ml-auto"></i>
+                </div>
+                <ul class="list-none p-0 m-0 sidebar-submenu-items">
+                  @for (subItem of item.items; track subItem.id) {
+                    <li
+                      [ngClass]="{
+                        'sidebar-submenu': subItem.items && subItem.items.length > 0,
+                        'submenu-open': isOpen(subItem.id),
+                      }"
+                    >
+                      @if (subItem.items && subItem.items.length > 0) {
+                        <div
+                          class="sidebar-menu-item sidebar-submenu-item sidebar-submenu-header"
+                          [class.menu-item-disabled]="subItem.disabled"
+                          [pTooltip]="subItem.disabled ? 'Coming soon' : undefined"
+                          tooltipPosition="right"
+                          (click)="subItem.disabled ? null : toggleMenu(subItem.id)"
+                        >
+                          <i [class]="subItem.icon + ' mr-2'"></i>
+                          <span class="font-medium">{{ subItem.label }}</span>
+                          @if (!subItem.disabled) {
+                            <i class="pi pi-chevron-down ml-auto"></i>
+                          }
+                          @if (subItem.disabled) {
+                            <i class="pi pi-lock ml-auto text-400" style="font-size: 0.7rem"></i>
+                          }
+                        </div>
+                        @if (!subItem.disabled) {
+                          <ul class="list-none p-0 m-0 sidebar-submenu-items">
+                            @for (subSubItem of subItem.items; track subSubItem.id) {
+                              <li>
+                                <a
+                                  pRipple
+                                  class="sidebar-menu-item sidebar-submenu-item"
+                                  [routerLink]="subSubItem.disabled ? null : subSubItem.routerLink"
+                                  [ngClass]="{ 'menu-item-disabled': subSubItem.disabled }"
+                                  [pTooltip]="subSubItem.disabled ? 'Coming soon' : undefined"
+                                  tooltipPosition="right"
+                                  (click)="subSubItem.disabled ? $event.preventDefault() : onNavClick()"
+                                  routerLinkActive="sidebar-menu-item-active"
+                                >
+                                  <i [class]="subSubItem.icon + ' mr-2'"></i>
+                                  <span class="font-medium">{{ subSubItem.label }}</span>
+                                  @if (subSubItem.disabled) {
+                                    <i class="pi pi-lock ml-auto text-400" style="font-size: 0.7rem"></i>
+                                  }
+                                </a>
+                              </li>
+                            }
+                          </ul>
+                        }
+                      } @else {
+                        <a
+                          pRipple
+                          class="sidebar-menu-item sidebar-submenu-item"
+                          [routerLink]="subItem.disabled ? null : subItem.routerLink"
+                          [ngClass]="{ 'menu-item-disabled': subItem.disabled }"
+                          [pTooltip]="subItem.disabled ? 'Coming soon' : undefined"
+                          tooltipPosition="right"
+                          (click)="subItem.disabled ? $event.preventDefault() : onNavClick()"
+                          routerLinkActive="sidebar-menu-item-active"
+                        >
+                          <i [class]="subItem.icon + ' mr-2'"></i>
+                          <span class="font-medium">{{ subItem.label }}</span>
+                          @if (subItem.disabled) {
+                            <i class="pi pi-lock ml-auto text-400" style="font-size: 0.7rem"></i>
+                          }
+                        </a>
+                      }
+                    </li>
+                  }
+                </ul>
+              </li>
+            }
+          }
+        </ul>
+      </div>
+
+      <div class="mt-auto">
+        <hr class="mb-3 mx-3 sidebar-divider" />
+        <a pRipple class="sidebar-user-item" (click)="userMenu.toggle($event)" [title]="userFullName">
+          <img [src]="userPhotoUrl" class="mr-2 user-avatar" style="width: 28px; height: 28px" alt="" />
+          <span class="font-medium">{{ userFullName }}</span>
+        </a>
+        <p-menu #userMenu [popup]="true" [model]="userMenuItems" appendTo="body" />
+      </div>
+    </div>
+  </div>
+
+  <button
+    pRipple
+    type="button"
+    class="sidebar-toggle-handle hidden lg:flex align-items-center justify-content-center"
+    pStyleClass="#alpha-layout-root"
+    toggleClass="sidebar-collapsed"
+    aria-label="Toggle sidebar"
+  >
+    <i class="pi pi-chevron-left handle-icon-expanded"></i>
+    <i class="pi pi-chevron-right handle-icon-collapsed"></i>
+  </button>
+
+  <div class="min-h-screen flex flex-column relative flex-auto">
+    <div
+      class="flex justify-content-between align-items-center px-5 surface-0 border-bottom-1 surface-border relative"
+      style="height: 60px"
+    >
+      <div class="flex align-items-center gap-3">
+        <a pRipple class="cursor-pointer block lg:hidden text-700 mr-3" (click)="toggleMobileMenu()">
+          <i class="pi pi-bars text-4xl"></i>
+        </a>
+        <nav class="top-breadcrumbs hide-on-mobile">
+          @for (crumb of breadcrumbs; track crumb.label; let last = $last) {
+            @if (!last && crumb.routerLink) {
+              <a [routerLink]="crumb.routerLink" class="crumb">{{ crumb.label }}</a>
+              <i class="pi pi-chevron-right sep" aria-hidden="true"></i>
+            }
+            @if (last) {
+              <span class="crumb current">{{ crumb.label }}</span>
+            }
+          }
+        </nav>
+      </div>
+
+      <div class="top-logo-center" [class.hidden]="mobileMenuOpen">
+        <img [src]="logoSrc" alt="Fieldwave" height="26" />
+      </div>
+
+      <div class="flex align-items-center">
+        <a
+          pRipple
+          class="mobile-user-avatar-trigger cursor-pointer lg:hidden"
+          (click)="mobileUserMenu.toggle($event)"
+          [title]="userFullName"
+        >
+          <img [src]="userPhotoUrl" class="user-avatar" style="width: 36px; height: 36px; border-radius: 50%" alt="" />
+        </a>
+        <p-menu #mobileUserMenu [popup]="true" [model]="userMenuItems" appendTo="body" class="lg:hidden" />
+
+        <ul class="list-none p-0 m-0 hidden lg:flex lg:align-items-center select-none lg:flex-row">
+          <li class="bug-report-header-item">
+            <a
+              pRipple
+              class="flex px-3 py-2 align-items-center text-600 hover:text-900 hover:surface-100 font-medium border-round cursor-pointer transition-duration-150 transition-colors"
+              (click)="onBugReport()"
+              title="Report an Issue"
+            >
+              <i class="pi pi-exclamation-circle text-2xl"></i>
+            </a>
+          </li>
+          <li class="theme-switcher-item">
+            <a
+              pRipple
+              class="flex px-3 py-2 align-items-center text-600 hover:text-900 hover:surface-100 font-medium border-round cursor-pointer transition-duration-150 transition-colors"
+              (click)="onThemeClick()"
+              title="Change theme"
+            >
+              <i class="pi pi-palette text-2xl"></i>
+            </a>
+          </li>
+          <li class="notification-bell-item">
+            <a
+              pRipple
+              class="flex px-3 py-2 align-items-center text-600 hover:text-900 hover:surface-100 font-medium border-round cursor-pointer transition-duration-150 transition-colors"
+              (click)="onNotifications()"
+              title="Notifications"
+            >
+              <i class="pi pi-bell text-2xl"></i>
+            </a>
+          </li>
+          <li>
+            <a
+              pRipple
+              class="flex px-3 py-2 align-items-center hover:surface-100 font-medium border-round cursor-pointer transition-duration-150 transition-colors"
+              (click)="topUserMenu.toggle($event)"
+              [title]="userFullName"
+            >
+              <img [src]="userPhotoUrl" class="user-avatar" style="width: 32px; height: 32px" alt="" />
+            </a>
+            <p-menu #topUserMenu [popup]="true" [model]="userMenuItems" appendTo="body" />
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="p-5 flex flex-column flex-auto">
       <router-outlet />
-    </main>
+    </div>
   </div>
 </div>

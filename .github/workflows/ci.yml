@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main, master]
 
+# GITHUB_TOKEN can read farseer89/hive-contracts when that repo allows workflow access
+# from other repos (Settings → Actions → General → Workflow access).
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -14,13 +19,18 @@ jobs:
       - name: Checkout Sting
         uses: actions/checkout@v4
 
-      - name: Checkout hive-contracts (sibling for file:../hive-contracts)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout hive-contracts
+        uses: actions/checkout@v4
+        with:
+          repository: farseer89/hive-contracts
+          path: vendor/hive-contracts
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Link hive-contracts for file:../hive-contracts
         run: |
-          git clone --depth 1 \
-            "https://x-access-token:${GH_TOKEN}@github.com/farseer89/hive-contracts.git" \
-            ../hive-contracts
+          rm -rf ../hive-contracts
+          mkdir -p ../hive-contracts
+          cp -a vendor/hive-contracts/. ../hive-contracts/
 
       - uses: actions/setup-node@v4
         with:

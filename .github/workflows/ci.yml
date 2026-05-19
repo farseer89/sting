@@ -6,8 +6,6 @@ on:
   pull_request:
     branches: [main, master]
 
-# GITHUB_TOKEN can read farseer89/hive-contracts when that repo allows workflow access
-# from other repos (Settings → Actions → General → Workflow access).
 permissions:
   contents: read
 
@@ -16,15 +14,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Require GH_PAT for private hive-contracts
+        run: |
+          if [ -z "${{ secrets.GH_PAT }}" ]; then
+            echo "::error::CI needs repository secret GH_PAT (classic PAT with repo scope) to clone private farseer89/hive-contracts."
+            echo "Create one at https://github.com/settings/tokens then: gh secret set GH_PAT -R farseer89/sting"
+            exit 1
+          fi
+
       - name: Checkout Sting
         uses: actions/checkout@v4
 
-      - name: Checkout hive-contracts
+      - name: Checkout hive-contracts (private)
         uses: actions/checkout@v4
         with:
           repository: farseer89/hive-contracts
           path: vendor/hive-contracts
-          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_PAT }}
 
       - name: Link hive-contracts for file:../hive-contracts
         run: |

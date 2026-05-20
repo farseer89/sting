@@ -47,8 +47,14 @@
   }
 }
 
+.protopipe-dashboard__integrations,
 .protopipe-dashboard__keywords {
   padding: 1rem 1.25rem 1.25rem;
+}
+
+.protopipe-dashboard__integrations code {
+  font-size: 0.8rem;
+  word-break: break-all;
 }
 
 .protopipe-dashboard__loading {

@@ -46,6 +46,50 @@
       </div>
     </section>
 
+    <section class="protopipe-dashboard__integrations surface-card border-round shadow-2">
+      <div class="flex align-items-center justify-content-between gap-2 flex-wrap mb-3">
+        <div class="flex align-items-center gap-2">
+          <i class="pi pi-link text-primary text-xl"></i>
+          <h2 class="m-0 text-xl font-semibold">Integrations</h2>
+        </div>
+        <p-button
+          label="Test DataForSEO API"
+          icon="pi pi-play"
+          size="small"
+          [outlined]="true"
+          [loading]="dataForSeoTesting()"
+          [disabled]="dataForSeoTesting()"
+          (onClick)="testDataForSeo()"
+        />
+      </div>
+      <p class="m-0 mb-3 text-color-secondary text-sm">
+        Calls bagend <code class="text-sm">GET /api/v2/protopipe/integrations/dataforseo/status</code> (credentials stay on server).
+      </p>
+      @if (dataForSeoTestError(); as errMsg) {
+        <p class="m-0 text-red-500" role="alert">{{ errMsg }}</p>
+      }
+      @if (dataForSeoStatus(); as dfs) {
+        <div class="flex flex-wrap gap-2 align-items-center">
+          <p-tag
+            [value]="dfs.connected ? 'Connected' : dfs.configured ? 'Not connected' : 'Not configured'"
+            [severity]="dataForSeoConnectedSeverity()"
+          />
+          @if (dfs.apiLogin) {
+            <p-tag [value]="'Login ' + dfs.apiLogin" severity="secondary" />
+          }
+          @if (dfs.balance != null) {
+            <p-tag [value]="'Balance $' + dfs.balance" severity="info" />
+          }
+          @if (dfs.timezone) {
+            <p-tag [value]="dfs.timezone" severity="secondary" />
+          }
+        </div>
+        @if (dfs.error) {
+          <p class="m-0 mt-2 text-orange-500 text-sm" role="status">{{ dfs.error }}</p>
+        }
+      }
+    </section>
+
     <section class="protopipe-dashboard__strategy fw-dashboard-card">
       <div class="fw-card-header">
         <i class="pi pi-compass"></i>

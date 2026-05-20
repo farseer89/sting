@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { ProtopipeEndpoints } from '@hive/contracts';
 import type {
   ProtopipeBootstrapResponse,
+  ProtopipeDataForSeoStatusResponse,
   ProtopipePlan,
   SaveKeywordsRequest,
   SaveKeywordsResponse,
@@ -35,6 +36,15 @@ export class ProtopipeApiService {
       this.http.put<SaveKeywordsResponse>(
         protopipeApiUrl(ProtopipeEndpoints.saveKeywords.path, { siteId }),
         body,
+      ),
+    );
+  }
+
+  /** Verifies bagend → DataForSEO credentials (JWT required; secrets stay on server). */
+  dataForSeoStatus(): Promise<ProtopipeDataForSeoStatusResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeDataForSeoStatusResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.dataForSeoStatus.path),
       ),
     );
   }

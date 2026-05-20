@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "stingbase"
+    "default": "stingbase",
+    "sting-protopipe": "sting-protopipe"
   }
 }

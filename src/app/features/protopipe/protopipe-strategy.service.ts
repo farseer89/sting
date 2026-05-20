@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import type { ProtopipeDataForSeoStatusResponse } from '@hive/contracts';
 import type {
   KeywordIntent,
   KeywordPriority,
@@ -34,6 +35,9 @@ export class ProtopipeStrategyService {
   private readonly _dirty = signal(false);
   private readonly _error = signal<string | null>(null);
   private readonly _initialized = signal(false);
+  private readonly _dataForSeoTesting = signal(false);
+  private readonly _dataForSeoStatus = signal<ProtopipeDataForSeoStatusResponse | null>(null);
+  private readonly _dataForSeoTestError = signal<string | null>(null);
 
   readonly keywords = this._keywords.asReadonly();
   readonly loading = this._loading.asReadonly();
@@ -41,6 +45,9 @@ export class ProtopipeStrategyService {
   readonly dirty = this._dirty.asReadonly();
   readonly error = this._error.asReadonly();
   readonly siteId = this._siteId.asReadonly();
+  readonly dataForSeoTesting = this._dataForSeoTesting.asReadonly();
+  readonly dataForSeoStatus = this._dataForSeoStatus.asReadonly();
+  readonly dataForSeoTestError = this._dataForSeoTestError.asReadonly();
 
   readonly strategy = computed<ProtopipeStrategySummary>(() => ({
     site: this._site() ?? {
@@ -124,6 +131,21 @@ export class ProtopipeStrategyService {
   removeKeyword(id: string): void {
     this._keywords.update((list) => list.filter((kw) => kw.id !== id));
     this._dirty.set(true);
+  }
+
+  /** Dev/integration check: bagend → DataForSEO (v2 status endpoint). */
+  async testDataForSeoConnection(): Promise<void> {
+    this._dataForSeoTesting.set(true);
+    this._dataForSeoTestError.set(null);
+    this._dataForSeoStatus.set(null);
+    try {
+      const status = await this.api.dataForSeoStatus();
+      this._dataForSeoStatus.set(status);
+    } catch (err) {
+      this._dataForSeoTestError.set(parseProtopipeApiError(err, 'DataForSEO check failed'));
+    } finally {
+      this._dataForSeoTesting.set(false);
+    }
   }
 
   async saveKeywords(): Promise<boolean> {

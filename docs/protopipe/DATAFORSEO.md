@@ -21,12 +21,13 @@ Credentials from https://app.dataforseo.com/api-access
 
 **Status** — `ProtopipeDataForSeoStatusResponse`: `configured`, `connected`, optional `balance`, `timezone`, masked `apiLogin`, or `error`. Uses `GET /v3/appendix/user_data` (free).
 
-**Enrich** — sync refresh for all plan keywords on a site. Two DataForSEO live POSTs per run (batched, not N+1):
+**Enrich** — sync refresh for all plan keywords on a site. DataForSEO live POSTs per run (batched, not N+1):
 
 1. `keywords_data/google_ads/search_volume/live` — volume, KD, CPC per phrase
-2. `dataforseo_labs/google/ranked_keywords/live` — organic rank by hostname
+2. `dataforseo_labs/google/ranked_keywords/live` — **organic** rank by hostname (US `2840`, `load_rank_absolute: true`)
+3. `dataforseo_labs/google/ranked_keywords/live` — **local_pack** per market ([`localMarkets.ts`](../../../../bagend/services/protopipe/dataforseo/localMarkets.ts)): **Maui County** (`1015603`), **Hawaii statewide** (`21144`)
 
-Appends rows to `protopipe_keyword_metrics` (`source: dataforseo`). Plan `GET` merges latest + previous snapshot per keyword into `keyword.market` (rank, deltas, volume).
+Appends rows to `protopipe_keyword_metrics` (`source: dataforseo`). Plan `GET` merges latest + previous snapshot per keyword into `keyword.market` (organic rank, volume, `localMarkets[]` for Maui/Hawaii).
 
 **History** — time series for one keyword (newest first, default 24 points).
 
@@ -43,7 +44,7 @@ DATAFORSEO_LOGIN=... DATAFORSEO_PASSWORD=... npx ts-node scripts/protopipe-dataf
 - `ProtopipeApiService.enrichMarket(siteId)` — Keywords page **Refresh market data**
 - `ProtopipeApiService.getKeywordMetricHistory(siteId, keywordId)` — per-keyword history dialog
 
-Keywords table columns: Rank, Δ, Volume, KD, CPC (from `keyword.market` on plan load).
+Keywords page: **Targeted keywords** table (Rank, Δ, Volume, KD, CPC) + separate **Local pack** table (Maui, Hawaii). Local pack uses Labs index; GBP often required for non-empty local ranks.
 
 ## Mongo (bagend)
 

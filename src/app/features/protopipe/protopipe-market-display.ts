@@ -1,4 +1,7 @@
-import type { ProtopipeKeywordMarket } from './protopipe.models';
+import type {
+  ProtopipeKeywordMarket,
+  ProtopipeKeywordMetricPoint,
+} from './protopipe.models';
 
 export function formatMarketNumber(value: number | undefined | null): string {
   if (value == null) {
@@ -25,4 +28,18 @@ export function rankDeltaSeverity(
     return 'secondary';
   }
   return market.rankDelta > 0 ? 'success' : 'danger';
+}
+
+export function localRankForMarket(
+  market: ProtopipeKeywordMarket | null | undefined,
+  marketId: string,
+): number | undefined {
+  return market?.localMarkets?.find((m) => m.marketId === marketId)?.rank;
+}
+
+export function localHistoryRank(
+  point: ProtopipeKeywordMetricPoint,
+  marketId: string,
+): number | undefined {
+  return point.localRanks?.find((r) => r.marketId === marketId)?.position;
 }

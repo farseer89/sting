@@ -199,6 +199,61 @@
       </div>
     }
   </div>
+
+  <div class="protopipe-keywords__local-panel surface-card border-round shadow-2">
+    <header class="protopipe-keywords__local-header">
+      <div>
+        <h2 class="protopipe-keywords__local-title m-0">Local pack rankings</h2>
+        <p class="protopipe-keywords__local-meta m-0 text-color-secondary">
+          Labs index · Maui County, then Hawaii statewide · Google Business Profile often required
+        </p>
+      </div>
+    </header>
+
+    @if (keywords().length === 0) {
+      <p class="protopipe-keywords__empty m-0 text-color-secondary">Add keywords above to track local pack positions.</p>
+    } @else {
+      <div class="protopipe-keywords__local-table-wrap">
+        <p-table
+          [value]="keywords()"
+          [rowHover]="true"
+          styleClass="protopipe-kw-table protopipe-kw-table--local p-datatable-sm"
+          responsiveLayout="scroll"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Keyword</th>
+              <th class="col-market">Maui</th>
+              <th class="col-market">
+                <span pTooltip="Hawaii statewide" tooltipPosition="top">Hawaii</span>
+              </th>
+              <th class="col-action"></th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-kw>
+            <tr>
+              <td class="text-sm">{{ kw.phrase }}</td>
+              <td class="text-sm">{{ formatMarketNumber(localRankForMarket(kw.market, 'maui')) }}</td>
+              <td class="text-sm">{{ formatMarketNumber(localRankForMarket(kw.market, 'hawaii')) }}</td>
+              <td>
+                <p-button
+                  type="button"
+                  icon="pi pi-chart-line"
+                  size="small"
+                  [text]="true"
+                  [disabled]="kw.id.startsWith('temp-')"
+                  pTooltip="Local pack history"
+                  tooltipPosition="top"
+                  (onClick)="openLocalHistory(kw)"
+                  ariaLabel="View local pack history"
+                />
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    }
+  </div>
 </div>
 
 <p-dialog
@@ -233,6 +288,42 @@
           <td>{{ formatMarketNumber(point.searchVolume) }}</td>
           <td>{{ formatMarketNumber(point.keywordDifficulty) }}</td>
           <td>{{ formatMarketNumber(point.cpc) }}</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  }
+</p-dialog>
+
+<p-dialog
+  [header]="'Local pack · ' + localHistoryPhrase()"
+  [visible]="localHistoryVisible()"
+  [modal]="true"
+  [style]="{ width: '32rem', maxWidth: '95vw' }"
+  (visibleChange)="localHistoryVisible.set($event)"
+  (onHide)="closeLocalHistory()"
+>
+  @if (localHistoryLoading()) {
+    <div class="flex justify-content-center p-4">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Loading local history" />
+    </div>
+  } @else if (localHistoryPoints().length === 0) {
+    <p class="m-0 text-color-secondary">No snapshots yet. Use Refresh market data first.</p>
+  } @else {
+    <p-table [value]="localHistoryPoints()" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Date</th>
+          <th>Maui</th>
+          <th>
+            <span pTooltip="Hawaii statewide" tooltipPosition="top">Hawaii</span>
+          </th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-point>
+        <tr>
+          <td class="text-sm">{{ formatHistoryDate(point.capturedAt) }}</td>
+          <td>{{ formatMarketNumber(localHistoryRank(point, 'maui')) }}</td>
+          <td>{{ formatMarketNumber(localHistoryRank(point, 'hawaii')) }}</td>
         </tr>
       </ng-template>
     </p-table>

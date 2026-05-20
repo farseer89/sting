@@ -14,9 +14,12 @@ import { Tooltip } from 'primeng/tooltip';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import type { KeywordIntent, KeywordPriority, ProtopipeKeywordDto } from '../protopipe.models';
 import { INTENT_OPTIONS, PRIORITY_OPTIONS } from '../protopipe-keyword-display';
+import type { ProtopipeKeywordMetricPoint } from '../protopipe.models';
 import {
   formatMarketNumber,
   formatRankDelta,
+  localHistoryRank,
+  localRankForMarket,
   rankDeltaSeverity,
 } from '../protopipe-market-display';
 import {
@@ -70,21 +73,20 @@ export class ProtopipeKeywordsComponent implements OnInit {
   readonly historyVisible = signal(false);
   readonly historyLoading = signal(false);
   readonly historyPhrase = signal('');
-  readonly historyPoints = signal<
-    Array<{
-      capturedAt: string;
-      searchVolume?: number;
-      keywordDifficulty?: number;
-      cpc?: number;
-      position?: number;
-    }>
-  >([]);
+  readonly historyPoints = signal<ProtopipeKeywordMetricPoint[]>([]);
+
+  readonly localHistoryVisible = signal(false);
+  readonly localHistoryLoading = signal(false);
+  readonly localHistoryPhrase = signal('');
+  readonly localHistoryPoints = signal<ProtopipeKeywordMetricPoint[]>([]);
 
   readonly maxPhraseLength = PROTOPIPE_MAX_PHRASE_LENGTH;
   readonly maxNotesLength = PROTOPIPE_MAX_NOTES_LENGTH;
   readonly formatMarketNumber = formatMarketNumber;
   readonly formatRankDelta = formatRankDelta;
   readonly rankDeltaSeverity = rankDeltaSeverity;
+  readonly localRankForMarket = localRankForMarket;
+  readonly localHistoryRank = localHistoryRank;
 
   ngOnInit(): void {
     void this.strategy.ensureLoaded();
@@ -131,6 +133,30 @@ export class ProtopipeKeywordsComponent implements OnInit {
 
   closeHistory(): void {
     this.historyVisible.set(false);
+  }
+
+  async openLocalHistory(kw: ProtopipeKeywordDto): Promise<void> {
+    this.localHistoryPhrase.set(kw.phrase);
+    this.localHistoryVisible.set(true);
+    this.localHistoryLoading.set(true);
+    this.localHistoryPoints.set([]);
+    try {
+      const points = await this.strategy.loadKeywordHistory(kw.id);
+      this.localHistoryPoints.set(points);
+    } catch {
+      this.messages.add({
+        severity: 'error',
+        summary: 'Local history unavailable',
+        detail: 'Could not load metric history for this keyword.',
+        life: 4000,
+      });
+    } finally {
+      this.localHistoryLoading.set(false);
+    }
+  }
+
+  closeLocalHistory(): void {
+    this.localHistoryVisible.set(false);
   }
 
   formatHistoryDate(iso: string): string {

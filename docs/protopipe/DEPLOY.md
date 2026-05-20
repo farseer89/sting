@@ -1,25 +1,36 @@
 # Protopipe deploy (API + hosting)
 
-Separate from **Sting platform** (`stingbase` Firebase + `main` branch).
+**Sting** uses a product branch + separate Firebase. **bagend** stays **one codebase, one deploy** — products are separated by **routes and Mongo database**, not by bagend branches.
 
 ## Architecture
 
-| Piece | Branch | Hosting / runtime |
-|-------|--------|-------------------|
-| **bagend API** | `protopipe` (or merge to DO deploy branch) | Digital Ocean — `https://droppin.shop` |
-| **Sting UI** | `protopipe` | **Dedicated Firebase project** (not `stingbase`) |
-| **hive-contracts** | `protopipe` | npm package; build before sting deploy |
-| **MongoDB** | — | Database name `protopipe` on cluster (`getProtopipeDb()`) |
+| Piece | Isolation | Hosting / runtime |
+|-------|-----------|-------------------|
+| **bagend** | Route prefix `/api/v2/protopipe/*` + `mongoModels/protopipe/` + DB `protopipe` | Single Digital Ocean app — `https://droppin.shop` |
+| **FieldWave (etc.)** | `/api/tenants/:tenantKey/*` + `fieldwave` DB | Same bagend host |
+| **Sting UI** | `protopipe` git branch + **dedicated Firebase** (not `stingbase`) | Firebase Hosting |
+| **hive-contracts** | `src/protopipe/*` types | Published / `file:../` with bagend & sting |
 
-## 1. Backend — bagend (commit + push)
+```text
+droppin.shop (one bagend process)
+├── /api/v2/auth/*           → shared users
+├── /api/v2/protopipe/*      → Protopipe (ownerUserId, protopipe DB)
+├── /api/tenants/:key/*      → FieldWave (tenantKey, fieldwave DB)
+└── …
+```
+
+## 1. Backend — bagend (merge to `main`, push, DO deploy)
+
+Protopipe backend ships on **`main`** with everything else. No separate bagend product branch required.
 
 ```bash
 cd bagend
-git checkout -b protopipe   # or stay on branch you use for DO
-git push -u origin protopipe
+git checkout main
+git merge protopipe   # or cherry-pick feat(bagend/protopipe) commits
+git push origin main
 ```
 
-Digital Ocean: deploy from the branch you pushed (merge to `main` first if DO only tracks `main`).
+Digital Ocean: deploy **`main`** as you normally do (pm2 / pull / CI).
 
 **After deploy**, verify (with a valid JWT):
 
@@ -32,11 +43,12 @@ Without token, bootstrap returns **401** (expected).
 
 ## 2. Contracts
 
+Types can land on **`main`** when bagend does, or stay on `protopipe` until sting catches up:
+
 ```bash
 cd hive-contracts
-git checkout -b protopipe
 npm run build
-git push -u origin protopipe
+# merge to main when coordinating a bagend deploy
 ```
 
 ## 3. Firebase — new project (Protopipe only)
@@ -47,11 +59,8 @@ Platform MVP stays on **`stingbase`**. Protopipe uses its **own** project so `ma
 cd sting
 git checkout protopipe
 
-# Create project (interactive; pick id e.g. protopipe or sting-protopipe)
-STING_FIREBASE_DISPLAY_NAME="Protopipe" ./scripts/setup-firebase.sh protopipe
-
-# Or manual: firebase projects:create protopipe --display-name "Protopipe"
-# firebase use protopipe
+# Project id `protopipe` is often taken globally; use sting-protopipe:
+STING_FIREBASE_DISPLAY_NAME="Protopipe" ./scripts/setup-firebase.sh sting-protopipe
 ```
 
 Wire aliases (optional, in local `.firebaserc` — gitignored):
@@ -60,7 +69,7 @@ Wire aliases (optional, in local `.firebaserc` — gitignored):
 {
   "projects": {
     "default": "stingbase",
-    "protopipe": "protopipe"
+    "sting-protopipe": "sting-protopipe"
   }
 }
 ```
@@ -68,12 +77,12 @@ Wire aliases (optional, in local `.firebaserc` — gitignored):
 Deploy Protopipe hosting:
 
 ```bash
-firebase use protopipe
+firebase use sting-protopipe
 STING_MICRO_URL="https://droppin.shop" npm run configure-env
 npm run deploy:firebase
 ```
 
-**URL:** `https://protopipe.web.app` (or your chosen project id).
+**Live URL:** https://sting-protopipe.web.app
 
 ## 4. bagend CORS
 
@@ -90,10 +99,10 @@ Add a custom domain later via `CORS_ALLOWED_ORIGINS` if needed.
 
 ## Branch strategy summary
 
-| Repo | Platform (`main`) | Protopipe (`protopipe`) |
-|------|-------------------|-------------------------|
-| sting | `stingbase` Firebase | **new** Firebase project |
-| bagend | shared DO host | `protopipe_*` routes + models |
-| hive-contracts | shared package | `src/protopipe/*` types |
+| Repo | Platform | Protopipe product |
+|------|----------|-------------------|
+| **sting** | `main` + `stingbase` Firebase | `protopipe` branch + **new** Firebase project |
+| **bagend** | `main` + one DO deploy | **same** — `/api/v2/protopipe/*` module only |
+| **hive-contracts** | `main` | `src/protopipe/*` (merge with bagend) |
 
-Do **not** deploy the whole `protopipe` branch to `stingbase` — use the separate Firebase project above.
+Do **not** deploy sting `protopipe` to **stingbase**. bagend does **not** need a second deploy or branch for Protopipe.

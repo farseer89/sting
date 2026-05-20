@@ -1,6 +1,8 @@
 # Protopipe (SEO SaaS)
 
-Product prototype on sting branch **`protopipe`**. Platform improvements merge to **`main`** per [SESSION_DEV_FLOW.md](./SESSION_DEV_FLOW.md).
+Product prototype on sting branch **`protopipe`** + dedicated Firebase. Platform improvements merge to sting **`main`** per [SESSION_DEV_FLOW.md](./SESSION_DEV_FLOW.md).
+
+**bagend:** Same repo and DO deploy as FieldWave — Protopipe is **`/api/v2/protopipe/*`** + `protopipe` DB only (no bagend product branch).
 
 ## Scope
 
@@ -19,8 +21,12 @@ Append one line per session (step 7):
 |------|-------|----------------------|
 | 2026-05-20 | Dashboard: destinationweddingpainter.com site card + keyword strategy table (seed data) | — |
 
-## Do not merge to main
+## Do not merge to sting `main`
 
 - `features/protopipe/**`
-- Protopipe routes/nav copy
-- `protopipe_*` collections and product-only contract types
+- Protopipe routes/nav copy in sting
+
+## bagend (merge to `main` when ready)
+
+- `mongoModels/protopipe/**`, `services/protopipe/**`, `routes/protopipeRoutes.ts`
+- Ship with normal bagend DO deploy — route separation, not a second backend

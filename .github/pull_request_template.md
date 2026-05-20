@@ -5,7 +5,7 @@
 ## Scope
 
 - [ ] **Platform** (merge to `main`) — auth, shell, Sheriff, shared UI, session flow
-- [ ] **Protopipe product** (stays on `protopipe` branch) — `features/protopipe`, bagend `protopipe_*`, contracts
+- [ ] **Protopipe product** — sting `protopipe` branch + Firebase; bagend `protopipe_*` routes on **main** (same DO deploy)
 
 ## Protopipe — FEATURE_STANDARD (required if product scope checked)
 

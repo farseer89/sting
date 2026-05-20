@@ -2,6 +2,8 @@
 
 Canonical patterns for **human actions** and **future agent actions** in the SEO product. New Protopipe work should match this doc before merge.
 
+**bagend:** One deployed codebase on Digital Ocean. Protopipe is isolated by **`/api/v2/protopipe/*`**, **`mongoModels/protopipe/`**, and the **`protopipe`** Mongo database — not by a separate bagend branch or host. FieldWave uses `/api/tenants/:tenantKey/*` and must not mix with Protopipe handlers.
+
 ## How agents are required to read this
 
 | Layer | What it does |

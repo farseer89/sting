@@ -21,10 +21,10 @@ See also [PLATFORM_AND_PROTOPYPE.md](./PLATFORM_AND_PROTOPYPE.md) (when added) f
 
 | Prefix | Target |
 |--------|--------|
-| `feat(protopipe):` | sting `protopipe` |
-| `feat(bagend/protopipe):` | bagend `protopipe` |
-| `feat(contracts/protopipe):` | hive-contracts `protopipe` |
-| `platform:` | sting **`main`** (and bagend/contracts `main` if shared) |
+| `feat(protopipe):` | sting `protopipe` branch only |
+| `feat(protopipe):` or `feat(bagend):` | bagend **`main`** — Protopipe routes/models (route separation, not a bagend branch) |
+| `feat(contracts):` | hive-contracts **`main`** when shipping with bagend |
+| `platform:` | sting **`main`** only |
 
 ## Merge-to-main prompt (end of session)
 
@@ -33,10 +33,10 @@ Copy, fill in, and decide **Yes / No / N/A** for each row.
 ```markdown
 ## Session merge-to-main — YYYY-MM-DD
 
-### Product (stays on protopipe)
+### Product (sting branch + bagend routes on main)
 - Slice: ___
-- sting: features/protopipe/___
-- bagend: mongoModels/protopipe/___ , routes/___
+- sting (protopipe branch): features/protopipe/___
+- bagend (main, route module): mongoModels/protopipe/___ , /api/v2/protopipe/___
 - contracts: ___
 
 ### Merge to sting `main`?

@@ -1,0 +1,56 @@
+.protopipe-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 72rem;
+}
+
+.protopipe-dashboard__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  flex-wrap: wrap;
+}
+
+.protopipe-dashboard__eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--primary-color);
+}
+
+.protopipe-dashboard__site {
+  padding: 1.25rem 1.5rem;
+}
+
+.protopipe-dashboard__favicon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--border-radius);
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.protopipe-dashboard__url {
+  color: var(--primary-color);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.protopipe-dashboard__keywords {
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.protopipe-dashboard__loading {
+  min-height: 12rem;
+}

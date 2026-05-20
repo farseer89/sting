@@ -6,8 +6,11 @@ Documentation for AI agents (and humans) working on Sting. Goal: **learn from pr
 
 | Doc | Purpose |
 |-----|---------|
+| **[active/SESSION_DEV_FLOW.md](./active/SESSION_DEV_FLOW.md)** | **Every session** — sync → build → merge-to-main prompt (required at end) |
+| [active/PROTOPYPE.md](./active/PROTOPYPE.md) | Protopipe product scope + session log |
 | [active/SECURITY_TODO.md](./active/SECURITY_TODO.md) | **Security roadmap** — shipped vs remaining (checkboxes) |
 | [improvements/INDEX.md](./improvements/INDEX.md) | Registry of lessons — **read before auth, CI, or deploy work** |
+| [../docs/SESSION_DEV_FLOW.md](../docs/SESSION_DEV_FLOW.md) | Full session checklist + merge template (repo docs) |
 | [improvements/TEMPLATE.md](./improvements/TEMPLATE.md) | Copy when adding a new lesson |
 | [../docs/SECURITY.md](../docs/SECURITY.md) | Auth v2, tokens, CSP |
 | [../docs/LAUNCH_NEW_MVP.md](../docs/LAUNCH_NEW_MVP.md) | Deploy and CORS |

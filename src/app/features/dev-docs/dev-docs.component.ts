@@ -18,6 +18,7 @@ import { Tag } from 'primeng/tag';
 import {
   DEV_DOC_CATEGORIES,
   DEV_DOCS_CATALOG,
+  SESSION_FLOW_CHECKLIST,
   STINGER_CHECKLIST,
   type DevDocCategory,
   type DevDocEntry,
@@ -35,6 +36,7 @@ export class DevDocsComponent implements AfterViewInit {
   private readonly host = inject(ElementRef<HTMLElement>);
   private observer: IntersectionObserver | null = null;
 
+  readonly sessionFlowChecklist = SESSION_FLOW_CHECKLIST;
   readonly stingerChecklist = STINGER_CHECKLIST;
   readonly catalog = DEV_DOCS_CATALOG;
 

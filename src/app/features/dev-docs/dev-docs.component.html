@@ -38,7 +38,17 @@
             [class.blocks-rail-item--active]="isNavActive('doc-hero')"
             (click)="scrollToBlock('doc-hero')"
           >
-            Stinger checklist
+            Each session
+          </button>
+        </li>
+        <li>
+          <button
+            type="button"
+            class="blocks-rail-item"
+            [class.blocks-rail-item--active]="isNavActive('doc-mvp-setup')"
+            (click)="scrollToBlock('doc-mvp-setup')"
+          >
+            First MVP setup
           </button>
         </li>
       </ul>
@@ -91,11 +101,41 @@
           <i class="pi pi-bolt"></i>
           <span>Stinger</span>
         </div>
-        <h2 class="stinger-hero-title">Your starting line</h2>
+        <h2 class="stinger-hero-title">Each session</h2>
         <p class="stinger-hero-lead m-0">
-          Ship an MVP from Sting in order: setup → build → UI → deploy. Use the checklist below,
-          then scroll the docs or jump to the playground.
+          Follow steps 0–7 every time you work on a product branch (e.g. protopipe). End with the
+          merge-to-main prompt — decide what returns to the core app on main.
         </p>
+        <div class="stinger-checklist">
+          @for (item of sessionFlowChecklist; track item; let i = $index) {
+            <div class="stinger-check-item">
+              <span class="stinger-check-num">{{ i }}</span>
+              <span>{{ item }}</span>
+            </div>
+          }
+        </div>
+        <div class="stinger-hero-actions">
+          <p-button
+            label="Merge-to-main template"
+            icon="pi pi-list-check"
+            [outlined]="true"
+            (onClick)="scrollToBlock('doc-session-dev-flow')"
+          />
+          <a routerLink="/dev/ui">
+            <p-button label="UI Playground" icon="pi pi-palette" [outlined]="true" />
+          </a>
+        </div>
+      </div>
+    </article>
+
+    <article id="doc-mvp-setup" class="block-card" data-doc-id="doc-mvp-setup">
+      <header class="block-header">
+        <div class="block-header-main">
+          <h3 class="block-title">First MVP setup</h3>
+          <p class="block-desc m-0">One-time checklist when cloning Sting for a new hosted MVP.</p>
+        </div>
+      </header>
+      <div class="block-doc-stage">
         <div class="stinger-checklist">
           @for (item of stingerChecklist; track item; let i = $index) {
             <div class="stinger-check-item">
@@ -104,14 +144,12 @@
             </div>
           }
         </div>
-        <div class="stinger-hero-actions">
-          <a routerLink="/dev/ui">
-            <p-button label="Open UI Playground" icon="pi pi-palette" />
-          </a>
+        <div class="stinger-hero-actions mt-3">
           <p-button
             label="Copy launch commands"
             icon="pi pi-copy"
             [outlined]="true"
+            size="small"
             (onClick)="copyText('npm install\nnpm start', $event)"
           />
         </div>

@@ -155,8 +155,27 @@ export class ShellComponent implements OnInit, OnDestroy {
       ];
       return;
     }
-    if (path === '/home' || path === '/' || path === '') {
-      this.breadcrumbs = [{ label: 'Home' }];
+    if (path === '/protopipe/keywords') {
+      this.breadcrumbs = [
+        { label: 'My Sites' },
+        { label: 'My Plan', routerLink: '/protopipe' },
+        { label: 'Keywords' },
+      ];
+      return;
+    }
+    if (path === '/protopipe') {
+      this.breadcrumbs = [
+        { label: 'My Sites' },
+        { label: 'My Plan' },
+      ];
+      return;
+    }
+    if (path === '/home') {
+      this.breadcrumbs = [{ label: 'Alpha Home' }];
+      return;
+    }
+    if (path === '/' || path === '') {
+      this.breadcrumbs = [{ label: 'My Plan', routerLink: '/protopipe' }];
       return;
     }
   }

@@ -1,0 +1,25 @@
+---
+description: Protopipe — read FEATURE_STANDARD before any work in this feature
+globs: src/app/features/protopipe/**,docs/protopipe/**
+alwaysApply: false
+---
+
+# Protopipe agent gate (Sting)
+
+**Before** planning, reviewing, or editing anything under `features/protopipe/` or `docs/protopipe/`:
+
+1. Read [docs/protopipe/FEATURE_STANDARD.md](docs/protopipe/FEATURE_STANDARD.md) end-to-end.
+2. Read [ai_context/active/PROTOPYPE.md](ai_context/active/PROTOPYPE.md) for branch scope (protopipe vs main).
+
+## Non-negotiables (do not skip)
+
+- API paths: `/api/v2/protopipe/*` via `@hive/contracts` `ProtopipeEndpoints`
+- Components inject **ProtopipeStrategyService** only — not `ProtopipeApiService`
+- **Explicit Save** + `dirty`; no auto-save on keystroke
+- **OnPush** + signals; `@for` with `track`
+- Forms: **ngModel** until Signal Forms are stable (migration gates in FEATURE_STANDARD)
+- Reads: move to `httpResource` in Phase B+ per doc
+- No secrets, no `innerHTML` on user keyword/plan text
+- PR must satisfy the Security checklist in FEATURE_STANDARD
+
+If the task conflicts with FEATURE_STANDARD, stop and ask the user before implementing.

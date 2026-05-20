@@ -45,13 +45,26 @@ fi
 
 firebase use "$PROJECT_ID" --add
 
-cat > .firebaserc <<EOF
+# Preserve stingbase as default when creating a product project (e.g. protopipe).
+if [[ -f .firebaserc ]] && grep -q '"stingbase"' .firebaserc 2>/dev/null; then
+  cat > .firebaserc <<EOF
+{
+  "projects": {
+    "default": "stingbase",
+    "$PROJECT_ID": "$PROJECT_ID"
+  }
+}
+EOF
+  echo "Kept default project stingbase; added alias \"$PROJECT_ID\"."
+else
+  cat > .firebaserc <<EOF
 {
   "projects": {
     "default": "$PROJECT_ID"
   }
 }
 EOF
+fi
 
 echo ""
 echo "Wired .firebaserc to project: $PROJECT_ID"

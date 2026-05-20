@@ -37,6 +37,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'protopipe/content',
+        loadComponent: () =>
+          import('./features/protopipe/content/protopipe-content.component').then(
+            (m) => m.ProtopipeContentComponent,
+          ),
+      },
+      {
         path: 'dev/docs',
         canMatch: [devRoutesGuard],
         loadComponent: () =>

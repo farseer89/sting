@@ -41,6 +41,13 @@ export class NavigationService {
             routerLink: '/protopipe/keywords',
             visible: true,
           },
+          {
+            id: 'content',
+            label: 'Content',
+            icon: 'pi pi-file-edit',
+            routerLink: '/protopipe/content',
+            visible: true,
+          },
         ],
       },
       {

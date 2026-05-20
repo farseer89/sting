@@ -8,6 +8,8 @@ export type {
   ProtopipeKeywordMetricPoint,
   ProtopipeSite,
   ProtopipePlan,
+  ProtopipeContentPost,
+  ProtopipeContentPostStatus,
 } from '@hive/contracts';
 
 /** Alias used by dashboard / strategy service. */

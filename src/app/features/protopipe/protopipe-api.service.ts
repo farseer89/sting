@@ -2,13 +2,18 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { ProtopipeEndpoints } from '@hive/contracts';
 import type {
+  CreateContentPostRequest,
   ProtopipeBootstrapResponse,
+  ProtopipeContentListResponse,
+  ProtopipeContentPostResponse,
   ProtopipeDataForSeoStatusResponse,
   ProtopipeKeywordMetricHistoryResponse,
   ProtopipeMarketEnrichResponse,
   ProtopipePlan,
+  ProtopipePublishContentResponse,
   SaveKeywordsRequest,
   SaveKeywordsResponse,
+  UpdateContentPostRequest,
 } from '@hive/contracts';
 import { firstValueFrom } from 'rxjs';
 import { protopipeApiUrl } from './protopipe-http.util';
@@ -69,6 +74,56 @@ export class ProtopipeApiService {
       this.http.get<ProtopipeKeywordMetricHistoryResponse>(
         protopipeApiUrl(ProtopipeEndpoints.keywordMetricHistory.path, { siteId, keywordId }),
         { params: { limit: String(limit) } },
+      ),
+    );
+  }
+
+  listContent(siteId: string): Promise<ProtopipeContentListResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeContentListResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.listContent.path, { siteId }),
+      ),
+    );
+  }
+
+  getContent(siteId: string, postId: string): Promise<ProtopipeContentPostResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeContentPostResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.getContent.path, { siteId, postId }),
+      ),
+    );
+  }
+
+  createContent(
+    siteId: string,
+    body: CreateContentPostRequest,
+  ): Promise<ProtopipeContentPostResponse> {
+    return firstValueFrom(
+      this.http.post<ProtopipeContentPostResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.createContent.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  updateContent(
+    siteId: string,
+    postId: string,
+    body: UpdateContentPostRequest,
+  ): Promise<ProtopipeContentPostResponse> {
+    return firstValueFrom(
+      this.http.put<ProtopipeContentPostResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.updateContent.path, { siteId, postId }),
+        body,
+      ),
+    );
+  }
+
+  publishContent(siteId: string, postId: string): Promise<ProtopipePublishContentResponse> {
+    return firstValueFrom(
+      this.http.post<ProtopipePublishContentResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.publishContent.path, { siteId, postId }),
+        {},
       ),
     );
   }

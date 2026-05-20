@@ -3,7 +3,8 @@ import type { ProtopipeDataForSeoStatusResponse } from '@hive/contracts';
 import type {
   KeywordIntent,
   KeywordPriority,
-  ProtopipeKeyword,
+  ProtopipeKeywordDto,
+  ProtopipeKeywordMetricPoint,
   ProtopipeSite,
   ProtopipeStrategySummary,
 } from './protopipe.models';
@@ -28,7 +29,9 @@ export class ProtopipeStrategyService {
   private readonly _siteId = signal<string | null>(null);
   private readonly _site = signal<ProtopipeSite | null>(null);
   private readonly _summary = signal('');
-  private readonly _keywords = signal<ProtopipeKeyword[]>([]);
+  private readonly _keywords = signal<ProtopipeKeywordDto[]>([]);
+  private readonly _marketRefreshing = signal(false);
+  private readonly _lastEnrichSummary = signal<string | null>(null);
   private readonly _updatedAt = signal(new Date().toISOString());
   private readonly _loading = signal(false);
   private readonly _saving = signal(false);
@@ -48,6 +51,8 @@ export class ProtopipeStrategyService {
   readonly dataForSeoTesting = this._dataForSeoTesting.asReadonly();
   readonly dataForSeoStatus = this._dataForSeoStatus.asReadonly();
   readonly dataForSeoTestError = this._dataForSeoTestError.asReadonly();
+  readonly marketRefreshing = this._marketRefreshing.asReadonly();
+  readonly lastEnrichSummary = this._lastEnrichSummary.asReadonly();
 
   readonly strategy = computed<ProtopipeStrategySummary>(() => ({
     site: this._site() ?? {
@@ -100,7 +105,7 @@ export class ProtopipeStrategyService {
     if (!phrase) {
       return;
     }
-    const keyword: ProtopipeKeyword = {
+    const keyword: ProtopipeKeywordDto = {
       id: `temp-${crypto.randomUUID()}`,
       phrase,
       intent: input.intent,
@@ -111,7 +116,7 @@ export class ProtopipeStrategyService {
     this._dirty.set(true);
   }
 
-  updateKeyword(id: string, patch: Partial<Omit<ProtopipeKeyword, 'id'>>): void {
+  updateKeyword(id: string, patch: Partial<Omit<ProtopipeKeywordDto, 'id'>>): void {
     this._keywords.update((list) =>
       list.map((kw) => {
         if (kw.id !== id) {
@@ -134,6 +139,38 @@ export class ProtopipeStrategyService {
   }
 
   /** Dev/integration check: bagend → DataForSEO (v2 status endpoint). */
+  async refreshMarketData(): Promise<boolean> {
+    const siteId = this._siteId();
+    if (!siteId) {
+      this._error.set('No site loaded');
+      return false;
+    }
+    this._marketRefreshing.set(true);
+    this._error.set(null);
+    try {
+      const result = await this.api.enrichMarket(siteId);
+      this._lastEnrichSummary.set(
+        `Updated ${result.enriched} keywords · $${result.costUsd.toFixed(4)} · ${new Date(result.capturedAt).toLocaleString()}`,
+      );
+      await this.reloadPlanOnly(siteId);
+      return true;
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Failed to refresh market data'));
+      return false;
+    } finally {
+      this._marketRefreshing.set(false);
+    }
+  }
+
+  async loadKeywordHistory(keywordId: string): Promise<ProtopipeKeywordMetricPoint[]> {
+    const siteId = this._siteId();
+    if (!siteId || keywordId.startsWith('temp-')) {
+      return [];
+    }
+    const { points } = await this.api.getKeywordMetricHistory(siteId, keywordId);
+    return points;
+  }
+
   async testDataForSeoConnection(): Promise<void> {
     this._dataForSeoTesting.set(true);
     this._dataForSeoTestError.set(null);
@@ -175,6 +212,11 @@ export class ProtopipeStrategyService {
     } finally {
       this._saving.set(false);
     }
+  }
+
+  private async reloadPlanOnly(siteId: string): Promise<void> {
+    const plan = await this.api.getPlan(siteId);
+    this.applyPlan(plan);
   }
 
   private applyPlan(plan: ProtopipeStrategySummary): void {

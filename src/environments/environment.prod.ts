@@ -3,7 +3,7 @@ const microserviceBaseUrl = 'https://droppin.shop';
 export const environment = {
   production: true,
   enableDevRoutes: false,
-  appName: 'Sting',
+  appName: 'Protopipe',
   MICRO_BASE_URL: microserviceBaseUrl,
   MICRO_SOCKET_ENDPOINT: microserviceBaseUrl,
   MICRO_USER_SIGNIN: `${microserviceBaseUrl}/api/v2/auth/signin`,

@@ -2,9 +2,11 @@
 export type {
   KeywordIntent,
   KeywordPriority,
-  ProtopipeSite,
   ProtopipeKeyword,
   ProtopipeKeywordDto,
+  ProtopipeKeywordMarket,
+  ProtopipeKeywordMetricPoint,
+  ProtopipeSite,
   ProtopipePlan,
 } from '@hive/contracts';
 

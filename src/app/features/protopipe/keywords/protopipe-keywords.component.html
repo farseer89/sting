@@ -11,13 +11,27 @@
             · <span class="text-orange-500">unsaved changes</span>
           }
         </span>
+        @if (lastEnrichSummary()) {
+          <span class="protopipe-keywords__meta text-color-secondary block mt-1">
+            {{ lastEnrichSummary() }}
+          </span>
+        }
       </div>
-      <div class="protopipe-keywords__actions flex align-items-center gap-2">
+      <div class="protopipe-keywords__actions flex align-items-center gap-2 flex-wrap">
+        <p-button
+          label="Refresh market data"
+          icon="pi pi-refresh"
+          size="small"
+          [outlined]="true"
+          [loading]="marketRefreshing()"
+          [disabled]="marketRefreshing() || saving() || loading()"
+          (onClick)="refreshMarketData()"
+        />
         <p-button
           label="Save"
           icon="pi pi-save"
           size="small"
-          [disabled]="!dirty() || saving() || loading()"
+          [disabled]="!dirty() || saving() || loading() || marketRefreshing()"
           [loading]="saving()"
           (onClick)="saveKeywords()"
         />
@@ -91,6 +105,11 @@
           <ng-template pTemplate="header">
             <tr>
               <th>Keyword</th>
+              <th class="col-market">Rank</th>
+              <th class="col-market">Δ</th>
+              <th class="col-market">Volume</th>
+              <th class="col-market">KD</th>
+              <th class="col-market">CPC</th>
               <th class="col-narrow">Intent</th>
               <th class="col-narrow">Priority</th>
               <th>Notes</th>
@@ -109,6 +128,16 @@
                   (ngModelChange)="onPhraseChange(kw, $event)"
                 />
               </td>
+              <td class="text-sm">{{ formatMarketNumber(kw.market?.rank) }}</td>
+              <td>
+                <p-tag
+                  [value]="formatRankDelta(kw.market)"
+                  [severity]="rankDeltaSeverity(kw.market)"
+                />
+              </td>
+              <td class="text-sm">{{ formatMarketNumber(kw.market?.searchVolume) }}</td>
+              <td class="text-sm">{{ formatMarketNumber(kw.market?.keywordDifficulty) }}</td>
+              <td class="text-sm">{{ formatMarketNumber(kw.market?.cpc) }}</td>
               <td>
                 <p-select
                   pSize="small"
@@ -142,7 +171,18 @@
                   (ngModelChange)="onNotesChange(kw, $event)"
                 />
               </td>
-              <td>
+              <td class="flex gap-1">
+                <p-button
+                  type="button"
+                  icon="pi pi-chart-line"
+                  size="small"
+                  [text]="true"
+                  [disabled]="kw.id.startsWith('temp-')"
+                  pTooltip="View history"
+                  tooltipPosition="top"
+                  (onClick)="openHistory(kw)"
+                  ariaLabel="View keyword history"
+                />
                 <p-button
                   type="button"
                   icon="pi pi-trash"
@@ -160,3 +200,41 @@
     }
   </div>
 </div>
+
+<p-dialog
+  [header]="'History · ' + historyPhrase()"
+  [visible]="historyVisible()"
+  [modal]="true"
+  [style]="{ width: '36rem', maxWidth: '95vw' }"
+  (visibleChange)="historyVisible.set($event)"
+  (onHide)="closeHistory()"
+>
+  @if (historyLoading()) {
+    <div class="flex justify-content-center p-4">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Loading history" />
+    </div>
+  } @else if (historyPoints().length === 0) {
+    <p class="m-0 text-color-secondary">No snapshots yet. Use Refresh market data first.</p>
+  } @else {
+    <p-table [value]="historyPoints()" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Date</th>
+          <th>Rank</th>
+          <th>Volume</th>
+          <th>KD</th>
+          <th>CPC</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-point>
+        <tr>
+          <td class="text-sm">{{ formatHistoryDate(point.capturedAt) }}</td>
+          <td>{{ formatMarketNumber(point.position) }}</td>
+          <td>{{ formatMarketNumber(point.searchVolume) }}</td>
+          <td>{{ formatMarketNumber(point.keywordDifficulty) }}</td>
+          <td>{{ formatMarketNumber(point.cpc) }}</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  }
+</p-dialog>

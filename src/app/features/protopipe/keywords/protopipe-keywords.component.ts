@@ -4,13 +4,21 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { ConfirmDialog } from 'primeng/confirmdialog';
+import { Dialog } from 'primeng/dialog';
 import { Toast } from 'primeng/toast';
 import { InputText } from 'primeng/inputtext';
 import { Select } from 'primeng/select';
 import { TableModule } from 'primeng/table';
+import { Tag } from 'primeng/tag';
 import { Tooltip } from 'primeng/tooltip';
-import type { KeywordIntent, KeywordPriority, ProtopipeKeyword } from '../protopipe.models';
+import { ProgressSpinner } from 'primeng/progressspinner';
+import type { KeywordIntent, KeywordPriority, ProtopipeKeywordDto } from '../protopipe.models';
 import { INTENT_OPTIONS, PRIORITY_OPTIONS } from '../protopipe-keyword-display';
+import {
+  formatMarketNumber,
+  formatRankDelta,
+  rankDeltaSeverity,
+} from '../protopipe-market-display';
 import {
   PROTOPIPE_MAX_NOTES_LENGTH,
   PROTOPIPE_MAX_PHRASE_LENGTH,
@@ -28,9 +36,12 @@ import { ProtopipeStrategyService } from '../protopipe-strategy.service';
     InputText,
     Select,
     TableModule,
+    Tag,
     Tooltip,
     ConfirmDialog,
     Toast,
+    Dialog,
+    ProgressSpinner,
   ],
   providers: [ConfirmationService, MessageService],
   templateUrl: './protopipe-keywords.component.html',
@@ -45,6 +56,8 @@ export class ProtopipeKeywordsComponent implements OnInit {
   readonly dirty = this.strategy.dirty;
   readonly saving = this.strategy.saving;
   readonly loading = this.strategy.loading;
+  readonly marketRefreshing = this.strategy.marketRefreshing;
+  readonly lastEnrichSummary = this.strategy.lastEnrichSummary;
   readonly error = this.strategy.error;
   readonly intentOptions = INTENT_OPTIONS;
   readonly priorityOptions = PRIORITY_OPTIONS;
@@ -54,11 +67,74 @@ export class ProtopipeKeywordsComponent implements OnInit {
   readonly newPriority = signal<KeywordPriority>('medium');
   readonly newNotes = signal('');
 
+  readonly historyVisible = signal(false);
+  readonly historyLoading = signal(false);
+  readonly historyPhrase = signal('');
+  readonly historyPoints = signal<
+    Array<{
+      capturedAt: string;
+      searchVolume?: number;
+      keywordDifficulty?: number;
+      cpc?: number;
+      position?: number;
+    }>
+  >([]);
+
   readonly maxPhraseLength = PROTOPIPE_MAX_PHRASE_LENGTH;
   readonly maxNotesLength = PROTOPIPE_MAX_NOTES_LENGTH;
+  readonly formatMarketNumber = formatMarketNumber;
+  readonly formatRankDelta = formatRankDelta;
+  readonly rankDeltaSeverity = rankDeltaSeverity;
 
   ngOnInit(): void {
     void this.strategy.ensureLoaded();
+  }
+
+  async refreshMarketData(): Promise<void> {
+    const ok = await this.strategy.refreshMarketData();
+    if (ok) {
+      this.messages.add({
+        severity: 'success',
+        summary: 'Market data updated',
+        detail: this.lastEnrichSummary() ?? 'Keywords enriched from DataForSEO.',
+        life: 5000,
+      });
+    } else if (this.error()) {
+      this.messages.add({
+        severity: 'error',
+        summary: 'Refresh failed',
+        detail: this.error() ?? 'Unknown error',
+        life: 5000,
+      });
+    }
+  }
+
+  async openHistory(kw: ProtopipeKeywordDto): Promise<void> {
+    this.historyPhrase.set(kw.phrase);
+    this.historyVisible.set(true);
+    this.historyLoading.set(true);
+    this.historyPoints.set([]);
+    try {
+      const points = await this.strategy.loadKeywordHistory(kw.id);
+      this.historyPoints.set(points);
+    } catch {
+      this.messages.add({
+        severity: 'error',
+        summary: 'History unavailable',
+        detail: 'Could not load metric history for this keyword.',
+        life: 4000,
+      });
+    } finally {
+      this.historyLoading.set(false);
+    }
+  }
+
+  closeHistory(): void {
+    this.historyVisible.set(false);
+  }
+
+  formatHistoryDate(iso: string): string {
+    return new Date(iso).toLocaleString();
   }
 
   async saveKeywords(): Promise<void> {
@@ -95,23 +171,23 @@ export class ProtopipeKeywordsComponent implements OnInit {
     this.newNotes.set('');
   }
 
-  onPhraseChange(kw: ProtopipeKeyword, phrase: string): void {
+  onPhraseChange(kw: ProtopipeKeywordDto, phrase: string): void {
     this.strategy.updateKeyword(kw.id, { phrase });
   }
 
-  onIntentChange(kw: ProtopipeKeyword, intent: KeywordIntent): void {
+  onIntentChange(kw: ProtopipeKeywordDto, intent: KeywordIntent): void {
     this.strategy.updateKeyword(kw.id, { intent });
   }
 
-  onPriorityChange(kw: ProtopipeKeyword, priority: KeywordPriority): void {
+  onPriorityChange(kw: ProtopipeKeywordDto, priority: KeywordPriority): void {
     this.strategy.updateKeyword(kw.id, { priority });
   }
 
-  onNotesChange(kw: ProtopipeKeyword, notes: string): void {
+  onNotesChange(kw: ProtopipeKeywordDto, notes: string): void {
     this.strategy.updateKeyword(kw.id, { notes });
   }
 
-  confirmRemove(kw: ProtopipeKeyword, event: Event): void {
+  confirmRemove(kw: ProtopipeKeywordDto, event: Event): void {
     this.confirm.confirm({
       target: event.target as EventTarget,
       message: `Remove "${kw.phrase}"?`,

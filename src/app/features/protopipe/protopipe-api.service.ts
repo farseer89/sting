@@ -4,6 +4,8 @@ import { ProtopipeEndpoints } from '@hive/contracts';
 import type {
   ProtopipeBootstrapResponse,
   ProtopipeDataForSeoStatusResponse,
+  ProtopipeKeywordMetricHistoryResponse,
+  ProtopipeMarketEnrichResponse,
   ProtopipePlan,
   SaveKeywordsRequest,
   SaveKeywordsResponse,
@@ -45,6 +47,28 @@ export class ProtopipeApiService {
     return firstValueFrom(
       this.http.get<ProtopipeDataForSeoStatusResponse>(
         protopipeApiUrl(ProtopipeEndpoints.dataForSeoStatus.path),
+      ),
+    );
+  }
+
+  enrichMarket(siteId: string): Promise<ProtopipeMarketEnrichResponse> {
+    return firstValueFrom(
+      this.http.post<ProtopipeMarketEnrichResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.marketEnrich.path, { siteId }),
+        {},
+      ),
+    );
+  }
+
+  getKeywordMetricHistory(
+    siteId: string,
+    keywordId: string,
+    limit = 24,
+  ): Promise<ProtopipeKeywordMetricHistoryResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeKeywordMetricHistoryResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.keywordMetricHistory.path, { siteId, keywordId }),
+        { params: { limit: String(limit) } },
       ),
     );
   }

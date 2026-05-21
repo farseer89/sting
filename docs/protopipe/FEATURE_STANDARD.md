@@ -59,17 +59,20 @@ routes/protopipeRoutes.ts  # Thin handlers; requireOwner() on every route
 | Market metrics | Read-only in UI | Append `protopipe_keyword_metrics` only |
 | Published content (Phase D) | Approve → publish | Draft only until human approval |
 
-### Future agent actions
+### Agent actions (Phase A)
 
 | Rule | Detail |
 |------|--------|
 | Entry | `POST /api/v2/protopipe/sites/:siteId/agent-runs` with `{ type }` |
+| Types (A) | `article_ideas`, `content_helper_ingest` |
 | Audit | `protopipe_agent_runs` document per job |
-| Writes | Agents patch rows in `protopipe_keywords` / metrics collections — **not** full human Save unless specified |
-| Secrets | DataForSEO, GSC, LLM keys **bagend env only** — never Sting |
-| Cost | Log external API spend (`protopipe_dataforseo_tasks`) |
-| HTTP | Enqueue and return `runId`; workers run off-request (no 30s blocking digest) |
-| Logging | Prod logs: `runId`, `siteId`, `type`, `cost` — not full prompts or keyword lists |
+| Knowledge | `protopipe_global_knowledge`, `protopipe_site_knowledge`, `protopipe_user_content_helper` |
+| Admin | `/api/v2/protopipe/admin/*` — `PROTOPIPE_PLATFORM_ADMIN_USER_IDS` env allowlist |
+| Secrets | DataForSEO, GSC, LLM (`ANTHROPIC_API_KEY`) **bagend env only** — never Sting |
+| Cost | Log `runId`, `siteId`, `type`, token aggregates — not full prompts |
+| HTTP | Enqueue and return `runId`; worker via `setImmediate` (no blocking LLM on GET) |
+| Idempotency | `Idempotency-Key` header on `POST agent-runs` |
+| Docs | [AI_AGENT.md](./AI_AGENT.md) |
 
 ### Future publish / client-sites (Phase D)
 
@@ -220,6 +223,7 @@ Mock HTTP at `HttpClientTestingModule` — do not call real bagend in unit tests
 ## Related docs
 
 - [SEO_ARTICLE_TEMPLATE.md](./SEO_ARTICLE_TEMPLATE.md) — structured article fields, validation rules (FAQ block deferred)
+- [AI_AGENT.md](./AI_AGENT.md) — agent knowledge layers, routes, env, Phase A scope
 - [SECURITY.md](../SECURITY.md) — Sting threat model
 - [PROTOPYPE.md](../../ai_context/active/PROTOPYPE.md) — product context
 - bagend `.cursor/rules/security/` — global API security

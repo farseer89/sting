@@ -9,22 +9,40 @@
     </div>
 
     <section class="write-tools__block">
-      <h2 class="write-tools__heading">Article ideas</h2>
-      @if (ideas().length === 0) {
+      <div class="write-tools__heading-row">
+        <h2 class="write-tools__heading">Article ideas</h2>
+        <button
+          type="button"
+          class="write-tools__link"
+          [disabled]="ideasLoading()"
+          (click)="refreshIdeas()"
+        >
+          {{ ideasLoading() ? 'Generating…' : 'Refresh' }}
+        </button>
+      </div>
+      @if (ideasError(); as err) {
+        <p class="write-tools__hint write-tools__hint--error">{{ err }}</p>
+      }
+      @if (ideasLoading() && !visibleIdeas().length) {
+        <p class="write-tools__hint">Generating ideas from your keyword plan…</p>
+      } @else if (visibleIdeas().length === 0) {
         <p class="write-tools__hint">
-          <a routerLink="/protopipe/keywords">Add keywords</a> to see topic ideas here.
+          <a routerLink="/protopipe/keywords">Add keywords</a> or refresh to generate AI ideas.
         </p>
       } @else {
         <ul class="write-tools__ideas">
-          @for (idea of ideas(); track idea.keywordId) {
+          @for (idea of visibleIdeas(); track idea.id) {
             <li>
-              <button type="button" class="idea-card" (click)="onIdeaClick(idea.keywordId)">
+              <button type="button" class="idea-card" (click)="onIdeaClick(idea)">
                 <span class="idea-card__phrase">{{ idea.phrase }}</span>
                 <span class="idea-card__angle">{{ idea.angle }}</span>
               </button>
             </li>
           }
         </ul>
+      }
+      @if (ideasPending()) {
+        <p class="write-tools__hint">Updating ideas…</p>
       }
     </section>
 

@@ -48,6 +48,13 @@ export class NavigationService {
             routerLink: '/protopipe/content',
             visible: true,
           },
+          {
+            id: 'content-helper',
+            label: 'Content Helper',
+            icon: 'pi pi-user-edit',
+            routerLink: '/protopipe/settings',
+            visible: true,
+          },
         ],
       },
       {
@@ -57,10 +64,10 @@ export class NavigationService {
         visible: true,
         items: [
           {
-            id: 'admin-settings',
-            label: 'Settings',
-            icon: 'pi pi-cog',
-            disabled: true,
+            id: 'admin-agent',
+            label: 'Agent Control',
+            icon: 'pi pi-sparkles',
+            routerLink: '/protopipe/admin/agent',
             visible: true,
           },
           {

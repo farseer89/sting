@@ -1,8 +1,18 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { ProtopipeEndpoints } from '@hive/contracts';
+import { ProtopipeAdminEndpoints, ProtopipeEndpoints } from '@hive/contracts';
 import type {
+  AdminSitesListResponse,
+  AgentRunResponse,
+  ArticleIdeasResponse,
+  ContentHelperIngestRequest,
+  ContentHelperIngestResponse,
   CreateContentPostRequest,
+  EnqueueAgentRunRequest,
+  EnqueueAgentRunResponse,
+  GlobalKnowledgeResponse,
+  PatchGlobalKnowledgeRequest,
+  PatchSiteKnowledgeRequest,
   ProtopipeBootstrapResponse,
   ProtopipeContentListResponse,
   ProtopipeContentPostResponse,
@@ -11,9 +21,12 @@ import type {
   ProtopipeMarketEnrichResponse,
   ProtopipePlan,
   ProtopipePublishContentResponse,
+  PutUserContentHelperRequest,
   SaveKeywordsRequest,
   SaveKeywordsResponse,
+  SiteKnowledgeListResponse,
   UpdateContentPostRequest,
+  UserContentHelperResponse,
 } from '@hive/contracts';
 import { Observable, firstValueFrom } from 'rxjs';
 import { protopipeApiUrl } from './protopipe-http.util';
@@ -145,5 +158,106 @@ export class ProtopipeApiService {
 
   publishContent(siteId: string, postId: string): Promise<ProtopipePublishContentResponse> {
     return firstValueFrom(this.publishContent$(siteId, postId));
+  }
+
+  getArticleIdeas$(siteId: string) {
+    return this.http.get<ArticleIdeasResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.getArticleIdeas.path, { siteId }),
+    );
+  }
+
+  getArticleIdeas(siteId: string): Promise<ArticleIdeasResponse> {
+    return firstValueFrom(this.getArticleIdeas$(siteId));
+  }
+
+  getAgentRun$(siteId: string, runId: string) {
+    return this.http.get<AgentRunResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.getAgentRun.path, { siteId, runId }),
+    );
+  }
+
+  enqueueAgentRun(
+    siteId: string,
+    body: EnqueueAgentRunRequest,
+    idempotencyKey?: string,
+  ): Promise<EnqueueAgentRunResponse> {
+    const headers = idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined;
+    return firstValueFrom(
+      this.http.post<EnqueueAgentRunResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.enqueueAgentRun.path, { siteId }),
+        body,
+        { headers },
+      ),
+    );
+  }
+
+  getContentHelper$(siteId: string) {
+    return this.http.get<UserContentHelperResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.getContentHelper.path, { siteId }),
+    );
+  }
+
+  putContentHelper(siteId: string, body: PutUserContentHelperRequest): Promise<UserContentHelperResponse> {
+    return firstValueFrom(
+      this.http.put<UserContentHelperResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.putContentHelper.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  ingestContentHelper(
+    siteId: string,
+    body: ContentHelperIngestRequest,
+  ): Promise<ContentHelperIngestResponse> {
+    return firstValueFrom(
+      this.http.post<ContentHelperIngestResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.ingestContentHelper.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  getGlobalKnowledge(): Promise<GlobalKnowledgeResponse> {
+    return firstValueFrom(
+      this.http.get<GlobalKnowledgeResponse>(
+        protopipeApiUrl(ProtopipeAdminEndpoints.getGlobalKnowledge.path),
+      ),
+    );
+  }
+
+  patchGlobalKnowledge(body: PatchGlobalKnowledgeRequest): Promise<GlobalKnowledgeResponse> {
+    return firstValueFrom(
+      this.http.patch<GlobalKnowledgeResponse>(
+        protopipeApiUrl(ProtopipeAdminEndpoints.patchGlobalKnowledge.path),
+        body,
+      ),
+    );
+  }
+
+  listAdminSites(): Promise<AdminSitesListResponse> {
+    return firstValueFrom(
+      this.http.get<AdminSitesListResponse>(protopipeApiUrl(ProtopipeAdminEndpoints.listSites.path)),
+    );
+  }
+
+  getAdminSiteKnowledge(siteId: string): Promise<SiteKnowledgeListResponse> {
+    return firstValueFrom(
+      this.http.get<SiteKnowledgeListResponse>(
+        protopipeApiUrl(ProtopipeAdminEndpoints.getSiteKnowledge.path, { siteId }),
+      ),
+    );
+  }
+
+  patchAdminSiteKnowledge(
+    siteId: string,
+    body: PatchSiteKnowledgeRequest,
+  ): Promise<SiteKnowledgeListResponse> {
+    return firstValueFrom(
+      this.http.patch<SiteKnowledgeListResponse>(
+        protopipeApiUrl(ProtopipeAdminEndpoints.patchSiteKnowledge.path, { siteId }),
+        body,
+      ),
+    );
   }
 }

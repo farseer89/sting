@@ -1,0 +1,59 @@
+.agent-control {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 1.5rem;
+
+  &__title {
+    margin: 0;
+    font-size: 1.5rem;
+  }
+
+  &__lead {
+    margin: 0.5rem 0 0;
+    color: var(--p-text-muted-color);
+  }
+
+  &__block {
+    margin-bottom: 2rem;
+
+    h2 {
+      font-size: 1rem;
+      margin: 0 0 0.75rem;
+    }
+  }
+
+  &__loading {
+    display: flex;
+    justify-content: center;
+    padding: 3rem;
+  }
+}
+
+.hint {
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+  margin: 0 0 0.75rem;
+}
+
+.chunk-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  li {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--p-content-border-color);
+
+    p {
+      margin: 0.35rem 0 0;
+      font-size: 0.875rem;
+      white-space: pre-wrap;
+    }
+  }
+
+  &__type {
+    font-size: 0.75rem;
+    color: var(--p-text-muted-color);
+    margin-left: 0.5rem;
+  }
+}

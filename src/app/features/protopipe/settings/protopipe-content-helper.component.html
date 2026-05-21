@@ -1,0 +1,96 @@
+<div class="content-helper page">
+  <header class="content-helper__header">
+    <a routerLink="/protopipe" class="content-helper__back">← My Plan</a>
+    <h1 class="content-helper__title">Content Helper</h1>
+    <p class="content-helper__lead">
+      Teach the writing agent your voice and add reference material for your site.
+    </p>
+  </header>
+
+  @if (helperError(); as err) {
+    <p-message severity="error" [text]="err" styleClass="w-full mb-3" />
+  }
+
+  @if (loading() || helperLoading()) {
+    <div class="content-helper__loading">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Loading" />
+    </div>
+  } @else if (helper(); as h) {
+    <section class="content-helper__block">
+      <h2>Writing voice</h2>
+      <label class="field">
+        <span>Tone</span>
+        <input pInputText class="w-full" [ngModel]="h.voice.tone ?? ''" (ngModelChange)="onToneChange($event)" />
+      </label>
+      <label class="field">
+        <span>Point of view</span>
+        <input
+          pInputText
+          class="w-full"
+          [ngModel]="h.voice.pointOfView ?? ''"
+          (ngModelChange)="onPovChange($event)"
+          placeholder="e.g. first person, we"
+        />
+      </label>
+    </section>
+
+    <section class="content-helper__block">
+      <h2>Gold paragraphs</h2>
+      <p class="hint">Up to {{ maxExamples }} samples the agent should emulate.</p>
+      @for (i of [0, 1, 2]; track i) {
+        @if (i < maxExamples) {
+          <textarea
+            pTextarea
+            class="w-full mb-2"
+            rows="4"
+            [ngModel]="h.examples[i] ?? ''"
+            (ngModelChange)="onExampleChange(i, $event)"
+            [maxlength]="maxExampleLen"
+          ></textarea>
+        }
+      }
+      <p-button
+        label="{{ helperSaving() ? 'Saving…' : helperDirty() ? 'Save' : 'Saved' }}"
+        [disabled]="!helperDirty() || helperSaving()"
+        (onClick)="save()"
+      />
+    </section>
+
+    <section class="content-helper__block">
+      <h2>Add reference</h2>
+      <p class="hint">Paste a URL or text about your business. The agent will summarize it for your site.</p>
+      <label class="field">
+        <span>Site link</span>
+        <input pInputText class="w-full" [(ngModel)]="ingestUrl" placeholder="https://…" />
+      </label>
+      <p-button
+        label="Add link"
+        [loading]="ingestLoading()"
+        [disabled]="!ingestUrl.trim()"
+        (onClick)="ingestUrlSubmit()"
+        styleClass="mb-3"
+      />
+      <label class="field">
+        <span>Or paste content</span>
+        <textarea pTextarea class="w-full" rows="6" [(ngModel)]="ingestText"></textarea>
+      </label>
+      <p-button
+        label="Add content"
+        [loading]="ingestLoading()"
+        [disabled]="!ingestText.trim()"
+        (onClick)="ingestTextSubmit()"
+      />
+      @if (h.references.length) {
+        <ul class="refs">
+          @for (ref of h.references; track ref.id) {
+            <li>
+              <span class="refs__kind">{{ ref.kind }}</span>
+              <span class="refs__status">{{ ref.status }}</span>
+              <span class="refs__value">{{ ref.value }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+</div>

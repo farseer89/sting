@@ -1,8 +1,16 @@
 import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
-import type { ProtopipeKeywordDto } from '@hive/contracts';
-import { buildArticleIdeas } from './content-template-suggestions';
+import type { ArticleIdeaDto, ProtopipeKeywordDto } from '@hive/contracts';
+import { ProtopipeAgentService } from '../protopipe-agent.service';
 import { ProtopipeContentService } from '../protopipe-content.service';
 
 @Component({
@@ -15,22 +23,43 @@ import { ProtopipeContentService } from '../protopipe-content.service';
 })
 export class ProtopipeWritingToolsComponent {
   protected readonly content = inject(ProtopipeContentService);
+  protected readonly agent = inject(ProtopipeAgentService);
 
   readonly session = this.content.writingSession;
   readonly planKeywords = this.content.planKeywords;
 
-  readonly ideas = computed(() => {
-    const s = this.session();
-    return buildArticleIdeas(this.planKeywords(), s?.selectedKeywordId ?? null);
-  });
+  readonly ideas = this.agent.ideas;
+  readonly ideasLoading = this.agent.ideasLoading;
+  readonly ideasPending = this.agent.ideasPending;
+  readonly ideasError = this.agent.ideasError;
 
   readonly imageDragOver = signal(false);
 
-  onIdeaClick(keywordId: string): void {
-    const kw = this.planKeywords().find((k) => k.id === keywordId);
-    if (!kw) return;
-    const idea = this.ideas().find((i) => i.keywordId === keywordId);
-    this.content.applyArticleIdeaToWriting(kw, idea?.angle);
+  private readonly ideasBootstrapped = signal(false);
+
+  constructor() {
+    effect(() => {
+      if (!this.content.catalogReady() || !this.content.inWritingMode()) return;
+      if (this.ideasBootstrapped()) return;
+      untracked(() => {
+        this.ideasBootstrapped.set(true);
+        void this.agent.loadArticleIdeas();
+      });
+    });
+  }
+
+  readonly visibleIdeas = computed(() => {
+    const s = this.session();
+    const selected = s?.selectedKeywordId ?? null;
+    return this.ideas().filter((i) => i.keywordId !== selected);
+  });
+
+  onIdeaClick(idea: ArticleIdeaDto): void {
+    this.content.applyArticleIdeaDto(idea);
+  }
+
+  refreshIdeas(): void {
+    void this.agent.refreshArticleIdeas();
   }
 
   buildOutline(): void {

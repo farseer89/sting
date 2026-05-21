@@ -62,6 +62,20 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'protopipe/settings',
+        loadComponent: () =>
+          import('./features/protopipe/settings/protopipe-content-helper.component').then(
+            (m) => m.ProtopipeContentHelperComponent,
+          ),
+      },
+      {
+        path: 'protopipe/admin/agent',
+        loadComponent: () =>
+          import('./features/protopipe/admin/protopipe-agent-control.component').then(
+            (m) => m.ProtopipeAgentControlComponent,
+          ),
+      },
+      {
         path: 'dev/docs',
         canMatch: [devRoutesGuard],
         loadComponent: () =>

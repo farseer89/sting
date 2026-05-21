@@ -1,0 +1,73 @@
+<div class="agent-control page">
+  <header class="agent-control__header">
+    <h1>Agent Control</h1>
+    <p class="agent-control__lead">Platform rules and per-site knowledge used by the writing agent.</p>
+  </header>
+
+  @if (error(); as err) {
+    <p-message severity="error" [text]="err" styleClass="w-full mb-3" />
+  }
+
+  @if (loading()) {
+    <div class="agent-control__loading">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Loading" />
+    </div>
+  } @else if (global(); as g) {
+    <section class="agent-control__block">
+      <h2>Platform rules</h2>
+      <p class="hint">One rule per line — applied to every agent run.</p>
+      <textarea
+        pTextarea
+        class="w-full"
+        rows="8"
+        [ngModel]="rulesText()"
+        (ngModelChange)="onRulesChange($event)"
+      ></textarea>
+      <p-button
+        class="mt-2"
+        label="{{ saving() ? 'Saving…' : globalDirty() ? 'Save rules' : 'Saved' }}"
+        [disabled]="!globalDirty() || saving()"
+        (onClick)="saveGlobal()"
+      />
+    </section>
+
+    <section class="agent-control__block">
+      <h2>Core knowledge</h2>
+      <ul class="chunk-list">
+        @for (chunk of g.chunks; track chunk.id) {
+          <li>
+            <strong>{{ chunk.title }}</strong>
+            <span class="chunk-list__type">{{ chunk.type }}</span>
+            <p>{{ chunk.body }}</p>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section class="agent-control__block">
+      <h2>Per-site knowledge</h2>
+      <p-select
+        [options]="sites()"
+        optionLabel="displayName"
+        optionValue="id"
+        placeholder="Select a site"
+        [ngModel]="selectedSiteId()"
+        (ngModelChange)="onSiteChange($event)"
+        styleClass="w-full mb-3"
+      />
+      @if (siteChunks().length) {
+        <ul class="chunk-list">
+          @for (chunk of siteChunks(); track chunk.id) {
+            <li>
+              <strong>{{ chunk.title }}</strong>
+              <span class="chunk-list__type">{{ chunk.chunkType }} · {{ chunk.source }}</span>
+              <p>{{ chunk.body }}</p>
+            </li>
+          }
+        </ul>
+      } @else if (selectedSiteId()) {
+        <p class="hint">No knowledge chunks for this site yet.</p>
+      }
+    </section>
+  }
+</div>

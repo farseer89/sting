@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import type {
+  ArticleIdeaDto,
   CreateContentPostRequest,
   ProtopipeContentPost,
   ProtopipeContentPostStatus,
@@ -245,6 +246,41 @@ export class ProtopipeContentService {
     this.updateWritingSession({
       template: applyKeywordToTemplate(s.template, kw),
       selectedKeywordId: kw.id,
+    });
+  }
+
+  /** Apply a server-generated article idea to the writing session. */
+  applyArticleIdeaDto(idea: ArticleIdeaDto): void {
+    const s = this._writingSession();
+    if (!s || s.readOnly) return;
+
+    const sections = idea.outline.map((sec, i) => ({
+      h2: sec.h2,
+      body: s.template.sections[i]?.body ?? '',
+      images: s.template.sections[i]?.images ?? [],
+    }));
+
+    const template: ProtopipeContentTemplate = {
+      ...s.template,
+      primaryKeywordId: idea.keywordId,
+      primaryKeywordPhrase: idea.phrase,
+      title: idea.title,
+      h1: idea.h1,
+      metaDescription: idea.metaDescription,
+      intro: idea.intro,
+      sections: sections.length ? sections : s.template.sections,
+    };
+
+    const slug =
+      !s.slug.trim() || this._editingId() === 'new'
+        ? slugifyTitle(template.title || template.h1)
+        : s.slug;
+
+    this.updateWritingSession({
+      template,
+      selectedKeywordId: idea.keywordId,
+      slug,
+      focusedSectionIndex: 0,
     });
   }
 

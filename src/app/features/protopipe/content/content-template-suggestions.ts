@@ -35,12 +35,43 @@ export function buildKeywordSuggestions(keyword: ProtopipeKeywordDto): {
   };
 }
 
-/** Apply keyword suggestions only into empty fields (never overwrite the writer). */
+export function slugifyTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+}
+
+export type ApplyKeywordMode = 'fill' | 'replace';
+
+/** Apply keyword starter copy. `fill` only touches empty fields; `replace` refreshes SEO + outline. */
 export function applyKeywordToTemplate(
   template: ProtopipeContentTemplate,
   keyword: ProtopipeKeywordDto,
+  options?: { mode?: ApplyKeywordMode; introOverride?: string },
 ): ProtopipeContentTemplate {
   const s = buildKeywordSuggestions(keyword);
+  const mode = options?.mode ?? 'fill';
+
+  if (mode === 'replace') {
+    const sections = s.sectionHeadings.map((h2, i) => ({
+      h2,
+      body: template.sections[i]?.body ?? '',
+      images: template.sections[i]?.images ?? [],
+    }));
+    return {
+      ...template,
+      primaryKeywordId: keyword.id,
+      primaryKeywordPhrase: keyword.phrase,
+      title: s.title,
+      h1: s.h1,
+      metaDescription: s.metaDescription,
+      intro: options?.introOverride?.trim() || s.intro,
+      sections,
+    };
+  }
+
   const sections = [...template.sections];
   for (let i = 0; i < s.sectionHeadings.length; i++) {
     if (!sections[i]) {

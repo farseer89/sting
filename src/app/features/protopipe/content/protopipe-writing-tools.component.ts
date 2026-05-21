@@ -28,7 +28,9 @@ export class ProtopipeWritingToolsComponent {
 
   onIdeaClick(keywordId: string): void {
     const kw = this.planKeywords().find((k) => k.id === keywordId);
-    if (kw) this.content.applyKeywordToWriting(kw);
+    if (!kw) return;
+    const idea = this.ideas().find((i) => i.keywordId === keywordId);
+    this.content.applyArticleIdeaToWriting(kw, idea?.angle);
   }
 
   buildOutline(): void {

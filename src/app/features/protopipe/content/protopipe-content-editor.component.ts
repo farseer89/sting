@@ -27,16 +27,9 @@ import {
 import {
   buildKeywordSuggestions,
   serpPreview,
+  slugifyTitle,
   writingHints,
 } from './content-template-suggestions';
-
-function slugify(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80);
-}
 
 @Component({
   selector: 'app-protopipe-content-editor',
@@ -219,7 +212,7 @@ export class ProtopipeContentEditorComponent {
     if (!s) return;
     const title = s.template.title || value;
     const slug =
-      !s.slug || this.content.editingId() === 'new' ? slugify(value || title) : s.slug;
+      !s.slug || this.content.editingId() === 'new' ? slugifyTitle(value || title) : s.slug;
     this.content.updateWritingSession({
       slug,
       template: { ...s.template, h1: value, title },

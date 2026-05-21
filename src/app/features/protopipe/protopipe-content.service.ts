@@ -11,7 +11,10 @@ import type {
   UpdateContentPostRequest,
 } from '@hive/contracts';
 import { forkJoin, map, switchMap, throwError } from 'rxjs';
-import { applyKeywordToTemplate } from './content/content-template-suggestions';
+import {
+  applyKeywordToTemplate,
+  slugifyTitle,
+} from './content/content-template-suggestions';
 import type { ContentCatalog } from './content/content-catalog.model';
 import {
   cloneTemplate,
@@ -242,6 +245,26 @@ export class ProtopipeContentService {
     this.updateWritingSession({
       template: applyKeywordToTemplate(s.template, kw),
       selectedKeywordId: kw.id,
+    });
+  }
+
+  /** Switch topic from the writing-tools panel — refresh title, SEO fields, and outline. */
+  applyArticleIdeaToWriting(kw: ProtopipeKeywordDto, introAngle?: string): void {
+    const s = this._writingSession();
+    if (!s || s.readOnly) return;
+    const template = applyKeywordToTemplate(s.template, kw, {
+      mode: 'replace',
+      introOverride: introAngle,
+    });
+    const slug =
+      !s.slug.trim() || this._editingId() === 'new'
+        ? slugifyTitle(template.title || template.h1)
+        : s.slug;
+    this.updateWritingSession({
+      template,
+      selectedKeywordId: kw.id,
+      slug,
+      focusedSectionIndex: 0,
     });
   }
 

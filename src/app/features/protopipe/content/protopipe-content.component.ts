@@ -7,13 +7,24 @@ import { ConfirmDialog } from 'primeng/confirmdialog';
 import { DatePicker } from 'primeng/datepicker';
 import { Dialog } from 'primeng/dialog';
 import { InputText } from 'primeng/inputtext';
+import { Message } from 'primeng/message';
 import { ProgressSpinner } from 'primeng/progressspinner';
+import { Select } from 'primeng/select';
 import { SelectButton } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { Tag } from 'primeng/tag';
 import { Textarea } from 'primeng/textarea';
 import { Toast } from 'primeng/toast';
-import { ProtopipeContentService } from '../protopipe-content.service';
+import type { ProtopipeContentSection, ProtopipeContentTemplate, ProtopipeKeywordDto } from '@hive/contracts';
+import {
+  PROTOPIPE_CONTENT_META_MAX,
+  PROTOPIPE_CONTENT_META_MIN,
+  PROTOPIPE_CONTENT_TITLE_WARN,
+} from '../protopipe.constants';
+import {
+  ProtopipeContentService,
+  emptyContentTemplate,
+} from '../protopipe-content.service';
 import type { ContentTab } from '../protopipe-content.service';
 import type { ProtopipeContentPost } from '../protopipe.models';
 
@@ -43,6 +54,8 @@ function slugify(title: string): string {
     SelectButton,
     DatePicker,
     ProgressSpinner,
+    Select,
+    Message,
   ],
   providers: [ConfirmationService, MessageService],
   templateUrl: './protopipe-content.component.html',
@@ -60,6 +73,12 @@ export class ProtopipeContentComponent implements OnInit {
   readonly activeTab = this.content.activeTab;
   readonly filteredPosts = this.content.filteredPosts;
   readonly editingId = this.content.editingId;
+  readonly seoChecklist = this.content.seoChecklist;
+  readonly planKeywords = this.content.planKeywords;
+
+  readonly metaMin = PROTOPIPE_CONTENT_META_MIN;
+  readonly metaMax = PROTOPIPE_CONTENT_META_MAX;
+  readonly titleWarn = PROTOPIPE_CONTENT_TITLE_WARN;
 
   readonly tabOptions = [
     { label: 'Published', value: 'published' as ContentTab },
@@ -69,11 +88,12 @@ export class ProtopipeContentComponent implements OnInit {
 
   readonly editorVisible = computed(() => this.editingId() !== null);
 
-  readonly editTitle = signal('');
   readonly editSlug = signal('');
-  readonly editDescription = signal('');
-  readonly editBody = signal('');
   readonly editScheduleAt = signal<Date | null>(null);
+  readonly editTemplate = signal<ProtopipeContentTemplate>(emptyContentTemplate());
+  readonly selectedKeywordId = signal<string | null>(null);
+
+  readonly metaLength = computed(() => this.editTemplate().metaDescription.length);
 
   ngOnInit(): void {
     void this.content.ensureLoaded();
@@ -84,20 +104,19 @@ export class ProtopipeContentComponent implements OnInit {
   }
 
   openCreate(): void {
-    this.editTitle.set('');
     this.editSlug.set('');
-    this.editDescription.set('');
-    this.editBody.set('');
     this.editScheduleAt.set(null);
+    this.editTemplate.set(emptyContentTemplate());
+    this.selectedKeywordId.set(null);
     this.content.startCreate();
   }
 
   openEdit(post: ProtopipeContentPost): void {
-    this.editTitle.set(post.title);
     this.editSlug.set(post.slug);
-    this.editDescription.set(post.description);
-    this.editBody.set(post.bodyMarkdown);
     this.editScheduleAt.set(post.publishAt ? new Date(post.publishAt) : null);
+    this.editTemplate.set(post.template ?? emptyContentTemplate());
+    const kwId = post.template?.primaryKeywordId ?? null;
+    this.selectedKeywordId.set(kwId);
     this.content.startEdit(post.id);
   }
 
@@ -105,11 +124,56 @@ export class ProtopipeContentComponent implements OnInit {
     this.content.cancelEdit();
   }
 
+  onKeywordSelect(keywordId: string | null): void {
+    this.selectedKeywordId.set(keywordId);
+    const kw = this.planKeywords().find((k) => k.id === keywordId);
+    this.patchTemplate({
+      primaryKeywordId: keywordId ?? undefined,
+      primaryKeywordPhrase: kw?.phrase ?? '',
+    });
+    this.content.markDirty();
+  }
+
   onTitleChange(value: string): void {
-    this.editTitle.set(value);
-    if (!this.editSlug() || this.editingId() === 'new') {
+    const t = this.editTemplate();
+    const slug = this.editSlug();
+    const updates: Partial<ProtopipeContentTemplate> = { title: value };
+    if (!t.h1?.trim()) {
+      updates.h1 = value;
+    }
+    if (!slug || this.editingId() === 'new') {
       this.editSlug.set(slugify(value));
     }
+    this.patchTemplate(updates);
+    this.content.markDirty();
+  }
+
+  patchTemplate(partial: Partial<ProtopipeContentTemplate>): void {
+    this.editTemplate.update((t) => ({ ...t, ...partial }));
+  }
+
+  patchSection(index: number, partial: Partial<ProtopipeContentSection>): void {
+    this.editTemplate.update((t) => {
+      const sections = [...t.sections];
+      sections[index] = { ...sections[index], ...partial };
+      return { ...t, sections };
+    });
+    this.content.markDirty();
+  }
+
+  addSection(): void {
+    this.editTemplate.update((t) => ({
+      ...t,
+      sections: [...t.sections, { h2: '', body: '', images: [] }],
+    }));
+    this.content.markDirty();
+  }
+
+  removeSection(index: number): void {
+    this.editTemplate.update((t) => ({
+      ...t,
+      sections: t.sections.filter((_, i) => i !== index),
+    }));
     this.content.markDirty();
   }
 
@@ -119,10 +183,8 @@ export class ProtopipeContentComponent implements OnInit {
 
   async savePost(): Promise<void> {
     const ok = await this.content.savePost({
-      title: this.editTitle(),
       slug: this.editSlug(),
-      description: this.editDescription(),
-      bodyMarkdown: this.editBody(),
+      template: this.editTemplate(),
       scheduleAt: this.editScheduleAt()?.toISOString(),
     });
     if (ok) {
@@ -142,7 +204,12 @@ export class ProtopipeContentComponent implements OnInit {
   async publishPost(postId: string): Promise<void> {
     const ok = await this.content.publishNow(postId);
     if (ok) {
-      this.messages.add({ severity: 'success', summary: 'Published', detail: 'Deploy will run via GitHub Actions.', life: 5000 });
+      this.messages.add({
+        severity: 'success',
+        summary: 'Published',
+        detail: 'Deploy will run via GitHub Actions.',
+        life: 5000,
+      });
       this.closeEditor();
     }
   }
@@ -151,6 +218,12 @@ export class ProtopipeContentComponent implements OnInit {
     if (status === 'published') return 'success';
     if (status === 'scheduled') return 'warn';
     return 'secondary';
+  }
+
+  checklistSeverity(level: string): 'error' | 'warn' | 'info' {
+    if (level === 'error') return 'error';
+    if (level === 'warning') return 'warn';
+    return 'info';
   }
 
   formatDate(iso?: string): string {
@@ -164,5 +237,12 @@ export class ProtopipeContentComponent implements OnInit {
       return undefined;
     }
     return this.content.postById(id);
+  }
+
+  keywordOptions(): Array<{ label: string; value: string }> {
+    return this.planKeywords().map((k: ProtopipeKeywordDto) => ({
+      label: k.phrase,
+      value: k.id,
+    }));
   }
 }

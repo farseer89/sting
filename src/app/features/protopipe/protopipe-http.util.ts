@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import type { ApiErrorBody } from '@hive/contracts';
+import type { ApiErrorBody, SeoValidationResult } from '@hive/contracts';
 import { environment } from '../../../environments/environment';
 
 const API_BASE = environment.MICRO_BASE_URL;
@@ -33,6 +33,17 @@ export function parseProtopipeApiError(err: unknown, fallback: string): string {
     }
     if (err.status === 404) {
       return 'Plan not found.';
+    }
+    if (err.status === 409) {
+      const publishBody = body as { message?: string; seoValidation?: SeoValidationResult } | null;
+      const seoMsgs = publishBody?.seoValidation?.errors?.map((e) => e.message) ?? [];
+      if (seoMsgs.length > 0) {
+        const prefix = publishBody?.message ?? 'Cannot publish yet';
+        return `${prefix}: ${seoMsgs.join('; ')}`;
+      }
+      if (typeof publishBody?.message === 'string') {
+        return publishBody.message;
+      }
     }
   }
   if (err instanceof Error && err.message && !err.message.includes('Http failure')) {

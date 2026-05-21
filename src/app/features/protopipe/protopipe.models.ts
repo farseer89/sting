@@ -10,6 +10,9 @@ export type {
   ProtopipePlan,
   ProtopipeContentPost,
   ProtopipeContentPostStatus,
+  ProtopipeContentTemplate,
+  ProtopipeContentSection,
+  SeoValidationResult,
 } from '@hive/contracts';
 
 /** Alias used by dashboard / strategy service. */

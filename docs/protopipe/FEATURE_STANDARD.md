@@ -219,6 +219,7 @@ Mock HTTP at `HttpClientTestingModule` — do not call real bagend in unit tests
 
 ## Related docs
 
+- [SEO_ARTICLE_TEMPLATE.md](./SEO_ARTICLE_TEMPLATE.md) — structured article fields, validation rules (FAQ block deferred)
 - [SECURITY.md](../SECURITY.md) — Sting threat model
 - [PROTOPYPE.md](../../ai_context/active/PROTOPYPE.md) — product context
 - bagend `.cursor/rules/security/` — global API security

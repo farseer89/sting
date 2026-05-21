@@ -118,6 +118,17 @@
   margin-bottom: 0.5rem;
 }
 
+.doc-canvas__keywords-empty {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--p-text-muted-color);
+  font-family: var(--app-font-family, system-ui, sans-serif);
+
+  a {
+    color: var(--p-primary-600);
+  }
+}
+
 .doc-canvas__chips {
   display: flex;
   flex-wrap: wrap;

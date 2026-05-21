@@ -47,23 +47,31 @@
       <main class="doc-canvas">
         <div class="doc-canvas__keywords">
           <span class="doc-canvas__keywords-label">Writing for</span>
-          <div class="doc-canvas__chips">
-            @for (kw of planKeywords(); track kw.id) {
-              <button
-                type="button"
-                class="keyword-chip"
-                [class.keyword-chip--active]="selectedKeywordId() === kw.id"
-                (click)="selectKeyword(kw)"
-              >
-                {{ kw.phrase }}
-              </button>
-            }
-            @if (selectedKeywordId()) {
-              <button type="button" class="keyword-chip keyword-chip--clear" (click)="clearKeyword()">
-                Clear
-              </button>
-            }
-          </div>
+          @if (planKeywords().length === 0) {
+            <p class="doc-canvas__keywords-empty">
+              Add keywords in
+              <a routerLink="/protopipe/keywords">My Plan</a>
+              to get topic chips here.
+            </p>
+          } @else {
+            <div class="doc-canvas__chips">
+              @for (kw of planKeywords(); track kw.id) {
+                <button
+                  type="button"
+                  class="keyword-chip"
+                  [class.keyword-chip--active]="selectedKeywordId() === kw.id"
+                  (click)="selectKeyword(kw)"
+                >
+                  {{ kw.phrase }}
+                </button>
+              }
+              @if (selectedKeywordId()) {
+                <button type="button" class="keyword-chip keyword-chip--clear" (click)="clearKeyword()">
+                  Clear
+                </button>
+              }
+            </div>
+          }
         </div>
 
         @if (introSuggestion()) {

@@ -46,6 +46,7 @@ export const routes: Routes = [
       },
       {
         path: 'protopipe/content/new',
+        data: { mode: 'create' },
         canDeactivate: [protopipeContentUnsavedGuard],
         loadComponent: () =>
           import('./features/protopipe/content/protopipe-content-editor.component').then(

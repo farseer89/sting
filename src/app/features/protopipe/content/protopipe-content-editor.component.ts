@@ -103,14 +103,22 @@ export class ProtopipeContentEditorComponent implements OnInit {
     void this.initFromRoute();
   }
 
+  /** Static route `content/new` has no :postId param — use route data. */
+  private isCreateRoute(): boolean {
+    return (
+      this.route.snapshot.data['mode'] === 'create' ||
+      this.route.snapshot.paramMap.get('postId') === 'new'
+    );
+  }
+
   private async initFromRoute(): Promise<void> {
     await this.content.ensureLoaded();
-    const id = this.route.snapshot.paramMap.get('postId');
-    if (id === 'new') {
+    if (this.isCreateRoute()) {
       this.content.startCreate();
       this.resetEditorState(emptyContentTemplate(), '', null, null);
       return;
     }
+    const id = this.route.snapshot.paramMap.get('postId');
     if (!id) {
       void this.router.navigate(['/protopipe/content']);
       return;
@@ -225,7 +233,7 @@ export class ProtopipeContentEditorComponent implements OnInit {
     });
     if (ok) {
       const id = this.content.editingId();
-      if (id && id !== 'new' && this.route.snapshot.paramMap.get('postId') === 'new') {
+      if (id && id !== 'new' && this.isCreateRoute()) {
         void this.router.navigate(['/protopipe/content', id], { replaceUrl: true });
       }
     }

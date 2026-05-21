@@ -81,7 +81,7 @@ export class ProtopipeContentService {
   });
 
   async ensureLoaded(): Promise<void> {
-    if (this._siteId() && this._posts().length > 0) {
+    if (this._siteId() && this._planKeywords().length > 0) {
       return;
     }
     await this.reload();

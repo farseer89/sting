@@ -10,6 +10,8 @@ import { Tooltip } from 'primeng/tooltip';
 import { filter, Subscription } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { NavMenuItem, NavigationService } from '../../core/config/navigation.service';
+import { ProtopipeContentService } from '../../features/protopipe/protopipe-content.service';
+import { ProtopipeWritingToolsComponent } from '../../features/protopipe/content/protopipe-writing-tools.component';
 import { SessionExpiredDialogComponent } from '../../shared/session-expired-dialog/session-expired-dialog.component';
 
 export interface ShellBreadcrumb {
@@ -31,6 +33,7 @@ export interface ShellBreadcrumb {
     Toast,
     Tooltip,
     SessionExpiredDialogComponent,
+    ProtopipeWritingToolsComponent,
   ],
   providers: [MessageService],
   templateUrl: './shell.component.html',
@@ -41,6 +44,9 @@ export class ShellComponent implements OnInit, OnDestroy {
   private readonly nav = inject(NavigationService);
   private readonly router = inject(Router);
   private readonly messages = inject(MessageService);
+  private readonly content = inject(ProtopipeContentService);
+
+  readonly inWritingMode = this.content.inWritingMode;
 
   private routerSub?: Subscription;
 
@@ -153,6 +159,20 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'Home', routerLink: '/home' },
         { label: 'UI Playground' },
       ];
+      return;
+    }
+    if (path.startsWith('/protopipe/content/')) {
+      const writing = path.includes('/content/new') || path.match(/\/content\/[a-f0-9]{24}$/i);
+      this.breadcrumbs = writing
+        ? [
+            { label: 'Content', routerLink: '/protopipe/content' },
+            { label: 'Writing' },
+          ]
+        : [{ label: 'Content' }];
+      return;
+    }
+    if (path === '/protopipe/content') {
+      this.breadcrumbs = [{ label: 'Content' }];
       return;
     }
     if (path === '/protopipe/keywords') {

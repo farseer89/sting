@@ -15,27 +15,31 @@ import type {
   SaveKeywordsResponse,
   UpdateContentPostRequest,
 } from '@hive/contracts';
-import { firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import { protopipeApiUrl } from './protopipe-http.util';
 
 @Injectable({ providedIn: 'root' })
 export class ProtopipeApiService {
   private readonly http = inject(HttpClient);
 
+  bootstrap$(): Observable<ProtopipeBootstrapResponse> {
+    return this.http.get<ProtopipeBootstrapResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.bootstrap.path),
+    );
+  }
+
   bootstrap(): Promise<ProtopipeBootstrapResponse> {
-    return firstValueFrom(
-      this.http.get<ProtopipeBootstrapResponse>(
-        protopipeApiUrl(ProtopipeEndpoints.bootstrap.path),
-      ),
+    return firstValueFrom(this.bootstrap$());
+  }
+
+  getPlan$(siteId: string): Observable<ProtopipePlan> {
+    return this.http.get<ProtopipePlan>(
+      protopipeApiUrl(ProtopipeEndpoints.getPlan.path, { siteId }),
     );
   }
 
   getPlan(siteId: string): Promise<ProtopipePlan> {
-    return firstValueFrom(
-      this.http.get<ProtopipePlan>(
-        protopipeApiUrl(ProtopipeEndpoints.getPlan.path, { siteId }),
-      ),
-    );
+    return firstValueFrom(this.getPlan$(siteId));
   }
 
   saveKeywords(siteId: string, body: SaveKeywordsRequest): Promise<SaveKeywordsResponse> {
@@ -78,12 +82,14 @@ export class ProtopipeApiService {
     );
   }
 
-  listContent(siteId: string): Promise<ProtopipeContentListResponse> {
-    return firstValueFrom(
-      this.http.get<ProtopipeContentListResponse>(
-        protopipeApiUrl(ProtopipeEndpoints.listContent.path, { siteId }),
-      ),
+  listContent$(siteId: string): Observable<ProtopipeContentListResponse> {
+    return this.http.get<ProtopipeContentListResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.listContent.path, { siteId }),
     );
+  }
+
+  listContent(siteId: string): Promise<ProtopipeContentListResponse> {
+    return firstValueFrom(this.listContent$(siteId));
   }
 
   getContent(siteId: string, postId: string): Promise<ProtopipeContentPostResponse> {
@@ -94,15 +100,31 @@ export class ProtopipeApiService {
     );
   }
 
+  createContent$(
+    siteId: string,
+    body: CreateContentPostRequest,
+  ): Observable<ProtopipeContentPostResponse> {
+    return this.http.post<ProtopipeContentPostResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.createContent.path, { siteId }),
+      body,
+    );
+  }
+
   createContent(
     siteId: string,
     body: CreateContentPostRequest,
   ): Promise<ProtopipeContentPostResponse> {
-    return firstValueFrom(
-      this.http.post<ProtopipeContentPostResponse>(
-        protopipeApiUrl(ProtopipeEndpoints.createContent.path, { siteId }),
-        body,
-      ),
+    return firstValueFrom(this.createContent$(siteId, body));
+  }
+
+  updateContent$(
+    siteId: string,
+    postId: string,
+    body: UpdateContentPostRequest,
+  ): Observable<ProtopipeContentPostResponse> {
+    return this.http.put<ProtopipeContentPostResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.updateContent.path, { siteId, postId }),
+      body,
     );
   }
 
@@ -111,20 +133,17 @@ export class ProtopipeApiService {
     postId: string,
     body: UpdateContentPostRequest,
   ): Promise<ProtopipeContentPostResponse> {
-    return firstValueFrom(
-      this.http.put<ProtopipeContentPostResponse>(
-        protopipeApiUrl(ProtopipeEndpoints.updateContent.path, { siteId, postId }),
-        body,
-      ),
+    return firstValueFrom(this.updateContent$(siteId, postId, body));
+  }
+
+  publishContent$(siteId: string, postId: string): Observable<ProtopipePublishContentResponse> {
+    return this.http.post<ProtopipePublishContentResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.publishContent.path, { siteId, postId }),
+      {},
     );
   }
 
   publishContent(siteId: string, postId: string): Promise<ProtopipePublishContentResponse> {
-    return firstValueFrom(
-      this.http.post<ProtopipePublishContentResponse>(
-        protopipeApiUrl(ProtopipeEndpoints.publishContent.path, { siteId, postId }),
-        {},
-      ),
-    );
+    return firstValueFrom(this.publishContent$(siteId, postId));
   }
 }

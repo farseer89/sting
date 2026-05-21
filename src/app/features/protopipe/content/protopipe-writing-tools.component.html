@@ -1,0 +1,104 @@
+@if (session(); as s) {
+  <div class="write-tools">
+    <div class="write-tools__brand">
+      <a routerLink="/protopipe/content" class="write-tools__exit">
+        <i class="pi pi-arrow-left" aria-hidden="true"></i>
+        All articles
+      </a>
+      <p class="write-tools__title">Writing tools</p>
+    </div>
+
+    <section class="write-tools__block">
+      <h2 class="write-tools__heading">Article ideas</h2>
+      @if (ideas().length === 0) {
+        <p class="write-tools__hint">
+          <a routerLink="/protopipe/keywords">Add keywords</a> to see topic ideas here.
+        </p>
+      } @else {
+        <ul class="write-tools__ideas">
+          @for (idea of ideas(); track idea.keywordId) {
+            <li>
+              <button type="button" class="idea-card" (click)="onIdeaClick(idea.keywordId)">
+                <span class="idea-card__phrase">{{ idea.phrase }}</span>
+                <span class="idea-card__angle">{{ idea.angle }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="write-tools__block">
+      <div class="write-tools__heading-row">
+        <h2 class="write-tools__heading">Outline</h2>
+        @if (!s.readOnly) {
+          <button type="button" class="write-tools__link" (click)="buildOutline()">Build</button>
+        }
+      </div>
+      <p class="write-tools__hint">Drag to reorder. Drop images onto a section.</p>
+      <div
+        cdkDropList
+        class="outline-list"
+        (cdkDropListDropped)="onOutlineDrop($event)"
+      >
+        @for (heading of outlineHeadings(); track $index; let i = $index) {
+          <div
+            cdkDrag
+            class="outline-item"
+            [class.outline-item--active]="s.focusedSectionIndex === i"
+            (click)="focusSection(i)"
+            (dragover)="onSectionDragOver($event, i)"
+            (drop)="onSectionDrop($event, i)"
+          >
+            <i class="pi pi-bars outline-item__handle" cdkDragHandle aria-hidden="true"></i>
+            <div class="outline-item__body">
+              <span class="outline-item__label">{{ heading }}</span>
+              @if (s.template.sections[i].images?.length) {
+                <span class="outline-item__meta">
+                  {{ s.template.sections[i].images!.length }} image(s)
+                </span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+      @if (!s.readOnly) {
+        <button type="button" class="write-tools__link" (click)="content.addWritingSection()">
+          + Add section
+        </button>
+      }
+    </section>
+
+    <section class="write-tools__block">
+      <h2 class="write-tools__heading">Images</h2>
+      <p class="write-tools__hint">
+        Drop on a section above, or here for
+        <strong>{{ outlineHeadings()[s.focusedSectionIndex] || 'section 1' }}</strong>.
+        Use a hosted URL before publish.
+      </p>
+      <div
+        class="image-drop"
+        [class.image-drop--active]="imageDragOver()"
+        (dragover)="onImagePoolDragOver($event)"
+        (dragleave)="onImagePoolDragLeave()"
+        (drop)="onImagePoolDrop($event)"
+      >
+        <i class="pi pi-image" aria-hidden="true"></i>
+        <span>Drop image file</span>
+      </div>
+      @for (section of s.template.sections; track $index; let si = $index) {
+        @for (img of section.images ?? []; track $index; let ii = $index) {
+          <div class="image-thumb">
+            <img [src]="img.url" [alt]="img.alt" />
+            <div class="image-thumb__meta">
+              <span class="image-thumb__section">§ {{ section.h2 || si + 1 }}</span>
+              @if (!s.readOnly) {
+                <button type="button" (click)="removeImage(si, ii)" aria-label="Remove image">×</button>
+              }
+            </div>
+          </div>
+        }
+      }
+    </section>
+  </div>
+}

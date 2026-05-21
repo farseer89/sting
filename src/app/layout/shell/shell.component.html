@@ -30,7 +30,10 @@
         </button>
       </div>
 
-      <div class="overflow-y-auto">
+      <div class="overflow-y-auto flex-1">
+        @if (inWritingMode()) {
+          <app-protopipe-writing-tools />
+        } @else {
         <ul class="list-none p-3 m-0">
           @for (item of navigationItems; track item.id) {
             @if (item.separator) {
@@ -142,6 +145,7 @@
             }
           }
         </ul>
+        }
       </div>
 
       <div class="mt-auto">
@@ -250,7 +254,7 @@
       </div>
     </div>
 
-    <div class="p-5 flex flex-column flex-auto">
+    <div class="flex flex-column flex-auto" [class.shell-main--writing]="inWritingMode()" [class.p-5]="!inWritingMode()">
       <router-outlet />
     </div>
   </div>

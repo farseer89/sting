@@ -1,19 +1,21 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  OnInit,
-  computed,
+  effect,
   inject,
   signal,
+  untracked,
+  computed,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { DatePicker } from 'primeng/datepicker';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { Toast } from 'primeng/toast';
-import type { ProtopipeContentSection, ProtopipeContentTemplate, ProtopipeKeywordDto } from '@hive/contracts';
+import { map } from 'rxjs/operators';
 import {
   PROTOPIPE_CONTENT_META_MAX,
   PROTOPIPE_CONTENT_META_MIN,
@@ -23,7 +25,6 @@ import {
   emptyContentTemplate,
 } from '../protopipe-content.service';
 import {
-  applyKeywordToTemplate,
   buildKeywordSuggestions,
   serpPreview,
   writingHints,
@@ -41,12 +42,12 @@ function slugify(title: string): string {
   selector: 'app-protopipe-content-editor',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, Button, DatePicker, ProgressSpinner, Toast],
+  imports: [FormsModule, Button, DatePicker, ProgressSpinner, Toast],
   providers: [MessageService],
   templateUrl: './protopipe-content-editor.component.html',
   styleUrl: './protopipe-content-editor.component.scss',
 })
-export class ProtopipeContentEditorComponent implements OnInit {
+export class ProtopipeContentEditorComponent {
   protected readonly content = inject(ProtopipeContentService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -55,29 +56,48 @@ export class ProtopipeContentEditorComponent implements OnInit {
   readonly loading = this.content.loading;
   readonly saving = this.content.saving;
   readonly publishing = this.content.publishing;
-  readonly error = this.content.error;
-  readonly planKeywords = this.content.planKeywords;
+  readonly error = this.content.loadError;
+  readonly session = this.content.writingSession;
   readonly publishBlockers = this.content.publishBlockers;
   readonly publishReview = this.content.publishReview;
 
-  readonly editSlug = signal('');
-  readonly editScheduleAt = signal<Date | null>(null);
-  readonly editTemplate = signal<ProtopipeContentTemplate>(emptyContentTemplate());
-  readonly selectedKeywordId = signal<string | null>(null);
-  readonly seoPanelOpen = signal(false);
+  readonly seoOpen = signal(false);
+  private readonly publishAfterSave = signal(false);
+
+  private readonly isCreateRoute = toSignal(
+    this.route.data.pipe(map((d) => d['mode'] === 'create')),
+    { initialValue: false },
+  );
+
+  private readonly routePostId = toSignal(
+    this.route.paramMap.pipe(map((p) => p.get('postId'))),
+    { initialValue: null as string | null },
+  );
+
+  private readonly editorBootKey = computed(
+    () => `${this.isCreateRoute()}:${this.routePostId() ?? ''}`,
+  );
+
+  private readonly bootstrappedKey = signal<string | null>(null);
 
   readonly metaMin = PROTOPIPE_CONTENT_META_MIN;
   readonly metaMax = PROTOPIPE_CONTENT_META_MAX;
 
-  readonly writingHints = computed(() => writingHints(this.editTemplate()));
-  readonly serp = computed(() =>
-    serpPreview({
-      title: this.editTemplate().title,
-      metaDescription: this.editTemplate().metaDescription,
-      slug: this.editSlug(),
+  readonly writingHints = computed(() => {
+    const t = this.session()?.template;
+    return t ? writingHints(t) : [];
+  });
+
+  readonly serp = computed(() => {
+    const s = this.session();
+    if (!s) return null;
+    return serpPreview({
+      title: s.template.title,
+      metaDescription: s.template.metaDescription,
+      slug: s.slug,
       siteHost: 'destinationweddingpainter.com',
-    }),
-  );
+    });
+  });
 
   readonly saveLabel = computed(() => {
     if (this.saving()) return 'Saving…';
@@ -85,165 +105,171 @@ export class ProtopipeContentEditorComponent implements OnInit {
     return 'Saved';
   });
 
-  readonly selectedKeyword = computed(() => {
-    const id = this.selectedKeywordId();
-    return this.planKeywords().find((k) => k.id === id);
-  });
-
   readonly introSuggestion = computed(() => {
-    const kw = this.selectedKeyword();
-    if (!kw || this.editTemplate().intro.trim()) return null;
+    const s = this.session();
+    if (!s) return null;
+    const kw = this.content.planKeywords().find((k) => k.id === s.selectedKeywordId);
+    if (!kw || s.template.intro.trim()) return null;
     return buildKeywordSuggestions(kw).intro;
   });
 
-  /** Exposed for template section-heading chips. */
-  readonly buildKeywordSuggestions = buildKeywordSuggestions;
+  constructor() {
+    this.content.ensureCatalogLoaded();
 
-  ngOnInit(): void {
-    void this.initFromRoute();
+    effect(() => {
+      if (!this.content.catalogReady()) return;
+
+      const key = this.editorBootKey();
+      if (this.bootstrappedKey() === key) return;
+
+      untracked(() => this.bootstrapEditor(key));
+    });
+
+    effect(() => {
+      const createdId = this.content.saveCreatedId();
+      if (!createdId || !this.isCreateRoute()) return;
+
+      untracked(() => {
+        void this.router.navigate(['/protopipe/content', createdId], { replaceUrl: true });
+        this.content.saveCreatedId.set(null);
+        this.bootstrappedKey.set(createdId);
+      });
+    });
+
+    effect(() => {
+      if (this.publishAfterSave() && !this.content.saving() && !this.content.dirty()) {
+        const postId = this.content.editingId();
+        if (postId && postId !== 'new') {
+          untracked(() => {
+            this.publishAfterSave.set(false);
+            this.content.publishNow(postId);
+          });
+        }
+      }
+    });
+
+    effect(() => {
+      if (!this.content.publishSucceeded()) return;
+
+      untracked(() => {
+        if (this.content.consumePublishSucceeded()) {
+          this.messages.add({
+            severity: 'success',
+            summary: 'Published',
+            detail: 'Your site will update via GitHub Actions.',
+            life: 5000,
+          });
+          this.content.clearEditor();
+          void this.router.navigate(['/protopipe/content']);
+        }
+      });
+    });
   }
 
-  /** Static route `content/new` has no :postId param — use route data. */
-  private isCreateRoute(): boolean {
-    return (
-      this.route.snapshot.data['mode'] === 'create' ||
-      this.route.snapshot.paramMap.get('postId') === 'new'
-    );
-  }
-
-  private async initFromRoute(): Promise<void> {
-    await this.content.ensureLoaded();
+  private bootstrapEditor(key: string): void {
     if (this.isCreateRoute()) {
       this.content.startCreate();
-      this.resetEditorState(emptyContentTemplate(), '', null, null);
+      this.content.openWritingSession({
+        template: emptyContentTemplate(),
+        slug: '',
+        scheduleAt: null,
+        selectedKeywordId: null,
+        readOnly: false,
+      });
+      this.bootstrappedKey.set(key);
       return;
     }
-    const id = this.route.snapshot.paramMap.get('postId');
+
+    const id = this.routePostId();
     if (!id) {
       void this.router.navigate(['/protopipe/content']);
       return;
     }
+
     const post = this.content.postById(id);
     if (!post) {
       void this.router.navigate(['/protopipe/content']);
       return;
     }
-    this.content.startEdit(id);
-    this.resetEditorState(
-      post.template ?? emptyContentTemplate(),
-      post.slug,
-      post.publishAt ? new Date(post.publishAt) : null,
-      post.template?.primaryKeywordId ?? null,
-    );
-  }
 
-  private resetEditorState(
-    template: ProtopipeContentTemplate,
-    slug: string,
-    schedule: Date | null,
-    keywordId: string | null,
-  ): void {
-    this.editTemplate.set(template);
-    this.editSlug.set(slug);
-    this.editScheduleAt.set(schedule);
-    this.selectedKeywordId.set(keywordId);
+    this.content.startEdit(id);
+    this.content.openWritingSession({
+      template: post.template ?? emptyContentTemplate(),
+      slug: post.slug,
+      scheduleAt: post.publishAt ? new Date(post.publishAt) : null,
+      selectedKeywordId: post.template?.primaryKeywordId ?? null,
+      readOnly: post.status === 'published',
+    });
+    this.bootstrappedKey.set(key);
   }
 
   backToLibrary(): void {
     this.content.clearEditor();
+    this.bootstrappedKey.set(null);
     void this.router.navigate(['/protopipe/content']);
-  }
-
-  selectKeyword(kw: ProtopipeKeywordDto): void {
-    this.selectedKeywordId.set(kw.id);
-    this.editTemplate.update((t) => applyKeywordToTemplate(t, kw));
-    this.content.markDirty();
-  }
-
-  clearKeyword(): void {
-    this.selectedKeywordId.set(null);
-    this.patchTemplate({ primaryKeywordId: undefined, primaryKeywordPhrase: '' });
   }
 
   insertIntroSuggestion(): void {
     const text = this.introSuggestion();
-    if (text) {
-      this.patchTemplate({ intro: text });
-      this.content.markDirty();
-    }
+    if (text) this.content.patchWritingTemplate({ intro: text });
   }
 
   onHeadlineInput(value: string): void {
-    const t = this.editTemplate();
-    const updates: Partial<ProtopipeContentTemplate> = { h1: value, title: t.title || value };
-    if (!this.editSlug() || this.content.editingId() === 'new') {
-      this.editSlug.set(slugify(value || t.title));
-    }
-    this.patchTemplate(updates);
-    this.content.markDirty();
-  }
-
-  patchTemplate(partial: Partial<ProtopipeContentTemplate>): void {
-    this.editTemplate.update((t) => ({ ...t, ...partial }));
-  }
-
-  patchSection(index: number, partial: Partial<ProtopipeContentSection>): void {
-    this.editTemplate.update((t) => {
-      const sections = [...t.sections];
-      sections[index] = { ...sections[index], ...partial };
-      return { ...t, sections };
+    const s = this.session();
+    if (!s) return;
+    const title = s.template.title || value;
+    const slug =
+      !s.slug || this.content.editingId() === 'new' ? slugify(value || title) : s.slug;
+    this.content.updateWritingSession({
+      slug,
+      template: { ...s.template, h1: value, title },
     });
-    this.content.markDirty();
+  }
+
+  patchTemplate(partial: Parameters<typeof this.content.patchWritingTemplate>[0]): void {
+    this.content.patchWritingTemplate(partial);
+  }
+
+  patchSection(
+    index: number,
+    partial: Parameters<typeof this.content.patchWritingSection>[1],
+  ): void {
+    this.content.patchWritingSection(index, partial);
   }
 
   addSection(): void {
-    this.editTemplate.update((t) => ({
-      ...t,
-      sections: [...t.sections, { h2: '', body: '', images: [] }],
-    }));
-    this.content.markDirty();
+    this.content.addWritingSection();
   }
 
   removeSection(index: number): void {
-    if (this.editTemplate().sections.length <= 1) return;
-    this.editTemplate.update((t) => ({
-      ...t,
-      sections: t.sections.filter((_, i) => i !== index),
-    }));
-    this.content.markDirty();
+    this.content.removeWritingSection(index);
   }
 
-  applySectionHeading(index: number, heading: string): void {
-    this.patchSection(index, { h2: heading });
+  setSchedule(date: Date | null): void {
+    this.content.updateWritingSession({ scheduleAt: date });
+  }
+
+  setSlug(slug: string): void {
+    this.content.updateWritingSession({ slug });
   }
 
   toggleSeoPanel(): void {
-    this.seoPanelOpen.update((v) => !v);
+    this.seoOpen.update((v) => !v);
   }
 
   dismissPublishReview(): void {
     this.content.dismissPublishReview();
   }
 
-  async saveDraft(): Promise<boolean> {
-    const ok = await this.content.savePost({
-      slug: this.editSlug(),
-      template: this.editTemplate(),
-      scheduleAt: this.editScheduleAt()?.toISOString(),
-    });
-    if (ok) {
-      const id = this.content.editingId();
-      if (id && id !== 'new' && this.isCreateRoute()) {
-        void this.router.navigate(['/protopipe/content', id], { replaceUrl: true });
-      }
-    }
-    return ok;
+  saveDraft(): void {
+    this.content.saveFromWritingSession();
   }
 
-  async publish(): Promise<void> {
+  publish(): void {
     if (this.content.dirty()) {
-      const saved = await this.saveDraft();
-      if (!saved) return;
+      this.publishAfterSave.set(true);
+      this.content.saveFromWritingSession();
+      return;
     }
     const postId = this.content.editingId();
     if (!postId || postId === 'new') {
@@ -255,22 +281,14 @@ export class ProtopipeContentEditorComponent implements OnInit {
       });
       return;
     }
-    const ok = await this.content.publishNow(postId);
-    if (ok) {
-      this.messages.add({
-        severity: 'success',
-        summary: 'Published',
-        detail: 'Your site will update via GitHub Actions.',
-        life: 5000,
-      });
-      this.content.clearEditor();
-      void this.router.navigate(['/protopipe/content']);
-    }
+    this.content.publishNow(postId);
   }
 
   isReadOnly(): boolean {
-    const id = this.content.editingId();
-    if (!id || id === 'new') return false;
-    return this.content.postById(id)?.status === 'published';
+    return this.session()?.readOnly ?? false;
+  }
+
+  focusSection(index: number): void {
+    this.content.setFocusedSection(index);
   }
 }

@@ -17,6 +17,18 @@
   font-family: 'Inter', 'Poppins', Arial, sans-serif;
 }
 
+.shell-main--writing {
+  padding: 0;
+  min-height: calc(100vh - 60px);
+}
+
+#app-sidebar-alpha:has(app-protopipe-writing-tools) {
+  .overflow-y-auto {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
 // Theme-aware sidebar styling
 .alpha-sidebar {
   border-right: 1px solid var(--surface-border);

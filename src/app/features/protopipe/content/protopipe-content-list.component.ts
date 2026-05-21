@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { ProgressSpinner } from 'primeng/progressspinner';
@@ -16,12 +16,12 @@ import type { ProtopipeContentPost } from '../protopipe.models';
   templateUrl: './protopipe-content-list.component.html',
   styleUrl: './protopipe-content-list.component.scss',
 })
-export class ProtopipeContentListComponent implements OnInit {
+export class ProtopipeContentListComponent {
   protected readonly content = inject(ProtopipeContentService);
   private readonly router = inject(Router);
 
   readonly loading = this.content.loading;
-  readonly error = this.content.error;
+  readonly error = this.content.loadError;
   readonly activeTab = this.content.activeTab;
   readonly filteredPosts = this.content.filteredPosts;
 
@@ -31,8 +31,8 @@ export class ProtopipeContentListComponent implements OnInit {
     { label: 'Drafts', value: 'draft' as ContentTab },
   ];
 
-  ngOnInit(): void {
-    void this.content.ensureLoaded();
+  constructor() {
+    this.content.ensureCatalogLoaded();
   }
 
   onTabChange(tab: ContentTab): void {

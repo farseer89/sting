@@ -101,6 +101,28 @@ export function writingHints(template: ProtopipeContentTemplate): WritingHint[] 
   ];
 }
 
+export interface ArticleIdea {
+  keywordId: string;
+  phrase: string;
+  angle: string;
+}
+
+/** Topic angles from the keyword plan for the writing tools panel. */
+export function buildArticleIdeas(
+  keywords: ProtopipeKeywordDto[],
+  selectedKeywordId: string | null,
+): ArticleIdea[] {
+  return keywords
+    .filter((k) => k.id !== selectedKeywordId)
+    .map((k) => ({
+      keywordId: k.id,
+      phrase: k.phrase,
+      angle:
+        k.notes?.trim() ||
+        `Guide for couples searching “${k.phrase}” — process, benefits, and how to book.`,
+    }));
+}
+
 export function serpPreview(input: {
   title: string;
   metaDescription: string;

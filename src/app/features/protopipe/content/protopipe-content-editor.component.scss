@@ -104,9 +104,15 @@
   font-family: 'Source Serif 4', Georgia, 'Times New Roman', serif;
 }
 
-.doc-canvas__keywords {
-  margin-bottom: 1.5rem;
+.doc-canvas__topic {
+  margin: 0 0 1.25rem;
+  font-size: 0.85rem;
+  color: #6b6560;
   font-family: var(--app-font-family, system-ui, sans-serif);
+
+  strong {
+    color: #3d3a33;
+  }
 }
 
 .doc-canvas__keywords-label {
@@ -252,6 +258,28 @@
 
 .doc-section {
   margin-bottom: 2rem;
+  border-radius: 4px;
+  transition: background 0.15s;
+
+  &--focused {
+    background: rgb(255 255 255 / 60%);
+  }
+}
+
+.doc-section__figure {
+  margin: 1rem 0 0;
+
+  img {
+    max-width: 100%;
+    border-radius: 6px;
+  }
+
+  figcaption {
+    font-size: 0.8rem;
+    color: #8a8275;
+    margin-top: 0.35rem;
+    font-family: var(--app-font-family, system-ui, sans-serif);
+  }
 }
 
 .doc-section__chips {

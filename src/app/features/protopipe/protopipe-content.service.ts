@@ -1,15 +1,23 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import type {
   CreateContentPostRequest,
   ProtopipeContentPost,
-  ProtopipeContentPostResponse,
   ProtopipeContentPostStatus,
   ProtopipeContentTemplate,
   ProtopipeKeywordDto,
   SeoValidationResult,
   UpdateContentPostRequest,
 } from '@hive/contracts';
+import { forkJoin, map, switchMap, throwError } from 'rxjs';
+import { applyKeywordToTemplate } from './content/content-template-suggestions';
+import type { ContentCatalog } from './content/content-catalog.model';
+import {
+  cloneTemplate,
+  patchSection,
+  type WritingSession,
+} from './content/protopipe-writing-session';
 import { parseProtopipeApiError } from './protopipe-http.util';
 import { ProtopipeApiService } from './protopipe-api.service';
 
@@ -32,24 +40,52 @@ export function emptyContentTemplate(): ProtopipeContentTemplate {
 export class ProtopipeContentService {
   private readonly api = inject(ProtopipeApiService);
 
-  private readonly _siteId = signal<string | null>(null);
-  private readonly _posts = signal<ProtopipeContentPost[]>([]);
-  private readonly _planKeywords = signal<ProtopipeKeywordDto[]>([]);
   private readonly _activeTab = signal<ContentTab>('draft');
-  private readonly _loading = signal(false);
   private readonly _saving = signal(false);
   private readonly _publishing = signal(false);
   private readonly _error = signal<string | null>(null);
   private readonly _editingId = signal<string | null>(null);
   private readonly _dirty = signal(false);
   private readonly _seoValidation = signal<SeoValidationResult | null>(null);
-  /** Set only after a failed publish — not on save. */
   private readonly _publishReview = signal(false);
+  private readonly _writingSession = signal<WritingSession | null>(null);
+  /** Fires after a successful create (for editor route replace). */
+  readonly saveCreatedId = signal<string | null>(null);
+  readonly publishSucceeded = signal(false);
 
-  readonly posts = this._posts.asReadonly();
-  readonly planKeywords = this._planKeywords.asReadonly();
+  /** Reactive catalog load (bootstrap → posts + plan keywords). */
+  readonly catalogResource = rxResource({
+    stream: () =>
+      this.api.bootstrap$().pipe(
+        switchMap((boot) => {
+          const siteId = boot.primarySiteId || boot.sites[0]?.id;
+          if (!siteId) {
+            return throwError(() => new Error('No site available'));
+          }
+          return forkJoin({
+            posts: this.api.listContent$(siteId),
+            plan: this.api.getPlan$(siteId),
+          }).pipe(
+            map(
+              ({ posts, plan }): ContentCatalog => ({
+                siteId,
+                posts: posts.posts,
+                keywords: plan.keywords,
+              }),
+            ),
+          );
+        }),
+      ),
+  });
+
+  readonly catalog = computed(() => this.catalogResource.value());
+  readonly siteId = computed(() => this.catalog()?.siteId ?? null);
+  readonly posts = computed(() => this.catalog()?.posts ?? []);
+  readonly planKeywords = computed(() => this.catalog()?.keywords ?? []);
+  readonly loading = this.catalogResource.isLoading;
+  readonly catalogReady = computed(() => this.catalogResource.hasValue());
+
   readonly activeTab = this._activeTab.asReadonly();
-  readonly loading = this._loading.asReadonly();
   readonly saving = this._saving.asReadonly();
   readonly publishing = this._publishing.asReadonly();
   readonly error = this._error.asReadonly();
@@ -57,14 +93,16 @@ export class ProtopipeContentService {
   readonly dirty = this._dirty.asReadonly();
   readonly seoValidation = this._seoValidation.asReadonly();
   readonly publishReview = this._publishReview.asReadonly();
+  readonly writingSession = this._writingSession.asReadonly();
+  readonly inWritingMode = computed(() => this._writingSession() !== null);
 
   readonly publishedPosts = computed(() =>
-    this._posts().filter((p) => p.status === 'published'),
+    this.posts().filter((p) => p.status === 'published'),
   );
   readonly scheduledPosts = computed(() =>
-    this._posts().filter((p) => p.status === 'scheduled'),
+    this.posts().filter((p) => p.status === 'scheduled'),
   );
-  readonly draftPosts = computed(() => this._posts().filter((p) => p.status === 'draft'));
+  readonly draftPosts = computed(() => this.posts().filter((p) => p.status === 'draft'));
 
   readonly filteredPosts = computed(() => {
     const tab = this._activeTab();
@@ -73,40 +111,28 @@ export class ProtopipeContentService {
     return this.draftPosts();
   });
 
-  /** Blocking issues from last publish attempt only. */
   readonly publishBlockers = computed(() => {
     const v = this._seoValidation();
     if (!v || !this._publishReview()) return [];
     return v.errors;
   });
 
-  async ensureLoaded(): Promise<void> {
-    if (this._siteId() && this._planKeywords().length > 0) {
-      return;
+  readonly loadError = computed(() => {
+    const err = this.catalogResource.error();
+    if (err) {
+      return parseProtopipeApiError(err, 'Failed to load content');
     }
-    await this.reload();
+    return this._error();
+  });
+
+  reload(): void {
+    this._error.set(null);
+    this.catalogResource.reload();
   }
 
-  async reload(): Promise<void> {
-    this._loading.set(true);
-    this._error.set(null);
-    try {
-      const boot = await this.api.bootstrap();
-      const siteId = boot.primarySiteId || boot.sites[0]?.id;
-      if (!siteId) {
-        throw new Error('No site available');
-      }
-      this._siteId.set(siteId);
-      const [{ posts }, plan] = await Promise.all([
-        this.api.listContent(siteId),
-        this.api.getPlan(siteId),
-      ]);
-      this._posts.set(posts);
-      this._planKeywords.set(plan.keywords);
-    } catch (err) {
-      this._error.set(parseProtopipeApiError(err, 'Failed to load content'));
-    } finally {
-      this._loading.set(false);
+  ensureCatalogLoaded(): void {
+    if (!this.catalogResource.hasValue()) {
+      this.reload();
     }
   }
 
@@ -133,6 +159,112 @@ export class ProtopipeContentService {
     this._dirty.set(false);
     this._seoValidation.set(null);
     this._publishReview.set(false);
+    this._writingSession.set(null);
+    this.saveCreatedId.set(null);
+    this.publishSucceeded.set(false);
+  }
+
+  consumePublishSucceeded(): boolean {
+    if (!this.publishSucceeded()) return false;
+    this.publishSucceeded.set(false);
+    return true;
+  }
+
+  openWritingSession(
+    session: Omit<WritingSession, 'focusedSectionIndex'> & { focusedSectionIndex?: number },
+  ): void {
+    this._writingSession.set({
+      ...session,
+      template: cloneTemplate(session.template),
+      focusedSectionIndex: session.focusedSectionIndex ?? 0,
+    });
+  }
+
+  updateWritingSession(patch: Partial<WritingSession>, options?: { markDirty?: boolean }): void {
+    const current = this._writingSession();
+    if (!current) return;
+    this._writingSession.set({ ...current, ...patch });
+    if (options?.markDirty !== false) {
+      this.markDirty();
+    }
+  }
+
+  patchWritingTemplate(partial: Partial<ProtopipeContentTemplate>): void {
+    const s = this._writingSession();
+    if (!s) return;
+    this.updateWritingSession({ template: { ...s.template, ...partial } });
+  }
+
+  patchWritingSection(index: number, partial: Parameters<typeof patchSection>[2]): void {
+    const s = this._writingSession();
+    if (!s) return;
+    this.updateWritingSession({ template: patchSection(s.template, index, partial) });
+  }
+
+  reorderWritingSections(previousIndex: number, currentIndex: number): void {
+    const s = this._writingSession();
+    if (!s || previousIndex === currentIndex) return;
+    const sections = [...s.template.sections];
+    const [moved] = sections.splice(previousIndex, 1);
+    sections.splice(currentIndex, 0, moved);
+    let focused = s.focusedSectionIndex;
+    if (focused === previousIndex) focused = currentIndex;
+    else if (previousIndex < focused && currentIndex >= focused) focused -= 1;
+    else if (previousIndex > focused && currentIndex <= focused) focused += 1;
+    this.updateWritingSession({ template: { ...s.template, sections }, focusedSectionIndex: focused });
+  }
+
+  addWritingSection(): void {
+    const s = this._writingSession();
+    if (!s || s.readOnly) return;
+    this.updateWritingSession({
+      template: {
+        ...s.template,
+        sections: [...s.template.sections, { h2: '', body: '', images: [] }],
+      },
+      focusedSectionIndex: s.template.sections.length,
+    });
+  }
+
+  removeWritingSection(index: number): void {
+    const s = this._writingSession();
+    if (!s || s.readOnly || s.template.sections.length <= 1) return;
+    const sections = s.template.sections.filter((_, i) => i !== index);
+    this.updateWritingSession({
+      template: { ...s.template, sections },
+      focusedSectionIndex: Math.min(s.focusedSectionIndex, sections.length - 1),
+    });
+  }
+
+  applyKeywordToWriting(kw: ProtopipeKeywordDto): void {
+    const s = this._writingSession();
+    if (!s || s.readOnly) return;
+    this.updateWritingSession({
+      template: applyKeywordToTemplate(s.template, kw),
+      selectedKeywordId: kw.id,
+    });
+  }
+
+  addImageToWritingSection(sectionIndex: number, url: string, alt: string): void {
+    const s = this._writingSession();
+    if (!s || s.readOnly) return;
+    const section = s.template.sections[sectionIndex];
+    if (!section) return;
+    const images = [...(section.images ?? []), { url, alt }];
+    this.patchWritingSection(sectionIndex, { images });
+    this.updateWritingSession({ focusedSectionIndex: sectionIndex }, { markDirty: false });
+  }
+
+  setFocusedSection(index: number): void {
+    const s = this._writingSession();
+    if (!s) return;
+    this._writingSession.set({ ...s, focusedSectionIndex: index });
+  }
+
+  getWritingSnapshot(): { slug: string; template: ProtopipeContentTemplate; scheduleAt: Date | null } | null {
+    const s = this._writingSession();
+    if (!s) return null;
+    return { slug: s.slug, template: s.template, scheduleAt: s.scheduleAt };
   }
 
   dismissPublishReview(): void {
@@ -143,15 +275,31 @@ export class ProtopipeContentService {
     this._dirty.set(true);
   }
 
-  async savePost(input: {
+  private patchCatalogPosts(updater: (posts: ProtopipeContentPost[]) => ProtopipeContentPost[]): void {
+    const cat = this.catalog();
+    if (!cat) return;
+    this.catalogResource.set({ ...cat, posts: updater(cat.posts) });
+  }
+
+  saveFromWritingSession(): void {
+    const snap = this.getWritingSnapshot();
+    if (!snap) return;
+    this.savePost({
+      slug: snap.slug,
+      template: snap.template,
+      scheduleAt: snap.scheduleAt?.toISOString(),
+    });
+  }
+
+  savePost(input: {
     slug: string;
     template: ProtopipeContentTemplate;
     scheduleAt?: string;
-  }): Promise<boolean> {
-    const siteId = this._siteId();
+  }): void {
+    const siteId = this.siteId();
     if (!siteId) {
       this._error.set('No site loaded');
-      return false;
+      return;
     }
 
     const publishAt = input.scheduleAt?.trim() || undefined;
@@ -166,63 +314,78 @@ export class ProtopipeContentService {
 
     this._saving.set(true);
     this._error.set(null);
-    try {
-      const editingId = this._editingId();
-      let response: ProtopipeContentPostResponse;
-      if (editingId === 'new') {
-        response = await this.api.createContent(siteId, body as CreateContentPostRequest);
-        this._posts.update((list) => [response.post, ...list]);
-        this._editingId.set(response.post.id);
-      } else if (editingId) {
-        response = await this.api.updateContent(siteId, editingId, body);
-        this._posts.update((list) => list.map((p) => (p.id === response.post.id ? response.post : p)));
-      } else {
-        return false;
-      }
-      this._dirty.set(false);
-      return true;
-    } catch (err) {
-      this._error.set(parseProtopipeApiError(err, 'Failed to save post'));
-      return false;
-    } finally {
+
+    const editingId = this._editingId();
+    const request$ =
+      editingId === 'new'
+        ? this.api.createContent$(siteId, body as CreateContentPostRequest)
+        : editingId
+          ? this.api.updateContent$(siteId, editingId, body)
+          : null;
+
+    if (!request$) {
       this._saving.set(false);
+      return;
     }
+
+    request$.subscribe({
+      next: (response) => {
+        if (editingId === 'new') {
+          this.patchCatalogPosts((list) => [response.post, ...list]);
+          this._editingId.set(response.post.id);
+          this.saveCreatedId.set(response.post.id);
+        } else {
+          this.patchCatalogPosts((list) =>
+            list.map((p) => (p.id === response.post.id ? response.post : p)),
+          );
+          this.saveCreatedId.set(null);
+        }
+        this._dirty.set(false);
+        this._saving.set(false);
+      },
+      error: (err) => {
+        this._error.set(parseProtopipeApiError(err, 'Failed to save post'));
+        this._saving.set(false);
+      },
+    });
   }
 
-  async publishNow(postId: string): Promise<boolean> {
-    const siteId = this._siteId();
+  publishNow(postId: string): void {
+    const siteId = this.siteId();
     if (!siteId) {
       this._error.set('No site loaded');
-      return false;
+      return;
     }
 
     this._publishing.set(true);
     this._error.set(null);
     this._publishReview.set(false);
-    try {
-      const { post } = await this.api.publishContent(siteId, postId);
-      this._posts.update((list) => list.map((p) => (p.id === post.id ? post : p)));
-      this._activeTab.set('published');
-      this._seoValidation.set(null);
-      return true;
-    } catch (err) {
-      if (err instanceof HttpErrorResponse && err.status === 409) {
-        const body = err.error as { seoValidation?: SeoValidationResult } | null;
-        if (body?.seoValidation) {
-          this._seoValidation.set(body.seoValidation);
-          this._publishReview.set(true);
+
+    this.api.publishContent$(siteId, postId).subscribe({
+      next: ({ post }) => {
+        this.patchCatalogPosts((list) => list.map((p) => (p.id === post.id ? post : p)));
+        this._activeTab.set('published');
+        this._seoValidation.set(null);
+        this._publishing.set(false);
+        this.publishSucceeded.set(true);
+      },
+      error: (err) => {
+        if (err instanceof HttpErrorResponse && err.status === 409) {
+          const body = err.error as { seoValidation?: SeoValidationResult } | null;
+          if (body?.seoValidation) {
+            this._seoValidation.set(body.seoValidation);
+            this._publishReview.set(true);
+          }
+          this._error.set(null);
+        } else {
+          this._error.set(parseProtopipeApiError(err, 'Failed to publish'));
         }
-        this._error.set(null);
-        return false;
-      }
-      this._error.set(parseProtopipeApiError(err, 'Failed to publish'));
-      return false;
-    } finally {
-      this._publishing.set(false);
-    }
+        this._publishing.set(false);
+      },
+    });
   }
 
   postById(id: string): ProtopipeContentPost | undefined {
-    return this._posts().find((p) => p.id === id);
+    return this.posts().find((p) => p.id === id);
   }
 }

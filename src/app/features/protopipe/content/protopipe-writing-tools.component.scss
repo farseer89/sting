@@ -1,0 +1,227 @@
+.write-tools {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0.75rem 0;
+  color: var(--text-color);
+}
+
+.write-tools__brand {
+  padding: 0 1rem 1rem;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.write-tools__exit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--text-color-secondary);
+  text-decoration: none;
+  margin-bottom: 0.5rem;
+
+  &:hover {
+    color: var(--text-color);
+  }
+}
+
+.write-tools__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.write-tools__block {
+  padding: 1rem;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.write-tools__heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.write-tools__heading {
+  margin: 0 0 0.35rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-color-secondary);
+  font-weight: 600;
+}
+
+.write-tools__hint {
+  margin: 0 0 0.65rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--text-color-secondary);
+
+  a {
+    color: var(--p-primary-600);
+  }
+}
+
+.write-tools__link {
+  border: none;
+  background: none;
+  color: var(--p-primary-600);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.25rem 0;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.write-tools__ideas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.idea-card {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  background: var(--surface-card);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+
+  &:hover {
+    border-color: var(--p-primary-200);
+    background: var(--surface-hover);
+  }
+}
+
+.idea-card__phrase {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+.idea-card__angle {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-color-secondary);
+  line-height: 1.35;
+}
+
+.outline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.outline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: var(--surface-ground);
+  cursor: pointer;
+
+  &--active {
+    border-color: var(--p-primary-200);
+    background: var(--p-primary-50);
+  }
+
+  &.cdk-drag-preview {
+    box-shadow: 0 4px 12px rgb(0 0 0 / 12%);
+  }
+}
+
+.outline-item__handle {
+  color: var(--text-color-secondary);
+  font-size: 0.75rem;
+  margin-top: 0.15rem;
+  cursor: grab;
+}
+
+.outline-item__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.outline-item__label {
+  display: block;
+  font-size: 0.82rem;
+  line-height: 1.3;
+}
+
+.outline-item__meta {
+  font-size: 0.7rem;
+  color: var(--text-color-secondary);
+}
+
+.image-drop {
+  border: 2px dashed var(--surface-border);
+  border-radius: 8px;
+  padding: 1.25rem 0.75rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-color-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  transition: border-color 0.12s, background 0.12s;
+
+  &--active {
+    border-color: var(--p-primary-400);
+    background: var(--p-primary-50);
+  }
+
+  .pi-image {
+    font-size: 1.25rem;
+  }
+}
+
+.image-thumb {
+  margin-bottom: 0.5rem;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--surface-border);
+
+  img {
+    display: block;
+    width: 100%;
+    height: 72px;
+    object-fit: cover;
+  }
+}
+
+.image-thumb__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.72rem;
+  background: var(--surface-section);
+
+  button {
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--text-color-secondary);
+    font-size: 1rem;
+    line-height: 1;
+  }
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.35;
+}

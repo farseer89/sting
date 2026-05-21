@@ -6,6 +6,10 @@ import type {
   PutUserContentHelperRequest,
   UserContentHelperDto,
 } from '@hive/contracts';
+import {
+  PROTOPIPE_AGENT_POLL_INTERVAL_MS,
+  PROTOPIPE_AGENT_POLL_MAX_ATTEMPTS,
+} from './protopipe.constants';
 import { parseProtopipeApiError } from './protopipe-http.util';
 import { ProtopipeApiService } from './protopipe-api.service';
 import { ProtopipeStrategyService } from './protopipe-strategy.service';
@@ -67,18 +71,31 @@ export class ProtopipeAgentService {
   }
 
   private async pollArticleIdeas(siteId: string, runId: string): Promise<ArticleIdeasResponse> {
-    for (let i = 0; i < 60; i++) {
-      await new Promise((r) => setTimeout(r, 500));
+    let lastStatus = 'queued';
+    for (let i = 0; i < PROTOPIPE_AGENT_POLL_MAX_ATTEMPTS; i++) {
+      await new Promise((r) => setTimeout(r, PROTOPIPE_AGENT_POLL_INTERVAL_MS));
       const run = await firstValueFrom(this.api.getAgentRun$(siteId, runId));
+      lastStatus = run?.run.status ?? lastStatus;
+
       if (run?.run.status === 'succeeded') {
-        const fresh = await this.api.getArticleIdeas(siteId);
-        return fresh;
+        const out = run.run.output as { ideas?: ArticleIdeaDto[]; generatedAt?: string } | undefined;
+        if (out?.ideas?.length) {
+          return {
+            ideas: out.ideas,
+            generatedAt: out.generatedAt ?? new Date().toISOString(),
+            runId,
+            pending: false,
+          };
+        }
+        return this.api.getArticleIdeas(siteId);
       }
       if (run?.run.status === 'failed') {
-        throw new Error('Idea generation failed');
+        throw new Error(run.run.error ?? 'Idea generation failed');
       }
     }
-    throw new Error('Idea generation timed out');
+    throw new Error(
+      `Idea generation timed out (last status: ${lastStatus}). Check server logs for run ${runId}.`,
+    );
   }
 
   async refreshArticleIdeas(): Promise<void> {

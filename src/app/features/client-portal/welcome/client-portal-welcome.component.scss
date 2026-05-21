@@ -1,0 +1,34 @@
+.portal-page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  box-sizing: border-box;
+  background: var(--surface-ground, #eff3f8);
+}
+
+.portal-card {
+  width: min(100%, 24rem);
+  text-align: center;
+}
+
+.status {
+  margin-top: 1rem;
+  color: var(--text-color-secondary);
+}
+
+.error {
+  color: var(--p-red-600, #b42318);
+}
+
+.hint {
+  color: var(--text-color-secondary);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0 0 0.75rem;
+}

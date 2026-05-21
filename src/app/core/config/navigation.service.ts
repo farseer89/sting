@@ -55,6 +55,49 @@ export class NavigationService {
             routerLink: '/protopipe/settings',
             visible: true,
           },
+          {
+            id: 'leads',
+            label: 'Leads',
+            icon: 'pi pi-inbox',
+            routerLink: '/protopipe/leads',
+            visible: true,
+          },
+        ],
+      },
+      {
+        id: 'site-builder',
+        label: 'Site Builder',
+        icon: 'pi pi-th-large',
+        visible: true,
+        items: [
+          {
+            id: 'sb-components',
+            label: 'Components',
+            icon: 'pi pi-box',
+            routerLink: '/protopipe/site-builder/components',
+            visible: true,
+          },
+          {
+            id: 'sb-templates',
+            label: 'Templates',
+            icon: 'pi pi-clone',
+            disabled: true,
+            visible: true,
+          },
+          {
+            id: 'sb-pages',
+            label: 'Pages',
+            icon: 'pi pi-file',
+            disabled: true,
+            visible: true,
+          },
+          {
+            id: 'sb-theme',
+            label: 'Theme tokens',
+            icon: 'pi pi-palette',
+            disabled: true,
+            visible: true,
+          },
         ],
       },
       {
@@ -112,6 +155,6 @@ export class NavigationService {
   }
 
   getDefaultOpenMenuIds(): string[] {
-    return ['my-sites', 'admin'];
+    return ['my-sites', 'site-builder', 'admin'];
   }
 }

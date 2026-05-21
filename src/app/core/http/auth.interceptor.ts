@@ -2,17 +2,24 @@ import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { BehaviorSubject, throwError } from 'rxjs';
 import { catchError, filter, switchMap, take } from 'rxjs/operators';
+import { ClientAuthService } from '../../features/client-portal/client-auth.service';
 import { AuthService } from '../auth/auth.service';
 import { environment } from '@env/environment';
 
 let isRefreshing = false;
 const refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
+function isClientPortalApi(url: string): boolean {
+  return url.includes('/api/v2/client/');
+}
+
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
+  const clientAuth = inject(ClientAuthService);
   const apiBase = environment.MICRO_SOCKET_ENDPOINT || environment.MICRO_BASE_URL || '';
   const isApi = !!apiBase && req.url.startsWith(apiBase);
-  const token = auth.getToken();
+  const isClientApi = isApi && isClientPortalApi(req.url);
+  const token = isClientApi ? clientAuth.getToken() : auth.getToken();
 
   if (isApi && token) {
     req = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
@@ -21,6 +28,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError((error) => {
       if (!(error instanceof HttpErrorResponse) || error.status !== 401 || !isApi) {
+        return throwError(() => error);
+      }
+      if (isClientApi) {
+        clientAuth.clearSession();
         return throwError(() => error);
       }
       if (!auth.hasStoredProfile()) {

@@ -1,0 +1,15 @@
+<main class="portal-page">
+  <div class="portal-card">
+    @if (auth.loading()) {
+      <p-progressSpinner ariaLabel="Signing you in" />
+      <p class="status">Signing you in…</p>
+    } @else if (auth.error(); as err) {
+      <h1>Link unavailable</h1>
+      <p class="error">{{ err }}</p>
+      <p class="hint">Open the link from your latest email, or contact your artist to request a new one.</p>
+    } @else if (!token()) {
+      <h1>Welcome</h1>
+      <p class="hint">Use the secure link from your email to access your client portal.</p>
+    }
+  </div>
+</main>

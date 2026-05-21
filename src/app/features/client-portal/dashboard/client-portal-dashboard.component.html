@@ -1,0 +1,30 @@
+<main class="portal-shell">
+  <header class="portal-header">
+    <span class="brand">Client Portal</span>
+    <p-button label="Sign out" severity="secondary" [text]="true" (onClick)="signOut()" />
+  </header>
+
+  @if (auth.loading()) {
+    <div class="portal-center">
+      <p-progressSpinner ariaLabel="Loading" />
+    </div>
+  } @else {
+    <section class="portal-hero">
+      <h1>Welcome{{ displayName() }}</h1>
+      <p>Your engagement is being set up. We will notify you when onboarding is ready.</p>
+    </section>
+
+    <p-card header="Coming soon" class="coming-soon">
+      <ul>
+        <li>Onboarding questionnaire</li>
+        <li>Contract signing</li>
+        <li>File uploads &amp; deliverables</li>
+        <li>Invoices &amp; payments</li>
+      </ul>
+    </p-card>
+
+    <div class="portal-footer-cta">
+      <p-button label="Contact your artist" severity="secondary" [disabled]="true" />
+    </div>
+  }
+</main>

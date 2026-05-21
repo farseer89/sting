@@ -27,6 +27,10 @@ import type {
   SiteKnowledgeListResponse,
   UpdateContentPostRequest,
   UserContentHelperResponse,
+  ProtopipeLeadsListResponse,
+  ProtopipeLeadDetailResponse,
+  ConvertLeadResponse,
+  SiteBuilderComponentsResponse,
 } from '@hive/contracts';
 import { Observable, firstValueFrom } from 'rxjs';
 import { protopipeApiUrl } from './protopipe-http.util';
@@ -257,6 +261,39 @@ export class ProtopipeApiService {
       this.http.patch<SiteKnowledgeListResponse>(
         protopipeApiUrl(ProtopipeAdminEndpoints.patchSiteKnowledge.path, { siteId }),
         body,
+      ),
+    );
+  }
+
+  getSiteBuilderComponents(): Promise<SiteBuilderComponentsResponse> {
+    return firstValueFrom(
+      this.http.get<SiteBuilderComponentsResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.siteBuilderComponents.path),
+      ),
+    );
+  }
+
+  listLeads(siteId: string): Promise<ProtopipeLeadsListResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeLeadsListResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.leadsList.path, { siteId }),
+      ),
+    );
+  }
+
+  getLead(siteId: string, leadId: string): Promise<ProtopipeLeadDetailResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeLeadDetailResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.leadDetail.path, { siteId, leadId }),
+      ),
+    );
+  }
+
+  convertLead(siteId: string, leadId: string): Promise<ConvertLeadResponse> {
+    return firstValueFrom(
+      this.http.post<ConvertLeadResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.leadConvert.path, { siteId, leadId }),
+        {},
       ),
     );
   }

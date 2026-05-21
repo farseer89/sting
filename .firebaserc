@@ -2,5 +2,19 @@
   "projects": {
     "default": "stingbase",
     "sting-protopipe": "sting-protopipe"
+  },
+  "targets": {
+    "stingbase": {
+      "hosting": {
+        "sting": ["sting-protopipe"],
+        "client-portal": ["clients-droppin-shop"]
+      }
+    },
+    "sting-protopipe": {
+      "hosting": {
+        "sting": ["sting-protopipe"],
+        "client-portal": ["clients-droppin-shop"]
+      }
+    }
   }
 }

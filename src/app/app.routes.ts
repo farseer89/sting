@@ -2,10 +2,33 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { devRoutesGuard } from './core/guards/dev-routes.guard';
 import { guestGuard } from './core/guards/guest.guard';
+import { clientAuthGuard } from './features/client-portal/guards/client-auth.guard';
+import { operatorOnlyGuard } from './features/client-portal/guards/operator-only.guard';
 import { protopipeContentUnsavedGuard } from './features/protopipe/guards/protopipe-content-unsaved.guard';
 import { protopipeUnsavedGuard } from './features/protopipe/guards/protopipe-unsaved.guard';
 
 export const routes: Routes = [
+  {
+    path: 'portal',
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'welcome' },
+      {
+        path: 'welcome',
+        loadComponent: () =>
+          import('./features/client-portal/welcome/client-portal-welcome.component').then(
+            (m) => m.ClientPortalWelcomeComponent,
+          ),
+      },
+      {
+        path: 'dashboard',
+        canActivate: [clientAuthGuard],
+        loadComponent: () =>
+          import('./features/client-portal/dashboard/client-portal-dashboard.component').then(
+            (m) => m.ClientPortalDashboardComponent,
+          ),
+      },
+    ],
+  },
   {
     path: 'login',
     canActivate: [guestGuard],
@@ -14,7 +37,7 @@ export const routes: Routes = [
   {
     path: '',
     loadComponent: () => import('./layout/shell/shell.component').then((m) => m.ShellComponent),
-    canActivate: [authGuard],
+    canActivate: [authGuard, operatorOnlyGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'protopipe' },
       {
@@ -73,6 +96,27 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/protopipe/admin/protopipe-agent-control.component').then(
             (m) => m.ProtopipeAgentControlComponent,
+          ),
+      },
+      {
+        path: 'protopipe/leads',
+        loadComponent: () =>
+          import('./features/protopipe/leads/protopipe-leads-list.component').then(
+            (m) => m.ProtopipeLeadsListComponent,
+          ),
+      },
+      {
+        path: 'protopipe/site-builder/components',
+        loadComponent: () =>
+          import('./features/protopipe/site-builder/site-builder-components.component').then(
+            (m) => m.SiteBuilderComponentsComponent,
+          ),
+      },
+      {
+        path: 'protopipe/site-builder/components/:componentId',
+        loadComponent: () =>
+          import('./features/protopipe/site-builder/site-builder-component-detail.component').then(
+            (m) => m.SiteBuilderComponentDetailComponent,
           ),
       },
       {

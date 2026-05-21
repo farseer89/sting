@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { devRoutesGuard } from './core/guards/dev-routes.guard';
 import { guestGuard } from './core/guards/guest.guard';
+import { protopipeContentUnsavedGuard } from './features/protopipe/guards/protopipe-content-unsaved.guard';
 import { protopipeUnsavedGuard } from './features/protopipe/guards/protopipe-unsaved.guard';
 
 export const routes: Routes = [
@@ -39,8 +40,24 @@ export const routes: Routes = [
       {
         path: 'protopipe/content',
         loadComponent: () =>
-          import('./features/protopipe/content/protopipe-content.component').then(
-            (m) => m.ProtopipeContentComponent,
+          import('./features/protopipe/content/protopipe-content-list.component').then(
+            (m) => m.ProtopipeContentListComponent,
+          ),
+      },
+      {
+        path: 'protopipe/content/new',
+        canDeactivate: [protopipeContentUnsavedGuard],
+        loadComponent: () =>
+          import('./features/protopipe/content/protopipe-content-editor.component').then(
+            (m) => m.ProtopipeContentEditorComponent,
+          ),
+      },
+      {
+        path: 'protopipe/content/:postId',
+        canDeactivate: [protopipeContentUnsavedGuard],
+        loadComponent: () =>
+          import('./features/protopipe/content/protopipe-content-editor.component').then(
+            (m) => m.ProtopipeContentEditorComponent,
           ),
       },
       {

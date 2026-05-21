@@ -1,0 +1,230 @@
+<p-toast />
+
+@if (loading()) {
+  <div class="doc-editor doc-editor--loading">
+    <p-progressSpinner strokeWidth="4" ariaLabel="Loading editor" />
+  </div>
+} @else {
+  <div class="doc-editor">
+    <header class="doc-editor__bar">
+      <button type="button" class="doc-editor__back" (click)="backToLibrary()">
+        <i class="pi pi-arrow-left" aria-hidden="true"></i>
+        Content
+      </button>
+      <div class="doc-editor__bar-center">
+        <span class="doc-editor__status" [class.doc-editor__status--dirty]="content.dirty()">
+          {{ saveLabel() }}
+        </span>
+      </div>
+      <div class="doc-editor__bar-actions">
+        @if (!isReadOnly()) {
+          <p-datepicker
+            [ngModel]="editScheduleAt()"
+            (ngModelChange)="editScheduleAt.set($event); content.markDirty()"
+            [showTime]="true"
+            hourFormat="12"
+            dateFormat="M d"
+            [showIcon]="true"
+            placeholder="Schedule"
+            inputStyleClass="doc-editor__schedule-input"
+          />
+          <p-button
+            [label]="saveLabel()"
+            [outlined]="true"
+            [loading]="saving()"
+            (onClick)="saveDraft()"
+          />
+          <p-button label="Publish" icon="pi pi-upload" [loading]="publishing()" (onClick)="publish()" />
+        }
+      </div>
+    </header>
+
+    @if (error()) {
+      <p class="doc-editor__banner doc-editor__banner--error" role="alert">{{ error() }}</p>
+    }
+
+    <div class="doc-editor__layout">
+      <main class="doc-canvas">
+        <div class="doc-canvas__keywords">
+          <span class="doc-canvas__keywords-label">Writing for</span>
+          <div class="doc-canvas__chips">
+            @for (kw of planKeywords(); track kw.id) {
+              <button
+                type="button"
+                class="keyword-chip"
+                [class.keyword-chip--active]="selectedKeywordId() === kw.id"
+                (click)="selectKeyword(kw)"
+              >
+                {{ kw.phrase }}
+              </button>
+            }
+            @if (selectedKeywordId()) {
+              <button type="button" class="keyword-chip keyword-chip--clear" (click)="clearKeyword()">
+                Clear
+              </button>
+            }
+          </div>
+        </div>
+
+        @if (introSuggestion()) {
+          <button type="button" class="doc-suggestion" (click)="insertIntroSuggestion()">
+            <span class="doc-suggestion__label">Suggested opening</span>
+            <span class="doc-suggestion__text">{{ introSuggestion() }}</span>
+            <span class="doc-suggestion__action">Insert</span>
+          </button>
+        }
+
+        <input
+          class="doc-canvas__h1"
+          type="text"
+          [ngModel]="editTemplate().h1"
+          (ngModelChange)="onHeadlineInput($event)"
+          placeholder="Article title"
+          [readonly]="isReadOnly()"
+          aria-label="Article headline"
+        />
+
+        <textarea
+          class="doc-canvas__intro"
+          [ngModel]="editTemplate().intro"
+          (ngModelChange)="patchTemplate({ intro: $event }); content.markDirty()"
+          placeholder="Start with a short intro — who this is for and what they'll learn."
+          rows="4"
+          [readonly]="isReadOnly()"
+          aria-label="Introduction"
+        ></textarea>
+
+        @for (section of editTemplate().sections; track si; let si = $index) {
+          <section class="doc-section">
+            @if (selectedKeyword(); as kw) {
+              @if (!section.h2?.trim()) {
+                <div class="doc-section__chips">
+                  @for (heading of buildKeywordSuggestions(kw).sectionHeadings; track heading) {
+                    <button
+                      type="button"
+                      class="doc-suggestion doc-suggestion--inline"
+                      (click)="applySectionHeading(si, heading)"
+                    >
+                      {{ heading }}
+                    </button>
+                  }
+                </div>
+              }
+            }
+            <input
+              class="doc-section__h2"
+              type="text"
+              [ngModel]="section.h2"
+              (ngModelChange)="patchSection($index, { h2: $event })"
+              placeholder="Section heading"
+              [readonly]="isReadOnly()"
+            />
+            <textarea
+              class="doc-section__body"
+              [ngModel]="section.body"
+              (ngModelChange)="patchSection($index, { body: $event })"
+              placeholder="Write this section…"
+              rows="6"
+              [readonly]="isReadOnly()"
+            ></textarea>
+            @if (!isReadOnly() && editTemplate().sections.length > 1) {
+              <button type="button" class="doc-section__remove" (click)="removeSection($index)">
+                Remove section
+              </button>
+            }
+          </section>
+        }
+
+        @if (!isReadOnly()) {
+          <button type="button" class="doc-canvas__add-section" (click)="addSection()">
+            <i class="pi pi-plus" aria-hidden="true"></i>
+            Add section
+          </button>
+        }
+      </main>
+
+      <aside class="doc-aside">
+        <div class="doc-aside__serp">
+          <p class="doc-aside__label">Search preview</p>
+          <div class="serp-card">
+            <p class="serp-card__url">{{ serp().url }}</p>
+            <p class="serp-card__title">{{ serp().title }}</p>
+            <p class="serp-card__desc">{{ serp().description }}</p>
+          </div>
+        </div>
+
+        <div class="doc-aside__hints">
+          <p class="doc-aside__label">While you write</p>
+          <ul class="hint-list">
+            @for (hint of writingHints(); track hint.id) {
+              <li class="hint-list__item" [class.hint-list__item--done]="hint.done">
+                <span class="hint-list__dot" aria-hidden="true"></span>
+                {{ hint.label }}
+              </li>
+            }
+          </ul>
+        </div>
+
+        <div class="doc-aside__seo">
+          <button type="button" class="doc-aside__seo-toggle" (click)="toggleSeoPanel()">
+            SEO details
+            <i class="pi" [class.pi-chevron-down]="!seoPanelOpen()" [class.pi-chevron-up]="seoPanelOpen()"></i>
+          </button>
+          @if (seoPanelOpen()) {
+            <div class="doc-aside__seo-fields">
+              <label class="doc-field">
+                <span>Browser title</span>
+                <input
+                  type="text"
+                  [ngModel]="editTemplate().title"
+                  (ngModelChange)="patchTemplate({ title: $event }); content.markDirty()"
+                  [readonly]="isReadOnly()"
+                />
+              </label>
+              <label class="doc-field">
+                <span>Meta description</span>
+                <textarea
+                  rows="3"
+                  [ngModel]="editTemplate().metaDescription"
+                  (ngModelChange)="patchTemplate({ metaDescription: $event }); content.markDirty()"
+                  [readonly]="isReadOnly()"
+                ></textarea>
+                <small
+                  [class.doc-field__warn]="
+                    editTemplate().metaDescription.length < metaMin ||
+                    editTemplate().metaDescription.length > metaMax
+                  "
+                >
+                  {{ editTemplate().metaDescription.length }} / {{ metaMin }}–{{ metaMax }}
+                </small>
+              </label>
+              <label class="doc-field">
+                <span>URL slug</span>
+                <input
+                  type="text"
+                  [ngModel]="editSlug()"
+                  (ngModelChange)="editSlug.set($event); content.markDirty()"
+                  [readonly]="isReadOnly()"
+                />
+              </label>
+            </div>
+          }
+        </div>
+
+        @if (publishReview() && publishBlockers().length > 0) {
+          <div class="doc-aside__publish-review" role="status">
+            <p class="doc-aside__label">Before you publish</p>
+            <ul class="publish-blockers">
+              @for (item of publishBlockers(); track item.code) {
+                <li>{{ item.message }}</li>
+              }
+            </ul>
+            <button type="button" class="publish-blockers__dismiss" (click)="dismissPublishReview()">
+              Keep writing
+            </button>
+          </div>
+        }
+      </aside>
+    </div>
+  </div>
+}

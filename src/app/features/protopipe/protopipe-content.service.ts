@@ -43,6 +43,8 @@ export class ProtopipeContentService {
   private readonly _editingId = signal<string | null>(null);
   private readonly _dirty = signal(false);
   private readonly _seoValidation = signal<SeoValidationResult | null>(null);
+  /** Set only after a failed publish — not on save. */
+  private readonly _publishReview = signal(false);
 
   readonly posts = this._posts.asReadonly();
   readonly planKeywords = this._planKeywords.asReadonly();
@@ -54,6 +56,7 @@ export class ProtopipeContentService {
   readonly editingId = this._editingId.asReadonly();
   readonly dirty = this._dirty.asReadonly();
   readonly seoValidation = this._seoValidation.asReadonly();
+  readonly publishReview = this._publishReview.asReadonly();
 
   readonly publishedPosts = computed(() =>
     this._posts().filter((p) => p.status === 'published'),
@@ -70,10 +73,11 @@ export class ProtopipeContentService {
     return this.draftPosts();
   });
 
-  readonly seoChecklist = computed(() => {
+  /** Blocking issues from last publish attempt only. */
+  readonly publishBlockers = computed(() => {
     const v = this._seoValidation();
-    if (!v) return [];
-    return [...v.errors, ...v.warnings];
+    if (!v || !this._publishReview()) return [];
+    return v.errors;
   });
 
   async ensureLoaded(): Promise<void> {
@@ -114,19 +118,25 @@ export class ProtopipeContentService {
     this._editingId.set('new');
     this._dirty.set(true);
     this._seoValidation.set(null);
+    this._publishReview.set(false);
   }
 
   startEdit(postId: string): void {
     this._editingId.set(postId);
     this._dirty.set(false);
-    const post = this.postById(postId);
-    this._seoValidation.set(post?.seoValidation ?? null);
+    this._seoValidation.set(null);
+    this._publishReview.set(false);
   }
 
-  cancelEdit(): void {
+  clearEditor(): void {
     this._editingId.set(null);
     this._dirty.set(false);
     this._seoValidation.set(null);
+    this._publishReview.set(false);
+  }
+
+  dismissPublishReview(): void {
+    this._publishReview.set(false);
   }
 
   markDirty(): void {
@@ -169,7 +179,6 @@ export class ProtopipeContentService {
       } else {
         return false;
       }
-      this._seoValidation.set(response.seoValidation ?? null);
       this._dirty.set(false);
       return true;
     } catch (err) {
@@ -189,18 +198,22 @@ export class ProtopipeContentService {
 
     this._publishing.set(true);
     this._error.set(null);
+    this._publishReview.set(false);
     try {
       const { post } = await this.api.publishContent(siteId, postId);
       this._posts.update((list) => list.map((p) => (p.id === post.id ? post : p)));
       this._activeTab.set('published');
-      this._seoValidation.set(post.seoValidation ?? null);
+      this._seoValidation.set(null);
       return true;
     } catch (err) {
       if (err instanceof HttpErrorResponse && err.status === 409) {
         const body = err.error as { seoValidation?: SeoValidationResult } | null;
         if (body?.seoValidation) {
           this._seoValidation.set(body.seoValidation);
+          this._publishReview.set(true);
         }
+        this._error.set(null);
+        return false;
       }
       this._error.set(parseProtopipeApiError(err, 'Failed to publish'));
       return false;

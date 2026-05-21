@@ -1,0 +1,64 @@
+<div class="content-library">
+  <header class="content-library__header">
+    <div>
+      <p class="content-library__eyebrow">Protopipe</p>
+      <h1>Content</h1>
+      <p class="content-library__lead">Drafts and published posts for your site.</p>
+    </div>
+    <div class="content-library__actions">
+      <p-button label="New article" icon="pi pi-plus" (onClick)="openNew()" />
+      <a routerLink="/protopipe">
+        <p-button label="My Plan" icon="pi pi-compass" [outlined]="true" />
+      </a>
+    </div>
+  </header>
+
+  @if (error()) {
+    <p class="content-library__error" role="alert">{{ error() }}</p>
+  }
+
+  <div class="content-library__tabs">
+    <p-selectButton
+      [options]="tabOptions"
+      [ngModel]="activeTab()"
+      (ngModelChange)="onTabChange($event)"
+      optionLabel="label"
+      optionValue="value"
+    />
+    <span class="content-library__count">{{ filteredPosts().length }} articles</span>
+  </div>
+
+  @if (loading() && filteredPosts().length === 0) {
+    <div class="content-library__empty">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Loading" />
+    </div>
+  } @else if (filteredPosts().length === 0) {
+    <div class="content-library__empty content-library__empty--cta">
+      <p>No articles here yet.</p>
+      <p-button label="Start writing" icon="pi pi-pencil" (onClick)="openNew()" />
+    </div>
+  } @else {
+    <ul class="content-library__grid">
+      @for (post of filteredPosts(); track post.id) {
+        <li>
+          <button type="button" class="content-card" (click)="openPost(post)">
+            <div class="content-card__top">
+              <p-tag [value]="post.status" [severity]="statusSeverity(post.status)" />
+              <span class="content-card__date">
+                @if (post.status === 'published') {
+                  {{ formatDate(post.publishedAt) }}
+                } @else if (post.status === 'scheduled') {
+                  {{ formatDate(post.publishAt) }}
+                } @else {
+                  {{ formatDate(post.updatedAt) }}
+                }
+              </span>
+            </div>
+            <h2 class="content-card__title">{{ post.title || 'Untitled' }}</h2>
+            <p class="content-card__meta">{{ post.template?.primaryKeywordPhrase || post.slug }}</p>
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</div>

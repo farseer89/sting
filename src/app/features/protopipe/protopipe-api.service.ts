@@ -31,6 +31,17 @@ import type {
   ProtopipeLeadDetailResponse,
   ConvertLeadResponse,
   SiteBuilderComponentsResponse,
+  SiteBuilderTemplatesResponse,
+  SiteBuilderTemplateDetailResponse,
+  CreateProtopipeSiteRequest,
+  CreateProtopipeSiteResponse,
+  SitePageResponse,
+  UpdateSitePageRequest,
+  UpdateSitePageResponse,
+  PublishSiteResponse,
+  PublishSiteCompleteRequest,
+  PublishSiteCompleteResponse,
+  ProtopipeSite,
 } from '@hive/contracts';
 import { Observable, firstValueFrom } from 'rxjs';
 import { protopipeApiUrl } from './protopipe-http.util';
@@ -270,6 +281,75 @@ export class ProtopipeApiService {
       this.http.get<SiteBuilderComponentsResponse>(
         protopipeApiUrl(ProtopipeEndpoints.siteBuilderComponents.path),
       ),
+    );
+  }
+
+  getSiteBuilderTemplates(): Promise<SiteBuilderTemplatesResponse> {
+    return firstValueFrom(
+      this.http.get<SiteBuilderTemplatesResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.siteBuilderTemplates.path),
+      ),
+    );
+  }
+
+  getSiteBuilderTemplate(templateId: string): Promise<SiteBuilderTemplateDetailResponse> {
+    return firstValueFrom(
+      this.http.get<SiteBuilderTemplateDetailResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.siteBuilderTemplateDetail.path, { templateId }),
+      ),
+    );
+  }
+
+  createSite(body: CreateProtopipeSiteRequest): Promise<CreateProtopipeSiteResponse> {
+    return firstValueFrom(
+      this.http.post<CreateProtopipeSiteResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.createSite.path),
+        body,
+      ),
+    );
+  }
+
+  getSitePage(siteId: string): Promise<SitePageResponse> {
+    return firstValueFrom(
+      this.http.get<SitePageResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.getSitePage.path, { siteId }),
+      ),
+    );
+  }
+
+  updateSitePage(siteId: string, body: UpdateSitePageRequest): Promise<UpdateSitePageResponse> {
+    return firstValueFrom(
+      this.http.put<UpdateSitePageResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.updateSitePage.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  publishSite(siteId: string): Promise<PublishSiteResponse> {
+    return firstValueFrom(
+      this.http.post<PublishSiteResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.publishSite.path, { siteId }),
+        {},
+      ),
+    );
+  }
+
+  publishSiteComplete(
+    siteId: string,
+    body: PublishSiteCompleteRequest,
+  ): Promise<PublishSiteCompleteResponse> {
+    return firstValueFrom(
+      this.http.post<PublishSiteCompleteResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.publishSiteComplete.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  getSite(siteId: string): Promise<ProtopipeSite> {
+    return firstValueFrom(
+      this.http.get<ProtopipeSite>(protopipeApiUrl(ProtopipeEndpoints.getSite.path, { siteId })),
     );
   }
 

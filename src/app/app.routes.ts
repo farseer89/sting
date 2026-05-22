@@ -120,6 +120,34 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'protopipe/site-builder/templates',
+        loadComponent: () =>
+          import('./features/protopipe/site-builder/site-builder-templates.component').then(
+            (m) => m.SiteBuilderTemplatesComponent,
+          ),
+      },
+      {
+        path: 'protopipe/site-builder/templates/:templateId',
+        loadComponent: () =>
+          import('./features/protopipe/site-builder/site-builder-template-detail.component').then(
+            (m) => m.SiteBuilderTemplateDetailComponent,
+          ),
+      },
+      {
+        path: 'protopipe/site-builder/add-site',
+        loadComponent: () =>
+          import('./features/protopipe/site-builder/add-site-wizard.component').then(
+            (m) => m.AddSiteWizardComponent,
+          ),
+      },
+      {
+        path: 'protopipe/site-builder/sites/:siteId/edit',
+        loadComponent: () =>
+          import('./features/protopipe/site-builder/site-page-editor.component').then(
+            (m) => m.SitePageEditorComponent,
+          ),
+      },
+      {
         path: 'dev/docs',
         canMatch: [devRoutesGuard],
         loadComponent: () =>

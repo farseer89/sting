@@ -81,7 +81,14 @@ export class NavigationService {
             id: 'sb-templates',
             label: 'Templates',
             icon: 'pi pi-clone',
-            disabled: true,
+            routerLink: '/protopipe/site-builder/templates',
+            visible: true,
+          },
+          {
+            id: 'sb-add-site',
+            label: 'Add site',
+            icon: 'pi pi-plus',
+            routerLink: '/protopipe/site-builder/add-site',
             visible: true,
           },
           {

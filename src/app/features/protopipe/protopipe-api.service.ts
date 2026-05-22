@@ -273,6 +273,14 @@ export class ProtopipeApiService {
     );
   }
 
+  listLeadsForAccount(): Promise<ProtopipeLeadsListResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeLeadsListResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.leadsListAll.path),
+      ),
+    );
+  }
+
   listLeads(siteId: string): Promise<ProtopipeLeadsListResponse> {
     return firstValueFrom(
       this.http.get<ProtopipeLeadsListResponse>(

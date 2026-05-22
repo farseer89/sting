@@ -15,12 +15,7 @@ import { ProtopipeLeadsService } from './protopipe-leads.service';
     <div class="leads-page">
       <header class="page-header">
         <h1>Leads</h1>
-        <p class="sub">
-          Inquiries from your landing page lead capture form
-          @if (leads.siteLabel(); as label) {
-            <span class="site-tag">({{ label }})</span>
-          }
-        </p>
+        <p class="sub">Inquiries from your landing page lead capture forms (all sites).</p>
       </header>
 
       @if (leads.loading()) {

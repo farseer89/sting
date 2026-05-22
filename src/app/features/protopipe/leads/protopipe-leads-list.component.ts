@@ -86,14 +86,24 @@ import { ProtopipeLeadsService } from './protopipe-leads.service';
               styleClass="w-full"
             />
           }
-          @if (leads.convertResult(); as link) {
+          @if (leads.convertResult(); as result) {
             <div class="convert-msg">
-              <p class="convert-msg__note">
-                Email is not wired yet — copy this link and open it (or check bagend server logs).
-              </p>
-              <a class="convert-msg__link" [href]="link" target="_blank" rel="noopener noreferrer">{{
-                link
-              }}</a>
+              @if (result.startsWith('email:')) {
+                <p class="convert-msg__note success">
+                  Magic link emailed to {{ result.slice(6) }}.
+                </p>
+              } @else {
+                <p class="convert-msg__note">
+                  Email could not be sent — copy this link or check bagend logs.
+                </p>
+                <a
+                  class="convert-msg__link"
+                  [href]="result.slice(5)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >{{ result.slice(5) }}</a
+                >
+              }
             </div>
           }
         }
@@ -124,6 +134,9 @@ import { ProtopipeLeadsService } from './protopipe-leads.service';
     .convert-msg__note {
       margin: 0 0 0.5rem;
       color: var(--text-color-secondary);
+    }
+    .convert-msg__note.success {
+      color: var(--green-600, #15803d);
     }
     .convert-msg__link {
       word-break: break-all;

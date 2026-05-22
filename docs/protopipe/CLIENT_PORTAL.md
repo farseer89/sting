@@ -15,7 +15,7 @@ Operator shell (`/protopipe`, etc.) is blocked when only a client session is act
 
 1. Visitor submits **Lead capture** on the Astro landing page.
 2. Operator opens **Protopipe → Leads** and clicks **Convert to client**.
-3. bagend creates `ClientUser` + magic link (logged to server console until email is wired).
+3. bagend creates `ClientUser` + magic link and emails it via SendGrid (falls back to logs + UI link if send fails).
 4. Client opens `https://clients.droppin.shop/portal/welcome?token=...` (or `http://localhost:4200/portal/welcome?token=...` locally).
 5. Portal exchanges token → JWT → `/portal/dashboard`.
 

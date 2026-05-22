@@ -163,15 +163,15 @@ export class MySitesListComponent implements OnInit {
 
   protected confirmDelete(event: Event, site: ProtopipeSite): void {
     const slug = site.clientSitesSlug ?? site.id;
-    const liveNote =
-      site.publishStatus === 'live'
-        ? ' The Cloudflare preview may stay online until you remove the project manually.'
+    const cfNote =
+      site.cloudflareProject?.startsWith('cs-')
+        ? ' The cs-* Cloudflare Pages project will be removed when configured on the server.'
         : '';
 
     this.confirm.confirm({
       target: event.target as EventTarget,
       header: 'Delete site',
-      message: `Delete "${site.displayName}" (${slug})? This removes the site record and related data.${liveNote}`,
+      message: `Delete "${site.displayName}" (${slug})? This removes the site record and related data.${cfNote}`,
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => void this.deleteSite(site),
@@ -181,12 +181,20 @@ export class MySitesListComponent implements OnInit {
   private async deleteSite(site: ProtopipeSite): Promise<void> {
     this.deletingId.set(site.id);
     try {
-      await this.api.deleteSite(site.id);
+      const res = await this.api.deleteSite(site.id);
       this.sites.update((list) => list.filter((s) => s.id !== site.id));
+      let detail = `${site.displayName} was removed.`;
+      if (res.cloudflare.removed) {
+        detail += ' Cloudflare Pages project deleted.';
+      } else if (res.cloudflare.error) {
+        detail += ` Cloudflare project was not removed: ${res.cloudflare.error}`;
+      } else if (res.cloudflare.skippedReason === 'not_configured') {
+        detail += ' Cloudflare cleanup skipped (API not configured on server).';
+      }
       this.messages.add({
-        severity: 'success',
+        severity: res.cloudflare.error ? 'warn' : 'success',
         summary: 'Site deleted',
-        detail: `${site.displayName} was removed.`,
+        detail,
       });
     } catch (err) {
       this.messages.add({

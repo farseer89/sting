@@ -35,6 +35,7 @@ import type {
   SiteBuilderTemplateDetailResponse,
   CreateProtopipeSiteRequest,
   CreateProtopipeSiteResponse,
+  DeleteProtopipeSiteResponse,
   SitePageResponse,
   UpdateSitePageRequest,
   UpdateSitePageResponse,
@@ -309,9 +310,11 @@ export class ProtopipeApiService {
     );
   }
 
-  deleteSite(siteId: string): Promise<void> {
+  deleteSite(siteId: string): Promise<DeleteProtopipeSiteResponse> {
     return firstValueFrom(
-      this.http.delete<void>(protopipeApiUrl(ProtopipeEndpoints.deleteSite.path, { siteId })),
+      this.http.delete<DeleteProtopipeSiteResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.deleteSite.path, { siteId }),
+      ),
     );
   }
 

@@ -14,3 +14,6 @@ export const PROTOPIPE_MAX_CONTENT_HELPER_EXAMPLE_LENGTH = 4000;
 /** Article-ideas agent run polling (Claude can take 30–90s). */
 export const PROTOPIPE_AGENT_POLL_INTERVAL_MS = 1000;
 export const PROTOPIPE_AGENT_POLL_MAX_ATTEMPTS = 120;
+
+/** client-sites slug for DWP landing v2 — must match public submission URL. */
+export const PROTOPIPE_LANDING_V2_CLIENT_SITES_SLUG = 'destinationweddingpainter';

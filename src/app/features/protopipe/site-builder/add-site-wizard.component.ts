@@ -40,9 +40,9 @@ const THEME_OPTIONS = [
         </label>
 
         <label class="field">
-          <span>Site slug (URL)</span>
+          <span>Site slug (repo folder)</span>
           <input pInputText [(ngModel)]="slug" />
-          <small>Preview: https://{{ slug || 'your-slug' }}.pages.dev</small>
+          <small>Used for files in client-sites only. Live URL appears after Publish.</small>
         </label>
 
         <label class="field">

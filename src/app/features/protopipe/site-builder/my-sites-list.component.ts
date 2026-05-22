@@ -42,7 +42,7 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
                 <h2>{{ site.displayName }}</h2>
                 <p-tag [value]="statusLabel(site)" [severity]="statusSeverity(site.publishStatus)" />
               </div>
-              <p class="slug">{{ site.clientSitesSlug ?? site.hostname }}</p>
+              <p class="slug">slug: {{ site.clientSitesSlug ?? '—' }}</p>
               @if (site.previewBaseUrl && site.publishStatus === 'live') {
                 <p>
                   <a [href]="site.previewBaseUrl" target="_blank" rel="noopener">{{ site.previewBaseUrl }}</a>

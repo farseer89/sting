@@ -86,22 +86,23 @@ import { ProtopipeLeadsService } from './protopipe-leads.service';
               styleClass="w-full"
             />
           }
-          @if (leads.convertResult(); as result) {
+          @if (leads.convertLink(); as link) {
             <div class="convert-msg">
-              @if (result.startsWith('email:')) {
-                <p class="convert-msg__note success">
-                  Magic link emailed to {{ result.slice(6) }}.
-                </p>
+              @if (leads.convertEmailSent()) {
+                <p class="convert-msg__note success">Magic link emailed to {{ lead.email }}.</p>
               } @else {
                 <p class="convert-msg__note">
-                  Email could not be sent — copy this link or check bagend logs.
+                  Email could not be sent@if (leads.convertEmailError(); as err) {
+                    : {{ err }}
+                  }
+                  — use this link:
                 </p>
                 <a
                   class="convert-msg__link"
-                  [href]="result.slice(5)"
+                  [href]="link"
                   target="_blank"
                   rel="noopener noreferrer"
-                  >{{ result.slice(5) }}</a
+                  >{{ link }}</a
                 >
               }
             </div>

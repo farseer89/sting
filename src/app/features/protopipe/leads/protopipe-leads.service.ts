@@ -12,14 +12,18 @@ export class ProtopipeLeadsService {
   private readonly _leads = signal<ProtopipeLead[]>([]);
   private readonly _selected = signal<ProtopipeLead | null>(null);
   private readonly _converting = signal(false);
-  private readonly _convertResult = signal<string | null>(null);
+  private readonly _convertLink = signal<string | null>(null);
+  private readonly _convertEmailSent = signal(false);
+  private readonly _convertEmailError = signal<string | null>(null);
 
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
   readonly leads = this._leads.asReadonly();
   readonly selected = this._selected.asReadonly();
   readonly converting = this._converting.asReadonly();
-  readonly convertResult = this._convertResult.asReadonly();
+  readonly convertLink = this._convertLink.asReadonly();
+  readonly convertEmailSent = this._convertEmailSent.asReadonly();
+  readonly convertEmailError = this._convertEmailError.asReadonly();
 
   async ensureLoaded(): Promise<void> {
     this._loading.set(true);
@@ -36,7 +40,9 @@ export class ProtopipeLeadsService {
 
   selectLead(lead: ProtopipeLead | null): void {
     this._selected.set(lead);
-    this._convertResult.set(null);
+    this._convertLink.set(null);
+    this._convertEmailSent.set(false);
+    this._convertEmailError.set(null);
   }
 
   async convertSelected(): Promise<void> {
@@ -47,11 +53,9 @@ export class ProtopipeLeadsService {
     this._error.set(null);
     try {
       const res = await this.api.convertLead(lead.siteId, lead.id);
-      this._convertResult.set(
-        res.emailSent
-          ? `email:${res.email}`
-          : `link:${res.magicLinkUrl}`,
-      );
+      this._convertLink.set(res.magicLinkUrl);
+      this._convertEmailSent.set(!!res.emailSent);
+      this._convertEmailError.set(res.emailSent ? null : (res.emailError ?? 'Email not sent'));
       await this.ensureLoaded();
       const updated = this._leads().find((l) => l.id === lead.id);
       if (updated) this._selected.set(updated);

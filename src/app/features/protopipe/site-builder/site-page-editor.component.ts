@@ -24,7 +24,7 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
       } @else {
         <header class="editor-header">
           <div>
-            <a routerLink="/protopipe/site-builder/templates">← Templates</a>
+            <a routerLink="/protopipe/site-builder/sites">← My sites</a>
             <h1>{{ site()?.displayName ?? 'Site' }} — page editor</h1>
             @if (publishStatus(); as ps) {
               <p-tag [value]="ps" [severity]="statusSeverity(ps)" />
@@ -174,6 +174,7 @@ export class SitePageEditorComponent implements OnInit {
   protected readonly provisionMessage = signal<string | null>(null);
 
   private siteId = '';
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
     this.siteId = this.route.snapshot.paramMap.get('siteId') ?? '';
@@ -256,6 +257,9 @@ export class SitePageEditorComponent implements OnInit {
       ]);
       this.site.set(site);
       this.publishStatus.set(page.publishStatus);
+      if (page.publishStatus === 'provisioning') {
+        this.startPublishPolling();
+      }
       if (page.pageDraft) {
         this.draft.set(JSON.parse(JSON.stringify(page.pageDraft)) as SitePageDraft);
       } else {
@@ -292,10 +296,55 @@ export class SitePageEditorComponent implements OnInit {
         res.message ??
           `Run: cd client-sites && node scripts/provision-from-template.mjs --site-id ${this.siteId}`,
       );
+      if (res.deployTriggered ?? res.message?.includes('GitHub Actions')) {
+        this.startPublishPolling();
+      }
     } catch (err) {
       this.error.set(parseProtopipeApiError(err, 'Publish failed.'));
     } finally {
       this.publishing.set(false);
+    }
+  }
+
+  private startPublishPolling(): void {
+    this.stopPublishPolling();
+    const started = Date.now();
+    const maxMs = 12 * 60 * 1000;
+    this.pollTimer = setInterval(() => {
+      void this.pollPublishOnce(started, maxMs);
+    }, 8000);
+    void this.pollPublishOnce(started, maxMs);
+  }
+
+  private stopPublishPolling(): void {
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
+  }
+
+  private async pollPublishOnce(started: number, maxMs: number): Promise<void> {
+    if (Date.now() - started > maxMs) {
+      this.stopPublishPolling();
+      this.provisionMessage.set('Deploy is taking longer than expected. Refresh the page in a few minutes.');
+      return;
+    }
+    try {
+      const site = await this.api.getSite(this.siteId);
+      this.site.set(site);
+      const ps = site.publishStatus ?? 'draft';
+      this.publishStatus.set(ps);
+      if (ps === 'live') {
+        this.stopPublishPolling();
+        this.provisionMessage.set(null);
+        this.error.set(null);
+      } else if (ps === 'failed') {
+        this.stopPublishPolling();
+        this.provisionMessage.set(site.provisioningError ?? 'Deploy failed.');
+        this.error.set(site.provisioningError ?? 'Deploy failed.');
+      }
+    } catch {
+      /* keep polling */
     }
   }
 }

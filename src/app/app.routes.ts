@@ -141,6 +141,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'protopipe/site-builder/sites',
+        loadComponent: () =>
+          import('./features/protopipe/site-builder/my-sites-list.component').then(
+            (m) => m.MySitesListComponent,
+          ),
+      },
+      {
         path: 'protopipe/site-builder/sites/:siteId/edit',
         loadComponent: () =>
           import('./features/protopipe/site-builder/site-page-editor.component').then(

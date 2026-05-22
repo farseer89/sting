@@ -28,6 +28,13 @@ export class NavigationService {
         visible: true,
         items: [
           {
+            id: 'landing-sites',
+            label: 'Landing sites',
+            icon: 'pi pi-window-maximize',
+            routerLink: '/protopipe/site-builder/sites',
+            visible: true,
+          },
+          {
             id: 'my-plan',
             label: 'My Plan',
             icon: 'pi pi-compass',
@@ -92,10 +99,10 @@ export class NavigationService {
             visible: true,
           },
           {
-            id: 'sb-pages',
-            label: 'Pages',
-            icon: 'pi pi-file',
-            disabled: true,
+            id: 'sb-sites',
+            label: 'Sites',
+            icon: 'pi pi-globe',
+            routerLink: '/protopipe/site-builder/sites',
             visible: true,
           },
           {

@@ -47,9 +47,7 @@ export class ProtopipeLeadsService {
     this._error.set(null);
     try {
       const res = await this.api.convertLead(lead.siteId, lead.id);
-      this._convertResult.set(
-        `Converted. Magic link (dev log): ${res.magicLinkUrl}`,
-      );
+      this._convertResult.set(res.magicLinkUrl);
       await this.ensureLoaded();
       const updated = this._leads().find((l) => l.id === lead.id);
       if (updated) this._selected.set(updated);

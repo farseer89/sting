@@ -86,8 +86,15 @@ import { ProtopipeLeadsService } from './protopipe-leads.service';
               styleClass="w-full"
             />
           }
-          @if (leads.convertResult(); as msg) {
-            <p class="convert-msg">{{ msg }}</p>
+          @if (leads.convertResult(); as link) {
+            <div class="convert-msg">
+              <p class="convert-msg__note">
+                Email is not wired yet — copy this link and open it (or check bagend server logs).
+              </p>
+              <a class="convert-msg__link" [href]="link" target="_blank" rel="noopener noreferrer">{{
+                link
+              }}</a>
+            </div>
           }
         }
       </p-drawer>
@@ -113,6 +120,12 @@ import { ProtopipeLeadsService } from './protopipe-leads.service';
     .convert-msg {
       margin-top: 1rem;
       font-size: 0.85rem;
+    }
+    .convert-msg__note {
+      margin: 0 0 0.5rem;
+      color: var(--text-color-secondary);
+    }
+    .convert-msg__link {
       word-break: break-all;
     }
     .leads-cards {

@@ -309,6 +309,12 @@ export class ProtopipeApiService {
     );
   }
 
+  deleteSite(siteId: string): Promise<void> {
+    return firstValueFrom(
+      this.http.delete<void>(protopipeApiUrl(ProtopipeEndpoints.deleteSite.path, { siteId })),
+    );
+  }
+
   getSitePage(siteId: string): Promise<SitePageResponse> {
     return firstValueFrom(
       this.http.get<SitePageResponse>(

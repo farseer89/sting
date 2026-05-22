@@ -92,13 +92,6 @@ export class NavigationService {
             visible: true,
           },
           {
-            id: 'sb-add-site',
-            label: 'Add site',
-            icon: 'pi pi-plus',
-            routerLink: '/protopipe/site-builder/add-site',
-            visible: true,
-          },
-          {
             id: 'sb-sites',
             label: 'Sites',
             icon: 'pi pi-globe',

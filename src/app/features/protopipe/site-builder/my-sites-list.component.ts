@@ -1,9 +1,12 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { Card } from 'primeng/card';
+import { ConfirmDialog } from 'primeng/confirmdialog';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { Tag } from 'primeng/tag';
+import { Toast } from 'primeng/toast';
 import type { ProtopipePublishStatus, ProtopipeSite } from '@hive/contracts';
 import { ProtopipeApiService } from '../protopipe-api.service';
 import { parseProtopipeApiError } from '../protopipe-http.util';
@@ -12,14 +15,17 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
   selector: 'app-my-sites-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Card, Tag, ProgressSpinner, Button],
+  imports: [RouterLink, Card, Tag, ProgressSpinner, Button, ConfirmDialog, Toast],
+  providers: [ConfirmationService, MessageService],
   template: `
+    <p-confirmDialog />
+    <p-toast />
     <div class="sites-page">
       <header class="page-header">
         <div class="page-header__row">
           <div>
             <h1>My landing sites</h1>
-            <p class="lead">Edit a site and use Publish to deploy to Cloudflare Pages.</p>
+            <p class="lead">Create, edit, publish, or remove landing sites.</p>
           </div>
           <a routerLink="/protopipe/site-builder/add-site" pButton label="Add site" icon="pi pi-plus"></a>
         </div>
@@ -59,6 +65,16 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
                   icon="pi pi-pencil"
                   size="small"
                 ></a>
+                <p-button
+                  label="Delete"
+                  icon="pi pi-trash"
+                  severity="danger"
+                  [outlined]="true"
+                  size="small"
+                  [loading]="deletingId() === site.id"
+                  [disabled]="site.publishStatus === 'provisioning' || deletingId() !== null"
+                  (onClick)="confirmDelete($event, site)"
+                />
               </div>
             </p-card>
           }
@@ -103,6 +119,10 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
       margin: 0.5rem 0;
     }
     .site-card__actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
       margin-top: 1rem;
     }
     .error {
@@ -116,10 +136,13 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
 })
 export class MySitesListComponent implements OnInit {
   private readonly api = inject(ProtopipeApiService);
+  private readonly confirm = inject(ConfirmationService);
+  private readonly messages = inject(MessageService);
 
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
   protected readonly sites = signal<ProtopipeSite[]>([]);
+  protected readonly deletingId = signal<string | null>(null);
 
   ngOnInit(): void {
     void this.load();
@@ -136,6 +159,44 @@ export class MySitesListComponent implements OnInit {
     if (ps === 'provisioning') return 'info';
     if (ps === 'failed') return 'danger';
     return 'secondary';
+  }
+
+  protected confirmDelete(event: Event, site: ProtopipeSite): void {
+    const slug = site.clientSitesSlug ?? site.id;
+    const liveNote =
+      site.publishStatus === 'live'
+        ? ' The Cloudflare preview may stay online until you remove the project manually.'
+        : '';
+
+    this.confirm.confirm({
+      target: event.target as EventTarget,
+      header: 'Delete site',
+      message: `Delete "${site.displayName}" (${slug})? This removes the site record and related data.${liveNote}`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => void this.deleteSite(site),
+    });
+  }
+
+  private async deleteSite(site: ProtopipeSite): Promise<void> {
+    this.deletingId.set(site.id);
+    try {
+      await this.api.deleteSite(site.id);
+      this.sites.update((list) => list.filter((s) => s.id !== site.id));
+      this.messages.add({
+        severity: 'success',
+        summary: 'Site deleted',
+        detail: `${site.displayName} was removed.`,
+      });
+    } catch (err) {
+      this.messages.add({
+        severity: 'error',
+        summary: 'Delete failed',
+        detail: parseProtopipeApiError(err, 'Could not delete site.'),
+      });
+    } finally {
+      this.deletingId.set(null);
+    }
   }
 
   private async load(): Promise<void> {

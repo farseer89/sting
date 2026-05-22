@@ -23,13 +23,24 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
         <header class="detail-header">
           <h1>{{ t.label }}</h1>
           <p>{{ t.description }}</p>
-          <a
-            [routerLink]="['/protopipe/site-builder/add-site']"
-            [queryParams]="{ templateId: t.id }"
-            pButton
-            label="Use this template"
-            icon="pi pi-plus"
-          ></a>
+          <div class="detail-actions">
+            @if (previewDemoUrl()) {
+              <a
+                [routerLink]="['/protopipe/site-builder/templates', t.id, 'preview']"
+                pButton
+                label="Live preview"
+                icon="pi pi-eye"
+                severity="secondary"
+              ></a>
+            }
+            <a
+              [routerLink]="['/protopipe/site-builder/add-site']"
+              [queryParams]="{ templateId: t.id }"
+              pButton
+              label="Use this template"
+              icon="pi pi-plus"
+            ></a>
+          </div>
         </header>
 
         <h2>Sections</h2>
@@ -50,6 +61,12 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
     }
     .detail-header {
       margin: 1rem 0 1.5rem;
+    }
+    .detail-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1rem;
     }
     .section-list {
       list-style: none;
@@ -80,7 +97,10 @@ export class SiteBuilderTemplateDetailComponent implements OnInit {
     id: string;
     label: string;
     description: string;
+    previewDemoUrl?: string;
+    previewImageUrl?: string;
   } | null>(null);
+  protected readonly previewDemoUrl = signal('');
   protected readonly sections = signal<
     { id: string; label: string; componentId: string }[]
   >([]);
@@ -103,9 +123,18 @@ export class SiteBuilderTemplateDetailComponent implements OnInit {
         id: string;
         label: string;
         description: string;
+        previewDemoUrl?: string;
+        previewImageUrl?: string;
         pages?: { sections: { id: string; label: string; componentId: string }[] }[];
       };
-      this.template.set({ id: t.id, label: t.label, description: t.description });
+      this.template.set({
+        id: t.id,
+        label: t.label,
+        description: t.description,
+        previewDemoUrl: t.previewDemoUrl,
+        previewImageUrl: t.previewImageUrl,
+      });
+      this.previewDemoUrl.set((t.previewDemoUrl || t.previewImageUrl || '').trim());
       this.sections.set(t.pages?.[0]?.sections ?? []);
     } catch (err) {
       this.error.set(parseProtopipeApiError(err, 'Could not load template.'));

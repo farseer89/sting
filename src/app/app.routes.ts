@@ -127,6 +127,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'protopipe/site-builder/templates/:templateId/preview',
+        loadComponent: () =>
+          import('./features/protopipe/site-builder/site-builder-template-preview.component').then(
+            (m) => m.SiteBuilderTemplatePreviewComponent,
+          ),
+      },
+      {
         path: 'protopipe/site-builder/templates/:templateId',
         loadComponent: () =>
           import('./features/protopipe/site-builder/site-builder-template-detail.component').then(

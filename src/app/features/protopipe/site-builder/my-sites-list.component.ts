@@ -163,9 +163,11 @@ export class MySitesListComponent implements OnInit {
 
   protected confirmDelete(event: Event, site: ProtopipeSite): void {
     const slug = site.clientSitesSlug ?? site.id;
+    const cfProject = site.cloudflareProject;
     const cfNote =
-      site.cloudflareProject?.startsWith('cs-')
-        ? ' The cs-* Cloudflare Pages project will be removed when configured on the server.'
+      cfProject?.startsWith('cs-') ||
+      (cfProject && site.clientSitesSlug && cfProject === site.clientSitesSlug)
+        ? ' The Cloudflare Pages project will be removed when configured on the server.'
         : '';
 
     this.confirm.confirm({

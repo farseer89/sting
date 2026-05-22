@@ -15,6 +15,7 @@ const THEME_OPTIONS = [
   { label: 'Classic gold', value: 'classic-gold' },
   { label: 'Slate rose', value: 'slate-rose' },
   { label: 'Ink cream', value: 'ink-cream' },
+  { label: 'Construction bold', value: 'construction-bold' },
 ];
 
 @Component({

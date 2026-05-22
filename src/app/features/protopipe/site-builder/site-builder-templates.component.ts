@@ -4,6 +4,7 @@ import { Button } from 'primeng/button';
 import { Card } from 'primeng/card';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { Tag } from 'primeng/tag';
+import type { SiteTemplateSummary } from '@hive/contracts';
 import { ProtopipeSiteBuilderService } from './protopipe-site-builder.service';
 
 @Component({
@@ -37,14 +38,26 @@ import { ProtopipeSiteBuilderService } from './protopipe-site-builder.service';
                 <p class="desc">{{ t.description }}</p>
                 <p class="meta">{{ t.sectionCount }} sections · theme {{ t.themeDefault }}</p>
               </a>
-              <a
-                [routerLink]="['/protopipe/site-builder/add-site']"
-                [queryParams]="{ templateId: t.id }"
-                pButton
-                label="Use template"
-                class="use-btn"
-                size="small"
-              ></a>
+              <div class="card-actions">
+                @if (previewUrl(t)) {
+                  <a
+                    [routerLink]="['/protopipe/site-builder/templates', t.id, 'preview']"
+                    pButton
+                    label="Live preview"
+                    icon="pi pi-eye"
+                    severity="secondary"
+                    size="small"
+                  ></a>
+                }
+                <a
+                  [routerLink]="['/protopipe/site-builder/add-site']"
+                  [queryParams]="{ templateId: t.id }"
+                  pButton
+                  label="Use template"
+                  class="use-btn"
+                  size="small"
+                ></a>
+              </div>
             </p-card>
           }
         </div>
@@ -95,6 +108,11 @@ import { ProtopipeSiteBuilderService } from './protopipe-site-builder.service';
     .meta {
       margin-top: 0.35rem;
     }
+    .card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
     .error {
       color: var(--red-500);
     }
@@ -102,6 +120,10 @@ import { ProtopipeSiteBuilderService } from './protopipe-site-builder.service';
 })
 export class SiteBuilderTemplatesComponent implements OnInit {
   protected readonly sb = inject(ProtopipeSiteBuilderService);
+
+  protected previewUrl(t: SiteTemplateSummary): string {
+    return (t.previewDemoUrl || t.previewImageUrl || '').trim();
+  }
 
   ngOnInit(): void {
     void this.sb.ensureTemplatesLoaded();

@@ -16,6 +16,7 @@ const THEME_OPTIONS = [
   { label: 'Slate rose', value: 'slate-rose' },
   { label: 'Ink cream', value: 'ink-cream' },
   { label: 'Construction bold', value: 'construction-bold' },
+  { label: 'Tech agency dark', value: 'tech-agency-dark' },
 ];
 
 @Component({

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Card } from 'primeng/card';
@@ -18,7 +19,7 @@ import { ProtopipeSiteBuilderService } from './protopipe-site-builder.service';
         <div class="page-header__row">
           <div>
             <h1>Site Builder — Templates</h1>
-            <p class="stats">Pick a template to add a new client site.</p>
+            <p class="stats">Pick a template — preview the full site before you add a client.</p>
           </div>
           <a routerLink="/protopipe/site-builder/add-site" pButton label="Add site" icon="pi pi-plus"></a>
         </div>
@@ -32,6 +33,20 @@ import { ProtopipeSiteBuilderService } from './protopipe-site-builder.service';
         <div class="template-grid">
           @for (t of sb.templates(); track t.id) {
             <p-card class="template-card">
+              @if (previewUrl(t); as demoUrl) {
+                <div class="template-preview" aria-hidden="true">
+                  <iframe
+                    [src]="previewFrameUrl(demoUrl)"
+                    [title]="t.label + ' site preview'"
+                    loading="lazy"
+                    tabindex="-1"
+                  ></iframe>
+                </div>
+              } @else {
+                <div class="template-preview template-preview--empty">
+                  <span>No live demo yet</span>
+                </div>
+              }
               <a [routerLink]="['/protopipe/site-builder/templates', t.id]" class="card-link">
                 <h2>{{ t.label }}</h2>
                 <p-tag [value]="t.category" />
@@ -39,11 +54,21 @@ import { ProtopipeSiteBuilderService } from './protopipe-site-builder.service';
                 <p class="meta">{{ t.sectionCount }} sections · theme {{ t.themeDefault }}</p>
               </a>
               <div class="card-actions">
-                @if (previewUrl(t)) {
+                @if (previewUrl(t); as demoUrl) {
+                  <a
+                    [href]="demoUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    pButton
+                    label="Live Demo"
+                    icon="pi pi-external-link"
+                    severity="help"
+                    size="small"
+                  ></a>
                   <a
                     [routerLink]="['/protopipe/site-builder/templates', t.id, 'preview']"
                     pButton
-                    label="Live preview"
+                    label="Preview"
                     icon="pi pi-eye"
                     severity="secondary"
                     size="small"
@@ -66,7 +91,7 @@ import { ProtopipeSiteBuilderService } from './protopipe-site-builder.service';
   `,
   styles: `
     .site-builder-page {
-      max-width: 72rem;
+      max-width: 80rem;
     }
     .page-header__row {
       display: flex;
@@ -81,7 +106,7 @@ import { ProtopipeSiteBuilderService } from './protopipe-site-builder.service';
     }
     .template-grid {
       display: grid;
-      gap: 1rem;
+      gap: 1.25rem;
       grid-template-columns: 1fr;
     }
     @media (min-width: 48rem) {
@@ -89,16 +114,52 @@ import { ProtopipeSiteBuilderService } from './protopipe-site-builder.service';
         grid-template-columns: repeat(2, 1fr);
       }
     }
-    @media (min-width: 72rem) {
+    @media (min-width: 90rem) {
       .template-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr);
       }
+    }
+    :host ::ng-deep .template-card .p-card-body {
+      padding: 0;
+    }
+    :host ::ng-deep .template-card .p-card-content {
+      padding: 0.75rem;
+    }
+    .template-preview {
+      position: relative;
+      height: 11rem;
+      overflow: hidden;
+      border-bottom: 1px solid var(--surface-border);
+      background: #0b0f19;
+    }
+    .template-preview--empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-color-secondary);
+      font-size: 0.875rem;
+      background: var(--surface-100);
+    }
+    .template-preview iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1280px;
+      height: 720px;
+      border: 0;
+      transform: scale(0.28);
+      transform-origin: 0 0;
+      pointer-events: none;
     }
     .card-link {
       text-decoration: none;
       color: inherit;
       display: block;
       margin-bottom: 0.75rem;
+    }
+    .card-link h2 {
+      margin: 0 0 0.35rem;
+      font-size: 1.125rem;
     }
     .desc,
     .meta {
@@ -120,9 +181,14 @@ import { ProtopipeSiteBuilderService } from './protopipe-site-builder.service';
 })
 export class SiteBuilderTemplatesComponent implements OnInit {
   protected readonly sb = inject(ProtopipeSiteBuilderService);
+  private readonly sanitizer = inject(DomSanitizer);
 
   protected previewUrl(t: SiteTemplateSummary): string {
     return (t.previewDemoUrl || t.previewImageUrl || '').trim();
+  }
+
+  protected previewFrameUrl(url: string): SafeResourceUrl {
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
   }
 
   ngOnInit(): void {

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { Card } from 'primeng/card';
 import { Button } from 'primeng/button';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { ProtopipeApiService } from '../protopipe-api.service';
@@ -10,7 +10,7 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
   selector: 'app-site-builder-template-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Card, Button, ProgressSpinner],
+  imports: [RouterLink, Button, ProgressSpinner],
   template: `
     <div class="detail-page">
       <a routerLink="/protopipe/site-builder/templates">← Templates</a>
@@ -26,9 +26,17 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
           <div class="detail-actions">
             @if (previewDemoUrl()) {
               <a
+                [href]="previewDemoUrl()"
+                target="_blank"
+                rel="noopener noreferrer"
+                pButton
+                label="Open Live Demo"
+                icon="pi pi-external-link"
+              ></a>
+              <a
                 [routerLink]="['/protopipe/site-builder/templates', t.id, 'preview']"
                 pButton
-                label="Live preview"
+                label="Full-screen preview"
                 icon="pi pi-eye"
                 severity="secondary"
               ></a>
@@ -43,24 +51,36 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
           </div>
         </header>
 
-        <h2>Sections</h2>
-        <ul class="section-list">
-          @for (section of sections(); track section.id) {
-            <li>
-              <strong>{{ section.label }}</strong>
-              <span class="component-id">{{ section.componentId }}</span>
-            </li>
-          }
-        </ul>
+        @if (previewDemoUrl()) {
+          <div class="detail-preview">
+            <iframe
+              [src]="previewFrameUrl()"
+              [title]="t.label + ' live site preview'"
+              loading="lazy"
+            ></iframe>
+          </div>
+        }
+
+        <details class="sections-details">
+          <summary>Section breakdown ({{ sections().length }})</summary>
+          <ul class="section-list">
+            @for (section of sections(); track section.id) {
+              <li>
+                <strong>{{ section.label }}</strong>
+                <span class="component-id">{{ section.componentId }}</span>
+              </li>
+            }
+          </ul>
+        </details>
       }
     </div>
   `,
   styles: `
     .detail-page {
-      max-width: 48rem;
+      max-width: 56rem;
     }
     .detail-header {
-      margin: 1rem 0 1.5rem;
+      margin: 1rem 0 1rem;
     }
     .detail-actions {
       display: flex;
@@ -68,10 +88,33 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
       gap: 0.5rem;
       margin-top: 1rem;
     }
+    .detail-preview {
+      position: relative;
+      height: min(70vh, 32rem);
+      overflow: hidden;
+      border: 1px solid var(--surface-border);
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      background: #0b0f19;
+    }
+    .detail-preview iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+    .sections-details {
+      margin-top: 1rem;
+    }
+    .sections-details summary {
+      cursor: pointer;
+      font-weight: 600;
+      padding: 0.5rem 0;
+      color: var(--text-color-secondary);
+    }
     .section-list {
       list-style: none;
       padding: 0;
-      margin: 0;
+      margin: 0.5rem 0 0;
     }
     .section-list li {
       padding: 0.75rem 0;
@@ -90,6 +133,7 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
 export class SiteBuilderTemplateDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly api = inject(ProtopipeApiService);
+  private readonly sanitizer = inject(DomSanitizer);
 
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
@@ -104,6 +148,10 @@ export class SiteBuilderTemplateDetailComponent implements OnInit {
   protected readonly sections = signal<
     { id: string; label: string; componentId: string }[]
   >([]);
+
+  protected previewFrameUrl(): SafeResourceUrl {
+    return this.sanitizer.bypassSecurityTrustResourceUrl(this.previewDemoUrl());
+  }
 
   ngOnInit(): void {
     const templateId = this.route.snapshot.paramMap.get('templateId');

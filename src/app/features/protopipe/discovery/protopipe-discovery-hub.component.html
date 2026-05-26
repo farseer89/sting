@@ -1,0 +1,53 @@
+<div class="discovery-hub">
+  <header class="discovery-hub__header">
+    <h1 class="discovery-hub__title m-0">Find keywords</h1>
+    <p class="discovery-hub__lead m-0 text-color-secondary">
+      Three ways to fill your keyword plan. Pick the one that matches how you work — they all
+      land in the same place.
+    </p>
+  </header>
+
+  <div class="discovery-hub__grid">
+    @for (path of pathways; track path.id) {
+      <article
+        class="discovery-hub__card surface-card border-round shadow-2"
+        [class.discovery-hub__card--disabled]="path.disabled"
+      >
+        <div class="discovery-hub__card-top">
+          <span class="discovery-hub__icon-wrap" [attr.aria-hidden]="true">
+            <i class="discovery-hub__icon" [class]="path.icon"></i>
+          </span>
+          <div class="discovery-hub__audience">
+            <span class="discovery-hub__audience-label">{{ path.audience }}</span>
+            @if (path.badge) {
+              <p-tag [value]="path.badge" severity="info" />
+            }
+          </div>
+        </div>
+
+        <h2 class="discovery-hub__card-title">{{ path.title }}</h2>
+        <p class="discovery-hub__card-pitch m-0">{{ path.pitch }}</p>
+        <p class="discovery-hub__card-body m-0 text-color-secondary">{{ path.body }}</p>
+
+        <div class="discovery-hub__card-action">
+          @if (path.disabled || !path.link) {
+            <p-button
+              [label]="path.cta"
+              [icon]="path.icon"
+              [disabled]="true"
+              styleClass="w-full"
+            />
+          } @else {
+            <a [routerLink]="path.link" class="discovery-hub__cta-link">
+              <p-button
+                [label]="path.cta"
+                [icon]="path.icon"
+                styleClass="w-full"
+              />
+            </a>
+          }
+        </div>
+      </article>
+    }
+  </div>
+</div>

@@ -1,0 +1,282 @@
+<p-toast />
+
+<div class="discovery-diy">
+  <header class="discovery-diy__header">
+    <div class="discovery-diy__title-block">
+      <h1 class="discovery-diy__title m-0">Find keywords for {{ hostname() ?? 'your site' }}</h1>
+      <p class="discovery-diy__lead m-0 text-color-secondary">
+        Pick the topics you want to win. Each tab pulls from a different signal — start with
+        Ranked (what your site is already showing up for) and work outward.
+      </p>
+    </div>
+    <div class="discovery-diy__header-actions">
+      <a routerLink="/protopipe/keywords/discover">
+        <p-button label="Back" icon="pi pi-arrow-left" [outlined]="true" size="small" />
+      </a>
+      <a routerLink="/protopipe/keywords">
+        <p-button label="My keywords" icon="pi pi-list" [outlined]="true" size="small" />
+      </a>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="discovery-diy__panel discovery-diy__loading surface-card border-round shadow-2">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Loading discovery results" />
+      <p class="m-0 text-color-secondary">Looking at what your site already ranks for…</p>
+    </div>
+  } @else if (error()) {
+    <div class="discovery-diy__panel surface-card border-round shadow-2" role="alert">
+      <h2 class="m-0 mb-2 text-lg">Couldn't load suggestions</h2>
+      <p class="m-0 mb-3 text-red-500">{{ error() }}</p>
+      <p-button label="Try again" icon="pi pi-refresh" (onClick)="load()" />
+    </div>
+  } @else {
+    <p-tabs [value]="activeTab()" (valueChange)="activeTab.set($any($event))">
+      <p-tablist>
+        <p-tab value="ranked">
+          <i class="pi pi-chart-line mr-2"></i>
+          Ranked
+          <span class="text-color-secondary ml-2">({{ rankedRows().length }})</span>
+        </p-tab>
+        <p-tab value="ads">
+          <i class="pi pi-lightbulb mr-2"></i>
+          Ideas
+          <span class="text-color-secondary ml-2">({{ adsRows().length }})</span>
+        </p-tab>
+        <p-tab value="gsc">
+          <i class="pi pi-google mr-2"></i>
+          Search Console
+          <span class="text-color-secondary ml-2">({{ gscRows().length }})</span>
+        </p-tab>
+      </p-tablist>
+
+      <p-tabpanels>
+        <p-tabpanel value="ranked">
+          <div class="discovery-diy__panel surface-card border-round shadow-2">
+            <header class="discovery-diy__panel-header">
+              <div>
+                <h2 class="discovery-diy__panel-title m-0">Phrases your site already ranks for</h2>
+                <p class="m-0 text-color-secondary">
+                  From DataForSEO organic index. Even page-5 rankings — these are the easiest wins.
+                </p>
+              </div>
+            </header>
+
+            @if (rankedRows().length === 0) {
+              <p class="m-0 text-color-secondary">
+                @if (response()?.ranked?.error) {
+                  {{ response()?.ranked?.error }}
+                } @else {
+                  No ranked phrases found yet. Try again after your site has been crawled.
+                }
+              </p>
+            } @else {
+              <p-table
+                [value]="rankedRows()"
+                [scrollable]="true"
+                scrollHeight="55vh"
+                styleClass="p-datatable-sm discovery-diy__table"
+              >
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th class="discovery-diy__check-col">
+                      <p-checkbox
+                        [binary]="true"
+                        [ngModel]="allSelected('ranked')"
+                        (ngModelChange)="toggleAll('ranked', $event)"
+                        ariaLabel="Select all ranked phrases"
+                      />
+                    </th>
+                    <th>Phrase</th>
+                    <th class="text-right">Pos</th>
+                    <th class="text-right">Volume</th>
+                    <th class="text-right">KD</th>
+                    <th class="text-right">CPC</th>
+                    <th></th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-row>
+                  <tr [class.discovery-diy__row--tracked]="row.tracked">
+                    <td class="discovery-diy__check-col">
+                      <p-checkbox
+                        [binary]="true"
+                        [ngModel]="row.selected"
+                        [disabled]="row.tracked"
+                        (ngModelChange)="toggleRow('ranked', row.phraseKey, $event)"
+                        [ariaLabel]="'Select ' + row.phrase"
+                      />
+                    </td>
+                    <td class="discovery-diy__phrase-col">{{ row.phrase }}</td>
+                    <td class="text-right">{{ formatPosition(row.position) }}</td>
+                    <td class="text-right">{{ formatNumber(row.searchVolume) }}</td>
+                    <td class="text-right">{{ formatNumber(row.keywordDifficulty) }}</td>
+                    <td class="text-right">{{ formatCpc(row.cpc) }}</td>
+                    <td>
+                      @if (row.tracked) {
+                        <p-tag value="Tracking" severity="success" />
+                      }
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            }
+          </div>
+        </p-tabpanel>
+
+        <p-tabpanel value="ads">
+          <div class="discovery-diy__panel surface-card border-round shadow-2">
+            <header class="discovery-diy__panel-header">
+              <div>
+                <h2 class="discovery-diy__panel-title m-0">Ideas from Google Keyword Planner</h2>
+                <p class="m-0 text-color-secondary">
+                  Seeded from your site URL. These are phrases your industry is actively searching.
+                </p>
+              </div>
+            </header>
+
+            @if (adsRows().length === 0) {
+              <p class="m-0 text-color-secondary">
+                @if (response()?.ads?.error) {
+                  {{ response()?.ads?.error }}
+                } @else {
+                  No ideas returned. Keyword Planner sometimes needs a few minutes after a site change.
+                }
+              </p>
+            } @else {
+              <p-table
+                [value]="adsRows()"
+                [scrollable]="true"
+                scrollHeight="55vh"
+                styleClass="p-datatable-sm discovery-diy__table"
+              >
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th class="discovery-diy__check-col">
+                      <p-checkbox
+                        [binary]="true"
+                        [ngModel]="allSelected('ads')"
+                        (ngModelChange)="toggleAll('ads', $event)"
+                        ariaLabel="Select all ideas"
+                      />
+                    </th>
+                    <th>Phrase</th>
+                    <th class="text-right">Avg searches</th>
+                    <th>Competition</th>
+                    <th class="text-right">Est. CPC</th>
+                    <th></th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-row>
+                  <tr [class.discovery-diy__row--tracked]="row.tracked">
+                    <td class="discovery-diy__check-col">
+                      <p-checkbox
+                        [binary]="true"
+                        [ngModel]="row.selected"
+                        [disabled]="row.tracked"
+                        (ngModelChange)="toggleRow('ads', row.phraseKey, $event)"
+                        [ariaLabel]="'Select ' + row.phrase"
+                      />
+                    </td>
+                    <td class="discovery-diy__phrase-col">{{ row.phrase }}</td>
+                    <td class="text-right">{{ formatNumber(row.searchVolume) }}</td>
+                    <td>{{ row.competition ?? '—' }}</td>
+                    <td class="text-right">{{ formatCpc(row.cpc) }}</td>
+                    <td>
+                      @if (row.tracked) {
+                        <p-tag value="Tracking" severity="success" />
+                      }
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            }
+          </div>
+        </p-tabpanel>
+
+        <p-tabpanel value="gsc">
+          <div class="discovery-diy__panel surface-card border-round shadow-2">
+            <header class="discovery-diy__panel-header">
+              <div>
+                <h2 class="discovery-diy__panel-title m-0">Queries from Google Search Console</h2>
+                <p class="m-0 text-color-secondary">
+                  Real impressions you're earning today — the highest-confidence signals to double down on.
+                </p>
+              </div>
+            </header>
+
+            @if (gscRows().length === 0) {
+              <p class="m-0 text-color-secondary">
+                @if (response()?.gsc?.error) {
+                  {{ response()?.gsc?.error }}
+                } @else {
+                  No queries yet — give it a week or two of impressions to build up.
+                }
+              </p>
+            } @else {
+              <p-table
+                [value]="gscRows()"
+                [scrollable]="true"
+                scrollHeight="55vh"
+                styleClass="p-datatable-sm discovery-diy__table"
+              >
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th class="discovery-diy__check-col">
+                      <p-checkbox
+                        [binary]="true"
+                        [ngModel]="allSelected('gsc')"
+                        (ngModelChange)="toggleAll('gsc', $event)"
+                        ariaLabel="Select all queries"
+                      />
+                    </th>
+                    <th>Query</th>
+                    <th class="text-right">Impressions</th>
+                    <th class="text-right">Clicks</th>
+                    <th class="text-right">Pos</th>
+                    <th></th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-row>
+                  <tr [class.discovery-diy__row--tracked]="row.tracked">
+                    <td class="discovery-diy__check-col">
+                      <p-checkbox
+                        [binary]="true"
+                        [ngModel]="row.selected"
+                        [disabled]="row.tracked"
+                        (ngModelChange)="toggleRow('gsc', row.phraseKey, $event)"
+                        [ariaLabel]="'Select ' + row.phrase"
+                      />
+                    </td>
+                    <td class="discovery-diy__phrase-col">{{ row.phrase }}</td>
+                    <td class="text-right">{{ formatNumber(row.impressions) }}</td>
+                    <td class="text-right">{{ formatNumber(row.clicks) }}</td>
+                    <td class="text-right">{{ formatPosition(row.position) }}</td>
+                    <td>
+                      @if (row.tracked) {
+                        <p-tag value="Tracking" severity="success" />
+                      }
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            }
+          </div>
+        </p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
+  }
+
+  @if (selectedCount() > 0) {
+    <div class="discovery-diy__action-bar shadow-3">
+      <span class="discovery-diy__action-count">
+        {{ selectedCount() }} selected
+      </span>
+      <p-button
+        label="Add to my plan"
+        icon="pi pi-plus"
+        [loading]="adding()"
+        (onClick)="addSelected()"
+      />
+    </div>
+  }
+</div>

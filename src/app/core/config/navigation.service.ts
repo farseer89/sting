@@ -56,6 +56,13 @@ export class NavigationService {
             visible: true,
           },
           {
+            id: 'keywords-discover',
+            label: 'Find keywords',
+            icon: 'pi pi-sparkles',
+            routerLink: '/protopipe/keywords/discover',
+            visible: true,
+          },
+          {
             id: 'content',
             label: 'Content',
             icon: 'pi pi-file-edit',

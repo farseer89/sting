@@ -68,6 +68,20 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'protopipe/keywords/discover',
+        loadComponent: () =>
+          import(
+            './features/protopipe/discovery/protopipe-discovery-hub.component'
+          ).then((m) => m.ProtopipeDiscoveryHubComponent),
+      },
+      {
+        path: 'protopipe/keywords/discover/diy',
+        loadComponent: () =>
+          import(
+            './features/protopipe/discovery/protopipe-discovery-diy.component'
+          ).then((m) => m.ProtopipeDiscoveryDiyComponent),
+      },
+      {
         path: 'protopipe/content',
         loadComponent: () =>
           import('./features/protopipe/content/protopipe-content-list.component').then(

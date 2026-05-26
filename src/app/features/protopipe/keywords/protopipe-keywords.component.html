@@ -18,6 +18,14 @@
         }
       </div>
       <div class="protopipe-keywords__actions flex align-items-center gap-2 flex-wrap">
+        <a routerLink="/protopipe/keywords/discover">
+          <p-button
+            label="Find keywords"
+            icon="pi pi-sparkles"
+            size="small"
+            [outlined]="true"
+          />
+        </a>
         <p-button
           label="Refresh market data"
           icon="pi pi-refresh"
@@ -93,7 +101,14 @@
     </div>
 
     @if (keywords().length === 0) {
-      <p class="protopipe-keywords__empty m-0 text-color-secondary">No keywords yet — add one above.</p>
+      <div class="protopipe-keywords__empty-state">
+        <p class="protopipe-keywords__empty m-0 text-color-secondary">
+          No keywords yet — type one above, or let us suggest some based on your site.
+        </p>
+        <a routerLink="/protopipe/keywords/discover">
+          <p-button label="Find keywords for me" icon="pi pi-sparkles" size="small" />
+        </a>
+      </div>
     } @else {
       <div class="protopipe-keywords__table-wrap">
         <p-table

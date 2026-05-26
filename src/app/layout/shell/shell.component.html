@@ -223,11 +223,18 @@
             <a
               pRipple
               class="flex px-3 py-2 align-items-center text-600 hover:text-900 hover:surface-100 font-medium border-round cursor-pointer transition-duration-150 transition-colors"
-              (click)="onThemeClick()"
+              (click)="themeMenu.toggle($event)"
               title="Change theme"
             >
               <i class="pi pi-palette text-2xl"></i>
             </a>
+            <p-menu
+              #themeMenu
+              [popup]="true"
+              [model]="themeMenuItems"
+              appendTo="body"
+              styleClass="theme-menu"
+            />
           </li>
           <li class="notification-bell-item">
             <a

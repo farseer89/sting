@@ -10,6 +10,8 @@ import { Tooltip } from 'primeng/tooltip';
 import { filter, Subscription } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { NavMenuItem, NavigationService } from '../../core/config/navigation.service';
+import { ThemeService } from '../../core/theme/theme.service';
+import { THEME_GROUPS } from '../../core/theme/theme.types';
 import { ProtopipeContentService } from '../../features/protopipe/protopipe-content.service';
 import { ProtopipeWritingToolsComponent } from '../../features/protopipe/content/protopipe-writing-tools.component';
 import { SessionExpiredDialogComponent } from '../../shared/session-expired-dialog/session-expired-dialog.component';
@@ -45,6 +47,11 @@ export class ShellComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly messages = inject(MessageService);
   private readonly content = inject(ProtopipeContentService);
+  private readonly themeService = inject(ThemeService);
+
+  readonly currentThemeId = this.themeService.themeId;
+
+  readonly themeMenuItems: MenuItem[] = buildThemeMenuItems((id) => this.themeService.setTheme(id));
 
   readonly inWritingMode = this.content.inWritingMode;
 
@@ -118,13 +125,8 @@ export class ShellComponent implements OnInit, OnDestroy {
     });
   }
 
-  onThemeClick(): void {
-    this.messages.add({
-      severity: 'info',
-      summary: 'Themes',
-      detail: 'Sting uses the FieldWave Lara preset; theme picker coming later.',
-      life: 3000,
-    });
+  isActiveTheme(id: string): boolean {
+    return this.currentThemeId() === id;
   }
 
   onNotifications(): void {
@@ -203,4 +205,23 @@ export class ShellComponent implements OnInit, OnDestroy {
   private logout(): void {
     this.auth.logout();
   }
+}
+
+/**
+ * Build the palette dropdown items from THEME_GROUPS, inserting separators
+ * between groups (matches PRIME_BLOCKS alpha-layout structure).
+ */
+function buildThemeMenuItems(onPick: (id: string) => void): MenuItem[] {
+  const items: MenuItem[] = [];
+  THEME_GROUPS.forEach((group, gIdx) => {
+    if (gIdx > 0) items.push({ separator: true });
+    for (const theme of group.themes) {
+      items.push({
+        label: theme.label,
+        icon: theme.icon,
+        command: () => onPick(theme.id),
+      });
+    }
+  });
+  return items;
 }

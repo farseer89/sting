@@ -42,6 +42,13 @@ export class NavigationService {
             visible: true,
           },
           {
+            id: 'research',
+            label: 'Research',
+            icon: 'pi pi-search',
+            routerLink: '/protopipe/research',
+            visible: true,
+          },
+          {
             id: 'keywords',
             label: 'Keywords',
             icon: 'pi pi-list',

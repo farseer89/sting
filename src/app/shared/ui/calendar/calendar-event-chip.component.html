@@ -1,0 +1,31 @@
+<button
+  type="button"
+  class="chip"
+  [ngClass]="chipClasses()"
+  (click)="onActivate($event)"
+  [attr.aria-label]="item().title"
+>
+  @if (!isGhost() && accentColor()) {
+    <span class="chip__stripe" [ngStyle]="stripeStyle()" aria-hidden="true"></span>
+  }
+
+  <span class="chip__body">
+    <span class="chip__title">{{ item().title }}</span>
+    @if (item().badge; as badge) {
+      <span class="chip__badge">{{ badge }}</span>
+    }
+  </span>
+
+  @if (item().metric; as metric) {
+    <span class="chip__metric" [attr.aria-label]="metricAriaLabel()">
+      <span class="chip__metric-value">{{ metric.value }}</span>
+      @if (trendIcon(); as icon) {
+        <i [class]="icon + ' ' + trendClass()" aria-hidden="true"></i>
+      }
+    </span>
+  }
+
+  @if (sourceIcon(); as icon) {
+    <i class="chip__source" [class]="'chip__source ' + icon" aria-hidden="true"></i>
+  }
+</button>

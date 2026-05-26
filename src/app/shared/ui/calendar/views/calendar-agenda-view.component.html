@@ -1,0 +1,37 @@
+<div class="agenda">
+  @if (isEmpty()) {
+    <p class="agenda__empty">No items this month.</p>
+  } @else {
+    <ul class="agenda__groups">
+      @for (group of groups(); track trackGroup($index, group)) {
+        <li class="agenda__group">
+          <div class="agenda__date" [class.agenda__date--today]="group.isToday">
+            <span class="agenda__date-label">{{ group.label }}</span>
+            @if (group.isToday) {
+              <span class="agenda__date-today">Today</span>
+            }
+          </div>
+          <ul class="agenda__items">
+            @for (item of group.items; track trackItem($index, item)) {
+              <li>
+                @if (chipTemplate(); as tmpl) {
+                  <ng-container
+                    *ngTemplateOutlet="tmpl; context: { $implicit: item }"
+                  ></ng-container>
+                } @else {
+                  <app-calendar-event-chip
+                    [item]="item"
+                    [accentColor]="accentFor(item)"
+                    [sourceIcon]="sourceIconFor(item)"
+                    density="comfortable"
+                    (chipClick)="onChipClick(item)"
+                  />
+                }
+              </li>
+            }
+          </ul>
+        </li>
+      }
+    </ul>
+  }
+</div>

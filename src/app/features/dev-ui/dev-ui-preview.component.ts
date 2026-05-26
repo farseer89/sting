@@ -47,6 +47,7 @@ import { ToggleSwitch } from 'primeng/toggleswitch';
 import { Toolbar } from 'primeng/toolbar';
 import { Tooltip } from 'primeng/tooltip';
 import { JsonPipe } from '@angular/common';
+import { CalendarPipelineDemoComponent } from './calendar-pipeline-demo.component';
 
 @Component({
   selector: 'app-dev-ui-preview',
@@ -98,6 +99,7 @@ import { JsonPipe } from '@angular/common';
     ToggleSwitch,
     Toolbar,
     Tooltip,
+    CalendarPipelineDemoComponent,
   ],
   providers: [MessageService],
   templateUrl: './dev-ui-preview.component.html',

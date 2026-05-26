@@ -1,0 +1,70 @@
+<div class="ppc-calendar">
+  <header class="ppc-calendar__header">
+    <div>
+      <p class="ppc-calendar__eyebrow">Protopipe</p>
+      <h1>Content calendar</h1>
+      <p class="ppc-calendar__lead">
+        Every draft, scheduled post, and published article in one view.
+      </p>
+    </div>
+    <div class="ppc-calendar__actions">
+      <a routerLink="/protopipe/content">
+        <p-button label="List view" icon="pi pi-list" [outlined]="true" />
+      </a>
+      <a routerLink="/protopipe/content/new">
+        <p-button label="New article" icon="pi pi-plus" />
+      </a>
+    </div>
+  </header>
+
+  @if (error()) {
+    <p class="ppc-calendar__error" role="alert">{{ error() }}</p>
+  }
+
+  @if (loading() && posts().length === 0) {
+    <div class="ppc-calendar__loading">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Loading" />
+    </div>
+  } @else {
+    <app-calendar
+      [items]="items()"
+      (itemAction)="onItemAction($event)"
+    >
+      <ng-template #dialog let-item>
+        <div class="ppc-calendar__dialog">
+          <div class="ppc-calendar__dialog-meta">
+            <p-tag
+              [value]="item.data.status"
+              [severity]="statusSeverity(item.data.status)"
+            />
+            <span class="ppc-calendar__dialog-date">
+              {{ dateLabelPrefix(item.data) }} {{ formatDateLabel(item.data) }}
+            </span>
+          </div>
+
+          @if (item.data.template?.primaryKeywordPhrase; as keyword) {
+            <p class="ppc-calendar__dialog-keyword">
+              <i class="pi pi-search" aria-hidden="true"></i>
+              <span>{{ keyword }}</span>
+            </p>
+          }
+
+          @if (item.data.description) {
+            <p class="ppc-calendar__dialog-desc">{{ item.data.description }}</p>
+          }
+
+          @if (item.data.publishedUrl) {
+            <p class="ppc-calendar__dialog-url">
+              <i class="pi pi-link" aria-hidden="true"></i>
+              <a
+                [href]="item.data.publishedUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+              >{{ item.data.publishedUrl }}</a>
+            </p>
+          }
+        </div>
+      </ng-template>
+    </app-calendar>
+  }
+</div>

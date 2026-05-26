@@ -1,6 +1,9 @@
 <p-toast />
 
 @switch (demoKey()) {
+  @case ('calendar-pipeline') {
+    <app-calendar-pipeline-demo />
+  }
   @case ('hive-user-card') {
     <div class="flex align-items-center gap-3 p-3 surface-ground border-round">
       <p-avatar [label]="demoUser.firstName.charAt(0) + demoUser.lastName.charAt(0)" shape="circle" size="large" />

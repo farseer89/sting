@@ -1,0 +1,222 @@
+:host {
+  display: block;
+}
+
+.week {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.week__summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  padding: 0.65rem 0.9rem;
+  background: var(--p-surface-50, #fafafa);
+  border: 1px solid var(--p-content-border-color, #e5e7eb);
+  border-radius: 10px;
+  font-size: 0.78rem;
+  color: var(--p-text-muted-color, #6b7280);
+  line-height: 1;
+}
+
+.week__summary-total {
+  font-weight: 600;
+  color: var(--p-text-color, #1f2937);
+}
+
+.week__summary-divider {
+  color: var(--p-surface-300, #d1d5db);
+}
+
+.week__summary-entry {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.week__summary-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.week__summary-count {
+  font-weight: 600;
+  color: var(--p-text-color, #1f2937);
+  font-variant-numeric: tabular-nums;
+}
+
+.week__summary-label {
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+}
+
+.week__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0;
+  border: 1px solid var(--p-content-border-color, #e5e7eb);
+  border-radius: 12px;
+  background: var(--p-content-background, #fff);
+  overflow: hidden;
+  min-height: 32rem;
+}
+
+.week__col {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border-right: 1px solid var(--p-content-border-color, #e5e7eb);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  &:last-child {
+    border-right: 0;
+  }
+
+  &:hover {
+    background: color-mix(in srgb, var(--p-surface-50, #fafafa) 60%, transparent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--p-primary-500, #3b82f6);
+    outline-offset: -2px;
+  }
+}
+
+.week__col--weekend:not(.week__col--today) {
+  background: color-mix(in srgb, var(--p-surface-50, #fafafa) 50%, transparent);
+}
+
+.week__col--off-month .week__col-date-num {
+  opacity: 0.55;
+}
+
+.week__col--today {
+  background: color-mix(in srgb, var(--p-primary-50, #eff6ff) 70%, transparent);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: var(--p-primary-500, #3b82f6);
+    z-index: 1;
+  }
+
+  &:hover {
+    background: color-mix(in srgb, var(--p-primary-50, #eff6ff) 95%, transparent);
+  }
+}
+
+.week__col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 0.75rem 0.55rem;
+  border-bottom: 1px solid var(--p-content-border-color, #e5e7eb);
+  background: inherit;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  backdrop-filter: blur(4px);
+}
+
+.week__col-weekday {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--p-text-muted-color, #6b7280);
+}
+
+.week__col--today .week__col-weekday {
+  color: var(--p-primary-600, #2563eb);
+}
+
+.week__col-date {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.week__col-date-num {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--p-text-color, #1f2937);
+  font-variant-numeric: tabular-nums;
+}
+
+.week__col-date-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  background: var(--p-primary-500, #3b82f6);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.week__col-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.55rem 0.5rem 0.6rem;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+
+  > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+.week__col-empty {
+  margin: 0.4rem 0 0;
+  font-size: 0.72rem;
+  color: var(--p-surface-400, #9ca3af);
+  text-align: center;
+  font-style: italic;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.week__col:hover .week__col-empty {
+  opacity: 0.7;
+}
+
+@media (max-width: 960px) {
+  .week__grid {
+    min-height: 26rem;
+  }
+
+  .week__col-header {
+    padding: 0.55rem 0.5rem 0.4rem;
+  }
+
+  .week__col-date-num,
+  .week__col-date-circle {
+    font-size: 0.9rem;
+  }
+
+  .week__col-date-circle {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+}

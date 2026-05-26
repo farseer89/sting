@@ -6,6 +6,9 @@
       <p class="content-library__lead">Drafts and published posts for your site.</p>
     </div>
     <div class="content-library__actions">
+      <a routerLink="/protopipe/content/calendar">
+        <p-button label="Calendar view" icon="pi pi-calendar" [outlined]="true" />
+      </a>
       <p-button label="New article" icon="pi pi-plus" (onClick)="openNew()" />
       <a routerLink="/protopipe">
         <p-button label="My Plan" icon="pi pi-compass" [outlined]="true" />

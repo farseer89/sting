@@ -1,0 +1,139 @@
+<div class="cal">
+  <div class="cal__toolbar">
+    <div class="cal__nav">
+      <p-button
+        icon="pi pi-chevron-left"
+        [text]="true"
+        [rounded]="true"
+        size="small"
+        (onClick)="prev()"
+        [ariaLabel]="navAriaLabels().prev"
+      />
+      <p-button
+        label="Today"
+        size="small"
+        [text]="true"
+        (onClick)="today()"
+      />
+      <p-button
+        icon="pi pi-chevron-right"
+        [text]="true"
+        [rounded]="true"
+        size="small"
+        (onClick)="next()"
+        [ariaLabel]="navAriaLabels().next"
+      />
+    </div>
+
+    <h2 class="cal__title">{{ currentTitle() }}</h2>
+
+    <div class="cal__toolbar-end">
+      @if (toolbarTmpl(); as tmpl) {
+        <ng-container *ngTemplateOutlet="tmpl"></ng-container>
+      }
+      @if (!isMobile()) {
+        <p-selectButton
+          [options]="viewOptions"
+          [ngModel]="view()"
+          (ngModelChange)="onViewChange($event)"
+          optionLabel="label"
+          optionValue="value"
+          size="small"
+        />
+      }
+    </div>
+  </div>
+
+  <div class="cal__body">
+    @if (view() === 'month' && !isMobile()) {
+      <app-calendar-month-view
+        [cursor]="cursor()"
+        [items]="items()"
+        [weekStartsOn]="weekStartsOn()"
+        [itemsPerDay]="itemsPerDay()"
+        [statusColors]="statusColors()"
+        [sourceIcons]="sourceIcons()"
+        [showWeekends]="showWeekends()"
+        [chipTemplate]="chipTmpl() ?? null"
+        (itemClick)="onItemClick($event)"
+        (cellClick)="onCellClick($event)"
+      />
+    } @else if (view() === 'week' && !isMobile()) {
+      <app-calendar-week-view
+        [cursor]="cursor()"
+        [items]="items()"
+        [weekStartsOn]="weekStartsOn()"
+        [statusColors]="statusColors()"
+        [sourceIcons]="sourceIcons()"
+        [chipTemplate]="chipTmpl() ?? null"
+        (itemClick)="onItemClick($event)"
+        (cellClick)="onCellClick($event)"
+      />
+    } @else {
+      <app-calendar-agenda-view
+        [cursor]="cursor()"
+        [items]="items()"
+        [statusColors]="statusColors()"
+        [sourceIcons]="sourceIcons()"
+        [chipTemplate]="chipTmpl() ?? null"
+        (itemClick)="onItemClick($event)"
+      />
+    }
+  </div>
+</div>
+
+<p-dialog
+  [visible]="dialogVisible()"
+  (visibleChange)="dialogVisible.set($event)"
+  [modal]="true"
+  [dismissableMask]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '32rem' }"
+  [breakpoints]="{ '960px': '90vw' }"
+  styleClass="cal__dialog"
+>
+  <ng-template pTemplate="header">
+    @if (activeItem(); as item) {
+      <div class="cal__dialog-header">
+        <h3 class="cal__dialog-title">{{ item.title }}</h3>
+        <p class="cal__dialog-meta">{{ formatDate(item.date) }}</p>
+      </div>
+    }
+  </ng-template>
+
+  @if (activeItem(); as item) {
+    @if (dialogTmpl(); as tmpl) {
+      <ng-container *ngTemplateOutlet="tmpl; context: { $implicit: item }"></ng-container>
+    } @else {
+      <div class="cal__dialog-default">
+        @if (item.status) {
+          <p class="cal__dialog-status">Status: <strong>{{ item.status }}</strong></p>
+        }
+        @if (item.badge) {
+          <p class="cal__dialog-status">{{ item.badge }}</p>
+        }
+        @if (item.metric; as metric) {
+          <p class="cal__dialog-status">
+            {{ metric.label }}: <strong>{{ metric.value }}</strong>
+          </p>
+        }
+      </div>
+    }
+
+    @if (item.actions && item.actions.length > 0) {
+      <div class="cal__dialog-actions">
+        @for (action of item.actions; track action.id) {
+          <p-button
+            [label]="action.label"
+            [icon]="action.icon ?? ''"
+            size="small"
+            [outlined]="!isPrimaryAction(action)"
+            [severity]="isDangerAction(action) ? 'danger' : undefined"
+            (onClick)="onActionClick(action)"
+          />
+        }
+      </div>
+    }
+  }
+</p-dialog>

@@ -1,0 +1,64 @@
+<div class="month" [class.month--no-weekends]="!showWeekends()">
+  <div class="month__weekdays" aria-hidden="true">
+    @for (label of weekdays(); track label) {
+      <div class="month__weekday">{{ label }}</div>
+    }
+  </div>
+
+  <div class="month__grid" role="grid">
+    @for (day of grid(); track trackDay($index, day)) {
+      <div
+        class="month__cell"
+        role="gridcell"
+        tabindex="0"
+        [attr.aria-label]="day.key"
+        [ngClass]="{
+          'month__cell--other-month': !day.isCurrentMonth,
+          'month__cell--today': day.isToday,
+          'month__cell--weekend': day.isWeekend,
+        }"
+        (click)="onCellClick(day)"
+        (keydown.enter)="onCellClick(day)"
+        (keydown.space)="onCellClick(day); $event.preventDefault()"
+      >
+        <div class="month__cell-header">
+          <span class="month__date-num">
+            @if (day.isToday) {
+              <span class="month__date-num-circle">{{ day.dayOfMonth }}</span>
+            } @else {
+              {{ day.dayOfMonth }}
+            }
+          </span>
+        </div>
+
+        <div class="month__cell-items">
+          @for (item of visibleItems(day.key); track trackItem($index, item)) {
+            @if (chipTemplate(); as tmpl) {
+              <ng-container
+                *ngTemplateOutlet="tmpl; context: { $implicit: item }"
+              ></ng-container>
+            } @else {
+              <app-calendar-event-chip
+                [item]="item"
+                [accentColor]="accentFor(item)"
+                [sourceIcon]="sourceIconFor(item)"
+                density="compact"
+                (chipClick)="onChipClick(item)"
+              />
+            }
+          }
+
+          @if (overflowCount(day.key) > 0) {
+            <button
+              type="button"
+              class="month__overflow"
+              (click)="onOverflowClick($event, day)"
+            >
+              +{{ overflowCount(day.key) }} more
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>

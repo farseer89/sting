@@ -1,0 +1,23 @@
+<div class="demo">
+  <app-calendar
+    [items]="items()"
+    (itemClick)="onItemClick($event)"
+    (itemAction)="onItemAction($event)"
+    (cellClick)="onCellClick($event)"
+  >
+    <ng-template #toolbar>
+      <div class="demo__wins" role="status">
+        <i class="pi pi-bolt" aria-hidden="true"></i>
+        <span>
+          Your <strong>"maui-elopement-photography"</strong> article got
+          <strong>47 new visitors</strong> this week.
+        </span>
+      </div>
+    </ng-template>
+  </app-calendar>
+
+  <div class="demo__events">
+    <span class="demo__events-label">Last event:</span>
+    <code>{{ lastEvent() }}</code>
+  </div>
+</div>

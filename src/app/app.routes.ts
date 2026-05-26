@@ -75,6 +75,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'protopipe/content/calendar',
+        loadComponent: () =>
+          import(
+            './features/protopipe/content/protopipe-content-pipeline-calendar.component'
+          ).then((m) => m.ProtopipeContentPipelineCalendarComponent),
+      },
+      {
         path: 'protopipe/content/new',
         data: { mode: 'create' },
         canDeactivate: [protopipeContentUnsavedGuard],

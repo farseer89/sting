@@ -1,0 +1,69 @@
+<div class="week">
+  @if (totalCount() > 0) {
+    <div class="week__summary" aria-label="Week summary">
+      <span class="week__summary-total">{{ totalCount() }} this week</span>
+      <span class="week__summary-divider" aria-hidden="true">·</span>
+      @for (entry of summary(); track trackStatus($index, entry)) {
+        <span class="week__summary-entry">
+          <span
+            class="week__summary-dot"
+            [style.background-color]="entry.color"
+            aria-hidden="true"
+          ></span>
+          <span class="week__summary-count">{{ entry.count }}</span>
+          <span class="week__summary-label">{{ entry.label }}</span>
+        </span>
+      }
+    </div>
+  }
+
+  <div class="week__grid" role="grid">
+    @for (day of grid(); track trackDay($index, day)) {
+      <div
+        class="week__col"
+        role="gridcell"
+        tabindex="0"
+        [attr.aria-label]="day.key"
+        [ngClass]="{
+          'week__col--today': day.isToday,
+          'week__col--weekend': day.isWeekend,
+          'week__col--off-month': !day.isCurrentMonth,
+        }"
+        (click)="onCellClick(day)"
+        (keydown.enter)="onCellClick(day)"
+        (keydown.space)="onCellClick(day); $event.preventDefault()"
+      >
+        <header class="week__col-header">
+          <span class="week__col-weekday">{{ dayName(day) }}</span>
+          <span class="week__col-date">
+            @if (day.isToday) {
+              <span class="week__col-date-circle">{{ day.dayOfMonth }}</span>
+            } @else {
+              <span class="week__col-date-num">{{ day.dayOfMonth }}</span>
+            }
+          </span>
+        </header>
+
+        <div class="week__col-items">
+          @for (item of itemsForDay(day.key); track trackItem($index, item)) {
+            @if (chipTemplate(); as tmpl) {
+              <ng-container
+                *ngTemplateOutlet="tmpl; context: { $implicit: item }"
+              ></ng-container>
+            } @else {
+              <app-calendar-event-chip
+                [item]="item"
+                [accentColor]="accentFor(item)"
+                [sourceIcon]="sourceIconFor(item)"
+                density="comfortable"
+                (chipClick)="onChipClick(item)"
+              />
+            }
+          } @empty {
+            <p class="week__col-empty" aria-hidden="true">No posts</p>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>

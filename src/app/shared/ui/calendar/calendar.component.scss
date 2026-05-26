@@ -1,0 +1,96 @@
+:host {
+  display: block;
+}
+
+.cal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cal__toolbar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.cal__nav {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.cal__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--p-text-color, #1f2937);
+  letter-spacing: -0.01em;
+}
+
+.cal__toolbar-end {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.cal__body {
+  min-height: 18rem;
+}
+
+.cal__dialog-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cal__dialog-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.cal__dialog-meta {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--p-text-muted-color, #6b7280);
+}
+
+.cal__dialog-default {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.cal__dialog-status {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--p-text-muted-color, #6b7280);
+
+  strong {
+    color: var(--p-text-color, #1f2937);
+    font-weight: 600;
+  }
+}
+
+.cal__dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  justify-content: flex-end;
+}
+
+@media (max-width: 600px) {
+  .cal__toolbar {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .cal__title {
+    font-size: 1.1rem;
+  }
+}

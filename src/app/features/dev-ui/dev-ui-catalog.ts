@@ -58,6 +58,39 @@ ${usage}`,
 
 const HAND_CRAFTED: DevUiExample[] = [
   {
+    id: 'calendar-pipeline',
+    name: 'Calendar (content pipeline)',
+    category: 'hive',
+    module: 'shared/ui/calendar',
+    description:
+      'Reusable <app-calendar> showing the Protopipe content lifecycle: ghost suggestions, drafts, scheduled, published with GA metric badges, failed-to-publish, and a projected wins banner.',
+    demoKey: 'calendar-pipeline',
+    keywords: ['calendar', 'pipeline', 'protopipe', 'content', 'schedule'],
+    snippet: `import { CalendarComponent } from 'src/app/shared/ui/calendar/calendar.component';
+import type { CalendarItem } from 'src/app/shared/ui/calendar/calendar.types';
+
+// Map your domain objects into CalendarItem<T>
+const items: CalendarItem<MyPost>[] = posts.map((p) => ({
+  id: p.id,
+  date: p.publishAt ?? p.updatedAt,
+  title: p.title,
+  status: p.status,                // 'suggested' | 'draft' | 'scheduled' | 'published' | 'failed'
+  source: 'human',                 // 'agent' | 'human' | 'hybrid'
+  metric: p.metrics                // optional GA badge
+    ? { label: 'visits', value: '+' + p.metrics.weeklyDelta, trend: 'up' }
+    : undefined,
+  actions: [{ id: 'edit', label: 'Edit', icon: 'pi pi-pencil', kind: 'primary' }],
+  data: p,
+}));
+
+// Drop into a template — defaults give you a full calendar
+<app-calendar [items]="items()" (itemClick)="open($event)" (itemAction)="handle($event)">
+  <ng-template #toolbar>...wins banner / filters...</ng-template>
+  <ng-template #chip let-item>...custom chip override (optional)...</ng-template>
+  <ng-template #dialog let-item>...custom dialog override (optional)...</ng-template>
+</app-calendar>`,
+  },
+  {
     id: 'hive-user-card',
     name: 'UserPublic card',
     category: 'hive',

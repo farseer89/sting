@@ -6,6 +6,7 @@ import { Select } from 'primeng/select';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { Message } from 'primeng/message';
 import { ProtopipeAdminAgentService } from '../protopipe-admin-agent.service';
+import { ProtopipeApiService } from '../protopipe-api.service';
 
 @Component({
   selector: 'app-protopipe-agent-control',
@@ -17,6 +18,7 @@ import { ProtopipeAdminAgentService } from '../protopipe-admin-agent.service';
 })
 export class ProtopipeAgentControlComponent implements OnInit {
   protected readonly admin = inject(ProtopipeAdminAgentService);
+  private readonly api = inject(ProtopipeApiService);
 
   readonly loading = this.admin.loading;
   readonly saving = this.admin.saving;
@@ -45,6 +47,11 @@ export class ProtopipeAgentControlComponent implements OnInit {
 
   async saveGlobal(): Promise<void> {
     await this.admin.saveGlobal();
+  }
+
+  async connectGoogle(): Promise<void> {
+    const { authorizationUrl } = await this.api.googleOAuthStart();
+    window.open(authorizationUrl, '_blank', 'noopener');
   }
 
   async onSiteChange(siteId: string): Promise<void> {

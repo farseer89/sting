@@ -1,0 +1,4 @@
+.protopipe-research { max-width: 1200px; margin: 0 auto; padding: 1rem; }
+.protopipe-research__metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 0.75rem; }
+.protopipe-research__metrics dt { font-size: 0.75rem; color: var(--text-color-secondary); margin: 0; }
+.protopipe-research__metrics dd { margin: 0.15rem 0 0; font-weight: 600; }

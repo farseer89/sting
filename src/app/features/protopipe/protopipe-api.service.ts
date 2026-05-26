@@ -17,6 +17,9 @@ import type {
   ProtopipeContentListResponse,
   ProtopipeContentPostResponse,
   ProtopipeDataForSeoStatusResponse,
+  ProtopipeGoogleIntegrationStatusResponse,
+  ProtopipeResearchQueryRequest,
+  ProtopipeResearchResponse,
   ProtopipeKeywordMetricHistoryResponse,
   ProtopipeMarketEnrichResponse,
   ProtopipePlan,
@@ -89,7 +92,32 @@ export class ProtopipeApiService {
     );
   }
 
-  enrichMarket(siteId: string): Promise<ProtopipeMarketEnrichResponse> {
+  googleIntegrationStatus(): Promise<ProtopipeGoogleIntegrationStatusResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeGoogleIntegrationStatusResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.googleIntegrationStatus.path),
+      ),
+    );
+  }
+
+  researchQuery(siteId: string, body: ProtopipeResearchQueryRequest): Promise<ProtopipeResearchResponse> {
+    return firstValueFrom(
+      this.http.post<ProtopipeResearchResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.researchQuery.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  googleOAuthStart(): Promise<{ authorizationUrl: string }> {
+    return firstValueFrom(
+      this.http.get<{ authorizationUrl: string }>(
+        protopipeApiUrl(ProtopipeAdminEndpoints.googleOAuthStart.path),
+      ),
+    );
+  }
+
+    enrichMarket(siteId: string): Promise<ProtopipeMarketEnrichResponse> {
     return firstValueFrom(
       this.http.post<ProtopipeMarketEnrichResponse>(
         protopipeApiUrl(ProtopipeEndpoints.marketEnrich.path, { siteId }),

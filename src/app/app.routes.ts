@@ -53,6 +53,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'protopipe/research',
+        loadComponent: () =>
+          import('./features/protopipe/research/protopipe-research.component').then(
+            (m) => m.ProtopipeResearchComponent,
+          ),
+      },
+      {
         path: 'protopipe/keywords',
         canDeactivate: [protopipeUnsavedGuard],
         loadComponent: () =>

@@ -7,6 +7,7 @@ import { ProgressSpinner } from 'primeng/progressspinner';
 import { Tag } from 'primeng/tag';
 import type { SiteTemplateSummary } from '@hive/contracts';
 import { ProtopipeSiteBuilderService } from './protopipe-site-builder.service';
+import { TemplatePreviewFrameComponent } from './template-preview-frame.component';
 
 /** Fallback when API manifest is stale — matches bagend `templates.ts` demo URLs. */
 const TEMPLATE_PREVIEW_URLS: Record<string, string> = {
@@ -20,7 +21,7 @@ const TEMPLATE_PREVIEW_URLS: Record<string, string> = {
   selector: 'app-site-builder-templates',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Card, Tag, ProgressSpinner, Button],
+  imports: [RouterLink, Card, Tag, ProgressSpinner, Button, TemplatePreviewFrameComponent],
   template: `
     <div class="site-builder-page">
       <header class="page-header">
@@ -43,12 +44,10 @@ const TEMPLATE_PREVIEW_URLS: Record<string, string> = {
             <p-card class="template-card">
               @if (previewUrl(t); as demoUrl) {
                 <div class="template-preview" aria-hidden="true">
-                  <iframe
+                  <app-template-preview-frame
                     [src]="previewFrameUrl(demoUrl)"
                     [title]="t.label + ' site preview'"
-                    loading="lazy"
-                    tabindex="-1"
-                  ></iframe>
+                  />
                 </div>
               } @else {
                 <div class="template-preview template-preview--empty">
@@ -138,11 +137,7 @@ const TEMPLATE_PREVIEW_URLS: Record<string, string> = {
       padding: 0.75rem;
     }
     .template-preview {
-      position: relative;
-      height: 11rem;
-      overflow: hidden;
       border-bottom: 1px solid var(--surface-border);
-      background: #0b0f19;
     }
     .template-preview--empty {
       display: flex;
@@ -151,17 +146,6 @@ const TEMPLATE_PREVIEW_URLS: Record<string, string> = {
       color: var(--text-color-secondary);
       font-size: 0.875rem;
       background: var(--surface-100);
-    }
-    .template-preview iframe {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 1280px;
-      height: 720px;
-      border: 0;
-      transform: scale(0.28);
-      transform-origin: 0 0;
-      pointer-events: none;
     }
     .card-link {
       text-decoration: none;

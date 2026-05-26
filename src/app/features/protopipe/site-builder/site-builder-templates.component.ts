@@ -60,16 +60,14 @@ const TEMPLATE_PREVIEW_URLS: Record<string, string> = {
                 <p-tag [value]="t.category" />
                 <p class="desc">{{ t.description }}</p>
                 <p class="meta">{{ t.sectionCount }} sections · theme {{ t.themeDefault }}</p>
+                @if (previewUrl(t); as demoUrl) {
+                  <a class="demo-url" [href]="demoUrl" target="_blank" rel="noopener noreferrer">
+                    {{ demoUrl }}
+                  </a>
+                }
               </a>
               <div class="card-actions">
                 @if (previewUrl(t); as demoUrl) {
-                  <a
-                    [routerLink]="['/protopipe/site-builder/templates', t.id, 'preview']"
-                    pButton
-                    label="Live preview"
-                    icon="pi pi-eye"
-                    size="small"
-                  ></a>
                   <a
                     [href]="demoUrl"
                     target="_blank"
@@ -77,6 +75,13 @@ const TEMPLATE_PREVIEW_URLS: Record<string, string> = {
                     pButton
                     label="Live Demo"
                     icon="pi pi-external-link"
+                    size="small"
+                  ></a>
+                  <a
+                    [routerLink]="['/protopipe/site-builder/templates', t.id, 'preview']"
+                    pButton
+                    label="Live preview"
+                    icon="pi pi-eye"
                     severity="secondary"
                     size="small"
                   ></a>
@@ -175,6 +180,17 @@ const TEMPLATE_PREVIEW_URLS: Record<string, string> = {
     }
     .meta {
       margin-top: 0.35rem;
+    }
+    .demo-url {
+      display: block;
+      margin-top: 0.35rem;
+      font-size: 0.8rem;
+      color: var(--primary-color);
+      text-decoration: underline;
+      word-break: break-all;
+    }
+    .demo-url:hover {
+      text-decoration: none;
     }
     .card-actions {
       display: flex;

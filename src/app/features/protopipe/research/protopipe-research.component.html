@@ -1,0 +1,224 @@
+<p-toast />
+
+<div class="protopipe-research page">
+  <header class="protopipe-research__header">
+    <h1>Keyword research</h1>
+    <p class="hint">Google Ads + Search Console data for any keyword. Add winners to your plan.</p>
+  </header>
+
+  @if (googleStatus(); as status) {
+    <section class="protopipe-research__status mb-3">
+      <p-tag
+        [severity]="status.ads.connected ? 'success' : status.ads.configured ? 'warn' : 'secondary'"
+        [value]="'Ads ' + (status.ads.connected ? 'connected' : status.ads.configured ? 'configured' : 'not configured')"
+      />
+      <p-tag
+        [severity]="status.gsc.connected ? 'success' : 'secondary'"
+        [value]="'Search Console ' + (status.gsc.connected ? 'connected' : 'not connected')"
+      />
+      @if (status.gsc.accountEmail) {
+        <span class="hint">{{ status.gsc.accountEmail }} · {{ status.gsc.propertiesCount ?? 0 }} verified properties</span>
+      }
+      @if (status.ads.error) {
+        <p class="hint hint--error">Ads: {{ status.ads.error }}</p>
+      }
+      @if (status.gsc.error && status.gsc.error !== status.ads.error) {
+        <p class="hint hint--error">GSC: {{ status.gsc.error }}</p>
+      }
+      @if (!status.ads.connected && !status.gsc.connected) {
+        <p class="hint">
+          Connect Google in
+          <a routerLink="/protopipe/admin/agent">Agent Control</a>
+          to enable research.
+        </p>
+      }
+    </section>
+  }
+
+  <section class="protopipe-research__search mb-3">
+    <div class="protopipe-research__form">
+      <input
+        pInputText
+        class="protopipe-research__phrase"
+        placeholder="Enter a keyword (e.g. live wedding painting)"
+        [ngModel]="phrase()"
+        (ngModelChange)="phrase.set($event)"
+        (keydown.enter)="onSearch()"
+      />
+      <p-select
+        [options]="geoOptions"
+        optionLabel="label"
+        optionValue="id"
+        [ngModel]="geoTargetId()"
+        (ngModelChange)="geoTargetId.set($event)"
+        styleClass="protopipe-research__geo"
+      />
+      <p-button
+        label="Research"
+        icon="pi pi-search"
+        [loading]="loading()"
+        [disabled]="!phrase().trim() || loading()"
+        (onClick)="onSearch()"
+      />
+    </div>
+    @if (error(); as err) {
+      <p class="hint hint--error">{{ err }}</p>
+    }
+  </section>
+
+  @if (loading()) {
+    <div class="protopipe-research__loading">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Loading" />
+    </div>
+  } @else if (result(); as r) {
+    <section class="protopipe-research__results">
+      <header class="protopipe-research__result-header">
+        <h2>{{ r.phrase }}</h2>
+        <span class="hint">{{ r.geo.label }} · {{ r.language }} · {{ r.cached ? 'cached' : 'live' }}</span>
+        <p-button
+          label="Add to plan"
+          icon="pi pi-plus"
+          [loading]="addingPhrase() === r.phrase"
+          (onClick)="addToPlan(r.phrase)"
+        />
+      </header>
+
+      @if (r.ads.available && r.ads.metrics; as m) {
+        <div class="protopipe-research__card">
+          <h3>Google Ads metrics</h3>
+          <dl class="protopipe-research__metrics">
+            <div>
+              <dt>Avg monthly searches</dt>
+              <dd>{{ formatNumber(m.avgMonthlySearches) }}{{ m.volumeIsRange ? ' (range)' : '' }}</dd>
+            </div>
+            <div>
+              <dt>Competition</dt>
+              <dd>{{ m.competition ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>Competition index</dt>
+              <dd>{{ m.competitionIndex ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>Top of page bid (low)</dt>
+              <dd>{{ microsToUsd(m.lowTopOfPageBidMicros) }}</dd>
+            </div>
+            <div>
+              <dt>Top of page bid (high)</dt>
+              <dd>{{ microsToUsd(m.highTopOfPageBidMicros) }}</dd>
+            </div>
+          </dl>
+        </div>
+      } @else if (r.ads.error) {
+        <div class="protopipe-research__card">
+          <h3>Google Ads metrics</h3>
+          <p class="hint hint--error">{{ r.ads.error }}</p>
+        </div>
+      }
+
+      @if (r.gsc.available && r.gsc.queryPerformance; as q) {
+        <div class="protopipe-research__card">
+          <h3>Your Search Console performance</h3>
+          <p class="hint">{{ r.gsc.propertyUrl }} · last 90 days</p>
+          <dl class="protopipe-research__metrics">
+            <div>
+              <dt>Clicks</dt>
+              <dd>{{ formatNumber(q.clicks) }}</dd>
+            </div>
+            <div>
+              <dt>Impressions</dt>
+              <dd>{{ formatNumber(q.impressions) }}</dd>
+            </div>
+            <div>
+              <dt>CTR</dt>
+              <dd>{{ formatPct(q.ctr) }}</dd>
+            </div>
+            <div>
+              <dt>Position</dt>
+              <dd>{{ q.position?.toFixed(1) ?? '—' }}</dd>
+            </div>
+          </dl>
+        </div>
+      } @else if (r.gsc.error) {
+        <div class="protopipe-research__card">
+          <h3>Search Console</h3>
+          <p class="hint hint--error">{{ r.gsc.error }}</p>
+        </div>
+      }
+
+      @if (r.gsc.similarQueries?.length) {
+        <div class="protopipe-research__card">
+          <h3>Similar queries you already rank for</h3>
+          <p-table [value]="r.gsc.similarQueries ?? []" styleClass="protopipe-research__table">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Query</th>
+                <th class="text-right">Clicks</th>
+                <th class="text-right">Impressions</th>
+                <th class="text-right">Position</th>
+                <th></th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-row>
+              <tr>
+                <td>{{ row.query }}</td>
+                <td class="text-right">{{ formatNumber(row.clicks) }}</td>
+                <td class="text-right">{{ formatNumber(row.impressions) }}</td>
+                <td class="text-right">{{ row.position?.toFixed(1) ?? '—' }}</td>
+                <td>
+                  <p-button
+                    icon="pi pi-plus"
+                    size="small"
+                    [text]="true"
+                    [loading]="addingPhrase() === row.query"
+                    (onClick)="addToPlan(row.query)"
+                  />
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      }
+
+      @if (r.ads.related?.length) {
+        <div class="protopipe-research__card">
+          <h3>Related keyword ideas</h3>
+          <p-table [value]="r.ads.related ?? []" styleClass="protopipe-research__table">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Keyword</th>
+                <th class="text-right">Avg monthly searches</th>
+                <th class="text-right">Competition</th>
+                <th class="text-right">CPC low</th>
+                <th class="text-right">CPC high</th>
+                <th></th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-row>
+              <tr>
+                <td>{{ row.phrase }}</td>
+                <td class="text-right">{{ formatNumber(row.avgMonthlySearches) }}</td>
+                <td class="text-right">{{ row.competition ?? '—' }}</td>
+                <td class="text-right">{{ microsToUsd(row.cpcLowMicros) }}</td>
+                <td class="text-right">{{ microsToUsd(row.cpcHighMicros) }}</td>
+                <td>
+                  <p-button
+                    icon="pi pi-plus"
+                    size="small"
+                    [text]="true"
+                    [loading]="addingPhrase() === row.phrase"
+                    (onClick)="addToPlan(row.phrase)"
+                  />
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      }
+    </section>
+  } @else {
+    <section class="protopipe-research__empty">
+      <p>Enter a keyword above to pull Google Ads + Search Console data.</p>
+    </section>
+  }
+</div>

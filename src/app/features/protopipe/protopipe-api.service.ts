@@ -20,6 +20,7 @@ import type {
   ProtopipeGoogleIntegrationStatusResponse,
   ProtopipeGoogleOAuthConfigResponse,
   ProtopipeGoogleOAuthStartResponse,
+  ProtopipeKeywordDiscoveryResponse,
   ProtopipeResearchQueryRequest,
   ProtopipeResearchResponse,
   ProtopipeKeywordMetricHistoryResponse,
@@ -134,6 +135,27 @@ export class ProtopipeApiService {
         {},
       ),
     );
+  }
+
+  discoverKeywords$(
+    siteId: string,
+    options?: { gscRowLimit?: number; rankedRowLimit?: number; adsLimit?: number },
+  ): Observable<ProtopipeKeywordDiscoveryResponse> {
+    const params: Record<string, string> = {};
+    if (options?.gscRowLimit != null) params['gscRowLimit'] = String(options.gscRowLimit);
+    if (options?.rankedRowLimit != null) params['rankedRowLimit'] = String(options.rankedRowLimit);
+    if (options?.adsLimit != null) params['adsLimit'] = String(options.adsLimit);
+    return this.http.get<ProtopipeKeywordDiscoveryResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.keywordDiscover.path, { siteId }),
+      Object.keys(params).length > 0 ? { params } : undefined,
+    );
+  }
+
+  discoverKeywords(
+    siteId: string,
+    options?: { gscRowLimit?: number; rankedRowLimit?: number; adsLimit?: number },
+  ): Promise<ProtopipeKeywordDiscoveryResponse> {
+    return firstValueFrom(this.discoverKeywords$(siteId, options));
   }
 
   getKeywordMetricHistory(

@@ -6,6 +6,13 @@ import { ProgressSpinner } from 'primeng/progressspinner';
 import { ProtopipeApiService } from '../protopipe-api.service';
 import { parseProtopipeApiError } from '../protopipe-http.util';
 
+const TEMPLATE_PREVIEW_URLS: Record<string, string> = {
+  'tech-agency-v1': 'https://cs-tech-agency-demo.pages.dev',
+  'construction-trades-v1': 'https://cs-trades-construction-demo.pages.dev',
+  'service-business-landing-v1': 'https://dwp-v2.pages.dev',
+  'artist-landing-v1': 'https://dwp-v2.pages.dev',
+};
+
 @Component({
   selector: 'app-site-builder-template-detail',
   standalone: true,
@@ -182,7 +189,8 @@ export class SiteBuilderTemplateDetailComponent implements OnInit {
         previewDemoUrl: t.previewDemoUrl,
         previewImageUrl: t.previewImageUrl,
       });
-      this.previewDemoUrl.set((t.previewDemoUrl || t.previewImageUrl || '').trim());
+      const fromApi = (t.previewDemoUrl || t.previewImageUrl || '').trim();
+      this.previewDemoUrl.set(fromApi || TEMPLATE_PREVIEW_URLS[t.id] || '');
       this.sections.set(t.pages?.[0]?.sections ?? []);
     } catch (err) {
       this.error.set(parseProtopipeApiError(err, 'Could not load template.'));

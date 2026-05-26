@@ -8,6 +8,14 @@ import { Tag } from 'primeng/tag';
 import type { SiteTemplateSummary } from '@hive/contracts';
 import { ProtopipeSiteBuilderService } from './protopipe-site-builder.service';
 
+/** Fallback when API manifest is stale — matches bagend `templates.ts` demo URLs. */
+const TEMPLATE_PREVIEW_URLS: Record<string, string> = {
+  'tech-agency-v1': 'https://cs-tech-agency-demo.pages.dev',
+  'construction-trades-v1': 'https://cs-trades-construction-demo.pages.dev',
+  'service-business-landing-v1': 'https://dwp-v2.pages.dev',
+  'artist-landing-v1': 'https://dwp-v2.pages.dev',
+};
+
 @Component({
   selector: 'app-site-builder-templates',
   standalone: true,
@@ -56,20 +64,19 @@ import { ProtopipeSiteBuilderService } from './protopipe-site-builder.service';
               <div class="card-actions">
                 @if (previewUrl(t); as demoUrl) {
                   <a
+                    [routerLink]="['/protopipe/site-builder/templates', t.id, 'preview']"
+                    pButton
+                    label="Live preview"
+                    icon="pi pi-eye"
+                    size="small"
+                  ></a>
+                  <a
                     [href]="demoUrl"
                     target="_blank"
                     rel="noopener noreferrer"
                     pButton
                     label="Live Demo"
                     icon="pi pi-external-link"
-                    severity="help"
-                    size="small"
-                  ></a>
-                  <a
-                    [routerLink]="['/protopipe/site-builder/templates', t.id, 'preview']"
-                    pButton
-                    label="Preview"
-                    icon="pi pi-eye"
                     severity="secondary"
                     size="small"
                   ></a>
@@ -184,7 +191,8 @@ export class SiteBuilderTemplatesComponent implements OnInit {
   private readonly sanitizer = inject(DomSanitizer);
 
   protected previewUrl(t: SiteTemplateSummary): string {
-    return (t.previewDemoUrl || t.previewImageUrl || '').trim();
+    const fromApi = (t.previewDemoUrl || t.previewImageUrl || '').trim();
+    return fromApi || TEMPLATE_PREVIEW_URLS[t.id] || '';
   }
 
   protected previewFrameUrl(url: string): SafeResourceUrl {

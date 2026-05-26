@@ -18,6 +18,8 @@ import type {
   ProtopipeContentPostResponse,
   ProtopipeDataForSeoStatusResponse,
   ProtopipeGoogleIntegrationStatusResponse,
+  ProtopipeGoogleOAuthConfigResponse,
+  ProtopipeGoogleOAuthStartResponse,
   ProtopipeResearchQueryRequest,
   ProtopipeResearchResponse,
   ProtopipeKeywordMetricHistoryResponse,
@@ -109,9 +111,17 @@ export class ProtopipeApiService {
     );
   }
 
-  googleOAuthStart(): Promise<{ authorizationUrl: string }> {
+  googleOAuthConfig(): Promise<ProtopipeGoogleOAuthConfigResponse> {
     return firstValueFrom(
-      this.http.get<{ authorizationUrl: string }>(
+      this.http.get<ProtopipeGoogleOAuthConfigResponse>(
+        protopipeApiUrl(ProtopipeAdminEndpoints.googleOAuthConfig.path),
+      ),
+    );
+  }
+
+  googleOAuthStart(): Promise<ProtopipeGoogleOAuthStartResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeGoogleOAuthStartResponse>(
         protopipeApiUrl(ProtopipeAdminEndpoints.googleOAuthStart.path),
       ),
     );

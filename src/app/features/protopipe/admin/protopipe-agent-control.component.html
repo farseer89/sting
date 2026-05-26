@@ -1,5 +1,12 @@
 <div class="agent-control page">
-  <section class="agent-control__block mb-3"><h2>Google integration</h2><p class="hint">Platform OAuth for Ads + Search Console.</p><p-button label="Connect Google" icon="pi pi-google" (onClick)="connectGoogle()" /></section>
+  <section class="agent-control__block mb-3">
+    <h2>Google integration</h2>
+    <p class="hint">Platform OAuth for Ads + Search Console.</p>
+    @if (googleOAuthHint(); as hint) {
+      <p class="hint agent-control__oauth-hint">{{ hint }}</p>
+    }
+    <p-button label="Connect Google" icon="pi pi-google" (onClick)="connectGoogle()" />
+  </section>
 
 <header class="agent-control__header">
     <h1>Agent Control</h1>

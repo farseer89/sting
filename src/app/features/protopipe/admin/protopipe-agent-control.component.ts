@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { Textarea } from 'primeng/textarea';
@@ -20,6 +20,8 @@ export class ProtopipeAgentControlComponent implements OnInit {
   protected readonly admin = inject(ProtopipeAdminAgentService);
   private readonly api = inject(ProtopipeApiService);
 
+  readonly googleOAuthHint = signal<string | null>(null);
+
   readonly loading = this.admin.loading;
   readonly saving = this.admin.saving;
   readonly error = this.admin.error;
@@ -31,6 +33,17 @@ export class ProtopipeAgentControlComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.admin.loadControlPanel();
+    try {
+      const cfg = await this.api.googleOAuthConfig();
+      const parts = [
+        `Callback URL (add in Google Console): ${cfg.redirectUri}`,
+        cfg.oauthClientIdSuffix ? `OAuth client: ${cfg.oauthClientIdSuffix}` : null,
+        `Env: ${cfg.publicUrlSource}`,
+      ].filter(Boolean);
+      this.googleOAuthHint.set(parts.join(' · '));
+    } catch {
+      this.googleOAuthHint.set(null);
+    }
   }
 
   rulesText(): string {
@@ -50,7 +63,10 @@ export class ProtopipeAgentControlComponent implements OnInit {
   }
 
   async connectGoogle(): Promise<void> {
-    const { authorizationUrl } = await this.api.googleOAuthStart();
+    const { authorizationUrl, redirectUri } = await this.api.googleOAuthStart();
+    if (redirectUri) {
+      this.googleOAuthHint.set(`Callback URL (add in Google Console): ${redirectUri}`);
+    }
     window.open(authorizationUrl, '_blank', 'noopener');
   }
 

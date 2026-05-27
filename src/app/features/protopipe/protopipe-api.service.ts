@@ -9,6 +9,7 @@ import type {
   ProtopipeAnalyticsResponse,
   ProtopipeAnalyticsSetPropertyRequest,
   ProtopipeAnalyticsSetPropertyResponse,
+  ProtopipeKeywordSerpResponse,
   AdminSitesListResponse,
   AgentRunResponse,
   ArticleIdeasResponse,
@@ -237,6 +238,30 @@ export class ProtopipeApiService {
       this.http.get<ProtopipeKeywordMetricHistoryResponse>(
         protopipeApiUrl(ProtopipeEndpoints.keywordMetricHistory.path, { siteId, keywordId }),
         { params: { limit: String(limit) } },
+      ),
+    );
+  }
+
+  /**
+   * Cached "first look" at the live SERP for a keyword. Returns a snapshot up
+   * to 7 days old when one exists; otherwise hits DataForSEO and persists a
+   * fresh row. Surfaces the daily-cap 429 body via the standard Angular
+   * `HttpErrorResponse.error` so the caller can render a friendly message.
+   */
+  getKeywordSerp(siteId: string, keywordId: string): Promise<ProtopipeKeywordSerpResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeKeywordSerpResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.keywordSerp.path, { siteId, keywordId }),
+      ),
+    );
+  }
+
+  /** Force a fresh DFS fetch, bypassing the 7-day cache; counts against the daily cap. */
+  refreshKeywordSerp(siteId: string, keywordId: string): Promise<ProtopipeKeywordSerpResponse> {
+    return firstValueFrom(
+      this.http.post<ProtopipeKeywordSerpResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.keywordSerpRefresh.path, { siteId, keywordId }),
+        {},
       ),
     );
   }

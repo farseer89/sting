@@ -1,0 +1,273 @@
+// PrimeNG mounts the drawer outside the component host, so all selectors
+// must be flat — scoping under :host would never match.
+
+.serp-drawer__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.serp-drawer__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.serp-drawer__title {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.serp-drawer__subtitle {
+  font-size: 0.85rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.serp-drawer__dot {
+  opacity: 0.5;
+}
+
+.serp-drawer__your-pos {
+  font-weight: 600;
+  color: var(--p-primary-color);
+}
+
+.serp-drawer__body {
+  padding-top: 0.5rem;
+}
+
+.serp-drawer__loading,
+.serp-drawer__error,
+.serp-drawer__quota {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.serp-drawer__quota-icon,
+.serp-drawer__error-icon {
+  font-size: 2rem;
+  color: var(--p-yellow-500, #f59e0b);
+}
+
+.serp-drawer__error-icon {
+  color: var(--p-red-500, #ef4444);
+}
+
+.serp-drawer__empty {
+  padding: 1.25rem 0;
+  text-align: center;
+}
+
+.serp-drawer__phase-note {
+  padding: 0.75rem 0 0;
+  font-style: italic;
+}
+
+.serp-drawer__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.serp-drawer__footer-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+// Organic list
+
+.serp-organic {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.serp-organic__item {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--p-surface-200, #e5e7eb);
+  background: var(--p-surface-0, #ffffff);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+
+  &:hover {
+    border-color: var(--p-surface-300, #d1d5db);
+  }
+}
+
+.serp-organic__item--mine {
+  border-color: var(--p-primary-color);
+  background: var(--p-primary-50, rgba(99, 102, 241, 0.08));
+}
+
+.serp-organic__position {
+  width: 2.25rem;
+  flex-shrink: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--p-text-muted-color);
+}
+
+.serp-organic__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.serp-organic__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.serp-organic__title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--p-text-color);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.serp-organic__url {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.serp-organic__snippet {
+  line-height: 1.4;
+}
+
+// Local pack
+
+.serp-local {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.serp-local__item {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--p-surface-200, #e5e7eb);
+  background: var(--p-surface-0, #ffffff);
+}
+
+.serp-local__position {
+  width: 2.25rem;
+  flex-shrink: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--p-text-muted-color);
+}
+
+.serp-local__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.serp-local__title {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.serp-local__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.serp-local__rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--p-yellow-600, #ca8a04);
+
+  .pi {
+    font-size: 0.85rem;
+  }
+}
+
+.serp-local__reviews {
+  color: var(--p-text-muted-color);
+}
+
+.serp-local__sep {
+  opacity: 0.5;
+}
+
+// Features tab
+
+.serp-features {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.serp-features__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.serp-features__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--p-surface-200, #e5e7eb);
+  background: var(--p-surface-50, #f9fafb);
+
+  h4 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--p-text-muted-color);
+  }
+}
+
+.serp-features__paa {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.serp-features__related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}

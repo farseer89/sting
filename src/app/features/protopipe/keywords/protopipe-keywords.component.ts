@@ -27,6 +27,7 @@ import {
   PROTOPIPE_MAX_PHRASE_LENGTH,
 } from '../protopipe.constants';
 import { ProtopipeStrategyService } from '../protopipe-strategy.service';
+import { ProtopipeSerpDrawerComponent } from '../serp/protopipe-serp-drawer.component';
 
 @Component({
   selector: 'app-protopipe-keywords',
@@ -45,6 +46,7 @@ import { ProtopipeStrategyService } from '../protopipe-strategy.service';
     Toast,
     Dialog,
     ProgressSpinner,
+    ProtopipeSerpDrawerComponent,
   ],
   providers: [ConfirmationService, MessageService],
   templateUrl: './protopipe-keywords.component.html',
@@ -62,6 +64,7 @@ export class ProtopipeKeywordsComponent implements OnInit {
   readonly marketRefreshing = this.strategy.marketRefreshing;
   readonly lastEnrichSummary = this.strategy.lastEnrichSummary;
   readonly error = this.strategy.error;
+  readonly activeSiteId = this.strategy.siteId;
   readonly intentOptions = INTENT_OPTIONS;
   readonly priorityOptions = PRIORITY_OPTIONS;
 
@@ -79,6 +82,9 @@ export class ProtopipeKeywordsComponent implements OnInit {
   readonly localHistoryLoading = signal(false);
   readonly localHistoryPhrase = signal('');
   readonly localHistoryPoints = signal<ProtopipeKeywordMetricPoint[]>([]);
+
+  readonly serpDrawerVisible = signal(false);
+  readonly serpDrawerKeyword = signal<ProtopipeKeywordDto | null>(null);
 
   readonly maxPhraseLength = PROTOPIPE_MAX_PHRASE_LENGTH;
   readonly maxNotesLength = PROTOPIPE_MAX_NOTES_LENGTH;
@@ -157,6 +163,12 @@ export class ProtopipeKeywordsComponent implements OnInit {
 
   closeLocalHistory(): void {
     this.localHistoryVisible.set(false);
+  }
+
+  openSerp(kw: ProtopipeKeywordDto): void {
+    if (kw.id.startsWith('temp-')) return;
+    this.serpDrawerKeyword.set(kw);
+    this.serpDrawerVisible.set(true);
   }
 
   formatHistoryDate(iso: string): string {

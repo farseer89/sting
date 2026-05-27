@@ -18,6 +18,7 @@ import type {
   ProtopipeKeywordSerpQuotaError,
   ProtopipeKeywordSerpResponse,
   ProtopipePlaceDetails,
+  ProtopipePlacePhoto,
   ProtopipeSerpSnapshot,
 } from '@hive/contracts';
 import * as L from 'leaflet';
@@ -29,6 +30,7 @@ import { Select } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { Tag } from 'primeng/tag';
+import { environment } from '../../../../environments/environment';
 import type { ProtopipeKeywordDto } from '../protopipe.models';
 import { ProtopipeApiService } from '../protopipe-api.service';
 import { protopipePlacePhotoUrl } from '../protopipe-http.util';
@@ -396,9 +398,15 @@ export class ProtopipeSerpDrawerComponent {
     return Boolean(this.placeDetailsLoading()[position]);
   }
 
-  photoUrl(name: string, maxHeightPx = 160): string {
-    return protopipePlacePhotoUrl(name, maxHeightPx);
+  photoUrl(photo: ProtopipePlacePhoto, maxHeightPx = 160): string {
+    // Backend pre-signs URLs keyed by height; fall back to the legacy
+    // builder for safety until everyone's cache rolls over.
+    const pre = photo.proxyUrls?.[maxHeightPx];
+    if (pre) return `${this.apiBase}${pre}`;
+    return protopipePlacePhotoUrl(photo.name, maxHeightPx);
   }
+
+  private readonly apiBase = environment.MICRO_BASE_URL;
 
   onPhotoError(event: Event): void {
     const img = event.target as HTMLImageElement | null;

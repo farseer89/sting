@@ -208,7 +208,7 @@
                         <div class="serp-local__photos">
                           @for (photo of (enriched?.photos ?? []).slice(0, 3); track photo.name) {
                             <img
-                              [src]="photoUrl(photo.name, 160)"
+                              [src]="photoUrl(photo, 160)"
                               loading="lazy"
                               referrerpolicy="no-referrer"
                               alt=""

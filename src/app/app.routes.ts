@@ -127,6 +127,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'protopipe/analytics',
+        loadComponent: () =>
+          import('./features/protopipe/analytics/protopipe-analytics.component').then(
+            (m) => m.ProtopipeAnalyticsComponent,
+          ),
+      },
+      {
         path: 'protopipe/admin/agent',
         loadComponent: () =>
           import('./features/protopipe/admin/protopipe-agent-control.component').then(

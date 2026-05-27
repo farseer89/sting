@@ -5,6 +5,10 @@ import type {
   ProtopipeAccountGoogleDisconnectResponse,
   ProtopipeAccountGoogleStartResponse,
   ProtopipeAccountGoogleStatusResponse,
+  ProtopipeAnalyticsPropertiesResponse,
+  ProtopipeAnalyticsResponse,
+  ProtopipeAnalyticsSetPropertyRequest,
+  ProtopipeAnalyticsSetPropertyResponse,
   AdminSitesListResponse,
   AgentRunResponse,
   ArticleIdeasResponse,
@@ -185,6 +189,41 @@ export class ProtopipeApiService {
       this.http.post<ProtopipeAccountGoogleDisconnectResponse>(
         protopipeApiUrl(ProtopipeEndpoints.accountGoogleDisconnect.path),
         {},
+      ),
+    );
+  }
+
+  getSiteAnalytics(
+    siteId: string,
+    range?: { startDate?: string; endDate?: string },
+  ): Promise<ProtopipeAnalyticsResponse> {
+    let params = new HttpParams();
+    if (range?.startDate) params = params.set('startDate', range.startDate);
+    if (range?.endDate) params = params.set('endDate', range.endDate);
+    return firstValueFrom(
+      this.http.get<ProtopipeAnalyticsResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.siteAnalytics.path, { siteId }),
+        { params },
+      ),
+    );
+  }
+
+  listSiteAnalyticsProperties(siteId: string): Promise<ProtopipeAnalyticsPropertiesResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeAnalyticsPropertiesResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.siteAnalyticsProperties.path, { siteId }),
+      ),
+    );
+  }
+
+  setSiteAnalyticsProperty(
+    siteId: string,
+    body: ProtopipeAnalyticsSetPropertyRequest,
+  ): Promise<ProtopipeAnalyticsSetPropertyResponse> {
+    return firstValueFrom(
+      this.http.put<ProtopipeAnalyticsSetPropertyResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.siteAnalyticsSetProperty.path, { siteId }),
+        body,
       ),
     );
   }

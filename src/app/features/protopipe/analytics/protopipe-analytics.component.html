@@ -1,0 +1,295 @@
+<p-toast position="top-right"></p-toast>
+
+<section class="analytics">
+  <header class="analytics__header">
+    <div>
+      <h1 class="analytics__title">Analytics</h1>
+      <p class="analytics__subtitle">
+        Real GA4 traffic for your site — sessions, sources, top landing pages.
+      </p>
+    </div>
+    <div class="analytics__controls">
+      @if (siteOptions().length > 1) {
+        <p-select
+          [options]="siteOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="selectedSiteId()"
+          (ngModelChange)="onSiteChange($event)"
+          placeholder="Site"
+          appendTo="body"
+        ></p-select>
+      }
+      <p-selectButton
+        [options]="rangeOptions"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="selectedRange()"
+        (ngModelChange)="onRangeChange($event)"
+        [allowEmpty]="false"
+        size="small"
+      ></p-selectButton>
+    </div>
+  </header>
+
+  @if (bootstrapping()) {
+    <div class="analytics__center">
+      <p-progressSpinner></p-progressSpinner>
+    </div>
+  } @else if (error()) {
+    <div class="analytics__error">
+      <p>{{ error() }}</p>
+      <p-button label="Retry" icon="pi pi-refresh" [text]="true" (onClick)="loadAnalytics()"></p-button>
+    </div>
+  } @else if (notConfigured()) {
+    <div class="analytics__connect-banner">
+      <div class="analytics__connect-icon" aria-hidden="true"><i class="pi pi-google"></i></div>
+      <div class="analytics__connect-body">
+        <h2 class="m-0 text-base">Connect Google to unlock Analytics</h2>
+        <p class="m-0 text-color-secondary text-sm">
+          {{ response()?.error }}
+        </p>
+      </div>
+      <a routerLink="/protopipe/settings/integrations" class="analytics__connect-cta">
+        <p-button label="Connect Google" icon="pi pi-arrow-right" iconPos="right" size="small"></p-button>
+      </a>
+    </div>
+  } @else if (needsPicker()) {
+    <div class="analytics__picker-prompt">
+      <i class="pi pi-info-circle"></i>
+      <div>
+        <h2 class="m-0 text-base">Pick the GA4 property for {{ selectedSite()?.hostname }}</h2>
+        <p class="m-0 text-color-secondary text-sm">
+          We couldn't auto-match a single GA4 property for this site. Choose one to get started — you can change it later.
+        </p>
+      </div>
+      <p-button label="Choose property" icon="pi pi-arrow-right" iconPos="right" (onClick)="openPicker(false)"></p-button>
+    </div>
+  } @else if (response()?.available) {
+    @let r = response()!;
+    <div class="analytics__property-row">
+      <div class="analytics__property-line">
+        Connected to <strong>{{ r.property?.displayName }}</strong>
+        @if (r.property?.defaultUri) {
+          <span class="text-color-secondary"> · {{ r.property?.defaultUri }}</span>
+        }
+        @if (r.property?.source === 'override') {
+          <p-tag value="override" severity="info" styleClass="ml-2"></p-tag>
+        }
+      </div>
+      <button class="analytics__change-link" type="button" (click)="openPicker(true)">
+        Change property
+      </button>
+    </div>
+
+    <div class="analytics__tiles">
+      <article class="analytics__tile">
+        <div class="analytics__tile-label">Users</div>
+        <div class="analytics__tile-value">{{ r.totals?.activeUsers | number }}</div>
+      </article>
+      <article class="analytics__tile">
+        <div class="analytics__tile-label">Sessions</div>
+        <div class="analytics__tile-value">{{ r.totals?.sessions | number }}</div>
+      </article>
+      <article class="analytics__tile">
+        <div class="analytics__tile-label">Engaged sessions</div>
+        <div class="analytics__tile-value">{{ r.totals?.engagedSessions | number }}</div>
+      </article>
+      <article class="analytics__tile">
+        <div class="analytics__tile-label">Avg engagement time</div>
+        <div class="analytics__tile-value">{{ formatDuration(r.totals?.averageSessionDuration) }}</div>
+      </article>
+      <article class="analytics__tile">
+        <div class="analytics__tile-label">Conversions</div>
+        <div class="analytics__tile-value">{{ r.totals?.conversions | number }}</div>
+      </article>
+    </div>
+
+    <article class="analytics__chart-card">
+      <header class="analytics__card-header">
+        <div>
+          <h2 class="analytics__card-title">Sessions &amp; users</h2>
+          <p class="analytics__card-subtitle">{{ r.range?.startDate }} → {{ r.range?.endDate }}</p>
+        </div>
+        <div class="analytics__legend">
+          <span class="analytics__swatch analytics__swatch--sessions"></span>Sessions
+          <span class="analytics__swatch analytics__swatch--users"></span>Users
+        </div>
+      </header>
+      @if (sparkline(); as sp) {
+        <svg
+          class="analytics__chart"
+          [attr.viewBox]="'0 0 ' + sp.width + ' ' + sp.height"
+          preserveAspectRatio="none"
+          role="img"
+          aria-label="Daily sessions and users"
+        >
+          <path [attr.d]="sp.sessionsPath" class="analytics__chart-line analytics__chart-line--sessions" />
+          <path [attr.d]="sp.usersPath" class="analytics__chart-line analytics__chart-line--users" />
+        </svg>
+      } @else {
+        <p class="text-color-secondary m-0">No daily data in range.</p>
+      }
+    </article>
+
+    <div class="analytics__tables">
+      <article class="analytics__table-card">
+        <h2 class="analytics__card-title">Traffic sources</h2>
+        <p-table [value]="r.sources ?? []" styleClass="p-datatable-sm">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Source / medium</th>
+              <th class="text-right">Sessions</th>
+              <th class="text-right">Users</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td>
+                <div class="analytics__source-cell">
+                  <strong>{{ row.source }}</strong>
+                  <span class="text-color-secondary"> / {{ row.medium }}</span>
+                </div>
+              </td>
+              <td class="text-right">{{ row.sessions | number }}</td>
+              <td class="text-right">{{ row.users | number }}</td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="3" class="text-color-secondary">No source data in this range.</td></tr>
+          </ng-template>
+        </p-table>
+      </article>
+
+      <article class="analytics__table-card">
+        <h2 class="analytics__card-title">Top landing pages</h2>
+        <p-table [value]="r.landingPages ?? []" styleClass="p-datatable-sm">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Path</th>
+              <th class="text-right">Sessions</th>
+              <th class="text-right">Users</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td class="analytics__path-cell">{{ row.pagePath }}</td>
+              <td class="text-right">{{ row.sessions | number }}</td>
+              <td class="text-right">{{ row.users | number }}</td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="3" class="text-color-secondary">No landing page data in this range.</td></tr>
+          </ng-template>
+        </p-table>
+      </article>
+
+      <article class="analytics__table-card">
+        <h2 class="analytics__card-title">Top countries</h2>
+        <p-table [value]="r.countries ?? []" styleClass="p-datatable-sm">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Country</th>
+              <th class="text-right">Sessions</th>
+              <th class="text-right">Users</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td>{{ row.country }}</td>
+              <td class="text-right">{{ row.sessions | number }}</td>
+              <td class="text-right">{{ row.users | number }}</td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="3" class="text-color-secondary">No country data in this range.</td></tr>
+          </ng-template>
+        </p-table>
+      </article>
+    </div>
+  } @else if (response()?.error) {
+    <div class="analytics__error">
+      <p>{{ response()?.error }}</p>
+      <p-button label="Retry" icon="pi pi-refresh" [text]="true" (onClick)="loadAnalytics()"></p-button>
+    </div>
+  }
+
+  @if (loading() && response()) {
+    <div class="analytics__loading-overlay" aria-live="polite">
+      <p-progressSpinner styleClass="analytics__overlay-spinner"></p-progressSpinner>
+    </div>
+  }
+</section>
+
+<p-dialog
+  [visible]="pickerOpen()"
+  (visibleChange)="pickerOpen.set($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: 'min(540px, 92vw)' }"
+  header="GA4 property"
+>
+  @if (pickerProperties().length === 0) {
+    <div class="analytics__picker-loading">
+      <p-progressSpinner></p-progressSpinner>
+    </div>
+  } @else {
+    <p class="m-0 mb-3 text-color-secondary text-sm">
+      Choose which GA4 property to use for <strong>{{ selectedSite()?.hostname }}</strong>.
+    </p>
+    <ul class="analytics__picker-list">
+      @for (prop of pickerProperties(); track prop.propertyId) {
+        <li>
+          <label class="analytics__picker-row">
+            <p-radioButton
+              name="ga4Property"
+              [value]="prop.propertyId"
+              [ngModel]="pickerSelected()"
+              (ngModelChange)="pickerSelected.set($event)"
+            ></p-radioButton>
+            <div class="analytics__picker-meta">
+              <div class="analytics__picker-name">{{ prop.displayName }}</div>
+              <div class="analytics__picker-sub">
+                @if (prop.accountDisplayName) {
+                  <span>{{ prop.accountDisplayName }}</span>
+                }
+                @if (prop.defaultUri) {
+                  <span class="text-color-secondary"> · {{ prop.defaultUri }}</span>
+                }
+              </div>
+            </div>
+          </label>
+        </li>
+      }
+    </ul>
+  }
+
+  <ng-template pTemplate="footer">
+    <div class="analytics__picker-footer">
+      @if (pickerForceChange() && response()?.property?.source === 'override') {
+        <p-button
+          label="Clear override (auto-match)"
+          icon="pi pi-undo"
+          severity="secondary"
+          [text]="true"
+          [loading]="pickerSaving()"
+          (onClick)="clearOverride()"
+        ></p-button>
+      }
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [text]="true"
+        (onClick)="closePicker()"
+      ></p-button>
+      <p-button
+        label="Save"
+        icon="pi pi-check"
+        [loading]="pickerSaving()"
+        [disabled]="!pickerSelected()"
+        (onClick)="confirmPicker()"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

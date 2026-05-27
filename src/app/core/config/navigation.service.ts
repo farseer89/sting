@@ -77,6 +77,13 @@ export class NavigationService {
             visible: true,
           },
           {
+            id: 'analytics',
+            label: 'Analytics',
+            icon: 'pi pi-chart-bar',
+            routerLink: '/protopipe/analytics',
+            visible: true,
+          },
+          {
             id: 'leads',
             label: 'Leads',
             icon: 'pi pi-inbox',

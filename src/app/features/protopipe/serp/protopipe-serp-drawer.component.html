@@ -80,10 +80,10 @@
     } @else if (snapshot(); as s) {
       <p-tabs [value]="activeTab()" (valueChange)="activeTab.set($any($event))">
         <p-tablist>
-          <p-tab value="organic">
+          <p-tab value="results">
             <i class="pi pi-list mr-2"></i>
-            Organic
-            <span class="text-color-secondary ml-2">({{ organicCount() }})</span>
+            Results
+            <span class="text-color-secondary ml-2">({{ unifiedResults().length }})</span>
           </p-tab>
           <p-tab value="local">
             <i class="pi pi-map-marker mr-2"></i>
@@ -102,38 +102,43 @@
         </p-tablist>
 
         <p-tabpanels>
-          <p-tabpanel value="organic">
-            @if (s.organicResults.length === 0) {
+          <p-tabpanel value="results">
+            @if (unifiedResults().length === 0) {
               <p class="serp-drawer__empty m-0 text-color-secondary">
-                No organic results returned.
+                No results returned.
               </p>
             } @else {
               <ul class="serp-organic">
-                @for (row of s.organicResults; track row.position) {
+                @for (row of unifiedResults(); track row.kind + '-' + row.position) {
                   <li
                     class="serp-organic__item"
                     [class.serp-organic__item--mine]="row.isYourSite"
+                    [class.serp-organic__item--local]="row.kind === 'local'"
                   >
                     <div class="serp-organic__position">#{{ row.position }}</div>
                     <div class="serp-organic__content">
                       <div class="serp-organic__title-row">
-                        <a
-                          class="serp-organic__title"
-                          [href]="row.url"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >{{ row.title }}</a>
+                        @if (row.url) {
+                          <a
+                            class="serp-organic__title"
+                            [href]="row.url"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >{{ row.title }}</a>
+                        } @else {
+                          <span class="serp-organic__title">{{ row.title }}</span>
+                        }
+                        @if (row.kind === 'local') {
+                          <p-tag value="Local" severity="info" />
+                        }
                         @if (row.isYourSite) {
                           <p-tag value="You" severity="success" />
                         }
                       </div>
-                      <div class="serp-organic__url text-color-secondary text-sm">
-                        {{ row.displayedUrl || row.url }}
-                      </div>
-                      @if (row.snippet) {
-                        <p class="serp-organic__snippet m-0 text-color-secondary text-sm">
-                          {{ row.snippet }}
-                        </p>
+                      @if (row.subtitle) {
+                        <div class="serp-organic__url text-color-secondary text-sm">
+                          {{ row.subtitle }}
+                        </div>
                       }
                     </div>
                   </li>
@@ -151,7 +156,7 @@
               <div #mapEl class="serp-local-map" aria-label="Local pack map"></div>
               <ul class="serp-local">
                 @for (row of s.localPack; track row.position) {
-                  @let enriched = detailsFor(row.placeId);
+                  @let enriched = detailsFor(row.position);
                   <li class="serp-local__item">
                     <div class="serp-local__position">#{{ row.position }}</div>
                     <div class="serp-local__content">
@@ -223,7 +228,7 @@
                           </a>
                         }
                       </div>
-                      @if (isEnriching(row.placeId)) {
+                      @if (isEnriching(row.position)) {
                         <div class="serp-local__enriching text-color-secondary text-sm">
                           <i class="pi pi-spin pi-spinner mr-1"></i>Loading Place details…
                         </div>

@@ -295,6 +295,26 @@ export class ProtopipeApiService {
     );
   }
 
+  /**
+   * Row-based local pack enrichment — bagend resolves a missing placeId via
+   * Text Search when DFS only gave us a `cid`, so the map always gets coords.
+   */
+  getLocalPackPlaceDetails(
+    siteId: string,
+    keywordId: string,
+    position: number,
+  ): Promise<ProtopipePlaceDetailsResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipePlaceDetailsResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.localPackPlaceDetails.path, {
+          siteId,
+          keywordId,
+          position: String(position),
+        }),
+      ),
+    );
+  }
+
   listContent$(siteId: string): Observable<ProtopipeContentListResponse> {
     return this.http.get<ProtopipeContentListResponse>(
       protopipeApiUrl(ProtopipeEndpoints.listContent.path, { siteId }),

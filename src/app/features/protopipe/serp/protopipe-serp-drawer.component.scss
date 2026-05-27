@@ -132,6 +132,10 @@
   background: var(--p-primary-50, rgba(99, 102, 241, 0.08));
 }
 
+.serp-organic__item--local {
+  border-left: 3px solid var(--p-info-color, #3b82f6);
+}
+
 .serp-organic__position {
   width: 2.25rem;
   flex-shrink: 0;

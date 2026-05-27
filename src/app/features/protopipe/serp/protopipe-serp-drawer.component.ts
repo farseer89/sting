@@ -33,7 +33,19 @@ import type { ProtopipeKeywordDto } from '../protopipe.models';
 import { ProtopipeApiService } from '../protopipe-api.service';
 import { protopipePlacePhotoUrl } from '../protopipe-http.util';
 
-type SerpTab = 'organic' | 'local' | 'features';
+type SerpTab = 'results' | 'local' | 'features';
+
+interface UnifiedResultRow {
+  kind: 'organic' | 'local';
+  position: number;
+  title: string;
+  subtitle?: string;
+  url?: string;
+  domain?: string;
+  isYourSite?: boolean;
+  /** For local rows so the card / map enrichment can key off it. */
+  localIndex?: number;
+}
 
 interface LocationOption {
   code: number;
@@ -89,20 +101,58 @@ export class ProtopipeSerpDrawerComponent {
   readonly data = signal<ProtopipeKeywordSerpResponse | null>(null);
   readonly error = signal<string | null>(null);
   readonly quotaError = signal<ProtopipeKeywordSerpQuotaError | null>(null);
-  readonly activeTab = signal<SerpTab>('organic');
+  readonly activeTab = signal<SerpTab>('results');
 
   readonly locationOptions = LOCATION_OPTIONS;
   readonly selectedLocationCode = signal<number>(LOCATION_OPTIONS[0].code);
 
-  /** Per-placeId Place Details, populated lazily as enrichment requests settle. */
-  readonly placeDetails = signal<Record<string, ProtopipePlaceDetails>>({});
-  readonly placeDetailsLoading = signal<Record<string, boolean>>({});
+  /**
+   * Place Details keyed by local pack `position` — the row-based endpoint
+   * resolves missing placeIds via Text Search server-side, so the drawer
+   * always has a single key it can rely on regardless of whether DFS gave
+   * us a place_id or just a cid.
+   */
+  readonly placeDetails = signal<Record<number, ProtopipePlaceDetails>>({});
+  readonly placeDetailsLoading = signal<Record<number, boolean>>({});
 
   readonly snapshot = computed<ProtopipeSerpSnapshot | null>(() => this.data()?.snapshot ?? null);
   readonly source = computed<'cache' | 'live' | null>(() => this.data()?.source ?? null);
 
   readonly localPackCount = computed(() => this.snapshot()?.localPack.length ?? 0);
   readonly organicCount = computed(() => this.snapshot()?.organicResults.length ?? 0);
+
+  /**
+   * Unified list of organic + local pack rows sorted by `position` (DFS's
+   * `rank_absolute`, which is the page-wide rank). Local pack rows carry a
+   * `kind: 'local'` discriminator so the template can tag them.
+   */
+  readonly unifiedResults = computed<UnifiedResultRow[]>(() => {
+    const s = this.snapshot();
+    if (!s) return [];
+    const rows: UnifiedResultRow[] = [];
+    for (const o of s.organicResults) {
+      rows.push({
+        kind: 'organic',
+        position: o.position,
+        title: o.title,
+        subtitle: o.displayedUrl ?? o.url,
+        url: o.url,
+        domain: o.domain,
+        isYourSite: o.isYourSite,
+      });
+    }
+    s.localPack.forEach((l, idx) => {
+      rows.push({
+        kind: 'local',
+        position: l.position,
+        title: l.title,
+        subtitle: l.address ?? l.categories?.join(', '),
+        localIndex: idx,
+      });
+    });
+    rows.sort((a, b) => a.position - b.position);
+    return rows;
+  });
 
   readonly featurePresenceCount = computed(() => {
     const s = this.snapshot();
@@ -125,7 +175,7 @@ export class ProtopipeSerpDrawerComponent {
     const details = this.placeDetails();
     return s.localPack
       .map((row) => {
-        const enriched = row.placeId ? details[row.placeId] : undefined;
+        const enriched = details[row.position];
         const lat = enriched?.location?.latitude;
         const lng = enriched?.location?.longitude;
         if (lat == null || lng == null) return null;
@@ -150,7 +200,7 @@ export class ProtopipeSerpDrawerComponent {
       const key = `${siteId}::${keyword.id}`;
       if (this.lastFetchedKey === key) return;
       this.lastFetchedKey = key;
-      this.activeTab.set('organic');
+      this.activeTab.set('results');
       const defaultLoc = this.siteDefaultLocationCode();
       const initial =
         defaultLoc != null && LOCATION_OPTIONS.some((o) => o.code === defaultLoc)
@@ -160,18 +210,19 @@ export class ProtopipeSerpDrawerComponent {
       void this.load(siteId, keyword.id, initial);
     });
 
-    // Auto-enrich each local pack row with Google Places details as the snapshot lands.
+    // Auto-enrich each local pack row with Google Places details as the
+    // snapshot lands. Bagend resolves missing placeIds via Text Search so we
+    // always end up with coords + full business cards.
     effect(() => {
       const snap = this.snapshot();
-      if (!snap) return;
+      const keyword = this.keyword();
       const siteId = this.siteId();
-      if (!siteId) return;
+      if (!snap || !keyword || !siteId) return;
       const have = this.placeDetails();
       const inflight = this.placeDetailsLoading();
       for (const row of snap.localPack) {
-        if (!row.placeId) continue;
-        if (have[row.placeId] || inflight[row.placeId]) continue;
-        void this.enrich(row.placeId);
+        if (have[row.position] || inflight[row.position]) continue;
+        void this.enrich(siteId, keyword.id, row.position);
       }
     });
 
@@ -186,10 +237,20 @@ export class ProtopipeSerpDrawerComponent {
       const view = MAP_VIEW_BY_LOCATION[this.selectedLocationCode()] ?? DEFAULT_MAP_VIEW;
       if (!this.map) {
         this.map = L.map(el, { zoomControl: true, attributionControl: true });
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '&copy; OpenStreetMap',
-        }).addTo(this.map);
+        // Esri World Imagery — free, no key, satellite basemap.
+        L.tileLayer(
+          'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+          {
+            maxZoom: 19,
+            attribution:
+              'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+          },
+        ).addTo(this.map);
+        // Light place-label overlay so the satellite isn't unreadable when zoomed in.
+        L.tileLayer(
+          'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+          { maxZoom: 19, opacity: 0.8 },
+        ).addTo(this.map);
         this.markersLayer = L.layerGroup().addTo(this.map);
       }
       this.map.setView([view.lat, view.lng], view.zoom, { animate: false });
@@ -293,17 +354,17 @@ export class ProtopipeSerpDrawerComponent {
     void this.load(siteId, keyword.id, code);
   }
 
-  private async enrich(placeId: string): Promise<void> {
-    this.placeDetailsLoading.update((m) => ({ ...m, [placeId]: true }));
+  private async enrich(siteId: string, keywordId: string, position: number): Promise<void> {
+    this.placeDetailsLoading.update((m) => ({ ...m, [position]: true }));
     try {
-      const res = await this.api.getPlaceDetails(placeId);
-      this.placeDetails.update((m) => ({ ...m, [placeId]: res.details }));
+      const res = await this.api.getLocalPackPlaceDetails(siteId, keywordId, position);
+      this.placeDetails.update((m) => ({ ...m, [position]: res.details }));
     } catch {
-      // Swallow — the row falls back to SERP-side fields. No global error.
+      // Swallow — row falls back to SERP-side fields and is omitted from the map.
     } finally {
       this.placeDetailsLoading.update((m) => {
         const copy = { ...m };
-        delete copy[placeId];
+        delete copy[position];
         return copy;
       });
     }
@@ -327,14 +388,12 @@ export class ProtopipeSerpDrawerComponent {
     this.destroyMap();
   }
 
-  detailsFor(placeId: string | undefined): ProtopipePlaceDetails | undefined {
-    if (!placeId) return undefined;
-    return this.placeDetails()[placeId];
+  detailsFor(position: number): ProtopipePlaceDetails | undefined {
+    return this.placeDetails()[position];
   }
 
-  isEnriching(placeId: string | undefined): boolean {
-    if (!placeId) return false;
-    return Boolean(this.placeDetailsLoading()[placeId]);
+  isEnriching(position: number): boolean {
+    return Boolean(this.placeDetailsLoading()[position]);
   }
 
   photoUrl(name: string, maxHeightPx = 160): string {

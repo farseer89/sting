@@ -219,20 +219,13 @@ export class ProtopipeSerpDrawerComponent {
       void this.load(siteId, keyword.id, initial);
     });
 
-    // Auto-enrich each local pack row with Google Places details as the
-    // snapshot lands. Bagend resolves missing placeIds via Text Search so we
-    // always end up with coords + full business cards.
+    // Bagend owns local pack enrichment now. The drawer mirrors the snapshot's
+    // stored enrichment state instead of firing paid lookup requests as a
+    // render side effect.
     effect(() => {
       const snap = this.snapshot();
-      const siteId = this.siteId();
-      if (!snap || !siteId) return;
-      const have = this.placeDetails();
-      const inflight = this.placeDetailsLoading();
-      const failed = this.placeDetailsFailed();
-      for (const row of snap.localPack) {
-        if (have[row.position] || inflight[row.position] || failed.has(row.position)) continue;
-        void this.enrich(siteId, row);
-      }
+      if (!snap) return;
+      this.hydratePlaceDetailsFromSnapshot(snap);
     });
 
     // Leaflet map: create/update when local tab active + we have mappable rows.
@@ -345,10 +338,10 @@ export class ProtopipeSerpDrawerComponent {
       const res = await this.api.refreshKeywordSerp(siteId, keyword.id, {
         locationCode: this.selectedLocationCode(),
       });
-      this.data.set(res);
       this.placeDetails.set({});
       this.placeDetailsLoading.set({});
       this.placeDetailsFailed.set(new Set());
+      this.data.set(res);
     } catch (err) {
       this.handleError(err);
     } finally {
@@ -365,35 +358,24 @@ export class ProtopipeSerpDrawerComponent {
     void this.load(siteId, keyword.id, code);
   }
 
-  private async enrich(
-    siteId: string,
-    row: ProtopipeSerpSnapshot['localPack'][number],
-  ): Promise<void> {
-    const position = row.position;
-    this.placeDetailsLoading.update((m) => ({ ...m, [position]: true }));
-    try {
-      const res = await this.api.lookupLocalPackPlace({
-        siteId,
-        placeId: row.placeId,
-        title: row.title,
-        address: row.address,
-      });
-      this.placeDetails.update((m) => ({ ...m, [position]: res.details }));
-    } catch {
-      // Mark failed so we don't retry-loop when the loading signal clears.
-      this.placeDetailsFailed.update((s) => {
-        if (s.has(position)) return s;
-        const next = new Set(s);
-        next.add(position);
-        return next;
-      });
-    } finally {
-      this.placeDetailsLoading.update((m) => {
-        const copy = { ...m };
-        delete copy[position];
-        return copy;
-      });
+  private hydratePlaceDetailsFromSnapshot(snapshot: ProtopipeSerpSnapshot): void {
+    const details: Record<number, ProtopipePlaceDetails> = {};
+    const failed = new Set<number>();
+    for (const row of snapshot.localPack) {
+      const enrichment = row.placeEnrichment;
+      if (enrichment?.details) {
+        details[row.position] = enrichment.details;
+      }
+      if (
+        enrichment?.status === 'not_found' ||
+        enrichment?.status === 'provider_error'
+      ) {
+        failed.add(row.position);
+      }
     }
+    this.placeDetails.set(details);
+    this.placeDetailsFailed.set(failed);
+    this.placeDetailsLoading.set({});
   }
 
   private handleError(err: unknown): void {
@@ -420,6 +402,13 @@ export class ProtopipeSerpDrawerComponent {
 
   isEnriching(position: number): boolean {
     return Boolean(this.placeDetailsLoading()[position]);
+  }
+
+  enrichmentMessage(row: ProtopipeSerpSnapshot['localPack'][number]): string | null {
+    const enrichment = row.placeEnrichment;
+    if (enrichment?.status === 'not_found') return 'Place details unavailable';
+    if (enrichment?.status === 'provider_error') return 'Place lookup failed';
+    return null;
   }
 
   photoUrl(photo: ProtopipePlacePhoto, maxHeightPx = 160): string {

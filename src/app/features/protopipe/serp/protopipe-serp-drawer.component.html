@@ -234,6 +234,10 @@
                         <div class="serp-local__enriching text-color-secondary text-sm">
                           <i class="pi pi-spin pi-spinner mr-1"></i>Loading Place details…
                         </div>
+                      } @else if (enrichmentMessage(row); as msg) {
+                        <div class="serp-local__enriching text-color-secondary text-sm">
+                          <i class="pi pi-info-circle mr-1"></i>{{ msg }}
+                        </div>
                       }
                     </div>
                   </li>

@@ -116,6 +116,13 @@ export class ProtopipeSerpDrawerComponent {
    */
   readonly placeDetails = signal<Record<number, ProtopipePlaceDetails>>({});
   readonly placeDetailsLoading = signal<Record<number, boolean>>({});
+  /**
+   * Positions whose enrichment attempt has already failed — without this we
+   * loop forever because the effect re-fires when the loading-state signal
+   * clears in finally(), sees a row not in `have` or `inflight`, and fires
+   * again.
+   */
+  readonly placeDetailsFailed = signal<Set<number>>(new Set());
 
   readonly snapshot = computed<ProtopipeSerpSnapshot | null>(() => this.data()?.snapshot ?? null);
   readonly source = computed<'cache' | 'live' | null>(() => this.data()?.source ?? null);
@@ -217,14 +224,14 @@ export class ProtopipeSerpDrawerComponent {
     // always end up with coords + full business cards.
     effect(() => {
       const snap = this.snapshot();
-      const keyword = this.keyword();
       const siteId = this.siteId();
-      if (!snap || !keyword || !siteId) return;
+      if (!snap || !siteId) return;
       const have = this.placeDetails();
       const inflight = this.placeDetailsLoading();
+      const failed = this.placeDetailsFailed();
       for (const row of snap.localPack) {
-        if (have[row.position] || inflight[row.position]) continue;
-        void this.enrich(siteId, keyword.id, row.position);
+        if (have[row.position] || inflight[row.position] || failed.has(row.position)) continue;
+        void this.enrich(siteId, row);
       }
     });
 
@@ -316,6 +323,7 @@ export class ProtopipeSerpDrawerComponent {
     this.data.set(null);
     this.placeDetails.set({});
     this.placeDetailsLoading.set({});
+    this.placeDetailsFailed.set(new Set());
     try {
       const res = await this.api.getKeywordSerp(siteId, keywordId, { locationCode });
       this.data.set(res);
@@ -340,6 +348,7 @@ export class ProtopipeSerpDrawerComponent {
       this.data.set(res);
       this.placeDetails.set({});
       this.placeDetailsLoading.set({});
+      this.placeDetailsFailed.set(new Set());
     } catch (err) {
       this.handleError(err);
     } finally {
@@ -356,13 +365,28 @@ export class ProtopipeSerpDrawerComponent {
     void this.load(siteId, keyword.id, code);
   }
 
-  private async enrich(siteId: string, keywordId: string, position: number): Promise<void> {
+  private async enrich(
+    siteId: string,
+    row: ProtopipeSerpSnapshot['localPack'][number],
+  ): Promise<void> {
+    const position = row.position;
     this.placeDetailsLoading.update((m) => ({ ...m, [position]: true }));
     try {
-      const res = await this.api.getLocalPackPlaceDetails(siteId, keywordId, position);
+      const res = await this.api.lookupLocalPackPlace({
+        siteId,
+        placeId: row.placeId,
+        title: row.title,
+        address: row.address,
+      });
       this.placeDetails.update((m) => ({ ...m, [position]: res.details }));
     } catch {
-      // Swallow — row falls back to SERP-side fields and is omitted from the map.
+      // Mark failed so we don't retry-loop when the loading signal clears.
+      this.placeDetailsFailed.update((s) => {
+        if (s.has(position)) return s;
+        const next = new Set(s);
+        next.add(position);
+        return next;
+      });
     } finally {
       this.placeDetailsLoading.update((m) => {
         const copy = { ...m };

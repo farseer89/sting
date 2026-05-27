@@ -11,6 +11,7 @@ import type {
   ProtopipeAnalyticsSetPropertyResponse,
   ProtopipeKeywordSerpResponse,
   ProtopipePlaceDetailsResponse,
+  ProtopipeLocalPackPlaceLookupRequest,
   AdminSitesListResponse,
   AgentRunResponse,
   ArticleIdeasResponse,
@@ -296,21 +297,16 @@ export class ProtopipeApiService {
   }
 
   /**
-   * Row-based local pack enrichment — bagend resolves a missing placeId via
-   * Text Search when DFS only gave us a `cid`, so the map always gets coords.
+   * Row-based local pack enrichment. The frontend already has the row data,
+   * so we send it directly — no snapshot lookup race on the backend.
    */
-  getLocalPackPlaceDetails(
-    siteId: string,
-    keywordId: string,
-    position: number,
+  lookupLocalPackPlace(
+    body: ProtopipeLocalPackPlaceLookupRequest,
   ): Promise<ProtopipePlaceDetailsResponse> {
     return firstValueFrom(
-      this.http.get<ProtopipePlaceDetailsResponse>(
-        protopipeApiUrl(ProtopipeEndpoints.localPackPlaceDetails.path, {
-          siteId,
-          keywordId,
-          position: String(position),
-        }),
+      this.http.post<ProtopipePlaceDetailsResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.localPackPlaceLookup.path),
+        body,
       ),
     );
   }

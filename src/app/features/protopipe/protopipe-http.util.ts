@@ -4,19 +4,6 @@ import { environment } from '../../../environments/environment';
 
 const API_BASE = environment.MICRO_BASE_URL;
 
-/**
- * Bagend photo-proxy URL for a Google Places photo. The API key never leaves
- * the server — bagend follows the Google redirect and streams the bytes back
- * with its own browser caching headers.
- */
-export function protopipePlacePhotoUrl(photoName: string, maxHeightPx = 320): string {
-  const params = new URLSearchParams({
-    name: photoName,
-    maxHeightPx: String(maxHeightPx),
-  });
-  return `${API_BASE}/api/v2/protopipe/places/photo?${params.toString()}`;
-}
-
 /** Build absolute v2 Protopipe URL; encodes path params safely. */
 export function protopipeApiUrl(pathTemplate: string, params?: Record<string, string>): string {
   let path = pathTemplate;

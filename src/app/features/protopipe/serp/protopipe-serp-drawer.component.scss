@@ -237,46 +237,6 @@
   font-size: 0.95rem;
 }
 
-.serp-local__summary {
-  margin-top: 0.25rem;
-  font-style: italic;
-  color: var(--p-text-muted-color);
-}
-
-.serp-local__photos {
-  display: flex;
-  gap: 0.4rem;
-  margin-top: 0.4rem;
-  flex-wrap: wrap;
-}
-
-.serp-local__photo {
-  width: 5rem;
-  height: 5rem;
-  object-fit: cover;
-  border-radius: 0.4rem;
-  border: 1px solid var(--p-surface-200, #e5e7eb);
-}
-
-.serp-local__links {
-  display: flex;
-  gap: 0.8rem;
-  margin-top: 0.35rem;
-  flex-wrap: wrap;
-
-  a {
-    color: var(--p-primary-color);
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-}
-
-.serp-local__enriching {
-  margin-top: 0.4rem;
-}
 
 .serp-local__meta {
   display: flex;

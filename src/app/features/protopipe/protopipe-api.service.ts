@@ -10,8 +10,6 @@ import type {
   ProtopipeAnalyticsSetPropertyRequest,
   ProtopipeAnalyticsSetPropertyResponse,
   ProtopipeKeywordSerpResponse,
-  ProtopipePlaceDetailsResponse,
-  ProtopipeLocalPackPlaceLookupRequest,
   AdminSitesListResponse,
   AgentRunResponse,
   ArticleIdeasResponse,
@@ -283,30 +281,6 @@ export class ProtopipeApiService {
         protopipeApiUrl(ProtopipeEndpoints.keywordSerpRefresh.path, { siteId, keywordId }),
         {},
         { params },
-      ),
-    );
-  }
-
-  /** Google Places enrichment for a local pack row; cached 30 days per placeId. */
-  getPlaceDetails(placeId: string): Promise<ProtopipePlaceDetailsResponse> {
-    return firstValueFrom(
-      this.http.get<ProtopipePlaceDetailsResponse>(
-        protopipeApiUrl(ProtopipeEndpoints.placeDetails.path, { placeId }),
-      ),
-    );
-  }
-
-  /**
-   * Row-based local pack enrichment. The frontend already has the row data,
-   * so we send it directly — no snapshot lookup race on the backend.
-   */
-  lookupLocalPackPlace(
-    body: ProtopipeLocalPackPlaceLookupRequest,
-  ): Promise<ProtopipePlaceDetailsResponse> {
-    return firstValueFrom(
-      this.http.post<ProtopipePlaceDetailsResponse>(
-        protopipeApiUrl(ProtopipeEndpoints.localPackPlaceLookup.path),
-        body,
       ),
     );
   }

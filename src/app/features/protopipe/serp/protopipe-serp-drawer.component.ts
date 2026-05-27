@@ -17,8 +17,6 @@ import { FormsModule } from '@angular/forms';
 import type {
   ProtopipeKeywordSerpQuotaError,
   ProtopipeKeywordSerpResponse,
-  ProtopipePlaceDetails,
-  ProtopipePlacePhoto,
   ProtopipeSerpSnapshot,
 } from '@hive/contracts';
 import * as L from 'leaflet';
@@ -30,10 +28,8 @@ import { Select } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { Tag } from 'primeng/tag';
-import { environment } from '../../../../environments/environment';
 import type { ProtopipeKeywordDto } from '../protopipe.models';
 import { ProtopipeApiService } from '../protopipe-api.service';
-import { protopipePlacePhotoUrl } from '../protopipe-http.util';
 
 type SerpTab = 'results' | 'local' | 'features';
 
@@ -45,7 +41,6 @@ interface UnifiedResultRow {
   url?: string;
   domain?: string;
   isYourSite?: boolean;
-  /** For local rows so the card / map enrichment can key off it. */
   localIndex?: number;
 }
 
@@ -94,7 +89,6 @@ export class ProtopipeSerpDrawerComponent {
 
   readonly siteId = input<string | null>(null);
   readonly keyword = input<ProtopipeKeywordDto | null>(null);
-  /** Site's default geo target — used as the initial selection. */
   readonly siteDefaultLocationCode = input<number | null>(null);
   readonly visible = model<boolean>(false);
 
@@ -108,33 +102,12 @@ export class ProtopipeSerpDrawerComponent {
   readonly locationOptions = LOCATION_OPTIONS;
   readonly selectedLocationCode = signal<number>(LOCATION_OPTIONS[0].code);
 
-  /**
-   * Place Details keyed by local pack `position` — the row-based endpoint
-   * resolves missing placeIds via Text Search server-side, so the drawer
-   * always has a single key it can rely on regardless of whether DFS gave
-   * us a place_id or just a cid.
-   */
-  readonly placeDetails = signal<Record<number, ProtopipePlaceDetails>>({});
-  readonly placeDetailsLoading = signal<Record<number, boolean>>({});
-  /**
-   * Positions whose enrichment attempt has already failed — without this we
-   * loop forever because the effect re-fires when the loading-state signal
-   * clears in finally(), sees a row not in `have` or `inflight`, and fires
-   * again.
-   */
-  readonly placeDetailsFailed = signal<Set<number>>(new Set());
-
   readonly snapshot = computed<ProtopipeSerpSnapshot | null>(() => this.data()?.snapshot ?? null);
   readonly source = computed<'cache' | 'live' | null>(() => this.data()?.source ?? null);
 
   readonly localPackCount = computed(() => this.snapshot()?.localPack.length ?? 0);
   readonly organicCount = computed(() => this.snapshot()?.organicResults.length ?? 0);
 
-  /**
-   * Unified list of organic + local pack rows sorted by `position` (DFS's
-   * `rank_absolute`, which is the page-wide rank). Local pack rows carry a
-   * `kind: 'local'` discriminator so the template can tag them.
-   */
   readonly unifiedResults = computed<UnifiedResultRow[]>(() => {
     const s = this.snapshot();
     if (!s) return [];
@@ -177,18 +150,16 @@ export class ProtopipeSerpDrawerComponent {
     return n;
   });
 
-  /** Local pack rows that have at least one coord — drives map marker count. */
+  /** Local pack rows that have geocoded coordinates — drives map markers. */
   readonly mappableLocalRows = computed(() => {
     const s = this.snapshot();
     if (!s) return [];
-    const details = this.placeDetails();
     return s.localPack
       .map((row) => {
-        const enriched = details[row.position];
-        const lat = enriched?.location?.latitude;
-        const lng = enriched?.location?.longitude;
+        const lat = row.placeEnrichment?.lat;
+        const lng = row.placeEnrichment?.lng;
         if (lat == null || lng == null) return null;
-        return { row, enriched, lat, lng };
+        return { row, lat, lng };
       })
       .filter((x): x is NonNullable<typeof x> => x !== null);
   });
@@ -200,7 +171,6 @@ export class ProtopipeSerpDrawerComponent {
   private lastFetchedKey: string | null = null;
 
   constructor() {
-    // Reset selection to site default whenever a new keyword/site combo opens.
     effect(() => {
       const visible = this.visible();
       const keyword = this.keyword();
@@ -219,16 +189,6 @@ export class ProtopipeSerpDrawerComponent {
       void this.load(siteId, keyword.id, initial);
     });
 
-    // Bagend owns local pack enrichment now. The drawer mirrors the snapshot's
-    // stored enrichment state instead of firing paid lookup requests as a
-    // render side effect.
-    effect(() => {
-      const snap = this.snapshot();
-      if (!snap) return;
-      this.hydratePlaceDetailsFromSnapshot(snap);
-    });
-
-    // Leaflet map: create/update when local tab active + we have mappable rows.
     afterRenderEffect(() => {
       const el = this.mapEl()?.nativeElement;
       if (!el) {
@@ -239,7 +199,6 @@ export class ProtopipeSerpDrawerComponent {
       const view = MAP_VIEW_BY_LOCATION[this.selectedLocationCode()] ?? DEFAULT_MAP_VIEW;
       if (!this.map) {
         this.map = L.map(el, { zoomControl: true, attributionControl: true });
-        // Esri World Imagery — free, no key, satellite basemap.
         L.tileLayer(
           'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
           {
@@ -248,7 +207,6 @@ export class ProtopipeSerpDrawerComponent {
               'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
           },
         ).addTo(this.map);
-        // Light place-label overlay so the satellite isn't unreadable when zoomed in.
         L.tileLayer(
           'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
           { maxZoom: 19, opacity: 0.8 },
@@ -256,15 +214,11 @@ export class ProtopipeSerpDrawerComponent {
         this.markersLayer = L.layerGroup().addTo(this.map);
       }
       this.map.setView([view.lat, view.lng], view.zoom, { animate: false });
-      // Containers laid out inside hidden tabs start with 0 dimensions —
-      // force a recalc once the panel becomes visible.
       setTimeout(() => this.map?.invalidateSize(), 0);
       this.renderMarkers();
     });
 
-    // Re-render markers when enrichment data lands.
     effect(() => {
-      this.placeDetails();
       this.mappableLocalRows();
       if (this.map && this.activeTab() === 'local') {
         this.renderMarkers();
@@ -277,23 +231,15 @@ export class ProtopipeSerpDrawerComponent {
     this.markersLayer.clearLayers();
     for (const item of this.mappableLocalRows()) {
       const marker = L.marker([item.lat, item.lng]);
-      const title = item.enriched?.displayName ?? item.row.title;
-      const subtitle =
-        item.enriched?.primaryTypeDisplayName ??
-        item.row.categories?.join(', ') ??
-        '';
       const rating =
-        item.enriched?.rating != null
-          ? `★ ${item.enriched.rating.toFixed(1)} (${item.enriched.userRatingCount ?? '?'})`
-          : item.row.rating != null
+        item.row.rating != null
           ? `★ ${item.row.rating.toFixed(1)}${
               item.row.reviewCount != null ? ` (${item.row.reviewCount})` : ''
             }`
           : '';
-      const address = item.enriched?.formattedAddress ?? item.row.address ?? '';
+      const address = item.row.address ?? '';
       marker.bindPopup(
-        `<strong>#${item.row.position} · ${escapeHtml(title)}</strong><br/>` +
-          (subtitle ? `<small>${escapeHtml(subtitle)}</small><br/>` : '') +
+        `<strong>#${item.row.position} · ${escapeHtml(item.row.title)}</strong><br/>` +
           (rating ? `${escapeHtml(rating)}<br/>` : '') +
           (address ? `<small>${escapeHtml(address)}</small>` : ''),
       );
@@ -314,9 +260,6 @@ export class ProtopipeSerpDrawerComponent {
     this.error.set(null);
     this.quotaError.set(null);
     this.data.set(null);
-    this.placeDetails.set({});
-    this.placeDetailsLoading.set({});
-    this.placeDetailsFailed.set(new Set());
     try {
       const res = await this.api.getKeywordSerp(siteId, keywordId, { locationCode });
       this.data.set(res);
@@ -338,9 +281,6 @@ export class ProtopipeSerpDrawerComponent {
       const res = await this.api.refreshKeywordSerp(siteId, keyword.id, {
         locationCode: this.selectedLocationCode(),
       });
-      this.placeDetails.set({});
-      this.placeDetailsLoading.set({});
-      this.placeDetailsFailed.set(new Set());
       this.data.set(res);
     } catch (err) {
       this.handleError(err);
@@ -356,26 +296,6 @@ export class ProtopipeSerpDrawerComponent {
     const keyword = this.keyword();
     if (!siteId || !keyword) return;
     void this.load(siteId, keyword.id, code);
-  }
-
-  private hydratePlaceDetailsFromSnapshot(snapshot: ProtopipeSerpSnapshot): void {
-    const details: Record<number, ProtopipePlaceDetails> = {};
-    const failed = new Set<number>();
-    for (const row of snapshot.localPack) {
-      const enrichment = row.placeEnrichment;
-      if (enrichment?.details) {
-        details[row.position] = enrichment.details;
-      }
-      if (
-        enrichment?.status === 'not_found' ||
-        enrichment?.status === 'provider_error'
-      ) {
-        failed.add(row.position);
-      }
-    }
-    this.placeDetails.set(details);
-    this.placeDetailsFailed.set(failed);
-    this.placeDetailsLoading.set({});
   }
 
   private handleError(err: unknown): void {
@@ -394,55 +314,6 @@ export class ProtopipeSerpDrawerComponent {
   onHide(): void {
     this.lastFetchedKey = null;
     this.destroyMap();
-  }
-
-  detailsFor(position: number): ProtopipePlaceDetails | undefined {
-    return this.placeDetails()[position];
-  }
-
-  isEnriching(position: number): boolean {
-    return Boolean(this.placeDetailsLoading()[position]);
-  }
-
-  /**
-   * Returns the Google-matched display name when it meaningfully differs
-   * from the DFS SERP title, so the user can see when the photo card was
-   * resolved to a slightly different business (e.g. brand vs legal name).
-   */
-  matchedNameNote(row: ProtopipeSerpSnapshot['localPack'][number]): string | null {
-    const matched = row.placeEnrichment?.details?.displayName;
-    if (!matched) return null;
-    const norm = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
-    return norm(matched) === norm(row.title) ? null : matched;
-  }
-
-  enrichmentMessage(row: ProtopipeSerpSnapshot['localPack'][number]): string | null {
-    const enrichment = row.placeEnrichment;
-    if (enrichment?.status === 'not_found') {
-      return enrichment.message ?? 'Place details unavailable';
-    }
-    if (enrichment?.status === 'provider_error') {
-      const detail = enrichment.providerStatus
-        ? `${enrichment.message ?? 'Place lookup failed'} (${enrichment.providerStatus})`
-        : enrichment.message ?? 'Place lookup failed';
-      return `Place lookup failed: ${detail}`;
-    }
-    return null;
-  }
-
-  photoUrl(photo: ProtopipePlacePhoto, maxHeightPx = 160): string {
-    // Backend pre-signs URLs keyed by height; fall back to the legacy
-    // builder for safety until everyone's cache rolls over.
-    const pre = photo.proxyUrls?.[maxHeightPx];
-    if (pre) return `${this.apiBase}${pre}`;
-    return protopipePlacePhotoUrl(photo.name, maxHeightPx);
-  }
-
-  private readonly apiBase = environment.MICRO_BASE_URL;
-
-  onPhotoError(event: Event): void {
-    const img = event.target as HTMLImageElement | null;
-    if (img) img.style.display = 'none';
   }
 
   formatFetchedAt(iso: string): string {

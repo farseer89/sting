@@ -107,3 +107,167 @@
     font-size: 0.95rem;
   }
 }
+
+// Drawer content is projected through PrimeNG's overlay; the elements still
+// carry this component's view-encapsulation attribute (they were authored in
+// our template), so flat class selectors here match correctly without
+// ::ng-deep. The outer .plan-drawer wrapper itself lives in PrimeNG's DOM and
+// can't be reached from here — restyle it globally if ever needed.
+
+.plan-drawer__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-right: 1.5rem;
+}
+
+.plan-drawer__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.plan-drawer__title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.plan-drawer__subtitle {
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.plan-drawer__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.plan-drawer__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+.plan-drawer__empty-icon {
+  font-size: 2rem;
+  color: var(--p-text-muted-color, var(--text-color-secondary));
+  opacity: 0.6;
+}
+
+.plan-drawer__stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.plan-drawer__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.75rem;
+  background: var(--p-surface-50, var(--surface-100));
+  border: 1px solid var(--p-surface-border, var(--surface-border));
+}
+
+.plan-drawer__stat-value {
+  font-size: 1.65rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--p-text-color, var(--text-color));
+}
+
+.plan-drawer__stat-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--p-text-muted-color, var(--text-color-secondary));
+}
+
+.plan-drawer__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.plan-drawer__group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--p-surface-border, var(--surface-border));
+}
+
+.plan-drawer__group-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--p-text-muted-color, var(--text-color-secondary));
+}
+
+.plan-drawer__group-count {
+  font-size: 0.75rem;
+  color: var(--p-text-muted-color, var(--text-color-secondary));
+}
+
+.plan-drawer__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.plan-drawer__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.6rem;
+  background: var(--p-surface-0, var(--surface-card));
+  border: 1px solid var(--p-surface-border, var(--surface-border));
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+
+  &:hover {
+    border-color: var(--p-primary-300, var(--primary-color));
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  }
+}
+
+.plan-drawer__phrase {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.plan-drawer__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.plan-drawer__notes {
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.plan-drawer__footer {
+  border-top: 1px solid var(--p-surface-border, var(--surface-border));
+  padding-top: 0.75rem;
+}
+
+.plan-drawer__edit-link {
+  display: block;
+  text-decoration: none;
+}

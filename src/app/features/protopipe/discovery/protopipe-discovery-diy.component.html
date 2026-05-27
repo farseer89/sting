@@ -13,9 +13,14 @@
       <a routerLink="/protopipe/keywords/discover">
         <p-button label="Back" icon="pi pi-arrow-left" [outlined]="true" size="small" />
       </a>
-      <a routerLink="/protopipe/keywords">
-        <p-button label="My keywords" icon="pi pi-list" [outlined]="true" size="small" />
-      </a>
+      <p-button
+        label="Your plan"
+        icon="pi pi-bookmark"
+        size="small"
+        [badge]="planCount().toString()"
+        badgeSeverity="info"
+        (onClick)="openPlanDrawer()"
+      />
     </div>
   </header>
 
@@ -280,3 +285,84 @@
     </div>
   }
 </div>
+
+<p-drawer
+  [visible]="planDrawerVisible()"
+  (visibleChange)="planDrawerVisible.set($event)"
+  position="right"
+  [style]="{ width: 'min(100%, 26rem)' }"
+  styleClass="plan-drawer"
+>
+  <ng-template #header>
+    <div class="plan-drawer__header">
+      <div class="plan-drawer__title-row">
+        <h2 class="plan-drawer__title m-0">Your plan</h2>
+        <p-tag [value]="planCount() + ' tracked'" severity="info" />
+      </div>
+      <p class="plan-drawer__subtitle m-0 text-color-secondary">
+        Keywords currently on your tracked list. Pick more from the tabs to add.
+      </p>
+    </div>
+  </ng-template>
+
+  <div class="plan-drawer__body">
+    @if (planCount() === 0) {
+      <div class="plan-drawer__empty">
+        <i class="pi pi-inbox plan-drawer__empty-icon"></i>
+        <p class="m-0 text-color-secondary">Nothing on your plan yet.</p>
+        <p class="m-0 text-color-secondary text-sm">
+          Tick a few rows from the tabs and hit "Add to my plan".
+        </p>
+      </div>
+    } @else {
+      <div class="plan-drawer__stats">
+        <div class="plan-drawer__stat">
+          <span class="plan-drawer__stat-value">{{ planCount() }}</span>
+          <span class="plan-drawer__stat-label">total</span>
+        </div>
+        <div class="plan-drawer__stat">
+          <span class="plan-drawer__stat-value">{{ planHighPriorityCount() }}</span>
+          <span class="plan-drawer__stat-label">high priority</span>
+        </div>
+      </div>
+
+      @for (group of planByPriority(); track group.key) {
+        <section class="plan-drawer__group">
+          <header class="plan-drawer__group-header">
+            <span class="plan-drawer__group-title">{{ group.label }}</span>
+            <span class="plan-drawer__group-count">{{ group.items.length }}</span>
+          </header>
+          <ul class="plan-drawer__list">
+            @for (kw of group.items; track kw.id) {
+              <li class="plan-drawer__item">
+                <div class="plan-drawer__phrase">{{ kw.phrase }}</div>
+                <div class="plan-drawer__meta">
+                  <p-tag [value]="kw.intent" [severity]="intentSeverity(kw.intent)" />
+                  <p-tag [value]="kw.priority" [severity]="prioritySeverity(kw.priority)" />
+                </div>
+                @if (kw.notes) {
+                  <p class="plan-drawer__notes m-0 text-color-secondary text-sm">
+                    {{ kw.notes }}
+                  </p>
+                }
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    }
+  </div>
+
+  <ng-template #footer>
+    <div class="plan-drawer__footer">
+      <a routerLink="/protopipe/keywords" class="plan-drawer__edit-link" (click)="planDrawerVisible.set(false)">
+        <p-button
+          label="Edit in full keywords table"
+          icon="pi pi-pen-to-square"
+          [text]="true"
+          styleClass="w-full"
+        />
+      </a>
+    </div>
+  </ng-template>
+</p-drawer>

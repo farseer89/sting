@@ -9,21 +9,29 @@ import {
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import { Badge } from 'primeng/badge';
 import { Button } from 'primeng/button';
 import { Checkbox } from 'primeng/checkbox';
+import { Drawer } from 'primeng/drawer';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { Tag } from 'primeng/tag';
 import { Toast } from 'primeng/toast';
 import type {
+  KeywordPriority,
   ProtopipeDiscoverAdsIdea,
   ProtopipeDiscoverGscQuery,
   ProtopipeDiscoverRankedKeyword,
   ProtopipeKeywordDiscoveryResponse,
+  ProtopipeKeywordDto,
 } from '@hive/contracts';
 import { ProtopipeApiService } from '../protopipe-api.service';
 import { parseProtopipeApiError } from '../protopipe-http.util';
+import {
+  intentSeverity,
+  prioritySeverity,
+} from '../protopipe-keyword-display';
 import { ProtopipeStrategyService } from '../protopipe-strategy.service';
 
 interface SelectableRow {
@@ -57,8 +65,10 @@ function microsToDollars(value: number | undefined): number | undefined {
   imports: [
     FormsModule,
     RouterLink,
+    Badge,
     Button,
     Checkbox,
+    Drawer,
     ProgressSpinner,
     TableModule,
     TabsModule,
@@ -93,8 +103,39 @@ export class ProtopipeDiscoveryDiyComponent implements OnInit {
 
   readonly activeTab = signal<'ranked' | 'ads' | 'gsc'>('ranked');
 
+  readonly planDrawerVisible = signal(false);
+  readonly planKeywords = this.strategy.keywords;
+  readonly planCount = this.strategy.keywordCount;
+  readonly planHighPriorityCount = this.strategy.highPriorityCount;
+
+  readonly intentSeverity = intentSeverity;
+  readonly prioritySeverity = prioritySeverity;
+
+  readonly planByPriority = computed<
+    { label: string; key: KeywordPriority; items: ProtopipeKeywordDto[] }[]
+  >(() => {
+    const buckets: Record<KeywordPriority, ProtopipeKeywordDto[]> = {
+      high: [],
+      medium: [],
+      low: [],
+    };
+    for (const kw of this.planKeywords()) {
+      buckets[kw.priority].push(kw);
+    }
+    const groups: { label: string; key: KeywordPriority; items: ProtopipeKeywordDto[] }[] = [
+      { label: 'High priority', key: 'high', items: buckets.high },
+      { label: 'Medium priority', key: 'medium', items: buckets.medium },
+      { label: 'Low priority', key: 'low', items: buckets.low },
+    ];
+    return groups.filter((group) => group.items.length > 0);
+  });
+
   ngOnInit(): void {
     void this.load();
+  }
+
+  openPlanDrawer(): void {
+    this.planDrawerVisible.set(true);
   }
 
   async load(): Promise<void> {

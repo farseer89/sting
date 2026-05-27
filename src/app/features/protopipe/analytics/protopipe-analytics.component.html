@@ -29,6 +29,16 @@
         [allowEmpty]="false"
         size="small"
       ></p-selectButton>
+      @if (hasResolvedProperty() || needsPicker()) {
+        <p-button
+          [label]="needsPicker() ? 'Choose GA4 property' : 'Change GA4 property'"
+          icon="pi pi-pencil"
+          severity="secondary"
+          [outlined]="true"
+          size="small"
+          (onClick)="openPicker(true)"
+        ></p-button>
+      }
     </div>
   </header>
 
@@ -77,9 +87,6 @@
           <p-tag value="override" severity="info" styleClass="ml-2"></p-tag>
         }
       </div>
-      <button class="analytics__change-link" type="button" (click)="openPicker(true)">
-        Change property
-      </button>
     </div>
 
     <div class="analytics__tiles">
@@ -210,7 +217,23 @@
   } @else if (response()?.error) {
     <div class="analytics__error">
       <p>{{ response()?.error }}</p>
-      <p-button label="Retry" icon="pi pi-refresh" [text]="true" (onClick)="loadAnalytics()"></p-button>
+      @if (response()?.property) {
+        <p class="text-sm">
+          Currently bound to <strong>{{ response()?.property?.displayName }}</strong>.
+          You may have picked the wrong GA4 property — try a different one.
+        </p>
+      }
+      <div class="analytics__error-actions">
+        <p-button label="Retry" icon="pi pi-refresh" [text]="true" (onClick)="loadAnalytics()"></p-button>
+        @if (hasResolvedProperty()) {
+          <p-button
+            label="Change GA4 property"
+            icon="pi pi-pencil"
+            severity="secondary"
+            (onClick)="openPicker(true)"
+          ></p-button>
+        }
+      </div>
     </div>
   }
 

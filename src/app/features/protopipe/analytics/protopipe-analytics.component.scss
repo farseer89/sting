@@ -62,6 +62,13 @@
   }
 }
 
+.analytics__error-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+
 .analytics__connect-banner {
   display: flex;
   align-items: center;

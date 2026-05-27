@@ -115,6 +115,8 @@ export class ProtopipeAnalyticsComponent implements OnInit {
     if (r.available) return false;
     return /Connect your Google account/i.test(r.error ?? '');
   });
+  /** True whenever we have a property bound to this site — drives the always-visible "Change property" control. */
+  readonly hasResolvedProperty = computed(() => !!this.response()?.property);
 
   readonly daily = computed(() => this.response()?.daily ?? []);
   readonly sparkline = computed(() => this.buildSparkline(this.daily()));

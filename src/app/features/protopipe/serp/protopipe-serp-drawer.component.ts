@@ -404,6 +404,18 @@ export class ProtopipeSerpDrawerComponent {
     return Boolean(this.placeDetailsLoading()[position]);
   }
 
+  /**
+   * Returns the Google-matched display name when it meaningfully differs
+   * from the DFS SERP title, so the user can see when the photo card was
+   * resolved to a slightly different business (e.g. brand vs legal name).
+   */
+  matchedNameNote(row: ProtopipeSerpSnapshot['localPack'][number]): string | null {
+    const matched = row.placeEnrichment?.details?.displayName;
+    if (!matched) return null;
+    const norm = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+    return norm(matched) === norm(row.title) ? null : matched;
+  }
+
   enrichmentMessage(row: ProtopipeSerpSnapshot['localPack'][number]): string | null {
     const enrichment = row.placeEnrichment;
     if (enrichment?.status === 'not_found') {

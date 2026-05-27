@@ -53,6 +53,7 @@ export class ProtopipeStrategyService {
   readonly dataForSeoTestError = this._dataForSeoTestError.asReadonly();
   readonly marketRefreshing = this._marketRefreshing.asReadonly();
   readonly lastEnrichSummary = this._lastEnrichSummary.asReadonly();
+  readonly site = this._site.asReadonly();
 
   readonly strategy = computed<ProtopipeStrategySummary>(() => ({
     site: this._site() ?? {

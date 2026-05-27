@@ -65,6 +65,7 @@ export class ProtopipeKeywordsComponent implements OnInit {
   readonly lastEnrichSummary = this.strategy.lastEnrichSummary;
   readonly error = this.strategy.error;
   readonly activeSiteId = this.strategy.siteId;
+  readonly activeSite = this.strategy.site;
   readonly intentOptions = INTENT_OPTIONS;
   readonly priorityOptions = PRIORITY_OPTIONS;
 

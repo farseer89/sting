@@ -3,7 +3,7 @@
   (visibleChange)="visible.set($event)"
   (onHide)="onHide()"
   position="right"
-  [style]="{ width: 'min(100%, 36rem)' }"
+  [style]="{ width: 'min(100%, 38rem)' }"
 >
   <ng-template #header>
     <div class="serp-drawer__header">
@@ -16,23 +16,36 @@
           />
         }
       </div>
+      <div class="serp-drawer__controls">
+        <p-select
+          pSize="small"
+          [options]="locationOptions"
+          optionLabel="name"
+          optionValue="code"
+          [ngModel]="selectedLocationCode()"
+          (ngModelChange)="onLocationChange($event)"
+          styleClass="serp-drawer__location-select"
+        />
+        @if (snapshot(); as s) {
+          <span class="serp-drawer__device text-color-secondary text-sm">
+            {{ s.device }} · fetched {{ formatFetchedAt(s.fetchedAt) }}
+          </span>
+        }
+      </div>
       @if (snapshot(); as s) {
-        <p class="serp-drawer__subtitle m-0 text-color-secondary">
-          <span>{{ s.location.name }} · {{ s.device }}</span>
-          <span class="serp-drawer__dot">·</span>
-          <span>Fetched {{ formatFetchedAt(s.fetchedAt) }}</span>
-          @if (s.yourPosition != null) {
-            <span class="serp-drawer__dot">·</span>
+        @if (s.yourPosition != null) {
+          <p class="serp-drawer__subtitle m-0">
             <span class="serp-drawer__your-pos">You: #{{ s.yourPosition }}</span>
-          } @else {
             <span class="serp-drawer__dot">·</span>
-            <span class="text-color-secondary">You: not in top {{ organicCount() }}</span>
-          }
-        </p>
-      } @else {
-        <p class="serp-drawer__subtitle m-0 text-color-secondary">
-          Live Google SERP for this keyword.
-        </p>
+            <span class="text-color-secondary text-sm">
+              in {{ organicCount() }} top results
+            </span>
+          </p>
+        } @else {
+          <p class="serp-drawer__subtitle m-0 text-color-secondary text-sm">
+            You're not in the top {{ organicCount() }} for this market.
+          </p>
+        }
       }
     </div>
   </ng-template>
@@ -135,44 +148,90 @@
                 No local pack on this SERP.
               </p>
             } @else {
+              <div #mapEl class="serp-local-map" aria-label="Local pack map"></div>
               <ul class="serp-local">
                 @for (row of s.localPack; track row.position) {
+                  @let enriched = detailsFor(row.placeId);
                   <li class="serp-local__item">
                     <div class="serp-local__position">#{{ row.position }}</div>
                     <div class="serp-local__content">
-                      <div class="serp-local__title">{{ row.title }}</div>
+                      <div class="serp-local__title-row">
+                        <span class="serp-local__title">
+                          {{ enriched?.displayName ?? row.title }}
+                        </span>
+                        @if (enriched?.openNow === true) {
+                          <p-tag value="Open now" severity="success" />
+                        } @else if (enriched?.openNow === false) {
+                          <p-tag value="Closed" severity="secondary" />
+                        }
+                      </div>
                       <div class="serp-local__meta text-sm text-color-secondary">
-                        @if (row.rating != null) {
+                        @let displayRating = enriched?.rating ?? row.rating;
+                        @let displayReviews = enriched?.userRatingCount ?? row.reviewCount;
+                        @if (displayRating != null) {
                           <span class="serp-local__rating">
                             <i class="pi pi-star-fill"></i>
-                            {{ formatRating(row.rating) }}
-                            @if (row.reviewCount != null) {
-                              <span class="serp-local__reviews">({{ row.reviewCount }})</span>
+                            {{ formatRating(displayRating) }}
+                            @if (displayReviews != null) {
+                              <span class="serp-local__reviews">({{ displayReviews }})</span>
                             }
                           </span>
                         }
-                        @if (row.categories?.length) {
+                        @if (enriched?.primaryTypeDisplayName; as ptype) {
+                          <span class="serp-local__sep">·</span>
+                          <span>{{ ptype }}</span>
+                        } @else if (row.categories?.length) {
                           <span class="serp-local__sep">·</span>
                           <span>{{ row.categories?.join(', ') }}</span>
                         }
                       </div>
-                      @if (row.address) {
+                      @let displayAddress = enriched?.formattedAddress ?? row.address;
+                      @if (displayAddress) {
                         <div class="serp-local__address text-sm text-color-secondary">
-                          <i class="pi pi-map-marker mr-1"></i>{{ row.address }}
+                          <i class="pi pi-map-marker mr-1"></i>{{ displayAddress }}
                         </div>
                       }
-                      @if (row.phone) {
+                      @if (enriched?.internationalPhoneNumber || row.phone; as phone) {
                         <div class="serp-local__phone text-sm text-color-secondary">
-                          <i class="pi pi-phone mr-1"></i>{{ row.phone }}
+                          <i class="pi pi-phone mr-1"></i>{{ phone }}
+                        </div>
+                      }
+                      @if (enriched?.editorialSummary; as summary) {
+                        <p class="serp-local__summary m-0 text-sm">{{ summary }}</p>
+                      }
+                      @if (enriched?.photos?.length) {
+                        <div class="serp-local__photos">
+                          @for (photo of (enriched?.photos ?? []).slice(0, 3); track photo.name) {
+                            <img
+                              [src]="photoUrl(photo.name, 160)"
+                              loading="lazy"
+                              alt=""
+                              class="serp-local__photo"
+                            />
+                          }
+                        </div>
+                      }
+                      <div class="serp-local__links">
+                        @if (enriched?.websiteUri; as web) {
+                          <a [href]="web" target="_blank" rel="noopener noreferrer" class="text-sm">
+                            <i class="pi pi-external-link mr-1"></i>Website
+                          </a>
+                        }
+                        @if (enriched?.googleMapsUri; as gmaps) {
+                          <a [href]="gmaps" target="_blank" rel="noopener noreferrer" class="text-sm">
+                            <i class="pi pi-google mr-1"></i>Google Maps
+                          </a>
+                        }
+                      </div>
+                      @if (isEnriching(row.placeId)) {
+                        <div class="serp-local__enriching text-color-secondary text-sm">
+                          <i class="pi pi-spin pi-spinner mr-1"></i>Loading Place details…
                         </div>
                       }
                     </div>
                   </li>
                 }
               </ul>
-              <p class="serp-drawer__phase-note m-0 text-color-secondary text-sm">
-                Photos, hours and review excerpts arrive when Places enrichment ships.
-              </p>
             }
           </p-tabpanel>
 

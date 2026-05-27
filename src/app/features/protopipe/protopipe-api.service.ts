@@ -10,6 +10,7 @@ import type {
   ProtopipeAnalyticsSetPropertyRequest,
   ProtopipeAnalyticsSetPropertyResponse,
   ProtopipeKeywordSerpResponse,
+  ProtopipePlaceDetailsResponse,
   AdminSitesListResponse,
   AgentRunResponse,
   ArticleIdeasResponse,
@@ -244,24 +245,52 @@ export class ProtopipeApiService {
 
   /**
    * Cached "first look" at the live SERP for a keyword. Returns a snapshot up
-   * to 7 days old when one exists; otherwise hits DataForSEO and persists a
-   * fresh row. Surfaces the daily-cap 429 body via the standard Angular
-   * `HttpErrorResponse.error` so the caller can render a friendly message.
+   * to 7 days old when one exists for {keywordId, location, device};
+   * otherwise hits DataForSEO and persists a fresh row. Pass a
+   * `locationCode` to override the site's default geo target (e.g. force
+   * United States when the site default is Maui).
    */
-  getKeywordSerp(siteId: string, keywordId: string): Promise<ProtopipeKeywordSerpResponse> {
+  getKeywordSerp(
+    siteId: string,
+    keywordId: string,
+    options?: { locationCode?: number },
+  ): Promise<ProtopipeKeywordSerpResponse> {
+    let params = new HttpParams();
+    if (options?.locationCode != null) {
+      params = params.set('locationCode', String(options.locationCode));
+    }
     return firstValueFrom(
       this.http.get<ProtopipeKeywordSerpResponse>(
         protopipeApiUrl(ProtopipeEndpoints.keywordSerp.path, { siteId, keywordId }),
+        { params },
       ),
     );
   }
 
   /** Force a fresh DFS fetch, bypassing the 7-day cache; counts against the daily cap. */
-  refreshKeywordSerp(siteId: string, keywordId: string): Promise<ProtopipeKeywordSerpResponse> {
+  refreshKeywordSerp(
+    siteId: string,
+    keywordId: string,
+    options?: { locationCode?: number },
+  ): Promise<ProtopipeKeywordSerpResponse> {
+    let params = new HttpParams();
+    if (options?.locationCode != null) {
+      params = params.set('locationCode', String(options.locationCode));
+    }
     return firstValueFrom(
       this.http.post<ProtopipeKeywordSerpResponse>(
         protopipeApiUrl(ProtopipeEndpoints.keywordSerpRefresh.path, { siteId, keywordId }),
         {},
+        { params },
+      ),
+    );
+  }
+
+  /** Google Places enrichment for a local pack row; cached 30 days per placeId. */
+  getPlaceDetails(placeId: string): Promise<ProtopipePlaceDetailsResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipePlaceDetailsResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.placeDetails.path, { placeId }),
       ),
     );
   }

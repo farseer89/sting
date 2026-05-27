@@ -370,5 +370,6 @@
 <app-protopipe-serp-drawer
   [siteId]="activeSiteId()"
   [keyword]="serpDrawerKeyword()"
+  [siteDefaultLocationCode]="activeSite()?.defaultSerpLocationCode ?? null"
   [(visible)]="serpDrawerVisible"
 />

@@ -406,8 +406,15 @@ export class ProtopipeSerpDrawerComponent {
 
   enrichmentMessage(row: ProtopipeSerpSnapshot['localPack'][number]): string | null {
     const enrichment = row.placeEnrichment;
-    if (enrichment?.status === 'not_found') return 'Place details unavailable';
-    if (enrichment?.status === 'provider_error') return 'Place lookup failed';
+    if (enrichment?.status === 'not_found') {
+      return enrichment.message ?? 'Place details unavailable';
+    }
+    if (enrichment?.status === 'provider_error') {
+      const detail = enrichment.providerStatus
+        ? `${enrichment.message ?? 'Place lookup failed'} (${enrichment.providerStatus})`
+        : enrichment.message ?? 'Place lookup failed';
+      return `Place lookup failed: ${detail}`;
+    }
     return null;
   }
 

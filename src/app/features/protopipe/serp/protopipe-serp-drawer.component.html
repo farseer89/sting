@@ -210,8 +210,10 @@
                             <img
                               [src]="photoUrl(photo.name, 160)"
                               loading="lazy"
+                              referrerpolicy="no-referrer"
                               alt=""
                               class="serp-local__photo"
+                              (error)="onPhotoError($event)"
                             />
                           }
                         </div>

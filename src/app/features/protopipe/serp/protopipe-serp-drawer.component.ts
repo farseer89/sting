@@ -400,6 +400,11 @@ export class ProtopipeSerpDrawerComponent {
     return protopipePlacePhotoUrl(name, maxHeightPx);
   }
 
+  onPhotoError(event: Event): void {
+    const img = event.target as HTMLImageElement | null;
+    if (img) img.style.display = 'none';
+  }
+
   formatFetchedAt(iso: string): string {
     const date = new Date(iso);
     const diffMs = Date.now() - date.getTime();

@@ -214,6 +214,58 @@
         </p-table>
       </article>
     </div>
+
+    <article class="analytics__table-card">
+      <header class="analytics__card-header">
+        <div>
+          <h2 class="analytics__card-title">Top search queries</h2>
+          <p class="analytics__card-subtitle">
+            What people searched on Google before they landed on your site
+            @if (r.searchQueries?.startDate && r.searchQueries?.endDate) {
+              · {{ r.searchQueries?.startDate }} → {{ r.searchQueries?.endDate }}
+            }
+            @if (r.searchQueries?.propertyUrl) {
+              · {{ r.searchQueries?.propertyUrl }}
+            }
+          </p>
+        </div>
+      </header>
+
+      @if (r.searchQueries?.available) {
+        <p-table [value]="r.searchQueries?.queries ?? []" styleClass="p-datatable-sm">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Query</th>
+              <th class="text-right">Clicks</th>
+              <th class="text-right">Impressions</th>
+              <th class="text-right">CTR</th>
+              <th class="text-right">Position</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td>{{ row.query }}</td>
+              <td class="text-right">{{ row.clicks | number }}</td>
+              <td class="text-right">{{ row.impressions | number }}</td>
+              <td class="text-right">{{ (row.ctr * 100) | number:'1.1-1' }}%</td>
+              <td class="text-right">{{ row.position | number:'1.1-1' }}</td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="5" class="text-color-secondary">No search query data in this range.</td></tr>
+          </ng-template>
+        </p-table>
+      } @else {
+        <div class="analytics__inline-warning">
+          <i class="pi pi-google"></i>
+          <div>
+            <strong>Search Console unavailable:</strong>
+            <span class="text-color-secondary"> {{ r.searchQueries?.error }}</span>
+          </div>
+        </div>
+      }
+    </article>
+  } @else if (response()?.error) {
   } @else if (response()?.error) {
     <div class="analytics__error">
       <p>{{ response()?.error }}</p>

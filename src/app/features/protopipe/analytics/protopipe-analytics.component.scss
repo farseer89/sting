@@ -283,6 +283,21 @@
   word-break: break-all;
 }
 
+.analytics__inline-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 0.95rem;
+  border-radius: 0.55rem;
+  background: var(--p-amber-50);
+  border: 1px solid var(--p-amber-200);
+  color: var(--p-amber-800);
+
+  > i {
+    font-size: 1rem;
+  }
+}
+
 .analytics__loading-overlay {
   position: absolute;
   inset: 0;

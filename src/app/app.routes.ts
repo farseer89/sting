@@ -120,6 +120,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'protopipe/settings/integrations',
+        loadComponent: () =>
+          import('./features/protopipe/settings/protopipe-integrations.component').then(
+            (m) => m.ProtopipeIntegrationsComponent,
+          ),
+      },
+      {
         path: 'protopipe/admin/agent',
         loadComponent: () =>
           import('./features/protopipe/admin/protopipe-agent-control.component').then(

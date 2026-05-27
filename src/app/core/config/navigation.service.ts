@@ -83,6 +83,13 @@ export class NavigationService {
             routerLink: '/protopipe/leads',
             visible: true,
           },
+          {
+            id: 'integrations',
+            label: 'Integrations',
+            icon: 'pi pi-link',
+            routerLink: '/protopipe/settings/integrations',
+            visible: true,
+          },
         ],
       },
       {

@@ -210,13 +210,31 @@
             </header>
 
             @if (gscRows().length === 0) {
-              <p class="m-0 text-color-secondary">
-                @if (response()?.gsc?.error) {
-                  {{ response()?.gsc?.error }}
-                } @else {
+              @if (response()?.gsc?.error) {
+                <div class="discovery-diy__connect-banner" role="status">
+                  <div class="discovery-diy__connect-banner-icon" aria-hidden="true">
+                    <i class="pi pi-google"></i>
+                  </div>
+                  <div class="discovery-diy__connect-banner-body">
+                    <h3 class="m-0 text-base">Connect Google to unlock Search Console data</h3>
+                    <p class="m-0 text-sm text-color-secondary">
+                      {{ response()?.gsc?.error }}
+                    </p>
+                  </div>
+                  <a routerLink="/protopipe/settings/integrations" class="discovery-diy__connect-banner-cta">
+                    <p-button
+                      label="Connect Google"
+                      icon="pi pi-arrow-right"
+                      iconPos="right"
+                      size="small"
+                    />
+                  </a>
+                </div>
+              } @else {
+                <p class="m-0 text-color-secondary">
                   No queries yet — give it a week or two of impressions to build up.
-                }
-              </p>
+                </p>
+              }
             } @else {
               <p-table
                 [value]="gscRows()"

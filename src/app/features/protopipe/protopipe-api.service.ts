@@ -1,7 +1,10 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { ProtopipeAdminEndpoints, ProtopipeEndpoints } from '@hive/contracts';
 import type {
+  ProtopipeAccountGoogleDisconnectResponse,
+  ProtopipeAccountGoogleStartResponse,
+  ProtopipeAccountGoogleStatusResponse,
   AdminSitesListResponse,
   AgentRunResponse,
   ArticleIdeasResponse,
@@ -156,6 +159,34 @@ export class ProtopipeApiService {
     options?: { gscRowLimit?: number; rankedRowLimit?: number; adsLimit?: number },
   ): Promise<ProtopipeKeywordDiscoveryResponse> {
     return firstValueFrom(this.discoverKeywords$(siteId, options));
+  }
+
+  getAccountGoogleStatus(): Promise<ProtopipeAccountGoogleStatusResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeAccountGoogleStatusResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.accountGoogleStatus.path),
+      ),
+    );
+  }
+
+  startAccountGoogleOAuth(returnTo?: string): Promise<ProtopipeAccountGoogleStartResponse> {
+    let params = new HttpParams();
+    if (returnTo) params = params.set('returnTo', returnTo);
+    return firstValueFrom(
+      this.http.get<ProtopipeAccountGoogleStartResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.accountGoogleStart.path),
+        { params },
+      ),
+    );
+  }
+
+  disconnectAccountGoogle(): Promise<ProtopipeAccountGoogleDisconnectResponse> {
+    return firstValueFrom(
+      this.http.post<ProtopipeAccountGoogleDisconnectResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.accountGoogleDisconnect.path),
+        {},
+      ),
+    );
   }
 
   getKeywordMetricHistory(

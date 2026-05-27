@@ -1,0 +1,145 @@
+<p-toast position="top-right"></p-toast>
+
+<section class="integrations">
+  <header class="integrations__header">
+    <div>
+      <h1 class="integrations__title">Integrations</h1>
+      <p class="integrations__subtitle">
+        Connect external accounts so Protopipe can pull in real data for your sites.
+      </p>
+    </div>
+  </header>
+
+  <article class="integration-card">
+    <header class="integration-card__header">
+      <div class="integration-card__brand">
+        <span class="integration-card__logo" aria-hidden="true">
+          <i class="pi pi-google"></i>
+        </span>
+        <div>
+          <h2 class="integration-card__name">Google</h2>
+          <p class="integration-card__tagline">
+            Search Console queries &amp; Google Analytics property data for this account.
+          </p>
+        </div>
+      </div>
+      @if (viewState() === 'connected') {
+        <p-tag severity="success" value="Connected"></p-tag>
+      } @else if (viewState() === 'not-connected') {
+        <p-tag severity="warn" value="Not connected"></p-tag>
+      } @else if (viewState() === 'not-configured') {
+        <p-tag severity="danger" value="Unavailable"></p-tag>
+      } @else if (viewState() === 'error') {
+        <p-tag severity="danger" value="Error"></p-tag>
+      }
+    </header>
+
+    <div class="integration-card__body">
+      @switch (viewState()) {
+        @case ('loading') {
+          <div class="integration-card__loading">
+            <p-progressSpinner styleClass="integration-card__spinner"></p-progressSpinner>
+            <span>Checking connection…</span>
+          </div>
+        }
+
+        @case ('not-configured') {
+          <p class="integration-card__message integration-card__message--danger">
+            Google OAuth is not configured on the server. Reach out to the platform admin.
+          </p>
+        }
+
+        @case ('error') {
+          <p class="integration-card__message integration-card__message--danger">
+            {{ loadError() ?? 'Could not load integration status.' }}
+          </p>
+          <p-button
+            label="Retry"
+            icon="pi pi-refresh"
+            [text]="true"
+            (onClick)="refresh()"
+          ></p-button>
+        }
+
+        @case ('not-connected') {
+          <p class="integration-card__message">
+            Connect your Google account to unlock:
+          </p>
+          <ul class="integration-card__bullets">
+            <li><i class="pi pi-check"></i> Real keyword impressions &amp; clicks from Search Console</li>
+            <li><i class="pi pi-check"></i> Position data on the queries you actually rank for</li>
+            <li><i class="pi pi-check"></i> GA4 property discovery (analytics dashboards next)</li>
+          </ul>
+          <div class="integration-card__actions">
+            <p-button
+              label="Connect Google"
+              icon="pi pi-google"
+              [loading]="busy()"
+              (onClick)="connect()"
+            ></p-button>
+          </div>
+        }
+
+        @case ('connected') {
+          <dl class="integration-card__facts">
+            @if (status()?.accountEmail) {
+              <div>
+                <dt>Connected as</dt>
+                <dd>{{ status()?.accountEmail }}</dd>
+              </div>
+            }
+            @if (connectedAtDisplay()) {
+              <div>
+                <dt>Connected on</dt>
+                <dd>{{ connectedAtDisplay() }}</dd>
+              </div>
+            }
+            @if (scopeChips().length) {
+              <div>
+                <dt>Granted</dt>
+                <dd class="integration-card__chips">
+                  @for (chip of scopeChips(); track chip) {
+                    <p-tag severity="info" [value]="chip"></p-tag>
+                  }
+                </dd>
+              </div>
+            }
+            <div>
+              <dt>Search Console properties</dt>
+              <dd>{{ status()?.gscPropertiesCount ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>GA4 properties</dt>
+              <dd>{{ status()?.ga4PropertiesCount ?? '—' }}</dd>
+            </div>
+          </dl>
+
+          @if (status()?.lastError) {
+            <p class="integration-card__message integration-card__message--warn">
+              Last warning: {{ status()?.lastError }}
+            </p>
+          }
+
+          <div class="integration-card__actions">
+            <p-button
+              label="Reconnect"
+              icon="pi pi-refresh"
+              severity="secondary"
+              [outlined]="true"
+              [loading]="busy()"
+              (onClick)="connect()"
+            ></p-button>
+            <p-button
+              label="Disconnect"
+              icon="pi pi-times"
+              severity="danger"
+              [text]="true"
+              [loading]="busy()"
+              (onClick)="disconnect()"
+            ></p-button>
+          </div>
+        }
+      }
+    </div>
+  </article>
+</section>

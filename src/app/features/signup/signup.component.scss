@@ -1,17 +1,17 @@
 @import '../login/login.component.scss';
 
-.grid {
+.name-fields {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
 }
 
-.col-6 {
+.name-field {
   min-width: 0;
 }
 
 @media (max-width: 576px) {
-  .grid {
+  .name-fields {
     grid-template-columns: 1fr;
   }
 }

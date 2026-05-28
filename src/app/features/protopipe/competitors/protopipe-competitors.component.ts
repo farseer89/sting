@@ -77,13 +77,6 @@ export class ProtopipeCompetitorsComponent implements OnInit {
   }
 
   async loadCompetitors(): Promise<void> {
-    const siteId = this.strategy.siteId();
-    if (!siteId) {
-      this.competitorsError.set('No site selected.');
-      this.loadingCompetitors.set(false);
-      return;
-    }
-
     this.loadingCompetitors.set(true);
     this.competitorsError.set(null);
     this.notConfigured.set(false);
@@ -92,7 +85,7 @@ export class ProtopipeCompetitorsComponent implements OnInit {
     this.gapRowLimit.set(null);
 
     try {
-      await this.strategy.ensureLoaded();
+      const siteId = await this.requireSiteId();
       const result = await this.api.siteCompetitors(siteId);
       this.competitorsResponse.set(result);
     } catch (err) {
@@ -106,6 +99,15 @@ export class ProtopipeCompetitorsComponent implements OnInit {
     }
   }
 
+  private async requireSiteId(): Promise<string> {
+    await this.strategy.ensureLoaded();
+    const siteId = this.strategy.siteId();
+    if (!siteId) {
+      throw new Error('No site loaded for this account');
+    }
+    return siteId;
+  }
+
   async selectCompetitor(competitor: ProtopipeSpyFuCompetitor): Promise<void> {
     if (this.loadingGap()) return;
     this.selectedCompetitor.set(competitor);
@@ -113,13 +115,11 @@ export class ProtopipeCompetitorsComponent implements OnInit {
   }
 
   async loadGapKeywords(competitorDomain: string): Promise<void> {
-    const siteId = this.strategy.siteId();
-    if (!siteId) return;
-
     this.loadingGap.set(true);
     this.gapError.set(null);
 
     try {
+      const siteId = await this.requireSiteId();
       const result = await this.api.competitorGapKeywords(siteId, competitorDomain);
       this.gapFetchedAt.set(result.fetchedAt);
       this.gapSource.set(result.source);

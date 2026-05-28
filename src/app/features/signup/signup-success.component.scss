@@ -1,0 +1,13 @@
+:host {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--surface-ground);
+}
+
+.success-panel {
+  max-width: 28rem;
+  width: 100%;
+}

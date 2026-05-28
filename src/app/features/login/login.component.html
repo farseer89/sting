@@ -1,55 +1,56 @@
 <div class="surface-ground">
-  <div [ngStyle]="{'background-image': 'url(' + loginImageUrl + ')'}" class="welcomeImage shadow-2">
-    <!-- Left brand panel -->
+  <div [ngStyle]="{ 'background-image': 'url(' + product.auth.loginImageUrl + ')' }" class="welcomeImage shadow-2">
     <div class="w-full lg:w-6">
       <div class="centerText">
-        <h1>Welcome to FieldWave</h1>
-        <p>Build Momentum. Make Waves.</p>
+        <h1>{{ product.auth.loginHeroTitle }}</h1>
+        <p>{{ product.auth.loginHeroSubtitle }}</p>
       </div>
     </div>
 
-    <!-- Right login panel -->
     <div class="w-full lg:w-6">
       <div class="surface-card p-4 lg:p-6 shadow-2">
-        <!-- Header -->
         <div class="mb-3">
-          <h2 class="text-color font-bold text-xl text-center">{{ loginWelcomeMessage }}</h2>
-          <p class="text-color-secondary text-center mb-3">Sign in to continue</p>
+          <h2 class="text-color font-bold text-xl text-center">{{ product.auth.loginWelcome }}</h2>
+          <p class="text-color-secondary text-center mb-3">{{ product.auth.loginTagline }}</p>
         </div>
 
-        <!-- Error Message -->
-        @if (hasError && !isNetworkError) {
-          <div class="p-error mt-2 mb-3 p-2 border-round" style="background-color: rgba(255, 72, 66, 0.1); border-left: 3px solid var(--red-500);">
-            <i class="pi pi-exclamation-circle mr-2" style="color: var(--red-600);"></i>
-            <span id="error-message">{{ errorMessage }}</span>
+        @if (hasError() && !isNetworkError()) {
+          <div
+            class="p-error mt-2 mb-3 p-2 border-round"
+            style="background-color: rgba(255, 72, 66, 0.1); border-left: 3px solid var(--red-500)"
+          >
+            <i class="pi pi-exclamation-circle mr-2" style="color: var(--red-600)"></i>
+            <span id="error-message">{{ errorMessage() }}</span>
           </div>
         }
 
-        <!-- Network/SSL Error Message -->
-        @if (isNetworkError) {
-          <div class="network-error-panel mt-2 mb-3 p-3 border-round" style="background-color: rgba(255, 152, 0, 0.1); border: 1px solid var(--orange-500);">
+        @if (isNetworkError()) {
+          <div
+            class="network-error-panel mt-2 mb-3 p-3 border-round"
+            style="background-color: rgba(255, 152, 0, 0.1); border: 1px solid var(--orange-500)"
+          >
             <div class="flex align-items-center mb-2">
-              <i class="pi pi-wifi mr-2" style="color: var(--orange-600); font-size: 1.25rem;"></i>
+              <i class="pi pi-wifi mr-2" style="color: var(--orange-600); font-size: 1.25rem"></i>
               <strong class="text-orange-700">Connection Error</strong>
             </div>
-            <p class="text-sm m-0 mb-2" style="color: var(--text-color-secondary);">
+            <p class="text-sm m-0 mb-2" style="color: var(--text-color-secondary)">
               Unable to connect to the server. This is typically caused by:
             </p>
-            <ul class="text-sm m-0 pl-4" style="color: var(--text-color-secondary);">
+            <ul class="text-sm m-0 pl-4" style="color: var(--text-color-secondary)">
               <li>Network security software (firewall, VPN, proxy)</li>
               <li>SSL certificate interception (common on corporate networks)</li>
               <li>Browser cache issues</li>
             </ul>
-            <div class="mt-3 pt-2" style="border-top: 1px solid var(--surface-border);">
-              <p class="text-sm m-0 font-medium" style="color: var(--orange-700);">
+            <div class="mt-3 pt-2" style="border-top: 1px solid var(--surface-border)">
+              <p class="text-sm m-0 font-medium" style="color: var(--orange-700)">
                 <i class="pi pi-info-circle mr-1"></i>
-                Try: Clear browser cache, use incognito mode, or contact your IT department to whitelist <strong>droppin.shop</strong>
+                Try: Clear browser cache, use incognito mode, or contact your IT department to whitelist
+                <strong>droppin.shop</strong>
               </p>
             </div>
           </div>
         }
 
-        <!-- Email Form (shown by default) -->
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
           <div class="mb-3">
             <label for="email" class="block text-900 font-medium mb-1">Email</label>
@@ -60,12 +61,15 @@
               pInputText
               class="p-inputtext w-full mb-1"
               placeholder="Email address"
-              [ngClass]="{ 'is-valid': loginForm.get('email')?.valid, 'is-invalid': formErrors.email }"
-              [disabled]="isLoggingIn"
-              />
-            @if (formErrors.email) {
+              [ngClass]="{
+                'is-valid': loginForm.get('email')?.valid,
+                'is-invalid': formErrors().email,
+              }"
+              [disabled]="isLoggingIn()"
+            />
+            @if (formErrors().email) {
               <div class="p-invalid">
-                <small id="email-help">{{ formErrors.email }}</small>
+                <small id="email-help">{{ formErrors().email }}</small>
               </div>
             }
           </div>
@@ -74,37 +78,41 @@
             <label for="password" class="block text-900 font-medium mb-1">Password</label>
             <div class="password-input-wrapper">
               <input
-                [type]="showPassword ? 'text' : 'password'"
+                [type]="showPassword() ? 'text' : 'password'"
                 id="password"
                 formControlName="password"
                 pInputText
                 class="p-inputtext w-full mb-1"
                 placeholder="Password"
-                [ngClass]="{ 'is-valid': loginForm.get('password')?.valid, 'is-invalid': formErrors.password }"
-                [disabled]="isLoggingIn"
-                />
+                [ngClass]="{
+                  'is-valid': loginForm.get('password')?.valid,
+                  'is-invalid': formErrors().password,
+                }"
+                [disabled]="isLoggingIn()"
+              />
               <button
                 type="button"
                 class="password-toggle-btn"
-                (click)="showPassword = !showPassword"
-                [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
-                tabindex="-1">
-                <i [class]="showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+                (click)="togglePassword()"
+                [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+                tabindex="-1"
+              >
+                <i [class]="showPassword() ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
               </button>
             </div>
-            @if (formErrors.password) {
+            @if (formErrors().password) {
               <div class="p-invalid">
-                <small id="password-help">{{ formErrors.password }}</small>
+                <small id="password-help">{{ formErrors().password }}</small>
               </div>
             }
           </div>
 
           <div class="flex flex-column sm:flex-row align-items-center justify-content-between mb-3 gap-2">
             <div class="flex align-items-center">
-                <p-checkbox [binary]="true" formControlName="rememberMe" inputId="rememberme" styleClass="mr-2"></p-checkbox>
-                <label for="rememberme" class="text-900">Remember me</label>
-              </div>
-            <a href="#" class="font-medium no-underline ml-2 text-primary text-right cursor-pointer">Forgot password?</a>
+              <p-checkbox [binary]="true" formControlName="rememberMe" inputId="rememberme" styleClass="mr-2" />
+              <label for="rememberme" class="text-900">Remember me</label>
+            </div>
+            <a class="font-medium no-underline ml-2 text-primary text-right cursor-pointer">Forgot password?</a>
           </div>
 
           <button
@@ -112,11 +120,12 @@
             pButton
             pRipple
             class="w-full p-button p-button-primary"
-            [disabled]="!loginForm.valid || isLoggingIn">
-            @if (!isLoggingIn) {
+            [disabled]="!loginForm.valid || isLoggingIn()"
+          >
+            @if (!isLoggingIn()) {
               <span>Sign In</span>
             }
-            @if (isLoggingIn) {
+            @if (isLoggingIn()) {
               <span>
                 <i class="pi pi-spin pi-spinner mr-2"></i>
                 Signing In...
@@ -125,56 +134,57 @@
           </button>
         </form>
 
-        <div class="pt-2 mt-3 text-center flex justify-content-between">
+        <div class="pt-2 mt-3 text-center flex flex-column gap-2">
+          @if (product.billing.trialDays > 0) {
+            <a [routerLink]="product.routes.signup" class="cursor-pointer font-medium text-primary text-center">
+              {{ product.auth.signupCta }}
+            </a>
+          }
+          <div class="flex justify-content-between">
           <a class="cursor-pointer font-medium text-primary text-center" (click)="showHelpDialog()">Need Help?</a>
-          <a class="cursor-pointer font-medium text-primary text-center" href="mailto:support@fieldwave.ai?subject=Login%20Support%20Request">Contact Support</a>
+          <a class="cursor-pointer font-medium text-primary text-center" [href]="'mailto:' + product.auth.supportEmail + '?subject=Login%20Support%20Request'"
+            >Contact Support</a
+          >
+          </div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Help Dialog -->
 <p-dialog
   header="Login Help"
-  [(visible)]="helpDialogVisible"
+  [visible]="helpDialogVisible()"
+  (visibleChange)="helpDialogVisible.set($event)"
   [modal]="true"
-  [style]="{width: '450px'}"
+  [style]="{ width: '450px' }"
   [dismissableMask]="true"
-  [closable]="true">
+  [closable]="true"
+>
   <div class="help-content">
     <div class="help-section mb-4">
       <h4 class="text-primary mb-2"><i class="pi pi-key mr-2"></i>Forgot your password?</h4>
-      <p class="text-color-secondary m-0">Click the "Forgot password?" link on the login form to receive a password reset email.</p>
-    </div>
-
-    <div class="help-section mb-4">
-      <h4 class="text-primary mb-2"><i class="pi pi-building mr-2"></i>Using Okta SSO?</h4>
-      <p class="text-color-secondary m-0">Click "Sign in with Okta" to use your company's single sign-on. Contact your IT administrator if you're having issues with Okta.</p>
+      <p class="text-color-secondary m-0">Contact your administrator for a password reset.</p>
     </div>
 
     <div class="help-section mb-4">
       <h4 class="text-primary mb-2"><i class="pi pi-envelope mr-2"></i>Email not recognized?</h4>
-      <p class="text-color-secondary m-0">Make sure you're using the email address associated with your FieldWave account. Check for typos or try an alternate email.</p>
-    </div>
-
-    <div class="help-section mb-4">
-      <h4 class="text-primary mb-2"><i class="pi pi-lock mr-2"></i>Account locked?</h4>
-      <p class="text-color-secondary m-0">After multiple failed login attempts, your account may be temporarily locked. Wait 15 minutes and try again, or contact support.</p>
+      <p class="text-color-secondary m-0">
+        Make sure you're using the email address associated with your FieldWave account.
+      </p>
     </div>
 
     <div class="help-section mb-4">
       <h4 class="text-primary mb-2"><i class="pi pi-wifi mr-2"></i>Connection Error?</h4>
-      <p class="text-color-secondary m-0">If you see a connection or certificate error, your network may be blocking the connection. Try these steps:</p>
+      <p class="text-color-secondary m-0">If you see a connection or certificate error, try:</p>
       <ul class="text-color-secondary mt-2 mb-0 pl-4">
         <li>Clear your browser cache and cookies</li>
-        <li>Try using incognito/private browsing mode</li>
-        <li>If on a corporate network, ask IT to whitelist <strong>droppin.shop</strong> from SSL inspection</li>
-        <li>Try using a different network (personal WiFi, mobile data)</li>
+        <li>Try incognito/private browsing mode</li>
+        <li>Ask IT to whitelist <strong>droppin.shop</strong> from SSL inspection</li>
       </ul>
     </div>
 
-    <p-divider></p-divider>
+    <p-divider />
 
     <div class="text-center">
       <p class="text-color-secondary mb-2">Still need help?</p>
@@ -186,4 +196,4 @@
   </div>
 </p-dialog>
 
-<p-toast></p-toast>
+<p-toast />

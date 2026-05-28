@@ -1,0 +1,14 @@
+<div class="success-panel surface-card p-5 shadow-2 text-center">
+  @if (status() === 'loading') {
+    <i class="pi pi-spin pi-spinner text-3xl text-primary mb-3"></i>
+    <h2 class="m-0 mb-2">Setting up your trial…</h2>
+    <p class="text-color-secondary m-0">This only takes a moment.</p>
+  }
+
+  @if (status() === 'error') {
+    <i class="pi pi-exclamation-circle text-3xl text-red-500 mb-3"></i>
+    <h2 class="m-0 mb-2">Something went wrong</h2>
+    <p class="text-color-secondary m-0 mb-3">{{ errorMessage() }}</p>
+    <a pButton [routerLink]="product.routes.login" label="Go to sign in" class="p-button-outlined"></a>
+  }
+</div>

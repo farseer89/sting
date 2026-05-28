@@ -1,0 +1,80 @@
+<div class="surface-ground">
+  <div class="welcomeImage shadow-2" [ngStyle]="{ 'background-image': 'url(' + product.auth.loginImageUrl + ')' }">
+    <div class="w-full lg:w-6">
+      <div class="centerText">
+        <h1>{{ product.auth.loginHeroTitle }}</h1>
+        <p>{{ product.auth.loginHeroSubtitle }}</p>
+      </div>
+    </div>
+
+    <div class="w-full lg:w-6">
+      <div class="surface-card p-4 lg:p-6 shadow-2">
+        <div class="mb-3">
+          <h2 class="text-color font-bold text-xl text-center">Start your {{ product.billing.trialDays }}-day trial</h2>
+          <p class="text-color-secondary text-center mb-3">{{ product.displayName }} — card required, cancel anytime</p>
+        </div>
+
+        <form [formGroup]="form" (ngSubmit)="onSubmit()">
+          <div class="mb-3 grid">
+            <div class="col-6">
+              <label for="firstName" class="block text-900 font-medium mb-1">First name</label>
+              <input id="firstName" type="text" formControlName="firstName" pInputText class="w-full" />
+            </div>
+            <div class="col-6">
+              <label for="lastName" class="block text-900 font-medium mb-1">Last name</label>
+              <input id="lastName" type="text" formControlName="lastName" pInputText class="w-full" />
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="email" class="block text-900 font-medium mb-1">Email</label>
+            <input id="email" type="email" formControlName="email" pInputText class="w-full" />
+          </div>
+
+          <div class="mb-3">
+            <label for="password" class="block text-900 font-medium mb-1">Password</label>
+            <div class="password-input-wrapper">
+              <input
+                id="password"
+                [type]="showPassword() ? 'text' : 'password'"
+                formControlName="password"
+                pInputText
+                class="w-full"
+              />
+              <button
+                type="button"
+                class="password-toggle-btn"
+                (click)="togglePassword()"
+                [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+                tabindex="-1"
+              >
+                <i [class]="showPassword() ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            pButton
+            pRipple
+            class="w-full p-button p-button-primary"
+            [disabled]="form.invalid || isSubmitting()"
+          >
+            @if (!isSubmitting()) {
+              <span>{{ product.auth.signupCta }}</span>
+            } @else {
+              <span><i class="pi pi-spin pi-spinner mr-2"></i>Redirecting to checkout…</span>
+            }
+          </button>
+        </form>
+
+        <p class="text-center mt-3 mb-0">
+          Already have an account?
+          <a [routerLink]="product.routes.login" class="font-medium text-primary no-underline">Sign in</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p-toast />

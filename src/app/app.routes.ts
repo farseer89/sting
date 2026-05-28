@@ -35,6 +35,17 @@ export const routes: Routes = [
     loadComponent: () => import('./features/login/login.component').then((m) => m.LoginComponent),
   },
   {
+    path: 'signup',
+    canActivate: [guestGuard],
+    loadComponent: () => import('./features/signup/signup.component').then((m) => m.SignupComponent),
+  },
+  {
+    path: 'signup/success',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('./features/signup/signup-success.component').then((m) => m.SignupSuccessComponent),
+  },
+  {
     path: '',
     loadComponent: () => import('./layout/shell/shell.component').then((m) => m.ShellComponent),
     canActivate: [authGuard, operatorOnlyGuard],
@@ -51,6 +62,11 @@ export const routes: Routes = [
           import('./features/protopipe/dashboard/protopipe-dashboard.component').then(
             (m) => m.ProtopipeDashboardComponent,
           ),
+      },
+      {
+        path: 'protopipe/onboarding',
+        pathMatch: 'full',
+        redirectTo: 'protopipe',
       },
       {
         path: 'protopipe/research',

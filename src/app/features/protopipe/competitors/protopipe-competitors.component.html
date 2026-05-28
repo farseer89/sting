@@ -7,15 +7,53 @@
       <p class="competitors__lead m-0 text-color-secondary">
         Find SEO competitors for {{ hostname() ?? 'your site' }} and keywords where they outrank you.
       </p>
+      @if (activeOverride()) {
+        <p class="m-0 mt-2 text-sm">
+          <span class="font-medium">Testing domain:</span> {{ activeOverride() }}
+          <button
+            type="button"
+            class="competitors__reset-link"
+            (click)="resetToSite()"
+          >Back to my site</button>
+        </p>
+      }
     </div>
     <p-button
       label="Refresh"
       icon="pi pi-refresh"
       [text]="true"
       [loading]="loadingCompetitors()"
-      (onClick)="loadCompetitors()"
+      (onClick)="loadCompetitors(activeOverride() ?? undefined)"
     ></p-button>
   </header>
+
+  <section class="competitors__panel surface-card border-round shadow-2">
+    <h2 class="competitors__panel-title m-0">Test against another domain</h2>
+    <p class="m-0 mt-1 text-sm text-color-secondary">
+      Useful for verifying SpyFu data on a well-established site (e.g. <code>nike.com</code>, <code>hubspot.com</code>).
+      Override results are not cached.
+    </p>
+    <form class="competitors__override-form mt-3" (ngSubmit)="runForInput()">
+      <input
+        pInputText
+        type="text"
+        placeholder="example.com"
+        autocomplete="off"
+        spellcheck="false"
+        [ngModel]="hostnameInput()"
+        (ngModelChange)="hostnameInput.set($event)"
+        name="hostnameOverride"
+        class="competitors__override-input"
+      />
+      <p-button
+        type="submit"
+        label="Run"
+        icon="pi pi-search"
+        [disabled]="!hostnameInput().trim() || loadingCompetitors()"
+        [loading]="loadingCompetitors()"
+      ></p-button>
+    </form>
+  </section>
 
   @if (loadingCompetitors()) {
     <div class="competitors__panel competitors__loading surface-card border-round shadow-2">
@@ -56,6 +94,12 @@
             <p-tag severity="secondary" value="Cached"></p-tag>
           }
         </header>
+
+        @if (competitorsResponse()?.notice) {
+          <div class="competitors__notice mb-3" role="status">
+            {{ competitorsResponse()?.notice }}
+          </div>
+        }
 
         @if ((competitorsResponse()?.competitors ?? []).length === 0) {
           <p class="m-0 text-color-secondary">No competitors returned for this domain.</p>
@@ -123,7 +167,11 @@
         } @else if (gapError()) {
           <p class="m-0 text-red-500">{{ gapError() }}</p>
         } @else if (gapRows().length === 0) {
-          <p class="m-0 text-color-secondary">No gap keywords found for this pair.</p>
+          @if (gapNotice()) {
+            <div class="competitors__notice" role="status">{{ gapNotice() }}</div>
+          } @else {
+            <p class="m-0 text-color-secondary">No gap keywords found for this pair.</p>
+          }
         } @else {
           <div class="competitors__gap-actions">
             <p-button

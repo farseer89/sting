@@ -116,10 +116,11 @@ export class ProtopipeApiService {
 
   siteCompetitors(
     siteId: string,
-    options?: { limit?: number },
+    options?: { limit?: number; hostname?: string },
   ): Promise<ProtopipeSiteCompetitorsResponse> {
     const params: Record<string, string> = {};
     if (options?.limit != null) params['limit'] = String(options.limit);
+    if (options?.hostname) params['hostname'] = options.hostname;
     return firstValueFrom(
       this.http.get<ProtopipeSiteCompetitorsResponse>(
         protopipeApiUrl(ProtopipeEndpoints.siteCompetitors.path, { siteId }),
@@ -131,10 +132,11 @@ export class ProtopipeApiService {
   competitorGapKeywords(
     siteId: string,
     competitorDomain: string,
-    options?: { limit?: number },
+    options?: { limit?: number; hostname?: string },
   ): Promise<ProtopipeCompetitorGapKeywordsResponse> {
     const params: Record<string, string> = {};
     if (options?.limit != null) params['limit'] = String(options.limit);
+    if (options?.hostname) params['hostname'] = options.hostname;
     return firstValueFrom(
       this.http.get<ProtopipeCompetitorGapKeywordsResponse>(
         protopipeApiUrl(ProtopipeEndpoints.competitorGapKeywords.path, {

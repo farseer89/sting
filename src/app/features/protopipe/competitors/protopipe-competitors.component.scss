@@ -94,3 +94,35 @@
 .competitors__row--tracked {
   opacity: 0.85;
 }
+
+.competitors__override-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.competitors__override-input {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+.competitors__notice {
+  background: var(--p-yellow-50, #fffbe6);
+  color: var(--p-yellow-900, #8a6d3b);
+  border: 1px solid var(--p-yellow-200, #f5e0a0);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  line-height: 1.4;
+}
+
+.competitors__reset-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 0.5rem;
+  color: var(--p-primary-color);
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}

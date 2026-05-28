@@ -11,6 +11,7 @@ import { RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { Checkbox } from 'primeng/checkbox';
+import { InputText } from 'primeng/inputtext';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { TableModule } from 'primeng/table';
 import { Tag } from 'primeng/tag';
@@ -38,6 +39,7 @@ interface GapSelectableRow extends ProtopipeCompetitorGapKeywordRow {
     RouterLink,
     Button,
     Checkbox,
+    InputText,
     ProgressSpinner,
     TableModule,
     Tag,
@@ -65,6 +67,12 @@ export class ProtopipeCompetitorsComponent implements OnInit {
   readonly gapFetchedAt = signal<string | null>(null);
   readonly gapSource = signal<'live' | 'cache' | null>(null);
   readonly gapRowLimit = signal<number | null>(null);
+  readonly gapNotice = signal<string | null>(null);
+
+  /** Free-form input value for testing SpyFu against another domain. */
+  readonly hostnameInput = signal('');
+  /** The override actually used for the last successful load (drives the "testing X" UI). */
+  readonly activeOverride = signal<string | null>(null);
 
   readonly hostname = computed(
     () => this.competitorsResponse()?.hostname ?? this.strategy.site()?.hostname ?? null,
@@ -76,18 +84,35 @@ export class ProtopipeCompetitorsComponent implements OnInit {
     void this.loadCompetitors();
   }
 
-  async loadCompetitors(): Promise<void> {
+  /** Trigger a load using the current `hostnameInput` value as an override. */
+  runForInput(): void {
+    const trimmed = this.hostnameInput().trim();
+    void this.loadCompetitors(trimmed || undefined);
+  }
+
+  /** Clear the override and re-run for the site's own hostname. */
+  resetToSite(): void {
+    this.hostnameInput.set('');
+    void this.loadCompetitors();
+  }
+
+  async loadCompetitors(hostnameOverride?: string): Promise<void> {
     this.loadingCompetitors.set(true);
     this.competitorsError.set(null);
     this.notConfigured.set(false);
     this.selectedCompetitor.set(null);
     this.gapRows.set([]);
     this.gapRowLimit.set(null);
+    this.gapNotice.set(null);
 
     try {
       const siteId = await this.requireSiteId();
-      const result = await this.api.siteCompetitors(siteId);
+      const result = await this.api.siteCompetitors(
+        siteId,
+        hostnameOverride ? { hostname: hostnameOverride } : undefined,
+      );
       this.competitorsResponse.set(result);
+      this.activeOverride.set(hostnameOverride ?? null);
     } catch (err) {
       const message = parseProtopipeApiError(err, 'Could not load competitors.');
       if (message.toLowerCase().includes('not configured')) {
@@ -117,13 +142,20 @@ export class ProtopipeCompetitorsComponent implements OnInit {
   async loadGapKeywords(competitorDomain: string): Promise<void> {
     this.loadingGap.set(true);
     this.gapError.set(null);
+    this.gapNotice.set(null);
 
     try {
       const siteId = await this.requireSiteId();
-      const result = await this.api.competitorGapKeywords(siteId, competitorDomain);
+      const override = this.activeOverride();
+      const result = await this.api.competitorGapKeywords(
+        siteId,
+        competitorDomain,
+        override ? { hostname: override } : undefined,
+      );
       this.gapFetchedAt.set(result.fetchedAt);
       this.gapSource.set(result.source);
       this.gapRowLimit.set(result.rowLimit);
+      this.gapNotice.set(result.notice ?? null);
       this.gapRows.set(
         result.rows.map((row) => ({
           ...row,

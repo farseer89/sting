@@ -8,21 +8,26 @@ import {
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { Tag } from 'primeng/tag';
 import { Toast } from 'primeng/toast';
-import type { ProtopipeAccountGoogleStatusResponse } from '@hive/contracts';
+import type {
+  ProtopipeAccountGoogleStatusResponse,
+  ProtopipeSpyFuStatusResponse,
+} from '@hive/contracts';
 import { ProtopipeApiService } from '../protopipe-api.service';
 import { parseProtopipeApiError } from '../protopipe-http.util';
 
 type ViewState = 'loading' | 'not-configured' | 'not-connected' | 'connected' | 'error';
+type SpyFuViewState = ViewState;
 
 @Component({
   selector: 'app-protopipe-integrations',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Button, ProgressSpinner, Tag, Toast],
+  imports: [RouterLink, Button, ProgressSpinner, Tag, Toast],
   providers: [MessageService],
   templateUrl: './protopipe-integrations.component.html',
   styleUrl: './protopipe-integrations.component.scss',
@@ -36,6 +41,10 @@ export class ProtopipeIntegrationsComponent implements OnInit {
   readonly busy = signal<boolean>(false);
   readonly status = signal<ProtopipeAccountGoogleStatusResponse | null>(null);
   readonly loadError = signal<string | null>(null);
+
+  readonly spyFuLoading = signal<boolean>(true);
+  readonly spyFuStatus = signal<ProtopipeSpyFuStatusResponse | null>(null);
+  readonly spyFuLoadError = signal<string | null>(null);
 
   readonly viewState = computed<ViewState>(() => {
     if (this.loading()) return 'loading';
@@ -63,6 +72,16 @@ export class ProtopipeIntegrationsComponent implements OnInit {
     }
   });
 
+  readonly spyFuViewState = computed<SpyFuViewState>(() => {
+    if (this.spyFuLoading()) return 'loading';
+    if (this.spyFuLoadError()) return 'error';
+    const s = this.spyFuStatus();
+    if (!s) return 'error';
+    if (!s.configured) return 'not-configured';
+    if (!s.connected) return 'not-connected';
+    return 'connected';
+  });
+
   readonly scopeChips = computed<string[]>(() => {
     const scopes = this.status()?.scopes ?? [];
     return scopes.map((scope) => {
@@ -76,7 +95,7 @@ export class ProtopipeIntegrationsComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
-    await this.refresh();
+    await Promise.all([this.refresh(), this.refreshSpyFu()]);
 
     const qp = this.route.snapshot.queryParamMap;
     const flag = qp.get('googleConnected');
@@ -108,6 +127,19 @@ export class ProtopipeIntegrationsComponent implements OnInit {
       this.loadError.set(parseProtopipeApiError(err, 'Could not load integration status.'));
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  async refreshSpyFu(): Promise<void> {
+    this.spyFuLoading.set(true);
+    this.spyFuLoadError.set(null);
+    try {
+      const result = await this.api.spyFuStatus();
+      this.spyFuStatus.set(result);
+    } catch (err) {
+      this.spyFuLoadError.set(parseProtopipeApiError(err, 'Could not load SpyFu status.'));
+    } finally {
+      this.spyFuLoading.set(false);
     }
   }
 

@@ -142,4 +142,92 @@
       }
     </div>
   </article>
+
+  <article class="integration-card">
+    <header class="integration-card__header">
+      <div class="integration-card__brand">
+        <span class="integration-card__logo integration-card__logo--spyfu" aria-hidden="true">
+          <i class="pi pi-chart-line"></i>
+        </span>
+        <div>
+          <h2 class="integration-card__name">SpyFu</h2>
+          <p class="integration-card__tagline">
+            Competitor domains and organic gap keywords (platform API).
+          </p>
+        </div>
+      </div>
+      @if (spyFuViewState() === 'connected') {
+        <p-tag severity="success" value="Connected"></p-tag>
+      } @else if (spyFuViewState() === 'not-connected') {
+        <p-tag severity="warn" value="Not connected"></p-tag>
+      } @else if (spyFuViewState() === 'not-configured') {
+        <p-tag severity="danger" value="Unavailable"></p-tag>
+      } @else if (spyFuViewState() === 'error') {
+        <p-tag severity="danger" value="Error"></p-tag>
+      }
+    </header>
+
+    <div class="integration-card__body">
+      @switch (spyFuViewState()) {
+        @case ('loading') {
+          <div class="integration-card__loading">
+            <p-progressSpinner styleClass="integration-card__spinner"></p-progressSpinner>
+            <span>Checking SpyFu…</span>
+          </div>
+        }
+
+        @case ('not-configured') {
+          <p class="integration-card__message integration-card__message--danger">
+            SpyFu API credentials are not configured on the server. Contact the platform admin.
+          </p>
+        }
+
+        @case ('error') {
+          <p class="integration-card__message integration-card__message--danger">
+            {{ spyFuLoadError() ?? 'Could not load SpyFu status.' }}
+          </p>
+          <p-button
+            label="Retry"
+            icon="pi pi-refresh"
+            [text]="true"
+            (onClick)="refreshSpyFu()"
+          ></p-button>
+        }
+
+        @case ('not-connected') {
+          <p class="integration-card__message integration-card__message--danger">
+            {{ spyFuStatus()?.error ?? 'SpyFu API connection failed.' }}
+          </p>
+          <p-button
+            label="Retry"
+            icon="pi pi-refresh"
+            [text]="true"
+            (onClick)="refreshSpyFu()"
+          ></p-button>
+        }
+
+        @case ('connected') {
+          <dl class="integration-card__facts">
+            @if (spyFuStatus()?.usageMonth) {
+              <div>
+                <dt>Usage month</dt>
+                <dd>{{ spyFuStatus()?.usageMonth }}</dd>
+              </div>
+            }
+            <div>
+              <dt>API requests</dt>
+              <dd>{{ spyFuStatus()?.requestCount ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>Units used</dt>
+              <dd>{{ spyFuStatus()?.unitsUsed ?? '—' }}</dd>
+            </div>
+          </dl>
+          <p class="integration-card__message m-0 text-color-secondary">
+            Use <a routerLink="/protopipe/keywords/competitors">Competitors</a> to explore SEO rivals and gap keywords.
+          </p>
+        }
+      }
+    </div>
+  </article>
 </section>

@@ -63,6 +63,13 @@ export class NavigationService {
             visible: true,
           },
           {
+            id: 'keywords-competitors',
+            label: 'Competitors',
+            icon: 'pi pi-users',
+            routerLink: '/protopipe/keywords/competitors',
+            visible: true,
+          },
+          {
             id: 'content',
             label: 'Content',
             icon: 'pi pi-file-edit',

@@ -67,6 +67,10 @@
   justify-content: center;
   font-size: 1.25rem;
   flex-shrink: 0;
+
+  &--spyfu {
+    background: linear-gradient(135deg, #e85d04 0%, #dc2f02 100%);
+  }
 }
 
 .integration-card__name {

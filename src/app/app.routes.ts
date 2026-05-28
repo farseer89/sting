@@ -82,6 +82,13 @@ export const routes: Routes = [
           ).then((m) => m.ProtopipeDiscoveryDiyComponent),
       },
       {
+        path: 'protopipe/keywords/competitors',
+        loadComponent: () =>
+          import('./features/protopipe/competitors/protopipe-competitors.component').then(
+            (m) => m.ProtopipeCompetitorsComponent,
+          ),
+      },
+      {
         path: 'protopipe/content',
         loadComponent: () =>
           import('./features/protopipe/content/protopipe-content-list.component').then(

@@ -1,0 +1,183 @@
+<p-toast position="top-right"></p-toast>
+
+<div class="competitors">
+  <header class="competitors__header">
+    <div>
+      <h1 class="competitors__title m-0">Competitors</h1>
+      <p class="competitors__lead m-0 text-color-secondary">
+        Find SEO competitors for {{ hostname() ?? 'your site' }} and keywords where they outrank you.
+      </p>
+    </div>
+    <p-button
+      label="Refresh"
+      icon="pi pi-refresh"
+      [text]="true"
+      [loading]="loadingCompetitors()"
+      (onClick)="loadCompetitors()"
+    ></p-button>
+  </header>
+
+  @if (loadingCompetitors()) {
+    <div class="competitors__panel competitors__loading surface-card border-round shadow-2">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Loading competitors"></p-progressSpinner>
+    </div>
+  } @else if (notConfigured()) {
+    <div class="competitors__panel surface-card border-round shadow-2" role="alert">
+      <p class="m-0">SpyFu is not configured on the server.</p>
+      <p class="m-0 mt-2 text-color-secondary">
+        Ask your platform admin to add API credentials, or check
+        <a routerLink="/protopipe/settings/integrations">Integrations</a>.
+      </p>
+    </div>
+  } @else if (competitorsError()) {
+    <div class="competitors__panel surface-card border-round shadow-2" role="alert">
+      <p class="m-0 text-red-500">{{ competitorsError() }}</p>
+      <p-button
+        class="mt-3"
+        label="Retry"
+        icon="pi pi-refresh"
+        [text]="true"
+        (onClick)="loadCompetitors()"
+      ></p-button>
+    </div>
+  } @else {
+    <div class="competitors__grid">
+      <section class="competitors__panel surface-card border-round shadow-2">
+        <header class="competitors__panel-header">
+          <div>
+            <h2 class="competitors__panel-title m-0">Top SEO competitors</h2>
+            @if (competitorsResponse()?.rowLimit; as cap) {
+              <p class="competitors__cap m-0 text-sm text-color-secondary">
+                Showing up to {{ cap }} domains per request
+              </p>
+            }
+          </div>
+          @if (competitorsResponse()?.source === 'cache') {
+            <p-tag severity="secondary" value="Cached"></p-tag>
+          }
+        </header>
+
+        @if ((competitorsResponse()?.competitors ?? []).length === 0) {
+          <p class="m-0 text-color-secondary">No competitors returned for this domain.</p>
+        } @else {
+          <p-table
+            [value]="competitorsResponse()?.competitors ?? []"
+            [rowHover]="true"
+            styleClass="p-datatable-sm"
+          >
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Domain</th>
+                <th>Shared keywords</th>
+                <th></th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-row>
+              <tr
+                [class.competitors__row--active]="selectedCompetitor()?.domain === row.domain"
+              >
+                <td>{{ row.domain }}</td>
+                <td>{{ formatNumber(row.commonKeywords) }}</td>
+                <td>
+                  <p-button
+                    label="Gap keywords"
+                    icon="pi pi-arrow-right"
+                    [text]="true"
+                    size="small"
+                    (onClick)="selectCompetitor(row)"
+                  ></p-button>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        }
+      </section>
+
+      <section class="competitors__panel surface-card border-round shadow-2">
+        <header class="competitors__panel-header">
+          <div>
+            <h2 class="competitors__panel-title m-0">
+              @if (selectedCompetitor(); as c) {
+                Where {{ c.domain }} outranks you
+              } @else {
+                Gap keywords
+              }
+            </h2>
+            @if (gapRowLimit(); as cap) {
+              <p class="competitors__cap m-0 text-sm text-color-secondary">
+                Showing up to {{ cap }} keywords per request
+              </p>
+            }
+          </div>
+          @if (gapSource() === 'cache') {
+            <p-tag severity="secondary" value="Cached"></p-tag>
+          }
+        </header>
+
+        @if (!selectedCompetitor()) {
+          <p class="m-0 text-color-secondary">Select a competitor to see keywords they rank above you for.</p>
+        } @else if (loadingGap()) {
+          <div class="competitors__loading-inline">
+            <p-progressSpinner strokeWidth="4" ariaLabel="Loading gap keywords"></p-progressSpinner>
+          </div>
+        } @else if (gapError()) {
+          <p class="m-0 text-red-500">{{ gapError() }}</p>
+        } @else if (gapRows().length === 0) {
+          <p class="m-0 text-color-secondary">No gap keywords found for this pair.</p>
+        } @else {
+          <div class="competitors__gap-actions">
+            <p-button
+              label="Add selected to plan"
+              icon="pi pi-plus"
+              [disabled]="selectedGapCount() === 0"
+              [loading]="adding()"
+              (onClick)="addSelectedGap()"
+            ></p-button>
+            <span class="text-sm text-color-secondary">
+              {{ selectedGapCount() }} selected
+            </span>
+          </div>
+
+          <p-table [value]="gapRows()" styleClass="p-datatable-sm">
+            <ng-template pTemplate="header">
+              <tr>
+                <th class="competitors__check-col">
+                  <p-checkbox
+                    [binary]="true"
+                    [ngModel]="allGapSelected()"
+                    (ngModelChange)="toggleAllGap($event)"
+                    inputId="gap-select-all"
+                  ></p-checkbox>
+                </th>
+                <th>Phrase</th>
+                <th>Their rank</th>
+                <th>Your rank</th>
+                <th>Volume</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-row>
+              <tr [class.competitors__row--tracked]="row.tracked">
+                <td class="competitors__check-col">
+                  @if (!row.tracked) {
+                    <p-checkbox
+                      [binary]="true"
+                      [ngModel]="row.selected"
+                      (ngModelChange)="toggleGapRow(row.phraseKey, $event)"
+                      [inputId]="'gap-' + row.phraseKey"
+                    ></p-checkbox>
+                  } @else {
+                    <p-tag severity="success" value="On plan"></p-tag>
+                  }
+                </td>
+                <td>{{ row.phrase }}</td>
+                <td>{{ formatPosition(row.competitorRank) }}</td>
+                <td>{{ formatPosition(row.yourRank) }}</td>
+                <td>{{ formatNumber(row.searchVolume) }}</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        }
+      </section>
+    </div>
+  }
+</div>

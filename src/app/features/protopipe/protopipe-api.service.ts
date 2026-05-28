@@ -25,6 +25,9 @@ import type {
   ProtopipeContentListResponse,
   ProtopipeContentPostResponse,
   ProtopipeDataForSeoStatusResponse,
+  ProtopipeSpyFuStatusResponse,
+  ProtopipeSiteCompetitorsResponse,
+  ProtopipeCompetitorGapKeywordsResponse,
   ProtopipeGoogleIntegrationStatusResponse,
   ProtopipeGoogleOAuthConfigResponse,
   ProtopipeGoogleOAuthStartResponse,
@@ -99,6 +102,46 @@ export class ProtopipeApiService {
     return firstValueFrom(
       this.http.get<ProtopipeDataForSeoStatusResponse>(
         protopipeApiUrl(ProtopipeEndpoints.dataForSeoStatus.path),
+      ),
+    );
+  }
+
+  spyFuStatus(): Promise<ProtopipeSpyFuStatusResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeSpyFuStatusResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.spyFuStatus.path),
+      ),
+    );
+  }
+
+  siteCompetitors(
+    siteId: string,
+    options?: { limit?: number },
+  ): Promise<ProtopipeSiteCompetitorsResponse> {
+    const params: Record<string, string> = {};
+    if (options?.limit != null) params['limit'] = String(options.limit);
+    return firstValueFrom(
+      this.http.get<ProtopipeSiteCompetitorsResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.siteCompetitors.path, { siteId }),
+        Object.keys(params).length > 0 ? { params } : undefined,
+      ),
+    );
+  }
+
+  competitorGapKeywords(
+    siteId: string,
+    competitorDomain: string,
+    options?: { limit?: number },
+  ): Promise<ProtopipeCompetitorGapKeywordsResponse> {
+    const params: Record<string, string> = {};
+    if (options?.limit != null) params['limit'] = String(options.limit);
+    return firstValueFrom(
+      this.http.get<ProtopipeCompetitorGapKeywordsResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.competitorGapKeywords.path, {
+          siteId,
+          competitorDomain,
+        }),
+        Object.keys(params).length > 0 ? { params } : undefined,
       ),
     );
   }

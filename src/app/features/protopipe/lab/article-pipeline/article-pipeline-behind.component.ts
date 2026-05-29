@@ -20,6 +20,7 @@ interface StepEventRow {
 
 const STEP_LABELS: Record<ArticleGenerationStep, string> = {
   infer_type: 'Infer type',
+  research: 'Research',
   build_brief: 'Build brief',
   outline: 'Outline',
   draft: 'Drafts',
@@ -30,6 +31,7 @@ const STEP_LABELS: Record<ArticleGenerationStep, string> = {
 
 const STEP_TO_ARTIFACT_KEY: Record<ArticleGenerationStep, keyof ArticleGenerationRunDto['artifacts'] | null> = {
   infer_type: null,
+  research: 'research',
   build_brief: 'brief',
   outline: 'outline',
   draft: 'sections',

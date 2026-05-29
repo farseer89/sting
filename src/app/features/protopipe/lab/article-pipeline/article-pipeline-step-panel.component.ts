@@ -9,6 +9,7 @@ import type {
   ArticleGenerationDraftedSection,
   ArticleGenerationMetadata,
   ArticleGenerationOutline,
+  ArticleGenerationResearch,
   ArticleGenerationReview,
   ArticleGenerationRunDto,
   ArticleGenerationStep,
@@ -18,6 +19,7 @@ import type {
 
 const STEP_LABELS: Record<ArticleGenerationStep, string> = {
   infer_type: 'Infer type',
+  research: 'Research',
   build_brief: 'Build brief',
   outline: 'Outline',
   draft: 'Drafts',
@@ -52,6 +54,7 @@ const ARTICLE_TYPE_DESCRIPTION: Record<ArticleGenerationType, string> = {
 
 const STEP_TITLES: Record<ArticleGenerationStep, string> = {
   infer_type: 'Inferred article type',
+  research: 'Research bundle',
   build_brief: 'SEO brief',
   outline: 'Outline',
   draft: 'Drafts',
@@ -93,6 +96,39 @@ export class ArticlePipelineStepPanelComponent {
   readonly articleTypeDescription = computed(() => {
     const t = this.articleType();
     return t ? ARTICLE_TYPE_DESCRIPTION[t] : null;
+  });
+
+  readonly research = computed<ArticleGenerationResearch | null>(
+    () => this.run()?.artifacts?.research ?? null,
+  );
+
+  readonly researchSignalChips = computed<string[]>(() => {
+    const r = this.research();
+    if (!r) return [];
+    const chips: string[] = [r.signals.intent, r.signals.priority];
+    if (r.signals.hasGeoModifier) chips.push('geo modifier');
+    if (r.signals.questionWord) chips.push(`question: ${r.signals.questionWord}`);
+    if (r.signals.hasComparison) chips.push('comparison');
+    if (r.signals.hasHowto) chips.push('how-to');
+    if (r.signals.monthlySearchVolume != null) {
+      chips.push(`${r.signals.monthlySearchVolume.toLocaleString()} MSV`);
+    }
+    return chips;
+  });
+
+  readonly researchSources = computed<{ label: string; value: string }[]>(() => {
+    const r = this.research();
+    if (!r) return [];
+    const entries: { label: string; value: string }[] = [];
+    if (r.sources.serp) entries.push({ label: 'SERP', value: r.sources.serp });
+    if (r.sources.paa) entries.push({ label: 'PAA', value: r.sources.paa });
+    if (r.sources.related) entries.push({ label: 'Related', value: r.sources.related });
+    if (r.sources.competitorOutlines)
+      entries.push({ label: 'Competitor outlines', value: r.sources.competitorOutlines });
+    if (r.sources.gsc) entries.push({ label: 'GSC', value: r.sources.gsc });
+    if (r.sources.siteKnowledge)
+      entries.push({ label: 'Site knowledge', value: r.sources.siteKnowledge });
+    return entries;
   });
 
   readonly brief = computed<ArticleGenerationBrief | null>(
@@ -151,6 +187,8 @@ export class ArticlePipelineStepPanelComponent {
     switch (step) {
       case 'infer_type':
         return !!run.articleType;
+      case 'research':
+        return !!run.artifacts?.research;
       case 'build_brief':
         return !!run.artifacts?.brief;
       case 'outline':
@@ -165,6 +203,26 @@ export class ArticlePipelineStepPanelComponent {
         return !!run.artifacts?.template;
     }
   });
+
+  formatCollectedAt(iso: string): string {
+    try {
+      return new Date(iso).toLocaleString([], {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return iso;
+    }
+  }
+
+  sourceClass(value: string): string {
+    if (value === 'live') return 'is-live';
+    if (value === 'cache') return 'is-cache';
+    if (value === 'admin') return 'is-admin';
+    return 'is-stub';
+  }
 
   scoreWidth(value: number): string {
     const clamped = Math.max(0, Math.min(100, value));

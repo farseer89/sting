@@ -17,6 +17,7 @@ interface ChatMessage {
 
 const STEP_LABELS: Record<ArticleGenerationStep, string> = {
   infer_type: 'Infer type',
+  research: 'Research',
   build_brief: 'Build brief',
   outline: 'Outline',
   draft: 'Drafts',
@@ -49,6 +50,11 @@ export class ArticlePipelineChatComponent {
           'Why did you pick this type?',
           'Try this as a how-to instead',
         ];
+      case 'research':
+        return [
+          'Pull the latest SERP for this keyword',
+          'Add this competitor URL to the research',
+        ];
       case 'build_brief':
         return [
           'Pull more competitor outlines',
@@ -70,6 +76,8 @@ export class ArticlePipelineChatComponent {
         return ['Rewrite the meta description in active voice'];
       case 'assemble':
         return ['Save as a scheduled post for next Tuesday'];
+      default:
+        return [];
     }
   });
 

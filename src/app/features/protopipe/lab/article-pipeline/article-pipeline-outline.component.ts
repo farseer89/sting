@@ -19,6 +19,7 @@ interface StepRailEntry {
 
 const STEP_LABELS: Record<ArticleGenerationStep, string> = {
   infer_type: 'Infer type',
+  research: 'Research',
   build_brief: 'Build brief',
   outline: 'Outline',
   draft: 'Drafts',
@@ -29,6 +30,7 @@ const STEP_LABELS: Record<ArticleGenerationStep, string> = {
 
 const ALL_STEPS: ArticleGenerationStep[] = [
   'infer_type',
+  'research',
   'build_brief',
   'outline',
   'draft',

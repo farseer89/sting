@@ -10,6 +10,7 @@ import { ArticlePipelineApiService } from './article-pipeline-api.service';
 const POLL_INTERVAL_MS = 800;
 const GENERATION_STEPS: ArticleGenerationStep[] = [
   'infer_type',
+  'research',
   'build_brief',
   'outline',
   'draft',

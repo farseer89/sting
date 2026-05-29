@@ -1,9 +1,11 @@
 @use './void-scrollbar' as *;
 
 :host {
-  display: block;
-  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   min-height: 0;
+  height: 100%;
   --writer-col: min(34rem, 100%);
   --writer-margin: minmax(0, 9rem);
   --void-ocean-rgb: 10, 147, 150;
@@ -80,12 +82,14 @@
   }
 }
 
-.writer__body {
+.writer__workspace {
   display: grid;
   grid-template-columns: 2rem minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   gap: 0.45rem;
   flex: 1;
   min-height: 0;
+  overflow: hidden;
 }
 
 .writer__toolbar {
@@ -190,9 +194,11 @@
 .writer__stage {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr);
   gap: 0.55rem;
   min-height: 0;
   min-width: 0;
+  overflow: hidden;
   position: relative;
 
   &::before {
@@ -212,6 +218,7 @@
   min-height: 0;
   min-width: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   justify-content: center;
   padding: 0 clamp(0.35rem, 2vw, 1.25rem);
@@ -450,7 +457,7 @@
 }
 
 .writer__intro,
-.writer__body {
+.writer__section-body {
   width: 100%;
   border: none;
   background: transparent;
@@ -499,7 +506,7 @@
   }
 }
 
-.writer__body {
+.writer__section-body {
   text-align: left;
 }
 
@@ -533,7 +540,9 @@
   gap: 0.4rem;
   width: 11.5rem;
   min-height: 0;
+  max-height: 100%;
   overflow-y: auto;
+  overscroll-behavior: contain;
   flex-shrink: 0;
   @include void-scrollbar;
 }
@@ -729,7 +738,7 @@
 }
 
 @media (max-width: 640px) {
-  .writer__body {
+  .writer__workspace {
     grid-template-columns: 1.75rem minmax(0, 1fr);
   }
 

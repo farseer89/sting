@@ -6,16 +6,34 @@ import {
 } from '@angular/core';
 import type {
   ArticleGenerationBrief,
+  ArticleGenerationClusterContext,
   ArticleGenerationDraftedSection,
+  ArticleGenerationInformationGain,
   ArticleGenerationMetadata,
   ArticleGenerationOutline,
+  ArticleGenerationProfileSnapshot,
   ArticleGenerationResearch,
+  ArticleGenerationResearchLensMeta,
   ArticleGenerationReview,
   ArticleGenerationRunDto,
   ArticleGenerationStep,
+  ArticleGenerationTopicalAuthority,
   ArticleGenerationType,
   ProtopipeContentTemplate,
 } from '@hive/contracts';
+
+interface KeywordFact {
+  label: string;
+  value: string;
+  hint?: string;
+}
+
+interface LensRow {
+  label: string;
+  state: string;
+  tier: string;
+  detail?: string;
+}
 
 const STEP_LABELS: Record<ArticleGenerationStep, string> = {
   infer_type: 'Infer type',
@@ -131,6 +149,79 @@ export class ArticlePipelineStepPanelComponent {
     return entries;
   });
 
+  readonly profile = computed<ArticleGenerationProfileSnapshot | null>(
+    () => this.research()?.profile ?? null,
+  );
+
+  readonly topicalAuthority = computed<ArticleGenerationTopicalAuthority | null>(
+    () => this.profile()?.topicalAuthority ?? null,
+  );
+
+  readonly clusterContext = computed<ArticleGenerationClusterContext | null>(
+    () => this.research()?.clusterContext ?? null,
+  );
+
+  readonly informationGain = computed<ArticleGenerationInformationGain | null>(
+    () => this.research()?.informationGain ?? null,
+  );
+
+  /** Headline facts driving the decision to write this article. */
+  readonly keywordFacts = computed<KeywordFact[]>(() => {
+    const r = this.research();
+    if (!r) return [];
+    const facts: KeywordFact[] = [];
+    const k = r.keyword;
+    facts.push({ label: 'Search intent', value: k.intent });
+    facts.push({ label: 'Priority', value: k.priority });
+    if (k.monthlySearchVolume != null) {
+      facts.push({
+        label: 'Monthly volume',
+        value: k.monthlySearchVolume.toLocaleString(),
+        hint: 'searches / mo',
+      });
+    }
+    if (k.difficulty != null) {
+      facts.push({ label: 'Difficulty', value: String(k.difficulty), hint: '/ 100' });
+    }
+    if (k.cpc != null) {
+      facts.push({ label: 'CPC', value: `$${k.cpc.toFixed(2)}` });
+    }
+    facts.push({ label: 'SERP geo', value: r.serpGeo.locationName });
+    return facts;
+  });
+
+  /** Provenance rows: every data lens this report drew on, with its status. */
+  readonly lensRows = computed<LensRow[]>(() => {
+    const r = this.research();
+    if (!r) return [];
+    const rows: LensRow[] = [];
+    const push = (
+      label: string,
+      meta: ArticleGenerationResearchLensMeta | undefined,
+      detail?: string,
+    ) => {
+      if (meta) rows.push({ label, state: meta.state, tier: meta.tier, detail });
+    };
+    const lm = r.lensMeta;
+    if (lm) {
+      push('SERP', lm.serp);
+      push('Questions (PAA)', lm.questions);
+      push('Demand', lm.demand);
+      push('Own performance', lm.queryPerformance);
+      push('Competitor gap', lm.queryGap);
+      push('Information gain', lm.informationGain);
+      push('Site knowledge', lm.siteKnowledge);
+    }
+    const pm = r.profile?.lensMeta;
+    if (pm) {
+      push('Topical authority', pm.topicalAuthority);
+      push('Positioning', pm.positioning);
+      push('Competitive landscape', pm.competitiveLandscape);
+      push('Strategic plan', pm.strategicPlan);
+    }
+    return rows;
+  });
+
   readonly brief = computed<ArticleGenerationBrief | null>(
     () => this.run()?.artifacts?.brief ?? null,
   );
@@ -222,6 +313,52 @@ export class ArticlePipelineStepPanelComponent {
     if (value === 'cache') return 'is-cache';
     if (value === 'admin') return 'is-admin';
     return 'is-stub';
+  }
+
+  lensStateClass(state: string): string {
+    switch (state) {
+      case 'loaded_live':
+        return 'is-live';
+      case 'loaded_cache':
+        return 'is-cache';
+      case 'admin':
+        return 'is-admin';
+      case 'error':
+        return 'is-error';
+      case 'not_loaded':
+        return 'is-pending';
+      default:
+        return 'is-stub';
+    }
+  }
+
+  lensStateLabel(state: string): string {
+    switch (state) {
+      case 'loaded_live':
+        return 'live';
+      case 'loaded_cache':
+        return 'cached';
+      case 'admin':
+        return 'admin';
+      case 'not_loaded':
+        return 'enrich to load';
+      case 'error':
+        return 'error';
+      default:
+        return 'stub';
+    }
+  }
+
+  coverageColor(value: number): string {
+    if (value >= 70) return '#8be7b5';
+    if (value >= 35) return '#f3d28a';
+    return '#fca5a5';
+  }
+
+  missionStatusLabel(status: string): string {
+    if (status === 'established') return 'Established';
+    if (status === 'building') return 'Building';
+    return 'Planned';
   }
 
   scoreWidth(value: number): string {

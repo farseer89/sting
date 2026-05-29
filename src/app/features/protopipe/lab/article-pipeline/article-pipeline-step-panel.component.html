@@ -32,278 +32,309 @@
         </section>
       }
 
-      <!-- ===================== RESEARCH ===================== -->
+      <!-- ===================== RESEARCH (executive report) ===================== -->
       @case ('research') {
         @if (research(); as r) {
-          <section class="research">
-            <header class="research__hero">
-              <div class="research__hero-main">
-                <span class="research__hero-eyebrow">Targeting</span>
-                <span class="research__hero-phrase">{{ r.keyword.phrase }}</span>
-                <div class="brief__chips research__chips">
-                  @for (chip of researchSignalChips(); track chip) {
-                    <span class="chip">{{ chip }}</span>
-                  }
-                </div>
+          <section class="exec">
+
+            <!-- 1. Decision banner -->
+            <header class="exec__banner">
+              <div class="exec__banner-main">
+                <span class="exec__eyebrow">Recommendation</span>
+                <h3 class="exec__decision">
+                  Write a <strong>{{ articleTypeLabel() }}</strong> targeting
+                  <strong>&ldquo;{{ r.keyword.phrase }}&rdquo;</strong>
+                </h3>
+                <p class="exec__rationale">{{ r.inferenceRationale }}</p>
               </div>
-              <aside class="research__hero-meta">
-                <div class="research__meta-row">
-                  <span class="research__meta-label">Inferred type</span>
-                  <span class="research__meta-value">{{ r.inferredArticleType }}</span>
-                </div>
-                <div class="research__meta-row">
-                  <span class="research__meta-label">SERP geo</span>
-                  <span class="research__meta-value">{{ r.serpGeo.locationName }}</span>
-                </div>
-                <div class="research__meta-row">
-                  <span class="research__meta-label">Collected</span>
-                  <span class="research__meta-value">{{ formatCollectedAt(r.collectedAt) }}</span>
-                </div>
-              </aside>
+              <div class="exec__banner-side">
+                <span class="exec__badge">{{ r.inferredArticleType }}</span>
+                @if (r.clusterContext?.isShortTermWin) {
+                  <span class="exec__badge exec__badge--win">short-term win</span>
+                }
+                <span class="exec__collected">as of {{ formatCollectedAt(r.collectedAt) }}</span>
+              </div>
             </header>
 
-            <p class="research__rationale">
-              <strong>Why this type:</strong> {{ r.inferenceRationale }}
-            </p>
+            <!-- 2. Key facts -->
+            <div class="exec__facts">
+              @for (f of keywordFacts(); track f.label) {
+                <div class="exec__fact">
+                  <span class="exec__fact-label">{{ f.label }}</span>
+                  <span class="exec__fact-value">{{ f.value }}</span>
+                  @if (f.hint) { <span class="exec__fact-hint">{{ f.hint }}</span> }
+                </div>
+              }
+            </div>
 
-            @if (researchSources().length > 0) {
-              <section class="research__sources">
-                <span class="brief__label">Data sources</span>
-                <div class="research__sources-list">
-                  @for (s of researchSources(); track s.label) {
-                    <span class="research__source" [class]="sourceClass(s.value)">
-                      <span class="research__source-label">{{ s.label }}</span>
-                      <span class="research__source-value">{{ s.value }}</span>
+            <!-- 3. Strategic placement (topical authority) -->
+            @if (clusterContext(); as cc) {
+              <section class="exec__section">
+                <h4 class="exec__section-h">Strategic placement</h4>
+                <div class="exec__placement">
+                  <div class="exec__lineage">
+                    <span class="exec__tier exec__tier--mission">
+                      <span class="exec__tier-k">Mission</span>
+                      <span class="exec__tier-v">{{ cc.missionTitle || 'Unassigned' }}</span>
                     </span>
+                    <span class="exec__lineage-arrow">›</span>
+                    <span class="exec__tier exec__tier--bomb">
+                      <span class="exec__tier-k">Cluster Bomb</span>
+                      <span class="exec__tier-v">{{ cc.clusterTitle || 'Unassigned' }}</span>
+                    </span>
+                    <span class="exec__lineage-arrow">›</span>
+                    <span class="exec__tier exec__tier--missile">
+                      <span class="exec__tier-k">Guided Missile</span>
+                      <span class="exec__tier-v">{{ r.keyword.phrase }}</span>
+                    </span>
+                  </div>
+
+                  @if (cc.requiredInternalLinks.length > 0) {
+                    <div class="exec__links">
+                      <span class="brief__label">Required internal links</span>
+                      <ul class="exec__links-list">
+                        @for (l of cc.requiredInternalLinks; track l.label) {
+                          <li>
+                            <span class="exec__link-label">{{ l.label }}</span>
+                            <span class="exec__link-reason">{{ l.reason }}</span>
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  }
+
+                  @if (cc.siblingMissiles.length > 0) {
+                    <div class="exec__siblings">
+                      <span class="brief__label">Sibling guided missiles ({{ cc.siblingMissiles.length }})</span>
+                      <div class="brief__chips">
+                        @for (s of cc.siblingMissiles; track s.phrase) {
+                          <span class="chip" [class.chip--soft]="!s.isPublished">
+                            {{ s.phrase }}{{ s.isPublished ? '' : ' (gap)' }}
+                          </span>
+                        }
+                      </div>
+                    </div>
                   }
                 </div>
               </section>
             }
 
-            <div class="research__grid">
-              <!-- SERP top results -->
-              <section class="research__card research__card--wide">
-                <header class="research__card-head">
-                  <h4 class="research__card-h">SERP top results</h4>
-                  <span class="research__card-count">{{ r.serpTop.length }}</span>
-                </header>
-                @if (r.serpTop.length === 0) {
-                  <p class="research__empty">Not collected yet — will land when the SERP cache wire-up ships.</p>
-                } @else {
-                  <ol class="research__serp">
-                    @for (s of r.serpTop; track s.position) {
-                      <li class="research__serp-item">
-                        <span class="research__serp-pos">{{ s.position }}</span>
-                        <div class="research__serp-body">
-                          <a class="research__serp-title" [href]="s.url" target="_blank" rel="noopener">{{ s.title }}</a>
-                          <span class="research__serp-domain">{{ s.domain }}</span>
-                          @if (s.snippet) {
-                            <p class="research__serp-snippet">{{ s.snippet }}</p>
-                          }
-                        </div>
+            <!-- 4. Authority state -->
+            @if (topicalAuthority(); as ta) {
+              <section class="exec__section">
+                <h4 class="exec__section-h">Site authority</h4>
+                <div class="exec__authority">
+                  <div class="exec__coverage">
+                    <div class="exec__coverage-ring" [style.--cov.%]="ta.authorityState.coverageScore">
+                      <span class="exec__coverage-num">{{ ta.authorityState.coverageScore }}</span>
+                    </div>
+                    <span class="exec__coverage-label">coverage</span>
+                  </div>
+                  <div class="exec__authority-stats">
+                    <div class="exec__stat">
+                      <span class="exec__stat-v">{{ ta.authorityState.totalMissions }}</span>
+                      <span class="exec__stat-k">Missions</span>
+                    </div>
+                    <div class="exec__stat">
+                      <span class="exec__stat-v">{{ ta.authorityState.totalClusterBombs }}</span>
+                      <span class="exec__stat-k">Cluster Bombs</span>
+                    </div>
+                    <div class="exec__stat">
+                      <span class="exec__stat-v">{{ ta.authorityState.deployedMissiles }}/{{ ta.authorityState.totalMissiles }}</span>
+                      <span class="exec__stat-k">Missiles deployed</span>
+                    </div>
+                    <div class="exec__stat">
+                      <span class="exec__stat-v">{{ ta.authorityState.orphanCount }}</span>
+                      <span class="exec__stat-k">Orphans</span>
+                    </div>
+                  </div>
+                </div>
+                @if (ta.authorityState.nextActions.length > 0) {
+                  <ul class="exec__actions">
+                    @for (a of ta.authorityState.nextActions; track a.label) {
+                      <li class="exec__action exec__action--{{ a.kind }}">
+                        <span class="exec__action-label">{{ a.label }}</span>
+                        @if (a.detail) { <span class="exec__action-detail">{{ a.detail }}</span> }
                       </li>
-                    }
-                  </ol>
-                }
-              </section>
-
-              <!-- People Also Ask -->
-              <section class="research__card">
-                <header class="research__card-head">
-                  <h4 class="research__card-h">People also ask</h4>
-                  <span class="research__card-count">{{ r.peopleAlsoAsk.length }}</span>
-                </header>
-                @if (r.peopleAlsoAsk.length === 0) {
-                  <p class="research__empty">Not collected yet.</p>
-                } @else {
-                  <ul class="research__paa">
-                    @for (p of r.peopleAlsoAsk; track p.question) {
-                      <li>{{ p.question }}</li>
                     }
                   </ul>
                 }
               </section>
+            }
 
-              <!-- Related searches -->
-              <section class="research__card">
-                <header class="research__card-head">
-                  <h4 class="research__card-h">Related searches</h4>
-                  <span class="research__card-count">{{ r.relatedSearches.length }}</span>
-                </header>
-                @if (r.relatedSearches.length === 0) {
-                  <p class="research__empty">Not collected yet.</p>
-                } @else {
-                  <div class="brief__chips">
-                    @for (q of r.relatedSearches; track q) {
-                      <span class="chip chip--soft">{{ q }}</span>
-                    }
-                  </div>
-                }
-              </section>
-
-              <!-- Competitor outlines -->
-              <section class="research__card research__card--wide">
-                <header class="research__card-head">
-                  <h4 class="research__card-h">Competitor outlines</h4>
-                  <span class="research__card-count">{{ r.competitorOutlines.length }}</span>
-                </header>
-                @if (r.competitorOutlines.length === 0) {
-                  <p class="research__empty">Not collected yet.</p>
-                } @else {
-                  <div class="brief__competitors">
-                    @for (c of r.competitorOutlines; track c.url) {
-                      <article class="competitor">
-                        <header class="competitor__head">
-                          <span class="competitor__title">{{ c.title }}</span>
-                          <a class="competitor__url" [href]="c.url" target="_blank" rel="noopener">{{ c.url }}</a>
-                        </header>
-                        <ul class="competitor__h2s">
-                          @for (h of c.h2s; track h) {
-                            <li>{{ h }}</li>
-                          }
-                        </ul>
-                      </article>
-                    }
-                  </div>
-                }
-              </section>
-
-              <!-- GSC queries -->
-              <section class="research__card research__card--wide">
-                <header class="research__card-head">
-                  <h4 class="research__card-h">Search Console queries</h4>
-                  <span class="research__card-count">{{ r.gscQueries.length }}</span>
-                </header>
-                @if (r.gscQueries.length === 0) {
-                  <p class="research__empty">Not collected yet — wires up with GSC integration.</p>
-                } @else {
-                  <table class="research__gsc">
-                    <thead>
-                      <tr>
-                        <th>Query</th>
-                        <th>Position</th>
-                        <th>Impressions</th>
-                        <th>Clicks</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (g of r.gscQueries; track g.query) {
-                        <tr>
-                          <td>{{ g.query }}</td>
-                          <td>{{ g.position ?? '—' }}</td>
-                          <td>{{ g.impressions ?? '—' }}</td>
-                          <td>{{ g.clicks ?? '—' }}</td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                }
-              </section>
-
-              <!-- Site context -->
-              <section class="research__card research__card--wide">
-                <header class="research__card-head">
-                  <h4 class="research__card-h">Site context</h4>
-                </header>
-                <div class="research__site">
-                  <div class="research__site-head">
-                    <span class="research__site-name">{{ r.siteContext.displayName || r.siteContext.hostname || 'Site' }}</span>
-                    @if (r.siteContext.url) {
-                      <a class="research__site-url" [href]="r.siteContext.url" target="_blank" rel="noopener">{{ r.siteContext.url }}</a>
-                    }
-                  </div>
-                  @if (r.siteContext.brandSummary) {
-                    <p class="brief__p">{{ r.siteContext.brandSummary }}</p>
-                  }
-                  @if (r.siteContext.servicesOffered && r.siteContext.servicesOffered.length > 0) {
-                    <div>
-                      <span class="brief__label">Services</span>
-                      <div class="brief__chips">
-                        @for (s of r.siteContext.servicesOffered; track s) {
-                          <span class="chip">{{ s }}</span>
-                        }
-                      </div>
-                    </div>
-                  }
-                  @if (r.siteContext.locationsServed && r.siteContext.locationsServed.length > 0) {
-                    <div>
-                      <span class="brief__label">Locations</span>
-                      <div class="brief__chips">
-                        @for (loc of r.siteContext.locationsServed; track loc) {
-                          <span class="chip">{{ loc }}</span>
-                        }
-                      </div>
-                    </div>
-                  }
-                  @if (r.siteContext.knowledgeChunks.length > 0) {
-                    <div class="research__knowledge">
-                      <span class="brief__label">
-                        Site knowledge ({{ r.siteContext.knowledgeChunks.length }})
-                      </span>
-                      <ul class="research__knowledge-list">
-                        @for (k of r.siteContext.knowledgeChunks; track $index) {
-                          <li class="research__knowledge-item">
-                            <header class="research__knowledge-head">
-                              <span class="research__knowledge-title">{{ k.title }}</span>
-                              <span class="chip chip--soft">{{ k.chunkType }}</span>
-                            </header>
-                            <p class="research__knowledge-body">{{ k.body }}</p>
-                          </li>
-                        }
+            <!-- 5. Information gain -->
+            @if (informationGain(); as ig) {
+              @if (ig.tableStakes.length > 0 || ig.wedges.length > 0) {
+                <section class="exec__section">
+                  <h4 class="exec__section-h">Information gain strategy</h4>
+                  <div class="exec__ig">
+                    <div class="exec__ig-col">
+                      <span class="exec__ig-h">Table stakes <em>(must cover)</em></span>
+                      <ul class="exec__ig-list">
+                        @for (t of ig.tableStakes; track t) { <li>{{ t }}</li> }
                       </ul>
                     </div>
-                  } @else {
-                    <p class="research__empty">No site-knowledge chunks indexed for this site yet.</p>
-                  }
-                </div>
-              </section>
-
-              <!-- Voice config -->
-              <section class="research__card">
-                <header class="research__card-head">
-                  <h4 class="research__card-h">Voice (default)</h4>
-                </header>
-                <div class="brief__chips">
-                  <span class="chip">{{ r.voiceConfig.tone }}</span>
-                  <span class="chip">{{ r.voiceConfig.pov }}</span>
-                  <span class="chip">{{ r.voiceConfig.sentenceLength }} sentences</span>
-                  <span class="chip">{{ r.voiceConfig.jargonLevel }} jargon</span>
-                  <span class="chip">{{ r.voiceConfig.ctaStyle }} CTA</span>
-                </div>
-                @if (r.voiceConfig.avoid.length > 0) {
-                  <div class="research__avoid">
-                    <span class="brief__label">Avoid</span>
-                    <div class="brief__chips">
-                      @for (a of r.voiceConfig.avoid; track a) {
-                        <span class="chip chip--warn">{{ a }}</span>
+                    <div class="exec__ig-col exec__ig-col--wedge">
+                      <span class="exec__ig-h">Our wedge <em>(unique value)</em></span>
+                      @if (ig.wedges.length > 0) {
+                        <ul class="exec__ig-list">
+                          @for (w of ig.wedges; track w) { <li>{{ w }}</li> }
+                        </ul>
+                      } @else {
+                        <p class="research__empty">No differentiators captured yet — add site positioning to sharpen the wedge.</p>
                       }
                     </div>
                   </div>
-                }
-              </section>
+                </section>
+              }
+            }
 
-              <!-- Author context -->
-              @if (r.authorContext) {
+            <!-- 6. SERP landscape -->
+            <section class="exec__section">
+              <h4 class="exec__section-h">SERP landscape <span class="exec__section-geo">{{ r.serpGeo.locationName }}</span></h4>
+              <div class="research__grid">
+                <section class="research__card research__card--wide">
+                  <header class="research__card-head">
+                    <h4 class="research__card-h">Top results</h4>
+                    <span class="research__card-count">{{ r.serpTop.length }}</span>
+                  </header>
+                  @if (r.serpTop.length === 0) {
+                    <p class="research__empty">No cached SERP yet — run an enrich to pull it live.</p>
+                  } @else {
+                    <ol class="research__serp">
+                      @for (s of r.serpTop; track s.position) {
+                        <li class="research__serp-item">
+                          <span class="research__serp-pos">{{ s.position }}</span>
+                          <div class="research__serp-body">
+                            <a class="research__serp-title" [href]="s.url" target="_blank" rel="noopener">{{ s.title }}</a>
+                            <span class="research__serp-domain">{{ s.domain }}</span>
+                            @if (s.snippet) { <p class="research__serp-snippet">{{ s.snippet }}</p> }
+                          </div>
+                        </li>
+                      }
+                    </ol>
+                  }
+                </section>
+
                 <section class="research__card">
                   <header class="research__card-head">
-                    <h4 class="research__card-h">Author</h4>
+                    <h4 class="research__card-h">People also ask</h4>
+                    <span class="research__card-count">{{ r.peopleAlsoAsk.length }}</span>
                   </header>
-                  @if (r.authorContext.name) {
-                    <p class="research__site-name">{{ r.authorContext.name }}</p>
+                  @if (r.peopleAlsoAsk.length === 0) {
+                    <p class="research__empty">Not collected yet.</p>
+                  } @else {
+                    <ul class="research__paa">
+                      @for (p of r.peopleAlsoAsk; track p.question) { <li>{{ p.question }}</li> }
+                    </ul>
                   }
-                  @if (r.authorContext.bio) {
-                    <p class="brief__p">{{ r.authorContext.bio }}</p>
-                  }
-                  @if (r.authorContext.expertise && r.authorContext.expertise.length > 0) {
+                </section>
+
+                <section class="research__card">
+                  <header class="research__card-head">
+                    <h4 class="research__card-h">Related searches</h4>
+                    <span class="research__card-count">{{ r.relatedSearches.length }}</span>
+                  </header>
+                  @if (r.relatedSearches.length === 0) {
+                    <p class="research__empty">Not collected yet.</p>
+                  } @else {
                     <div class="brief__chips">
-                      @for (e of r.authorContext.expertise; track e) {
-                        <span class="chip">{{ e }}</span>
-                      }
+                      @for (q of r.relatedSearches; track q) { <span class="chip chip--soft">{{ q }}</span> }
                     </div>
                   }
                 </section>
+              </div>
+            </section>
+
+            <!-- 7. Site & brand context -->
+            <section class="exec__section">
+              <h4 class="exec__section-h">Business context</h4>
+              @if (profile(); as p) {
+                @if (p.positioning.niche || p.positioning.valueProp || (p.positioning.differentiators && p.positioning.differentiators.length)) {
+                  <div class="exec__positioning">
+                    @if (p.positioning.niche) {
+                      <div class="exec__pos-row"><span class="brief__label">Niche</span><span>{{ p.positioning.niche }}</span></div>
+                    }
+                    @if (p.positioning.valueProp) {
+                      <div class="exec__pos-row"><span class="brief__label">Value prop</span><span>{{ p.positioning.valueProp }}</span></div>
+                    }
+                    @if (p.positioning.audience) {
+                      <div class="exec__pos-row"><span class="brief__label">Audience</span><span>{{ p.positioning.audience }}</span></div>
+                    }
+                  </div>
+                }
+                @if (p.strategicPlan.strategySummary) {
+                  <div class="exec__plan">
+                    <span class="brief__label">Strategic plan</span>
+                    <p class="brief__p">{{ p.strategicPlan.strategySummary }}</p>
+                  </div>
+                }
               }
-            </div>
+
+              <div class="research__grid">
+                @if (r.siteContext.servicesOffered && r.siteContext.servicesOffered.length > 0) {
+                  <section class="research__card">
+                    <header class="research__card-head"><h4 class="research__card-h">Services</h4></header>
+                    <div class="brief__chips">
+                      @for (s of r.siteContext.servicesOffered; track s) { <span class="chip">{{ s }}</span> }
+                    </div>
+                  </section>
+                }
+                @if (r.siteContext.locationsServed && r.siteContext.locationsServed.length > 0) {
+                  <section class="research__card">
+                    <header class="research__card-head"><h4 class="research__card-h">Locations</h4></header>
+                    <div class="brief__chips">
+                      @for (loc of r.siteContext.locationsServed; track loc) { <span class="chip">{{ loc }}</span> }
+                    </div>
+                  </section>
+                }
+                <section class="research__card">
+                  <header class="research__card-head"><h4 class="research__card-h">Voice</h4></header>
+                  <div class="brief__chips">
+                    <span class="chip">{{ r.voiceConfig.tone }}</span>
+                    <span class="chip">{{ r.voiceConfig.pov }}</span>
+                    <span class="chip">{{ r.voiceConfig.sentenceLength }} sentences</span>
+                    <span class="chip">{{ r.voiceConfig.jargonLevel }} jargon</span>
+                  </div>
+                </section>
+
+                @if (r.siteContext.knowledgeChunks.length > 0) {
+                  <section class="research__card research__card--wide">
+                    <header class="research__card-head">
+                      <h4 class="research__card-h">Site knowledge</h4>
+                      <span class="research__card-count">{{ r.siteContext.knowledgeChunks.length }}</span>
+                    </header>
+                    <ul class="research__knowledge-list">
+                      @for (k of r.siteContext.knowledgeChunks; track $index) {
+                        <li class="research__knowledge-item">
+                          <header class="research__knowledge-head">
+                            <span class="research__knowledge-title">{{ k.title }}</span>
+                            <span class="chip chip--soft">{{ k.chunkType }}</span>
+                          </header>
+                          <p class="research__knowledge-body">{{ k.body }}</p>
+                        </li>
+                      }
+                    </ul>
+                  </section>
+                }
+              </div>
+            </section>
+
+            <!-- 8. Provenance -->
+            @if (lensRows().length > 0) {
+              <section class="exec__section">
+                <h4 class="exec__section-h">Data sources &amp; provenance</h4>
+                <div class="exec__provenance">
+                  @for (row of lensRows(); track row.label) {
+                    <div class="exec__prov-row">
+                      <span class="exec__prov-label">{{ row.label }}</span>
+                      <span class="exec__prov-state" [class]="lensStateClass(row.state)">{{ lensStateLabel(row.state) }}</span>
+                      <span class="exec__prov-tier">{{ row.tier }}</span>
+                    </div>
+                  }
+                </div>
+              </section>
+            }
           </section>
         }
       }

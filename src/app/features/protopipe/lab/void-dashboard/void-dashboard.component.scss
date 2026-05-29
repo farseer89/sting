@@ -177,6 +177,8 @@
 
 .void__viewport {
   position: relative;
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
   overflow: hidden;
@@ -194,7 +196,11 @@
 }
 
 .void__panel-stack {
-  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
   transition:
     opacity 0.45s ease,
     filter 0.45s ease;
@@ -204,7 +210,7 @@
 .glass {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
   min-height: 0;
   border-radius: 8px;
   padding: 0.45rem 0.55rem;
@@ -216,6 +222,11 @@
 
 .glass--full {
   overflow: hidden;
+
+  > app-void-content-writer {
+    flex: 1;
+    min-height: 0;
+  }
 }
 
 .glass__head {

@@ -9,7 +9,7 @@
     </div>
   </header>
 
-  <div class="writer__body">
+  <div class="writer__workspace">
     <nav class="writer__toolbar" aria-label="Writing tools">
       @for (tool of tools; track tool.id; let i = $index) {
         @if (i === 6) {
@@ -130,7 +130,7 @@
                     placeholder="Section heading"
                   />
                   <textarea
-                    class="writer__body"
+                    class="writer__section-body"
                     [ngModel]="section.body"
                     (ngModelChange)="sections.update((list) => list.map((s, i) => (i === si ? { ...s, body: $event } : s))); markDirty()"
                     placeholder="Write this section…"

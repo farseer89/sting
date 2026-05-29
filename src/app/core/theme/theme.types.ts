@@ -54,6 +54,28 @@ export const PRESET_BASES: Readonly<Record<PresetBaseId, PresetBase>> = Object.f
 export const PALETTE_SHADES = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950] as const;
 
 /**
+ * Custom primary palettes that don't exist in @primeuix/themes' built-in
+ * primitives. The `ThemeService.buildPalette()` consults this map first;
+ * if a name isn't here it falls back to a `{name.shade}` token reference
+ * (which resolves against PrimeUIX's built-in palettes like `teal`, `indigo`).
+ */
+export const CUSTOM_PALETTES: Readonly<Record<string, Readonly<Record<string, string>>>> = Object.freeze({
+  ocean: Object.freeze({
+    50: '#effbfb',
+    100: '#cef3f4',
+    200: '#a4e8ea',
+    300: '#6cd1d4',
+    400: '#34b3b8',
+    500: '#0a9396',
+    600: '#0a7e80',
+    700: '#0d6a6c',
+    800: '#0f5557',
+    900: '#114447',
+    950: '#072a2c',
+  }),
+});
+
+/**
  * The 14 themes from `alpha-layout.themeMenuItems`, faithfully preserving:
  *  - the legacy id (so persisted choices roundtrip)
  *  - the branded label
@@ -68,6 +90,19 @@ export const PALETTE_SHADES = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 
  *  - `lara-*-*` → Lara preset (1:1)
  */
 export const THEME_GROUPS: readonly ThemeGroup[] = [
+  {
+    label: 'Protopipe',
+    themes: [
+      {
+        id: 'protopipe-ocean',
+        label: 'Protopipe Ocean',
+        icon: 'pi pi-palette',
+        preset: 'lara',
+        scheme: 'light',
+        primary: 'ocean',
+      },
+    ],
+  },
   {
     label: 'Lara — Light',
     themes: [
@@ -112,11 +147,13 @@ export const THEME_GROUPS: readonly ThemeGroup[] = [
 /** Flat list of all themes — useful for lookups. */
 export const THEMES: readonly ThemeMeta[] = THEME_GROUPS.flatMap((g) => g.themes);
 
-/** Default matches the previous FieldwavePreset (Lara + emerald-flavored teal). */
-export const DEFAULT_THEME_ID = 'lara-light-teal';
+/** Default brands Protopipe with the deep ocean teal (#0a9396) used in
+ *  the onboarding mockups and across product surfaces. */
+export const DEFAULT_THEME_ID = 'protopipe-ocean';
 
-/** localStorage key — bumped if the schema ever needs migration. */
-export const STORAGE_KEY = 'sting.theme.v1';
+/** localStorage key — bumped to v2 so persisted Lara/Indigo/etc. choices
+ *  from before the Protopipe Ocean default reset and pick up the new brand. */
+export const STORAGE_KEY = 'sting.theme.v2';
 
 export function findTheme(id: string): ThemeMeta {
   return THEMES.find((t) => t.id === id) ?? THEMES.find((t) => t.id === DEFAULT_THEME_ID)!;

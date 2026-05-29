@@ -1,6 +1,7 @@
 import { Injectable, computed, effect, signal } from '@angular/core';
 import { definePreset, usePreset } from '@primeuix/themes';
 import {
+  CUSTOM_PALETTES,
   DEFAULT_THEME_ID,
   PALETTE_SHADES,
   PRESET_BASES,
@@ -78,8 +79,17 @@ export class ThemeService {
   }
 }
 
-/** Build a primary palette as token references — works for any primitive name. */
+/**
+ * Build a primary palette. If `name` matches a CUSTOM_PALETTES entry, return
+ * its explicit hex shades verbatim (so e.g. `ocean` resolves to #0a9396 at 500).
+ * Otherwise emit token references like `{teal.500}` which @primeuix resolves
+ * against its built-in primitive palettes.
+ */
 function buildPalette(name: string): Record<string, string> {
+  const custom = CUSTOM_PALETTES[name];
+  if (custom) {
+    return { ...custom };
+  }
   const out: Record<string, string> = {};
   for (const shade of PALETTE_SHADES) {
     out[String(shade)] = `{${name}.${shade}}`;

@@ -1,30 +1,34 @@
 <div class="onboarding-shell">
-  <div class="onboarding-card">
-    <header class="onboarding-header">
-      <p class="eyebrow">Welcome to {{ product.displayName }}</p>
-      <h1>Tell us about your business</h1>
-      <p class="subtitle">A few quick questions so we can suggest the right keywords and content.</p>
-      <ol class="step-indicator" aria-label="Onboarding progress">
-        <li [class.active]="step() === 1" [class.done]="step() > 1">
-          <span class="step-number">1</span>
-          <span class="step-label">Business</span>
-        </li>
-        <li [class.active]="step() === 2" [class.done]="step() > 2">
-          <span class="step-number">2</span>
-          <span class="step-label">Market</span>
-        </li>
-        <li [class.active]="step() === 3">
-          <span class="step-number">3</span>
-          <span class="step-label">Goal</span>
-        </li>
-      </ol>
-    </header>
+  <div
+    class="progress-bar"
+    [style.--progress.%]="progressPercent()"
+    role="progressbar"
+    aria-label="Onboarding progress"
+    [attr.aria-valuenow]="step()"
+    [attr.aria-valuemin]="1"
+    [attr.aria-valuemax]="totalSteps"
+  ></div>
 
+  <header class="onboarding-top">
+    <div class="brand">{{ product.displayName }}</div>
+    <div class="back-slot">
+      @if (step() > 1) {
+        <button type="button" class="back-link" (click)="previousStep()">← Back</button>
+      }
+    </div>
+    <div class="step-indicator">Step {{ step() }} of {{ totalSteps }}</div>
+  </header>
+
+  <main class="onboarding-main">
     @if (step() === 1) {
-      <form [formGroup]="businessForm" class="onboarding-form" (ngSubmit)="nextStep()">
+      <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
+        <p class="eyebrow">Getting started</p>
+        <h1 class="question">What's the business called?</h1>
+        <p class="helper">We'll use this name across your dashboard.</p>
+
         <div class="field">
-          <label for="businessName">Business name</label>
           <input
+            #nameInput
             id="businessName"
             type="text"
             formControlName="businessName"
@@ -34,39 +38,84 @@
           />
         </div>
 
-        <div class="field">
-          <label for="businessDescription">What does your business do?</label>
-          <textarea
-            id="businessDescription"
-            formControlName="businessDescription"
-            pTextarea
-            rows="3"
-            placeholder="One or two sentences. e.g. We're a residential electrician in Maui specializing in panel upgrades and EV chargers."
-          ></textarea>
-          <small class="helper">10–800 characters</small>
-        </div>
-
-        <div class="field">
-          <label for="trade">Trade or category <span class="optional">(optional)</span></label>
-          <input
-            id="trade"
-            type="text"
-            formControlName="trade"
-            pInputText
-            placeholder="Electrician, photographer, attorney…"
-          />
-        </div>
-
         <div class="actions">
-          <p-button type="submit" label="Continue" />
+          <span class="enter-hint">press Enter ↵</span>
+          <p-button
+            type="submit"
+            label="Continue"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+          />
         </div>
       </form>
     }
 
     @if (step() === 2) {
-      <form [formGroup]="marketForm" class="onboarding-form" (ngSubmit)="nextStep()">
+      <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
+        <p class="eyebrow">About your business</p>
+        <h1 class="question">What does your business do?</h1>
+        <p class="helper">One sentence is fine — we'll use this to suggest keywords.</p>
+
         <div class="field">
-          <label for="locationSearch">Where do you serve customers?</label>
+          <textarea
+            #descriptionInput
+            id="businessDescription"
+            formControlName="businessDescription"
+            pTextarea
+            rows="3"
+            placeholder="We're a residential electrician in Maui specializing in panel upgrades and EV chargers."
+          ></textarea>
+          <small class="counter">10–800 characters</small>
+        </div>
+
+        <div class="actions">
+          <span class="enter-hint">press Enter ↵</span>
+          <p-button
+            type="submit"
+            label="Continue"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+          />
+        </div>
+      </form>
+    }
+
+    @if (step() === 3) {
+      <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
+        <p class="eyebrow">Trade</p>
+        <h1 class="question">What kind of work do you do?</h1>
+        <p class="helper">A short phrase is fine — Electrician, Photographer, Attorney…</p>
+
+        <div class="field">
+          <input
+            #tradeInput
+            id="trade"
+            type="text"
+            formControlName="trade"
+            pInputText
+            placeholder="Electrician"
+          />
+        </div>
+
+        <div class="actions">
+          <span class="enter-hint">press Enter ↵</span>
+          <p-button
+            type="submit"
+            label="Continue"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+          />
+        </div>
+      </form>
+    }
+
+    @if (step() === 4) {
+      <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
+        <p class="eyebrow">Service area</p>
+        <h1 class="question">Where do you serve customers?</h1>
+        <p class="helper">We use this to target local search results.</p>
+
+        <div class="field">
           <p-autocomplete
             inputId="locationSearch"
             [suggestions]="locationSuggestions()"
@@ -80,71 +129,62 @@
             [minLength]="2"
             [delay]="250"
             appendTo="body"
-            styleClass="w-full location-autocomplete"
-          ></p-autocomplete>
-          <small class="helper">We use this to target local search results.</small>
-        </div>
-
-        <div class="field-row">
-          <div class="field">
-            <label for="city">City</label>
-            <input id="city" type="text" formControlName="city" pInputText placeholder="Kahului" />
-          </div>
-          <div class="field">
-            <label for="state">State / region</label>
-            <input id="state" type="text" formControlName="state" pInputText placeholder="HI" />
-          </div>
-        </div>
-
-        <div class="field">
-          <label for="websiteUrl">Website URL <span class="optional">(optional)</span></label>
-          <input
-            id="websiteUrl"
-            type="url"
-            formControlName="websiteUrl"
-            pInputText
-            placeholder="https://mauielectric.com"
+            styleClass="onboarding-autocomplete"
           />
-          <small class="helper">If you don't have one yet, leave blank — we'll set this up later.</small>
         </div>
 
         <div class="actions">
+          <span class="enter-hint">press Enter ↵</span>
           <p-button
-            type="button"
-            label="Back"
-            severity="secondary"
-            [text]="true"
-            (onClick)="previousStep()"
+            type="submit"
+            label="Continue"
+            icon="pi pi-arrow-right"
+            iconPos="right"
           />
-          <p-button type="submit" label="Continue" />
         </div>
       </form>
     }
 
-    @if (step() === 3) {
-      <form [formGroup]="goalForm" class="onboarding-form" (ngSubmit)="submit()">
+    @if (step() === 5) {
+      <form [formGroup]="form" class="step" (ngSubmit)="submit()">
+        <p class="eyebrow">Your first goal</p>
+        <h1 class="question">What would you love to rank for?</h1>
+        <p class="helper">
+          Optional — we'll use it to pre-fill keyword discovery. You can change it
+          anytime.
+        </p>
+
         <div class="field">
-          <label for="seedPhrase">What would you love to rank for?</label>
           <input
+            #seedInput
             id="seedPhrase"
             type="text"
             formControlName="seedPhrase"
             pInputText
             placeholder="e.g. electrician maui"
           />
-          <small class="helper">
-            Optional — we'll use this to pre-fill keyword discovery. You can change it anytime.
-          </small>
+
+          @if (seedSuggestions().length > 0) {
+            <div class="suggestions">
+              <span class="suggestions-label">Suggested for you</span>
+              <div class="suggestion-pills">
+                @for (s of seedSuggestions(); track s) {
+                  <button
+                    type="button"
+                    class="suggestion"
+                    (click)="applySuggestion(s)"
+                  >
+                    <i class="pi pi-arrow-up-right" aria-hidden="true"></i>
+                    <span>{{ s }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+          }
         </div>
 
         <div class="actions">
-          <p-button
-            type="button"
-            label="Back"
-            severity="secondary"
-            [text]="true"
-            (onClick)="previousStep()"
-          />
+          <span class="enter-hint">press Enter ↵</span>
           <p-button
             type="submit"
             [label]="isSubmitting() ? 'Saving…' : 'Find my keywords'"
@@ -155,7 +195,7 @@
         </div>
       </form>
     }
-  </div>
+  </main>
 </div>
 
 <p-toast />

@@ -1,13 +1,22 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   OnInit,
+  computed,
+  effect,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { AutoComplete, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
+import {
+  AutoComplete,
+  AutoCompleteCompleteEvent,
+  AutoCompleteSelectEvent,
+} from 'primeng/autocomplete';
 import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
 import { Textarea } from 'primeng/textarea';
@@ -19,17 +28,8 @@ import { ProtopipeOnboardingStateService } from './protopipe-onboarding-state.se
 import { parseProtopipeApiError } from '../protopipe-http.util';
 import { PRODUCT_CONFIG } from '../../../core/config/product-config';
 
-interface BusinessForm {
-  businessName: string;
-  businessDescription: string;
-  trade: string;
-}
-
-interface MarketForm {
-  city: string;
-  state: string;
-  websiteUrl: string;
-}
+type Step = 1 | 2 | 3 | 4 | 5;
+const TOTAL_STEPS = 5 as const;
 
 @Component({
   selector: 'app-protopipe-onboarding',
@@ -48,42 +48,66 @@ export class ProtopipeOnboardingComponent implements OnInit {
   private readonly messages = inject(MessageService);
   readonly product = inject(PRODUCT_CONFIG);
 
-  readonly step = signal<1 | 2 | 3>(1);
+  readonly totalSteps = TOTAL_STEPS;
+  readonly step = signal<Step>(1);
   readonly isSubmitting = signal(false);
   readonly siteId = signal<string | null>(null);
   readonly locationSuggestions = signal<ProtopipeSerpLocationOption[]>([]);
   readonly selectedLocation = signal<ProtopipeSerpLocationOption | null>(null);
   readonly isSearchingLocations = signal(false);
 
-  readonly businessForm = this.fb.nonNullable.group({
-    businessName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(120)]],
+  readonly form = this.fb.nonNullable.group({
+    businessName: [
+      '',
+      [Validators.required, Validators.minLength(2), Validators.maxLength(120)],
+    ],
     businessDescription: [
       '',
       [Validators.required, Validators.minLength(10), Validators.maxLength(800)],
     ],
     trade: ['', [Validators.maxLength(80)]],
-  });
-
-  readonly marketForm = this.fb.nonNullable.group({
     city: ['', [Validators.maxLength(80)]],
     state: ['', [Validators.maxLength(80)]],
-    websiteUrl: ['', [Validators.maxLength(300)]],
-  });
-
-  readonly goalForm = this.fb.nonNullable.group({
     seedPhrase: ['', [Validators.maxLength(200)]],
   });
+
+  private readonly formValue = toSignal(this.form.valueChanges, {
+    initialValue: this.form.getRawValue(),
+  });
+
+  readonly seedSuggestions = computed<readonly string[]>(() => {
+    const v = this.formValue();
+    const trade = (v.trade ?? '').trim().toLowerCase();
+    const city = (v.city ?? '').trim().toLowerCase();
+    if (!trade) return [];
+    if (city) {
+      return [`${trade} ${city}`, `best ${trade} in ${city}`, `${trade} near ${city}`];
+    }
+    return [`${trade} near me`, `local ${trade}`, `${trade} services`];
+  });
+
+  readonly progressPercent = computed(() =>
+    Math.round((this.step() / this.totalSteps) * 100),
+  );
+
+  private readonly nameInput = viewChild<ElementRef<HTMLInputElement>>('nameInput');
+  private readonly descriptionInput =
+    viewChild<ElementRef<HTMLTextAreaElement>>('descriptionInput');
+  private readonly tradeInput = viewChild<ElementRef<HTMLInputElement>>('tradeInput');
+  private readonly seedInput = viewChild<ElementRef<HTMLInputElement>>('seedInput');
+
+  constructor() {
+    effect(() => {
+      const s = this.step();
+      setTimeout(() => this.focusForStep(s), 50);
+    });
+  }
 
   async ngOnInit(): Promise<void> {
     try {
       const boot = await this.state.load();
       const id = boot.primarySiteId || boot.sites[0]?.id || null;
       this.siteId.set(id);
-
-      const site = boot.sites.find((s) => s.id === id);
-      if (site && site.hostname && !site.hostname.endsWith('pending.local')) {
-        this.marketForm.patchValue({ websiteUrl: site.url });
-      }
     } catch (err) {
       this.messages.add({
         severity: 'error',
@@ -94,37 +118,31 @@ export class ProtopipeOnboardingComponent implements OnInit {
   }
 
   nextStep(): void {
-    if (this.step() === 1) {
-      this.businessForm.markAllAsTouched();
-      if (!this.businessForm.valid) {
-        this.messages.add({
-          severity: 'warn',
-          summary: 'Almost there',
-          detail: 'Add your business name and a short description (10+ characters) to continue.',
-        });
-        return;
-      }
-      this.step.set(2);
+    const current = this.step();
+    if (!this.isStepValid(current)) {
+      this.markStepTouched(current);
+      this.messages.add({
+        severity: 'warn',
+        summary: 'Almost there',
+        detail: this.stepHint(current),
+      });
       return;
     }
-    if (this.step() === 2) {
-      this.marketForm.markAllAsTouched();
-      if (!this.marketForm.valid) {
-        this.messages.add({
-          severity: 'warn',
-          summary: 'Check your inputs',
-          detail: 'One of the fields above is invalid.',
-        });
-        return;
-      }
-      this.step.set(3);
-      return;
+    if (current < this.totalSteps) {
+      this.step.set((current + 1) as Step);
     }
   }
 
   previousStep(): void {
-    if (this.step() === 2) this.step.set(1);
-    else if (this.step() === 3) this.step.set(2);
+    const current = this.step();
+    if (current > 1) {
+      this.step.set((current - 1) as Step);
+    }
+  }
+
+  applySuggestion(phrase: string): void {
+    this.form.controls.seedPhrase.setValue(phrase);
+    this.form.controls.seedPhrase.markAsDirty();
   }
 
   async searchLocations(event: AutoCompleteCompleteEvent): Promise<void> {
@@ -153,10 +171,10 @@ export class ProtopipeOnboardingComponent implements OnInit {
     this.selectedLocation.set(option);
     const parts = option.name.split(',').map((p) => p.trim());
     if (parts.length >= 1) {
-      this.marketForm.patchValue({ city: parts[0] });
+      this.form.controls.city.setValue(parts[0]);
     }
     if (parts.length >= 2) {
-      this.marketForm.patchValue({ state: parts[1] });
+      this.form.controls.state.setValue(parts[1]);
     }
   }
 
@@ -175,25 +193,26 @@ export class ProtopipeOnboardingComponent implements OnInit {
       });
       return;
     }
+    if (!this.form.valid) {
+      this.form.markAllAsTouched();
+      this.step.set(this.firstInvalidStep());
+      return;
+    }
 
     this.isSubmitting.set(true);
-
-    const business = this.businessForm.getRawValue() as BusinessForm;
-    const market = this.marketForm.getRawValue() as MarketForm;
-    const goal = this.goalForm.getRawValue();
+    const v = this.form.getRawValue();
     const location = this.selectedLocation();
 
     try {
       await this.api.completeOnboarding(siteId, {
-        businessName: business.businessName.trim(),
-        businessDescription: business.businessDescription.trim(),
-        trade: business.trade.trim() || undefined,
-        city: market.city.trim() || undefined,
-        state: market.state.trim() || undefined,
+        businessName: v.businessName.trim(),
+        businessDescription: v.businessDescription.trim(),
+        trade: v.trade.trim() || undefined,
+        city: v.city.trim() || undefined,
+        state: v.state.trim() || undefined,
         defaultSerpLocationCode: location?.code,
         defaultSerpLocationName: location?.name,
-        websiteUrl: market.websiteUrl.trim() || undefined,
-        seedPhrase: goal.seedPhrase.trim() || undefined,
+        seedPhrase: v.seedPhrase.trim() || undefined,
       });
 
       this.state.invalidate();
@@ -206,5 +225,48 @@ export class ProtopipeOnboardingComponent implements OnInit {
       });
       this.isSubmitting.set(false);
     }
+  }
+
+  private focusForStep(s: Step): void {
+    if (s === 1) this.nameInput()?.nativeElement?.focus();
+    else if (s === 2) this.descriptionInput()?.nativeElement?.focus();
+    else if (s === 3) this.tradeInput()?.nativeElement?.focus();
+    else if (s === 5) this.seedInput()?.nativeElement?.focus();
+  }
+
+  private isStepValid(step: Step): boolean {
+    const c = this.form.controls;
+    switch (step) {
+      case 1:
+        return c.businessName.valid;
+      case 2:
+        return c.businessDescription.valid;
+      case 3:
+        return c.trade.valid;
+      case 4:
+        return c.city.valid && c.state.valid;
+      case 5:
+        return c.seedPhrase.valid;
+    }
+  }
+
+  private markStepTouched(step: Step): void {
+    const c = this.form.controls;
+    if (step === 1) c.businessName.markAsTouched();
+    else if (step === 2) c.businessDescription.markAsTouched();
+    else if (step === 3) c.trade.markAsTouched();
+  }
+
+  private stepHint(step: Step): string {
+    if (step === 1) return 'Add your business name to continue.';
+    if (step === 2) return 'Add a short description (10+ characters) to continue.';
+    return 'One of the fields above is invalid.';
+  }
+
+  private firstInvalidStep(): Step {
+    const c = this.form.controls;
+    if (!c.businessName.valid) return 1;
+    if (!c.businessDescription.valid) return 2;
+    return 5;
   }
 }

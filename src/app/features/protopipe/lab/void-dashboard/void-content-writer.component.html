@@ -1,0 +1,287 @@
+<div class="writer">
+  <header class="writer__bar">
+    <button type="button" class="writer__back">Content</button>
+    <span class="writer__status" [class.is-dirty]="dirty()">{{ saveLabel() }}</span>
+    <div class="writer__actions">
+      <span class="writer__schedule">{{ scheduleLabel() }}</span>
+      <button type="button" class="writer__btn writer__btn--ghost" (click)="saveDraft()">{{ saveLabel() }}</button>
+      <button type="button" class="writer__btn writer__btn--accent" (click)="publish()">Publish</button>
+    </div>
+  </header>
+
+  <div class="writer__body">
+    <nav class="writer__toolbar" aria-label="Writing tools">
+      @for (tool of tools; track tool.id; let i = $index) {
+        @if (i === 6) {
+          <span class="writer__tool-divider" aria-hidden="true"></span>
+        }
+        <button
+          type="button"
+          class="writer__tool"
+          [class.is-active]="isToolActive(tool.id)"
+          [attr.aria-label]="tool.label"
+          [attr.aria-pressed]="isToolActive(tool.id)"
+          (click)="selectTool(tool.id)"
+        >
+          @switch (tool.id) {
+            @case ('text') {
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3.5h10M8 3.5v10M5.5 13.5h5" /></svg>
+            }
+            @case ('heading') {
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4v8M3 8h6M9 4v8M13 4v8" /></svg>
+            }
+            @case ('section') {
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4h10M3 8h10M3 12h6" /><path d="M12.5 11.5l1.5 1.5-1.5 1.5" /></svg>
+            }
+            @case ('image') {
+              <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="9" rx="1" /><circle cx="6" cy="7" r="1.2" /><path d="M3.5 11.5l3-2.5 2 1.5 2.5-3 3.5 4" /></svg>
+            }
+            @case ('link') {
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.2 9.8a2.5 2.5 0 003.6 0l2-2a2.5 2.5 0 00-3.6-3.6L7.6 5.4" /><path d="M9.8 6.2a2.5 2.5 0 00-3.6 0l-2 2a2.5 2.5 0 003.6 3.6l1.2-1.2" /></svg>
+            }
+            @case ('ai') {
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5l1 2.5 2.5.4-1.8 1.8.4 2.5L8 8.4 5.9 9.7l.4-2.5L4.5 5.4 7 5z" /><path d="M3 12.5h10" /></svg>
+            }
+            @case ('serp') {
+              <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4" /><path d="M10.5 10.5L13 13" /></svg>
+            }
+            @case ('hints') {
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 4.5h9M3.5 8h9M3.5 11.5h5.5" /><path d="M11.5 10.5l1.5 1.5-1.5 1.5" /></svg>
+            }
+            @case ('seo') {
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12l2.5-3 2 2.5L11 7l2 2" /><path d="M3 13.5h10" /></svg>
+            }
+          }
+          <span class="writer__tool-tip">{{ tool.label }}</span>
+          @if (tool.id === 'ai' && aiNoteCount() > 0) {
+            <span class="writer__tool-badge">{{ aiNoteCount() }}</span>
+          }
+        </button>
+      }
+    </nav>
+
+    <div class="writer__stage">
+      <main class="writer__scroll">
+        <div class="writer__canvas">
+          <p class="writer__topic">
+            Writing for <strong>{{ primaryKeyword }}</strong>
+          </p>
+
+          <div class="writer__block">
+            <aside class="writer__margin writer__margin--left" aria-label="Suggestions">
+              @for (note of notesForBlock('title', 'left'); track note.id) {
+                <ng-container [ngTemplateOutlet]="aiNote" [ngTemplateOutletContext]="{ $implicit: note }" />
+              }
+            </aside>
+            <div class="writer__block-main writer__block-main--title">
+              <input
+                class="writer__h1"
+                type="text"
+                [ngModel]="h1()"
+                (ngModelChange)="h1.set($event); markDirty()"
+                placeholder="Article title"
+                aria-label="Article headline"
+              />
+            </div>
+            <aside class="writer__margin writer__margin--right" aria-label="Suggestions">
+              @for (note of notesForBlock('title', 'right'); track note.id) {
+                <ng-container [ngTemplateOutlet]="aiNote" [ngTemplateOutletContext]="{ $implicit: note }" />
+              }
+            </aside>
+          </div>
+
+          <div class="writer__block">
+            <aside class="writer__margin writer__margin--left" aria-label="Suggestions">
+              @for (note of notesForBlock('intro', 'left'); track note.id) {
+                <ng-container [ngTemplateOutlet]="aiNote" [ngTemplateOutletContext]="{ $implicit: note }" />
+              }
+            </aside>
+            <div class="writer__block-main">
+              <textarea
+                class="writer__intro"
+                [ngModel]="intro()"
+                (ngModelChange)="intro.set($event); markDirty()"
+                placeholder="Start with a short intro — who this is for and what they'll learn."
+                rows="3"
+                aria-label="Introduction"
+              ></textarea>
+            </div>
+            <aside class="writer__margin writer__margin--right" aria-label="Suggestions">
+              @for (note of notesForBlock('intro', 'right'); track note.id) {
+                <ng-container [ngTemplateOutlet]="aiNote" [ngTemplateOutletContext]="{ $implicit: note }" />
+              }
+            </aside>
+          </div>
+
+          @for (section of sections(); track $index; let si = $index) {
+            <div class="writer__block">
+              <aside class="writer__margin writer__margin--left" aria-label="Suggestions">
+                @for (note of notesForBlock('section', 'left', si); track note.id) {
+                  <ng-container [ngTemplateOutlet]="aiNote" [ngTemplateOutletContext]="{ $implicit: note }" />
+                }
+              </aside>
+              <div class="writer__block-main">
+                <section class="writer__section">
+                  <input
+                    class="writer__h2"
+                    type="text"
+                    [ngModel]="section.h2"
+                    (ngModelChange)="sections.update((list) => list.map((s, i) => (i === si ? { ...s, h2: $event } : s))); markDirty()"
+                    placeholder="Section heading"
+                  />
+                  <textarea
+                    class="writer__body"
+                    [ngModel]="section.body"
+                    (ngModelChange)="sections.update((list) => list.map((s, i) => (i === si ? { ...s, body: $event } : s))); markDirty()"
+                    placeholder="Write this section…"
+                    rows="4"
+                  ></textarea>
+                  @if (sections().length > 1) {
+                    <button type="button" class="writer__remove-section" (click)="removeSection(si)">
+                      Remove section
+                    </button>
+                  }
+                </section>
+              </div>
+              <aside class="writer__margin writer__margin--right" aria-label="Suggestions">
+                @for (note of notesForBlock('section', 'right', si); track note.id) {
+                  <ng-container [ngTemplateOutlet]="aiNote" [ngTemplateOutletContext]="{ $implicit: note }" />
+                }
+              </aside>
+            </div>
+          }
+
+          <div class="writer__block writer__block--foot">
+            <div class="writer__block-main">
+              <button type="button" class="writer__add-section" (click)="addSection()">+ Add section</button>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      @if (showSerp() || showHints() || showSeoPanel() || (publishReview() && publishBlockers().length > 0)) {
+        <aside class="writer__aside">
+          @if (showSerp()) {
+            <div class="writer__panel">
+              <p class="glass__title">Search preview</p>
+              @if (serp(); as preview) {
+                <div class="writer__serp">
+                  <p class="writer__serp-url">{{ preview.url }}</p>
+                  <p class="writer__serp-title">{{ preview.title }}</p>
+                  <p class="writer__serp-desc">{{ preview.description }}</p>
+                </div>
+              }
+            </div>
+          }
+
+          @if (showHints()) {
+            <div class="writer__panel">
+              <p class="glass__title">While you write</p>
+              <ul class="writer__hints">
+                @for (hint of hints(); track hint.id) {
+                  <li class="writer__hint" [class.is-done]="hint.done">
+                    <span class="writer__hint-dot" aria-hidden="true"></span>
+                    {{ hint.label }}
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+
+          @if (showSeoPanel()) {
+            <div class="writer__panel">
+              <button type="button" class="writer__seo-toggle" (click)="toggleSeo()">
+                SEO details
+                <span>{{ seoOpen() ? '▴' : '▾' }}</span>
+              </button>
+              @if (seoOpen()) {
+                <div class="writer__seo-fields">
+                  <label class="writer__field">
+                    <span>Browser title</span>
+                    <input
+                      type="text"
+                      [ngModel]="browserTitle()"
+                      (ngModelChange)="browserTitle.set($event); markDirty()"
+                    />
+                  </label>
+                  <label class="writer__field">
+                    <span>Meta description</span>
+                    <textarea
+                      rows="2"
+                      [ngModel]="metaDescription()"
+                      (ngModelChange)="metaDescription.set($event); markDirty()"
+                    ></textarea>
+                    <small
+                      class="writer__meta-count"
+                      [class.is-warn]="metaDescription().length < metaMin || metaDescription().length > metaMax"
+                    >
+                      {{ metaDescription().length }} / {{ metaMin }}–{{ metaMax }}
+                    </small>
+                  </label>
+                  <label class="writer__field">
+                    <span>URL slug</span>
+                    <input
+                      type="text"
+                      [ngModel]="slug()"
+                      (ngModelChange)="slug.set($event); markDirty()"
+                    />
+                  </label>
+                </div>
+              }
+            </div>
+          }
+
+          @if (publishReview() && publishBlockers().length > 0) {
+            <div class="writer__panel writer__panel--review" role="status">
+              <p class="glass__title">Before you publish</p>
+              <ul class="writer__blockers">
+                @for (item of publishBlockers(); track item.code) {
+                  <li>{{ item.message }}</li>
+                }
+              </ul>
+              <button type="button" class="writer__dismiss" (click)="dismissPublishReview()">
+                Keep writing
+              </button>
+            </div>
+          }
+        </aside>
+      }
+    </div>
+  </div>
+</div>
+
+<ng-template #aiNote let-note>
+  <div
+    class="ai-note"
+    [class.ai-note--left]="note.side === 'left'"
+    [class.ai-note--right]="note.side === 'right'"
+    [class.is-expanded]="isNoteExpanded(note.id)"
+  >
+    <button
+      type="button"
+      class="ai-note__trigger"
+      [attr.aria-expanded]="isNoteExpanded(note.id)"
+      [attr.aria-label]="note.label + ': ' + note.peek"
+      (click)="toggleNote(note.id)"
+    >
+      <span class="ai-note__dot" aria-hidden="true"></span>
+      <span class="ai-note__stem" aria-hidden="true"></span>
+      <span class="ai-note__peek">{{ note.peek }}</span>
+    </button>
+
+    @if (isNoteExpanded(note.id)) {
+      <div class="ai-note__card">
+        <span class="ai-note__label">{{ note.label }}</span>
+        <p class="ai-note__text">{{ note.text }}</p>
+        <div class="ai-note__actions">
+          @if (note.id === 'title-keyword') {
+            <button type="button" class="ai-note__apply" (click)="dismissNote(note.id)">Got it</button>
+          } @else {
+            <button type="button" class="ai-note__apply" (click)="applyNote(note)">Apply</button>
+            <button type="button" class="ai-note__dismiss" (click)="dismissNote(note.id)">Dismiss</button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</ng-template>

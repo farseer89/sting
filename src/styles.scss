@@ -63,3 +63,5 @@ body {
 .text-600 {
   color: var(--p-text-muted-color, #6c757d);
 }
+
+@import 'app/features/protopipe/lab/void-dashboard/void-lab-global.scss';

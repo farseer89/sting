@@ -1,0 +1,444 @@
+<div class="void" [attr.data-bg]="backgroundId()">
+  <div class="void__backdrop" aria-hidden="true"></div>
+  <div class="void__veil" aria-hidden="true"></div>
+
+  <nav class="void__bg-picker" aria-label="Background">
+    @for (bg of backgrounds; track bg.id) {
+      <button
+        type="button"
+        class="void__bg-dot"
+        [class.is-active]="backgroundId() === bg.id"
+        [attr.aria-label]="bg.label"
+        [attr.aria-pressed]="backgroundId() === bg.id"
+        (click)="setBackground(bg.id)"
+      ></button>
+    }
+  </nav>
+
+  <div class="void__frame">
+    <header class="hud-metrics">
+      @for (m of metrics(); track m.id) {
+        <span class="hud-metrics__item">
+          <span class="hud-metrics__label">{{ m.label }}</span>
+          <span class="hud-metrics__value">{{ m.value }}</span>
+          @if (m.delta) {
+            <span class="hud-metrics__delta">{{ m.delta }}</span>
+          }
+        </span>
+      }
+    </header>
+
+    <div class="void__viewport" [class.is-loading]="loadingWindow()" [class.is-ai-open]="aiOpen()">
+      <div class="void__panel-stack">
+        @switch (activeWindow()) {
+          @case ('overview') {
+            <section class="glass glass--full" aria-label="Home">
+              <div class="mosaic">
+                <div class="mosaic__tile mosaic__tile--clock">
+                  <span class="mosaic__label">Local</span>
+                  <span class="mosaic__clock">{{ clock() }}</span>
+                  <span class="mosaic__sub">Thu · destinationweddingpainter.com</span>
+                </div>
+                <div class="mosaic__tile">
+                  <span class="mosaic__label">Stripe</span>
+                  <span class="mosaic__stat">$4,240</span>
+                  <span class="mosaic__sub">MRR · 2 payouts pending</span>
+                </div>
+                <div class="mosaic__tile">
+                  <span class="mosaic__label">SEO</span>
+                  <span class="mosaic__stat">184</span>
+                  <span class="mosaic__sub">clicks · avg pos 18.4</span>
+                </div>
+                <div class="mosaic__tile mosaic__tile--wide">
+                  <span class="mosaic__label">Activity</span>
+                  <ul class="slim-list slim-list--feed mosaic__list">
+                    @for (item of feed().slice(0, 4); track item.id) {
+                      <li class="slim-list__row">
+                        <span class="slim-list__time">{{ item.time }}</span>
+                        <span class="slim-list__primary">{{ item.label }}</span>
+                      </li>
+                    }
+                  </ul>
+                </div>
+                <div class="mosaic__tile">
+                  <span class="mosaic__label">Slack</span>
+                  <ul class="slim-list mosaic__list">
+                    @for (msg of slackMessages().slice(0, 3); track msg.id) {
+                      <li class="slim-list__row">
+                        <span class="slim-list__primary">{{ msg.user }}: {{ msg.text }}</span>
+                        @if (msg.unread) {
+                          <span class="pill pill--accent">new</span>
+                        }
+                      </li>
+                    }
+                  </ul>
+                </div>
+                <div class="mosaic__tile">
+                  <span class="mosaic__label">Mail</span>
+                  <ul class="slim-list mosaic__list">
+                    @for (msg of mailMessages().slice(0, 3); track msg.id) {
+                      <li class="slim-list__row">
+                        <span class="slim-list__primary">{{ msg.from }} — {{ msg.subject }}</span>
+                        @if (msg.unread) {
+                          <span class="pill pill--accent">•</span>
+                        }
+                      </li>
+                    }
+                  </ul>
+                </div>
+              </div>
+            </section>
+          }
+          @case ('analytics') {
+            <section class="glass glass--full" aria-label="Analytics">
+              <div class="split split--3">
+                <div class="split__col">
+                  <h2 class="glass__title">Impressions</h2>
+                  <svg viewBox="0 0 100 40" preserveAspectRatio="none" class="traffic-chart traffic-chart--tall" aria-hidden="true">
+                    <path class="traffic-chart__line" [attr.d]="trafficPath()" fill="none" />
+                  </svg>
+                </div>
+                <div class="split__col">
+                  <h2 class="glass__title">Sessions by day</h2>
+                  <div class="bar-chart">
+                    @for (bar of barChart; track bar.label) {
+                      <div class="bar-chart__col">
+                        <div class="bar-chart__bar" [style.height.%]="barHeight(bar.value, barMax())"></div>
+                        <span class="bar-chart__label">{{ bar.label }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+                <div class="split__col">
+                  <h2 class="glass__title">Channels</h2>
+                  <table class="slim-table">
+                    <thead>
+                      <tr>
+                        <th>Source</th>
+                        <th>Sessions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (ch of channelBars; track ch.label) {
+                        <tr>
+                          <td>{{ ch.label }}</td>
+                          <td class="num">{{ ch.value }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <ul class="slim-list slim-list--feed">
+                @for (item of feed(); track item.id) {
+                  <li class="slim-list__row">
+                    <span class="slim-list__time">{{ item.time }}</span>
+                    <span class="slim-list__primary">{{ item.label }}</span>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+          @case ('keywords') {
+            <section class="glass glass--full" aria-label="SEO">
+              <header class="glass__head">
+                <h2 class="glass__title">Keyword strategy</h2>
+                <span class="glass__meta">{{ keywords().length }}</span>
+              </header>
+              <table class="slim-table slim-table--wide">
+                <thead>
+                  <tr>
+                    <th>Phrase</th>
+                    <th>Int</th>
+                    <th>Pri</th>
+                    <th>Pos</th>
+                    <th>Vol</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (kw of keywords(); track kw.id) {
+                    <tr>
+                      <td>{{ kw.phrase }}</td>
+                      <td><span class="pill">{{ intentShort(kw.intent) }}</span></td>
+                      <td>
+                        <span class="pill" [class.pill--accent]="isAccentPriority(kw.priority)">{{ kw.priority }}</span>
+                      </td>
+                      <td class="num">{{ kw.position ?? '—' }}</td>
+                      <td class="num">{{ formatVolume(kw.volume) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </section>
+          }
+          @case ('content') {
+            <section class="glass glass--full" aria-label="Content">
+              <header class="glass__head">
+                <h2 class="glass__title">Article pipeline</h2>
+                <span class="glass__meta">{{ articles().length }}</span>
+              </header>
+              <ul class="slim-list slim-list--rich">
+                @for (post of articles(); track post.id) {
+                  <li class="slim-list__row">
+                    <span class="slim-list__primary">{{ post.title }}</span>
+                    <span class="slim-list__secondary">{{ post.keyword }}</span>
+                    <span class="pill" [class.pill--accent]="isAccentStatus(post.status)">{{ post.status }}</span>
+                    <span class="slim-list__date">{{ post.date }}</span>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+          @case ('writer') {
+            <section class="glass glass--full" aria-label="Content writer">
+              <app-void-content-writer />
+            </section>
+          }
+          @case ('files') {
+            <section class="glass glass--full" aria-label="Files">
+              <header class="glass__head">
+                <h2 class="glass__title">Site files</h2>
+                <span class="glass__meta">destinationweddingpainter.com</span>
+              </header>
+              <ul class="folder-tree">
+                @for (node of folderNodes(); track node.id) {
+                  <li
+                    class="folder-tree__row"
+                    [class.is-site]="node.kind === 'site'"
+                    [style.padding-left.rem]="0.35 + node.depth * 0.65"
+                  >
+                    <span class="folder-tree__kind">{{ folderKindLabel(node.kind) }}</span>
+                    <span class="folder-tree__name">{{ node.name }}</span>
+                    @if (node.meta) {
+                      <span class="folder-tree__meta">{{ node.meta }}</span>
+                    }
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+          @case ('kanban') {
+            <section class="glass glass--full" aria-label="Kanban">
+              <header class="glass__head">
+                <h2 class="glass__title">Content pipeline</h2>
+                <span class="glass__meta">draft · scheduled · published</span>
+              </header>
+              <div class="kanban">
+                @for (col of kanbanColumns; track col.id) {
+                  <div class="kanban__col">
+                    <header class="kanban__head">
+                      <span class="kanban__title">{{ col.label }}</span>
+                      <span class="kanban__count">{{ kanbanColumn(col.id).length }}</span>
+                    </header>
+                    <ul class="kanban__cards">
+                      @for (card of kanbanColumn(col.id); track card.id) {
+                        <li class="kanban__card">
+                          <span class="kanban__card-title">{{ card.title }}</span>
+                          <span class="kanban__card-kw">{{ card.keyword }}</span>
+                          <span class="kanban__card-date">{{ card.date }}</span>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                }
+              </div>
+            </section>
+          }
+          @case ('calendar') {
+            <section class="glass glass--full" aria-label="Content calendar">
+              <header class="glass__head">
+                <h2 class="glass__title">Content calendar</h2>
+                <span class="glass__meta">May 2026</span>
+              </header>
+              <div class="cal-grid">
+                @for (label of calendarDow; track label) {
+                  <span class="cal-grid__dow">{{ label }}</span>
+                }
+                @for (week of calendarWeeks; track $index) {
+                  @for (cell of week; track $index) {
+                    <div class="cal-grid__cell" [class.is-today]="cell.day === 29">
+                      @if (cell.day) {
+                        <span class="cal-grid__day">{{ cell.day }}</span>
+                        @for (item of cell.items; track item.title) {
+                          <span class="cal-grid__chip pill" [class.pill--accent]="item.status !== 'draft'">
+                            {{ item.title }}
+                          </span>
+                        }
+                      }
+                    </div>
+                  }
+                }
+              </div>
+            </section>
+          }
+          @case ('schedule') {
+            <section class="glass glass--full" aria-label="Schedule">
+              <div class="split">
+                <div class="split__col split__col--clock">
+                  <span class="mosaic__clock mosaic__clock--hero">{{ clock() }}</span>
+                  <span class="mosaic__sub">Thursday · May 29</span>
+                  <span class="mosaic__sub">Maui · UTC−10</span>
+                </div>
+                <div class="split__col">
+                  <header class="glass__head">
+                    <h2 class="glass__title">Agenda</h2>
+                    <span class="glass__meta">Today</span>
+                  </header>
+                  <ul class="slim-list slim-list--rich slim-list--schedule">
+                    @for (ev of schedule(); track ev.id) {
+                      <li class="slim-list__row">
+                        <span class="slim-list__time">{{ ev.time }}</span>
+                        <span class="slim-list__primary">{{ ev.title }}</span>
+                        @if (ev.tag) {
+                          <span class="pill" [class.pill--accent]="ev.tag === 'event'">{{ ev.tag }}</span>
+                        }
+                      </li>
+                    }
+                  </ul>
+                </div>
+              </div>
+            </section>
+          }
+          @case ('stripe') {
+            <section class="glass glass--full" aria-label="Stripe">
+              <header class="glass__head">
+                <h2 class="glass__title">Revenue</h2>
+                <span class="glass__meta">Stripe · live</span>
+              </header>
+              <div class="mosaic mosaic--inline">
+                <div class="mosaic__tile mosaic__tile--flat">
+                  <span class="mosaic__label">MRR</span>
+                  <span class="mosaic__stat">$4,240</span>
+                </div>
+                <div class="mosaic__tile mosaic__tile--flat">
+                  <span class="mosaic__label">Payout</span>
+                  <span class="mosaic__stat">$1,240</span>
+                </div>
+                <div class="mosaic__tile mosaic__tile--flat">
+                  <span class="mosaic__label">Failed</span>
+                  <span class="mosaic__stat">1</span>
+                </div>
+              </div>
+              <table class="slim-table slim-table--wide">
+                <thead>
+                  <tr>
+                    <th>Customer</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (ch of stripeCharges(); track ch.id) {
+                    <tr>
+                      <td>{{ ch.customer }}</td>
+                      <td class="num">{{ ch.amount }}</td>
+                      <td>
+                        <span class="pill" [class.pill--accent]="isStripeAccent(ch.status)">{{ ch.status }}</span>
+                      </td>
+                      <td class="muted">{{ ch.date }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </section>
+          }
+          @case ('slack') {
+            <section class="glass glass--full" aria-label="Slack">
+              <header class="glass__head">
+                <h2 class="glass__title">#inquiries</h2>
+                <span class="glass__meta">3 unread</span>
+              </header>
+              <ul class="slim-list slim-list--chat">
+                @for (msg of slackMessages(); track msg.id) {
+                  <li class="slim-list__row" [class.is-unread]="msg.unread">
+                    <span class="slim-list__time">{{ msg.time }}</span>
+                    <span class="slim-list__user">{{ msg.user }}</span>
+                    <span class="slim-list__primary">{{ msg.text }}</span>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+          @case ('mail') {
+            <section class="glass glass--full" aria-label="Mail">
+              <header class="glass__head">
+                <h2 class="glass__title">Inbox</h2>
+                <span class="glass__meta">7 messages</span>
+              </header>
+              <ul class="slim-list slim-list--mail">
+                @for (msg of mailMessages(); track msg.id) {
+                  <li class="slim-list__row" [class.is-unread]="msg.unread">
+                    <span class="slim-list__user">{{ msg.from }}</span>
+                    <span class="slim-list__primary">{{ msg.subject }}</span>
+                    <span class="slim-list__secondary">{{ msg.preview }}</span>
+                    <span class="slim-list__date">{{ msg.time }}</span>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+          @case ('serp') {
+            <section class="glass glass--full" aria-label="SERP">
+              <header class="glass__head">
+                <h2 class="glass__title">SERP — destination wedding painter</h2>
+                <span class="glass__meta">US · desktop</span>
+              </header>
+              <table class="slim-table slim-table--wide">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Result</th>
+                    <th>URL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of serpRows(); track row.pos) {
+                    <tr [class.is-you]="row.pos === 3">
+                      <td class="num">{{ row.pos }}</td>
+                      <td>{{ row.title }}</td>
+                      <td class="muted">{{ row.url }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </section>
+          }
+        }
+      </div>
+
+      <div class="ai-layer" [class.is-open]="aiOpen()">
+        <div class="ai-layer__field">
+          <input
+            #aiInput
+            class="ai-layer__input"
+            type="text"
+            placeholder="Ask across SEO, mail, stripe, schedule…"
+            [ngModel]="aiQuery()"
+            (ngModelChange)="aiQuery.set($event)"
+            (keydown)="onAiKeydown($event)"
+          />
+          <button type="button" class="ai-layer__send" (click)="submitAi()">Run</button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="hud-nav">
+      <nav class="hud-nav__windows" aria-label="Windows">
+        @for (win of windows; track win.id) {
+          <button
+            type="button"
+            class="hud-nav__tab"
+            [class.is-active]="activeWindow() === win.id"
+            (click)="selectWindow(win.id)"
+          >
+            {{ win.label }}
+          </button>
+        }
+      </nav>
+      <button type="button" class="hud-nav__ai" [class.is-open]="aiOpen()" (click)="aiOpen() ? closeAi() : openAi()">
+        AI
+      </button>
+    </footer>
+  </div>
+</div>

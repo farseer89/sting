@@ -1,0 +1,87 @@
+<div class="studio">
+  <header class="studio__bar">
+    <div class="studio__title">
+      <span class="studio__crumb">Lab</span>
+      <span class="studio__sep">/</span>
+      <span class="studio__name">Article pipeline</span>
+    </div>
+
+    <span
+      class="studio__status"
+      [class.is-running]="status() === 'running'"
+      [class.is-complete]="status() === 'complete'"
+      [class.is-failed]="status() === 'failed'"
+    >
+      {{ statusLabel() }}
+    </span>
+
+    @if (articleType) {
+      <span class="studio__type-pill" [attr.title]="'Inferred article type'">
+        {{ articleType }}
+      </span>
+    }
+
+    <div class="studio__actions">
+      <div class="studio__keyword">
+        <p-select
+          [options]="keywordOptions()"
+          [ngModel]="selectedKeywordId()"
+          (ngModelChange)="selectedKeywordId.set($event)"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Pick a keyword"
+          [filter]="true"
+          appendTo="body"
+        />
+      </div>
+      <p-button
+        label="Run"
+        icon="pi pi-play"
+        size="small"
+        [loading]="starting()"
+        [disabled]="!canRun()"
+        (onClick)="run_pipeline()"
+      />
+      @if (canSavePost()) {
+        <p-button
+          label="Save as scheduled post"
+          icon="pi pi-calendar-plus"
+          severity="success"
+          size="small"
+          [loading]="saving()"
+          (onClick)="saveAsPost()"
+        />
+      }
+    </div>
+  </header>
+
+  <div class="studio__body">
+    <app-article-pipeline-outline
+      [run]="run()"
+      [activeStep]="activeStep()"
+      (stepSelected)="selectStep($event)"
+    />
+
+    <main class="studio__stage">
+      <div class="studio__stage-tabs" role="tablist" aria-label="View mode">
+        <button type="button" class="studio__tab is-active">Display</button>
+        <button type="button" class="studio__tab" disabled>Behind the scenes</button>
+      </div>
+
+      <div class="studio__panel">
+        <div class="studio__placeholder">
+          <p class="studio__placeholder-eyebrow">{{ activeStep() }}</p>
+          <h2 class="studio__placeholder-h">Step preview coming next</h2>
+          <p class="studio__placeholder-p">
+            This panel renders the artifact for the selected step.
+            <br />
+            Pick a keyword and click <strong>Run</strong> to watch each step fill in.
+            The Infer-type and Build-brief panels land in the next checkpoint.
+          </p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <p-toast position="bottom-right" />
+</div>

@@ -1,0 +1,33 @@
+<nav class="rail" aria-label="Article pipeline steps">
+  @for (entry of entries(); track entry.step) {
+    <button
+      type="button"
+      class="rail__entry"
+      [class.is-active]="isActive(entry.step)"
+      [class.is-running]="entry.status === 'running'"
+      [class.is-complete]="entry.status === 'complete'"
+      [class.is-failed]="entry.status === 'failed'"
+      [attr.aria-pressed]="isActive(entry.step)"
+      (click)="selectStep(entry.step)"
+    >
+      <span class="rail__index">{{ entry.index }}</span>
+      <span class="rail__label">{{ entry.label }}</span>
+      <span class="rail__status" aria-hidden="true">
+        @switch (entry.status) {
+          @case ('running') {
+            <span class="rail__spinner"></span>
+          }
+          @case ('complete') {
+            <svg viewBox="0 0 16 16" class="rail__check"><path d="M3.5 8.5l3 3 6-7" /></svg>
+          }
+          @case ('failed') {
+            <svg viewBox="0 0 16 16" class="rail__error"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+          }
+          @default {
+            <span class="rail__dot"></span>
+          }
+        }
+      </span>
+    </button>
+  }
+</nav>

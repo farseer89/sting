@@ -21,6 +21,24 @@ export const routes: Routes = [
       ),
   },
   {
+    // Immersive visual sandbox — outside the product shell, dev-only.
+    path: 'protopipe/lab/void',
+    canMatch: [devRoutesGuard],
+    loadComponent: () =>
+      import('./features/protopipe/lab/void-dashboard/void-dashboard.component').then(
+        (m) => m.VoidDashboardComponent,
+      ),
+  },
+  {
+    // Article generation studio — dev-style, real backend, void-writer-shaped UI.
+    path: 'protopipe/lab/article-pipeline',
+    canActivate: [authGuard, operatorOnlyGuard],
+    loadComponent: () =>
+      import('./features/protopipe/lab/article-pipeline/article-pipeline.component').then(
+        (m) => m.ArticlePipelineComponent,
+      ),
+  },
+  {
     path: 'portal',
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'welcome' },

@@ -2,7 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   OnInit,
-  computed,
   inject,
   signal,
 } from '@angular/core';
@@ -75,8 +74,6 @@ export class ProtopipeOnboardingComponent implements OnInit {
     seedPhrase: ['', [Validators.maxLength(200)]],
   });
 
-  readonly canContinueStep1 = computed(() => this.businessForm.valid);
-
   async ngOnInit(): Promise<void> {
     try {
       const boot = await this.state.load();
@@ -99,11 +96,27 @@ export class ProtopipeOnboardingComponent implements OnInit {
   nextStep(): void {
     if (this.step() === 1) {
       this.businessForm.markAllAsTouched();
-      if (!this.businessForm.valid) return;
+      if (!this.businessForm.valid) {
+        this.messages.add({
+          severity: 'warn',
+          summary: 'Almost there',
+          detail: 'Add your business name and a short description (10+ characters) to continue.',
+        });
+        return;
+      }
       this.step.set(2);
       return;
     }
     if (this.step() === 2) {
+      this.marketForm.markAllAsTouched();
+      if (!this.marketForm.valid) {
+        this.messages.add({
+          severity: 'warn',
+          summary: 'Check your inputs',
+          detail: 'One of the fields above is invalid.',
+        });
+        return;
+      }
       this.step.set(3);
       return;
     }

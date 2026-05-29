@@ -13,6 +13,14 @@ import {
 
 export const routes: Routes = [
   {
+    path: 'protopipe/onboarding',
+    canActivate: [authGuard, operatorOnlyGuard, skipWhenOnboardingCompleteGuard],
+    loadComponent: () =>
+      import('./features/protopipe/onboarding/protopipe-onboarding.component').then(
+        (m) => m.ProtopipeOnboardingComponent,
+      ),
+  },
+  {
     path: 'portal',
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'welcome' },
@@ -66,14 +74,6 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/protopipe/dashboard/protopipe-dashboard.component').then(
             (m) => m.ProtopipeDashboardComponent,
-          ),
-      },
-      {
-        path: 'protopipe/onboarding',
-        canActivate: [skipWhenOnboardingCompleteGuard],
-        loadComponent: () =>
-          import('./features/protopipe/onboarding/protopipe-onboarding.component').then(
-            (m) => m.ProtopipeOnboardingComponent,
           ),
       },
       {

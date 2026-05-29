@@ -51,6 +51,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
   readonly totalSteps = TOTAL_STEPS;
   readonly step = signal<Step>(1);
   readonly isSubmitting = signal(false);
+  readonly isComplete = signal(false);
   readonly siteId = signal<string | null>(null);
   readonly locationSuggestions = signal<ProtopipeSerpLocationOption[]>([]);
   readonly selectedLocation = signal<ProtopipeSerpLocationOption | null>(null);
@@ -88,8 +89,29 @@ export class ProtopipeOnboardingComponent implements OnInit {
   });
 
   readonly progressPercent = computed(() =>
-    Math.round((this.step() / this.totalSteps) * 100),
+    this.isComplete() ? 100 : Math.round((this.step() / this.totalSteps) * 100),
   );
+
+  readonly summaryChips = computed<readonly { label: string; value: string }[]>(() => {
+    const v = this.formValue();
+    const location = this.selectedLocation();
+    const chips: { label: string; value: string }[] = [];
+    const name = (v.businessName ?? '').trim();
+    if (name) chips.push({ label: 'Business', value: name });
+    const trade = (v.trade ?? '').trim();
+    if (trade) chips.push({ label: 'Trade', value: trade });
+    const cityState = [v.city, v.state]
+      .map((s) => (s ?? '').trim())
+      .filter(Boolean)
+      .join(', ');
+    if (location?.name) chips.push({ label: 'Service area', value: location.name });
+    else if (cityState) chips.push({ label: 'Service area', value: cityState });
+    const url = (v.websiteUrl ?? '').trim();
+    if (url) chips.push({ label: 'Site', value: url.replace(/^https?:\/\//i, '') });
+    const seed = (v.seedPhrase ?? '').trim();
+    if (seed) chips.push({ label: 'First goal', value: seed });
+    return chips;
+  });
 
   private readonly urlInput = viewChild<ElementRef<HTMLInputElement>>('urlInput');
   private readonly nameInput = viewChild<ElementRef<HTMLInputElement>>('nameInput');
@@ -225,7 +247,8 @@ export class ProtopipeOnboardingComponent implements OnInit {
       });
 
       this.state.invalidate();
-      await this.router.navigateByUrl('/protopipe/keywords/discover/diy');
+      this.isSubmitting.set(false);
+      this.isComplete.set(true);
     } catch (err) {
       this.messages.add({
         severity: 'error',
@@ -234,6 +257,10 @@ export class ProtopipeOnboardingComponent implements OnInit {
       });
       this.isSubmitting.set(false);
     }
+  }
+
+  async enterApp(): Promise<void> {
+    await this.router.navigateByUrl('/protopipe/keywords/discover/diy');
   }
 
   private focusForStep(s: Step): void {

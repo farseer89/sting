@@ -9,17 +9,60 @@
     [attr.aria-valuemax]="totalSteps"
   ></div>
 
-  <header class="onboarding-top">
+  <header class="onboarding-top" [class.is-complete]="isComplete()">
     <div class="brand">{{ product.displayName }}</div>
     <div class="back-slot">
-      @if (step() > 1) {
+      @if (step() > 1 && !isComplete()) {
         <button type="button" class="back-link" (click)="previousStep()">← Back</button>
       }
     </div>
-    <div class="step-indicator">Step {{ step() }} of {{ totalSteps }}</div>
+    <div class="step-indicator">
+      @if (isComplete()) {
+        <span class="indicator-pill"><i class="pi pi-check"></i> Complete</span>
+      } @else {
+        Step {{ step() }} of {{ totalSteps }}
+      }
+    </div>
   </header>
 
   <main class="onboarding-main">
+    @if (isComplete()) {
+      <section class="celebration" aria-live="polite">
+        <div class="ribbon" aria-hidden="true"></div>
+        <div class="glow" aria-hidden="true"></div>
+        <div class="reveal">
+          <p class="eyebrow">All set</p>
+          <h1 class="hero">Your SEO workspace is ready.</h1>
+          <p class="welcome-line">
+            @if (form.controls.businessName.value) {
+              We've set everything up for {{ form.controls.businessName.value }}.
+            } @else {
+              We've set everything up.
+            }
+          </p>
+          @if (summaryChips().length > 0) {
+            <ul class="contents-chips">
+              @for (chip of summaryChips(); track chip.label) {
+                <li class="content-chip">
+                  <i class="pi pi-check" aria-hidden="true"></i>
+                  <span class="content-chip__label">{{ chip.label }}</span>
+                  <span class="content-chip__value">{{ chip.value }}</span>
+                </li>
+              }
+            </ul>
+          }
+          <div class="celebration-actions">
+            <p-button
+              type="button"
+              label="Open my workspace"
+              icon="pi pi-arrow-right"
+              iconPos="right"
+              (onClick)="enterApp()"
+            />
+          </div>
+        </div>
+      </section>
+    } @else {
     @if (step() === 1) {
       <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
         <p class="eyebrow">Your website</p>
@@ -182,7 +225,7 @@
       </form>
     }
 
-    @if (step() === 6) {
+    @if (step() === 6 && !isComplete()) {
       <form [formGroup]="form" class="step" (ngSubmit)="submit()">
         <p class="eyebrow">Your first goal</p>
         <h1 class="question">What would you love to rank for?</h1>
@@ -231,6 +274,7 @@
           />
         </div>
       </form>
+    }
     }
   </main>
 </div>

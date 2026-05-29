@@ -52,10 +52,29 @@
           (onClick)="saveAsPost()"
         />
       }
+      <button
+        type="button"
+        class="studio__inspector-toggle"
+        [class.is-active]="inspectorOpen()"
+        [attr.aria-pressed]="inspectorOpen()"
+        [attr.aria-label]="inspectorOpen() ? 'Hide inspector' : 'Show inspector'"
+        (click)="toggleInspector()"
+      >
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M2.5 3.5h11v9h-11z" />
+          <path d="M10 3.5v9" />
+        </svg>
+        <span>Inspector</span>
+      </button>
     </div>
   </header>
 
-  <div class="studio__body">
+  <div
+    #body
+    class="studio__body"
+    [class.has-inspector]="inspectorOpen()"
+    [style.--inspector-width.%]="inspectorWidthPct()"
+  >
     <app-article-pipeline-outline
       [run]="run()"
       [activeStep]="activeStep()"
@@ -63,24 +82,64 @@
     />
 
     <main class="studio__stage">
-      <div class="studio__stage-tabs" role="tablist" aria-label="View mode">
-        <button type="button" class="studio__tab is-active">Display</button>
-        <button type="button" class="studio__tab" disabled>Behind the scenes</button>
-      </div>
-
-      <div class="studio__panel">
-        <div class="studio__placeholder">
-          <p class="studio__placeholder-eyebrow">{{ activeStep() }}</p>
-          <h2 class="studio__placeholder-h">Step preview coming next</h2>
-          <p class="studio__placeholder-p">
-            This panel renders the artifact for the selected step.
-            <br />
-            Pick a keyword and click <strong>Run</strong> to watch each step fill in.
-            The Infer-type and Build-brief panels land in the next checkpoint.
-          </p>
-        </div>
-      </div>
+      <app-article-pipeline-step-panel
+        [run]="run()"
+        [activeStep]="activeStep()"
+      />
     </main>
+
+    @if (inspectorOpen()) {
+      <div
+        class="studio__splitter"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize inspector"
+        (pointerdown)="onSplitterPointerDown($event)"
+      ></div>
+
+      <aside class="studio__inspector" aria-label="Inspector">
+        <div class="studio__inspector-body">
+          @if (inspectorMode() === 'chat') {
+            <app-article-pipeline-chat [activeStep]="activeStep()" />
+          } @else {
+            <app-article-pipeline-behind
+              [run]="run()"
+              [activeStep]="activeStep()"
+              (rerun)="rerunActiveStep($event)"
+            />
+          }
+        </div>
+
+        <nav class="studio__inspector-rail" aria-label="Inspector mode">
+          <button
+            type="button"
+            class="studio__inspector-rail-btn"
+            [class.is-active]="inspectorMode() === 'chat'"
+            [attr.aria-pressed]="inspectorMode() === 'chat'"
+            aria-label="Chat"
+            title="Chat"
+            (click)="setInspectorMode('chat')"
+          >
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="studio__inspector-rail-btn"
+            [class.is-active]="inspectorMode() === 'behind'"
+            [attr.aria-pressed]="inspectorMode() === 'behind'"
+            aria-label="Behind the scenes"
+            title="Behind the scenes"
+            (click)="setInspectorMode('behind')"
+          >
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M5.5 4l-3 4 3 4M10.5 4l3 4-3 4" />
+            </svg>
+          </button>
+        </nav>
+      </aside>
+    }
   </div>
 
   <p-toast position="bottom-right" />

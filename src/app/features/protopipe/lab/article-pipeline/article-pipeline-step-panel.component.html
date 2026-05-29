@@ -1,0 +1,343 @@
+<div class="panel">
+  <header class="panel__header">
+    <span class="panel__eyebrow">{{ stepLabel() }}</span>
+    <h2 class="panel__title">{{ stepTitle() }}</h2>
+  </header>
+
+  @if (!hasRun()) {
+    <section class="panel__empty">
+      <p class="panel__empty-h">No run yet</p>
+      <p class="panel__empty-p">Pick a keyword and click <strong>Run</strong> to start the pipeline.</p>
+    </section>
+  } @else if (!hasArtifactForStep()) {
+    <section class="panel__empty">
+      <p class="panel__empty-h">Awaiting {{ stepLabel() }}</p>
+      <p class="panel__empty-p">This step has not produced an artifact yet — it will fill in as the pipeline runs.</p>
+    </section>
+  } @else {
+    @switch (activeStep()) {
+
+      <!-- ===================== INFER TYPE ===================== -->
+      @case ('infer_type') {
+        <section class="infer">
+          <div class="infer__card">
+            <span class="infer__pill">{{ articleType() }}</span>
+            <h3 class="infer__h">{{ articleTypeLabel() }}</h3>
+            <p class="infer__p">{{ articleTypeDescription() }}</p>
+          </div>
+          <p class="infer__note">
+            Inferred deterministically from the keyword signals (geo modifiers, question words,
+            comparison markers, etc). The full rationale string lands with the real Infer-type panel.
+          </p>
+        </section>
+      }
+
+      <!-- ===================== BUILD BRIEF ===================== -->
+      @case ('build_brief') {
+        @if (brief(); as b) {
+          <section class="brief">
+            <div class="brief__grid">
+              <div class="brief__card">
+                <span class="brief__label">Primary keyword</span>
+                <span class="brief__big">{{ b.primaryKeyword.phrase }}</span>
+                <div class="brief__chips brief__chips--inline">
+                  <span class="chip">{{ b.primaryKeyword.intent }}</span>
+                  <span class="chip">{{ b.primaryKeyword.priority }}</span>
+                </div>
+              </div>
+              <div class="brief__card">
+                <span class="brief__label">Target word count</span>
+                <span class="brief__big">{{ b.targetWordCount }}</span>
+              </div>
+              <div class="brief__card">
+                <span class="brief__label">SERP geo</span>
+                <span class="brief__big">{{ b.serpGeo.locationName }}</span>
+                <span class="brief__sub">code {{ b.serpGeo.locationCode }}</span>
+              </div>
+            </div>
+
+            <div class="brief__block">
+              <h4 class="brief__h">Voice</h4>
+              <div class="brief__chips">
+                <span class="chip">{{ b.voiceConfig.tone }}</span>
+                <span class="chip">{{ b.voiceConfig.pov }}</span>
+                <span class="chip">{{ b.voiceConfig.sentenceLength }} sentences</span>
+                <span class="chip">{{ b.voiceConfig.jargonLevel }} jargon</span>
+                <span class="chip">{{ b.voiceConfig.ctaStyle }} CTA</span>
+              </div>
+              @if (b.voiceConfig.avoid.length > 0) {
+                <div class="brief__avoid">
+                  <span class="brief__label">Avoid</span>
+                  <div class="brief__chips">
+                    @for (a of b.voiceConfig.avoid; track a) {
+                      <span class="chip chip--warn">{{ a }}</span>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+
+            @if (b.secondaryKeywords.length > 0) {
+              <div class="brief__block">
+                <h4 class="brief__h">Secondary keywords</h4>
+                <div class="brief__chips">
+                  @for (k of b.secondaryKeywords; track k) {
+                    <span class="chip">{{ k }}</span>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (b.nlpTerms.length > 0) {
+              <div class="brief__block">
+                <h4 class="brief__h">NLP terms</h4>
+                <div class="brief__chips">
+                  @for (n of b.nlpTerms; track n) {
+                    <span class="chip chip--soft">{{ n }}</span>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (b.contentGaps.length > 0) {
+              <div class="brief__block">
+                <h4 class="brief__h">Content gaps</h4>
+                <ul class="brief__bullets">
+                  @for (g of b.contentGaps; track g) {
+                    <li>{{ g }}</li>
+                  }
+                </ul>
+              </div>
+            }
+
+            @if (b.competitorOutlines.length > 0) {
+              <div class="brief__block">
+                <h4 class="brief__h">Competitor outlines</h4>
+                <div class="brief__competitors">
+                  @for (c of b.competitorOutlines; track c.url) {
+                    <article class="competitor">
+                      <header class="competitor__head">
+                        <span class="competitor__title">{{ c.title }}</span>
+                        <a class="competitor__url" [href]="c.url" target="_blank" rel="noopener">{{ c.url }}</a>
+                      </header>
+                      <ul class="competitor__h2s">
+                        @for (h of c.h2s; track h) {
+                          <li>{{ h }}</li>
+                        }
+                      </ul>
+                    </article>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (b.authorContext || b.businessContext) {
+              <div class="brief__block brief__context">
+                @if (b.authorContext) {
+                  <div>
+                    <h4 class="brief__h">Author context</h4>
+                    <p class="brief__p">{{ b.authorContext }}</p>
+                  </div>
+                }
+                @if (b.businessContext) {
+                  <div>
+                    <h4 class="brief__h">Business context</h4>
+                    <p class="brief__p">{{ b.businessContext }}</p>
+                  </div>
+                }
+              </div>
+            }
+          </section>
+        }
+      }
+
+      <!-- ===================== OUTLINE ===================== -->
+      @case ('outline') {
+        @if (outline(); as o) {
+          <section class="outline">
+            <h3 class="outline__h1">{{ o.h1 }}</h3>
+            <ol class="outline__sections">
+              @for (s of o.sections; track $index) {
+                <li class="outline__section">
+                  <div class="outline__section-head">
+                    <span class="outline__h2">{{ s.h2 }}</span>
+                    <span class="outline__wc">{{ s.targetWordCount }} words</span>
+                  </div>
+                  @if (s.kwSlice.length > 0) {
+                    <div class="brief__chips">
+                      @for (k of s.kwSlice; track k) {
+                        <span class="chip chip--soft">{{ k }}</span>
+                      }
+                    </div>
+                  }
+                  @if (s.notes.length > 0) {
+                    <ul class="outline__notes">
+                      @for (n of s.notes; track n) {
+                        <li>{{ n }}</li>
+                      }
+                    </ul>
+                  }
+                </li>
+              }
+            </ol>
+          </section>
+        }
+      }
+
+      <!-- ===================== DRAFTS ===================== -->
+      @case ('draft') {
+        <section class="drafts">
+          @for (d of draftedSections(); track $index) {
+            <article class="drafts__section">
+              <header class="drafts__head">
+                <h3 class="drafts__h2">{{ d.section.h2 }}</h3>
+                <span class="drafts__meta">
+                  {{ d.wordCount }} words · {{ d.promptVersion }}
+                </span>
+              </header>
+              <p class="drafts__prose">{{ d.prose }}</p>
+            </article>
+          }
+        </section>
+      }
+
+      <!-- ===================== REVIEW ===================== -->
+      @case ('review') {
+        @if (review(); as r) {
+          <section class="review">
+            <div class="review__hero">
+              <div class="review__overall">
+                <span class="review__overall-label">Overall</span>
+                <span
+                  class="review__overall-score"
+                  [style.color]="scoreColor(r.overallScore)"
+                >{{ r.overallScore }}</span>
+                <span
+                  class="review__overall-status"
+                  [class.is-pass]="r.passesThreshold"
+                  [class.is-fail]="!r.passesThreshold"
+                >
+                  {{ r.passesThreshold ? 'Passes threshold' : 'Below threshold' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="review__scores">
+              @for (s of reviewScoreRows(); track s.key) {
+                <div class="review__row">
+                  <span class="review__row-label">{{ s.label }}</span>
+                  <div class="review__bar">
+                    <div
+                      class="review__bar-fill"
+                      [style.width]="scoreWidth(s.value)"
+                      [style.background]="scoreColor(s.value)"
+                    ></div>
+                  </div>
+                  <span class="review__row-value">{{ s.value }}</span>
+                </div>
+              }
+            </div>
+
+            @if (r.violations.length > 0) {
+              <div class="review__block">
+                <h4 class="brief__h">Violations</h4>
+                <ul class="review__list">
+                  @for (v of r.violations; track v) {
+                    <li>{{ v }}</li>
+                  }
+                </ul>
+              </div>
+            }
+
+            @if (r.sectionViolations.length > 0) {
+              <div class="review__block">
+                <h4 class="brief__h">Section violations</h4>
+                <ul class="review__list">
+                  @for (sv of r.sectionViolations; track $index) {
+                    <li>
+                      <strong>{{ sv.h2 }}</strong> — {{ sv.message }}
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+          </section>
+        }
+      }
+
+      <!-- ===================== METADATA ===================== -->
+      @case ('metadata') {
+        @if (metadata(); as m) {
+          <section class="meta">
+            <div class="meta__row">
+              <span class="meta__label">Title tag</span>
+              <span class="meta__value">{{ m.titleTag }}</span>
+              <span class="meta__count">{{ m.titleTag.length }} chars</span>
+            </div>
+            <div class="meta__row">
+              <span class="meta__label">Meta description</span>
+              <span class="meta__value">{{ m.metaDesc }}</span>
+              <span class="meta__count">{{ m.metaDesc.length }} chars</span>
+            </div>
+            <div class="meta__row">
+              <span class="meta__label">Slug</span>
+              <span class="meta__value meta__value--mono">/{{ m.slug }}</span>
+            </div>
+            <div class="meta__row">
+              <span class="meta__label">OG title</span>
+              <span class="meta__value">{{ m.ogTitle }}</span>
+            </div>
+            <div class="meta__row">
+              <span class="meta__label">OG description</span>
+              <span class="meta__value">{{ m.ogDesc }}</span>
+            </div>
+            <div class="meta__schema">
+              <h4 class="brief__h">JSON-LD schema</h4>
+              <pre class="meta__json"><code>{{ schemaPretty() }}</code></pre>
+            </div>
+          </section>
+        }
+      }
+
+      <!-- ===================== ASSEMBLE ===================== -->
+      @case ('assemble') {
+        @if (template(); as t) {
+          <article class="assembled">
+            <header class="assembled__head">
+              <span class="assembled__title-tag">{{ t.title }}</span>
+              <p class="assembled__meta">{{ t.metaDescription }}</p>
+            </header>
+            <h1 class="assembled__h1">{{ t.h1 }}</h1>
+            <p class="assembled__intro">{{ t.intro }}</p>
+            @for (s of t.sections; track $index) {
+              <section class="assembled__section">
+                <h2 class="assembled__h2">{{ s.h2 }}</h2>
+                <p class="assembled__body">{{ s.body }}</p>
+              </section>
+            }
+            @if (t.cta; as cta) {
+              <div class="assembled__cta">
+                <a class="assembled__cta-btn" [href]="cta.href" target="_blank" rel="noopener">
+                  {{ cta.label }}
+                </a>
+              </div>
+            }
+            @if (t.internalLinks && t.internalLinks.length > 0) {
+              <aside class="assembled__links">
+                <span class="brief__label">Internal links</span>
+                <ul>
+                  @for (l of t.internalLinks; track l.href) {
+                    <li><a [href]="l.href">{{ l.label }}</a></li>
+                  }
+                </ul>
+              </aside>
+            }
+            @if (t.authorLine) {
+              <footer class="assembled__author">{{ t.authorLine }}</footer>
+            }
+          </article>
+        }
+      }
+    }
+  }
+</div>

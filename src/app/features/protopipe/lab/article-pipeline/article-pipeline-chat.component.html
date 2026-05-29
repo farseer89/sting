@@ -1,0 +1,60 @@
+<section class="chat" aria-label="Studio chat">
+  <header class="chat__header">
+    <div class="chat__title">
+      <span class="chat__title-eyebrow">Chat</span>
+      <span class="chat__title-step">{{ activeStepLabel() }}</span>
+    </div>
+  </header>
+
+  <div class="chat__scroll">
+    @if (messages().length === 0) {
+      <div class="chat__empty">
+        <p class="chat__empty-h">Ask about this step</p>
+        <p class="chat__empty-p">
+          Talk to the studio about the artifact on the left. Try one of these to get started.
+        </p>
+        <div class="chat__suggestions">
+          @for (s of suggestions(); track s) {
+            <button
+              type="button"
+              class="chat__suggestion"
+              (click)="applySuggestion(s)"
+            >
+              {{ s }}
+            </button>
+          }
+        </div>
+      </div>
+    } @else {
+      <ul class="chat__messages">
+        @for (m of messages(); track m.id) {
+          <li class="chat__msg" [class.is-you]="m.author === 'you'" [class.is-studio]="m.author === 'studio'">
+            <span class="chat__msg-author">{{ m.author === 'you' ? 'You' : 'Studio' }}</span>
+            <p class="chat__msg-text">{{ m.text }}</p>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+
+  <footer class="chat__compose">
+    <textarea
+      class="chat__input"
+      rows="2"
+      placeholder="Ask the studio anything..."
+      [ngModel]="draft()"
+      (ngModelChange)="draft.set($event)"
+      (keydown)="onKey($event)"
+      aria-label="Message"
+    ></textarea>
+    <button
+      type="button"
+      class="chat__send"
+      [disabled]="!draft().trim()"
+      (click)="send()"
+      aria-label="Send"
+    >
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8l11-5-4 11-2-5-5-1z" /></svg>
+    </button>
+  </footer>
+</section>

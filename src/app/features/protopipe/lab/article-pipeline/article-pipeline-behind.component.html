@@ -1,0 +1,53 @@
+<section class="behind" aria-label="Step internals">
+  <header class="behind__header">
+    <span class="behind__eyebrow">Behind the scenes</span>
+    <span class="behind__step">{{ activeStepLabel() }}</span>
+  </header>
+
+  <div class="behind__scroll">
+    <section class="behind__block">
+      <h3 class="behind__title">Step events</h3>
+      @if (stepEvents().length === 0) {
+        <p class="behind__empty">No events yet — run the pipeline to populate.</p>
+      } @else {
+        <ul class="behind__events">
+          @for (event of stepEvents(); track event.startedAt + event.status) {
+            <li class="behind__event" [class.is-failed]="event.status === 'failed'">
+              <span class="behind__event-status">{{ event.status }}</span>
+              <span class="behind__event-time">{{ formatStarted(event.startedAt) }}</span>
+              @if (event.durationMs != null) {
+                <span class="behind__event-duration">{{ event.durationMs }}ms</span>
+              }
+              @if (event.promptVersion) {
+                <span class="behind__event-version">{{ event.promptVersion }}</span>
+              }
+              @if (event.error) {
+                <span class="behind__event-error">{{ event.error }}</span>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="behind__block">
+      <h3 class="behind__title">Parsed artifact</h3>
+      @if (artifactJson(); as json) {
+        <pre class="behind__json"><code>{{ json }}</code></pre>
+      } @else {
+        <p class="behind__empty">This step has not produced an artifact yet.</p>
+      }
+    </section>
+  </div>
+
+  <footer class="behind__footer">
+    <button
+      type="button"
+      class="behind__rerun"
+      [disabled]="!canRerun()"
+      (click)="triggerRerun()"
+    >
+      Rerun {{ activeStepLabel() }}
+    </button>
+  </footer>
+</section>

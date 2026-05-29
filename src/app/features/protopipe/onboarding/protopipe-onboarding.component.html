@@ -22,6 +22,43 @@
   <main class="onboarding-main">
     @if (step() === 1) {
       <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
+        <p class="eyebrow">Your website</p>
+        <h1 class="question">Got a website?</h1>
+        <p class="helper">
+          Paste your URL — or skip if you don't have one yet.
+        </p>
+
+        <div class="field">
+          <input
+            #urlInput
+            id="websiteUrl"
+            type="url"
+            formControlName="websiteUrl"
+            pInputText
+            autocomplete="url"
+            inputmode="url"
+            placeholder="mauielectric.com"
+          />
+          <small class="helper-inline">
+            Optional — we'll use it to set up your site profile. We'll layer in
+            an automatic audit of your homepage soon.
+          </small>
+        </div>
+
+        <div class="actions">
+          <span class="enter-hint">press Enter ↵</span>
+          <p-button
+            type="submit"
+            label="Continue"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+          />
+        </div>
+      </form>
+    }
+
+    @if (step() === 2) {
+      <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
         <p class="eyebrow">Getting started</p>
         <h1 class="question">What's the business called?</h1>
         <p class="helper">We'll use this name across your dashboard.</p>
@@ -50,7 +87,7 @@
       </form>
     }
 
-    @if (step() === 2) {
+    @if (step() === 3) {
       <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
         <p class="eyebrow">About your business</p>
         <h1 class="question">What does your business do?</h1>
@@ -80,7 +117,7 @@
       </form>
     }
 
-    @if (step() === 3) {
+    @if (step() === 4) {
       <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
         <p class="eyebrow">Trade</p>
         <h1 class="question">What kind of work do you do?</h1>
@@ -109,7 +146,7 @@
       </form>
     }
 
-    @if (step() === 4) {
+    @if (step() === 5) {
       <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
         <p class="eyebrow">Service area</p>
         <h1 class="question">Where do you serve customers?</h1>
@@ -145,7 +182,7 @@
       </form>
     }
 
-    @if (step() === 5) {
+    @if (step() === 6) {
       <form [formGroup]="form" class="step" (ngSubmit)="submit()">
         <p class="eyebrow">Your first goal</p>
         <h1 class="question">What would you love to rank for?</h1>

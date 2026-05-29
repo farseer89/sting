@@ -28,8 +28,8 @@ import { ProtopipeOnboardingStateService } from './protopipe-onboarding-state.se
 import { parseProtopipeApiError } from '../protopipe-http.util';
 import { PRODUCT_CONFIG } from '../../../core/config/product-config';
 
-type Step = 1 | 2 | 3 | 4 | 5;
-const TOTAL_STEPS = 5 as const;
+type Step = 1 | 2 | 3 | 4 | 5 | 6;
+const TOTAL_STEPS = 6 as const;
 
 @Component({
   selector: 'app-protopipe-onboarding',
@@ -57,6 +57,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
   readonly isSearchingLocations = signal(false);
 
   readonly form = this.fb.nonNullable.group({
+    websiteUrl: ['', [Validators.maxLength(300)]],
     businessName: [
       '',
       [Validators.required, Validators.minLength(2), Validators.maxLength(120)],
@@ -90,6 +91,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
     Math.round((this.step() / this.totalSteps) * 100),
   );
 
+  private readonly urlInput = viewChild<ElementRef<HTMLInputElement>>('urlInput');
   private readonly nameInput = viewChild<ElementRef<HTMLInputElement>>('nameInput');
   private readonly descriptionInput =
     viewChild<ElementRef<HTMLTextAreaElement>>('descriptionInput');
@@ -108,6 +110,11 @@ export class ProtopipeOnboardingComponent implements OnInit {
       const boot = await this.state.load();
       const id = boot.primarySiteId || boot.sites[0]?.id || null;
       this.siteId.set(id);
+
+      const site = boot.sites.find((s) => s.id === id);
+      if (site && site.hostname && !site.hostname.endsWith('pending.local')) {
+        this.form.controls.websiteUrl.setValue(site.url);
+      }
     } catch (err) {
       this.messages.add({
         severity: 'error',
@@ -202,6 +209,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
     this.isSubmitting.set(true);
     const v = this.form.getRawValue();
     const location = this.selectedLocation();
+    const websiteUrl = this.normalizeUrl(v.websiteUrl);
 
     try {
       await this.api.completeOnboarding(siteId, {
@@ -212,6 +220,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
         state: v.state.trim() || undefined,
         defaultSerpLocationCode: location?.code,
         defaultSerpLocationName: location?.name,
+        websiteUrl: websiteUrl || undefined,
         seedPhrase: v.seedPhrase.trim() || undefined,
       });
 
@@ -228,45 +237,55 @@ export class ProtopipeOnboardingComponent implements OnInit {
   }
 
   private focusForStep(s: Step): void {
-    if (s === 1) this.nameInput()?.nativeElement?.focus();
-    else if (s === 2) this.descriptionInput()?.nativeElement?.focus();
-    else if (s === 3) this.tradeInput()?.nativeElement?.focus();
-    else if (s === 5) this.seedInput()?.nativeElement?.focus();
+    if (s === 1) this.urlInput()?.nativeElement?.focus();
+    else if (s === 2) this.nameInput()?.nativeElement?.focus();
+    else if (s === 3) this.descriptionInput()?.nativeElement?.focus();
+    else if (s === 4) this.tradeInput()?.nativeElement?.focus();
+    else if (s === 6) this.seedInput()?.nativeElement?.focus();
   }
 
   private isStepValid(step: Step): boolean {
     const c = this.form.controls;
     switch (step) {
       case 1:
-        return c.businessName.valid;
+        return c.websiteUrl.valid;
       case 2:
-        return c.businessDescription.valid;
+        return c.businessName.valid;
       case 3:
-        return c.trade.valid;
+        return c.businessDescription.valid;
       case 4:
-        return c.city.valid && c.state.valid;
+        return c.trade.valid;
       case 5:
+        return c.city.valid && c.state.valid;
+      case 6:
         return c.seedPhrase.valid;
     }
   }
 
   private markStepTouched(step: Step): void {
     const c = this.form.controls;
-    if (step === 1) c.businessName.markAsTouched();
-    else if (step === 2) c.businessDescription.markAsTouched();
-    else if (step === 3) c.trade.markAsTouched();
+    if (step === 2) c.businessName.markAsTouched();
+    else if (step === 3) c.businessDescription.markAsTouched();
+    else if (step === 4) c.trade.markAsTouched();
   }
 
   private stepHint(step: Step): string {
-    if (step === 1) return 'Add your business name to continue.';
-    if (step === 2) return 'Add a short description (10+ characters) to continue.';
+    if (step === 2) return 'Add your business name to continue.';
+    if (step === 3) return 'Add a short description (10+ characters) to continue.';
     return 'One of the fields above is invalid.';
   }
 
   private firstInvalidStep(): Step {
     const c = this.form.controls;
-    if (!c.businessName.valid) return 1;
-    if (!c.businessDescription.valid) return 2;
-    return 5;
+    if (!c.businessName.valid) return 2;
+    if (!c.businessDescription.valid) return 3;
+    return 6;
+  }
+
+  private normalizeUrl(raw: string): string {
+    const trimmed = (raw ?? '').trim();
+    if (!trimmed) return '';
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://${trimmed}`;
   }
 }

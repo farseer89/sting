@@ -6,6 +6,10 @@ import { clientAuthGuard } from './features/client-portal/guards/client-auth.gua
 import { operatorOnlyGuard } from './features/client-portal/guards/operator-only.guard';
 import { protopipeContentUnsavedGuard } from './features/protopipe/guards/protopipe-content-unsaved.guard';
 import { protopipeUnsavedGuard } from './features/protopipe/guards/protopipe-unsaved.guard';
+import {
+  requireOnboardingCompleteGuard,
+  skipWhenOnboardingCompleteGuard,
+} from './features/protopipe/onboarding/protopipe-onboarding.guard';
 
 export const routes: Routes = [
   {
@@ -58,6 +62,7 @@ export const routes: Routes = [
       // protopipe — SEO SaaS product (protopipe branch)
       {
         path: 'protopipe',
+        canActivate: [requireOnboardingCompleteGuard],
         loadComponent: () =>
           import('./features/protopipe/dashboard/protopipe-dashboard.component').then(
             (m) => m.ProtopipeDashboardComponent,
@@ -65,8 +70,11 @@ export const routes: Routes = [
       },
       {
         path: 'protopipe/onboarding',
-        pathMatch: 'full',
-        redirectTo: 'protopipe',
+        canActivate: [skipWhenOnboardingCompleteGuard],
+        loadComponent: () =>
+          import('./features/protopipe/onboarding/protopipe-onboarding.component').then(
+            (m) => m.ProtopipeOnboardingComponent,
+          ),
       },
       {
         path: 'protopipe/research',

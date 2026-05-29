@@ -1,0 +1,165 @@
+<div class="onboarding-shell">
+  <div class="onboarding-card">
+    <header class="onboarding-header">
+      <p class="eyebrow">Welcome to {{ product.displayName }}</p>
+      <h1>Tell us about your business</h1>
+      <p class="subtitle">A few quick questions so we can suggest the right keywords and content.</p>
+      <ol class="step-indicator" aria-label="Onboarding progress">
+        <li [class.active]="step() === 1" [class.done]="step() > 1">
+          <span class="step-number">1</span>
+          <span class="step-label">Business</span>
+        </li>
+        <li [class.active]="step() === 2" [class.done]="step() > 2">
+          <span class="step-number">2</span>
+          <span class="step-label">Market</span>
+        </li>
+        <li [class.active]="step() === 3">
+          <span class="step-number">3</span>
+          <span class="step-label">Goal</span>
+        </li>
+      </ol>
+    </header>
+
+    @if (step() === 1) {
+      <form [formGroup]="businessForm" class="onboarding-form" (ngSubmit)="nextStep()">
+        <div class="field">
+          <label for="businessName">Business name</label>
+          <input
+            id="businessName"
+            type="text"
+            formControlName="businessName"
+            pInputText
+            autocomplete="organization"
+            placeholder="Maui Electric"
+          />
+        </div>
+
+        <div class="field">
+          <label for="businessDescription">What does your business do?</label>
+          <textarea
+            id="businessDescription"
+            formControlName="businessDescription"
+            pTextarea
+            rows="3"
+            placeholder="One or two sentences. e.g. We're a residential electrician in Maui specializing in panel upgrades and EV chargers."
+          ></textarea>
+          <small class="helper">10–800 characters</small>
+        </div>
+
+        <div class="field">
+          <label for="trade">Trade or category <span class="optional">(optional)</span></label>
+          <input
+            id="trade"
+            type="text"
+            formControlName="trade"
+            pInputText
+            placeholder="Electrician, photographer, attorney…"
+          />
+        </div>
+
+        <div class="actions">
+          <p-button
+            type="submit"
+            label="Continue"
+            [disabled]="!canContinueStep1()"
+          />
+        </div>
+      </form>
+    }
+
+    @if (step() === 2) {
+      <form [formGroup]="marketForm" class="onboarding-form" (ngSubmit)="nextStep()">
+        <div class="field">
+          <label for="locationSearch">Where do you serve customers?</label>
+          <p-autocomplete
+            inputId="locationSearch"
+            [suggestions]="locationSuggestions()"
+            (completeMethod)="searchLocations($event)"
+            (onSelect)="onLocationSelected($event)"
+            (onClear)="onLocationCleared()"
+            field="name"
+            optionLabel="name"
+            placeholder="Start typing a city or region (e.g. Maui)"
+            [forceSelection]="false"
+            [minLength]="2"
+            [delay]="250"
+            appendTo="body"
+            styleClass="w-full location-autocomplete"
+          ></p-autocomplete>
+          <small class="helper">We use this to target local search results.</small>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="city">City</label>
+            <input id="city" type="text" formControlName="city" pInputText placeholder="Kahului" />
+          </div>
+          <div class="field">
+            <label for="state">State / region</label>
+            <input id="state" type="text" formControlName="state" pInputText placeholder="HI" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="websiteUrl">Website URL <span class="optional">(optional)</span></label>
+          <input
+            id="websiteUrl"
+            type="url"
+            formControlName="websiteUrl"
+            pInputText
+            placeholder="https://mauielectric.com"
+          />
+          <small class="helper">If you don't have one yet, leave blank — we'll set this up later.</small>
+        </div>
+
+        <div class="actions">
+          <p-button
+            type="button"
+            label="Back"
+            severity="secondary"
+            [text]="true"
+            (onClick)="previousStep()"
+          />
+          <p-button type="submit" label="Continue" />
+        </div>
+      </form>
+    }
+
+    @if (step() === 3) {
+      <form [formGroup]="goalForm" class="onboarding-form" (ngSubmit)="submit()">
+        <div class="field">
+          <label for="seedPhrase">What would you love to rank for?</label>
+          <input
+            id="seedPhrase"
+            type="text"
+            formControlName="seedPhrase"
+            pInputText
+            placeholder="e.g. electrician maui"
+          />
+          <small class="helper">
+            Optional — we'll use this to pre-fill keyword discovery. You can change it anytime.
+          </small>
+        </div>
+
+        <div class="actions">
+          <p-button
+            type="button"
+            label="Back"
+            severity="secondary"
+            [text]="true"
+            (onClick)="previousStep()"
+          />
+          <p-button
+            type="submit"
+            [label]="isSubmitting() ? 'Saving…' : 'Find my keywords'"
+            [disabled]="isSubmitting()"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+          />
+        </div>
+      </form>
+    }
+  </div>
+</div>
+
+<p-toast />

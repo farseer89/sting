@@ -36,8 +36,11 @@ import type {
   ProtopipeResearchResponse,
   ProtopipeKeywordMetricHistoryResponse,
   ProtopipeMarketEnrichResponse,
+  ProtopipeOnboardingRequest,
+  ProtopipeOnboardingResponse,
   ProtopipePlan,
   ProtopipePublishContentResponse,
+  ProtopipeSerpLocationsResponse,
   PutUserContentHelperRequest,
   SaveKeywordsRequest,
   SaveKeywordsResponse,
@@ -93,6 +96,28 @@ export class ProtopipeApiService {
       this.http.put<SaveKeywordsResponse>(
         protopipeApiUrl(ProtopipeEndpoints.saveKeywords.path, { siteId }),
         body,
+      ),
+    );
+  }
+
+  completeOnboarding(
+    siteId: string,
+    body: ProtopipeOnboardingRequest,
+  ): Promise<ProtopipeOnboardingResponse> {
+    return firstValueFrom(
+      this.http.patch<ProtopipeOnboardingResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.siteOnboarding.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  searchSerpLocations(query: string, limit = 8): Promise<ProtopipeSerpLocationsResponse> {
+    const params = new HttpParams().set('q', query).set('limit', String(limit));
+    return firstValueFrom(
+      this.http.get<ProtopipeSerpLocationsResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.serpLocationsSearch.path),
+        { params },
       ),
     );
   }

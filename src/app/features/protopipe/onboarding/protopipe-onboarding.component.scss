@@ -1,0 +1,173 @@
+.onboarding-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2f7 100%);
+}
+
+.onboarding-card {
+  width: 100%;
+  max-width: 640px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+  padding: 2.5rem;
+}
+
+.onboarding-header {
+  text-align: center;
+  margin-bottom: 2rem;
+
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+    color: var(--primary-color, #10b981);
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+  }
+
+  h1 {
+    margin: 0 0 0.5rem;
+    font-size: 1.65rem;
+    color: var(--text-color, #0f172a);
+  }
+
+  .subtitle {
+    margin: 0 0 1.5rem;
+    color: var(--text-color-secondary, #64748b);
+  }
+}
+
+.step-indicator {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-color-secondary, #64748b);
+    font-size: 0.875rem;
+  }
+
+  .step-number {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: #475569;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  li.active .step-number {
+    background: var(--primary-color, #10b981);
+    color: #ffffff;
+  }
+
+  li.done .step-number {
+    background: var(--primary-color, #10b981);
+    color: #ffffff;
+  }
+
+  li.active .step-label,
+  li.done .step-label {
+    color: var(--text-color, #0f172a);
+    font-weight: 600;
+  }
+}
+
+.onboarding-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+
+  label {
+    font-weight: 600;
+    color: var(--text-color, #0f172a);
+    font-size: 0.95rem;
+  }
+
+  .optional {
+    color: var(--text-color-secondary, #64748b);
+    font-weight: 400;
+    font-size: 0.85rem;
+    margin-left: 0.25rem;
+  }
+
+  .helper {
+    color: var(--text-color-secondary, #64748b);
+    font-size: 0.8rem;
+  }
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 540px) {
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .onboarding-card {
+    padding: 1.5rem;
+  }
+
+  .step-indicator .step-label {
+    display: none;
+  }
+}
+
+input.p-inputtext,
+textarea.p-inputtextarea {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.95rem;
+  border-radius: 8px;
+}
+
+textarea.p-inputtextarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.location-autocomplete {
+  width: 100%;
+}
+
+::ng-deep .location-autocomplete .p-autocomplete-input {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.95rem;
+  border-radius: 8px;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+
+  button:only-child {
+    margin-left: auto;
+  }
+}

@@ -151,9 +151,12 @@ export const THEMES: readonly ThemeMeta[] = THEME_GROUPS.flatMap((g) => g.themes
  *  the onboarding mockups and across product surfaces. */
 export const DEFAULT_THEME_ID = 'protopipe-ocean';
 
-/** localStorage key — bumped to v2 so persisted Lara/Indigo/etc. choices
- *  from before the Protopipe Ocean default reset and pick up the new brand. */
-export const STORAGE_KEY = 'sting.theme.v2';
+/** localStorage key.
+ *  - v1 → v2: introduced Protopipe Ocean (registered the theme).
+ *  - v2 → v3: stale v2 values from picker exploration kept overriding the
+ *    new brand default; bumping the key wipes those so every browser lands
+ *    on Protopipe Ocean once. Future picker choices persist normally. */
+export const STORAGE_KEY = 'sting.theme.v3';
 
 export function findTheme(id: string): ThemeMeta {
   return THEMES.find((t) => t.id === id) ?? THEMES.find((t) => t.id === DEFAULT_THEME_ID)!;

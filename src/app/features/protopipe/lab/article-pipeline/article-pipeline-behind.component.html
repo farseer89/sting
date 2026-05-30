@@ -5,6 +5,30 @@
   </header>
 
   <div class="behind__scroll">
+    @if (showMeasurementModel()) {
+      <section class="behind__block">
+        <h3 class="behind__title">PageProfile measurement model</h3>
+        <p class="behind__model-note">
+          The canonical, unified feature set recorded for every page we scan —
+          competitors now, our own articles later — so the corpus is ML-ready.
+        </p>
+        @for (g of measurementModel; track g.group) {
+          <div class="model-group">
+            <span class="model-group__name">{{ g.group }}</span>
+            @for (f of g.fields; track f.label) {
+              <div class="model-field">
+                <span class="model-field__origin" [attr.data-origin]="f.origin">{{ f.origin }}</span>
+                <div class="model-field__body">
+                  <code class="model-field__key">{{ f.label }}</code>
+                  <span class="model-field__desc">{{ f.description }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
+
     <section class="behind__block">
       <h3 class="behind__title">Step events</h3>
       @if (stepEvents().length === 0) {

@@ -7,6 +7,8 @@ import {
 import type {
   ArticleGenerationBrief,
   ArticleGenerationClusterContext,
+  ArticleGenerationCompetitionAnalysis,
+  ArticleGenerationPageProfile,
   ArticleGenerationDraftedSection,
   ArticleGenerationInformationGain,
   ArticleGenerationMetadata,
@@ -37,6 +39,7 @@ interface LensRow {
 
 const STEP_LABELS: Record<ArticleGenerationStep, string> = {
   infer_type: 'Infer type',
+  analyse_competition: 'Analyse competition',
   research: 'Research',
   build_brief: 'Build brief',
   outline: 'Outline',
@@ -72,6 +75,7 @@ const ARTICLE_TYPE_DESCRIPTION: Record<ArticleGenerationType, string> = {
 
 const STEP_TITLES: Record<ArticleGenerationStep, string> = {
   infer_type: 'Inferred article type',
+  analyse_competition: 'Competitor X-ray',
   research: 'Research bundle',
   build_brief: 'SEO brief',
   outline: 'Outline',
@@ -115,6 +119,15 @@ export class ArticlePipelineStepPanelComponent {
     const t = this.articleType();
     return t ? ARTICLE_TYPE_DESCRIPTION[t] : null;
   });
+
+  readonly competitionAnalysis = computed<ArticleGenerationCompetitionAnalysis | null>(
+    () => this.run()?.artifacts?.competitionAnalysis ?? null,
+  );
+
+  /** The profiled pages (iteration 1: the #1 organic result). */
+  readonly competitorPages = computed<ArticleGenerationPageProfile[]>(
+    () => this.competitionAnalysis()?.pages ?? [],
+  );
 
   readonly research = computed<ArticleGenerationResearch | null>(
     () => this.run()?.artifacts?.research ?? null,
@@ -278,6 +291,8 @@ export class ArticlePipelineStepPanelComponent {
     switch (step) {
       case 'infer_type':
         return !!run.articleType;
+      case 'analyse_competition':
+        return !!run.artifacts?.competitionAnalysis;
       case 'research':
         return !!run.artifacts?.research;
       case 'build_brief':
@@ -370,5 +385,34 @@ export class ArticlePipelineStepPanelComponent {
     if (value >= 80) return '#8be7b5';
     if (value >= 60) return '#f3d28a';
     return '#fca5a5';
+  }
+
+  formatDay(iso?: string): string {
+    if (!iso) return '—';
+    try {
+      return new Date(iso).toLocaleDateString([], {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch {
+      return iso;
+    }
+  }
+
+  fetchStatusLabel(status: string): string {
+    if (status === 'ok') return 'fetched';
+    if (status === 'blocked') return 'blocked';
+    return 'error';
+  }
+
+  fetchStatusClass(status: string): string {
+    if (status === 'ok') return 'is-live';
+    if (status === 'blocked') return 'is-admin';
+    return 'is-error';
+  }
+
+  headingIndent(level: number): string {
+    return `${(level - 1) * 14}px`;
   }
 }

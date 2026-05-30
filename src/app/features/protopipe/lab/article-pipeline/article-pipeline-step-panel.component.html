@@ -32,6 +32,179 @@
         </section>
       }
 
+      <!-- ===================== ANALYSE COMPETITION (competitor X-ray) ===================== -->
+      @case ('analyse_competition') {
+        @if (competitionAnalysis(); as ca) {
+          <section class="xray">
+            <div class="xray__head">
+              <p class="xray__lede">
+                Profiling the top organic result for
+                <strong>&ldquo;{{ ca.keyword.phrase }}&rdquo;</strong>
+                to reverse-engineer why it ranks.
+                <span class="xray__asof">· {{ ca.serpGeo.locationName }} · {{ formatCollectedAt(ca.analyzedAt) }}</span>
+              </p>
+              <div class="xray__meta">
+                <span class="xray__chip"><i>scanned</i>{{ ca.scannedCount }}</span>
+                <span class="xray__chip"><i>schema v</i>{{ ca.featureSchemaVersion }}</span>
+                @if (ca.sources.pageScan) {
+                  <span class="xray__chip"><i>page scan</i>{{ ca.sources.pageScan }}</span>
+                }
+              </div>
+            </div>
+
+            @if (competitorPages().length === 0) {
+              <div class="xray__empty">
+                <p>{{ ca.notes || 'No competitor page available to profile.' }}</p>
+              </div>
+            }
+
+            @for (p of competitorPages(); track p.url) {
+              <article class="profile">
+                <header class="profile__top">
+                  <span class="profile__rank">#{{ p.serpPosition ?? '?' }}</span>
+                  <div class="profile__id">
+                    <a class="profile__domain" [href]="p.url" target="_blank" rel="noopener">{{ p.domain }}</a>
+                    <span class="profile__url">{{ p.url }}</span>
+                  </div>
+                  <span class="profile__status" [class]="fetchStatusClass(p.fetchStatus)">
+                    {{ fetchStatusLabel(p.fetchStatus) }}@if (p.httpStatus) { · {{ p.httpStatus }} }
+                  </span>
+                </header>
+
+                @if (p.fetchStatus !== 'ok') {
+                  <p class="profile__blocked">
+                    {{ p.error || 'Page could not be fetched.' }}
+                    @if (p.openObservations.length) { — {{ p.openObservations[0] }} }
+                  </p>
+                } @else {
+                  <!-- Deterministic metric strip -->
+                  <div class="profile__metrics">
+                    <span class="profile__stat"><i>words</i>{{ p.wordCount.toLocaleString() }}</span>
+                    <span class="profile__stat"><i>H2</i>{{ p.h2Count }}</span>
+                    <span class="profile__stat"><i>H3</i>{{ p.h3Count }}</span>
+                    <span class="profile__stat"><i>lists</i>{{ p.listCount }}</span>
+                    <span class="profile__stat"><i>tables</i>{{ p.tableCount }}</span>
+                    <span class="profile__stat"><i>images</i>{{ p.imageCount }}</span>
+                    <span class="profile__stat"><i>video</i>{{ p.videoCount }}</span>
+                    <span class="profile__stat"><i>int links</i>{{ p.internalLinkCount }}</span>
+                    <span class="profile__stat"><i>ext links</i>{{ p.externalLinkCount }}</span>
+                    <span class="profile__stat"><i>citations</i>{{ p.externalCitationCount }}</span>
+                  </div>
+
+                  <!-- Flags -->
+                  <div class="profile__flags">
+                    @if (p.detectedFormat) { <span class="profile__flag is-fmt">{{ p.detectedFormat }}</span> }
+                    @if (p.hasFaqSection) { <span class="profile__flag">FAQ</span> }
+                    @if (p.hasTableOfContents) { <span class="profile__flag">ToC</span> }
+                    @if (p.hasKeyTakeaways) { <span class="profile__flag">key takeaways</span> }
+                    @if (p.hasAuthorBio) { <span class="profile__flag">author bio</span> }
+                    @if (p.keywordInTitle) { <span class="profile__flag">kw in title</span> }
+                    @if (p.keywordInH1) { <span class="profile__flag">kw in H1</span> }
+                  </div>
+
+                  <!-- Targeting + freshness grid -->
+                  <div class="profile__grid">
+                    <div class="profile__cell">
+                      <span class="profile__k">Title</span>
+                      <span class="profile__v">{{ p.titleTag || '—' }}</span>
+                    </div>
+                    <div class="profile__cell">
+                      <span class="profile__k">Author</span>
+                      <span class="profile__v">{{ p.authorName || '—' }}</span>
+                    </div>
+                    <div class="profile__cell">
+                      <span class="profile__k">Published</span>
+                      <span class="profile__v">{{ formatDay(p.publishedDate) }}</span>
+                    </div>
+                    <div class="profile__cell">
+                      <span class="profile__k">Modified</span>
+                      <span class="profile__v">{{ formatDay(p.modifiedDate) }}</span>
+                    </div>
+                  </div>
+
+                  @if (p.schemaTypes.length) {
+                    <div class="profile__chips">
+                      <span class="profile__chips-k">schema</span>
+                      @for (s of p.schemaTypes; track s) {
+                        <span class="profile__tag">{{ s }}</span>
+                      }
+                    </div>
+                  }
+                  @if (p.notableCitationDomains.length) {
+                    <div class="profile__chips">
+                      <span class="profile__chips-k">cites</span>
+                      @for (d of p.notableCitationDomains; track d) {
+                        <span class="profile__tag is-dim">{{ d }}</span>
+                      }
+                    </div>
+                  }
+
+                  <!-- LLM interpretation -->
+                  @if (p.rankingRationale) {
+                    <div class="profile__why">
+                      <span class="profile__why-k">Why it ranks</span>
+                      <p>{{ p.rankingRationale }}</p>
+                    </div>
+                  }
+
+                  <div class="profile__cols">
+                    @if (p.uniqueCoverage.length) {
+                      <div class="profile__col">
+                        <span class="profile__col-k">Unique coverage</span>
+                        <ul>@for (x of p.uniqueCoverage; track x) { <li>{{ x }}</li> }</ul>
+                      </div>
+                    }
+                    @if (p.eeatSignals.length) {
+                      <div class="profile__col">
+                        <span class="profile__col-k">E-E-A-T signals</span>
+                        <ul>@for (x of p.eeatSignals; track x) { <li>{{ x }}</li> }</ul>
+                      </div>
+                    }
+                    @if (p.weaknesses.length) {
+                      <div class="profile__col is-weak">
+                        <span class="profile__col-k">Weaknesses to beat</span>
+                        <ul>@for (x of p.weaknesses; track x) { <li>{{ x }}</li> }</ul>
+                      </div>
+                    }
+                  </div>
+
+                  @if (p.openObservations.length || p.surprises.length) {
+                    <div class="profile__learn">
+                      @if (p.openObservations.length) {
+                        <div class="profile__col">
+                          <span class="profile__col-k">Open observations</span>
+                          <ul>@for (x of p.openObservations; track x) { <li>{{ x }}</li> }</ul>
+                        </div>
+                      }
+                      @if (p.surprises.length) {
+                        <div class="profile__col is-surprise">
+                          <span class="profile__col-k">Surprises</span>
+                          <ul>@for (x of p.surprises; track x) { <li>{{ x }}</li> }</ul>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  <!-- Heading outline -->
+                  @if (p.headingOutline.length) {
+                    <details class="profile__outline">
+                      <summary>Heading outline ({{ p.headingOutline.length }})</summary>
+                      <ol>
+                        @for (h of p.headingOutline; track $index) {
+                          <li [style.padding-left]="headingIndent(h.level)" [attr.data-level]="h.level">
+                            <span class="profile__hl">H{{ h.level }}</span> {{ h.text }}
+                          </li>
+                        }
+                      </ol>
+                    </details>
+                  }
+                }
+              </article>
+            }
+          </section>
+        }
+      }
+
       <!-- ===================== RESEARCH (executive report) ===================== -->
       @case ('research') {
         @if (research(); as r) {

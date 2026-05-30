@@ -10,8 +10,13 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type {
+  ArticleGenerationContentStrategy,
   KeywordPriority,
   ProtopipeContentPlanCalendarItem,
+  ProtopipeContentPlanCurrentStep,
+  ProtopipeContentPlanRunSummary,
+  ProtopipeContentPlanStep,
+  ProtopipeContentPlanStepEvent,
   ProtopipeScoredKeyword,
 } from '@hive/contracts';
 import { Button } from 'primeng/button';
@@ -25,7 +30,13 @@ import { prioritySeverity } from '../protopipe-keyword-display';
 import { ProtopipeStrategyService } from '../protopipe-strategy.service';
 import { ContentPlanStore } from './content-plan.store';
 
-type PlanSection = 'overview' | 'calendar' | 'keywords' | 'clusters' | 'audit';
+type PlanSection =
+  | 'overview'
+  | 'calendar'
+  | 'keywords'
+  | 'clusters'
+  | 'audit'
+  | 'process';
 
 interface PlanSectionDef {
   id: PlanSection;
@@ -34,6 +45,35 @@ interface PlanSectionDef {
 }
 
 type TagSeverity = 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast';
+
+type StepStatus = 'pending' | 'running' | 'complete' | 'failed';
+
+interface PlanStepDef {
+  step: ProtopipeContentPlanStep;
+  label: string;
+  icon: string;
+}
+
+interface PlanStepEntry extends PlanStepDef {
+  index: number;
+  status: StepStatus;
+}
+
+const PLAN_STEPS: PlanStepDef[] = [
+  { step: 'audit', label: 'Audit existing', icon: 'pi pi-file' },
+  { step: 'score_tier', label: 'Score & tier', icon: 'pi pi-sort-amount-down' },
+  { step: 'cluster', label: 'Cluster', icon: 'pi pi-sitemap' },
+  { step: 'deep_scan', label: 'Deep scan', icon: 'pi pi-search' },
+  { step: 'unify', label: 'Unify', icon: 'pi pi-compass' },
+];
+
+const STEP_ORDER: ProtopipeContentPlanStep[] = [
+  'audit',
+  'score_tier',
+  'cluster',
+  'deep_scan',
+  'unify',
+];
 
 @Component({
   selector: 'app-protopipe-content-plan',
@@ -65,7 +105,11 @@ export class ProtopipeContentPlanComponent implements OnInit {
     { id: 'keywords', label: 'Keywords', icon: 'pi pi-list' },
     { id: 'clusters', label: 'Clusters', icon: 'pi pi-sitemap' },
     { id: 'audit', label: 'Existing content', icon: 'pi pi-file' },
+    { id: 'process', label: 'Process', icon: 'pi pi-cog' },
   ];
+
+  /** The step whose artifact + log is expanded in the Process tab. */
+  readonly processStep = signal<ProtopipeContentPlanStep>('audit');
 
   readonly plan = this.store.plan;
   readonly starting = this.store.starting;
@@ -74,6 +118,10 @@ export class ProtopipeContentPlanComponent implements OnInit {
   readonly isRunning = this.store.isRunning;
   readonly isComplete = this.store.isComplete;
   readonly hasFailed = this.store.hasFailed;
+  readonly runs = this.store.runs;
+  readonly selectedRunId = this.store.selectedRunId;
+  readonly currentStep = this.store.currentStep;
+  readonly events = this.store.events;
 
   readonly tiers = computed(() => this.plan()?.keywordTiers);
   readonly clusters = computed(() => this.plan()?.clusters ?? []);
@@ -81,6 +129,22 @@ export class ProtopipeContentPlanComponent implements OnInit {
   readonly pillars = computed(() => this.plan()?.pillars ?? []);
   readonly audit = computed(() => this.plan()?.existingContent);
   readonly narrative = computed(() => this.plan()?.narrative);
+
+  readonly focusStrategies = computed<ArticleGenerationContentStrategy[]>(
+    () => this.plan()?.focusStrategies ?? [],
+  );
+
+  readonly stepEntries = computed<PlanStepEntry[]>(() =>
+    PLAN_STEPS.map((def, index) => ({
+      ...def,
+      index: index + 1,
+      status: this.deriveStepStatus(def.step),
+    })),
+  );
+
+  readonly stepEvents = computed<ProtopipeContentPlanStepEvent[]>(() =>
+    this.events().filter((e) => e.step === this.processStep()),
+  );
 
   readonly progressPct = computed(() => {
     const p = this.plan()?.progress;
@@ -153,5 +217,81 @@ export class ProtopipeContentPlanComponent implements OnInit {
       groups.set(key, arr);
     }
     return [...groups.entries()].map(([cluster, items]) => ({ cluster, items }));
+  }
+
+  // ---- process / stepper helpers ----
+
+  selectProcessStep(step: ProtopipeContentPlanStep): void {
+    this.processStep.set(step);
+  }
+
+  selectRun(planId: string | null): void {
+    void this.store.selectRun(planId);
+  }
+
+  isLatestRun(): boolean {
+    return this.selectedRunId() === null;
+  }
+
+  stepStatusSeverity(status: StepStatus): TagSeverity {
+    switch (status) {
+      case 'complete':
+        return 'success';
+      case 'running':
+        return 'info';
+      case 'failed':
+        return 'danger';
+      default:
+        return 'secondary';
+    }
+  }
+
+  eventStatusSeverity(status: ProtopipeContentPlanStepEvent['status']): TagSeverity {
+    switch (status) {
+      case 'completed':
+        return 'success';
+      case 'failed':
+        return 'danger';
+      default:
+        return 'secondary';
+    }
+  }
+
+  /** Cost of a step = the cost stamped on its last completed event. */
+  stepCost(step: ProtopipeContentPlanStep): number | null {
+    const ev = [...this.events()]
+      .reverse()
+      .find((e) => e.step === step && e.status === 'completed' && e.costUsd != null);
+    return ev?.costUsd ?? null;
+  }
+
+  /** Wall-clock duration of a step = its last completed event's durationMs. */
+  stepDurationMs(step: ProtopipeContentPlanStep): number | null {
+    const ev = [...this.events()]
+      .reverse()
+      .find((e) => e.step === step && e.status === 'completed' && e.durationMs != null);
+    return ev?.durationMs ?? null;
+  }
+
+  private deriveStepStatus(step: ProtopipeContentPlanStep): StepStatus {
+    const p = this.plan();
+    if (!p) return 'pending';
+
+    const failedHere = (p.events ?? []).some(
+      (e) => e.step === step && e.status === 'failed',
+    );
+    if (failedHere) return 'failed';
+
+    const current: ProtopipeContentPlanCurrentStep | undefined = p.currentStep;
+    if (p.status === 'complete' || current === 'done') return 'complete';
+    if (!current) return 'pending';
+
+    const stepOrder = STEP_ORDER.indexOf(step);
+    const currentOrder = STEP_ORDER.indexOf(current as ProtopipeContentPlanStep);
+    if (stepOrder < currentOrder) return 'complete';
+    if (stepOrder === currentOrder) {
+      return p.status === 'running' ? 'running' : 'pending';
+    }
+    return 'pending';
   }
 }

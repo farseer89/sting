@@ -4,6 +4,8 @@ import { ProtopipeEndpoints } from '@hive/contracts';
 import type {
   ProtopipeGenerateContentPlanResponse,
   ProtopipeGetContentPlanResponse,
+  ProtopipeGetContentPlanRunResponse,
+  ProtopipeListContentPlanRunsResponse,
 } from '@hive/contracts';
 import { firstValueFrom } from 'rxjs';
 import { protopipeApiUrl } from '../protopipe-http.util';
@@ -25,6 +27,22 @@ export class ContentPlanService {
     return firstValueFrom(
       this.http.get<ProtopipeGetContentPlanResponse>(
         protopipeApiUrl(ProtopipeEndpoints.contentPlanGet.path, { siteId }),
+      ),
+    );
+  }
+
+  listRuns(siteId: string): Promise<ProtopipeListContentPlanRunsResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeListContentPlanRunsResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.contentPlanListRuns.path, { siteId }),
+      ),
+    );
+  }
+
+  getRun(siteId: string, planId: string): Promise<ProtopipeGetContentPlanRunResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeGetContentPlanRunResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.contentPlanGetRun.path, { siteId, planId }),
       ),
     );
   }

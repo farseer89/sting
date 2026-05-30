@@ -1,5 +1,9 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import type { ProtopipeSiteContentPlan } from '@hive/contracts';
+import type {
+  ProtopipeContentPlanRunSummary,
+  ProtopipeContentPlanStepEvent,
+  ProtopipeSiteContentPlan,
+} from '@hive/contracts';
 import { parseProtopipeApiError } from '../protopipe-http.util';
 import { ContentPlanService } from './content-plan.service';
 
@@ -14,12 +18,17 @@ export class ContentPlanStore {
   private readonly _starting = signal(false);
   private readonly _loading = signal(false);
   private readonly _error = signal<string | null>(null);
+  private readonly _runs = signal<ProtopipeContentPlanRunSummary[]>([]);
+  /** null = follow the latest run; otherwise a pinned run id being replayed. */
+  private readonly _selectedRunId = signal<string | null>(null);
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly plan = this._plan.asReadonly();
   readonly starting = this._starting.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
+  readonly runs = this._runs.asReadonly();
+  readonly selectedRunId = this._selectedRunId.asReadonly();
 
   readonly status = computed(() => this._plan()?.status ?? 'idle');
   readonly isRunning = computed(
@@ -27,6 +36,11 @@ export class ContentPlanStore {
   );
   readonly isComplete = computed(() => this._plan()?.status === 'complete');
   readonly hasFailed = computed(() => this._plan()?.status === 'failed');
+
+  readonly currentStep = computed(() => this._plan()?.currentStep ?? null);
+  readonly events = computed<ProtopipeContentPlanStepEvent[]>(
+    () => this._plan()?.events ?? [],
+  );
 
   setSiteId(siteId: string): void {
     this._siteId.set(siteId);
@@ -37,9 +51,11 @@ export class ContentPlanStore {
     if (!siteId) return;
     this._loading.set(true);
     this._error.set(null);
+    this._selectedRunId.set(null);
     try {
       const res = await this.api.getLatest(siteId);
       this._plan.set(res.plan);
+      void this.loadRuns();
       if (res.plan && (res.plan.status === 'running' || res.plan.status === 'pending')) {
         this.startPolling();
       }
@@ -58,14 +74,52 @@ export class ContentPlanStore {
     }
     this._starting.set(true);
     this._error.set(null);
+    this._selectedRunId.set(null);
     try {
       const res = await this.api.generate(siteId);
       this._plan.set(res.plan);
+      void this.loadRuns();
       this.startPolling();
     } catch (err) {
       this._error.set(parseProtopipeApiError(err, 'Failed to generate content plan'));
     } finally {
       this._starting.set(false);
+    }
+  }
+
+  async loadRuns(): Promise<void> {
+    const siteId = this._siteId();
+    if (!siteId) return;
+    try {
+      const res = await this.api.listRuns(siteId);
+      this._runs.set(res.runs);
+    } catch {
+      // Run list is supplementary; failures shouldn't block the main view.
+    }
+  }
+
+  /** Pin and load a specific run for replay, or pass null to follow latest. */
+  async selectRun(planId: string | null): Promise<void> {
+    const siteId = this._siteId();
+    if (!siteId) return;
+    this.stopPolling();
+    this._selectedRunId.set(planId);
+    if (planId === null) {
+      await this.loadLatest();
+      return;
+    }
+    this._loading.set(true);
+    this._error.set(null);
+    try {
+      const res = await this.api.getRun(siteId, planId);
+      this._plan.set(res.plan);
+      if (res.plan && (res.plan.status === 'running' || res.plan.status === 'pending')) {
+        this.startPolling();
+      }
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Failed to load plan run'));
+    } finally {
+      this._loading.set(false);
     }
   }
 
@@ -89,12 +143,17 @@ export class ContentPlanStore {
       return;
     }
     try {
-      const res = await this.api.getLatest(siteId);
+      const selectedRunId = this._selectedRunId();
+      const res = selectedRunId
+        ? await this.api.getRun(siteId, selectedRunId)
+        : await this.api.getLatest(siteId);
       this._plan.set(res.plan);
       if (res.plan && (res.plan.status === 'running' || res.plan.status === 'pending')) {
         this.pollTimer = setTimeout(() => this.pollOnce(), POLL_INTERVAL_MS);
       } else {
         this.stopPolling();
+        // Refresh the picker so a freshly-finished run shows its final status.
+        void this.loadRuns();
       }
     } catch (err) {
       this._error.set(parseProtopipeApiError(err, 'Failed to poll content plan'));

@@ -66,6 +66,31 @@
   }
 
   @if (plan()) {
+    @if (runs().length > 1) {
+      <div class="cp__runs surface-card border-round shadow-1">
+        <span class="cp__runs-label">Runs</span>
+        <div class="cp__runs-chips">
+          @for (r of runs(); track r.id) {
+            <button
+              type="button"
+              class="cp__run-chip"
+              [class.cp__run-chip--active]="r.id === plan()?.id"
+              (click)="selectRun(r.id)"
+              [pTooltip]="(r.generatedAt | date: 'medium') ?? r.status"
+            >
+              <span class="cp__run-chip-v">v{{ r.version }}</span>
+              <span class="cp__run-chip-dot" [attr.data-status]="r.status"></span>
+            </button>
+          }
+        </div>
+        @if (!isLatestRun()) {
+          <button type="button" class="cp__run-latest" (click)="selectRun(null)">
+            <i class="pi pi-angle-double-right mr-1"></i>Follow latest
+          </button>
+        }
+      </div>
+    }
+
     <p-tabs [value]="activeTab()" (valueChange)="activeTab.set($any($event))">
       <p-tablist>
         @for (s of sections; track s.id) {
@@ -308,6 +333,224 @@
           } @else {
             <p class="text-color-secondary">No audit yet.</p>
           }
+        </p-tabpanel>
+
+        <!-- PROCESS (site-wide stepper — how the plan is made) -->
+        <p-tabpanel value="process">
+          <p class="text-color-secondary text-sm mt-0 mb-3">
+            Behind the curtain — the five stages that build the plan, their logs,
+            cost and the per-keyword deep scan we feed into the calendar.
+          </p>
+
+          <!-- Step rail -->
+          <ol class="cp__rail">
+            @for (entry of stepEntries(); track entry.step) {
+              <li
+                class="cp__rail-item"
+                [class.cp__rail-item--active]="processStep() === entry.step"
+                [attr.data-status]="entry.status"
+              >
+                <button type="button" class="cp__rail-btn" (click)="selectProcessStep(entry.step)">
+                  <span class="cp__rail-dot">
+                    @if (entry.status === 'complete') {
+                      <i class="pi pi-check"></i>
+                    } @else if (entry.status === 'running') {
+                      <i class="pi pi-spin pi-spinner"></i>
+                    } @else if (entry.status === 'failed') {
+                      <i class="pi pi-times"></i>
+                    } @else {
+                      {{ entry.index }}
+                    }
+                  </span>
+                  <span class="cp__rail-label">{{ entry.label }}</span>
+                </button>
+              </li>
+            }
+          </ol>
+
+          <!-- Selected step panel -->
+          <div class="cp__step surface-card border-round shadow-1">
+            @for (entry of stepEntries(); track entry.step) {
+              @if (entry.step === processStep()) {
+                <div class="cp__step-head">
+                  <div class="flex align-items-center gap-2">
+                    <i [class]="entry.icon"></i>
+                    <span class="font-semibold">{{ entry.label }}</span>
+                    <p-tag [value]="entry.status" [severity]="stepStatusSeverity(entry.status)" styleClass="cp__mini-tag" />
+                  </div>
+                  <div class="cp__step-meta">
+                    @if (stepDurationMs(entry.step); as ms) {
+                      <span class="text-color-secondary text-xs"><i class="pi pi-clock mr-1"></i>{{ (ms / 1000) | number: '1.1-1' }}s</span>
+                    }
+                    @if (stepCost(entry.step); as c) {
+                      <span class="text-color-secondary text-xs"><i class="pi pi-dollar mr-1"></i>{{ c | number: '1.2-4' }}</span>
+                    }
+                  </div>
+                </div>
+
+                <!-- Per-step artifact summary -->
+                <div class="cp__step-body">
+                  @switch (entry.step) {
+                    @case ('audit') {
+                      @if (audit(); as a) {
+                        <ul class="cp__facts">
+                          <li>{{ a.scannedCount }} page(s) crawled via <strong>{{ a.source }}</strong></li>
+                          <li>{{ a.refreshCandidates.length }} refresh candidate(s)</li>
+                          <li>{{ a.alreadyRanking.length }} keyword(s) you already rank for</li>
+                        </ul>
+                        @if (a.note) { <p class="text-color-secondary text-sm m-0">{{ a.note }}</p> }
+                        <button type="button" class="cp__jump" (click)="activeTab.set('audit')">Open existing content →</button>
+                      } @else {
+                        <p class="text-color-secondary m-0">Waiting on the crawl…</p>
+                      }
+                    }
+                    @case ('score_tier') {
+                      @if (tiers(); as t) {
+                        <ul class="cp__facts">
+                          <li><strong>{{ t.immediateFocus.length }}</strong> immediate focus</li>
+                          <li><strong>{{ t.longTerm.length }}</strong> long-term</li>
+                          <li><strong>{{ t.longTail.length }}</strong> long-tail</li>
+                        </ul>
+                        <button type="button" class="cp__jump" (click)="activeTab.set('keywords')">Open keywords →</button>
+                      } @else {
+                        <p class="text-color-secondary m-0">Scoring keywords…</p>
+                      }
+                    }
+                    @case ('cluster') {
+                      @if (clusters().length) {
+                        <div class="cp__chips">
+                          @for (c of clusters(); track c.name) {
+                            <span class="cp__chip">{{ c.name }} <span class="text-color-secondary">({{ c.members.length }})</span></span>
+                          }
+                        </div>
+                        <button type="button" class="cp__jump" (click)="activeTab.set('clusters')">Open clusters →</button>
+                      } @else {
+                        <p class="text-color-secondary m-0">Proposing clusters…</p>
+                      }
+                    }
+                    @case ('deep_scan') {
+                      @if (focusStrategies().length) {
+                        <div class="cp__scan">
+                          @for (s of focusStrategies(); track s.keyword.id) {
+                            <details class="cp__scan-card">
+                              <summary class="cp__scan-summary">
+                                <span class="font-medium">{{ s.keyword.phrase }}</span>
+                                <span class="cp__scan-tags">
+                                  <p-tag [value]="s.articleType" severity="secondary" styleClass="cp__mini-tag" />
+                                  <p-tag [value]="s.scannedCount + ' scanned'" severity="secondary" styleClass="cp__mini-tag" />
+                                </span>
+                              </summary>
+                              <div class="cp__scan-detail">
+                                @if (s.positioningSummary) {
+                                  <p class="m-0 mb-2 line-height-3">{{ s.positioningSummary }}</p>
+                                }
+                                @if (s.recommendedPillarAngle) {
+                                  <p class="m-0 mb-3 text-sm"><span class="text-color-secondary">Pillar angle:</span> {{ s.recommendedPillarAngle }}</p>
+                                }
+
+                                <div class="cp__scan-grid">
+                                  <div>
+                                    <div class="cp__scan-h">Consensus</div>
+                                    <ul class="cp__facts">
+                                      <li>Median {{ s.consensus.medianWordCount | number }} words</li>
+                                      @if (s.consensus.commonHeadings.length) {
+                                        <li>Common headings: {{ s.consensus.commonHeadings.join(', ') }}</li>
+                                      }
+                                      @if (s.consensus.commonSchemaTypes.length) {
+                                        <li>Schema: {{ s.consensus.commonSchemaTypes.join(', ') }}</li>
+                                      }
+                                    </ul>
+                                  </div>
+
+                                  @if (s.demandConsensus.length) {
+                                    <div>
+                                      <div class="cp__scan-h">Demand ({{ s.demandConsensus.length }})</div>
+                                      <ul class="cp__facts">
+                                        @for (d of s.demandConsensus; track d.term) {
+                                          <li>
+                                            {{ d.term }}
+                                            <span class="text-color-secondary text-xs">{{ d.coveredByCount }}/{{ d.scannedCount }} · {{ d.source }}</span>
+                                            @if (d.isTableStakes) { <p-tag value="must" severity="secondary" styleClass="ml-1 cp__mini-tag" /> }
+                                          </li>
+                                        }
+                                      </ul>
+                                    </div>
+                                  }
+                                </div>
+
+                                @if (s.topicGaps.length) {
+                                  <div class="cp__scan-h mt-2">Topic gaps</div>
+                                  <ul class="cp__facts">
+                                    @for (g of s.topicGaps; track g.topic) {
+                                      <li><strong>{{ g.topic }}</strong> — <span class="text-color-secondary">{{ g.whyItMatters }}</span></li>
+                                    }
+                                  </ul>
+                                }
+
+                                @if (s.articleIdeas.length) {
+                                  <div class="cp__scan-h mt-2">Article ideas ({{ s.articleIdeas.length }})</div>
+                                  <ul class="cp__facts">
+                                    @for (idea of s.articleIdeas; track idea.workingTitle) {
+                                      <li>
+                                        <span class="font-medium">{{ idea.workingTitle }}</span>
+                                        <span class="text-color-secondary text-xs"> · {{ idea.suggestedKeyword }} · {{ idea.relationToSeed }} · {{ idea.priority }}</span>
+                                        @if (idea.rationale) {
+                                          <div class="text-color-secondary text-xs line-height-3">{{ idea.rationale }}</div>
+                                        }
+                                      </li>
+                                    }
+                                  </ul>
+                                }
+                              </div>
+                            </details>
+                          }
+                        </div>
+                      } @else {
+                        <p class="text-color-secondary m-0">Deep-scanning focus keywords…</p>
+                      }
+                    }
+                    @case ('unify') {
+                      @if (narrative(); as n) {
+                        <p class="font-medium m-0 mb-1">{{ n.headline }}</p>
+                        <p class="text-color-secondary text-sm m-0 mb-3 line-height-3">{{ n.why }}</p>
+                      }
+                      <ul class="cp__facts">
+                        <li>{{ pillars().length }} pillar(s)</li>
+                        <li>{{ calendar().length }} calendar item(s)</li>
+                      </ul>
+                      @if (calendar().length) {
+                        <button type="button" class="cp__jump" (click)="activeTab.set('calendar')">Open calendar →</button>
+                      }
+                    }
+                  }
+                </div>
+
+                <!-- Events log -->
+                <div class="cp__log">
+                  <div class="cp__log-h">Log</div>
+                  @if (stepEvents().length) {
+                    @for (ev of stepEvents(); track $index) {
+                      <div class="cp__log-row" [attr.data-status]="ev.status">
+                        <span class="cp__log-time">{{ ev.startedAt | date: 'HH:mm:ss' }}</span>
+                        <p-tag [value]="ev.status" [severity]="eventStatusSeverity(ev.status)" styleClass="cp__mini-tag" />
+                        <span class="cp__log-note">
+                          {{ ev.note ?? ev.error ?? '—' }}
+                          @if (ev.durationMs != null) {
+                            <span class="text-color-secondary text-xs"> · {{ (ev.durationMs / 1000) | number: '1.1-1' }}s</span>
+                          }
+                          @if (ev.costUsd != null) {
+                            <span class="text-color-secondary text-xs"> · ${{ ev.costUsd | number: '1.2-4' }}</span>
+                          }
+                        </span>
+                      </div>
+                    }
+                  } @else {
+                    <p class="text-color-secondary text-sm m-0">No events logged for this step yet.</p>
+                  }
+                </div>
+              }
+            }
+          </div>
         </p-tabpanel>
       </p-tabpanels>
     </p-tabs>

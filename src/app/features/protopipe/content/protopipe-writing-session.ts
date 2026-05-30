@@ -1,7 +1,13 @@
-import type { ProtopipeContentSection, ProtopipeContentTemplate } from '@hive/contracts';
+import type {
+  ProtopipeContentBrief,
+  ProtopipeContentSection,
+  ProtopipeContentTemplate,
+} from '@hive/contracts';
 
 export interface WritingSession {
   template: ProtopipeContentTemplate;
+  /** Pre-writing research brief (present when the post was seeded from a plan). */
+  brief: ProtopipeContentBrief | null;
   slug: string;
   scheduleAt: Date | null;
   selectedKeywordId: string | null;

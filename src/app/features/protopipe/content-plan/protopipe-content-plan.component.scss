@@ -44,6 +44,26 @@
       background: color-mix(in srgb, var(--red-500) 8%, transparent);
       color: var(--red-500);
     }
+
+    &--ok {
+      border: 1px solid var(--fw-success-border, color-mix(in srgb, #10b981 30%, transparent));
+      background: var(--fw-success-bg, color-mix(in srgb, #10b981 8%, transparent));
+      color: var(--fw-success, #059669);
+    }
+  }
+
+  // Calendar rows that have a linked draft post are clickable
+  &__cal-row--linked {
+    cursor: pointer;
+    &:hover { background: color-mix(in srgb, var(--primary-color) 6%, transparent); }
+  }
+
+  &__cal-open {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--primary-color);
   }
 
   &__progress {

@@ -8,7 +8,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import type {
   ArticleGenerationContentStrategy,
   KeywordPriority,
@@ -97,6 +97,7 @@ export class ProtopipeContentPlanComponent implements OnInit {
   private readonly strategy = inject(ProtopipeStrategyService);
   private readonly store = inject(ContentPlanStore);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
 
   readonly activeTab = signal<PlanSection>('overview');
   readonly sections: PlanSectionDef[] = [
@@ -114,10 +115,14 @@ export class ProtopipeContentPlanComponent implements OnInit {
   readonly plan = this.store.plan;
   readonly starting = this.store.starting;
   readonly loading = this.store.loading;
+  readonly confirming = this.store.confirming;
   readonly error = this.store.error;
   readonly isRunning = this.store.isRunning;
   readonly isComplete = this.store.isComplete;
   readonly hasFailed = this.store.hasFailed;
+
+  /** Transient success note after confirming a plan. */
+  readonly confirmMessage = signal<string | null>(null);
   readonly runs = this.store.runs;
   readonly selectedRunId = this.store.selectedRunId;
   readonly currentStep = this.store.currentStep;
@@ -146,6 +151,17 @@ export class ProtopipeContentPlanComponent implements OnInit {
     this.events().filter((e) => e.step === this.processStep()),
   );
 
+  readonly confirmedCount = computed(
+    () => this.calendar().filter((i) => i.contentPostId).length,
+  );
+  readonly allConfirmed = computed(() => {
+    const items = this.calendar();
+    return items.length > 0 && items.every((i) => i.contentPostId);
+  });
+  readonly unconfirmedCount = computed(
+    () => this.calendar().filter((i) => !i.contentPostId).length,
+  );
+
   readonly progressPct = computed(() => {
     const p = this.plan()?.progress;
     if (!p || p.total <= 0) return 0;
@@ -163,7 +179,25 @@ export class ProtopipeContentPlanComponent implements OnInit {
   }
 
   generate(): void {
+    this.confirmMessage.set(null);
     void this.store.generate();
+  }
+
+  async confirm(): Promise<void> {
+    this.confirmMessage.set(null);
+    const res = await this.store.confirm();
+    if (!res) return;
+    const parts: string[] = [];
+    if (res.createdCount > 0) parts.push(`${res.createdCount} draft(s) created`);
+    if (res.skippedCount > 0) parts.push(`${res.skippedCount} already linked`);
+    this.confirmMessage.set(
+      parts.length ? parts.join(' · ') : 'No new drafts to create.',
+    );
+  }
+
+  openCalendarItem(item: ProtopipeContentPlanCalendarItem): void {
+    if (!item.contentPostId) return;
+    void this.router.navigate(['/protopipe/content', item.contentPostId]);
   }
 
   sectionCount(id: PlanSection): number | null {

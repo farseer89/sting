@@ -17,6 +17,7 @@ export class ContentPlanStore {
   private readonly _plan = signal<ProtopipeSiteContentPlan | null>(null);
   private readonly _starting = signal(false);
   private readonly _loading = signal(false);
+  private readonly _confirming = signal(false);
   private readonly _error = signal<string | null>(null);
   private readonly _runs = signal<ProtopipeContentPlanRunSummary[]>([]);
   /** null = follow the latest run; otherwise a pinned run id being replayed. */
@@ -26,6 +27,7 @@ export class ContentPlanStore {
   readonly plan = this._plan.asReadonly();
   readonly starting = this._starting.asReadonly();
   readonly loading = this._loading.asReadonly();
+  readonly confirming = this._confirming.asReadonly();
   readonly error = this._error.asReadonly();
   readonly runs = this._runs.asReadonly();
   readonly selectedRunId = this._selectedRunId.asReadonly();
@@ -84,6 +86,28 @@ export class ContentPlanStore {
       this._error.set(parseProtopipeApiError(err, 'Failed to generate content plan'));
     } finally {
       this._starting.set(false);
+    }
+  }
+
+  /**
+   * Confirm the current plan: server materializes calendar items into draft
+   * posts and returns the plan with contentPostId back-links. Returns the
+   * created/skipped counts for a user-facing message, or null on failure.
+   */
+  async confirm(): Promise<{ createdCount: number; skippedCount: number } | null> {
+    const siteId = this._siteId();
+    if (!siteId) return null;
+    this._confirming.set(true);
+    this._error.set(null);
+    try {
+      const res = await this.api.confirm(siteId);
+      this._plan.set(res.plan);
+      return { createdCount: res.createdCount, skippedCount: res.skippedCount };
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Failed to confirm content plan'));
+      return null;
+    } finally {
+      this._confirming.set(false);
     }
   }
 

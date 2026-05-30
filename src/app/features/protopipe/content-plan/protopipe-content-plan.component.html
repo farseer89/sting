@@ -24,11 +24,28 @@
       <p-button
         [label]="isRunning() ? 'Running…' : plan() ? 'Regenerate plan' : 'Generate plan'"
         [icon]="isRunning() ? 'pi pi-spin pi-spinner' : 'pi pi-bolt'"
-        [disabled]="starting() || isRunning()"
+        [severity]="isComplete() && unconfirmedCount() > 0 ? 'secondary' : undefined"
+        [outlined]="isComplete() && unconfirmedCount() > 0"
+        [disabled]="starting() || isRunning() || confirming()"
         (onClick)="generate()"
       />
+      @if (isComplete() && calendar().length) {
+        <p-button
+          [label]="confirming() ? 'Confirming…' : allConfirmed() ? 'Drafts created' : 'Confirm plan (' + unconfirmedCount() + ')'"
+          [icon]="confirming() ? 'pi pi-spin pi-spinner' : allConfirmed() ? 'pi pi-check' : 'pi pi-check-circle'"
+          [disabled]="confirming() || allConfirmed()"
+          (onClick)="confirm()"
+        />
+      }
     </div>
   </header>
+
+  @if (confirmMessage(); as m) {
+    <div class="cp__alert cp__alert--ok surface-card border-round" role="status">
+      <i class="pi pi-check-circle mr-2"></i>{{ m }}
+      <a routerLink="/protopipe/content" class="cp__exurl ml-2">Open content writer →</a>
+    </div>
+  }
 
   @if (error(); as e) {
     <div class="cp__alert cp__alert--err surface-card border-round" role="alert">
@@ -137,6 +154,14 @@
         <!-- CALENDAR -->
         <p-tabpanel value="calendar">
           @if (calendar().length) {
+            <p class="text-color-secondary text-sm mt-0 mb-3">
+              @if (confirmedCount() > 0) {
+                {{ confirmedCount() }} of {{ calendar().length }} items have draft posts — click a
+                <span class="cp__cal-open"><i class="pi pi-pencil"></i> Draft</span> row to open it in the content writer.
+              } @else {
+                Confirm the plan to turn these ideas into draft posts you can open in the content writer.
+              }
+            </p>
             @for (group of calendarByCluster(); track group.cluster) {
               <h3 class="cp__h3">{{ group.cluster }}</h3>
               <p-table
@@ -148,11 +173,14 @@
                 <ng-template pTemplate="header">
                   <tr>
                     <th>Publish</th><th>Working title</th><th>Keyword</th>
-                    <th>Type</th><th>Role</th><th>Priority</th><th>Kind</th>
+                    <th>Type</th><th>Role</th><th>Priority</th><th>Kind</th><th></th>
                   </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-item>
-                  <tr>
+                  <tr
+                    [class.cp__cal-row--linked]="item.contentPostId"
+                    (click)="openCalendarItem(item)"
+                  >
                     <td class="white-space-nowrap">{{ item.proposedPublishAt | date: 'MMM d' }}</td>
                     <td>
                       <span class="font-medium">{{ item.workingTitle }}</span>
@@ -160,7 +188,7 @@
                         <div class="text-color-secondary text-xs mt-1 line-height-3">{{ item.rationale }}</div>
                       }
                       @if (item.kind === 'refresh-existing' && item.existingUrl) {
-                        <a class="cp__exurl text-xs" [href]="item.existingUrl" target="_blank" rel="noopener">
+                        <a class="cp__exurl text-xs" [href]="item.existingUrl" target="_blank" rel="noopener" (click)="$event.stopPropagation()">
                           <i class="pi pi-refresh mr-1"></i>{{ item.existingUrl }}
                         </a>
                       }
@@ -177,6 +205,11 @@
                         [icon]="item.kind === 'refresh-existing' ? 'pi pi-refresh' : 'pi pi-plus'"
                         severity="secondary"
                       />
+                    </td>
+                    <td class="text-right white-space-nowrap">
+                      @if (item.contentPostId) {
+                        <span class="cp__cal-open"><i class="pi pi-pencil mr-1"></i>Draft</span>
+                      }
                     </td>
                   </tr>
                 </ng-template>

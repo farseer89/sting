@@ -164,6 +164,7 @@ export class ProtopipeContentEditorComponent {
       this.content.startCreate();
       this.content.openWritingSession({
         template: emptyContentTemplate(),
+        brief: null,
         slug: '',
         scheduleAt: null,
         selectedKeywordId: null,
@@ -188,6 +189,7 @@ export class ProtopipeContentEditorComponent {
     this.content.startEdit(id);
     this.content.openWritingSession({
       template: post.template ?? emptyContentTemplate(),
+      brief: post.brief ?? null,
       slug: post.slug,
       scheduleAt: post.publishAt ? new Date(post.publishAt) : null,
       selectedKeywordId: post.template?.primaryKeywordId ?? null,

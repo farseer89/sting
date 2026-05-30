@@ -28,6 +28,22 @@ export class ProtopipeWritingToolsComponent {
   readonly session = this.content.writingSession;
   readonly planKeywords = this.content.planKeywords;
 
+  /** Pre-writing research brief (when the post was seeded from a content plan). */
+  readonly brief = computed(() => this.session()?.brief ?? null);
+  readonly hasBrief = computed(() => {
+    const b = this.brief();
+    if (!b) return false;
+    return Boolean(
+      b.mustCoverTerms.length ||
+        b.contentGaps.length ||
+        b.secondaryKeywords.length ||
+        b.competitorHeadings.length ||
+        b.targetWordCount ||
+        b.positioningSummary ||
+        b.recommendedAngle,
+    );
+  });
+
   readonly ideas = this.agent.ideas;
   readonly ideasLoading = this.agent.ideasLoading;
   readonly ideasPending = this.agent.ideasPending;

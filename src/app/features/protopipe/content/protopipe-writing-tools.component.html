@@ -8,6 +8,69 @@
       <p class="write-tools__title">Writing tools</p>
     </div>
 
+    @if (hasBrief() && brief(); as b) {
+      <section class="write-tools__block brief">
+        <div class="write-tools__heading-row">
+          <h2 class="write-tools__heading">Brief</h2>
+          @if (b.targetWordCount) {
+            <span class="brief__target">~{{ b.targetWordCount }} words</span>
+          }
+        </div>
+        <p class="write-tools__hint">Research from your content plan. Use it as you write.</p>
+
+        @if (b.positioningSummary) {
+          <p class="brief__positioning">{{ b.positioningSummary }}</p>
+        }
+        @if (b.recommendedAngle) {
+          <p class="brief__angle"><strong>Angle:</strong> {{ b.recommendedAngle }}</p>
+        }
+
+        @if (b.mustCoverTerms.length) {
+          <div class="brief__group">
+            <h3 class="brief__label">Must-cover terms</h3>
+            <div class="brief__chips">
+              @for (term of b.mustCoverTerms; track term) {
+                <span class="brief__chip brief__chip--cover">{{ term }}</span>
+              }
+            </div>
+          </div>
+        }
+
+        @if (b.contentGaps.length) {
+          <div class="brief__group">
+            <h3 class="brief__label">Gaps to win (competitors miss these)</h3>
+            <ul class="brief__list">
+              @for (gap of b.contentGaps; track gap) {
+                <li>{{ gap }}</li>
+              }
+            </ul>
+          </div>
+        }
+
+        @if (b.secondaryKeywords.length) {
+          <div class="brief__group">
+            <h3 class="brief__label">Secondary keywords</h3>
+            <div class="brief__chips">
+              @for (kw of b.secondaryKeywords; track kw) {
+                <span class="brief__chip">{{ kw }}</span>
+              }
+            </div>
+          </div>
+        }
+
+        @if (b.competitorHeadings.length) {
+          <div class="brief__group">
+            <h3 class="brief__label">Competitor consensus headings</h3>
+            <ul class="brief__list brief__list--muted">
+              @for (h of b.competitorHeadings; track h) {
+                <li>{{ h }}</li>
+              }
+            </ul>
+          </div>
+        }
+      </section>
+    }
+
     <section class="write-tools__block">
       <div class="write-tools__heading-row">
         <h2 class="write-tools__heading">Article ideas</h2>

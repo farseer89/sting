@@ -8,6 +8,7 @@ import type {
   ArticleGenerationBrief,
   ArticleGenerationClusterContext,
   ArticleGenerationCompetitionAnalysis,
+  ArticleGenerationContentStrategy,
   ArticleGenerationPageProfile,
   ArticleGenerationDraftedSection,
   ArticleGenerationInformationGain,
@@ -40,6 +41,7 @@ interface LensRow {
 const STEP_LABELS: Record<ArticleGenerationStep, string> = {
   infer_type: 'Infer type',
   analyse_competition: 'Analyse competition',
+  content_plan: 'Content plan',
   research: 'Research',
   build_brief: 'Build brief',
   outline: 'Outline',
@@ -76,6 +78,7 @@ const ARTICLE_TYPE_DESCRIPTION: Record<ArticleGenerationType, string> = {
 const STEP_TITLES: Record<ArticleGenerationStep, string> = {
   infer_type: 'Inferred article type',
   analyse_competition: 'Competitor X-ray',
+  content_plan: 'Content plan',
   research: 'Research bundle',
   build_brief: 'SEO brief',
   outline: 'Outline',
@@ -124,9 +127,18 @@ export class ArticlePipelineStepPanelComponent {
     () => this.run()?.artifacts?.competitionAnalysis ?? null,
   );
 
-  /** The profiled pages (iteration 1: the #1 organic result). */
+  /** The profiled pages (top-10 organic results). */
   readonly competitorPages = computed<ArticleGenerationPageProfile[]>(
     () => this.competitionAnalysis()?.pages ?? [],
+  );
+
+  /** The #1 anchor page — the only one carrying the rich LLM interpretation. */
+  readonly anchorPage = computed<ArticleGenerationPageProfile | null>(
+    () => this.competitorPages()[0] ?? null,
+  );
+
+  readonly contentStrategy = computed<ArticleGenerationContentStrategy | null>(
+    () => this.run()?.artifacts?.contentStrategy ?? null,
   );
 
   readonly research = computed<ArticleGenerationResearch | null>(
@@ -293,6 +305,8 @@ export class ArticlePipelineStepPanelComponent {
         return !!run.articleType;
       case 'analyse_competition':
         return !!run.artifacts?.competitionAnalysis;
+      case 'content_plan':
+        return !!run.artifacts?.contentStrategy;
       case 'research':
         return !!run.artifacts?.research;
       case 'build_brief':

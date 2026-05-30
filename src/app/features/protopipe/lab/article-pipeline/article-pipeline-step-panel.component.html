@@ -38,9 +38,10 @@
           <section class="xray">
             <div class="xray__head">
               <p class="xray__lede">
-                Profiling the top organic result for
+                Profiling the top {{ ca.scannedCount }} organic results for
                 <strong>&ldquo;{{ ca.keyword.phrase }}&rdquo;</strong>
-                to reverse-engineer why it ranks.
+                to reverse-engineer what wins. The #1 anchor gets the deep read;
+                the full set feeds the content plan.
                 <span class="xray__asof">· {{ ca.serpGeo.locationName }} · {{ formatCollectedAt(ca.analyzedAt) }}</span>
               </p>
               <div class="xray__meta">
@@ -58,7 +59,35 @@
               </div>
             }
 
-            @for (p of competitorPages(); track p.url) {
+            <!-- Top-N comparison table -->
+            @if (competitorPages().length > 1) {
+              <div class="cmp">
+                <div class="cmp__row cmp__row--head">
+                  <span class="cmp__rank">#</span>
+                  <span class="cmp__domain">domain</span>
+                  <span class="cmp__num">words</span>
+                  <span class="cmp__num">H2</span>
+                  <span class="cmp__num">schema</span>
+                  <span class="cmp__num">demand</span>
+                  <span class="cmp__status">fetch</span>
+                </div>
+                @for (p of competitorPages(); track p.url) {
+                  <div class="cmp__row" [class.is-anchor]="$index === 0">
+                    <span class="cmp__rank">{{ p.serpPosition ?? ($index + 1) }}</span>
+                    <a class="cmp__domain" [href]="p.url" target="_blank" rel="noopener">{{ p.domain }}</a>
+                    <span class="cmp__num">{{ p.fetchStatus === 'ok' ? p.wordCount.toLocaleString() : '—' }}</span>
+                    <span class="cmp__num">{{ p.fetchStatus === 'ok' ? p.h2Count : '—' }}</span>
+                    <span class="cmp__num">{{ p.fetchStatus === 'ok' ? p.schemaTypes.length : '—' }}</span>
+                    <span class="cmp__num">{{ p.fetchStatus === 'ok' && p.entityCoverage.length ? coveredCount(p) + '/' + p.entityCoverage.length : '—' }}</span>
+                    <span class="cmp__status" [class]="fetchStatusClass(p.fetchStatus)">{{ fetchStatusLabel(p.fetchStatus) }}</span>
+                  </div>
+                }
+              </div>
+
+              <div class="xray__anchorlabel">Anchor deep-dive · #1 result</div>
+            }
+
+            @if (anchorPage(); as p) {
               <article class="profile">
                 <header class="profile__top">
                   <span class="profile__rank">#{{ p.serpPosition ?? '?' }}</span>
@@ -298,6 +327,124 @@
                   }
                 }
               </article>
+            }
+          </section>
+        }
+      }
+
+      <!-- ===================== CONTENT PLAN (consolidated strategy) ===================== -->
+      @case ('content_plan') {
+        @if (contentStrategy(); as cs) {
+          <section class="plan">
+            <div class="plan__head">
+              <p class="plan__lede">
+                Content strategy for
+                <strong>&ldquo;{{ cs.keyword.phrase }}&rdquo;</strong>
+                consolidated from the top {{ cs.scannedCount }} competitors.
+                <span class="xray__asof">· {{ cs.serpGeo.locationName }} · {{ formatCollectedAt(cs.generatedAt) }}</span>
+              </p>
+            </div>
+
+            <!-- Consensus (deterministic) -->
+            <div class="plan__section">
+              <span class="profile__col-k">Consensus structure</span>
+              <div class="profile__metrics">
+                <span class="profile__stat"><i>median words</i>{{ cs.consensus.medianWordCount.toLocaleString() }}</span>
+                <span class="profile__stat"><i>common sections</i>{{ cs.consensus.commonHeadings.length }}</span>
+              </div>
+              @if (cs.consensus.commonHeadings.length) {
+                <div class="profile__chips">
+                  <span class="profile__chips-k">shared headings</span>
+                  @for (h of cs.consensus.commonHeadings; track h) {
+                    <span class="profile__tag">{{ h }}</span>
+                  }
+                </div>
+              }
+              @if (cs.consensus.commonSchemaTypes.length) {
+                <div class="profile__chips">
+                  <span class="profile__chips-k">common schema</span>
+                  @for (s of cs.consensus.commonSchemaTypes; track s) {
+                    <span class="profile__tag is-dim">{{ s }}</span>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Demand consensus -->
+            @if (cs.demandConsensus.length) {
+              <div class="plan__section">
+                <span class="profile__col-k">Demand coverage across competitors</span>
+                <div class="cover__grid">
+                  @for (d of cs.demandConsensus; track d.term) {
+                    <span class="cover__item" [class.is-covered]="d.isTableStakes" [class.is-missing]="d.coveredByCount === 0">
+                      <span class="cover__dot"></span>
+                      <span class="cover__term">{{ d.term }}</span>
+                      <span class="cover__src">{{ d.source }}</span>
+                      <span class="cover__n">{{ d.coveredByCount }}/{{ d.scannedCount }}</span>
+                      @if (d.isTableStakes) { <span class="cover__src">table-stakes</span> }
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Pillar angle + positioning -->
+            @if (cs.recommendedPillarAngle) {
+              <div class="profile__angle">
+                <span class="profile__angle-k">Recommended pillar angle</span>
+                <p>{{ cs.recommendedPillarAngle }}</p>
+              </div>
+            }
+            @if (cs.positioningSummary) {
+              <p class="plan__positioning">{{ cs.positioningSummary }}</p>
+            }
+
+            <!-- Topic gaps -->
+            @if (cs.topicGaps.length) {
+              <div class="profile__col is-weak plan__section">
+                <span class="profile__col-k">Topic gaps (our wedge)</span>
+                <ul>
+                  @for (g of cs.topicGaps; track g.topic) {
+                    <li><strong>{{ g.topic }}</strong>@if (g.whyItMatters) { — {{ g.whyItMatters }} }</li>
+                  }
+                </ul>
+              </div>
+            }
+
+            <!-- Article ideas (the content plan) -->
+            @if (cs.articleIdeas.length) {
+              <div class="ideas plan__section">
+                <span class="profile__col-k">Article plan ({{ cs.articleIdeas.length }} ideas) · input for the monthly attack plan</span>
+                <div class="ideas__list">
+                  @for (idea of cs.articleIdeas; track idea.workingTitle) {
+                    <div class="idea" [class.is-pillar]="idea.clusterRole === 'pillar'">
+                      <div class="idea__top">
+                        <span class="idea__title">{{ idea.workingTitle }}</span>
+                        <span class="idea__prio" [attr.data-prio]="idea.priority">{{ idea.priority }}</span>
+                      </div>
+                      <div class="idea__meta">
+                        <span class="idea__tag" [class.is-pillar]="idea.clusterRole === 'pillar'">{{ idea.clusterRole }}</span>
+                        <span class="idea__tag is-rel">{{ idea.relationToSeed }}</span>
+                        <span class="idea__kw">{{ idea.suggestedKeyword }}</span>
+                        <span class="idea__tag">{{ idea.articleType }}</span>
+                        <span class="idea__tag">{{ idea.intent }}</span>
+                        @if (idea.targetWordCount) {
+                          <span class="idea__tag">{{ idea.targetWordCount.toLocaleString() }} words</span>
+                        }
+                      </div>
+                      @if (idea.mandatorySections?.length) {
+                        <div class="profile__chips">
+                          <span class="profile__chips-k">must cover</span>
+                          @for (s of idea.mandatorySections; track s) {
+                            <span class="profile__tag is-dim">{{ s }}</span>
+                          }
+                        </div>
+                      }
+                      @if (idea.rationale) { <p class="idea__why">{{ idea.rationale }}</p> }
+                    </div>
+                  }
+                </div>
+              </div>
             }
           </section>
         }

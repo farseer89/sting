@@ -7,12 +7,20 @@
   <div class="behind__scroll">
     @if (showMeasurementModel()) {
       <section class="behind__block">
-        <h3 class="behind__title">PageProfile measurement model</h3>
+        <h3 class="behind__title">
+          {{ activeStep() === 'content_plan' ? 'ContentStrategy measurement model' : 'PageProfile measurement model' }}
+        </h3>
         <p class="behind__model-note">
-          The canonical, unified feature set recorded for every page we scan —
-          competitors now, our own articles later — so the corpus is ML-ready.
+          @if (activeStep() === 'content_plan') {
+            Consolidates the top-N scan into a reviewable content strategy:
+            deterministic consensus plus an LLM pass for the angle + ranked
+            article ideas.
+          } @else {
+            The canonical, unified feature set recorded for every page we scan —
+            competitors now, our own articles later — so the corpus is ML-ready.
+          }
         </p>
-        @for (g of measurementModel; track g.group) {
+        @for (g of measurementModel(); track g.group) {
           <div class="model-group">
             <span class="model-group__name">{{ g.group }}</span>
             @for (f of g.fields; track f.label) {

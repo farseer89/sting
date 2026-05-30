@@ -108,9 +108,45 @@ const PAGE_PROFILE_MODEL: ModelGroup[] = [
   },
 ];
 
+/**
+ * The ContentStrategy measurement model (content_plan step). Consensus is
+ * computed deterministically across the scanned set; the ideas + angle come
+ * from a single LLM consolidation pass.
+ */
+const CONTENT_STRATEGY_MODEL: ModelGroup[] = [
+  {
+    group: 'Consensus (deterministic)',
+    fields: [
+      { label: 'consensus.medianWordCount', origin: 'deterministic', description: 'Median body depth across the scanned competitors.' },
+      { label: 'consensus.commonHeadings', origin: 'deterministic', description: 'Sections most competitors share (table-stakes structure).' },
+      { label: 'consensus.commonSchemaTypes', origin: 'deterministic', description: 'Schema.org types common across the set.' },
+      { label: 'demandConsensus[]', origin: 'deterministic', description: 'Each demand term + how many competitors cover it; majority => table-stakes.' },
+    ],
+  },
+  {
+    group: 'Strategy (LLM)',
+    fields: [
+      { label: 'recommendedPillarAngle', origin: 'llm', description: 'One-line angle for the pillar that wins this cluster.' },
+      { label: 'positioningSummary', origin: 'llm', description: 'How to position the cluster vs the SERP.' },
+      { label: 'topicGaps[]', origin: 'llm', description: 'Topics nobody covers well — our wedge.' },
+    ],
+  },
+  {
+    group: 'Article ideas (LLM)',
+    fields: [
+      { label: 'articleIdeas[].workingTitle / suggestedKeyword', origin: 'llm', description: 'The idea and the keyword it targets.' },
+      { label: 'articleIdeas[].clusterRole / relationToSeed', origin: 'llm', description: 'Placement: pillar vs supporting, and relation to the seed.' },
+      { label: 'articleIdeas[].intent / articleType / priority', origin: 'llm', description: 'Idea classification + ranking.' },
+      { label: 'articleIdeas[].targetWordCount / mandatorySections', origin: 'llm', description: 'Brief-lite specs for the article.' },
+      { label: 'articleIdeas[].rationale', origin: 'llm', description: 'Why it strengthens topical authority.' },
+    ],
+  },
+];
+
 const STEP_LABELS: Record<ArticleGenerationStep, string> = {
   infer_type: 'Infer type',
   analyse_competition: 'Analyse competition',
+  content_plan: 'Content plan',
   research: 'Research',
   build_brief: 'Build brief',
   outline: 'Outline',
@@ -123,6 +159,7 @@ const STEP_LABELS: Record<ArticleGenerationStep, string> = {
 const STEP_TO_ARTIFACT_KEY: Record<ArticleGenerationStep, keyof ArticleGenerationRunDto['artifacts'] | null> = {
   infer_type: null,
   analyse_competition: 'competitionAnalysis',
+  content_plan: 'contentStrategy',
   research: 'research',
   build_brief: 'brief',
   outline: 'outline',
@@ -148,10 +185,16 @@ export class ArticlePipelineBehindComponent {
   readonly activeStepLabel = computed(() => STEP_LABELS[this.activeStep()]);
 
   readonly showMeasurementModel = computed(
-    () => this.activeStep() === 'analyse_competition',
+    () =>
+      this.activeStep() === 'analyse_competition' ||
+      this.activeStep() === 'content_plan',
   );
 
-  readonly measurementModel = PAGE_PROFILE_MODEL;
+  readonly measurementModel = computed<ModelGroup[]>(() =>
+    this.activeStep() === 'content_plan'
+      ? CONTENT_STRATEGY_MODEL
+      : PAGE_PROFILE_MODEL,
+  );
 
   readonly artifactJson = computed<string | null>(() => {
     const run = this.run();

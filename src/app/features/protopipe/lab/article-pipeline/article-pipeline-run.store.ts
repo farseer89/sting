@@ -11,6 +11,7 @@ const POLL_INTERVAL_MS = 800;
 const GENERATION_STEPS: ArticleGenerationStep[] = [
   'infer_type',
   'analyse_competition',
+  'content_plan',
   'research',
   'build_brief',
   'outline',

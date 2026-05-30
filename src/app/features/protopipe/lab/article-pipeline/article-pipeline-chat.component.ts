@@ -18,6 +18,7 @@ interface ChatMessage {
 const STEP_LABELS: Record<ArticleGenerationStep, string> = {
   infer_type: 'Infer type',
   analyse_competition: 'Analyse competition',
+  content_plan: 'Content plan',
   research: 'Research',
   build_brief: 'Build brief',
   outline: 'Outline',

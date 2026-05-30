@@ -53,6 +53,8 @@ export class ProtopipeContentService {
   private readonly _seoValidation = signal<SeoValidationResult | null>(null);
   private readonly _publishReview = signal(false);
   private readonly _writingSession = signal<WritingSession | null>(null);
+  /** True while the immersive pipeline writer owns the layout (shell hides global nav). */
+  private readonly _writerImmersive = signal(false);
   /** Fires after a successful create (for editor route replace). */
   readonly saveCreatedId = signal<string | null>(null);
   readonly publishSucceeded = signal(false);
@@ -99,6 +101,11 @@ export class ProtopipeContentService {
   readonly publishReview = this._publishReview.asReadonly();
   readonly writingSession = this._writingSession.asReadonly();
   readonly inWritingMode = computed(() => this._writingSession() !== null);
+  readonly writerImmersive = this._writerImmersive.asReadonly();
+
+  setWriterImmersive(active: boolean): void {
+    this._writerImmersive.set(active);
+  }
 
   readonly publishedPosts = computed(() =>
     this.posts().filter((p) => p.status === 'published'),

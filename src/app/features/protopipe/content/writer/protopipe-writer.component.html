@@ -1,0 +1,444 @@
+<p-toast />
+
+<div class="pw" [class.pw--readonly]="isReadOnly()">
+  <!-- Top bar -->
+  <header class="pw__bar">
+    <button type="button" class="pw__back" (click)="backToLibrary()">
+      <i class="pi pi-arrow-left"></i>
+      <span>Content</span>
+    </button>
+
+    <div class="pw__bar-status">
+      @if (loading() || loadingPost()) {
+        <span class="pw__status"><i class="pi pi-spin pi-spinner"></i> Loading…</span>
+      } @else if (isReadOnly()) {
+        <span class="pw__status pw__status--pub"><i class="pi pi-check-circle"></i> Published</span>
+      } @else {
+        <span
+          class="pw__status"
+          [class.pw__status--dirty]="content.dirty()"
+        >{{ saveLabel() }}</span>
+      }
+    </div>
+
+    <div class="pw__bar-actions">
+      @if (!isReadOnly()) {
+        <button
+          type="button"
+          class="pw__btn pw__btn--ghost"
+          (click)="saveDraft()"
+          [disabled]="saving() || !content.dirty()"
+        >
+          {{ saving() ? 'Saving…' : 'Save draft' }}
+        </button>
+      }
+      <button
+        type="button"
+        class="pw__btn pw__btn--accent"
+        (click)="publish()"
+        [disabled]="publishing() || isReadOnly()"
+      >
+        {{ publishing() ? 'Publishing…' : 'Publish' }}
+      </button>
+    </div>
+  </header>
+
+  <!-- Workspace: tool-rail · stage(canvas + inspector) -->
+  <div class="pw__workspace">
+    <nav class="pw__rail" aria-label="Writer tools">
+      <button
+        type="button"
+        class="pw__tool"
+        (click)="addSection()"
+        [disabled]="isReadOnly()"
+        title="Add section"
+      >
+        <i class="pi pi-plus"></i>
+        <span class="pw__tool-tip">Add section</span>
+      </button>
+
+      <span class="pw__rail-divider"></span>
+
+      <button
+        type="button"
+        class="pw__tool"
+        [class.is-active]="isPanelOpen('brief')"
+        (click)="togglePanel('brief')"
+        title="Research brief"
+      >
+        <i class="pi pi-flag"></i>
+        @if (hasBrief()) { <span class="pw__tool-dot"></span> }
+        <span class="pw__tool-tip">Brief</span>
+      </button>
+      <button
+        type="button"
+        class="pw__tool"
+        [class.is-active]="isPanelOpen('preview')"
+        (click)="togglePanel('preview')"
+        title="Search preview"
+      >
+        <i class="pi pi-google"></i>
+        <span class="pw__tool-tip">Search preview</span>
+      </button>
+      <button
+        type="button"
+        class="pw__tool"
+        [class.is-active]="isPanelOpen('hints')"
+        (click)="togglePanel('hints')"
+        title="Writing hints"
+      >
+        <i class="pi pi-check-circle"></i>
+        <span class="pw__tool-tip">Hints</span>
+      </button>
+      <button
+        type="button"
+        class="pw__tool"
+        [class.is-active]="isPanelOpen('seo')"
+        (click)="togglePanel('seo')"
+        title="SEO & schedule"
+      >
+        <i class="pi pi-sliders-h"></i>
+        <span class="pw__tool-tip">SEO & schedule</span>
+      </button>
+      <button
+        type="button"
+        class="pw__tool"
+        [class.is-active]="isPanelOpen('behind')"
+        (click)="togglePanel('behind')"
+        title="Behind the curtain"
+      >
+        <i class="pi pi-server"></i>
+        <span class="pw__tool-tip">Behind the curtain</span>
+      </button>
+    </nav>
+
+    <div class="pw__stage">
+      <div class="pw__scroll">
+        @if (session(); as s) {
+          <article class="pw__canvas">
+            @if (topicLabel(); as topic) {
+              <p class="pw__topic">Writing for <strong>{{ topic }}</strong></p>
+            }
+
+            <!-- Headline -->
+            <div class="pw__block pw__block--title">
+              <div class="pw__block-main pw__block-main--title">
+                <input
+                  class="pw__h1"
+                  type="text"
+                  [ngModel]="s.template.h1"
+                  (ngModelChange)="onHeadlineInput($event)"
+                  [disabled]="isReadOnly()"
+                  placeholder="Your headline…"
+                />
+              </div>
+            </div>
+
+            <!-- Intro -->
+            <div class="pw__block">
+              <div class="pw__block-main">
+                <textarea
+                  class="pw__intro"
+                  rows="3"
+                  [ngModel]="s.template.intro"
+                  (ngModelChange)="patchTemplate({ intro: $event })"
+                  [disabled]="isReadOnly()"
+                  placeholder="Open with the promise of the piece…"
+                ></textarea>
+                @if (introSuggestion(); as hint) {
+                  <button type="button" class="pw__suggest" (click)="insertIntroSuggestion()">
+                    <i class="pi pi-sparkles"></i> Suggest an opening
+                  </button>
+                }
+              </div>
+            </div>
+
+            <!-- Sections -->
+            @for (sec of s.template.sections; track $index) {
+              @if (!isReadOnly()) {
+                <div class="pw__insert">
+                  <button
+                    type="button"
+                    class="pw__insert-btn"
+                    (click)="insertSection($index)"
+                    title="Insert section here"
+                  >
+                    <span class="pw__insert-icon"></span>
+                  </button>
+                </div>
+              }
+
+              <div class="pw__block pw__section">
+                <div class="pw__block-main">
+                  <input
+                    class="pw__h2"
+                    type="text"
+                    [ngModel]="sec.h2"
+                    (ngModelChange)="patchSection($index, { h2: $event })"
+                    (focus)="focusSection($index)"
+                    [disabled]="isReadOnly()"
+                    placeholder="Section heading…"
+                  />
+                  <textarea
+                    class="pw__section-body"
+                    rows="4"
+                    [ngModel]="sec.body"
+                    (ngModelChange)="patchSection($index, { body: $event })"
+                    (focus)="focusSection($index)"
+                    [disabled]="isReadOnly()"
+                    placeholder="Write this section…"
+                  ></textarea>
+                  @if (!isReadOnly() && s.template.sections.length > 1) {
+                    <button type="button" class="pw__remove" (click)="removeSection($index)">
+                      Remove section
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (!isReadOnly()) {
+              <div class="pw__block pw__block--foot">
+                <div class="pw__block-main">
+                  <button type="button" class="pw__add" (click)="addSection()">
+                    <i class="pi pi-plus"></i> Add section
+                  </button>
+                </div>
+              </div>
+            }
+          </article>
+        }
+      </div>
+
+      <!-- Right inspector -->
+      <aside class="pw__aside">
+        @if (error(); as err) {
+          <div class="pw__panel pw__panel--error">{{ err }}</div>
+        }
+
+        @if (publishReview()) {
+          <section class="pw__panel pw__panel--review">
+            <h3 class="pw__panel-title">Review before publishing</h3>
+            <ul class="pw__blockers">
+              @for (b of publishBlockers(); track b) {
+                <li>{{ b }}</li>
+              }
+            </ul>
+            <button type="button" class="pw__dismiss" (click)="dismissPublishReview()">Dismiss</button>
+          </section>
+        }
+
+        @if (isPanelOpen('brief')) {
+          <section class="pw__panel pw__panel--brief">
+            <h3 class="pw__panel-title">Brief</h3>
+            @if (hasBrief() && brief(); as b) {
+              @if (b.targetWordCount) {
+                <p class="pw__brief-target">Target ~{{ b.targetWordCount }} words</p>
+              }
+              @if (b.positioningSummary) {
+                <p class="pw__brief-note">{{ b.positioningSummary }}</p>
+              }
+              @if (b.recommendedAngle) {
+                <p class="pw__brief-angle"><span>Angle</span> {{ b.recommendedAngle }}</p>
+              }
+              @if (b.mustCoverTerms.length) {
+                <div class="pw__brief-group">
+                  <span class="pw__brief-label">Must cover</span>
+                  <div class="pw__chips">
+                    @for (t of b.mustCoverTerms; track t) { <span class="pw__chip">{{ t }}</span> }
+                  </div>
+                </div>
+              }
+              @if (b.secondaryKeywords.length) {
+                <div class="pw__brief-group">
+                  <span class="pw__brief-label">Secondary keywords</span>
+                  <div class="pw__chips">
+                    @for (t of b.secondaryKeywords; track t) { <span class="pw__chip pw__chip--soft">{{ t }}</span> }
+                  </div>
+                </div>
+              }
+              @if (b.contentGaps.length) {
+                <div class="pw__brief-group">
+                  <span class="pw__brief-label">Content gaps</span>
+                  <ul class="pw__brief-list">
+                    @for (g of b.contentGaps; track g) { <li>{{ g }}</li> }
+                  </ul>
+                </div>
+              }
+              @if (b.competitorHeadings.length) {
+                <div class="pw__brief-group">
+                  <span class="pw__brief-label">Competitor headings</span>
+                  <ul class="pw__brief-list">
+                    @for (h of b.competitorHeadings; track h) { <li>{{ h }}</li> }
+                  </ul>
+                </div>
+              }
+            } @else {
+              <p class="pw__panel-empty">
+                No research brief on this post. Briefs are seeded when a post is created from a
+                confirmed content plan.
+              </p>
+            }
+          </section>
+        }
+
+        @if (isPanelOpen('preview')) {
+          <section class="pw__panel">
+            <h3 class="pw__panel-title">Search preview</h3>
+            @if (serp(); as p) {
+              <p class="pw__serp-url">{{ p.url }}</p>
+              <p class="pw__serp-title">{{ p.title }}</p>
+              <p class="pw__serp-desc">{{ p.description }}</p>
+            }
+          </section>
+        }
+
+        @if (isPanelOpen('hints')) {
+          <section class="pw__panel">
+            <h3 class="pw__panel-title">Hints</h3>
+            <ul class="pw__hints">
+              @for (h of writingHints(); track h.id) {
+                <li class="pw__hint" [class.is-done]="h.done">
+                  <span class="pw__hint-dot"></span>{{ h.label }}
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        @if (isPanelOpen('seo')) {
+          <section class="pw__panel">
+            <h3 class="pw__panel-title">SEO &amp; schedule</h3>
+            @if (session(); as s) {
+              <label class="pw__field">
+                <span>Title</span>
+                <input
+                  type="text"
+                  [ngModel]="s.template.title"
+                  (ngModelChange)="patchTemplate({ title: $event })"
+                  [disabled]="isReadOnly()"
+                />
+              </label>
+              <label class="pw__field">
+                <span>Slug</span>
+                <input
+                  type="text"
+                  [ngModel]="s.slug"
+                  (ngModelChange)="setSlug($event)"
+                  [disabled]="isReadOnly()"
+                />
+              </label>
+              <label class="pw__field">
+                <span>Meta description</span>
+                <textarea
+                  rows="3"
+                  [ngModel]="s.template.metaDescription"
+                  (ngModelChange)="patchTemplate({ metaDescription: $event })"
+                  [disabled]="isReadOnly()"
+                ></textarea>
+                <span class="pw__meta-count" [class.is-warn]="metaWarn()">
+                  {{ metaLen() }} / {{ metaMin }}–{{ metaMax }}
+                </span>
+              </label>
+              <label class="pw__field">
+                <span>Schedule</span>
+                <p-datepicker
+                  [ngModel]="s.scheduleAt"
+                  (ngModelChange)="setSchedule($event)"
+                  [showTime]="true"
+                  [showButtonBar]="true"
+                  hourFormat="12"
+                  dateFormat="M d, yy"
+                  appendTo="body"
+                  [disabled]="isReadOnly()"
+                  placeholder="Publish immediately"
+                />
+              </label>
+            }
+          </section>
+        }
+
+        @if (isPanelOpen('behind')) {
+          <section class="pw__panel pw__panel--behind">
+            <h3 class="pw__panel-title">Behind the curtain</h3>
+
+            @if (run(); as r) {
+              <div class="pw__run-status" [attr.data-status]="r.status">
+                <span class="pw__run-dot"></span>
+                <span class="pw__run-label">
+                  @switch (r.status) {
+                    @case ('running') { Running · {{ r.currentStep }} }
+                    @case ('pending') { Queued }
+                    @case ('complete') { Complete }
+                    @case ('failed') { Failed }
+                  }
+                </span>
+              </div>
+
+              <ol class="pw__steps">
+                @for (st of pipelineSteps(); track st.step) {
+                  <li class="pw__step" [attr.data-status]="st.status">
+                    <span class="pw__step-dot">
+                      @if (st.status === 'complete') { <i class="pi pi-check"></i> }
+                      @else if (st.status === 'running') { <i class="pi pi-spin pi-spinner"></i> }
+                      @else if (st.status === 'failed') { <i class="pi pi-times"></i> }
+                    </span>
+                    <span class="pw__step-label">{{ st.label }}</span>
+                  </li>
+                }
+              </ol>
+
+              @if (r.error) {
+                <p class="pw__run-error">{{ r.error.step }}: {{ r.error.message }}</p>
+              }
+
+              @if (generatedReady() && !isReadOnly()) {
+                <button type="button" class="pw__btn pw__btn--accent pw__run-apply" (click)="applyGenerated()">
+                  <i class="pi pi-download"></i> Pull draft into document
+                </button>
+              }
+
+              @if (!runIsActive()) {
+                <button
+                  type="button"
+                  class="pw__run-relaunch"
+                  (click)="generateWithPipeline()"
+                  [disabled]="generating()"
+                >
+                  {{ generating() ? 'Launching…' : 'Re-run pipeline' }}
+                </button>
+              }
+
+              @if (runEvents().length) {
+                <div class="pw__log">
+                  <span class="pw__log-h">Event log</span>
+                  @for (ev of runEvents(); track $index) {
+                    <div class="pw__log-row" [attr.data-status]="ev.status">
+                      <span class="pw__log-step">{{ ev.step }}</span>
+                      <span class="pw__log-state">{{ ev.status }}</span>
+                      @if (ev.durationMs) { <span class="pw__log-dur">{{ ev.durationMs }}ms</span> }
+                    </div>
+                  }
+                </div>
+              }
+            } @else {
+              <p class="pw__panel-empty">
+                Run the generation pipeline to draft this article behind the scenes.
+                @if (briefSource()) { Seeded from <strong>{{ briefSource() }}</strong>. }
+              </p>
+              <button
+                type="button"
+                class="pw__btn pw__btn--accent pw__run-apply"
+                (click)="generateWithPipeline()"
+                [disabled]="generating() || isReadOnly()"
+              >
+                <i class="pi pi-bolt"></i>
+                {{ generating() ? 'Launching…' : 'Generate with pipeline' }}
+              </button>
+            }
+          </section>
+        }
+      </aside>
+    </div>
+  </div>
+</div>

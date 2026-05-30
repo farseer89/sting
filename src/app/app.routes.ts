@@ -165,16 +165,16 @@ export const routes: Routes = [
         data: { mode: 'create' },
         canDeactivate: [protopipeContentUnsavedGuard],
         loadComponent: () =>
-          import('./features/protopipe/content/protopipe-content-editor.component').then(
-            (m) => m.ProtopipeContentEditorComponent,
+          import('./features/protopipe/content/writer/protopipe-writer.component').then(
+            (m) => m.ProtopipeWriterComponent,
           ),
       },
       {
         path: 'protopipe/content/:postId',
         canDeactivate: [protopipeContentUnsavedGuard],
         loadComponent: () =>
-          import('./features/protopipe/content/protopipe-content-editor.component').then(
-            (m) => m.ProtopipeContentEditorComponent,
+          import('./features/protopipe/content/writer/protopipe-writer.component').then(
+            (m) => m.ProtopipeWriterComponent,
           ),
       },
       {

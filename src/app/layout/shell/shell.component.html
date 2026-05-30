@@ -6,6 +6,7 @@
 >
   <div class="mobile-menu-overlay lg:hidden" [class.active]="mobileMenuOpen" (click)="closeMobileMenu()"></div>
 
+  @if (!writerImmersive()) {
   <div
     id="app-sidebar-alpha"
     class="alpha-sidebar h-screen lg:block flex-shrink-0 absolute lg:static left-0 top-0 z-1 select-none"
@@ -170,6 +171,7 @@
     <i class="pi pi-chevron-left handle-icon-expanded"></i>
     <i class="pi pi-chevron-right handle-icon-collapsed"></i>
   </button>
+  }
 
   <div class="min-h-screen flex flex-column relative flex-auto">
     <div

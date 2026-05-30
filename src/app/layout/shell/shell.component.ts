@@ -78,6 +78,7 @@ export class ShellComponent implements OnInit, OnDestroy {
   }
 
   readonly inWritingMode = this.content.inWritingMode;
+  readonly writerImmersive = this.content.writerImmersive;
 
   private routerSub?: Subscription;
 

@@ -40,6 +40,8 @@ import type {
   ProtopipeOnboardingResponse,
   ProtopipePlan,
   ProtopipePublishContentResponse,
+  ProtopipeContentGenerateResponse,
+  ArticleGenerationGetResponse,
   ProtopipeSerpLocationsResponse,
   PutUserContentHelperRequest,
   SaveKeywordsRequest,
@@ -365,12 +367,14 @@ export class ProtopipeApiService {
     return firstValueFrom(this.listContent$(siteId));
   }
 
-  getContent(siteId: string, postId: string): Promise<ProtopipeContentPostResponse> {
-    return firstValueFrom(
-      this.http.get<ProtopipeContentPostResponse>(
-        protopipeApiUrl(ProtopipeEndpoints.getContent.path, { siteId, postId }),
-      ),
+  getContent$(siteId: string, postId: string): Observable<ProtopipeContentPostResponse> {
+    return this.http.get<ProtopipeContentPostResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.getContent.path, { siteId, postId }),
     );
+  }
+
+  getContent(siteId: string, postId: string): Promise<ProtopipeContentPostResponse> {
+    return firstValueFrom(this.getContent$(siteId, postId));
   }
 
   createContent$(
@@ -418,6 +422,21 @@ export class ProtopipeApiService {
 
   publishContent(siteId: string, postId: string): Promise<ProtopipePublishContentResponse> {
     return firstValueFrom(this.publishContent$(siteId, postId));
+  }
+
+  /** Launch (or relaunch) an ArticleGeneration run wired to a content post. */
+  generateContent$(siteId: string, postId: string): Observable<ProtopipeContentGenerateResponse> {
+    return this.http.post<ProtopipeContentGenerateResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.generateContent.path, { siteId, postId }),
+      {},
+    );
+  }
+
+  /** Poll a single ArticleGeneration run (for the writer's pipeline inspector). */
+  getArticleRun$(siteId: string, runId: string): Observable<ArticleGenerationGetResponse> {
+    return this.http.get<ArticleGenerationGetResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.articleGenerationsGet.path, { siteId, runId }),
+    );
   }
 
   getArticleIdeas$(siteId: string) {

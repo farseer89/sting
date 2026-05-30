@@ -55,6 +55,14 @@ const PAGE_PROFILE_MODEL: ModelGroup[] = [
     ],
   },
   {
+    group: 'On-page keywords & entities',
+    fields: [
+      { label: 'keywordCount / keywordDensity', origin: 'deterministic', description: 'Target-phrase occurrences and % of total words.' },
+      { label: 'keywordInHeadingsCount', origin: 'deterministic', description: 'Headings containing the target keyword.' },
+      { label: 'entityCoverage[]', origin: 'deterministic', description: 'PAA/related/gap demand terms and whether the page covers each.' },
+    ],
+  },
+  {
     group: 'E-E-A-T & freshness',
     fields: [
       { label: 'authorName / hasAuthorBio', origin: 'deterministic', description: 'Authorship signals.' },
@@ -75,11 +83,13 @@ const PAGE_PROFILE_MODEL: ModelGroup[] = [
     group: 'Interpretation (LLM)',
     fields: [
       { label: 'detectedFormat / featuredSnippetReadiness', origin: 'llm', description: 'Page archetype and snippet fit.' },
-      { label: 'rankingRationale', origin: 'llm', description: 'Why the page ranks where it does.' },
+      { label: 'rankingRationale / recommendedAngle', origin: 'llm', description: 'Why it ranks + the wedge to beat it.' },
+      { label: 'dominantIntent / intentGaps', origin: 'llm', description: 'Intent served and unmet sub-intents.' },
       { label: 'contentAngles / uniqueCoverage', origin: 'llm', description: 'Angles and differentiated coverage.' },
       { label: 'eeatSignals / weaknesses', origin: 'llm', description: 'Trust signals and beatable gaps.' },
-      { label: 'openObservations', origin: 'llm', description: 'Free-text insights no fixed metric captured.' },
-      { label: 'surprises', origin: 'llm', description: 'Things that defied expectations (hypothesis seeds).' },
+      { label: 'topicsCovered / topicGaps', origin: 'llm', description: 'Structured inventory of topics addressed vs. missed.' },
+      { label: 'articleIdeas[]', origin: 'llm', description: 'Spin-off article ideas (title, keyword, type, intent) for the content plan.' },
+      { label: 'openObservations / surprises', origin: 'llm', description: 'Free-text insights + hypothesis seeds.' },
     ],
   },
   {

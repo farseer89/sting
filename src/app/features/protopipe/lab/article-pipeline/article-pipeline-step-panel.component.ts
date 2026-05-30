@@ -415,4 +415,8 @@ export class ArticlePipelineStepPanelComponent {
   headingIndent(level: number): string {
     return `${(level - 1) * 14}px`;
   }
+
+  coveredCount(page: ArticleGenerationPageProfile): number {
+    return page.entityCoverage.filter((e) => e.present).length;
+  }
 }

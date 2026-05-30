@@ -89,6 +89,15 @@
                     <span class="profile__stat"><i>int links</i>{{ p.internalLinkCount }}</span>
                     <span class="profile__stat"><i>ext links</i>{{ p.externalLinkCount }}</span>
                     <span class="profile__stat"><i>citations</i>{{ p.externalCitationCount }}</span>
+                    @if (p.keywordCount != null) {
+                      <span class="profile__stat"><i>kw count</i>{{ p.keywordCount }}</span>
+                    }
+                    @if (p.keywordDensity != null) {
+                      <span class="profile__stat"><i>kw density</i>{{ p.keywordDensity }}%</span>
+                    }
+                    @if (p.keywordInHeadingsCount != null) {
+                      <span class="profile__stat"><i>kw in headings</i>{{ p.keywordInHeadingsCount }}</span>
+                    }
                   </div>
 
                   <!-- Flags -->
@@ -144,6 +153,95 @@
                     <div class="profile__why">
                       <span class="profile__why-k">Why it ranks</span>
                       <p>{{ p.rankingRationale }}</p>
+                    </div>
+                  }
+
+                  @if (p.recommendedAngle) {
+                    <div class="profile__angle">
+                      <span class="profile__angle-k">Wedge to beat it</span>
+                      <p>{{ p.recommendedAngle }}</p>
+                    </div>
+                  }
+
+                  @if (p.dominantIntent || p.intentGaps.length) {
+                    <div class="profile__intent">
+                      @if (p.dominantIntent) {
+                        <span class="profile__chips-k">intent</span>
+                        <span class="profile__tag is-fmt">{{ p.dominantIntent }}</span>
+                      }
+                      @for (g of p.intentGaps; track g) {
+                        <span class="profile__tag is-gap">unmet: {{ g }}</span>
+                      }
+                    </div>
+                  }
+
+                  <!-- Entity / demand-term coverage matrix -->
+                  @if (p.entityCoverage.length) {
+                    <div class="cover">
+                      <span class="profile__col-k">Demand coverage ({{ coveredCount(p) }}/{{ p.entityCoverage.length }})</span>
+                      <div class="cover__grid">
+                        @for (e of p.entityCoverage; track e.term) {
+                          <span class="cover__item" [class.is-covered]="e.present" [class.is-missing]="!e.present">
+                            <span class="cover__dot"></span>
+                            <span class="cover__term">{{ e.term }}</span>
+                            <span class="cover__src">{{ e.source }}</span>
+                            @if (e.present) { <span class="cover__n">{{ e.count }}</span> }
+                          </span>
+                        }
+                      </div>
+                    </div>
+                  }
+
+                  <!-- Topics covered vs gaps -->
+                  @if (p.topicsCovered.length || p.topicGaps.length) {
+                    <div class="profile__cols">
+                      @if (p.topicsCovered.length) {
+                        <div class="profile__col">
+                          <span class="profile__col-k">Topics covered</span>
+                          <ul>
+                            @for (t of p.topicsCovered; track t.topic) {
+                              <li>
+                                {{ t.topic }}
+                                <span class="topic__depth" [class.is-deep]="t.treatment === 'in_depth'">{{ t.treatment === 'in_depth' ? 'in depth' : 'mention' }}</span>
+                              </li>
+                            }
+                          </ul>
+                        </div>
+                      }
+                      @if (p.topicGaps.length) {
+                        <div class="profile__col is-weak">
+                          <span class="profile__col-k">Topic gaps</span>
+                          <ul>
+                            @for (g of p.topicGaps; track g.topic) {
+                              <li><strong>{{ g.topic }}</strong>@if (g.whyItMatters) { — {{ g.whyItMatters }} }</li>
+                            }
+                          </ul>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  <!-- Article ideas for the attack plan -->
+                  @if (p.articleIdeas.length) {
+                    <div class="ideas">
+                      <span class="profile__col-k">Article ideas ({{ p.articleIdeas.length }}) · input for the monthly plan</span>
+                      <div class="ideas__list">
+                        @for (idea of p.articleIdeas; track idea.workingTitle) {
+                          <div class="idea">
+                            <div class="idea__top">
+                              <span class="idea__title">{{ idea.workingTitle }}</span>
+                              <span class="idea__prio" [attr.data-prio]="idea.priority">{{ idea.priority }}</span>
+                            </div>
+                            <div class="idea__meta">
+                              <span class="idea__kw">{{ idea.suggestedKeyword }}</span>
+                              <span class="idea__tag">{{ idea.articleType }}</span>
+                              <span class="idea__tag">{{ idea.intent }}</span>
+                              <span class="idea__tag is-rel">{{ idea.relationToTarget }}</span>
+                            </div>
+                            @if (idea.rationale) { <p class="idea__why">{{ idea.rationale }}</p> }
+                          </div>
+                        }
+                      </div>
                     </div>
                   }
 

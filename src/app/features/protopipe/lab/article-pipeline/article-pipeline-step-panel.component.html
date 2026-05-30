@@ -37,127 +37,70 @@
         @if (research(); as r) {
           <section class="exec">
 
-            <!-- 1. Dossier header -->
-            <header class="exec__head">
-              <span class="exec__eyebrow">Research dossier</span>
-              <p class="exec__reco">
+            <!-- Decision dossier (single compact block) -->
+            <div class="dossier">
+              <p class="dossier__reco">
                 Write a <strong>{{ articleTypeLabel() }}</strong> targeting
                 <strong>&ldquo;{{ r.keyword.phrase }}&rdquo;</strong>
                 @if (r.clusterContext?.isShortTermWin) {
-                  <span class="exec__tag">short-term win</span>
+                  <span class="dossier__tag">short-term win</span>
                 }
               </p>
-              <p class="exec__reco-why">{{ r.inferenceRationale }}</p>
-              <span class="exec__asof">
-                {{ r.inferredArticleType }} · {{ r.serpGeo.locationName }} · as of {{ formatCollectedAt(r.collectedAt) }}
-              </span>
-            </header>
+              <p class="dossier__why">
+                {{ r.inferenceRationale }}
+                <span class="dossier__asof">· {{ r.serpGeo.locationName }} · {{ formatCollectedAt(r.collectedAt) }}</span>
+              </p>
 
-            <!-- 2. Key facts -->
-            <div class="exec__facts">
-              @for (f of keywordFacts(); track f.label) {
-                <div class="exec__fact">
-                  <span class="exec__fact-label">{{ f.label }}</span>
-                  <span class="exec__fact-value">{{ f.value }}</span>
-                  @if (f.hint) { <span class="exec__fact-hint">{{ f.hint }}</span> }
+              <div class="dossier__strip">
+                @for (f of keywordFacts(); track f.label) {
+                  <span class="dossier__stat"><i>{{ f.label }}</i>{{ f.value }}</span>
+                }
+              </div>
+
+              @if (clusterContext(); as cc) {
+                <div class="dossier__line">
+                  <span class="dossier__line-k">Placement</span>
+                  <span class="dossier__path">
+                    <b>M</b>{{ cc.missionTitle || 'Unassigned' }}
+                    <em>›</em> <b>CB</b>{{ cc.clusterTitle || 'Unassigned' }}
+                    <em>›</em> <b>GM</b>{{ r.keyword.phrase }}
+                  </span>
                 </div>
+                @if (cc.siblingMissiles.length > 0) {
+                  <div class="dossier__line">
+                    <span class="dossier__line-k">Siblings</span>
+                    <span class="dossier__path dossier__path--chips">
+                      @for (s of cc.siblingMissiles; track s.phrase) {
+                        <span class="chip" [class.chip--soft]="!s.isPublished">{{ s.phrase }}{{ s.isPublished ? '' : ' (gap)' }}</span>
+                      }
+                    </span>
+                  </div>
+                }
               }
-            </div>
 
-            <!-- 3. Strategic placement (topical authority) -->
-            @if (clusterContext(); as cc) {
-              <section class="exec__section">
-                <h4 class="exec__section-h">Strategic placement</h4>
-                <div class="exec__placement">
-                  <div class="exec__lineage">
-                    <span class="exec__tier exec__tier--mission">
-                      <span class="exec__tier-k">Mission</span>
-                      <span class="exec__tier-v">{{ cc.missionTitle || 'Unassigned' }}</span>
-                    </span>
-                    <span class="exec__lineage-arrow">›</span>
-                    <span class="exec__tier exec__tier--bomb">
-                      <span class="exec__tier-k">Cluster Bomb</span>
-                      <span class="exec__tier-v">{{ cc.clusterTitle || 'Unassigned' }}</span>
-                    </span>
-                    <span class="exec__lineage-arrow">›</span>
-                    <span class="exec__tier exec__tier--missile">
-                      <span class="exec__tier-k">Guided Missile</span>
-                      <span class="exec__tier-v">{{ r.keyword.phrase }}</span>
-                    </span>
-                  </div>
-
-                  @if (cc.requiredInternalLinks.length > 0) {
-                    <div class="exec__links">
-                      <span class="brief__label">Required internal links</span>
-                      <ul class="exec__links-list">
-                        @for (l of cc.requiredInternalLinks; track l.label) {
-                          <li>
-                            <span class="exec__link-label">{{ l.label }}</span>
-                            <span class="exec__link-reason">{{ l.reason }}</span>
-                          </li>
-                        }
-                      </ul>
-                    </div>
-                  }
-
-                  @if (cc.siblingMissiles.length > 0) {
-                    <div class="exec__siblings">
-                      <span class="brief__label">Sibling guided missiles ({{ cc.siblingMissiles.length }})</span>
-                      <div class="brief__chips">
-                        @for (s of cc.siblingMissiles; track s.phrase) {
-                          <span class="chip" [class.chip--soft]="!s.isPublished">
-                            {{ s.phrase }}{{ s.isPublished ? '' : ' (gap)' }}
-                          </span>
-                        }
-                      </div>
-                    </div>
-                  }
-                </div>
-              </section>
-            }
-
-            <!-- 4. Authority state -->
-            @if (topicalAuthority(); as ta) {
-              <section class="exec__section">
-                <h4 class="exec__section-h">Site authority</h4>
-                <div class="exec__authority">
-                  <div class="exec__coverage">
-                    <div class="exec__coverage-ring" [style.--cov.%]="ta.authorityState.coverageScore">
-                      <span class="exec__coverage-num">{{ ta.authorityState.coverageScore }}</span>
-                    </div>
-                    <span class="exec__coverage-label">coverage</span>
-                  </div>
-                  <div class="exec__authority-stats">
-                    <div class="exec__stat">
-                      <span class="exec__stat-v">{{ ta.authorityState.totalMissions }}</span>
-                      <span class="exec__stat-k">Missions</span>
-                    </div>
-                    <div class="exec__stat">
-                      <span class="exec__stat-v">{{ ta.authorityState.totalClusterBombs }}</span>
-                      <span class="exec__stat-k">Cluster Bombs</span>
-                    </div>
-                    <div class="exec__stat">
-                      <span class="exec__stat-v">{{ ta.authorityState.deployedMissiles }}/{{ ta.authorityState.totalMissiles }}</span>
-                      <span class="exec__stat-k">Missiles deployed</span>
-                    </div>
-                    <div class="exec__stat">
-                      <span class="exec__stat-v">{{ ta.authorityState.orphanCount }}</span>
-                      <span class="exec__stat-k">Orphans</span>
-                    </div>
-                  </div>
+              @if (topicalAuthority(); as ta) {
+                <div class="dossier__line">
+                  <span class="dossier__line-k">Authority</span>
+                  <span class="dossier__path">
+                    {{ ta.authorityState.coverageScore }} cov ·
+                    {{ ta.authorityState.totalMissions }} missions ·
+                    {{ ta.authorityState.totalClusterBombs }} bombs ·
+                    {{ ta.authorityState.deployedMissiles }}/{{ ta.authorityState.totalMissiles }} missiles ·
+                    {{ ta.authorityState.orphanCount }} orphans
+                  </span>
                 </div>
                 @if (ta.authorityState.nextActions.length > 0) {
-                  <ul class="exec__actions">
-                    @for (a of ta.authorityState.nextActions; track a.label) {
-                      <li class="exec__action exec__action--{{ a.kind }}">
-                        <span class="exec__action-label">{{ a.label }}</span>
-                        @if (a.detail) { <span class="exec__action-detail">{{ a.detail }}</span> }
-                      </li>
-                    }
-                  </ul>
+                  <div class="dossier__line">
+                    <span class="dossier__line-k">Next</span>
+                    <span class="dossier__path dossier__path--chips">
+                      @for (a of ta.authorityState.nextActions; track a.label) {
+                        <span class="dossier__act dossier__act--{{ a.kind }}">{{ a.label }}</span>
+                      }
+                    </span>
+                  </div>
                 }
-              </section>
-            }
+              }
+            </div>
 
             <!-- 5. Information gain -->
             @if (informationGain(); as ig) {

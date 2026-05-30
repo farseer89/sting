@@ -1,0 +1,407 @@
+:host {
+  display: block;
+  min-height: 100%;
+  background: #0b1118;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+}
+
+.cp {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 28px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  &__head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 16px;
+  }
+
+  &__back {
+    color: rgba(255, 255, 255, 0.4);
+    text-decoration: none;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    &:hover { color: #b9dcff; }
+  }
+
+  &__title h1 {
+    margin: 6px 0 2px;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  &__sub {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 12px;
+  }
+
+  &__meta { color: rgba(255, 255, 255, 0.3); margin-left: 8px; }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__cost, &__model {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__btn {
+    background: rgba(140, 200, 255, 0.12);
+    color: #b9dcff;
+    border: 1px solid rgba(140, 200, 255, 0.3);
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    &:hover:not(:disabled) { background: rgba(140, 200, 255, 0.2); }
+    &:disabled { opacity: 0.45; cursor: default; }
+  }
+
+  &__alert {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    &--err {
+      border-color: rgba(252, 165, 165, 0.3);
+      background: rgba(252, 165, 165, 0.08);
+      color: #fca5a5;
+    }
+  }
+
+  &__progress {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  &__progress-bar {
+    flex: 1;
+    height: 4px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+    span {
+      display: block;
+      height: 100%;
+      background: rgba(140, 200, 255, 0.6);
+      transition: width 0.3s ease;
+    }
+  }
+  &__progress-label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+
+  &__empty {
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 28px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  // ---- sectioned body: vertical rail + panel ----
+  &__body {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+
+  &__rail {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: sticky;
+    top: 16px;
+  }
+
+  &__rail-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+
+    i { font-size: 13px; width: 16px; color: rgba(255, 255, 255, 0.4); }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    &--active {
+      background: rgba(140, 200, 255, 0.1);
+      border-color: rgba(140, 200, 255, 0.28);
+      color: #b9dcff;
+      i { color: #b9dcff; }
+    }
+  }
+
+  &__rail-label { flex: 1; }
+
+  &__rail-count {
+    padding: 0 7px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.07);
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__panel {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+  }
+
+  @media (max-width: 760px) {
+    &__body { grid-template-columns: 1fr; }
+    &__rail {
+      position: static;
+      flex-direction: row;
+      flex-wrap: wrap;
+      overflow-x: auto;
+    }
+    &__rail-btn { width: auto; }
+    &__rail-label { white-space: nowrap; }
+  }
+
+  // ---- cards / blocks ----
+  &__card {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 18px 20px;
+    background: rgba(255, 255, 255, 0.015);
+  }
+  &__narrative h2 { margin: 0 0 8px; font-size: 18px; color: #b9dcff; }
+  &__narrative p { margin: 0; line-height: 1.6; color: rgba(255, 255, 255, 0.75); }
+
+  &__block { display: flex; flex-direction: column; gap: 12px; }
+  &__h3 {
+    margin: 0;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.55);
+  }
+  &__count {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 7px;
+    border-radius: 10px;
+    background: rgba(140, 200, 255, 0.12);
+    color: #b9dcff;
+    font-size: 11px;
+  }
+  &__dim { color: rgba(255, 255, 255, 0.4); font-weight: 400; }
+  &__faint { color: rgba(255, 255, 255, 0.3); }
+
+  // ---- pillars ----
+  &__pillars {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  &__pillar {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.02);
+  }
+  &__pillar-name { font-weight: 600; font-size: 13px; }
+  &__pillar-kw { color: #b9dcff; font-size: 12px; margin-top: 2px; }
+  &__pillar-angle { color: rgba(255, 255, 255, 0.55); font-size: 12px; margin-top: 6px; line-height: 1.5; }
+  &__pillar-count { color: rgba(255, 255, 255, 0.35); font-size: 11px; margin-top: 8px; }
+
+  // ---- tables ----
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    th {
+      text-align: left;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.35);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 10px;
+      padding: 6px 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    td {
+      padding: 7px 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      vertical-align: top;
+    }
+    &--kw { font-variant-numeric: tabular-nums; }
+  }
+  &__nowrap { white-space: nowrap; }
+  &__opp { color: #8be7b5; font-variant-numeric: tabular-nums; }
+  &__rationale { color: rgba(255, 255, 255, 0.4); font-size: 11px; margin-top: 3px; line-height: 1.4; }
+  &__exurl { color: rgba(140, 200, 255, 0.7); font-size: 11px; text-decoration: none; word-break: break-all; &:hover { text-decoration: underline; } }
+
+  // ---- calendar ----
+  &__cal-group { margin-bottom: 14px; }
+  &__cal-cluster {
+    font-size: 12px;
+    color: #b9dcff;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+
+  // ---- tiers ----
+  &__tiers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+  }
+  &__tier {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.015);
+  }
+  &__tier-head {
+    padding: 10px 12px;
+    font-weight: 600;
+    font-size: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+  }
+  &__tier .cp__table { padding: 0 4px; }
+  &__row--idea td { background: rgba(140, 200, 255, 0.03); }
+
+  // ---- chips / tags ----
+  &__chip, &__cluster-chip {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 0 6px;
+    border-radius: 4px;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    vertical-align: middle;
+  }
+  &__chip { background: rgba(140, 200, 255, 0.14); color: #b9dcff; }
+  &__cluster-chip { background: rgba(255, 255, 255, 0.06); color: rgba(255, 255, 255, 0.55); }
+
+  &__src {
+    display: inline-block;
+    padding: 0 5px;
+    border-radius: 3px;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.5);
+    &--google_ads { background: rgba(110, 220, 160, 0.14); color: #8be7b5; }
+    &--dataforseo { background: rgba(140, 200, 255, 0.12); color: #b9dcff; }
+    &--intent { background: rgba(255, 255, 255, 0.06); color: rgba(255, 255, 255, 0.55); }
+  }
+
+  &__tag {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 4px;
+    font-size: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.55);
+    &--pillar { background: rgba(140, 200, 255, 0.14); color: #b9dcff; }
+  }
+
+  &__pri {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    &--high { color: #fca5a5; }
+    &--medium { color: rgba(255, 255, 255, 0.6); }
+    &--low { color: rgba(255, 255, 255, 0.35); }
+  }
+
+  &__kind {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.5);
+    &--refresh { color: #8be7b5; }
+  }
+
+  // ---- clusters ----
+  &__clusters {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+  }
+  &__cluster {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.015);
+  }
+  &__cluster-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  &__cluster-name { font-weight: 600; font-size: 13px; }
+  &__cluster-members {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    li {
+      padding: 3px 0;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.65);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+  }
+  &__pillar-member { color: #b9dcff !important; font-weight: 500; }
+
+  // ---- audit ----
+  &__sub-block { margin-top: 12px; }
+  &__sub-h {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255, 255, 255, 0.45);
+    margin-bottom: 4px;
+  }
+  &__flag {
+    display: inline-block;
+    margin-right: 5px;
+    padding: 0 6px;
+    border-radius: 4px;
+    font-size: 9px;
+    text-transform: uppercase;
+    background: rgba(252, 200, 120, 0.14);
+    color: #fcd49a;
+    &--stale { background: rgba(252, 165, 165, 0.14); color: #fca5a5; }
+  }
+}

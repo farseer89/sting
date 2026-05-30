@@ -39,6 +39,15 @@ export const routes: Routes = [
       ),
   },
   {
+    // Content plan — void-styled variant kept for lab/aesthetic testing.
+    path: 'protopipe/lab/content-plan',
+    canActivate: [authGuard, operatorOnlyGuard],
+    loadComponent: () =>
+      import('./features/protopipe/lab/content-plan/void-content-plan.component').then(
+        (m) => m.VoidContentPlanComponent,
+      ),
+  },
+  {
     path: 'portal',
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'welcome' },

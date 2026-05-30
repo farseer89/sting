@@ -10,21 +10,11 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type {
-  KeywordIntent,
-  KeywordPriority,
   ProtopipeContentPlanCalendarItem,
   ProtopipeScoredKeyword,
 } from '@hive/contracts';
-import { Button } from 'primeng/button';
-import { Card } from 'primeng/card';
-import { ProgressBar } from 'primeng/progressbar';
-import { TableModule } from 'primeng/table';
-import { TabsModule } from 'primeng/tabs';
-import { Tag } from 'primeng/tag';
-import { Tooltip } from 'primeng/tooltip';
-import { intentSeverity, prioritySeverity } from '../protopipe-keyword-display';
-import { ProtopipeStrategyService } from '../protopipe-strategy.service';
-import { ContentPlanStore } from './content-plan.store';
+import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
+import { ContentPlanStore } from '../../content-plan/content-plan.store';
 
 type PlanSection = 'overview' | 'calendar' | 'keywords' | 'clusters' | 'audit';
 
@@ -34,32 +24,20 @@ interface PlanSectionDef {
   icon: string;
 }
 
-type TagSeverity = 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast';
-
 @Component({
-  selector: 'app-protopipe-content-plan',
+  selector: 'app-void-content-plan',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
-    RouterLink,
-    Card,
-    Button,
-    Tag,
-    TableModule,
-    TabsModule,
-    ProgressBar,
-    Tooltip,
-  ],
-  templateUrl: './protopipe-content-plan.component.html',
-  styleUrl: './protopipe-content-plan.component.scss',
+  imports: [CommonModule, RouterLink],
+  templateUrl: './void-content-plan.component.html',
+  styleUrl: './void-content-plan.component.scss',
 })
-export class ProtopipeContentPlanComponent implements OnInit {
+export class VoidContentPlanComponent implements OnInit {
   private readonly strategy = inject(ProtopipeStrategyService);
   private readonly store = inject(ContentPlanStore);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly activeTab = signal<PlanSection>('overview');
+  readonly activeSection = signal<PlanSection>('overview');
   readonly sections: PlanSectionDef[] = [
     { id: 'overview', label: 'Overview', icon: 'pi pi-compass' },
     { id: 'calendar', label: 'Calendar', icon: 'pi pi-calendar' },
@@ -67,6 +45,23 @@ export class ProtopipeContentPlanComponent implements OnInit {
     { id: 'clusters', label: 'Clusters', icon: 'pi pi-sitemap' },
     { id: 'audit', label: 'Existing content', icon: 'pi pi-file' },
   ];
+
+  sectionCount(id: PlanSection): number | null {
+    switch (id) {
+      case 'calendar':
+        return this.calendar().length || null;
+      case 'clusters':
+        return this.clusters().length || null;
+      case 'audit':
+        return this.audit()?.scannedCount || null;
+      default:
+        return null;
+    }
+  }
+
+  setSection(id: PlanSection): void {
+    this.activeSection.set(id);
+  }
 
   readonly plan = this.store.plan;
   readonly starting = this.store.starting;
@@ -103,44 +98,10 @@ export class ProtopipeContentPlanComponent implements OnInit {
     void this.store.generate();
   }
 
-  sectionCount(id: PlanSection): number | null {
-    switch (id) {
-      case 'calendar':
-        return this.calendar().length || null;
-      case 'keywords': {
-        const t = this.tiers();
-        if (!t) return null;
-        return (
-          t.immediateFocus.length + t.longTerm.length + t.longTail.length || null
-        );
-      }
-      case 'clusters':
-        return this.clusters().length || null;
-      case 'audit':
-        return this.audit()?.scannedCount || null;
-      default:
-        return null;
-    }
-  }
-
   // ---- display helpers ----
 
   tierKeywords(tier: 'immediateFocus' | 'longTerm' | 'longTail'): ProtopipeScoredKeyword[] {
     return this.tiers()?.[tier] ?? [];
-  }
-
-  intentSeverity(intent?: KeywordIntent): TagSeverity {
-    return intent ? intentSeverity(intent) : 'secondary';
-  }
-
-  prioritySeverity(priority?: KeywordPriority): TagSeverity {
-    return priority ? prioritySeverity(priority) : 'secondary';
-  }
-
-  volumeSeverity(kw: ProtopipeScoredKeyword): TagSeverity {
-    if (kw.volumeSource === 'google_ads') return 'success';
-    if (kw.volumeSource === 'dataforseo') return 'info';
-    return 'secondary';
   }
 
   volumeBadge(kw: ProtopipeScoredKeyword): string {

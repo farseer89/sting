@@ -1,0 +1,267 @@
+<section class="cp">
+  <header class="cp__head">
+    <div class="cp__title">
+      <a routerLink="/protopipe/content" class="cp__back">← content</a>
+      <h1>Site content plan</h1>
+      <p class="cp__sub">
+        Top-keyword research, SERP analysis, clusters &amp; calendar — unified.
+        @if (plan(); as p) {
+          <span class="cp__meta">v{{ p.version }} · {{ p.status }}</span>
+        }
+      </p>
+    </div>
+    <div class="cp__actions">
+      @if (plan()?.costUsd; as cost) {
+        <span class="cp__cost">≈ ${{ cost | number: '1.2-4' }}</span>
+      }
+      @if (plan()?.llmModel; as model) {
+        <span class="cp__model">{{ model }}</span>
+      }
+      <button class="cp__btn" [disabled]="starting() || isRunning()" (click)="generate()">
+        {{ isRunning() ? 'Running…' : plan() ? 'Regenerate plan' : 'Generate plan' }}
+      </button>
+    </div>
+  </header>
+
+  @if (error(); as e) {
+    <div class="cp__alert cp__alert--err">{{ e }}</div>
+  }
+
+  @if (isRunning()) {
+    <div class="cp__progress">
+      <div class="cp__progress-bar">
+        <span [style.width.%]="progressPct()"></span>
+      </div>
+      <span class="cp__progress-label">
+        {{ plan()?.progress?.stage ?? 'starting' }}
+        @if (plan()?.progress; as pr) {
+          · {{ pr.scanned }}/{{ pr.total }}
+        }
+      </span>
+    </div>
+  }
+
+  @if (!plan() && !loading() && !isRunning()) {
+    <div class="cp__empty">
+      No plan yet. Generate one to audit existing pages, score the account's
+      keywords (DataForSEO + Google Ads), propose clusters, and lay out a
+      calendar.
+    </div>
+  }
+
+  @if (hasFailed() && plan()?.error) {
+    <div class="cp__alert cp__alert--err">Run failed: {{ plan()?.error }}</div>
+  }
+
+  <!-- Narrative -->
+  @if (narrative(); as n) {
+    <article class="cp__card cp__narrative">
+      <h2>{{ n.headline }}</h2>
+      <p>{{ n.why }}</p>
+    </article>
+  }
+
+  <!-- Pillars -->
+  @if (pillars().length) {
+    <section class="cp__block">
+      <h3 class="cp__h3">Pillars</h3>
+      <div class="cp__pillars">
+        @for (pillar of pillars(); track pillar.clusterName) {
+          <div class="cp__pillar">
+            <div class="cp__pillar-name">{{ pillar.clusterName }}</div>
+            <div class="cp__pillar-kw">{{ pillar.pillarKeyword }}</div>
+            @if (pillar.angle) {
+              <div class="cp__pillar-angle">{{ pillar.angle }}</div>
+            }
+            <div class="cp__pillar-count">{{ pillar.supportingCount }} supporting</div>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- Calendar -->
+  @if (calendar().length) {
+    <section class="cp__block">
+      <h3 class="cp__h3">Proposed calendar <span class="cp__count">{{ calendar().length }}</span></h3>
+      @for (group of calendarByCluster(); track group.cluster) {
+        <div class="cp__cal-group">
+          <div class="cp__cal-cluster">{{ group.cluster }}</div>
+          <table class="cp__table">
+            <thead>
+              <tr>
+                <th>Publish</th><th>Working title</th><th>Keyword</th>
+                <th>Type</th><th>Role</th><th>Priority</th><th>Kind</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of group.items; track item.workingTitle) {
+                <tr>
+                  <td class="cp__nowrap">{{ item.proposedPublishAt | date: 'MMM d' }}</td>
+                  <td>
+                    {{ item.workingTitle }}
+                    @if (item.rationale) {
+                      <div class="cp__rationale">{{ item.rationale }}</div>
+                    }
+                    @if (item.kind === 'refresh-existing' && item.existingUrl) {
+                      <a class="cp__exurl" [href]="item.existingUrl" target="_blank" rel="noopener">
+                        ↻ {{ item.existingUrl }}
+                      </a>
+                    }
+                  </td>
+                  <td>{{ item.suggestedKeyword }}</td>
+                  <td class="cp__dim">{{ item.articleType }}</td>
+                  <td>
+                    <span class="cp__tag" [class.cp__tag--pillar]="item.clusterRole === 'pillar'">
+                      {{ item.clusterRole }}
+                    </span>
+                  </td>
+                  <td><span class="cp__pri cp__pri--{{ item.priority }}">{{ item.priority }}</span></td>
+                  <td>
+                    <span class="cp__kind" [class.cp__kind--refresh]="item.kind === 'refresh-existing'">
+                      {{ item.kind === 'refresh-existing' ? 'refresh' : 'new' }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  }
+
+  <!-- Keyword tiers (advanced: all signals + provenance) -->
+  @if (tiers()) {
+    <section class="cp__block">
+      <h3 class="cp__h3">Keyword tiers <span class="cp__dim">— all signals (advanced)</span></h3>
+      <div class="cp__tiers">
+        @for (tier of [
+          { key: 'immediateFocus', label: 'Immediate focus' },
+          { key: 'longTerm', label: 'Long-term goals' },
+          { key: 'longTail', label: 'Long-tail' }
+        ]; track tier.key) {
+          <div class="cp__tier">
+            <div class="cp__tier-head">
+              {{ tier.label }}
+              <span class="cp__count">{{ tierKeywords($any(tier.key)).length }}</span>
+            </div>
+            <table class="cp__table cp__table--kw">
+              <thead>
+                <tr>
+                  <th>Phrase</th><th>Vol</th><th>src</th><th>KD</th>
+                  <th>Comp</th><th>CPC</th><th>Opp</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (kw of tierKeywords($any(tier.key)); track kw.phrase) {
+                  <tr [class.cp__row--idea]="kw.source === 'ads_idea'">
+                    <td>
+                      {{ kw.phrase }}
+                      @if (kw.source === 'ads_idea') { <span class="cp__chip">ads idea</span> }
+                      @if (kw.clusterName) { <span class="cp__cluster-chip">{{ kw.clusterName }}</span> }
+                    </td>
+                    <td>{{ kw.searchVolume != null ? (kw.searchVolume | number) : '—' }}</td>
+                    <td><span class="cp__src cp__src--{{ kw.volumeSource }}">{{ volumeBadge(kw) }}</span></td>
+                    <td>{{ kw.difficulty != null ? kw.difficulty : '—' }}</td>
+                    <td class="cp__dim">
+                      {{ kw.googleAds?.competition ?? '—' }}
+                      @if (kw.googleAds?.competitionIndex != null) {
+                        <span class="cp__faint">({{ kw.googleAds?.competitionIndex }})</span>
+                      }
+                    </td>
+                    <td class="cp__dim">{{ cpcRange(kw) ?? '—' }}</td>
+                    <td class="cp__opp">{{ kw.opportunityScore | number }}</td>
+                  </tr>
+                }
+                @if (!tierKeywords($any(tier.key)).length) {
+                  <tr><td colspan="7" class="cp__dim">No keywords in this tier.</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- Clusters -->
+  @if (clusters().length) {
+    <section class="cp__block">
+      <h3 class="cp__h3">Proposed clusters <span class="cp__dim">— proposal only, not yet saved</span></h3>
+      <div class="cp__clusters">
+        @for (cluster of clusters(); track cluster.name) {
+          <div class="cp__cluster">
+            <div class="cp__cluster-head">
+              <span class="cp__cluster-name">{{ cluster.name }}</span>
+              <span class="cp__src cp__src--intent">{{ cluster.dominantIntent }}</span>
+            </div>
+            @if (cluster.subtopic) { <div class="cp__dim">{{ cluster.subtopic }}</div> }
+            <ul class="cp__cluster-members">
+              @for (m of cluster.members; track m.phrase) {
+                <li [class.cp__pillar-member]="m.role === 'pillar'">
+                  {{ m.phrase }}
+                  @if (m.role === 'pillar') { <span class="cp__chip">pillar</span> }
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- Existing content audit -->
+  @if (audit(); as a) {
+    <section class="cp__block">
+      <h3 class="cp__h3">
+        Existing content
+        <span class="cp__dim">— {{ a.scannedCount }} pages via {{ a.source }}</span>
+      </h3>
+      @if (a.note) { <div class="cp__alert">{{ a.note }}</div> }
+
+      @if (a.alreadyRanking.length) {
+        <div class="cp__sub-block">
+          <div class="cp__sub-h">Already ranking (free, from SERP)</div>
+          <table class="cp__table">
+            <thead><tr><th>Keyword</th><th>Pos</th><th>URL</th></tr></thead>
+            <tbody>
+              @for (r of a.alreadyRanking; track r.phrase) {
+                <tr>
+                  <td>{{ r.phrase }}</td>
+                  <td class="cp__opp">#{{ r.position }}</td>
+                  <td class="cp__dim">{{ r.url ?? '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      @if (a.refreshCandidates.length) {
+        <div class="cp__sub-block">
+          <div class="cp__sub-h">Refresh candidates ({{ a.refreshCandidates.length }})</div>
+          <table class="cp__table">
+            <thead><tr><th>Page</th><th>Words</th><th>Flags</th></tr></thead>
+            <tbody>
+              @for (p of a.refreshCandidates; track p.url) {
+                <tr>
+                  <td>
+                    <a class="cp__exurl" [href]="p.url" target="_blank" rel="noopener">
+                      {{ p.title ?? p.url }}
+                    </a>
+                  </td>
+                  <td>{{ p.wordCount | number }}</td>
+                  <td>
+                    @if (p.isThin) { <span class="cp__flag">thin</span> }
+                    @if (p.isStale) { <span class="cp__flag cp__flag--stale">stale</span> }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  }
+</section>

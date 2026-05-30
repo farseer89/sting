@@ -37,23 +37,20 @@
         @if (research(); as r) {
           <section class="exec">
 
-            <!-- 1. Decision banner -->
-            <header class="exec__banner">
-              <div class="exec__banner-main">
-                <span class="exec__eyebrow">Recommendation</span>
-                <h3 class="exec__decision">
-                  Write a <strong>{{ articleTypeLabel() }}</strong> targeting
-                  <strong>&ldquo;{{ r.keyword.phrase }}&rdquo;</strong>
-                </h3>
-                <p class="exec__rationale">{{ r.inferenceRationale }}</p>
-              </div>
-              <div class="exec__banner-side">
-                <span class="exec__badge">{{ r.inferredArticleType }}</span>
+            <!-- 1. Dossier header -->
+            <header class="exec__head">
+              <span class="exec__eyebrow">Research dossier</span>
+              <p class="exec__reco">
+                Write a <strong>{{ articleTypeLabel() }}</strong> targeting
+                <strong>&ldquo;{{ r.keyword.phrase }}&rdquo;</strong>
                 @if (r.clusterContext?.isShortTermWin) {
-                  <span class="exec__badge exec__badge--win">short-term win</span>
+                  <span class="exec__tag">short-term win</span>
                 }
-                <span class="exec__collected">as of {{ formatCollectedAt(r.collectedAt) }}</span>
-              </div>
+              </p>
+              <p class="exec__reco-why">{{ r.inferenceRationale }}</p>
+              <span class="exec__asof">
+                {{ r.inferredArticleType }} · {{ r.serpGeo.locationName }} · as of {{ formatCollectedAt(r.collectedAt) }}
+              </span>
             </header>
 
             <!-- 2. Key facts -->

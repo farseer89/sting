@@ -6,6 +6,7 @@ import {
   OnInit,
   computed,
   inject,
+  signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type {
@@ -14,6 +15,14 @@ import type {
 } from '@hive/contracts';
 import { ProtopipeStrategyService } from '../protopipe-strategy.service';
 import { ContentPlanStore } from './content-plan.store';
+
+type PlanSection = 'overview' | 'calendar' | 'keywords' | 'clusters' | 'audit';
+
+interface PlanSectionDef {
+  id: PlanSection;
+  label: string;
+  icon: string;
+}
 
 @Component({
   selector: 'app-protopipe-content-plan',
@@ -27,6 +36,32 @@ export class ProtopipeContentPlanComponent implements OnInit {
   private readonly strategy = inject(ProtopipeStrategyService);
   private readonly store = inject(ContentPlanStore);
   private readonly destroyRef = inject(DestroyRef);
+
+  readonly activeSection = signal<PlanSection>('overview');
+  readonly sections: PlanSectionDef[] = [
+    { id: 'overview', label: 'Overview', icon: 'pi pi-compass' },
+    { id: 'calendar', label: 'Calendar', icon: 'pi pi-calendar' },
+    { id: 'keywords', label: 'Keywords', icon: 'pi pi-list' },
+    { id: 'clusters', label: 'Clusters', icon: 'pi pi-sitemap' },
+    { id: 'audit', label: 'Existing content', icon: 'pi pi-file' },
+  ];
+
+  sectionCount(id: PlanSection): number | null {
+    switch (id) {
+      case 'calendar':
+        return this.calendar().length || null;
+      case 'clusters':
+        return this.clusters().length || null;
+      case 'audit':
+        return this.audit()?.scannedCount || null;
+      default:
+        return null;
+    }
+  }
+
+  setSection(id: PlanSection): void {
+    this.activeSection.set(id);
+  }
 
   readonly plan = this.store.plan;
   readonly starting = this.store.starting;

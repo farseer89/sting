@@ -13,6 +13,21 @@
     </a>
   </header>
 
+  <a routerLink="/protopipe/content/plan" class="protopipe-dashboard__plan-cta surface-card border-round shadow-2">
+    <div class="flex align-items-center gap-3">
+      <div class="protopipe-dashboard__plan-icon" aria-hidden="true">
+        <i class="pi pi-sitemap"></i>
+      </div>
+      <div>
+        <h2 class="m-0 text-xl font-semibold">Content plan</h2>
+        <p class="m-0 mt-1 text-color-secondary text-sm">
+          Site-wide attack plan — research, SERP analysis, clusters, and a scheduled calendar across your top keywords.
+        </p>
+      </div>
+    </div>
+    <p-button label="Open plan" icon="pi pi-arrow-right" iconPos="right" [text]="true" />
+  </a>
+
   @if (loading() && keywordCount() === 0) {
     <div class="protopipe-dashboard__loading surface-card border-round shadow-1 p-5 flex flex-column align-items-center">
       <p-progressSpinner strokeWidth="4" ariaLabel="Loading strategy" />

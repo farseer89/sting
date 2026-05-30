@@ -70,6 +70,13 @@ export class NavigationService {
             visible: true,
           },
           {
+            id: 'content-plan',
+            label: 'Content Plan',
+            icon: 'pi pi-sitemap',
+            routerLink: '/protopipe/content/plan',
+            visible: true,
+          },
+          {
             id: 'content',
             label: 'Content',
             icon: 'pi pi-file-edit',

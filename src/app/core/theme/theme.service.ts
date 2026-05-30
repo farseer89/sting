@@ -13,6 +13,12 @@ import {
 
 const DARK_CLASS = 'app-dark';
 
+/** Root font-size (px) drives rem-based scaling of the whole UI. */
+export const DEFAULT_ROOT_FONT_PX = 14;
+export const MIN_ROOT_FONT_PX = 11;
+export const MAX_ROOT_FONT_PX = 18;
+const SCALE_STORAGE_KEY = 'sting.scale.v1';
+
 /**
  * Owns the active theme and exposes a tiny imperative API.
  *
@@ -30,6 +36,9 @@ export class ThemeService {
   readonly current = computed<ThemeMeta>(() => findTheme(this.themeId()));
   readonly configuratorOpen = signal(false);
 
+  /** Root font-size in px — scales the entire UI via rem-based sizing. */
+  readonly rootFontPx = signal<number>(loadPersistedScale() ?? DEFAULT_ROOT_FONT_PX);
+
   constructor() {
     effect(() => {
       const theme = this.current();
@@ -40,11 +49,41 @@ export class ThemeService {
         /* storage unavailable — fail silently */
       }
     });
+
+    effect(() => {
+      const px = this.rootFontPx();
+      if (typeof document !== 'undefined') {
+        document.documentElement.style.fontSize = `${px}px`;
+      }
+      try {
+        localStorage.setItem(SCALE_STORAGE_KEY, String(px));
+      } catch {
+        /* storage unavailable — fail silently */
+      }
+    });
   }
 
   setTheme(id: string): void {
     if (!THEMES.some((t) => t.id === id)) return;
     this.themeId.set(id);
+  }
+
+  /** Set the root font size (px), clamped to the supported range. */
+  setRootFontPx(px: number): void {
+    const clamped = Math.min(MAX_ROOT_FONT_PX, Math.max(MIN_ROOT_FONT_PX, Math.round(px)));
+    this.rootFontPx.set(clamped);
+  }
+
+  increaseScale(): void {
+    this.setRootFontPx(this.rootFontPx() + 1);
+  }
+
+  decreaseScale(): void {
+    this.setRootFontPx(this.rootFontPx() - 1);
+  }
+
+  resetScale(): void {
+    this.setRootFontPx(DEFAULT_ROOT_FONT_PX);
   }
 
   openConfigurator(): void {
@@ -102,6 +141,19 @@ function loadPersistedId(): string | null {
   try {
     const id = localStorage.getItem(STORAGE_KEY);
     return id && THEMES.some((t) => t.id === id) ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+function loadPersistedScale(): number | null {
+  if (typeof localStorage === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(SCALE_STORAGE_KEY);
+    if (!raw) return null;
+    const px = Number(raw);
+    if (!Number.isFinite(px)) return null;
+    return Math.min(MAX_ROOT_FONT_PX, Math.max(MIN_ROOT_FONT_PX, px));
   } catch {
     return null;
   }

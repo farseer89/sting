@@ -234,7 +234,41 @@
               [model]="themeMenuItems"
               appendTo="body"
               styleClass="theme-menu"
-            />
+            >
+              <ng-template pTemplate="start">
+                <div class="theme-menu__scale">
+                  <span class="theme-menu__scale-label">Scale</span>
+                  <div class="theme-menu__scale-stepper">
+                    <button
+                      type="button"
+                      class="theme-menu__scale-btn"
+                      (click)="decreaseScale($event)"
+                      [disabled]="rootFontPx() <= minScale"
+                      aria-label="Decrease UI scale"
+                    >
+                      <i class="pi pi-minus"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="theme-menu__scale-value"
+                      (click)="resetScale($event)"
+                      title="Reset to default"
+                    >
+                      {{ rootFontPx() }}px
+                    </button>
+                    <button
+                      type="button"
+                      class="theme-menu__scale-btn"
+                      (click)="increaseScale($event)"
+                      [disabled]="rootFontPx() >= maxScale"
+                      aria-label="Increase UI scale"
+                    >
+                      <i class="pi pi-plus"></i>
+                    </button>
+                  </div>
+                </div>
+              </ng-template>
+            </p-menu>
           </li>
           <li class="notification-bell-item">
             <a

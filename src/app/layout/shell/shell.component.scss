@@ -609,6 +609,61 @@
       margin-right: 0.5rem;
     }
   }
+
+  // Scale (zoom) control in the theme menu start template
+  .theme-menu__scale {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--surface-border);
+  }
+  .theme-menu__scale-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-color-secondary);
+  }
+  .theme-menu__scale-stepper {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .theme-menu__scale-btn,
+  .theme-menu__scale-value {
+    border: 1px solid var(--surface-border);
+    background: var(--p-content-background, #fff);
+    color: var(--text-color);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    line-height: 1;
+  }
+  .theme-menu__scale-btn {
+    width: 1.5rem;
+    height: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover:not(:disabled) {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+    &:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+  }
+  .theme-menu__scale-value {
+    min-width: 2.75rem;
+    height: 1.5rem;
+    padding: 0 0.4rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
 }
 
 // Responsive adjustments

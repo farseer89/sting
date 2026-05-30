@@ -26,6 +26,12 @@ body {
   margin: 0;
 }
 
+/* Root rem base — drives global UI scale. ThemeService overrides this inline
+ * at runtime (persisted "Scale" control); this is the initial-paint default. */
+html {
+  font-size: 14px;
+}
+
 body,
 .p-component,
 .p-inputtext,
@@ -35,7 +41,8 @@ body,
 .p-panel,
 .p-tag {
   font-family: var(--app-font-family);
-  font-size: 14px;
+  /* rem-relative so the Scale control resizes text along with spacing. */
+  font-size: 1rem;
 }
 
 body {

@@ -143,16 +143,14 @@
                     <td>{{ item.suggestedKeyword }}</td>
                     <td class="text-color-secondary">{{ item.articleType }}</td>
                     <td>
-                      <p-tag
-                        [value]="item.clusterRole"
-                        [severity]="item.clusterRole === 'pillar' ? 'info' : 'secondary'"
-                      />
+                      <p-tag [value]="item.clusterRole" severity="secondary" />
                     </td>
                     <td><p-tag [value]="item.priority" [severity]="prioritySeverity(item.priority)" /></td>
                     <td>
                       <p-tag
                         [value]="item.kind === 'refresh-existing' ? 'refresh' : 'new'"
-                        [severity]="item.kind === 'refresh-existing' ? 'success' : 'secondary'"
+                        [icon]="item.kind === 'refresh-existing' ? 'pi pi-refresh' : 'pi pi-plus'"
+                        severity="secondary"
                       />
                     </td>
                   </tr>
@@ -196,14 +194,14 @@
                     <td>
                       <span class="font-medium">{{ kw.phrase }}</span>
                       @if (kw.source === 'ads_idea') {
-                        <p-tag value="ads idea" severity="warn" styleClass="ml-2 cp__mini-tag" />
+                        <p-tag value="ads idea" severity="secondary" styleClass="ml-2 cp__mini-tag" />
                       }
                       @if (kw.clusterName) {
                         <p-tag [value]="kw.clusterName" severity="secondary" styleClass="ml-2 cp__mini-tag" />
                       }
                     </td>
                     <td class="cp__num">{{ kw.searchVolume != null ? (kw.searchVolume | number) : '—' }}</td>
-                    <td><p-tag [value]="volumeBadge(kw)" [severity]="volumeSeverity(kw)" styleClass="cp__mini-tag" /></td>
+                    <td><p-tag [value]="volumeBadge(kw)" severity="secondary" styleClass="cp__mini-tag" /></td>
                     <td class="cp__num">{{ kw.difficulty != null ? kw.difficulty : '—' }}</td>
                     <td class="text-color-secondary">
                       {{ kw.googleAds?.competition ?? '—' }}
@@ -234,7 +232,7 @@
                 <div class="cp__tile surface-card border-round shadow-1">
                   <div class="flex align-items-center justify-content-between gap-2">
                     <span class="font-semibold">{{ cluster.name }}</span>
-                    <p-tag [value]="cluster.dominantIntent" [severity]="intentSeverity(cluster.dominantIntent)" styleClass="cp__mini-tag" />
+                    <p-tag [value]="cluster.dominantIntent" severity="secondary" styleClass="cp__mini-tag" />
                   </div>
                   @if (cluster.subtopic) {
                     <div class="text-color-secondary text-sm mt-1">{{ cluster.subtopic }}</div>
@@ -244,7 +242,7 @@
                       <li [class.cp__member--pillar]="m.role === 'pillar'">
                         {{ m.phrase }}
                         @if (m.role === 'pillar') {
-                          <p-tag value="pillar" severity="info" styleClass="ml-2 cp__mini-tag" />
+                          <p-tag value="pillar" severity="secondary" styleClass="ml-2 cp__mini-tag" />
                         }
                       </li>
                     }

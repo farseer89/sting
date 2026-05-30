@@ -10,7 +10,6 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type {
-  KeywordIntent,
   KeywordPriority,
   ProtopipeContentPlanCalendarItem,
   ProtopipeScoredKeyword,
@@ -22,7 +21,7 @@ import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { Tag } from 'primeng/tag';
 import { Tooltip } from 'primeng/tooltip';
-import { intentSeverity, prioritySeverity } from '../protopipe-keyword-display';
+import { prioritySeverity } from '../protopipe-keyword-display';
 import { ProtopipeStrategyService } from '../protopipe-strategy.service';
 import { ContentPlanStore } from './content-plan.store';
 
@@ -129,18 +128,8 @@ export class ProtopipeContentPlanComponent implements OnInit {
     return this.tiers()?.[tier] ?? [];
   }
 
-  intentSeverity(intent?: KeywordIntent): TagSeverity {
-    return intent ? intentSeverity(intent) : 'secondary';
-  }
-
   prioritySeverity(priority?: KeywordPriority): TagSeverity {
     return priority ? prioritySeverity(priority) : 'secondary';
-  }
-
-  volumeSeverity(kw: ProtopipeScoredKeyword): TagSeverity {
-    if (kw.volumeSource === 'google_ads') return 'success';
-    if (kw.volumeSource === 'dataforseo') return 'info';
-    return 'secondary';
   }
 
   volumeBadge(kw: ProtopipeScoredKeyword): string {

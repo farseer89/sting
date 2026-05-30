@@ -10,7 +10,11 @@ import { Tooltip } from 'primeng/tooltip';
 import { filter, Subscription } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { NavMenuItem, NavigationService } from '../../core/config/navigation.service';
-import { ThemeService } from '../../core/theme/theme.service';
+import {
+  MAX_ROOT_FONT_PX,
+  MIN_ROOT_FONT_PX,
+  ThemeService,
+} from '../../core/theme/theme.service';
 import { THEME_GROUPS } from '../../core/theme/theme.types';
 import { ProtopipeContentService } from '../../features/protopipe/protopipe-content.service';
 import { ProtopipeWritingToolsComponent } from '../../features/protopipe/content/protopipe-writing-tools.component';
@@ -52,6 +56,26 @@ export class ShellComponent implements OnInit, OnDestroy {
   readonly currentThemeId = this.themeService.themeId;
 
   readonly themeMenuItems: MenuItem[] = buildThemeMenuItems((id) => this.themeService.setTheme(id));
+
+  // UI scale (root font size) — see ThemeService.
+  readonly rootFontPx = this.themeService.rootFontPx;
+  readonly minScale = MIN_ROOT_FONT_PX;
+  readonly maxScale = MAX_ROOT_FONT_PX;
+
+  increaseScale(event?: Event): void {
+    event?.stopPropagation();
+    this.themeService.increaseScale();
+  }
+
+  decreaseScale(event?: Event): void {
+    event?.stopPropagation();
+    this.themeService.decreaseScale();
+  }
+
+  resetScale(event?: Event): void {
+    event?.stopPropagation();
+    this.themeService.resetScale();
+  }
 
   readonly inWritingMode = this.content.inWritingMode;
 

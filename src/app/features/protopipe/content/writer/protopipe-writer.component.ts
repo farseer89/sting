@@ -438,10 +438,49 @@ export class ProtopipeWriterComponent implements OnDestroy {
   }
 
   saveDraft(): void {
+    if (this.promptIfIncomplete()) return;
     this.content.saveFromWritingSession();
   }
 
+  /**
+   * The server requires a non-empty title, meta description and body. Prompt for
+   * whatever is missing (and reveal the relevant panel) instead of firing a save
+   * that would fail server-side validation.
+   */
+  private promptIfIncomplete(): boolean {
+    const s = this.session();
+    if (!s || s.readOnly) return false;
+    const t = s.template;
+
+    let blocker: { detail: string; panel?: InspectorPanel } | null = null;
+    if (!t.title.trim()) {
+      blocker = { detail: 'Add a title before saving.' };
+    } else if (!t.metaDescription.trim()) {
+      blocker = {
+        detail: 'Add a meta description before saving — it’s required.',
+        panel: 'seo',
+      };
+    } else if (!t.intro.trim() && t.sections.every((sec) => !sec.body.trim())) {
+      blocker = { detail: 'Write some body content before saving.' };
+    }
+
+    if (!blocker) return false;
+
+    if (blocker.panel) {
+      const panel = blocker.panel;
+      this.openPanels.update((set) => new Set(set).add(panel));
+    }
+    this.messages.add({
+      severity: 'warn',
+      summary: 'Almost there',
+      detail: blocker.detail,
+      life: 5000,
+    });
+    return true;
+  }
+
   publish(): void {
+    if (this.promptIfIncomplete()) return;
     if (this.content.dirty()) {
       this.publishAfterSave.set(true);
       this.content.saveFromWritingSession();

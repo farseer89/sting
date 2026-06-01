@@ -25,7 +25,13 @@
           <button type="button" class="thinker__btn" (click)="cancel.emit()">Stop</button>
         }
         @if (activeStep()) {
-          <button type="button" class="thinker__btn" (click)="rerunStep.emit(activeStep()!.id)">Rerun step</button>
+          <button
+            type="button"
+            class="thinker__btn"
+            [disabled]="!canRerun()"
+            [title]="canRerun() ? 'Rerun this step and everything after it' : 'Wait for the run to finish'"
+            (click)="rerunStep.emit(activeStep()!.id)"
+          >Rerun step</button>
         }
       </div>
     }
@@ -87,7 +93,13 @@
             @if (step.error.stack) {
               <pre class="stage__stack">{{ step.error.stack }}</pre>
             }
-            <button type="button" class="thinker__btn" (click)="rerunStep.emit(step.id)">Retry step</button>
+            <button
+              type="button"
+              class="thinker__btn"
+              [disabled]="!canRerun()"
+              [title]="canRerun() ? 'Retry this step and everything after it' : 'Wait for the run to finish'"
+              (click)="rerunStep.emit(step.id)"
+            >Retry step</button>
           </div>
         }
 

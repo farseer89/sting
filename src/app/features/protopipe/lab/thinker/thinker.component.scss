@@ -105,6 +105,12 @@
   white-space: nowrap;
 
   &:hover { background: rgba(var(--void-ocean-rgb), 0.16); }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: var(--void-ocean-fill);
+  }
 }
 
 /* ---- Body layout ---- */

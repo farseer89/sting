@@ -93,6 +93,79 @@
   background: var(--void-ocean-fill);
 }
 
+/* ---- Status strip ---- */
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.6rem;
+  border: 0.5px solid var(--void-ocean-line);
+  border-radius: 9px;
+  background: var(--void-glass-bg);
+  font-size: 10px;
+}
+.statusbar__spacer { flex: 1; }
+
+.statusbar__chip {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  font-size: 9px;
+  padding: 0.15rem 0.45rem;
+  border-radius: 5px;
+  border: 0.5px solid var(--void-sep);
+  color: var(--void-ink-muted);
+}
+.statusbar.is-running .statusbar__chip,
+.statusbar.is-pending .statusbar__chip {
+  color: var(--void-ocean);
+  border-color: var(--void-ocean-line);
+  background: var(--void-ocean-fill);
+}
+.statusbar.is-complete .statusbar__chip {
+  color: #2e7d5b;
+  border-color: rgba(46, 125, 91, 0.4);
+  background: rgba(46, 125, 91, 0.08);
+}
+.statusbar.is-failed .statusbar__chip {
+  color: #c0492f;
+  border-color: rgba(192, 73, 47, 0.45);
+  background: rgba(192, 73, 47, 0.08);
+}
+
+.statusbar__step { color: var(--void-ink-muted); }
+.statusbar__step strong { color: var(--void-ink-body); font-weight: 600; }
+
+.statusbar__conn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--void-ink-muted);
+}
+.statusbar__conn.is-live { color: var(--void-ocean); }
+.statusbar__conn.is-warn { color: #b8791f; }
+.statusbar__conn.is-err { color: #c0492f; }
+.statusbar__pulse {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 0 currentColor;
+  animation: statusbar-pulse 1.6s ease-out infinite;
+}
+@keyframes statusbar-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(var(--void-ocean-rgb), 0.5); }
+  70% { box-shadow: 0 0 0 5px rgba(var(--void-ocean-rgb), 0); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--void-ocean-rgb), 0); }
+}
+.statusbar__retry {
+  background: var(--void-ocean-fill);
+  border: 0.5px solid var(--void-ocean-line);
+  border-radius: 6px;
+  color: var(--void-ocean);
+  font-size: 10px;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+}
+
 /* ---- Stage wrapper ---- */
 .stagewrap {
   flex: 1;
@@ -126,3 +199,16 @@
   background: rgba(220, 120, 90, 0.08);
   color: var(--void-ink-body);
 }
+
+.trun__notice--error {
+  margin: 0.5rem 0 0;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 0.55rem 0.75rem;
+  border: 0.5px solid rgba(192, 73, 47, 0.5);
+  border-radius: 9px;
+  background: rgba(192, 73, 47, 0.08);
+  color: var(--void-ink-body);
+}
+.trun__notice--error p { margin: 0; }
+.trun__hint { color: var(--void-ink-muted); font-size: 10px; }

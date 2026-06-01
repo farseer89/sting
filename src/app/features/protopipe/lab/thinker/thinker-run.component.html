@@ -22,6 +22,43 @@
     </div>
   </header>
 
+  @if (statusLabel(); as status) {
+    <div class="statusbar" [class]="'is-' + (run()?.status ?? 'idle')">
+      <span class="statusbar__chip">{{ status }}</span>
+
+      @if (currentStepLabel(); as stepLabel) {
+        <span class="statusbar__step">
+          {{ isActive() ? 'On step:' : 'Last step:' }} <strong>{{ stepLabel }}</strong>
+        </span>
+      }
+
+      <span class="statusbar__spacer"></span>
+
+      @switch (connection()) {
+        @case ('live') {
+          <span class="statusbar__conn is-live"><span class="statusbar__pulse"></span> Live</span>
+        }
+        @case ('reconnecting') {
+          <span class="statusbar__conn is-warn"><span class="statusbar__pulse"></span> Reconnecting…</span>
+        }
+        @case ('lost') {
+          <span class="statusbar__conn is-err">Connection lost</span>
+          <button type="button" class="statusbar__retry" (click)="retry()">Retry</button>
+        }
+      }
+    </div>
+
+    @if (failure(); as f) {
+      <div class="trun__notice trun__notice--error">
+        <p>
+          <strong>Run failed{{ f.step ? ' at ' + f.step : '' }}.</strong>
+          {{ f.message }}
+        </p>
+        <p class="trun__hint">Open the failed step below to inspect its input and error, then use “Retry step”.</p>
+      </div>
+    }
+  }
+
   <div class="stagewrap">
     @if (actionError(); as actionErr) {
       <div class="trun__notice trun__notice--warn">
@@ -38,6 +75,7 @@
       <app-thinker
         [thought]="t"
         [mode]="mode()"
+        [canRerun]="canRerun()"
         (back)="back()"
         (rerunStep)="onRerunStep($event)"
       />

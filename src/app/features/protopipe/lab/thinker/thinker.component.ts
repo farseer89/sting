@@ -35,6 +35,8 @@ export class ThinkerComponent {
   readonly thought = input.required<Thought>();
   readonly audience = input<ThinkerAudience>('operator');
   readonly mode = input<ThinkerMode>('calm');
+  /** When false, step rerun is blocked (e.g. the run is actively progressing). */
+  readonly canRerun = input<boolean>(true);
 
   readonly back = output<void>();
   readonly rerunStep = output<string>();

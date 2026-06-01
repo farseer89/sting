@@ -28,3 +28,34 @@
     background: rgba(4, 8, 16, 0.9);
   }
 }
+
+@mixin void-scrollbar-dark {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--void-ocean-rgb, 10, 147, 150), 0.45) rgba(10, 10, 10, 0.95);
+
+  &::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(10, 10, 10, 0.95);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(var(--void-ocean-rgb, 10, 147, 150), 0.4);
+    border-radius: 999px;
+    border: 1px solid rgba(10, 10, 10, 0.95);
+    background-clip: padding-box;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(var(--void-ocean-rgb, 10, 147, 150), 0.55);
+  }
+
+  &::-webkit-scrollbar-corner {
+    background: rgba(10, 10, 10, 0.95);
+  }
+}

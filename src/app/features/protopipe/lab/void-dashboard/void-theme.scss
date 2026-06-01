@@ -1,0 +1,95 @@
+@mixin void-theme-dark {
+  --void-ink: rgba(240, 244, 252, 0.88);
+  --void-ink-strong: rgba(245, 248, 255, 0.92);
+  --void-ink-body: rgba(230, 235, 245, 0.85);
+  --void-ink-soft: rgba(225, 232, 245, 0.9);
+  --void-ink-secondary: rgba(180, 195, 220, 0.55);
+  --void-ink-muted: rgba(170, 185, 210, 0.45);
+  --void-ink-label: rgba(170, 185, 210, 0.4);
+  --void-ink-faint: rgba(160, 175, 200, 0.42);
+  --void-ink-dim: rgba(190, 200, 220, 0.5);
+  --void-glass-bg: rgba(255, 255, 255, 0.025);
+  --void-glass-border: rgba(255, 255, 255, 0.07);
+  --void-tile-bg: rgba(255, 255, 255, 0.02);
+  --void-tile-border: rgba(255, 255, 255, 0.06);
+  --void-row-border: rgba(255, 255, 255, 0.035);
+  --void-frame-bg: rgba(0, 0, 0, 0.12);
+  --void-rail-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012));
+  --void-rail-panel: rgba(4, 8, 14, 0.28);
+  --void-picker-bg: rgba(4, 6, 12, 0.3);
+  --void-picker-dot: rgba(255, 255, 255, 0.12);
+  --void-picker-dot-border: rgba(255, 255, 255, 0.15);
+  --void-ai-bg: rgba(4, 8, 14, 0.55);
+  --void-collapse-bg: rgba(4, 8, 14, 0.72);
+  --void-scrollbar-track: rgba(4, 8, 16, 0.9);
+  --void-veil: linear-gradient(
+    180deg,
+    rgba(4, 6, 14, 0.38) 0%,
+    rgba(4, 6, 14, 0.12) 50%,
+    rgba(4, 6, 14, 0.42) 100%
+  );
+  --void-hover: rgba(255, 255, 255, 0.03);
+  --void-hover-strong: rgba(255, 255, 255, 0.06);
+  --void-sep: rgba(255, 255, 255, 0.07);
+  --void-icon: rgba(180, 195, 220, 0.55);
+  --void-ink-hover: rgba(230, 238, 248, 0.88);
+  --void-ink-group-hover: rgba(210, 220, 235, 0.78);
+  --void-ink-rail: rgba(185, 198, 220, 0.62);
+  --void-ink-rail-user: rgba(185, 198, 220, 0.65);
+  --void-ink-unread: rgba(245, 248, 255, 0.95);
+  --void-glass-faint: rgba(255, 255, 255, 0.015);
+  --void-glass-faint-border: rgba(255, 255, 255, 0.04);
+  --void-rail-fade: rgba(255, 255, 255, 0.012);
+  --void-panel-bg: rgba(6, 10, 18, 0.78);
+  --void-tooltip-bg: rgba(8, 12, 20, 0.92);
+  --void-input-ink: rgba(225, 232, 245, 0.9);
+  --void-placeholder: rgba(170, 185, 210, 0.32);
+}
+
+@mixin void-theme-white {
+  --void-ink: rgba(14, 18, 26, 0.92);
+  --void-ink-strong: rgba(8, 12, 18, 0.96);
+  --void-ink-body: rgba(28, 34, 44, 0.88);
+  --void-ink-soft: rgba(22, 28, 38, 0.9);
+  --void-ink-secondary: rgba(58, 68, 84, 0.72);
+  --void-ink-muted: rgba(78, 90, 106, 0.62);
+  --void-ink-label: rgba(88, 100, 116, 0.58);
+  --void-ink-faint: rgba(98, 110, 126, 0.52);
+  --void-ink-dim: rgba(72, 84, 100, 0.58);
+  --void-glass-bg: rgba(0, 0, 0, 0.028);
+  --void-glass-border: rgba(0, 0, 0, 0.09);
+  --void-tile-bg: rgba(0, 0, 0, 0.022);
+  --void-tile-border: rgba(0, 0, 0, 0.075);
+  --void-row-border: rgba(0, 0, 0, 0.055);
+  --void-frame-bg: rgba(255, 255, 255, 0.62);
+  --void-rail-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.88));
+  --void-rail-panel: rgba(255, 255, 255, 0.78);
+  --void-picker-bg: rgba(255, 255, 255, 0.82);
+  --void-picker-dot: rgba(0, 0, 0, 0.08);
+  --void-picker-dot-border: rgba(0, 0, 0, 0.12);
+  --void-ai-bg: rgba(255, 255, 255, 0.88);
+  --void-collapse-bg: rgba(255, 255, 255, 0.94);
+  --void-scrollbar-track: rgba(236, 240, 244, 0.95);
+  --void-veil: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.04) 50%,
+    rgba(248, 250, 252, 0.22) 100%
+  );
+  --void-hover: rgba(0, 0, 0, 0.035);
+  --void-hover-strong: rgba(0, 0, 0, 0.055);
+  --void-sep: rgba(0, 0, 0, 0.08);
+  --void-icon: rgba(58, 68, 84, 0.62);
+  --void-ink-hover: rgba(14, 18, 26, 0.96);
+  --void-ink-group-hover: rgba(28, 34, 44, 0.88);
+  --void-ink-rail: rgba(58, 68, 84, 0.68);
+  --void-ink-rail-user: rgba(58, 68, 84, 0.72);
+  --void-ink-unread: rgba(8, 12, 18, 0.96);
+  --void-glass-faint: rgba(0, 0, 0, 0.018);
+  --void-glass-faint-border: rgba(0, 0, 0, 0.05);
+  --void-rail-fade: rgba(0, 0, 0, 0.012);
+  --void-panel-bg: rgba(255, 255, 255, 0.86);
+  --void-tooltip-bg: rgba(255, 255, 255, 0.96);
+  --void-input-ink: rgba(22, 28, 38, 0.9);
+  --void-placeholder: rgba(98, 110, 126, 0.45);
+}

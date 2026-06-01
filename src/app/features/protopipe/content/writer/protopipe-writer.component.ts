@@ -626,6 +626,17 @@ export class ProtopipeWriterComponent implements OnDestroy {
     }
   }
 
+  /** Open the live run in the generic Thinker view (Thought stepper). */
+  openInThinker(): void {
+    const siteId = this.content.siteId();
+    const runId = this.run()?.id;
+    if (!siteId || !runId) return;
+    const postId = this.content.editingId();
+    void this.router.navigate(['/protopipe/lab/thinker/run', siteId, runId], {
+      queryParams: postId && postId !== 'new' ? { postId } : undefined,
+    });
+  }
+
   /** Pull the generated outline/draft (assembled template) into the document. */
   applyGenerated(): void {
     const run = this.run();

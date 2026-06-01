@@ -1,0 +1,39 @@
+<div class="void" data-bg="white">
+  <div class="void__backdrop" aria-hidden="true"></div>
+  <div class="void__veil" aria-hidden="true"></div>
+
+  <header class="top">
+    <div class="top__brand">
+      <span class="top__mark" aria-hidden="true"></span>
+      <span class="top__name">Thinker</span>
+      <span class="top__train">{{ thought()?.title ?? 'Article run' }}</span>
+    </div>
+
+    <div class="top__controls">
+      <button type="button" class="top__back" (click)="back()">← Writer</button>
+      <button
+        type="button"
+        class="top__mode"
+        [class.is-on]="mode() === 'debug'"
+        (click)="toggleMode()"
+      >
+        {{ mode() === 'debug' ? 'Debug' : 'Calm' }}
+      </button>
+    </div>
+  </header>
+
+  <div class="stagewrap">
+    @if (loadError(); as err) {
+      <div class="trun__notice">
+        <p>{{ err }}</p>
+        <button type="button" class="top__back" (click)="back()">← Back to writer</button>
+      </div>
+    } @else if (thought(); as t) {
+      <app-thinker [thought]="t" [mode]="mode()" (back)="back()" />
+    } @else {
+      <div class="trun__notice">
+        <p>Loading run…</p>
+      </div>
+    }
+  </div>
+</div>

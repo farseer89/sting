@@ -1,0 +1,109 @@
+<div class="void" [attr.data-bg]="backgroundId()">
+  <div class="void__backdrop" aria-hidden="true"></div>
+  <div class="void__veil" aria-hidden="true"></div>
+
+  <nav class="void__bg-picker" aria-label="Background">
+    @for (bg of backgrounds; track bg.id) {
+      <button
+        type="button"
+        class="void__bg-dot"
+        [class.is-active]="backgroundId() === bg.id"
+        [attr.aria-label]="bg.label"
+        [attr.data-bg-id]="bg.id"
+        (click)="setBackground(bg.id)"
+      ></button>
+    }
+  </nav>
+
+  <header class="top">
+    <div class="top__brand">
+      <span class="top__mark" aria-hidden="true"></span>
+      <span class="top__name">Train of Thought</span>
+      <span class="top__train">{{ train.title }}</span>
+    </div>
+
+    <div class="top__controls">
+      <div class="seg" role="group" aria-label="Audience">
+        <button type="button" class="seg__btn" [class.is-active]="audience() === 'operator'" (click)="setAudience('operator')">Operator</button>
+        <button type="button" class="seg__btn" [class.is-active]="audience() === 'customer'" (click)="setAudience('customer')">Customer</button>
+      </div>
+      @if (audience() === 'operator') {
+        <button type="button" class="top__mode" [class.is-on]="mode() === 'debug'" (click)="toggleMode()">
+          {{ mode() === 'debug' ? 'Debug' : 'Calm' }}
+        </button>
+      }
+    </div>
+  </header>
+
+  <div class="stagewrap">
+    @if (openThought(); as thought) {
+      <app-thinker
+        [thought]="thought"
+        [audience]="audience()"
+        [mode]="mode()"
+        (back)="closeThought()"
+      />
+    } @else {
+      <!-- Train graph -->
+      <div class="graph" [style.width.px]="canvasSize().w" [style.height.px]="canvasSize().h">
+        <svg class="graph__wires" [attr.width]="canvasSize().w" [attr.height]="canvasSize().h" aria-hidden="true">
+          @for (edge of edgePaths(); track edge.id) {
+            <path
+              class="wire"
+              [class.is-active]="edge.active"
+              [attr.d]="edge.d"
+              fill="none"
+            />
+            @if (edge.label) {
+              <text class="wire__label" [attr.x]="edge.midX" [attr.y]="edge.midY - 6" text-anchor="middle">{{ edge.label }}</text>
+            }
+          }
+        </svg>
+
+        @for (node of train.nodes; track node.id) {
+          <button
+            type="button"
+            class="node"
+            [class]="'is-' + (node.thought?.status ?? 'idle')"
+            [class.is-clickable]="!!node.thought"
+            [style.left.px]="node.position.x"
+            [style.top.px]="node.position.y"
+            [style.width.px]="nodeW"
+            [style.height.px]="nodeH"
+            (click)="openNode(node)"
+          >
+            <header class="node__head">
+              <span class="node__mark">{{ monogram(node.thinkerKind) }}</span>
+              <span class="node__title">{{ thinkerFor(node.thinkerKind)?.label }}</span>
+              <span class="node__status" [class]="'is-' + (node.thought?.status ?? 'idle')">
+                @if (node.thought?.status === 'running') { <span class="node__pulse" aria-hidden="true"></span> }
+                {{ statusLabel(node.thought?.status) }}
+              </span>
+            </header>
+
+            <p class="node__summary">{{ node.thought?.summary ?? thinkerFor(node.thinkerKind)?.description }}</p>
+
+            <div class="node__steps" aria-hidden="true">
+              @for (step of node.thought?.steps ?? []; track step.id) {
+                <span class="node__step" [class]="'is-' + step.status"></span>
+              }
+            </div>
+
+            <footer class="node__foot">
+              <span class="node__progress">
+                <span class="node__progress-fill" [style.width.%]="nodeProgress(node.thought)"></span>
+              </span>
+              <span class="node__ports">
+                @for (out of node.thought?.outputs ?? []; track out.portId) {
+                  <span class="node__port" [class.is-ready]="!!out.artifact">{{ out.label }}</span>
+                }
+              </span>
+            </footer>
+          </button>
+        }
+      </div>
+
+      <p class="graph__hint">A Train of Thought — each node is a Thought (one run of a Thinker), wired output → input. Click a node to step inside.</p>
+    }
+  </div>
+</div>

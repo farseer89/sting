@@ -407,6 +407,14 @@
                 }
               </ol>
 
+              <button
+                type="button"
+                class="pw__run-relaunch"
+                (click)="openInThinker()"
+              >
+                <i class="pi pi-sitemap"></i> Open in Thinker
+              </button>
+
               @if (r.error) {
                 <p class="pw__run-error">{{ r.error.step }}: {{ r.error.message }}</p>
               }

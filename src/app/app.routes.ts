@@ -39,6 +39,26 @@ export const routes: Routes = [
       ),
   },
   {
+    // Train of Thought — generic agentic-process visualizer (Thinkers/Thoughts).
+    // Dev-only lab mockup (no backend), matches the void lab access pattern.
+    path: 'protopipe/lab/thinker',
+    canMatch: [devRoutesGuard],
+    loadComponent: () =>
+      import('./features/protopipe/lab/thinker/train-of-thought.component').then(
+        (m) => m.TrainOfThoughtComponent,
+      ),
+  },
+  {
+    // Live Thinker run — renders a real ArticleGenerationRun in the Thought
+    // stepper. Operator-gated; opened from the writer's behind-the-curtain panel.
+    path: 'protopipe/lab/thinker/run/:siteId/:runId',
+    canActivate: [authGuard, operatorOnlyGuard],
+    loadComponent: () =>
+      import('./features/protopipe/lab/thinker/thinker-run.component').then(
+        (m) => m.ThinkerRunComponent,
+      ),
+  },
+  {
     // Content plan — void-styled variant kept for lab/aesthetic testing.
     path: 'protopipe/lab/content-plan',
     canActivate: [authGuard, operatorOnlyGuard],

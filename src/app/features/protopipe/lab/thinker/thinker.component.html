@@ -1,0 +1,196 @@
+<div class="thinker" [class.is-customer]="isCustomer()" [class.is-debug]="isDebug()">
+  <!-- Transport bar -->
+  <header class="thinker__bar">
+    <button type="button" class="thinker__back" (click)="back.emit()" aria-label="Back to train">
+      <span aria-hidden="true">‹</span>
+      @if (!isCustomer()) { <span class="thinker__back-label">Train</span> }
+    </button>
+
+    <div class="thinker__id">
+      <span class="thinker__title">{{ thought().title }}</span>
+      @if (thought().summary) {
+        <span class="thinker__sub">{{ thought().summary }}</span>
+      }
+    </div>
+
+    <span class="thinker__status" [class]="'is-' + thought().status">{{ statusLabel() }}</span>
+
+    <div class="thinker__progress" [attr.aria-label]="progress() + '% complete'">
+      <span class="thinker__progress-fill" [style.width.%]="progress()"></span>
+    </div>
+
+    @if (!isCustomer()) {
+      <div class="thinker__actions">
+        @if (thought().status === 'running') {
+          <button type="button" class="thinker__btn" (click)="cancel.emit()">Stop</button>
+        }
+        @if (activeStep()) {
+          <button type="button" class="thinker__btn" (click)="rerunStep.emit(activeStep()!.id)">Rerun step</button>
+        }
+      </div>
+    }
+  </header>
+
+  <div class="thinker__body">
+    <!-- Step rail -->
+    <nav class="rail" aria-label="Steps">
+      <ol class="rail__list">
+        @for (step of steps(); track step.id; let i = $index) {
+          <li
+            class="rail__item"
+            [class]="stepStatusClass(step.status)"
+            [class.is-active]="activeStep()?.id === step.id"
+          >
+            <button type="button" class="rail__row" (click)="selectStep(step.id)">
+              <span class="rail__node" aria-hidden="true">
+                <span class="rail__dot"></span>
+              </span>
+              <span class="rail__text">
+                <span class="rail__label">{{ step.label }}</span>
+                @if (!isCustomer()) {
+                  <span class="rail__meta">
+                    @if (step.status === 'running') { <span class="rail__live">live</span> }
+                    @else if (step.durationMs != null) { {{ formatDuration(step.durationMs) }} }
+                    @if (step.attempt > 1) { <span class="rail__attempt">×{{ step.attempt }}</span> }
+                  </span>
+                } @else if (step.summary) {
+                  <span class="rail__meta rail__meta--summary">{{ step.summary }}</span>
+                }
+              </span>
+            </button>
+          </li>
+        }
+      </ol>
+    </nav>
+
+    <!-- Stage -->
+    <main class="stage">
+      @if (activeStep(); as step) {
+        <header class="stage__head">
+          <h2 class="stage__title">{{ step.label }}</h2>
+          @if (!isCustomer()) {
+            <span class="stage__chip" [class]="'is-' + step.status">{{ step.status }}</span>
+            @if (step.promptVersion) { <span class="stage__ver">{{ step.promptVersion }}</span> }
+          }
+        </header>
+
+        @if (step.summary) {
+          <p class="stage__summary">{{ step.summary }}</p>
+        }
+
+        @if (step.error && !isCustomer()) {
+          <div class="stage__error">
+            <span class="stage__error-title">{{ step.error.message }}</span>
+            @if (step.error.offendingInput) {
+              <span class="stage__error-sub">Triggered by: {{ step.error.offendingInput.label }}</span>
+            }
+            @if (step.error.stack) {
+              <pre class="stage__stack">{{ step.error.stack }}</pre>
+            }
+            <button type="button" class="thinker__btn" (click)="rerunStep.emit(step.id)">Retry step</button>
+          </div>
+        }
+
+        <!-- Input -> Output -->
+        <div class="flow">
+          @if (step.input?.length && !isCustomer()) {
+            <section class="flow__col">
+              <span class="flow__label">Input</span>
+              @for (a of step.input; track a.id) {
+                <app-thought-artifact-card [artifact]="a" />
+              }
+            </section>
+            <span class="flow__arrow" aria-hidden="true">→</span>
+          }
+
+          <section class="flow__col flow__col--out">
+            <span class="flow__label">{{ isCustomer() ? 'Result' : 'Output' }}</span>
+            @if (hasDiff() && !isCustomer()) {
+              <div class="diff">
+                <div class="diff__col diff__col--old">
+                  <span class="diff__tag">before rerun</span>
+                  @for (a of step.previousOutput; track a.id) {
+                    <app-thought-artifact-card [artifact]="a" />
+                  }
+                </div>
+                <div class="diff__col diff__col--new">
+                  <span class="diff__tag diff__tag--new">after rerun</span>
+                  @for (a of step.output; track a.id) {
+                    <app-thought-artifact-card [artifact]="a" />
+                  }
+                </div>
+              </div>
+            } @else if (step.output?.length) {
+              @for (a of step.output; track a.id) {
+                <app-thought-artifact-card [artifact]="a" />
+              }
+            } @else if (step.status === 'running') {
+              <div class="flow__pending">
+                <span class="flow__pulse" aria-hidden="true"></span>
+                Working on it…
+              </div>
+            } @else {
+              <div class="flow__pending flow__pending--idle">Nothing here yet.</div>
+            }
+          </section>
+        </div>
+      }
+    </main>
+
+    <!-- Inspector (debug only) -->
+    @if (isDebug()) {
+      <aside class="inspector" aria-label="Inspector">
+        <nav class="inspector__tabs">
+          @for (tab of ['logs', 'events', 'raw', 'chat']; track tab) {
+            <button
+              type="button"
+              class="inspector__tab"
+              [class.is-active]="inspectorTab() === tab"
+              (click)="setTab($any(tab))"
+            >{{ tab }}</button>
+          }
+        </nav>
+
+        <div class="inspector__body">
+          @switch (inspectorTab()) {
+            @case ('events') {
+              <ul class="log">
+                @for (e of activeEvents(); track $index) {
+                  <li class="log__row" [class]="'is-' + e.level">
+                    <span class="log__time">{{ e.at }}</span>
+                    <span class="log__level">{{ e.level }}</span>
+                    <span class="log__msg">{{ e.message }}</span>
+                  </li>
+                }
+                @empty { <li class="log__empty">No events.</li> }
+              </ul>
+            }
+            @case ('raw') {
+              <pre class="inspector__raw">{{ rawJson() }}</pre>
+            }
+            @case ('chat') {
+              <div class="chat">
+                <p class="chat__hint">Ask about this step…</p>
+                <div class="chat__field">
+                  <input class="chat__input" type="text" placeholder="Why did this rerun?" />
+                  <button type="button" class="thinker__btn">Ask</button>
+                </div>
+              </div>
+            }
+            @default {
+              <ul class="log">
+                @for (e of activeEvents(); track $index) {
+                  <li class="log__row" [class]="'is-' + e.level">
+                    <span class="log__time">{{ e.at }}</span>
+                    <span class="log__msg">{{ e.message }}</span>
+                  </li>
+                }
+                @empty { <li class="log__empty">No log output.</li> }
+              </ul>
+            }
+          }
+        </div>
+      </aside>
+    }
+  </div>
+</div>

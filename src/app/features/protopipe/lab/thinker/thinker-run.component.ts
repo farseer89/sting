@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import type { ArticleGenerationRunDto } from '@hive/contracts';
+import type { ArticleGenerationRunDto, ArticleGenerationStep } from '@hive/contracts';
 import { ProtopipeApiService } from '../../protopipe-api.service';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 import { articleRunToThought } from './article-run-to-thought';
@@ -36,6 +36,8 @@ export class ThinkerRunComponent implements OnInit {
   readonly mode = signal<ThinkerMode>('calm');
   readonly run = signal<ArticleGenerationRunDto | null>(null);
   readonly loadError = signal<string | null>(null);
+  readonly actionError = signal<string | null>(null);
+  readonly rerunning = signal(false);
 
   readonly thought = computed(() => {
     const r = this.run();
@@ -77,6 +79,25 @@ export class ThinkerRunComponent implements OnInit {
     } else {
       void this.router.navigate(['/protopipe/content']);
     }
+  }
+
+  onRerunStep(stepId: string): void {
+    const step = stepId as ArticleGenerationStep;
+    if (this.rerunning()) return;
+    this.actionError.set(null);
+    this.rerunning.set(true);
+    this.stopPolling();
+    this.api.rerunArticleStep$(this.siteId, this.runId, step).subscribe({
+      next: ({ run }) => {
+        this.run.set(run);
+        this.rerunning.set(false);
+        this.maybePoll(run);
+      },
+      error: (err) => {
+        this.rerunning.set(false);
+        this.actionError.set(parseProtopipeApiError(err, 'Failed to rerun step.'));
+      },
+    });
   }
 
   private load(): void {

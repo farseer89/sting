@@ -23,16 +23,27 @@
   </header>
 
   <div class="stagewrap">
+    @if (actionError(); as actionErr) {
+      <div class="trun__notice trun__notice--warn">
+        <p>{{ actionErr }}</p>
+      </div>
+    }
+
     @if (loadError(); as err) {
       <div class="trun__notice">
         <p>{{ err }}</p>
         <button type="button" class="top__back" (click)="back()">← Back to writer</button>
       </div>
     } @else if (thought(); as t) {
-      <app-thinker [thought]="t" [mode]="mode()" (back)="back()" />
+      <app-thinker
+        [thought]="t"
+        [mode]="mode()"
+        (back)="back()"
+        (rerunStep)="onRerunStep($event)"
+      />
     } @else {
       <div class="trun__notice">
-        <p>Loading run…</p>
+        <p>{{ rerunning() ? 'Rerunning step…' : 'Loading run…' }}</p>
       </div>
     }
   </div>

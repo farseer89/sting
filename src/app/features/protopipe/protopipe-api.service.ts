@@ -42,6 +42,8 @@ import type {
   ProtopipePublishContentResponse,
   ProtopipeContentGenerateResponse,
   ArticleGenerationGetResponse,
+  ArticleGenerationRerunStepResponse,
+  ArticleGenerationStep,
   ProtopipeSerpLocationsResponse,
   PutUserContentHelperRequest,
   SaveKeywordsRequest,
@@ -436,6 +438,22 @@ export class ProtopipeApiService {
   getArticleRun$(siteId: string, runId: string): Observable<ArticleGenerationGetResponse> {
     return this.http.get<ArticleGenerationGetResponse>(
       protopipeApiUrl(ProtopipeEndpoints.articleGenerationsGet.path, { siteId, runId }),
+    );
+  }
+
+  /** Rerun a single pipeline step and everything downstream of it. */
+  rerunArticleStep$(
+    siteId: string,
+    runId: string,
+    step: ArticleGenerationStep,
+  ): Observable<ArticleGenerationRerunStepResponse> {
+    return this.http.post<ArticleGenerationRerunStepResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.articleGenerationsRerunStep.path, {
+        siteId,
+        runId,
+        step,
+      }),
+      {},
     );
   }
 

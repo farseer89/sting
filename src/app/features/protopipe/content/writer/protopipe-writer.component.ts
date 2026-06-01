@@ -227,8 +227,40 @@ export class ProtopipeWriterComponent implements OnDestroy {
       } else {
         status = 'pending';
       }
+      if (
+        step === 'review' &&
+        run.artifacts?.review &&
+        !run.artifacts.review.passesThreshold &&
+        status === 'complete'
+      ) {
+        status = 'failed';
+      }
       return { step, label, status };
     });
+  });
+
+  readonly generationReview = computed(() => this.run()?.artifacts?.review ?? null);
+
+  readonly generationReviewFailed = computed(() => {
+    const review = this.generationReview();
+    return review != null && !review.passesThreshold;
+  });
+
+  readonly generationReviewBlockers = computed(() => {
+    const review = this.generationReview();
+    if (!review || review.passesThreshold) return [];
+    const lines: string[] = [...review.violations];
+    for (const v of review.sectionViolations) {
+      lines.push(`${v.h2}: ${v.message}`);
+    }
+    return lines;
+  });
+
+  readonly generationReviewScoreLabel = computed(() => {
+    const review = this.generationReview();
+    return review && Number.isFinite(review.overallScore)
+      ? review.overallScore.toFixed(2)
+      : '';
   });
 
   readonly runEvents = computed(() => {

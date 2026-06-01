@@ -419,7 +419,23 @@
                 <p class="pw__run-error">{{ r.error.step }}: {{ r.error.message }}</p>
               }
 
-              @if (generatedReady() && !isReadOnly()) {
+              @if (generationReviewFailed()) {
+                <div class="pw__panel pw__panel--review">
+                  <h4 class="pw__panel-title">Draft review did not pass</h4>
+                  @if (generationReviewScoreLabel(); as score) {
+                    <p class="pw__meta-count is-warn">
+                      Score {{ score }} — fix issues in Thinker or re-run draft.
+                    </p>
+                  }
+                  <ul class="pw__blockers">
+                    @for (b of generationReviewBlockers(); track b) {
+                      <li>{{ b }}</li>
+                    }
+                  </ul>
+                </div>
+              }
+
+              @if (generatedReady() && !isReadOnly() && !generationReviewFailed()) {
                 <button type="button" class="pw__btn pw__btn--accent pw__run-apply" (click)="applyGenerated()">
                   <i class="pi pi-download"></i> Pull draft into document
                 </button>

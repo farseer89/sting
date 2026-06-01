@@ -13,6 +13,11 @@ function isClientPortalApi(url: string): boolean {
   return url.includes('/api/v2/client/');
 }
 
+/** Never retry refresh/sign-in/logout — avoids a 401 refresh loop in the console. */
+function isAuthV2Endpoint(url: string): boolean {
+  return /\/api\/v2\/auth\/(refresh|signin|logout)(?:\?|$)/.test(url);
+}
+
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const clientAuth = inject(ClientAuthService);
@@ -28,6 +33,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError((error) => {
       if (!(error instanceof HttpErrorResponse) || error.status !== 401 || !isApi) {
+        return throwError(() => error);
+      }
+      if (isAuthV2Endpoint(req.url)) {
         return throwError(() => error);
       }
       if (isClientApi) {

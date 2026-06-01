@@ -36,6 +36,7 @@ export class AuthService {
 
   /** Short-lived access JWT — memory only, never persisted. */
   private accessToken: string | null = null;
+  private sessionBootstrapped = false;
 
   currentUserEmail = '';
   currentUserFirstName = '';
@@ -117,6 +118,11 @@ export class AuthService {
 
   /** Restore access token from httpOnly refresh cookie on app boot. */
   bootstrapSession(): Promise<boolean> {
+    if (this.sessionBootstrapped) {
+      return Promise.resolve(this.hasValidAccessToken());
+    }
+    this.sessionBootstrapped = true;
+
     if (!this.hasStoredProfile()) {
       return Promise.resolve(false);
     }
@@ -129,7 +135,9 @@ export class AuthService {
       this.refreshAccessToken({ silent: true }).pipe(
         tap(() => this.authStateSubject.next(true)),
         catchError(() => {
-          this.clearSession();
+          // Keep stored profile so login can prefill; access token stays cleared.
+          this.accessToken = null;
+          this.authStateSubject.next(false);
           return throwError(() => new Error('Session expired'));
         }),
       ),

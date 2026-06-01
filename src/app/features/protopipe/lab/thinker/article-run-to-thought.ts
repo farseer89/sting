@@ -3,6 +3,7 @@ import type {
   ArticleGenerationEvent,
   ArticleGenerationOutline,
   ArticleGenerationDraftedSection,
+  ArticleGenerationReview,
   ArticleGenerationRunDto,
   ArticleGenerationStep,
 } from '@hive/contracts';
@@ -164,16 +165,26 @@ function stepOutput(
           ]
         : [];
     case 'review':
-      return a.review
-        ? [
-            json(
-              'review',
-              'Review',
-              a.review,
-              `Score ${a.review.overallScore} · ${a.review.passesThreshold ? 'passes' : 'below threshold'}`,
-            ),
-          ]
-        : [];
+      if (!a.review) return [];
+      const outputs = [
+        json(
+          'review',
+          'Review',
+          a.review,
+          `Score ${formatReviewScore(a.review.overallScore)} · ${a.review.passesThreshold ? 'passes' : 'below threshold'}`,
+        ),
+      ];
+      if (!a.review.passesThreshold) {
+        outputs.push(
+          markdown(
+            'review-violations',
+            'Violations',
+            formatReviewViolations(a.review),
+            `${a.review.violations.length + a.review.sectionViolations.length} issue(s)`,
+          ),
+        );
+      }
+      return outputs;
     case 'metadata':
       return a.metadata
         ? [json('metadata', 'Metadata', a.metadata, a.metadata.titleTag)]
@@ -242,21 +253,40 @@ export function articleRunToThought(run: ArticleGenerationRunDto): Thought {
     }
 
     const meta = STEP_META[step];
+    const reviewArtifact = step === 'review' ? run.artifacts?.review : undefined;
+    const reviewFailed = reviewArtifact && !reviewArtifact.passesThreshold;
+
+    let stepStatus = status;
+    if (reviewFailed && stepStatus === 'complete') {
+      stepStatus = 'failed';
+    }
+
     const error =
       run.error?.step === step
         ? { message: run.error.message, stack: run.error.stack }
-        : undefined;
+        : reviewFailed
+          ? { message: formatReviewViolations(reviewArtifact) }
+          : undefined;
+
+    const summary = reviewFailed
+      ? `Below threshold (score ${formatReviewScore(reviewArtifact.overallScore)})`
+      : reviewArtifact?.passesThreshold
+        ? `Passed (score ${formatReviewScore(reviewArtifact.overallScore)})`
+        : meta.summary;
 
     return {
       id: step,
       label: meta.label,
-      summary: meta.summary,
-      status,
+      summary,
+      status: stepStatus,
       startedAt: started?.startedAt,
       finishedAt: finished?.finishedAt,
       durationMs: finished?.durationMs,
       attempt: Math.max(1, evs.filter((e) => e.status === 'started').length),
-      output: status === 'complete' || status === 'failed' ? stepOutput(step, run) : undefined,
+      output:
+        stepStatus === 'complete' || stepStatus === 'failed'
+          ? stepOutput(step, run)
+          : undefined,
       events: mapEvents(evs),
       error,
       promptVersion: finished?.promptVersion ?? started?.promptVersion,
@@ -308,4 +338,19 @@ export function articleRunToThought(run: ArticleGenerationRunDto): Thought {
     startedAt,
     finishedAt,
   } satisfies Thought;
+}
+
+function formatReviewScore(score: number): string {
+  return Number.isFinite(score) ? score.toFixed(2) : '—';
+}
+
+function formatReviewViolations(review: ArticleGenerationReview): string {
+  const lines: string[] = [];
+  for (const v of review.violations) {
+    lines.push(`- ${v}`);
+  }
+  for (const v of review.sectionViolations) {
+    lines.push(`- [${v.sectionIndex}] ${v.h2}: ${v.message}`);
+  }
+  return lines.length ? lines.join('\n') : 'Review did not pass threshold.';
 }

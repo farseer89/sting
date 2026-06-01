@@ -24,6 +24,7 @@ import {
   PROTOPIPE_CONTENT_META_MIN,
 } from '../../protopipe.constants';
 import { ProtopipeApiService } from '../../protopipe-api.service';
+import { parseProtopipeApiError } from '../../protopipe-http.util';
 import {
   ProtopipeContentService,
   emptyContentTemplate,
@@ -90,6 +91,11 @@ export class ProtopipeWriterComponent implements OnDestroy {
 
   readonly metaMin = PROTOPIPE_CONTENT_META_MIN;
   readonly metaMax = PROTOPIPE_CONTENT_META_MAX;
+
+  /** The plan keyword currently linked to this post (drives generation). */
+  readonly linkedKeywordId = computed(
+    () => this.session()?.template.primaryKeywordId ?? '',
+  );
 
   /** Local fetch state for the by-id load (separate from catalog loading). */
   readonly loadingPost = signal(false);
@@ -479,6 +485,11 @@ export class ProtopipeWriterComponent implements OnDestroy {
     return true;
   }
 
+  /** Link or clear the post's primary plan keyword. */
+  linkKeyword(keywordId: string): void {
+    this.content.setPrimaryKeyword(keywordId);
+  }
+
   publish(): void {
     if (this.promptIfIncomplete()) return;
     if (this.content.dirty()) {
@@ -538,13 +549,16 @@ export class ProtopipeWriterComponent implements OnDestroy {
           this.startPolling();
         }
       },
-      error: () => {
+      error: (err) => {
         this.generating.set(false);
         this.messages.add({
           severity: 'error',
           summary: 'Could not generate',
-          detail: 'Make sure this post has a linked keyword, then try again.',
-          life: 5000,
+          detail: parseProtopipeApiError(
+            err,
+            'Make sure this post has a linked keyword, then try again.',
+          ),
+          life: 6000,
         });
       },
     });

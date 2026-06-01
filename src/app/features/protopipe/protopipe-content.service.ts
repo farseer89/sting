@@ -256,6 +256,24 @@ export class ProtopipeContentService {
     });
   }
 
+  /**
+   * Link (or clear) the post's primary plan keyword without touching the drafted
+   * content. This is what the generate pipeline reads (template.primaryKeywordId).
+   */
+  setPrimaryKeyword(keywordId: string): void {
+    const s = this._writingSession();
+    if (!s || s.readOnly) return;
+    const kw = this.planKeywords().find((k) => k.id === keywordId);
+    this.updateWritingSession({
+      template: {
+        ...s.template,
+        primaryKeywordId: kw?.id ?? '',
+        primaryKeywordPhrase: kw?.phrase ?? s.template.primaryKeywordPhrase,
+      },
+      selectedKeywordId: kw?.id ?? null,
+    });
+  }
+
   /** Apply a server-generated article idea to the writing session. */
   applyArticleIdeaDto(idea: ArticleIdeaDto): void {
     const s = this._writingSession();

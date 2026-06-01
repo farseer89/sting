@@ -362,6 +362,25 @@
           <section class="pw__panel pw__panel--behind">
             <h3 class="pw__panel-title">Behind the curtain</h3>
 
+            <label class="pw__field">
+              <span>Linked keyword</span>
+              <select
+                [ngModel]="linkedKeywordId()"
+                (ngModelChange)="linkKeyword($event)"
+                [disabled]="isReadOnly()"
+              >
+                <option value="">— Pick a plan keyword —</option>
+                @for (kw of content.planKeywords(); track kw.id) {
+                  <option [value]="kw.id">{{ kw.phrase }}</option>
+                }
+              </select>
+              @if (!linkedKeywordId()) {
+                <span class="pw__meta-count is-warn">
+                  Generation needs a linked keyword. Save after picking one.
+                </span>
+              }
+            </label>
+
             @if (run(); as r) {
               <div class="pw__run-status" [attr.data-status]="r.status">
                 <span class="pw__run-dot"></span>

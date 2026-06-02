@@ -22,6 +22,17 @@
     </div>
 
     <div class="pw__bar-actions">
+      @if (generatedReady() && !isReadOnly()) {
+        <button
+          type="button"
+          class="pw__btn pw__btn--ghost pw__btn--pull"
+          (click)="applyGenerated()"
+          [attr.title]="pullDraftHint()"
+        >
+          <i class="pi pi-download"></i>
+          Pull pipeline draft
+        </button>
+      }
       @if (!isReadOnly()) {
         <button
           type="button"
@@ -500,10 +511,16 @@
                 </div>
               }
 
-              @if (generatedReady() && !isReadOnly() && !factCheckBlocksPull()) {
+              @if (generatedReady() && !isReadOnly()) {
                 <button type="button" class="pw__btn pw__btn--accent pw__run-apply" (click)="applyGenerated()">
                   <i class="pi pi-download"></i> Pull draft into document
                 </button>
+                @if (factCheckBlocksPull()) {
+                  <p class="pw__pull-note">
+                    {{ unresolvedCriticalFacts() }} critical fact(s) still need review — you can pull the draft
+                    anyway and resolve them in the editor.
+                  </p>
+                }
               }
 
               @if (!runIsActive()) {

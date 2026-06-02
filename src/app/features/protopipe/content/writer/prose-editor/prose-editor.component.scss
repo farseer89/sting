@@ -5,6 +5,8 @@
 
 .prose-editor {
   width: 100%;
+  background: #fff;
+  border-radius: 6px;
 }
 
 // ProseMirror renders its own DOM after view init, so it does not carry the

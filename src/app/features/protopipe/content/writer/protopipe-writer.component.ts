@@ -493,10 +493,16 @@ export class ProtopipeWriterComponent implements OnDestroy {
       ).length,
   );
 
-  /** Block "pull draft" only while critical facts remain unresolved. */
+  /** Review failed with unresolved critical facts (informational; pull is not blocked). */
   readonly factCheckBlocksPull = computed(
     () => this.generationReviewFailed() && this.unresolvedCriticalFacts() > 0,
   );
+
+  readonly pullDraftHint = computed(() => {
+    if (!this.factCheckBlocksPull()) return 'Replace the editor with the latest assembled pipeline draft';
+    const n = this.unresolvedCriticalFacts();
+    return `${n} critical fact(s) flagged — pull draft anyway, then confirm or dismiss in the editor`;
+  });
 
   /** Live TipTap editors keyed by template section index. */
   private readonly sectionEditors = new Map<number, Editor>();

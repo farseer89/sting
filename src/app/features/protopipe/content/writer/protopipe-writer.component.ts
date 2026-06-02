@@ -461,6 +461,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
         severity: fact.severity,
         resolved: fact.resolution !== null,
         selected: fact.id === selectedId,
+        suggestion: fact.suggestion,
       });
       map.set(fact.sectionIndex, arr);
     }
@@ -480,8 +481,8 @@ export class ProtopipeWriterComponent implements OnDestroy {
   /** Fact whose claim is highlighted in the prose (e.g. picked from the panel). */
   readonly selectedFactId = signal<string | null>(null);
 
-  /** Whether the intentional-keyword highlighter is toggled on. */
-  readonly keywordsVisible = signal(false);
+  /** Whether intentional SEO keywords are highlighted inside the prose editors. */
+  readonly keywordsVisible = signal(true);
 
   /**
    * The article's load-bearing SEO terms — primary keyword plus brief cluster /
@@ -516,14 +517,19 @@ export class ProtopipeWriterComponent implements OnDestroy {
   }
 
   /**
-   * Surface a flagged claim inside the prose: scroll it into view and light up
-   * its inline highlight (no text selection, so the bubble menu stays closed).
+   * Surface a flagged claim inside the prose editor: scroll to the span,
+   * strengthen its inline highlight, and open the same anchored popover as a
+   * direct click on the highlighted text.
    */
   locateFact(fact: FlaggedFactView): void {
-    this.openPanels.update((set) => new Set(set).add('facts'));
     this.content.setFocusedSection(fact.sectionIndex);
     this.selectedFactId.set(fact.id);
-    this.sectionEditors.get(fact.sectionIndex)?.commands.revealFact(fact.id);
+    const editor = this.sectionEditors.get(fact.sectionIndex);
+    if (!editor?.commands.revealFact(fact.id)) return;
+    const coords = editor.view.coordsAtPos(editor.state.selection.from);
+    const x = Math.min(Math.max(12, coords.left), window.innerWidth - 280);
+    const y = Math.min(coords.bottom + 8, window.innerHeight - 200);
+    this.activeFact.set({ fact, x, y });
   }
 
   readonly runEvents = computed(() => {

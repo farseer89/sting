@@ -111,20 +111,6 @@
         <span class="pw__tool-tip">Behind the curtain</span>
       </button>
 
-      <span class="pw__rail-divider"></span>
-
-      @if (articleKeywords().length) {
-        <button
-          type="button"
-          class="pw__tool"
-          [class.is-active]="keywordsVisible()"
-          (click)="toggleKeywords()"
-          title="Highlight keywords"
-        >
-          <i class="pi pi-hashtag"></i>
-          <span class="pw__tool-tip">Highlight keywords</span>
-        </button>
-      }
       @if (flaggedFactCount()) {
         <button
           type="button"
@@ -147,6 +133,29 @@
           <article class="pw__canvas">
             @if (topicLabel(); as topic) {
               <p class="pw__topic">Writing for <strong>{{ topic }}</strong></p>
+            }
+
+            @if (articleKeywords().length) {
+              <div class="pw__kw-strip" role="toolbar" aria-label="Keywords in article">
+                <span class="pw__kw-strip-label">Keywords in your draft</span>
+                @for (kw of articleKeywords(); track kw) {
+                  <span class="pw__kw-strip-mark" [attr.title]="kw">{{ kw }}</span>
+                }
+                <button
+                  type="button"
+                  class="pw__kw-strip-toggle"
+                  [class.is-on]="keywordsVisible()"
+                  (click)="toggleKeywords()"
+                  [attr.aria-pressed]="keywordsVisible()"
+                >
+                  {{ keywordsVisible() ? 'Hide in text' : 'Show in text' }}
+                </button>
+              </div>
+            }
+            @if (flaggedFactCount()) {
+              <p class="pw__editor-legend">
+                Flagged claims are underlined in your draft — hover for guidance, click to confirm or dismiss.
+              </p>
             }
 
             <!-- Headline -->
@@ -183,14 +192,6 @@
                   </button>
                 }
               </div>
-              <aside class="pw__margin" aria-label="Suggestions">
-                @for (note of notesForIntro(); track note.id) {
-                  <ng-container
-                    [ngTemplateOutlet]="marginNote"
-                    [ngTemplateOutletContext]="{ $implicit: note }"
-                  />
-                }
-              </aside>
             </div>
 
             <!-- Sections -->
@@ -240,14 +241,6 @@
                     </button>
                   }
                 </div>
-                <aside class="pw__margin" aria-label="Suggestions">
-                  @for (note of notesForSection($index); track note.id) {
-                    <ng-container
-                      [ngTemplateOutlet]="marginNote"
-                      [ngTemplateOutletContext]="{ $implicit: note }"
-                    />
-                  }
-                </aside>
               </div>
             }
 
@@ -568,16 +561,6 @@
                   >
                     <i class="pi pi-arrow-right"></i> {{ sec.h2 }}
                   </button>
-
-                  <p class="pw__fact-prose">
-                    @for (seg of sec.segments; track $index) {
-                      @if (seg.flagged) {
-                        <mark class="pw__fact-mark">{{ seg.text }}</mark>
-                      } @else {
-                        <span>{{ seg.text }}</span>
-                      }
-                    }
-                  </p>
 
                   @for (fact of sec.facts; track fact.id) {
                     <div

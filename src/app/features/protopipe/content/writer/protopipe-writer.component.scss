@@ -240,6 +240,68 @@
   }
 }
 
+// Inline editor aids — live in the canvas, not the inspector rail.
+.pw__kw-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  max-width: 48rem;
+  margin: 0 auto 1rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--p-primary-color, #6366f1) 6%, var(--p-content-background, #fff));
+  border: 1px solid color-mix(in srgb, var(--p-primary-color, #6366f1) 18%, transparent);
+}
+
+.pw__kw-strip-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-color-secondary);
+  margin-right: 0.15rem;
+}
+
+.pw__kw-strip-mark {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  color: var(--text-color);
+  background: color-mix(in srgb, var(--p-primary-color, #6366f1) 14%, transparent);
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--p-primary-color, #6366f1) 55%, transparent);
+}
+
+.pw__kw-strip-toggle {
+  margin-left: auto;
+  border: none;
+  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+  font-family: inherit;
+  font-size: 0.6875rem;
+  color: var(--text-color-secondary);
+  background: transparent;
+  cursor: pointer;
+
+  &.is-on {
+    color: var(--p-primary-color, var(--primary-color));
+    font-weight: 600;
+  }
+
+  &:hover {
+    color: var(--text-color);
+  }
+}
+
+.pw__editor-legend {
+  max-width: 48rem;
+  margin: -0.35rem auto 1.25rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--text-color-secondary);
+  text-align: center;
+}
+
 .pw__block {
   display: flex;
   justify-content: center;

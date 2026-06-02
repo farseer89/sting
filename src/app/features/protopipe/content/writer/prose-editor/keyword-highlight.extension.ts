@@ -55,8 +55,13 @@ function buildDecorations(doc: ProseNode, keywords: string[]): DecorationSet {
         const end = start + m[0].length;
         if (claimed.some(([s, e]) => start < e && end > s)) continue;
         claimed.push([start, end]);
+        const phrase = m[0];
         decorations.push(
-          Decoration.inline(base + start, base + end, { class: 'pw-kw-mark' }),
+          Decoration.inline(base + start, base + end, {
+            class: 'pw-kw-mark',
+            title: `Intentional SEO keyword — safe to trim elsewhere, keep this phrase unless you mean to drop it`,
+            'data-kw-phrase': phrase,
+          }),
         );
       }
     }
@@ -83,7 +88,7 @@ export const KeywordHighlight = Extension.create<unknown, KeywordHighlightStorag
         (keywords) =>
         ({ editor, tr, dispatch }) => {
           editor.storage['protopipeKeywordHighlight'].keywords = (keywords ?? [])
-            .map((k) => k.toLowerCase())
+            .map((k) => k.trim())
             .filter(Boolean);
           if (dispatch) {
             tr.setMeta(keywordHighlightKey, true);

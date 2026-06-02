@@ -65,12 +65,12 @@
     border-radius: 3px;
     padding: 0 1px;
     cursor: pointer;
-    transition: background 0.12s ease;
+    transition: background 0.12s ease, box-shadow 0.12s ease;
   }
 
   .pw-fact-mark--critical {
-    background: color-mix(in srgb, var(--red-400, #f87171) 28%, transparent);
-    box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--red-500, #ef4444) 70%, transparent);
+    background: color-mix(in srgb, var(--red-400, #f87171) 36%, transparent);
+    box-shadow: inset 0 -2px 0 var(--red-500, #ef4444);
   }
 
   .pw-fact-mark--critical:hover {
@@ -78,8 +78,8 @@
   }
 
   .pw-fact-mark--minor {
-    background: color-mix(in srgb, var(--yellow-400, #facc15) 28%, transparent);
-    box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--yellow-500, #eab308) 60%, transparent);
+    background: color-mix(in srgb, var(--yellow-400, #facc15) 36%, transparent);
+    box-shadow: inset 0 -2px 0 var(--yellow-500, #eab308);
   }
 
   .pw-fact-mark--minor:hover {
@@ -101,12 +101,13 @@
     box-shadow: inset 0 -2px 0 var(--yellow-500, #eab308);
   }
 
-  // Intentional SEO keyword highlighter (toggled from the tool rail).
+  // Intentional SEO keywords — always rendered inside the draft, not the side rail.
   .pw-kw-mark {
     border-radius: 3px;
     padding: 0 1px;
-    background: color-mix(in srgb, var(--p-primary-color, #6366f1) 14%, transparent);
-    box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--p-primary-color, #6366f1) 45%, transparent);
+    cursor: help;
+    background: color-mix(in srgb, var(--p-primary-color, #6366f1) 22%, transparent);
+    box-shadow: inset 0 -2px 0 var(--p-primary-color, #6366f1);
   }
 
   // tiptap-markdown / Placeholder empty state

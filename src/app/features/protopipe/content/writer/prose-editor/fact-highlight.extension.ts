@@ -12,6 +12,8 @@ export interface FactHighlightItem {
   resolved: boolean;
   /** The claim whose popover is currently open — gets a stronger treatment. */
   selected?: boolean;
+  /** Shown as a native tooltip on the inline highlight. */
+  suggestion?: string;
 }
 
 export interface FactHighlightOptions {
@@ -74,9 +76,13 @@ function buildDecorations(doc: ProseNode, facts: FactHighlightItem[]): Decoratio
   const decorations = ranges.map((r) => {
     const classes = ['pw-fact-mark', `pw-fact-mark--${r.fact.severity}`];
     if (r.fact.selected) classes.push('pw-fact-mark--selected');
+    const tip = r.fact.suggestion?.trim();
     return Decoration.inline(r.from, r.to, {
       class: classes.join(' '),
       'data-fact-id': r.fact.id,
+      title: tip
+        ? `${r.fact.severity === 'critical' ? 'Critical' : 'Review'}: ${tip}`
+        : 'Flagged claim — click to review',
     });
   });
   return DecorationSet.create(doc, decorations);

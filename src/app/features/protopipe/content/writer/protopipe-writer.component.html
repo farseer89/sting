@@ -110,6 +110,20 @@
         <i class="pi pi-server"></i>
         <span class="pw__tool-tip">Behind the curtain</span>
       </button>
+      @if (flaggedFactCount()) {
+        <button
+          type="button"
+          class="pw__tool"
+          [class.is-active]="isPanelOpen('facts')"
+          [class.is-warn]="unresolvedCriticalFacts() > 0"
+          (click)="togglePanel('facts')"
+          title="Fact check"
+        >
+          <i class="pi pi-exclamation-triangle"></i>
+          <span class="pw__tool-badge">{{ flaggedFactCount() }}</span>
+          <span class="pw__tool-tip">Fact check</span>
+        </button>
+      }
     </nav>
 
     <div class="pw__stage">
@@ -424,8 +438,23 @@
                   <h4 class="pw__panel-title">Draft review did not pass</h4>
                   @if (generationReviewScoreLabel(); as score) {
                     <p class="pw__meta-count is-warn">
-                      Score {{ score }} — fix issues in Thinker or re-run draft.
+                      Score {{ score }}
+                      @if (unresolvedCriticalFacts() > 0) {
+                        — {{ unresolvedCriticalFacts() }} fact(s) need your review.
+                      } @else {
+                        — review the flagged details below.
+                      }
                     </p>
+                  }
+                  @if (flaggedFactCount()) {
+                    <button
+                      type="button"
+                      class="pw__btn pw__run-relaunch"
+                      (click)="togglePanel('facts')"
+                    >
+                      <i class="pi pi-exclamation-triangle"></i>
+                      Open fact check ({{ flaggedFactCount() }})
+                    </button>
                   }
                   <ul class="pw__blockers">
                     @for (b of generationReviewBlockers(); track b) {
@@ -435,7 +464,7 @@
                 </div>
               }
 
-              @if (generatedReady() && !isReadOnly() && !generationReviewFailed()) {
+              @if (generatedReady() && !isReadOnly() && !factCheckBlocksPull()) {
                 <button type="button" class="pw__btn pw__btn--accent pw__run-apply" (click)="applyGenerated()">
                   <i class="pi pi-download"></i> Pull draft into document
                 </button>
@@ -478,6 +507,93 @@
                 <i class="pi pi-bolt"></i>
                 {{ generating() ? 'Launching…' : 'Generate with pipeline' }}
               </button>
+            }
+          </section>
+        }
+
+        @if (isPanelOpen('facts')) {
+          <section class="pw__panel pw__panel--facts">
+            <h3 class="pw__panel-title">Fact check</h3>
+            @if (flaggedFactCount()) {
+              <p class="pw__meta-count" [class.is-warn]="unresolvedCriticalFacts() > 0">
+                {{ flaggedFactCount() }} flagged · {{ unresolvedCriticalFacts() }} need your decision
+              </p>
+              @for (sec of flaggedSections(); track sec.sectionIndex) {
+                <div class="pw__fact-section">
+                  <button
+                    type="button"
+                    class="pw__fact-h2"
+                    (click)="goToFlaggedSection(sec.sectionIndex)"
+                    title="Jump to this section"
+                  >
+                    <i class="pi pi-arrow-right"></i> {{ sec.h2 }}
+                  </button>
+
+                  <p class="pw__fact-prose">
+                    @for (seg of sec.segments; track $index) {
+                      @if (seg.flagged) {
+                        <mark class="pw__fact-mark">{{ seg.text }}</mark>
+                      } @else {
+                        <span>{{ seg.text }}</span>
+                      }
+                    }
+                  </p>
+
+                  @for (fact of sec.facts; track fact.id) {
+                    <div
+                      class="pw__fact"
+                      [attr.data-category]="fact.category"
+                      [class.is-resolved]="fact.resolution"
+                    >
+                      <div class="pw__fact-head">
+                        <span class="pw__fact-tag">{{ factCategoryLabels[fact.category] }}</span>
+                        @if (fact.severity === 'critical') {
+                          <span class="pw__fact-tag is-critical">Critical</span>
+                        }
+                        @if (fact.resolution) {
+                          <span class="pw__fact-tag is-done">
+                            {{ fact.resolution === 'confirmed' ? 'Confirmed' : 'Dismissed' }}
+                          </span>
+                        }
+                      </div>
+                      <p class="pw__fact-claim">“{{ fact.claim }}”</p>
+                      <p class="pw__fact-suggestion">{{ fact.suggestion }}</p>
+                      @if (!isReadOnly()) {
+                        <div class="pw__fact-actions">
+                          <button
+                            type="button"
+                            class="pw__btn pw__btn--sm"
+                            [class.is-active]="fact.resolution === 'confirmed'"
+                            (click)="resolveFact(fact, 'confirmed')"
+                          >
+                            <i class="pi pi-check"></i> Confirm
+                          </button>
+                          <button
+                            type="button"
+                            class="pw__btn pw__btn--sm"
+                            [class.is-active]="fact.resolution === 'dismissed'"
+                            (click)="resolveFact(fact, 'dismissed')"
+                          >
+                            <i class="pi pi-times"></i> Dismiss
+                          </button>
+                          <button
+                            type="button"
+                            class="pw__btn pw__btn--sm"
+                            (click)="goToFlaggedSection(fact.sectionIndex)"
+                          >
+                            <i class="pi pi-pencil"></i> Edit
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            } @else {
+              <p class="pw__panel-empty">
+                No flagged facts. Run the pipeline and review the draft to surface
+                claims that need grounding.
+              </p>
             }
           </section>
         }

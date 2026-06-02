@@ -12,6 +12,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import type {
+  ArticleGenerationFlaggedFact,
   ArticleGenerationRunDto,
   ArticleGenerationStep,
 } from '@hive/contracts';
@@ -36,14 +37,87 @@ import {
   writingHints,
 } from '../content-template-suggestions';
 
-type InspectorPanel = 'brief' | 'preview' | 'hints' | 'seo' | 'behind';
+type InspectorPanel = 'brief' | 'preview' | 'hints' | 'seo' | 'behind' | 'facts';
 
 type PipelineStepStatus = 'pending' | 'running' | 'complete' | 'failed';
+
+type FactResolution = 'confirmed' | 'dismissed';
 
 interface PipelineStepView {
   step: ArticleGenerationStep;
   label: string;
   status: PipelineStepStatus;
+}
+
+interface FlaggedFactView extends ArticleGenerationFlaggedFact {
+  /** Stable key for tracking + resolution state. */
+  id: string;
+  resolution: FactResolution | null;
+}
+
+interface HighlightSegment {
+  text: string;
+  flagged: boolean;
+}
+
+interface FlaggedSectionView {
+  sectionIndex: number;
+  h2: string;
+  segments: HighlightSegment[];
+  facts: FlaggedFactView[];
+}
+
+const FACT_CATEGORY_LABELS: Record<ArticleGenerationFlaggedFact['category'], string> = {
+  business_specific: 'Needs your facts',
+  industry_norm: 'General guidance',
+  broken_link: 'Broken link',
+  scope: 'Scope / length',
+};
+
+function flaggedFactId(fact: ArticleGenerationFlaggedFact): string {
+  return `${fact.sectionIndex}::${fact.claim}`;
+}
+
+/**
+ * Splits prose into flagged / unflagged segments so the review pane can wrap
+ * each claim in a highlight mark. Claims are matched as verbatim substrings
+ * (the reviewer is instructed to quote exactly); unmatched claims are skipped.
+ */
+function buildHighlightSegments(prose: string, claims: string[]): HighlightSegment[] {
+  if (!prose) return [];
+  const ranges: Array<[number, number]> = [];
+  for (const claim of claims) {
+    const needle = claim.trim();
+    if (!needle) continue;
+    const at = prose.indexOf(needle);
+    if (at >= 0) ranges.push([at, at + needle.length]);
+  }
+  if (!ranges.length) return [{ text: prose, flagged: false }];
+
+  ranges.sort((a, b) => a[0] - b[0]);
+  const merged: Array<[number, number]> = [];
+  for (const [start, end] of ranges) {
+    const last = merged[merged.length - 1];
+    if (last && start <= last[1]) {
+      last[1] = Math.max(last[1], end);
+    } else {
+      merged.push([start, end]);
+    }
+  }
+
+  const segments: HighlightSegment[] = [];
+  let cursor = 0;
+  for (const [start, end] of merged) {
+    if (start > cursor) {
+      segments.push({ text: prose.slice(cursor, start), flagged: false });
+    }
+    segments.push({ text: prose.slice(start, end), flagged: true });
+    cursor = end;
+  }
+  if (cursor < prose.length) {
+    segments.push({ text: prose.slice(cursor), flagged: false });
+  }
+  return segments;
 }
 
 const PIPELINE_STEP_LABELS: ReadonlyArray<{ step: ArticleGenerationStep; label: string }> = [
@@ -263,6 +337,62 @@ export class ProtopipeWriterComponent implements OnDestroy {
       : '';
   });
 
+  // --- fact check -----------------------------------------------------------
+
+  readonly factCategoryLabels = FACT_CATEGORY_LABELS;
+
+  /** Client-side resolution map keyed by flaggedFactId, reset per run. */
+  private readonly factResolutions = signal<Map<string, FactResolution>>(new Map());
+
+  readonly generationFlaggedFacts = computed<FlaggedFactView[]>(() => {
+    const review = this.generationReview();
+    if (!review?.flaggedFacts?.length) return [];
+    const resolutions = this.factResolutions();
+    return review.flaggedFacts.map((fact) => {
+      const id = flaggedFactId(fact);
+      return { ...fact, id, resolution: resolutions.get(id) ?? null };
+    });
+  });
+
+  /** Flagged facts grouped by section, with the reviewed prose split for highlighting. */
+  readonly flaggedSections = computed<FlaggedSectionView[]>(() => {
+    const facts = this.generationFlaggedFacts();
+    if (!facts.length) return [];
+    const drafted = this.run()?.artifacts?.sections ?? [];
+    const bySection = new Map<number, FlaggedFactView[]>();
+    for (const fact of facts) {
+      const arr = bySection.get(fact.sectionIndex) ?? [];
+      arr.push(fact);
+      bySection.set(fact.sectionIndex, arr);
+    }
+    const out: FlaggedSectionView[] = [];
+    for (const [sectionIndex, sectionFacts] of bySection) {
+      const prose = drafted[sectionIndex]?.prose ?? '';
+      out.push({
+        sectionIndex,
+        h2: sectionFacts[0].h2,
+        segments: buildHighlightSegments(prose, sectionFacts.map((f) => f.claim)),
+        facts: sectionFacts,
+      });
+    }
+    return out.sort((a, b) => a.sectionIndex - b.sectionIndex);
+  });
+
+  readonly flaggedFactCount = computed(() => this.generationFlaggedFacts().length);
+
+  /** Critical facts still needing the owner's decision before a clean pull. */
+  readonly unresolvedCriticalFacts = computed(
+    () =>
+      this.generationFlaggedFacts().filter(
+        (f) => f.severity === 'critical' && f.resolution === null,
+      ).length,
+  );
+
+  /** Block "pull draft" only while critical facts remain unresolved. */
+  readonly factCheckBlocksPull = computed(
+    () => this.generationReviewFailed() && this.unresolvedCriticalFacts() > 0,
+  );
+
   readonly runEvents = computed(() => {
     const events = this.run()?.events ?? [];
     return [...events].slice(-12).reverse();
@@ -373,6 +503,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
         this.bootstrappedKey.set(key);
         this.loadingPost.set(false);
         this.run.set(null);
+        this.factResolutions.set(new Map());
         if (post.articleGenerationRunId) {
           this.loadRun(post.articleGenerationRunId);
         }
@@ -575,6 +706,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
     this.api.generateContent$(siteId, postId).subscribe({
       next: ({ run }) => {
         this.run.set(run);
+        this.factResolutions.set(new Map());
         this.generating.set(false);
         this.openPanels.update((set) => new Set(set).add('behind'));
         if (run.status === 'running' || run.status === 'pending') {
@@ -667,6 +799,27 @@ export class ProtopipeWriterComponent implements OnDestroy {
     void this.router.navigate(['/protopipe/lab/thinker/run', siteId, runId], {
       queryParams: postId && postId !== 'new' ? { postId } : undefined,
     });
+  }
+
+  // --- fact check actions ---------------------------------------------------
+
+  /** Mark a flagged fact as resolved (client-side; write-back handled separately). */
+  resolveFact(fact: FlaggedFactView, resolution: FactResolution): void {
+    this.factResolutions.update((prev) => {
+      const next = new Map(prev);
+      if (next.get(fact.id) === resolution) {
+        next.delete(fact.id);
+      } else {
+        next.set(fact.id, resolution);
+      }
+      return next;
+    });
+  }
+
+  /** Open the pipeline panel and focus the editable section for a flagged fact. */
+  goToFlaggedSection(sectionIndex: number): void {
+    this.openPanels.update((set) => new Set(set).add('facts'));
+    this.content.setFocusedSection(sectionIndex);
   }
 
   /** Pull the generated outline/draft (assembled template) into the document. */

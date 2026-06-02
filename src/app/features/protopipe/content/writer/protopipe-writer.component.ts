@@ -39,6 +39,7 @@ import {
 } from '../content-template-suggestions';
 import { ProseEditorComponent } from './prose-editor/prose-editor.component';
 import type { Editor } from '@tiptap/core';
+import { claimAppearsInText } from './prose-editor/claim-match';
 import type { FactHighlightItem } from './prose-editor/fact-highlight.extension';
 import type {
   ProseSelectionEvent,
@@ -414,19 +415,31 @@ export class ProtopipeWriterComponent implements OnDestroy {
   readonly flaggedSections = computed<FlaggedSectionView[]>(() => {
     const facts = this.generationFlaggedFacts();
     if (!facts.length) return [];
-    const drafted = this.run()?.artifacts?.sections ?? [];
-    const bySection = new Map<number, FlaggedFactView[]>();
+    const tpl = this.session()?.template;
+    const byTemplate = new Map<number, FlaggedFactView[]>();
     for (const fact of facts) {
-      const arr = bySection.get(fact.sectionIndex) ?? [];
+      const { intro, sectionIndex } = this.templateTargetForFact(fact);
+      const key = intro ? -1 : sectionIndex;
+      const arr = byTemplate.get(key) ?? [];
       arr.push(fact);
-      bySection.set(fact.sectionIndex, arr);
+      byTemplate.set(key, arr);
     }
     const out: FlaggedSectionView[] = [];
-    for (const [sectionIndex, sectionFacts] of bySection) {
-      const prose = drafted[sectionIndex]?.prose ?? '';
+    for (const [key, sectionFacts] of byTemplate) {
+      const artifactSections = this.run()?.artifacts?.sections;
+      const prose =
+        key < 0
+          ? (tpl?.intro ?? '')
+          : (tpl?.sections[key]?.body ??
+            artifactSections?.[key + 1]?.prose ??
+            '');
+      const h2 =
+        key < 0
+          ? 'Introduction'
+          : (tpl?.sections[key]?.h2 ?? sectionFacts[0]?.h2 ?? `Section ${key + 1}`);
       out.push({
-        sectionIndex,
-        h2: sectionFacts[0].h2,
+        sectionIndex: key < 0 ? 0 : key + 1,
+        h2,
         segments: buildHighlightSegments(prose, sectionFacts.map((f) => f.claim)),
         facts: sectionFacts,
       });
@@ -449,31 +462,69 @@ export class ProtopipeWriterComponent implements OnDestroy {
     () => this.generationReviewFailed() && this.unresolvedCriticalFacts() > 0,
   );
 
-  /** Flagged claims grouped by section index, shaped for the editor extension. */
-  private readonly factsBySection = computed<Map<number, FactHighlightItem[]>>(() => {
-    const map = new Map<number, FactHighlightItem[]>();
-    const selectedId = this.activeFact()?.fact.id ?? this.selectedFactId();
-    for (const fact of this.generationFlaggedFacts()) {
-      const arr = map.get(fact.sectionIndex) ?? [];
-      arr.push({
-        id: fact.id,
-        claim: fact.claim,
-        severity: fact.severity,
-        resolved: fact.resolution !== null,
-        selected: fact.id === selectedId,
-        suggestion: fact.suggestion,
-      });
-      map.set(fact.sectionIndex, arr);
-    }
-    return map;
-  });
+  /** Live TipTap editors keyed by template section index. */
+  private readonly sectionEditors = new Map<number, Editor>();
 
-  factsForSection(index: number): FactHighlightItem[] {
-    return this.factsBySection().get(index) ?? [];
+  private introEditor: Editor | null = null;
+
+  private toFactHighlightItem(
+    fact: FlaggedFactView,
+    selectedId: string | null,
+  ): FactHighlightItem {
+    return {
+      id: fact.id,
+      claim: fact.claim,
+      severity: fact.severity,
+      resolved: fact.resolution !== null,
+      selected: fact.id === selectedId,
+      suggestion: fact.suggestion,
+    };
   }
 
-  /** Live TipTap editors keyed by section index (for inline fact actions). */
-  private readonly sectionEditors = new Map<number, Editor>();
+  /**
+   * Route facts to editors by where the claim actually appears in the template
+   * (not pipeline sectionIndex, which uses drafted[0]=intro and body offset).
+   */
+  factsForIntro(): FactHighlightItem[] {
+    const intro = this.session()?.template.intro ?? '';
+    const selectedId = this.activeFact()?.fact.id ?? this.selectedFactId();
+    return this.generationFlaggedFacts()
+      .filter((f) => claimAppearsInText(f.claim, intro))
+      .map((f) => this.toFactHighlightItem(f, selectedId));
+  }
+
+  factsForSection(templateIndex: number): FactHighlightItem[] {
+    const body = this.session()?.template.sections[templateIndex]?.body ?? '';
+    const selectedId = this.activeFact()?.fact.id ?? this.selectedFactId();
+    const inBody = this.generationFlaggedFacts().filter((f) =>
+      claimAppearsInText(f.claim, body),
+    );
+    if (inBody.length) {
+      return inBody.map((f) => this.toFactHighlightItem(f, selectedId));
+    }
+    // Fallback: pipeline drafted index N → template section N−1 (section 0 = intro).
+    return this.generationFlaggedFacts()
+      .filter((f) => f.sectionIndex === templateIndex + 1)
+      .map((f) => this.toFactHighlightItem(f, selectedId));
+  }
+
+  /** Resolve which template section (or intro) owns this fact for navigation. */
+  private templateTargetForFact(fact: FlaggedFactView): { intro: boolean; sectionIndex: number } {
+    const tpl = this.session()?.template;
+    if (!tpl) {
+      return { intro: false, sectionIndex: Math.max(0, fact.sectionIndex - 1) };
+    }
+    if (claimAppearsInText(fact.claim, tpl.intro ?? '')) {
+      return { intro: true, sectionIndex: 0 };
+    }
+    for (let i = 0; i < tpl.sections.length; i++) {
+      if (claimAppearsInText(fact.claim, tpl.sections[i]?.body ?? '')) {
+        return { intro: false, sectionIndex: i };
+      }
+    }
+    const idx = fact.sectionIndex > 0 ? fact.sectionIndex - 1 : fact.sectionIndex;
+    return { intro: false, sectionIndex: Math.min(Math.max(0, idx), tpl.sections.length - 1) };
+  }
 
   /** Currently open inline fact popover, anchored to a viewport position. */
   readonly activeFact = signal<{ fact: FlaggedFactView; x: number; y: number } | null>(null);
@@ -522,9 +573,14 @@ export class ProtopipeWriterComponent implements OnDestroy {
    * direct click on the highlighted text.
    */
   locateFact(fact: FlaggedFactView): void {
-    this.content.setFocusedSection(fact.sectionIndex);
     this.selectedFactId.set(fact.id);
-    const editor = this.sectionEditors.get(fact.sectionIndex);
+    const target = this.templateTargetForFact(fact);
+    const editor = target.intro
+      ? this.introEditor
+      : this.sectionEditors.get(target.sectionIndex);
+    if (!target.intro) {
+      this.content.setFocusedSection(target.sectionIndex);
+    }
     if (!editor?.commands.revealFact(fact.id)) return;
     const coords = editor.view.coordsAtPos(editor.state.selection.from);
     const x = Math.min(Math.max(12, coords.left), window.innerWidth - 280);
@@ -597,6 +653,8 @@ export class ProtopipeWriterComponent implements OnDestroy {
   ngOnDestroy(): void {
     this.content.setWriterImmersive(false);
     this.stopPolling();
+    this.introEditor = null;
+    this.sectionEditors.clear();
   }
 
   private bootstrapEditor(key: string): void {
@@ -960,12 +1018,24 @@ export class ProtopipeWriterComponent implements OnDestroy {
   /** Open the pipeline panel and focus the editable section for a flagged fact. */
   goToFlaggedSection(sectionIndex: number): void {
     this.openPanels.update((set) => new Set(set).add('facts'));
-    this.content.setFocusedSection(sectionIndex);
+    const group = this.flaggedSections().find((s) => s.sectionIndex === sectionIndex);
+    const fact = group?.facts[0];
+    if (fact) {
+      this.locateFact(fact);
+      return;
+    }
+    this.content.setFocusedSection(sectionIndex > 0 ? sectionIndex - 1 : 0);
   }
 
   /** Track a section's editor instance so inline fact actions can target it. */
   registerEditor(sectionIndex: number, editor: Editor): void {
     this.sectionEditors.set(sectionIndex, editor);
+    editor.commands.setFlaggedFacts(this.factsForSection(sectionIndex));
+  }
+
+  registerIntroEditor(editor: Editor): void {
+    this.introEditor = editor;
+    editor.commands.setFlaggedFacts(this.factsForIntro());
   }
 
   /** A highlighted claim was clicked in the editor: open the inline popover. */

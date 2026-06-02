@@ -2,18 +2,19 @@ import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import type { Node as ProseNode } from '@tiptap/pm/model';
+import { buildFlatTextIndex, rangeFromFlatMatch } from './text-block-index';
 
-export interface KeywordHighlightStorage {
-  /** Lower-cased target phrases. Empty array = highlighting off. */
+export interface KeywordHighlightPluginState {
   keywords: string[];
 }
 
-export const keywordHighlightKey = new PluginKey('protopipeKeywordHighlight');
+export const keywordHighlightKey = new PluginKey<KeywordHighlightPluginState>(
+  'protopipeKeywordHighlight',
+);
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     protopipeKeywordHighlight: {
-      /** Replace the highlighted keyword set; pass [] to clear. */
       setKeywords: (keywords: string[]) => ReturnType;
     };
   }
@@ -23,11 +24,6 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-/**
- * Build one case-insensitive, word-boundary regex per keyword phrase. Longer
- * phrases are matched first so a multi-word keyword wins over its component
- * words (handled by the caller sorting keywords by length desc).
- */
 function buildMatchers(keywords: string[]): RegExp[] {
   return keywords
     .map((kw) => kw.trim())
@@ -42,25 +38,26 @@ function buildDecorations(doc: ProseNode, keywords: string[]): DecorationSet {
   const decorations: Decoration[] = [];
   doc.descendants((node, pos) => {
     if (!node.isTextblock) return;
-    const text = node.textContent;
-    if (!text) return;
-    const base = pos + 1;
-    // Track claimed spans so overlapping keywords don't double-decorate.
+    const flat = buildFlatTextIndex(node, pos);
+    if (!flat.text) return;
+
     const claimed: Array<[number, number]> = [];
     for (const re of matchers) {
       re.lastIndex = 0;
       let m: RegExpExecArray | null;
-      while ((m = re.exec(text)) !== null) {
+      while ((m = re.exec(flat.text)) !== null) {
         const start = m.index;
         const end = start + m[0].length;
         if (claimed.some(([s, e]) => start < e && end > s)) continue;
         claimed.push([start, end]);
-        const phrase = m[0];
+        const span = rangeFromFlatMatch(flat, start, m[0].length);
+        if (!span) continue;
         decorations.push(
-          Decoration.inline(base + start, base + end, {
+          Decoration.inline(span.from, span.to, {
             class: 'pw-kw-mark',
-            title: `Intentional SEO keyword — safe to trim elsewhere, keep this phrase unless you mean to drop it`,
-            'data-kw-phrase': phrase,
+            title:
+              'Intentional SEO keyword — safe to trim elsewhere, keep this phrase unless you mean to drop it',
+            'data-kw-phrase': m[0],
           }),
         );
       }
@@ -70,16 +67,11 @@ function buildDecorations(doc: ProseNode, keywords: string[]): DecorationSet {
   return decorations.length ? DecorationSet.create(doc, decorations) : DecorationSet.empty;
 }
 
-/**
- * Subtly highlights the article's intentional SEO keywords inside the prose so
- * the writer can see which words are load-bearing before trimming text. Toggled
- * on/off from the writer's tool rail; the keyword list lives in editor storage.
- */
-export const KeywordHighlight = Extension.create<unknown, KeywordHighlightStorage>({
+export const KeywordHighlight = Extension.create<unknown, KeywordHighlightPluginState>({
   name: 'protopipeKeywordHighlight',
 
   addStorage() {
-    return { keywords: [] };
+    return { keywords: [] as string[] };
   },
 
   addCommands() {
@@ -87,11 +79,10 @@ export const KeywordHighlight = Extension.create<unknown, KeywordHighlightStorag
       setKeywords:
         (keywords) =>
         ({ editor, tr, dispatch }) => {
-          editor.storage['protopipeKeywordHighlight'].keywords = (keywords ?? [])
-            .map((k) => k.trim())
-            .filter(Boolean);
+          const list = (keywords ?? []).map((k) => k.trim()).filter(Boolean);
+          editor.storage['protopipeKeywordHighlight'].keywords = list;
           if (dispatch) {
-            tr.setMeta(keywordHighlightKey, true);
+            tr.setMeta(keywordHighlightKey, { keywords: list });
             dispatch(tr);
           }
           return true;
@@ -104,9 +95,19 @@ export const KeywordHighlight = Extension.create<unknown, KeywordHighlightStorag
     return [
       new Plugin({
         key: keywordHighlightKey,
+        state: {
+          init: (): KeywordHighlightPluginState => ({ keywords: [] }),
+          apply(tr, value): KeywordHighlightPluginState {
+            const meta = tr.getMeta(keywordHighlightKey) as KeywordHighlightPluginState | undefined;
+            if (meta?.keywords) return meta;
+            return value;
+          },
+        },
         props: {
           decorations(state) {
-            return buildDecorations(state.doc, extension.storage.keywords);
+            const pluginKw = keywordHighlightKey.getState(state)?.keywords;
+            const keywords = pluginKw ?? extension.storage.keywords;
+            return buildDecorations(state.doc, keywords);
           },
         },
       }),

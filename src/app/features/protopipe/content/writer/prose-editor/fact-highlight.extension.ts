@@ -2,6 +2,12 @@ import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state';
 import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view';
 import type { Node as ProseNode } from '@tiptap/pm/model';
+import { normalizeClaimText } from './claim-match';
+import {
+  buildFlatTextIndex,
+  rangeFromFlatMatch,
+  type FlatTextIndex,
+} from './text-block-index';
 
 export interface FactHighlightItem {
   id: string;
@@ -21,11 +27,11 @@ export interface FactHighlightOptions {
   onFactClick?: (factId: string, rect: DOMRect) => void;
 }
 
-export interface FactHighlightStorage {
+export interface FactHighlightPluginState {
   facts: FactHighlightItem[];
 }
 
-export const factHighlightKey = new PluginKey('protopipeFactHighlight');
+export const factHighlightKey = new PluginKey<FactHighlightPluginState>('protopipeFactHighlight');
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -43,27 +49,64 @@ interface FactRange {
   to: number;
 }
 
+function findNeedleInFlat(index: FlatTextIndex, needle: string): number {
+  const exact = index.text.indexOf(needle);
+  if (exact !== -1) return exact;
+
+  const normalizedHay = normalizeClaimText(index.text);
+  const normalizedNeedle = normalizeClaimText(needle);
+  if (!normalizedNeedle) return -1;
+  const at = normalizedHay.indexOf(normalizedNeedle);
+  if (at === -1) return -1;
+
+  // Map normalized offset back to raw text (same length when only case/dash differs).
+  if (normalizeClaimText(index.text.slice(at, at + needle.length)) === normalizedNeedle) {
+    return at;
+  }
+
+  // Walk raw text for first window matching normalized needle.
+  for (let i = 0; i <= index.text.length - needle.length; i++) {
+    if (normalizeClaimText(index.text.slice(i, i + needle.length)) === normalizedNeedle) {
+      return i;
+    }
+  }
+  for (let len = needle.length; len >= Math.min(12, needle.length); len--) {
+    const sub = needle.slice(0, len);
+    const idx = index.text.indexOf(sub);
+    if (idx !== -1 && normalizeClaimText(sub).length >= 8) return idx;
+  }
+  return -1;
+}
+
 /**
- * Locate every active (unresolved) claim as a verbatim substring inside each
- * textblock and map it to ProseMirror document positions. Recomputed on every
- * doc change, so highlights re-anchor automatically and silently drop once the
- * underlying text is edited away.
+ * Locate active claims inside each textblock using true document positions.
+ * Recomputed on every doc change so highlights track edits.
  */
-function findFactRanges(doc: ProseNode, facts: FactHighlightItem[]): FactRange[] {
+export function findFactRanges(doc: ProseNode, facts: FactHighlightItem[]): FactRange[] {
   const active = facts.filter((f) => !f.resolved && f.claim.trim());
   if (!active.length) return [];
+
   const ranges: FactRange[] = [];
   doc.descendants((node, pos) => {
     if (!node.isTextblock) return;
-    const text = node.textContent;
-    if (!text) return;
-    const base = pos + 1;
+    const flat = buildFlatTextIndex(node, pos);
+    if (!flat.text) return;
+
     for (const fact of active) {
       const needle = fact.claim.trim();
-      let at = text.indexOf(needle);
+      const positions: number[] = [];
+      let at = flat.text.indexOf(needle);
       while (at !== -1) {
-        ranges.push({ fact, from: base + at, to: base + at + needle.length });
-        at = text.indexOf(needle, at + needle.length);
+        positions.push(at);
+        at = flat.text.indexOf(needle, at + needle.length);
+      }
+      if (!positions.length) {
+        const fuzzy = findNeedleInFlat(flat, needle);
+        if (fuzzy !== -1) positions.push(fuzzy);
+      }
+      for (const start of positions) {
+        const span = rangeFromFlatMatch(flat, start, needle.length);
+        if (span) ranges.push({ fact, from: span.from, to: span.to });
       }
     }
   });
@@ -96,10 +139,9 @@ function factAt(doc: ProseNode, facts: FactHighlightItem[], pos: number): FactHi
 }
 
 /**
- * Inline decorations for reviewer-flagged claims, with click-to-resolve. The
- * fact list lives in editor storage and is refreshed via `setFlaggedFacts`.
+ * Inline decorations for reviewer-flagged claims, with click-to-resolve.
  */
-export const FactHighlight = Extension.create<FactHighlightOptions, FactHighlightStorage>({
+export const FactHighlight = Extension.create<FactHighlightOptions, FactHighlightPluginState>({
   name: 'protopipeFactHighlight',
 
   addOptions() {
@@ -107,7 +149,7 @@ export const FactHighlight = Extension.create<FactHighlightOptions, FactHighligh
   },
 
   addStorage() {
-    return { facts: [] };
+    return { facts: [] as FactHighlightItem[] };
   },
 
   addCommands() {
@@ -115,9 +157,10 @@ export const FactHighlight = Extension.create<FactHighlightOptions, FactHighligh
       setFlaggedFacts:
         (facts) =>
         ({ editor, tr, dispatch }) => {
-          editor.storage['protopipeFactHighlight'].facts = facts ?? [];
+          const list = facts ?? [];
+          editor.storage['protopipeFactHighlight'].facts = list;
           if (dispatch) {
-            tr.setMeta(factHighlightKey, true);
+            tr.setMeta(factHighlightKey, { facts: list });
             dispatch(tr);
           }
           return true;
@@ -126,7 +169,7 @@ export const FactHighlight = Extension.create<FactHighlightOptions, FactHighligh
         (factId) =>
         ({ editor, tr, dispatch, view }) => {
           const facts: FactHighlightItem[] = editor.storage['protopipeFactHighlight'].facts;
-          const target = facts.find((f) => f.id === factId);
+          const target = facts.find((f: FactHighlightItem) => f.id === factId);
           if (!target) return false;
           const ranges = findFactRanges(tr.doc, [{ ...target, resolved: false }]);
           if (!ranges.length) return false;
@@ -142,14 +185,12 @@ export const FactHighlight = Extension.create<FactHighlightOptions, FactHighligh
         (factId) =>
         ({ editor, tr, dispatch }) => {
           const facts: FactHighlightItem[] = editor.storage['protopipeFactHighlight'].facts;
-          const target = facts.find((f) => f.id === factId);
+          const target = facts.find((f: FactHighlightItem) => f.id === factId);
           if (!target) return false;
           const ranges = findFactRanges(tr.doc, [{ ...target, resolved: false }]);
           if (!ranges.length) return false;
           const { from } = ranges[0];
           if (dispatch) {
-            // Collapsed caret so we scroll the claim into view without opening
-            // the selection bubble menu.
             tr.setSelection(TextSelection.create(tr.doc, from)).scrollIntoView();
             dispatch(tr);
           }
@@ -163,12 +204,24 @@ export const FactHighlight = Extension.create<FactHighlightOptions, FactHighligh
     return [
       new Plugin({
         key: factHighlightKey,
+        state: {
+          init: (): FactHighlightPluginState => ({ facts: [] }),
+          apply(tr, value): FactHighlightPluginState {
+            const meta = tr.getMeta(factHighlightKey) as FactHighlightPluginState | undefined;
+            if (meta?.facts) return meta;
+            return value;
+          },
+        },
         props: {
           decorations(state) {
-            return buildDecorations(state.doc, extension.storage.facts);
+            const pluginFacts = factHighlightKey.getState(state)?.facts;
+            const facts = pluginFacts ?? extension.storage.facts;
+            return buildDecorations(state.doc, facts);
           },
           handleClick(view: EditorView, pos: number, event: MouseEvent) {
-            const fact = factAt(view.state.doc, extension.storage.facts, pos);
+            const facts =
+              factHighlightKey.getState(view.state)?.facts ?? extension.storage.facts;
+            const fact = factAt(view.state.doc, facts, pos);
             if (!fact) return false;
             const handler = extension.options.onFactClick;
             if (!handler) return false;

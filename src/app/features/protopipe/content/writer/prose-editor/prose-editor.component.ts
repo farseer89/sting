@@ -99,13 +99,21 @@ export class ProseEditorComponent {
     // Keep inline fact highlights in sync with the reviewer's flagged claims.
     effect(() => {
       const facts = this.flaggedFacts();
-      this.editor?.commands.setFlaggedFacts(facts);
+      const content = this.value();
+      const ed = this.editor;
+      if (!ed) return;
+      void content;
+      queueMicrotask(() => ed.commands.setFlaggedFacts(facts));
     });
 
     // Keep keyword highlights in sync with the writer's keyword toggle.
     effect(() => {
       const keywords = this.keywords();
-      this.editor?.commands.setKeywords(keywords);
+      const content = this.value();
+      const ed = this.editor;
+      if (!ed) return;
+      void content;
+      queueMicrotask(() => ed.commands.setKeywords(keywords));
     });
 
     this.destroyRef.onDestroy(() => {

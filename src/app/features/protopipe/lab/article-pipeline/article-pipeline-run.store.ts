@@ -16,9 +16,9 @@ const GENERATION_STEPS: ArticleGenerationStep[] = [
   'build_brief',
   'outline',
   'draft',
-  'review',
   'metadata',
   'assemble',
+  'review',
 ];
 
 @Injectable({ providedIn: 'root' })

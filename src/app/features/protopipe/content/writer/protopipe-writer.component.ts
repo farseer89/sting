@@ -13,9 +13,12 @@ import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import type {
+  ArticleGenerationContentTarget,
   ArticleGenerationFlaggedFact,
   ArticleGenerationRunDto,
   ArticleGenerationStep,
+  ProtopipeFactResolution,
+  ProtopipeFactReview,
 } from '@hive/contracts';
 import { MessageService } from 'primeng/api';
 import { DatePicker } from 'primeng/datepicker';
@@ -39,7 +42,6 @@ import {
 } from '../content-template-suggestions';
 import { ProseEditorComponent } from './prose-editor/prose-editor.component';
 import type { Editor } from '@tiptap/core';
-import { claimAppearsInText } from './prose-editor/claim-match';
 import type { FactHighlightItem } from './prose-editor/fact-highlight.extension';
 import type {
   ProseSelectionEvent,
@@ -132,7 +134,26 @@ const FACT_CATEGORY_LABELS: Record<ArticleGenerationFlaggedFact['category'], str
 };
 
 function flaggedFactId(fact: ArticleGenerationFlaggedFact): string {
-  return `${fact.sectionIndex}::${fact.claim}`;
+  if (fact.id) return fact.id;
+  const target = resolveFactTarget(fact);
+  return target.kind === 'intro'
+    ? `intro::${fact.claim}`
+    : `section:${target.index}::${fact.claim}`;
+}
+
+function resolveFactTarget(fact: ArticleGenerationFlaggedFact): ArticleGenerationContentTarget {
+  if (fact.target) return fact.target;
+  if (fact.sectionIndex <= 0) return { kind: 'intro' };
+  return { kind: 'section', index: Math.max(0, fact.sectionIndex - 1) };
+}
+
+function factTargetsIntro(fact: ArticleGenerationFlaggedFact): boolean {
+  return resolveFactTarget(fact).kind === 'intro';
+}
+
+function factTargetsSection(fact: ArticleGenerationFlaggedFact, templateIndex: number): boolean {
+  const target = resolveFactTarget(fact);
+  return target.kind === 'section' && target.index === templateIndex;
 }
 
 /**
@@ -185,9 +206,9 @@ const PIPELINE_STEP_LABELS: ReadonlyArray<{ step: ArticleGenerationStep; label: 
   { step: 'build_brief', label: 'Brief' },
   { step: 'outline', label: 'Outline' },
   { step: 'draft', label: 'Draft' },
-  { step: 'review', label: 'Review' },
   { step: 'metadata', label: 'Metadata' },
   { step: 'assemble', label: 'Assemble' },
+  { step: 'review', label: 'Review' },
 ];
 
 /**
@@ -398,16 +419,31 @@ export class ProtopipeWriterComponent implements OnDestroy {
 
   readonly factCategoryLabels = FACT_CATEGORY_LABELS;
 
-  /** Client-side resolution map keyed by flaggedFactId, reset per run. */
+  /** Persisted + in-session resolutions keyed by fact id. */
   private readonly factResolutions = signal<Map<string, FactResolution>>(new Map());
 
+  /** Fact review snapshot from the loaded content post (survives refresh). */
+  private readonly postFactReview = signal<ProtopipeFactReview | null>(null);
+
   readonly generationFlaggedFacts = computed<FlaggedFactView[]>(() => {
+    const postReview = this.postFactReview();
     const review = this.generationReview();
-    if (!review?.flaggedFacts?.length) return [];
+    const flags =
+      postReview?.flags?.length
+        ? postReview.flags
+        : (review?.flaggedFacts ?? []);
+    if (!flags.length) return [];
     const resolutions = this.factResolutions();
-    return review.flaggedFacts.map((fact) => {
+    return flags.map((fact) => {
       const id = flaggedFactId(fact);
-      return { ...fact, id, resolution: resolutions.get(id) ?? null };
+      const persisted = postReview?.resolutions?.find((r) => r.factId === id);
+      const local = resolutions.get(id);
+      const resolution: FactResolution | null = local
+        ? local
+        : persisted?.status === 'confirmed' || persisted?.status === 'dismissed'
+          ? persisted.status
+          : null;
+      return { ...fact, id, target: resolveFactTarget(fact), resolution };
     });
   });
 
@@ -418,8 +454,8 @@ export class ProtopipeWriterComponent implements OnDestroy {
     const tpl = this.session()?.template;
     const byTemplate = new Map<number, FlaggedFactView[]>();
     for (const fact of facts) {
-      const { intro, sectionIndex } = this.templateTargetForFact(fact);
-      const key = intro ? -1 : sectionIndex;
+      const target = resolveFactTarget(fact);
+      const key = target.kind === 'intro' ? -1 : target.index;
       const arr = byTemplate.get(key) ?? [];
       arr.push(fact);
       byTemplate.set(key, arr);
@@ -486,44 +522,26 @@ export class ProtopipeWriterComponent implements OnDestroy {
    * (not pipeline sectionIndex, which uses drafted[0]=intro and body offset).
    */
   factsForIntro(): FactHighlightItem[] {
-    const intro = this.session()?.template.intro ?? '';
     const selectedId = this.activeFact()?.fact.id ?? this.selectedFactId();
     return this.generationFlaggedFacts()
-      .filter((f) => claimAppearsInText(f.claim, intro))
+      .filter((f) => factTargetsIntro(f))
       .map((f) => this.toFactHighlightItem(f, selectedId));
   }
 
   factsForSection(templateIndex: number): FactHighlightItem[] {
-    const body = this.session()?.template.sections[templateIndex]?.body ?? '';
     const selectedId = this.activeFact()?.fact.id ?? this.selectedFactId();
-    const inBody = this.generationFlaggedFacts().filter((f) =>
-      claimAppearsInText(f.claim, body),
-    );
-    if (inBody.length) {
-      return inBody.map((f) => this.toFactHighlightItem(f, selectedId));
-    }
-    // Fallback: pipeline drafted index N → template section N−1 (section 0 = intro).
     return this.generationFlaggedFacts()
-      .filter((f) => f.sectionIndex === templateIndex + 1)
+      .filter((f) => factTargetsSection(f, templateIndex))
       .map((f) => this.toFactHighlightItem(f, selectedId));
   }
 
   /** Resolve which template section (or intro) owns this fact for navigation. */
   private templateTargetForFact(fact: FlaggedFactView): { intro: boolean; sectionIndex: number } {
-    const tpl = this.session()?.template;
-    if (!tpl) {
-      return { intro: false, sectionIndex: Math.max(0, fact.sectionIndex - 1) };
-    }
-    if (claimAppearsInText(fact.claim, tpl.intro ?? '')) {
+    const target = resolveFactTarget(fact);
+    if (target.kind === 'intro') {
       return { intro: true, sectionIndex: 0 };
     }
-    for (let i = 0; i < tpl.sections.length; i++) {
-      if (claimAppearsInText(fact.claim, tpl.sections[i]?.body ?? '')) {
-        return { intro: false, sectionIndex: i };
-      }
-    }
-    const idx = fact.sectionIndex > 0 ? fact.sectionIndex - 1 : fact.sectionIndex;
-    return { intro: false, sectionIndex: Math.min(Math.max(0, idx), tpl.sections.length - 1) };
+    return { intro: false, sectionIndex: target.index };
   }
 
   /** Currently open inline fact popover, anchored to a viewport position. */
@@ -700,11 +718,13 @@ export class ProtopipeWriterComponent implements OnDestroy {
         this.bootstrappedKey.set(key);
         this.loadingPost.set(false);
         this.run.set(null);
-        this.factResolutions.set(new Map());
+        this.postFactReview.set(post.factReview ?? null);
+        this.hydrateFactResolutions(post.factReview);
         this.resetMarginNotes();
         if (post.articleGenerationRunId) {
           this.loadRun(post.articleGenerationRunId);
         }
+        this.maybeAutoApplyTemplateFromRun();
       },
       error: () => {
         this.loadingPost.set(false);
@@ -904,6 +924,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
     this.api.generateContent$(siteId, postId).subscribe({
       next: ({ run }) => {
         this.run.set(run);
+        this.postFactReview.set(null);
         this.factResolutions.set(new Map());
         this.resetMarginNotes();
         this.generating.set(false);
@@ -935,6 +956,8 @@ export class ProtopipeWriterComponent implements OnDestroy {
         this.run.set(run);
         if (run.status === 'running' || run.status === 'pending') {
           this.startPolling();
+        } else if (run.status === 'complete') {
+          this.maybeAutoApplyTemplateFromRun(run);
         }
       },
       error: () => {
@@ -968,10 +991,11 @@ export class ProtopipeWriterComponent implements OnDestroy {
         } else {
           this.stopPolling();
           if (run.status === 'complete') {
+            this.maybeAutoApplyTemplateFromRun(run);
             this.messages.add({
               severity: 'success',
               summary: 'Pipeline finished',
-              detail: 'Open the inspector to pull the draft into your document.',
+              detail: 'Draft synced when the document was empty; open Facts to review flags.',
               life: 5000,
             });
           }
@@ -1012,6 +1036,64 @@ export class ProtopipeWriterComponent implements OnDestroy {
         next.set(fact.id, resolution);
       }
       return next;
+    });
+    this.persistFactReview();
+  }
+
+  private hydrateFactResolutions(review: ProtopipeFactReview | null | undefined): void {
+    if (!review?.resolutions?.length) {
+      this.factResolutions.set(new Map());
+      return;
+    }
+    const map = new Map<string, FactResolution>();
+    for (const r of review.resolutions) {
+      if (r.status === 'confirmed' || r.status === 'dismissed') {
+        map.set(r.factId, r.status);
+      }
+    }
+    this.factResolutions.set(map);
+  }
+
+  private persistFactReview(): void {
+    const siteId = this.content.siteId();
+    const postId = this.content.editingId();
+    const runId = this.run()?.id;
+    if (!siteId || !postId || postId === 'new' || !runId) return;
+
+    const flags = this.generationFlaggedFacts().map(
+      ({ id, sectionIndex, h2, claim, category, severity, suggestion, target, claimStart, claimEnd, contentHash }) => ({
+        id,
+        sectionIndex,
+        h2,
+        claim,
+        category,
+        severity,
+        suggestion,
+        target,
+        claimStart,
+        claimEnd,
+        contentHash,
+      }),
+    );
+    const resolutions: ProtopipeFactResolution[] = [...this.factResolutions().entries()]
+      .filter(([, status]) => status === 'confirmed' || status === 'dismissed')
+      .map(([factId, status]) => ({
+        factId,
+        status,
+        resolvedAt: new Date().toISOString(),
+      }));
+
+    const factReview: ProtopipeFactReview = {
+      runId,
+      flags,
+      resolutions,
+    };
+
+    this.api.updateContent$(siteId, postId, { factReview }).subscribe({
+      next: ({ post }) => this.postFactReview.set(post.factReview ?? factReview),
+      error: () => {
+        /* non-blocking; operator can save manually */
+      },
     });
   }
 
@@ -1470,7 +1552,20 @@ export class ProtopipeWriterComponent implements OnDestroy {
   }
 
   /** Pull the generated outline/draft (assembled template) into the document. */
-  applyGenerated(): void {
+  /** Pull assembled template into the session when the canvas is still empty. */
+  private maybeAutoApplyTemplateFromRun(run?: ArticleGenerationRunDto): void {
+    const active = run ?? this.run();
+    if (!active || active.status !== 'complete' || !active.artifacts?.template) return;
+    const s = this.session();
+    if (!s || s.readOnly) return;
+    const hasContent =
+      (s.template.intro?.trim().length ?? 0) > 0 ||
+      s.template.sections.some((sec) => (sec.body?.trim().length ?? 0) > 0);
+    if (hasContent) return;
+    this.applyGenerated({ silent: true });
+  }
+
+  applyGenerated(options?: { silent?: boolean }): void {
     const run = this.run();
     const s = this.session();
     if (!run || !s || s.readOnly) return;
@@ -1493,6 +1588,16 @@ export class ProtopipeWriterComponent implements OnDestroy {
           })),
         },
       });
+      const reviewFlags = artifacts.review?.flaggedFacts ?? [];
+      if (reviewFlags.length && run.id) {
+        const factReview: ProtopipeFactReview = {
+          runId: run.id,
+          flags: reviewFlags,
+          resolutions: this.postFactReview()?.resolutions ?? [],
+        };
+        this.postFactReview.set(factReview);
+        this.persistFactReview();
+      }
     } else {
       const outline = artifacts.outline;
       const drafted = artifacts.sections ?? [];
@@ -1510,11 +1615,13 @@ export class ProtopipeWriterComponent implements OnDestroy {
       });
     }
 
-    this.messages.add({
-      severity: 'success',
-      summary: 'Draft applied',
-      detail: 'Review the pulled-in sections, then save.',
-      life: 4000,
-    });
+    if (!options?.silent) {
+      this.messages.add({
+        severity: 'success',
+        summary: 'Draft applied',
+        detail: 'Review the pulled-in sections, then save.',
+        life: 4000,
+      });
+    }
   }
 }

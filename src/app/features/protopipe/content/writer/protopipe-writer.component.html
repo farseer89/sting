@@ -110,6 +110,21 @@
         <i class="pi pi-server"></i>
         <span class="pw__tool-tip">Behind the curtain</span>
       </button>
+
+      <span class="pw__rail-divider"></span>
+
+      @if (articleKeywords().length) {
+        <button
+          type="button"
+          class="pw__tool"
+          [class.is-active]="keywordsVisible()"
+          (click)="toggleKeywords()"
+          title="Highlight keywords"
+        >
+          <i class="pi pi-hashtag"></i>
+          <span class="pw__tool-tip">Highlight keywords</span>
+        </button>
+      }
       @if (flaggedFactCount()) {
         <button
           type="button"
@@ -158,6 +173,7 @@
                   (valueChange)="patchTemplate({ intro: $event })"
                   (selectionChange)="onSelectionMenu($event)"
                   (slashChange)="onSlashMenu($event)"
+                  [keywords]="activeKeywords()"
                   [disabled]="isReadOnly()"
                   placeholder="Open with the promise of the piece…"
                 ></app-prose-editor>
@@ -210,6 +226,7 @@
                     (valueChange)="patchSection($index, { body: $event })"
                     (focused)="focusSection($index)"
                     [flaggedFacts]="factsForSection($index)"
+                    [keywords]="activeKeywords()"
                     (factClick)="onFactClick($index, $event)"
                     (selectionChange)="onSelectionMenu($event)"
                     (slashChange)="onSlashMenu($event)"
@@ -579,7 +596,15 @@
                           </span>
                         }
                       </div>
-                      <p class="pw__fact-claim">“{{ fact.claim }}”</p>
+                      <button
+                        type="button"
+                        class="pw__fact-claim"
+                        [class.is-selected]="selectedFactId() === fact.id"
+                        (click)="locateFact(fact)"
+                        title="Show this claim in the article"
+                      >
+                        “{{ fact.claim }}”
+                      </button>
                       <p class="pw__fact-suggestion">{{ fact.suggestion }}</p>
                       @if (!isReadOnly()) {
                         <div class="pw__fact-actions">
@@ -602,9 +627,9 @@
                           <button
                             type="button"
                             class="pw__btn pw__btn--sm"
-                            (click)="goToFlaggedSection(fact.sectionIndex)"
+                            (click)="locateFact(fact)"
                           >
-                            <i class="pi pi-pencil"></i> Edit
+                            <i class="pi pi-eye"></i> Show in text
                           </button>
                         </div>
                       }

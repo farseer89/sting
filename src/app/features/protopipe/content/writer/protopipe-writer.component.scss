@@ -1007,10 +1007,29 @@
 }
 
 .pw__fact-claim {
+  display: block;
+  width: 100%;
   margin: 0 0 0.3rem;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  font-family: inherit;
   font-size: 0.8125rem;
   font-style: italic;
+  text-align: left;
   color: var(--text-color);
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+
+  &:hover {
+    background: var(--p-content-hover-background, var(--surface-hover, rgba(0, 0, 0, 0.04)));
+  }
+
+  &.is-selected {
+    border-color: color-mix(in srgb, var(--p-primary-color, #6366f1) 55%, transparent);
+    background: color-mix(in srgb, var(--p-primary-color, #6366f1) 12%, transparent);
+  }
 }
 
 .pw__fact-suggestion {

@@ -452,7 +452,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
   /** Flagged claims grouped by section index, shaped for the editor extension. */
   private readonly factsBySection = computed<Map<number, FactHighlightItem[]>>(() => {
     const map = new Map<number, FactHighlightItem[]>();
-    const selectedId = this.activeFact()?.fact.id ?? null;
+    const selectedId = this.activeFact()?.fact.id ?? this.selectedFactId();
     for (const fact of this.generationFlaggedFacts()) {
       const arr = map.get(fact.sectionIndex) ?? [];
       arr.push({
@@ -476,6 +476,55 @@ export class ProtopipeWriterComponent implements OnDestroy {
 
   /** Currently open inline fact popover, anchored to a viewport position. */
   readonly activeFact = signal<{ fact: FlaggedFactView; x: number; y: number } | null>(null);
+
+  /** Fact whose claim is highlighted in the prose (e.g. picked from the panel). */
+  readonly selectedFactId = signal<string | null>(null);
+
+  /** Whether the intentional-keyword highlighter is toggled on. */
+  readonly keywordsVisible = signal(false);
+
+  /**
+   * The article's load-bearing SEO terms — primary keyword plus brief cluster /
+   * NLP terms — deduped and ordered longest-first so multi-word phrases win.
+   */
+  readonly articleKeywords = computed<string[]>(() => {
+    const template = this.session()?.template;
+    const brief = this.brief();
+    const seen = new Set<string>();
+    const out: string[] = [];
+    const add = (value?: string | null) => {
+      const trimmed = value?.trim();
+      if (!trimmed) return;
+      const key = trimmed.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push(trimmed);
+    };
+    add(template?.primaryKeywordPhrase);
+    (brief?.secondaryKeywords ?? []).forEach(add);
+    (brief?.mustCoverTerms ?? []).forEach(add);
+    return out.sort((a, b) => b.length - a.length);
+  });
+
+  /** Keywords passed to the editors — empty unless the toggle is on. */
+  readonly activeKeywords = computed<string[]>(() =>
+    this.keywordsVisible() ? this.articleKeywords() : [],
+  );
+
+  toggleKeywords(): void {
+    this.keywordsVisible.update((v) => !v);
+  }
+
+  /**
+   * Surface a flagged claim inside the prose: scroll it into view and light up
+   * its inline highlight (no text selection, so the bubble menu stays closed).
+   */
+  locateFact(fact: FlaggedFactView): void {
+    this.openPanels.update((set) => new Set(set).add('facts'));
+    this.content.setFocusedSection(fact.sectionIndex);
+    this.selectedFactId.set(fact.id);
+    this.sectionEditors.get(fact.sectionIndex)?.commands.revealFact(fact.id);
+  }
 
   readonly runEvents = computed(() => {
     const events = this.run()?.events ?? [];
@@ -1310,6 +1359,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
   private resetMarginNotes(): void {
     this.dismissedNotes.set(new Set());
     this.expandedNote.set(null);
+    this.selectedFactId.set(null);
   }
 
   isNoteExpanded(id: string): boolean {

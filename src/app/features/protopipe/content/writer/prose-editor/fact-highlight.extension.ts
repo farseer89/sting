@@ -30,6 +30,7 @@ declare module '@tiptap/core' {
     protopipeFactHighlight: {
       setFlaggedFacts: (facts: FactHighlightItem[]) => ReturnType;
       selectFact: (factId: string) => ReturnType;
+      revealFact: (factId: string) => ReturnType;
     };
   }
 }
@@ -128,6 +129,23 @@ export const FactHighlight = Extension.create<FactHighlightOptions, FactHighligh
             tr.setSelection(TextSelection.create(tr.doc, from, to)).scrollIntoView();
             dispatch(tr);
             view.focus();
+          }
+          return true;
+        },
+      revealFact:
+        (factId) =>
+        ({ editor, tr, dispatch }) => {
+          const facts: FactHighlightItem[] = editor.storage['protopipeFactHighlight'].facts;
+          const target = facts.find((f) => f.id === factId);
+          if (!target) return false;
+          const ranges = findFactRanges(tr.doc, [{ ...target, resolved: false }]);
+          if (!ranges.length) return false;
+          const { from } = ranges[0];
+          if (dispatch) {
+            // Collapsed caret so we scroll the claim into view without opening
+            // the selection bubble menu.
+            tr.setSelection(TextSelection.create(tr.doc, from)).scrollIntoView();
+            dispatch(tr);
           }
           return true;
         },

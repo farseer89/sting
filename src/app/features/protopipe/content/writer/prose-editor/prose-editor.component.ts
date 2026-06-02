@@ -14,6 +14,7 @@ import type { Extensions } from '@tiptap/core';
 import { Editor } from '@tiptap/core';
 import { buildProseExtensions } from './prose-editor-extensions';
 import { FactHighlight, type FactHighlightItem } from './fact-highlight.extension';
+import { KeywordHighlight } from './keyword-highlight.extension';
 import {
   EditorMenus,
   type MenuSelectionInfo,
@@ -54,6 +55,8 @@ export class ProseEditorComponent {
   readonly extensions = input<Extensions>([]);
   /** Reviewer-flagged claims to highlight inline. */
   readonly flaggedFacts = input<FactHighlightItem[]>([]);
+  /** Intentional SEO keywords to highlight inline; empty = off. */
+  readonly keywords = input<string[]>([]);
 
   /** Emits markdown whenever the user edits. */
   readonly valueChange = output<string>();
@@ -99,6 +102,12 @@ export class ProseEditorComponent {
       this.editor?.commands.setFlaggedFacts(facts);
     });
 
+    // Keep keyword highlights in sync with the writer's keyword toggle.
+    effect(() => {
+      const keywords = this.keywords();
+      this.editor?.commands.setKeywords(keywords);
+    });
+
     this.destroyRef.onDestroy(() => {
       this.editor?.destroy();
       this.editor = null;
@@ -119,7 +128,7 @@ export class ProseEditorComponent {
     });
     const extensions: Extensions = buildProseExtensions({
       placeholder: this.placeholder(),
-      extra: [factHighlight, menus, ...this.extensions()],
+      extra: [factHighlight, KeywordHighlight, menus, ...this.extensions()],
     });
 
     const editor = new Editor({
@@ -137,6 +146,7 @@ export class ProseEditorComponent {
 
     this.editor = editor;
     editor.commands.setFlaggedFacts(this.flaggedFacts());
+    editor.commands.setKeywords(this.keywords());
     this.ready.emit(editor);
   }
 

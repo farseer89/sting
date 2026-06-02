@@ -452,6 +452,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
   /** Flagged claims grouped by section index, shaped for the editor extension. */
   private readonly factsBySection = computed<Map<number, FactHighlightItem[]>>(() => {
     const map = new Map<number, FactHighlightItem[]>();
+    const selectedId = this.activeFact()?.fact.id ?? null;
     for (const fact of this.generationFlaggedFacts()) {
       const arr = map.get(fact.sectionIndex) ?? [];
       arr.push({
@@ -459,6 +460,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
         claim: fact.claim,
         severity: fact.severity,
         resolved: fact.resolution !== null,
+        selected: fact.id === selectedId,
       });
       map.set(fact.sectionIndex, arr);
     }

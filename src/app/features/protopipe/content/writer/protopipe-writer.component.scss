@@ -325,6 +325,9 @@
   font-weight: 600;
   line-height: 1.35;
   margin-bottom: 0.5rem;
+  resize: none;
+  overflow: hidden;
+  field-sizing: content;
 }
 
 .pw__section-body {

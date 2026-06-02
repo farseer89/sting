@@ -194,15 +194,16 @@
 
               <div class="pw__block pw__section">
                 <div class="pw__block-main">
-                  <input
+                  <textarea
                     class="pw__h2"
-                    type="text"
+                    rows="1"
                     [ngModel]="sec.h2"
                     (ngModelChange)="patchSection($index, { h2: $event })"
+                    (keydown.enter)="$event.preventDefault()"
                     (focus)="focusSection($index)"
                     [disabled]="isReadOnly()"
                     placeholder="Section heading…"
-                  />
+                  ></textarea>
                   <app-prose-editor
                     class="pw__section-body pw__section-body--editor"
                     [value]="sec.body"

@@ -10,6 +10,8 @@ export interface FactHighlightItem {
   severity: 'critical' | 'minor';
   /** Resolved facts (confirmed/dismissed) stop highlighting. */
   resolved: boolean;
+  /** The claim whose popover is currently open — gets a stronger treatment. */
+  selected?: boolean;
 }
 
 export interface FactHighlightOptions {
@@ -68,12 +70,14 @@ function findFactRanges(doc: ProseNode, facts: FactHighlightItem[]): FactRange[]
 function buildDecorations(doc: ProseNode, facts: FactHighlightItem[]): DecorationSet {
   const ranges = findFactRanges(doc, facts);
   if (!ranges.length) return DecorationSet.empty;
-  const decorations = ranges.map((r) =>
-    Decoration.inline(r.from, r.to, {
-      class: `pw-fact-mark pw-fact-mark--${r.fact.severity}`,
+  const decorations = ranges.map((r) => {
+    const classes = ['pw-fact-mark', `pw-fact-mark--${r.fact.severity}`];
+    if (r.fact.selected) classes.push('pw-fact-mark--selected');
+    return Decoration.inline(r.from, r.to, {
+      class: classes.join(' '),
       'data-fact-id': r.fact.id,
-    }),
-  );
+    });
+  });
   return DecorationSet.create(doc, decorations);
 }
 

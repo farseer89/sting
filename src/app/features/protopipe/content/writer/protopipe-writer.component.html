@@ -137,14 +137,15 @@
             <!-- Headline -->
             <div class="pw__block pw__block--title">
               <div class="pw__block-main pw__block-main--title">
-                <input
+                <textarea
                   class="pw__h1"
-                  type="text"
+                  rows="1"
                   [ngModel]="s.template.h1"
                   (ngModelChange)="onHeadlineInput($event)"
+                  (keydown.enter)="$event.preventDefault()"
                   [disabled]="isReadOnly()"
                   placeholder="Your headline…"
-                />
+                ></textarea>
               </div>
             </div>
 

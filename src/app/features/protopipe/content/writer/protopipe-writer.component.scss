@@ -243,6 +243,7 @@
 .pw__block {
   display: flex;
   justify-content: center;
+  position: relative;
 }
 
 .pw__block-main {
@@ -1024,6 +1025,322 @@
   }
 
   .pw__aside {
+    display: none;
+  }
+}
+
+// --- inline fact popover ----------------------------------------------------
+
+.pw__fact-pop-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
+.pw__fact-pop {
+  position: fixed;
+  z-index: 1001;
+  width: min(20rem, calc(100vw - 1.5rem));
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  background: var(--surface-overlay, var(--surface-card));
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pw__fact-pop--critical {
+  border-color: color-mix(in srgb, var(--red-500, #ef4444) 55%, var(--surface-border));
+}
+
+.pw__fact-pop-claim {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--text-color);
+}
+
+.pw__fact-pop-suggest {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--text-color-secondary);
+}
+
+.pw__fact-pop-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.pw__btn--ghost {
+  background: transparent;
+  color: var(--text-color-secondary);
+}
+
+// --- bubble menu ------------------------------------------------------------
+
+.pw__bubble {
+  position: fixed;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem 0.3rem;
+  border-radius: 8px;
+  background: var(--surface-overlay, var(--surface-card));
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+}
+
+.pw__bubble-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-color);
+  font-size: 0.85rem;
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--text-color) 10%, transparent);
+  }
+}
+
+.pw__bubble-sep {
+  width: 1px;
+  height: 1.1rem;
+  margin: 0 0.15rem;
+  background: var(--surface-border);
+}
+
+// --- slash menu -------------------------------------------------------------
+
+.pw__slash-backdrop,
+.pw__ai-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
+.pw__slash {
+  position: fixed;
+  z-index: 1001;
+  width: 14rem;
+  padding: 0.3rem;
+  border-radius: 10px;
+  background: var(--surface-overlay, var(--surface-card));
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+}
+
+.pw__slash-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.4rem 0.55rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-color);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--primary-color) 14%, transparent);
+  }
+
+  i {
+    color: var(--text-color-secondary);
+    width: 1rem;
+  }
+}
+
+.pw__slash-empty {
+  padding: 0.5rem 0.55rem;
+  font-size: 0.8rem;
+  color: var(--text-color-secondary);
+}
+
+// --- AI results panel -------------------------------------------------------
+
+.pw__ai {
+  position: fixed;
+  z-index: 1001;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  width: min(22rem, calc(100vw - 2rem));
+  max-height: min(28rem, 70vh);
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  background: var(--surface-overlay, var(--surface-card));
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+}
+
+.pw__ai-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--surface-border);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.pw__ai-close {
+  border: none;
+  background: transparent;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+}
+
+.pw__ai-status {
+  margin: 0;
+  padding: 1rem 0.85rem;
+  font-size: 0.82rem;
+  color: var(--text-color-secondary);
+}
+
+.pw__ai-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.3rem;
+  overflow-y: auto;
+}
+
+.pw__ai-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-color);
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  }
+}
+
+.pw__ai-item-label {
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.pw__ai-item-detail {
+  flex: none;
+  font-size: 0.72rem;
+  color: var(--text-color-secondary);
+}
+
+// --- margin AI notes --------------------------------------------------------
+
+.pw__margin {
+  position: absolute;
+  top: 0.15rem;
+  right: 0;
+  width: 5.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  pointer-events: none;
+}
+
+.pw__note {
+  position: relative;
+  pointer-events: auto;
+}
+
+.pw__note-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0.1rem 0;
+  color: var(--text-color-secondary);
+  font-size: 0.68rem;
+  text-align: left;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.pw__note-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary-color);
+}
+
+.pw__note-peek {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pw__note-card {
+  position: absolute;
+  top: 1.4rem;
+  right: 0;
+  z-index: 20;
+  width: 15rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: var(--surface-overlay, var(--surface-card));
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pw__note-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-color-secondary);
+}
+
+.pw__note-text {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-color);
+}
+
+.pw__note-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+@media (max-width: 960px) {
+  .pw__margin {
     display: none;
   }
 }

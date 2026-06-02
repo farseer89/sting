@@ -9,6 +9,7 @@ import {
   untracked,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import type {
@@ -36,6 +37,61 @@ import {
   slugifyTitle,
   writingHints,
 } from '../content-template-suggestions';
+import { ProseEditorComponent } from './prose-editor/prose-editor.component';
+import type { Editor } from '@tiptap/core';
+import type { FactHighlightItem } from './prose-editor/fact-highlight.extension';
+import type {
+  ProseSelectionEvent,
+  ProseSlashEvent,
+} from './prose-editor/prose-editor.component';
+
+type AiPanelKind = 'research' | 'ideas' | 'links';
+
+interface AiPanelItem {
+  label: string;
+  detail?: string;
+  /** Optional value to insert into the editor (markdown). */
+  insert?: string;
+}
+
+interface AiPanelState {
+  kind: AiPanelKind;
+  title: string;
+  loading: boolean;
+  error: string | null;
+  items: AiPanelItem[];
+  /** Editor + range the inserts target. */
+  editor: Editor;
+  range: { from: number; to: number } | null;
+  /** Links applied to an existing selection (setLink) vs inserted as text. */
+  linkSelection?: boolean;
+}
+
+interface SlashCommand {
+  id: string;
+  label: string;
+  icon: string;
+  keywords: string;
+}
+
+interface MarginNote {
+  id: string;
+  anchor: 'intro' | 'section';
+  sectionIndex?: number;
+  label: string;
+  peek: string;
+  text: string;
+  /** When present, "Apply" inserts this markdown into the target. */
+  apply?: { target: 'intro' | 'section'; sectionIndex?: number; text: string };
+}
+
+const SLASH_COMMANDS: SlashCommand[] = [
+  { id: 'research', label: 'Research a phrase', icon: 'pi pi-search', keywords: 'research search keyword' },
+  { id: 'link', label: 'Insert internal link', icon: 'pi pi-link', keywords: 'link internal url' },
+  { id: 'idea', label: 'Article ideas', icon: 'pi pi-lightbulb', keywords: 'idea topic angle' },
+  { id: 'bullet', label: 'Bullet list', icon: 'pi pi-list', keywords: 'bullet list unordered' },
+  { id: 'quote', label: 'Quote', icon: 'pi pi-comment', keywords: 'quote blockquote' },
+];
 
 type InspectorPanel = 'brief' | 'preview' | 'hints' | 'seo' | 'behind' | 'facts';
 
@@ -143,7 +199,7 @@ const PIPELINE_STEP_LABELS: ReadonlyArray<{ step: ArticleGenerationStep; label: 
   selector: 'app-protopipe-writer',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePicker, Toast],
+  imports: [FormsModule, DatePicker, Toast, ProseEditorComponent, NgTemplateOutlet],
   providers: [MessageService],
   templateUrl: './protopipe-writer.component.html',
   styleUrl: './protopipe-writer.component.scss',
@@ -393,6 +449,32 @@ export class ProtopipeWriterComponent implements OnDestroy {
     () => this.generationReviewFailed() && this.unresolvedCriticalFacts() > 0,
   );
 
+  /** Flagged claims grouped by section index, shaped for the editor extension. */
+  private readonly factsBySection = computed<Map<number, FactHighlightItem[]>>(() => {
+    const map = new Map<number, FactHighlightItem[]>();
+    for (const fact of this.generationFlaggedFacts()) {
+      const arr = map.get(fact.sectionIndex) ?? [];
+      arr.push({
+        id: fact.id,
+        claim: fact.claim,
+        severity: fact.severity,
+        resolved: fact.resolution !== null,
+      });
+      map.set(fact.sectionIndex, arr);
+    }
+    return map;
+  });
+
+  factsForSection(index: number): FactHighlightItem[] {
+    return this.factsBySection().get(index) ?? [];
+  }
+
+  /** Live TipTap editors keyed by section index (for inline fact actions). */
+  private readonly sectionEditors = new Map<number, Editor>();
+
+  /** Currently open inline fact popover, anchored to a viewport position. */
+  readonly activeFact = signal<{ fact: FlaggedFactView; x: number; y: number } | null>(null);
+
   readonly runEvents = computed(() => {
     const events = this.run()?.events ?? [];
     return [...events].slice(-12).reverse();
@@ -504,6 +586,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
         this.loadingPost.set(false);
         this.run.set(null);
         this.factResolutions.set(new Map());
+        this.resetMarginNotes();
         if (post.articleGenerationRunId) {
           this.loadRun(post.articleGenerationRunId);
         }
@@ -707,6 +790,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
       next: ({ run }) => {
         this.run.set(run);
         this.factResolutions.set(new Map());
+        this.resetMarginNotes();
         this.generating.set(false);
         this.openPanels.update((set) => new Set(set).add('behind'));
         if (run.status === 'running' || run.status === 'pending') {
@@ -820,6 +904,441 @@ export class ProtopipeWriterComponent implements OnDestroy {
   goToFlaggedSection(sectionIndex: number): void {
     this.openPanels.update((set) => new Set(set).add('facts'));
     this.content.setFocusedSection(sectionIndex);
+  }
+
+  /** Track a section's editor instance so inline fact actions can target it. */
+  registerEditor(sectionIndex: number, editor: Editor): void {
+    this.sectionEditors.set(sectionIndex, editor);
+  }
+
+  /** A highlighted claim was clicked in the editor: open the inline popover. */
+  onFactClick(sectionIndex: number, event: { factId: string; rect: DOMRect }): void {
+    const fact = this.generationFlaggedFacts().find((f) => f.id === event.factId);
+    if (!fact) return;
+    const { rect } = event;
+    const x = Math.min(rect.left, window.innerWidth - 320);
+    const y = rect.bottom + 8;
+    this.activeFact.set({ fact, x: Math.max(12, x), y });
+  }
+
+  closeFactPopover(): void {
+    this.activeFact.set(null);
+  }
+
+  confirmActiveFact(): void {
+    const active = this.activeFact();
+    if (!active) return;
+    this.resolveFact(active.fact, 'confirmed');
+    this.closeFactPopover();
+  }
+
+  dismissActiveFact(): void {
+    const active = this.activeFact();
+    if (!active) return;
+    this.resolveFact(active.fact, 'dismissed');
+    this.closeFactPopover();
+  }
+
+  /** Select the claim text in its section editor so the operator can rewrite it. */
+  editActiveFact(): void {
+    const active = this.activeFact();
+    if (!active) return;
+    const editor = this.sectionEditors.get(active.fact.sectionIndex);
+    editor?.commands.selectFact(active.fact.id);
+    this.closeFactPopover();
+  }
+
+  // --- bubble + slash menus -------------------------------------------------
+
+  /** Floating formatting/AI toolbar shown on a text selection. */
+  readonly bubbleMenu = signal<{
+    text: string;
+    x: number;
+    y: number;
+    editor: Editor;
+    range: { from: number; to: number };
+  } | null>(null);
+
+  /** Slash command palette anchored to the cursor. */
+  readonly slashMenu = signal<{
+    query: string;
+    x: number;
+    y: number;
+    editor: Editor;
+    range: { from: number; to: number };
+  } | null>(null);
+
+  /** Dismissible results popover for research / ideas / links. */
+  readonly aiPanel = signal<AiPanelState | null>(null);
+
+  /** Slash commands filtered by the current query. */
+  readonly slashCommands = computed<SlashCommand[]>(() => {
+    const menu = this.slashMenu();
+    const q = (menu?.query ?? '').toLowerCase();
+    if (!q) return SLASH_COMMANDS;
+    return SLASH_COMMANDS.filter(
+      (c) => c.label.toLowerCase().includes(q) || c.keywords.includes(q),
+    );
+  });
+
+  onSelectionMenu(event: ProseSelectionEvent | null): void {
+    if (!event) {
+      this.bubbleMenu.set(null);
+      return;
+    }
+    const editor = event.editor;
+    const { from, to } = editor.state.selection;
+    const x = Math.max(12, Math.min(event.rect.left, window.innerWidth - 280));
+    const y = Math.max(12, event.rect.top - 46);
+    this.bubbleMenu.set({ text: event.text, x, y, editor, range: { from, to } });
+  }
+
+  onSlashMenu(event: ProseSlashEvent | null): void {
+    if (!event) {
+      this.slashMenu.set(null);
+      return;
+    }
+    const x = Math.max(12, Math.min(event.rect.left, window.innerWidth - 260));
+    const y = event.rect.bottom + 6;
+    this.slashMenu.set({
+      query: event.query,
+      x,
+      y,
+      editor: event.editor,
+      range: { from: event.from, to: event.to },
+    });
+  }
+
+  bubbleToggleBold(): void {
+    this.bubbleMenu()?.editor.chain().focus().toggleBold().run();
+  }
+
+  bubbleToggleItalic(): void {
+    this.bubbleMenu()?.editor.chain().focus().toggleItalic().run();
+  }
+
+  bubbleResearch(): void {
+    const menu = this.bubbleMenu();
+    if (!menu) return;
+    const phrase = menu.text.trim().slice(0, 120);
+    this.bubbleMenu.set(null);
+    void this.openResearch(menu.editor, phrase, { from: menu.range.to, to: menu.range.to });
+  }
+
+  bubbleLink(): void {
+    const menu = this.bubbleMenu();
+    if (!menu) return;
+    this.bubbleMenu.set(null);
+    void this.openLinkPicker(menu.editor, menu.range, true);
+  }
+
+  runSlashCommand(id: string): void {
+    const menu = this.slashMenu();
+    if (!menu) return;
+    const { editor, range } = menu;
+    this.slashMenu.set(null);
+
+    switch (id) {
+      case 'bullet':
+        editor.chain().focus().deleteRange(range).toggleBulletList().run();
+        return;
+      case 'quote':
+        editor.chain().focus().deleteRange(range).toggleBlockquote().run();
+        return;
+      case 'link':
+        editor.chain().focus().deleteRange(range).run();
+        void this.openLinkPicker(editor, { from: range.from, to: range.from }, false);
+        return;
+      case 'idea':
+        editor.chain().focus().deleteRange(range).run();
+        void this.openIdeas(editor, { from: range.from, to: range.from });
+        return;
+      case 'research': {
+        editor.chain().focus().deleteRange(range).run();
+        const phrase = this.session()?.template.h1?.trim() || this.session()?.template.title || '';
+        void this.openResearch(editor, phrase, { from: range.from, to: range.from });
+        return;
+      }
+    }
+  }
+
+  closeAiPanel(): void {
+    this.aiPanel.set(null);
+  }
+
+  applyAiItem(item: AiPanelItem): void {
+    const panel = this.aiPanel();
+    if (!panel) return;
+    const { editor, range } = panel;
+    if (panel.kind === 'links' && panel.linkSelection) {
+      if (item.insert) {
+        editor.chain().focus().extendMarkRange('link').setLink({ href: item.insert }).run();
+      }
+    } else if (panel.kind === 'links' && item.insert) {
+      this.insertAtRange(editor, range, `[${item.label}](${item.insert})`);
+    } else if (item.insert) {
+      this.insertAtRange(editor, range, item.insert);
+    }
+    this.closeAiPanel();
+  }
+
+  private insertAtRange(
+    editor: Editor,
+    range: { from: number; to: number } | null,
+    text: string,
+  ): void {
+    const chain = editor.chain().focus();
+    if (range) {
+      chain.insertContentAt(range, text);
+    } else {
+      chain.insertContent(text);
+    }
+    chain.run();
+  }
+
+  private async openResearch(
+    editor: Editor,
+    phrase: string,
+    range: { from: number; to: number },
+  ): Promise<void> {
+    const siteId = this.content.siteId();
+    if (!siteId || !phrase) return;
+    this.aiPanel.set({
+      kind: 'research',
+      title: `Research · “${phrase}”`,
+      loading: true,
+      error: null,
+      items: [],
+      editor,
+      range,
+    });
+    try {
+      const res = await this.api.researchQuery(siteId, {
+        phrase,
+        includeRelated: true,
+        relatedLimit: 10,
+      });
+      const items: AiPanelItem[] = (res.ads.related ?? []).map((kw) => ({
+        label: kw.phrase,
+        detail:
+          kw.avgMonthlySearches != null ? `${kw.avgMonthlySearches.toLocaleString()}/mo` : undefined,
+        insert: kw.phrase,
+      }));
+      this.aiPanel.update((p) =>
+        p && p.kind === 'research'
+          ? { ...p, loading: false, items, error: items.length ? null : 'No related phrases found.' }
+          : p,
+      );
+    } catch {
+      this.aiPanel.update((p) =>
+        p && p.kind === 'research' ? { ...p, loading: false, error: 'Research failed.' } : p,
+      );
+    }
+  }
+
+  private async openIdeas(
+    editor: Editor,
+    range: { from: number; to: number },
+  ): Promise<void> {
+    const siteId = this.content.siteId();
+    if (!siteId) return;
+    this.aiPanel.set({
+      kind: 'ideas',
+      title: 'Article ideas',
+      loading: true,
+      error: null,
+      items: [],
+      editor,
+      range,
+    });
+    try {
+      const res = await this.api.getArticleIdeas(siteId);
+      const items: AiPanelItem[] = (res.ideas ?? []).slice(0, 12).map((idea) => ({
+        label: idea.title,
+        detail: idea.angle,
+        insert: idea.title,
+      }));
+      this.aiPanel.update((p) =>
+        p && p.kind === 'ideas'
+          ? {
+              ...p,
+              loading: false,
+              items,
+              error: res.pending
+                ? 'Ideas are still generating — try again shortly.'
+                : items.length
+                  ? null
+                  : 'No ideas yet.',
+            }
+          : p,
+      );
+    } catch {
+      this.aiPanel.update((p) =>
+        p && p.kind === 'ideas' ? { ...p, loading: false, error: 'Could not load ideas.' } : p,
+      );
+    }
+  }
+
+  private async openLinkPicker(
+    editor: Editor,
+    range: { from: number; to: number },
+    linkSelection: boolean,
+  ): Promise<void> {
+    const siteId = this.content.siteId();
+    if (!siteId) return;
+    this.aiPanel.set({
+      kind: 'links',
+      title: 'Link to a published article',
+      loading: true,
+      error: null,
+      items: [],
+      editor,
+      range,
+      linkSelection,
+    });
+    try {
+      const res = await this.api.listContent(siteId);
+      const currentId = this.content.editingId();
+      const items: AiPanelItem[] = (res.posts ?? [])
+        .filter((p) => p.status === 'published' && p.id !== currentId && p.slug)
+        .slice(0, 20)
+        .map((p) => ({
+          label: p.title || p.template?.h1 || p.slug || 'Untitled',
+          detail: `/${p.slug}`,
+          insert: `/${p.slug}`,
+        }));
+      this.aiPanel.update((prev) =>
+        prev && prev.kind === 'links'
+          ? { ...prev, loading: false, items, error: items.length ? null : 'No published articles to link.' }
+          : prev,
+      );
+    } catch {
+      this.aiPanel.update((prev) =>
+        prev && prev.kind === 'links' ? { ...prev, loading: false, error: 'Could not load articles.' } : prev,
+      );
+    }
+  }
+
+  // --- margin AI notes (ambient suggestions) --------------------------------
+
+  private readonly dismissedNotes = signal<Set<string>>(new Set());
+  readonly expandedNote = signal<string | null>(null);
+
+  private static readonly HINT_ADVICE: Record<string, string> = {
+    meta: 'Write a 140–160 character meta description that previews the answer and includes the keyword.',
+    'intro-kw': 'Work the primary keyword naturally into the first sentence or two of the opening.',
+    words: 'Aim for at least 300 words of substantive body copy so the piece reads as authoritative.',
+    title: 'Give the article a search-friendly title that leads with the phrase people type.',
+    h1: 'Add a clear page headline (H1) so readers and search engines know the topic at a glance.',
+  };
+
+  /** All ambient suggestions seeded from writing hints, brief gaps, and outline notes. */
+  private readonly allMarginNotes = computed<MarginNote[]>(() => {
+    const session = this.session();
+    if (!session) return [];
+    const template = session.template;
+    const notes: MarginNote[] = [];
+
+    for (const hint of writingHints(template)) {
+      if (hint.done) continue;
+      const advice = ProtopipeWriterComponent.HINT_ADVICE[hint.id];
+      if (!advice) continue;
+      notes.push({
+        id: `hint:${hint.id}`,
+        anchor: 'intro',
+        label: 'Checklist',
+        peek: hint.label,
+        text: advice,
+      });
+    }
+
+    const brief = this.run()?.artifacts?.brief;
+    (brief?.contentGaps ?? []).slice(0, 4).forEach((gap, i) => {
+      const trimmed = gap.trim();
+      if (!trimmed) return;
+      notes.push({
+        id: `gap:${i}`,
+        anchor: 'intro',
+        label: 'Content gap',
+        peek: trimmed.length > 28 ? `${trimmed.slice(0, 28)}…` : trimmed,
+        text: trimmed,
+      });
+    });
+
+    const outline = this.run()?.artifacts?.outline;
+    (outline?.sections ?? []).forEach((sec, i) => {
+      const body = template.sections[i]?.body ?? '';
+      if (body.trim()) return;
+      const points = (sec.notes ?? []).map((n) => n.trim()).filter(Boolean);
+      if (!points.length) return;
+      notes.push({
+        id: `outline:${i}`,
+        anchor: 'section',
+        sectionIndex: i,
+        label: 'Draft prompt',
+        peek: 'Cover these points',
+        text: points.join(' · '),
+        apply: {
+          target: 'section',
+          sectionIndex: i,
+          text: points.map((p) => `- ${p}`).join('\n'),
+        },
+      });
+    });
+
+    return notes;
+  });
+
+  readonly marginNoteCount = computed(
+    () => this.allMarginNotes().filter((n) => !this.dismissedNotes().has(n.id)).length,
+  );
+
+  notesForIntro(): MarginNote[] {
+    const dismissed = this.dismissedNotes();
+    return this.allMarginNotes().filter((n) => n.anchor === 'intro' && !dismissed.has(n.id));
+  }
+
+  notesForSection(sectionIndex: number): MarginNote[] {
+    const dismissed = this.dismissedNotes();
+    return this.allMarginNotes().filter(
+      (n) => n.anchor === 'section' && n.sectionIndex === sectionIndex && !dismissed.has(n.id),
+    );
+  }
+
+  private resetMarginNotes(): void {
+    this.dismissedNotes.set(new Set());
+    this.expandedNote.set(null);
+  }
+
+  isNoteExpanded(id: string): boolean {
+    return this.expandedNote() === id;
+  }
+
+  toggleNote(id: string): void {
+    this.expandedNote.update((cur) => (cur === id ? null : id));
+  }
+
+  dismissNote(id: string): void {
+    this.dismissedNotes.update((prev) => new Set(prev).add(id));
+    if (this.expandedNote() === id) this.expandedNote.set(null);
+  }
+
+  applyNote(note: MarginNote): void {
+    if (!note.apply || this.isReadOnly()) {
+      this.dismissNote(note.id);
+      return;
+    }
+    const { target, sectionIndex, text } = note.apply;
+    if (target === 'section' && sectionIndex != null) {
+      const existing = this.session()?.template.sections[sectionIndex]?.body ?? '';
+      const next = existing.trim() ? `${existing}\n\n${text}` : text;
+      this.patchSection(sectionIndex, { body: next });
+    } else if (target === 'intro') {
+      const existing = this.session()?.template.intro ?? '';
+      const next = existing.trim() ? `${existing}\n\n${text}` : text;
+      this.patchTemplate({ intro: next });
+    }
+    this.dismissNote(note.id);
   }
 
   /** Pull the generated outline/draft (assembled template) into the document. */

@@ -151,20 +151,29 @@
             <!-- Intro -->
             <div class="pw__block">
               <div class="pw__block-main">
-                <textarea
-                  class="pw__intro"
-                  rows="3"
-                  [ngModel]="s.template.intro"
-                  (ngModelChange)="patchTemplate({ intro: $event })"
+                <app-prose-editor
+                  class="pw__intro pw__intro--editor"
+                  [value]="s.template.intro"
+                  (valueChange)="patchTemplate({ intro: $event })"
+                  (selectionChange)="onSelectionMenu($event)"
+                  (slashChange)="onSlashMenu($event)"
                   [disabled]="isReadOnly()"
                   placeholder="Open with the promise of the piece…"
-                ></textarea>
+                ></app-prose-editor>
                 @if (introSuggestion(); as hint) {
                   <button type="button" class="pw__suggest" (click)="insertIntroSuggestion()">
                     <i class="pi pi-sparkles"></i> Suggest an opening
                   </button>
                 }
               </div>
+              <aside class="pw__margin" aria-label="Suggestions">
+                @for (note of notesForIntro(); track note.id) {
+                  <ng-container
+                    [ngTemplateOutlet]="marginNote"
+                    [ngTemplateOutletContext]="{ $implicit: note }"
+                  />
+                }
+              </aside>
             </div>
 
             <!-- Sections -->
@@ -193,21 +202,33 @@
                     [disabled]="isReadOnly()"
                     placeholder="Section heading…"
                   />
-                  <textarea
-                    class="pw__section-body"
-                    rows="4"
-                    [ngModel]="sec.body"
-                    (ngModelChange)="patchSection($index, { body: $event })"
-                    (focus)="focusSection($index)"
+                  <app-prose-editor
+                    class="pw__section-body pw__section-body--editor"
+                    [value]="sec.body"
+                    (valueChange)="patchSection($index, { body: $event })"
+                    (focused)="focusSection($index)"
+                    [flaggedFacts]="factsForSection($index)"
+                    (factClick)="onFactClick($index, $event)"
+                    (selectionChange)="onSelectionMenu($event)"
+                    (slashChange)="onSlashMenu($event)"
+                    (ready)="registerEditor($index, $event)"
                     [disabled]="isReadOnly()"
                     placeholder="Write this section…"
-                  ></textarea>
+                  ></app-prose-editor>
                   @if (!isReadOnly() && s.template.sections.length > 1) {
                     <button type="button" class="pw__remove" (click)="removeSection($index)">
                       Remove section
                     </button>
                   }
                 </div>
+                <aside class="pw__margin" aria-label="Suggestions">
+                  @for (note of notesForSection($index); track note.id) {
+                    <ng-container
+                      [ngTemplateOutlet]="marginNote"
+                      [ngTemplateOutletContext]="{ $implicit: note }"
+                    />
+                  }
+                </aside>
               </div>
             }
 
@@ -601,3 +622,126 @@
     </div>
   </div>
 </div>
+
+@if (bubbleMenu(); as bm) {
+  <div class="pw__bubble" [style.left.px]="bm.x" [style.top.px]="bm.y">
+    <button type="button" class="pw__bubble-btn" (click)="bubbleToggleBold()" title="Bold">
+      <strong>B</strong>
+    </button>
+    <button type="button" class="pw__bubble-btn" (click)="bubbleToggleItalic()" title="Italic">
+      <em>i</em>
+    </button>
+    <span class="pw__bubble-sep"></span>
+    <button type="button" class="pw__bubble-btn" (click)="bubbleLink()" title="Link">
+      <i class="pi pi-link"></i>
+    </button>
+    <button type="button" class="pw__bubble-btn" (click)="bubbleResearch()" title="Research this">
+      <i class="pi pi-search"></i>
+    </button>
+  </div>
+}
+
+@if (slashMenu(); as sm) {
+  <div class="pw__slash-backdrop" (click)="slashMenu.set(null)"></div>
+  <div class="pw__slash" [style.left.px]="sm.x" [style.top.px]="sm.y">
+    @for (cmd of slashCommands(); track cmd.id) {
+      <button type="button" class="pw__slash-item" (click)="runSlashCommand(cmd.id)">
+        <i [class]="cmd.icon"></i>
+        <span>{{ cmd.label }}</span>
+      </button>
+    } @empty {
+      <div class="pw__slash-empty">No matching commands</div>
+    }
+  </div>
+}
+
+@if (aiPanel(); as ai) {
+  <div class="pw__ai-backdrop" (click)="closeAiPanel()"></div>
+  <div class="pw__ai">
+    <header class="pw__ai-head">
+      <span>{{ ai.title }}</span>
+      <button type="button" class="pw__ai-close" (click)="closeAiPanel()" title="Close">
+        <i class="pi pi-times"></i>
+      </button>
+    </header>
+    @if (ai.loading) {
+      <p class="pw__ai-status"><i class="pi pi-spin pi-spinner"></i> Loading…</p>
+    } @else if (ai.error) {
+      <p class="pw__ai-status">{{ ai.error }}</p>
+    } @else {
+      <ul class="pw__ai-list">
+        @for (item of ai.items; track $index) {
+          <li>
+            <button type="button" class="pw__ai-item" (click)="applyAiItem(item)">
+              <span class="pw__ai-item-label">{{ item.label }}</span>
+              @if (item.detail) {
+                <span class="pw__ai-item-detail">{{ item.detail }}</span>
+              }
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+}
+
+@if (activeFact(); as af) {
+  <div class="pw__fact-pop-backdrop" (click)="closeFactPopover()"></div>
+  <div
+    class="pw__fact-pop"
+    [class.pw__fact-pop--critical]="af.fact.severity === 'critical'"
+    [style.left.px]="af.x"
+    [style.top.px]="af.y"
+  >
+    <span class="pw__fact-tag" [attr.data-cat]="af.fact.category">
+      {{ factCategoryLabels[af.fact.category] }}
+    </span>
+    <p class="pw__fact-pop-claim">“{{ af.fact.claim }}”</p>
+    @if (af.fact.suggestion) {
+      <p class="pw__fact-pop-suggest">{{ af.fact.suggestion }}</p>
+    }
+    <div class="pw__fact-pop-actions">
+      <button type="button" class="pw__btn pw__btn--sm" (click)="confirmActiveFact()">
+        <i class="pi pi-check"></i> Confirm
+      </button>
+      <button type="button" class="pw__btn pw__btn--sm" (click)="editActiveFact()">
+        <i class="pi pi-pencil"></i> Edit
+      </button>
+      <button type="button" class="pw__btn pw__btn--sm pw__btn--ghost" (click)="dismissActiveFact()">
+        <i class="pi pi-times"></i> Dismiss
+      </button>
+    </div>
+  </div>
+}
+
+<ng-template #marginNote let-note>
+  <div class="pw__note" [class.is-expanded]="isNoteExpanded(note.id)">
+    <button
+      type="button"
+      class="pw__note-trigger"
+      [attr.aria-expanded]="isNoteExpanded(note.id)"
+      [attr.aria-label]="note.label + ': ' + note.peek"
+      (click)="toggleNote(note.id)"
+    >
+      <span class="pw__note-dot" aria-hidden="true"></span>
+      <span class="pw__note-peek">{{ note.peek }}</span>
+    </button>
+
+    @if (isNoteExpanded(note.id)) {
+      <div class="pw__note-card">
+        <span class="pw__note-label">{{ note.label }}</span>
+        <p class="pw__note-text">{{ note.text }}</p>
+        <div class="pw__note-actions">
+          @if (note.apply && !isReadOnly()) {
+            <button type="button" class="pw__btn pw__btn--sm" (click)="applyNote(note)">Apply</button>
+            <button type="button" class="pw__btn pw__btn--sm pw__btn--ghost" (click)="dismissNote(note.id)">
+              Dismiss
+            </button>
+          } @else {
+            <button type="button" class="pw__btn pw__btn--sm" (click)="dismissNote(note.id)">Got it</button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</ng-template>

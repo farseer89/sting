@@ -30,17 +30,11 @@
       <article class="kwpick__panel kwpick__panel--suggested">
         <header class="kwpick__panel-head">
           <span class="kwpick__panel-label">Suggested for you</span>
-          <span class="kwpick__panel-meta">{{ store.suggested().length }} ranked · check to include</span>
+          <span class="kwpick__panel-meta">
+            {{ sortedPlanRows().length }} keywords · click headers to sort
+          </span>
         </header>
-        <p class="kwpick__legend">
-          <strong>How we rank these:</strong>
-          Volume is average monthly searches (DataForSEO or Google Ads).
-          Competition is organic difficulty (KD) or ad auction crowding (LOW / MEDIUM / HIGH).
-          Fit measures alignment with your onboarding profile.
-          Opportunity combines volume, competition, fit, and source — higher is a better starting bet.
-          Pre-checked rows are the recommended plan.
-        </p>
-        @if (store.suggested().length === 0) {
+        @if (sortedPlanRows().length === 0) {
           <p class="kwpick__empty">No suggestions yet — search or add keywords manually.</p>
         } @else {
           <div class="kwpick__table-wrap kwpick__table-wrap--suggested">
@@ -48,16 +42,74 @@
               <thead>
                 <tr>
                   <th class="kwpick__th-check" scope="col"><span class="kwpick__sr">Include</span></th>
-                  <th scope="col">Keyword</th>
-                  <th scope="col" class="kwpick__th-num">Volume<span class="kwpick__th-sub">/mo searches</span></th>
-                  <th scope="col">Competition<span class="kwpick__th-sub">difficulty</span></th>
-                  <th scope="col" class="kwpick__th-num">Fit<span class="kwpick__th-sub">on-brand</span></th>
-                  <th scope="col" class="kwpick__th-num">Opportunity<span class="kwpick__th-sub">score</span></th>
-                  <th scope="col">Source</th>
+                  <th scope="col">
+                    <button
+                      type="button"
+                      class="kwpick__th-sort"
+                      [title]="columnTooltips.phrase"
+                      (click)="toggleSort('phrase')"
+                    >
+                      Keyword <span class="kwpick__sort-ind">{{ sortIndicator('phrase') }}</span>
+                    </button>
+                  </th>
+                  <th scope="col" class="kwpick__th-num">
+                    <button
+                      type="button"
+                      class="kwpick__th-sort"
+                      [title]="columnTooltips.volume"
+                      (click)="toggleSort('volume')"
+                    >
+                      Volume<span class="kwpick__th-sub">/mo searches</span>
+                      <span class="kwpick__sort-ind">{{ sortIndicator('volume') }}</span>
+                    </button>
+                  </th>
+                  <th scope="col">
+                    <button
+                      type="button"
+                      class="kwpick__th-sort"
+                      [title]="columnTooltips.competition"
+                      (click)="toggleSort('competition')"
+                    >
+                      Competition<span class="kwpick__th-sub">0–100 score</span>
+                      <span class="kwpick__sort-ind">{{ sortIndicator('competition') }}</span>
+                    </button>
+                  </th>
+                  <th scope="col" class="kwpick__th-num">
+                    <button
+                      type="button"
+                      class="kwpick__th-sort"
+                      [title]="columnTooltips.fit"
+                      (click)="toggleSort('fit')"
+                    >
+                      Fit<span class="kwpick__th-sub">on-brand</span>
+                      <span class="kwpick__sort-ind">{{ sortIndicator('fit') }}</span>
+                    </button>
+                  </th>
+                  <th scope="col" class="kwpick__th-num">
+                    <button
+                      type="button"
+                      class="kwpick__th-sort"
+                      [title]="columnTooltips.opportunity"
+                      (click)="toggleSort('opportunity')"
+                    >
+                      Opportunity<span class="kwpick__th-sub">score</span>
+                      <span class="kwpick__sort-ind">{{ sortIndicator('opportunity') }}</span>
+                    </button>
+                  </th>
+                  <th scope="col">
+                    <button
+                      type="button"
+                      class="kwpick__th-sort"
+                      [title]="columnTooltips.source"
+                      (click)="toggleSort('source')"
+                    >
+                      Source <span class="kwpick__sort-ind">{{ sortIndicator('source') }}</span>
+                    </button>
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                @for (kw of store.suggested(); track kw.phraseKey) {
+                @for (kw of sortedPlanRows(); track kw.phraseKey) {
                   <tr
                     class="kwpick__plan-row"
                     [class.kwpick__plan-row--selected]="store.isSelected(kw.phraseKey)"
@@ -77,8 +129,16 @@
                       <span class="kwpick__td-main">{{ formatVolume(kw.searchVolume) }}</span>
                     </td>
                     <td class="kwpick__td-comp">
-                      <span class="kwpick__td-main">{{ formatCompetition(kw) }}</span>
-                      <span class="kwpick__td-sub">{{ competitionHint(kw) }}</span>
+                      @if (formatCompetitionCell(kw); as comp) {
+                        <span class="kwpick__td-main">
+                          @if (comp.score != null) {
+                            <span class="kwpick__score-num">{{ comp.score }}</span>
+                            <span class="kwpick__score-sep">·</span>
+                          }
+                          {{ comp.label }}
+                        </span>
+                        <span class="kwpick__td-sub">{{ comp.band }}</span>
+                      }
                     </td>
                     <td class="kwpick__td-num">
                       <span class="kwpick__td-main">{{ fitLabel(kw.relevanceScore) }}</span>
@@ -202,7 +262,15 @@
                   <td class="kwpick__td-phrase">{{ kw.phrase }}</td>
                   <td class="kwpick__td-num">{{ formatVolume(kw.searchVolume) }}/mo</td>
                   <td class="kwpick__td-comp">
-                    <span class="kwpick__td-main">{{ formatCompetition(kw) }}</span>
+                    @if (formatCompetitionCell(kw); as comp) {
+                      <span class="kwpick__td-main">
+                        @if (comp.score != null) {
+                          <span class="kwpick__score-num">{{ comp.score }}</span>
+                          <span class="kwpick__score-sep">·</span>
+                        }
+                        {{ comp.label }}
+                      </span>
+                    }
                   </td>
                   <td class="kwpick__td-num kwpick__td-opp">{{ formatOpportunity(kw) }}</td>
                   <td><span class="kwpick__pill">{{ sourceLabel(kw.source) }}</span></td>

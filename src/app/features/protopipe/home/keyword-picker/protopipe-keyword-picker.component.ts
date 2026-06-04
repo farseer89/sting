@@ -2,10 +2,20 @@ import {
   ChangeDetectionStrategy,
   Component,
   OnInit,
+  computed,
   inject,
   input,
   output,
+  signal,
 } from '@angular/core';
+import {
+  formatCompetitionCell,
+  fitLabel,
+  sortPlanRows,
+  COLUMN_TOOLTIPS,
+  type KeywordPlanSortColumn,
+  type KeywordPlanSortDirection,
+} from './keyword-picker.table';
 import {
   formatCompetitionLabel,
   formatKeywordVolume,
@@ -13,29 +23,6 @@ import {
 } from './keyword-picker.types';
 import type { KeywordPickerOption } from './keyword-picker.types';
 import { ProtopipeKeywordPickerStore } from './protopipe-keyword-picker.store';
-
-function competitionHint(option: KeywordPickerOption): string {
-  if (option.keywordDifficulty != null) {
-    const kd = option.keywordDifficulty;
-    if (kd <= 40) return 'Easier organic win';
-    if (kd <= 60) return 'Moderate effort';
-    return 'Hard to rank';
-  }
-  if (option.competition) {
-    const c = option.competition.toUpperCase();
-    if (c === 'LOW') return 'Less ad crowding';
-    if (c === 'MEDIUM') return 'Moderate crowding';
-    return 'High crowding';
-  }
-  return 'Unknown difficulty';
-}
-
-function fitLabel(score: number | undefined): string {
-  if (score == null) return '—';
-  if (score >= 70) return 'Strong';
-  if (score >= 40) return 'Good';
-  return 'Fair';
-}
 
 @Component({
   selector: 'app-protopipe-keyword-picker',
@@ -54,17 +41,39 @@ export class ProtopipeKeywordPickerComponent implements OnInit {
   readonly formatVolume = formatKeywordVolume;
   readonly formatCompetition = formatCompetitionLabel;
   readonly sourceLabel = sourceLabel;
-  readonly competitionHint = competitionHint;
+  readonly formatCompetitionCell = formatCompetitionCell;
   readonly fitLabel = fitLabel;
+  readonly columnTooltips = COLUMN_TOOLTIPS;
+
+  readonly sortColumn = signal<KeywordPlanSortColumn>('opportunity');
+  readonly sortDirection = signal<KeywordPlanSortDirection>('desc');
+
+  readonly sortedPlanRows = computed(() =>
+    sortPlanRows(this.store.pool(), this.sortColumn(), this.sortDirection()),
+  );
 
   formatOpportunity(option: KeywordPickerOption): string {
     if (option.opportunityScore == null) return '—';
     return option.opportunityScore.toLocaleString();
   }
 
+  sortIndicator(column: KeywordPlanSortColumn): string {
+    if (this.sortColumn() !== column) return '↕';
+    return this.sortDirection() === 'asc' ? '↑' : '↓';
+  }
+
+  toggleSort(column: KeywordPlanSortColumn): void {
+    if (this.sortColumn() === column) {
+      this.sortDirection.update((d) => (d === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+    this.sortColumn.set(column);
+    this.sortDirection.set(column === 'phrase' ? 'asc' : 'desc');
+  }
+
   onSuggestedRowClick(event: Event, option: KeywordPickerOption): void {
     const target = event.target as HTMLElement;
-    if (target.closest('input[type="checkbox"]')) return;
+    if (target.closest('input[type="checkbox"]') || target.closest('.kwpick__th-sort')) return;
     this.toggle(option);
   }
 

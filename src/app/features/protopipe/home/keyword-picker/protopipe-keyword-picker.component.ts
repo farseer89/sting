@@ -1,7 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  OnInit,
   computed,
   inject,
   input,
@@ -28,7 +27,7 @@ import { ProtopipeKeywordPickerStore } from './protopipe-keyword-picker.store';
   templateUrl: './protopipe-keyword-picker.component.html',
   styleUrl: './protopipe-keyword-picker.component.scss',
 })
-export class ProtopipeKeywordPickerComponent implements OnInit {
+export class ProtopipeKeywordPickerComponent {
   readonly store = inject(ProtopipeKeywordPickerStore);
   readonly sidePanel = inject(ProtopipeHomeSidePanelService);
 
@@ -71,10 +70,6 @@ export class ProtopipeKeywordPickerComponent implements OnInit {
     const target = event.target as HTMLElement;
     if (target.closest('input[type="checkbox"]') || target.closest('.kwpick__th-sort')) return;
     this.toggle(option);
-  }
-
-  ngOnInit(): void {
-    void this.store.load();
   }
 
   toggle(option: KeywordPickerOption): void {

@@ -1,4 +1,4 @@
-<div class="void void--shell" data-bg="white">
+<div class="void void--shell" data-bg="white" (click)="closeUserMenu()">
   <div class="void__backdrop" aria-hidden="true"></div>
   <div class="void__veil" aria-hidden="true"></div>
 
@@ -10,6 +10,34 @@
       <span class="void-topnav__tab">Analytics</span>
       <span class="void-topnav__tab">Settings</span>
     </nav>
+
+    <div class="void-topnav__right">
+      <div class="void-topnav__user-menu">
+        <button
+          type="button"
+          class="void-topnav__user-trigger"
+          [attr.aria-expanded]="userMenuOpen()"
+          aria-haspopup="menu"
+          [attr.aria-label]="'Account menu for ' + userName()"
+          (click)="toggleUserMenu($event)"
+        >
+          @if (userPhotoUrl()) {
+            <img class="void-topnav__user-photo" [src]="userPhotoUrl()" alt="" />
+          } @else {
+            <span class="void-topnav__user-initials">{{ userInitials() }}</span>
+          }
+        </button>
+
+        @if (userMenuOpen()) {
+          <div class="void-topnav__user-dropdown" role="menu" (click)="$event.stopPropagation()">
+            <span class="void-topnav__user-dropdown-name">{{ userName() }}</span>
+            <button type="button" class="void-topnav__user-dropdown-action" role="menuitem" (click)="logout()">
+              Log out
+            </button>
+          </div>
+        }
+      </div>
+    </div>
   </header>
 
   <div class="void__frame">

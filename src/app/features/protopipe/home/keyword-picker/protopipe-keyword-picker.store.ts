@@ -78,7 +78,21 @@ export class ProtopipeKeywordPickerStore {
 
   readonly hasSearchQuery = computed(() => this._searchQuery().trim().length > 0);
 
-  async load(): Promise<void> {
+  async load(force = false): Promise<void> {
+    if (this.loadTask && !force) {
+      return this.loadTask;
+    }
+    this.loadTask = this.performLoad();
+    try {
+      await this.loadTask;
+    } finally {
+      this.loadTask = null;
+    }
+  }
+
+  private loadTask: Promise<void> | null = null;
+
+  private async performLoad(): Promise<void> {
     this._loading.set(true);
     this._error.set(null);
     this._discoveryNote.set(null);

@@ -3,6 +3,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  HostListener,
   OnInit,
   computed,
   inject,
@@ -53,6 +54,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   private readonly strategy = inject(ProtopipeStrategyService);
   private readonly contentPlan = inject(ContentPlanStore);
   readonly sidePanel = inject(ProtopipeHomeSidePanelService);
+  private readonly keywordStore = inject(ProtopipeKeywordPickerStore);
   private readonly homeWorkspaceEl = viewChild<ElementRef<HTMLElement>>('homeWorkspace');
 
   constructor() {
@@ -71,6 +73,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   readonly loading = signal(true);
   readonly activeView = signal<ProtopipeHomeView>('keywords');
   readonly activeNavId = signal('start-keywords');
+  readonly userMenuOpen = signal(false);
 
   readonly userName = computed(() => {
     const full = this.auth.getCurrentUserFullName()?.trim();
@@ -78,6 +81,11 @@ export class ProtopipeUserHomeComponent implements OnInit {
   });
 
   readonly userInitials = computed(() => initialsFromName(this.userName()));
+
+  readonly userPhotoUrl = computed(() => {
+    const photo = this.auth.getCurrentUserPhoto();
+    return photo.includes('avatar-f-1.png') ? '' : photo;
+  });
 
   ngOnInit(): void {
     this.destroyRef.onDestroy(() => this.sidePanel.detachResizeListeners());
@@ -124,6 +132,25 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.activeNavId.set('start-keywords');
   }
 
+  toggleUserMenu(event: Event): void {
+    event.stopPropagation();
+    this.userMenuOpen.update((open) => !open);
+  }
+
+  closeUserMenu(): void {
+    this.userMenuOpen.set(false);
+  }
+
+  logout(): void {
+    this.closeUserMenu();
+    this.auth.logout();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.closeUserMenu();
+  }
+
   isNavItemActive(item: ProtopipeHomeNavItem): boolean {
     return !item.disabled && this.activeNavId() === item.id;
   }
@@ -148,6 +175,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
         await this.strategy.ensureLoaded();
         this.contentPlan.setSiteId(site.id);
         await this.contentPlan.loadLatest();
+        void this.keywordStore.load();
         const planStatus = this.contentPlan.status();
         if (planStatus === 'running' || planStatus === 'pending' || planStatus === 'complete') {
           this.activeView.set('plan');

@@ -16,6 +16,12 @@ export interface FactHighlightItem {
   severity: 'critical' | 'minor';
   /** Resolved facts (confirmed/dismissed) stop highlighting. */
   resolved: boolean;
+  /** Body changed since review — skip inline highlight. */
+  stale?: boolean;
+  /** Char offsets in the reviewed markdown field (when offsetsReliable). */
+  claimStart?: number;
+  claimEnd?: number;
+  useOffsets?: boolean;
   /** The claim whose popover is currently open — gets a stronger treatment. */
   selected?: boolean;
   /** Shown as a native tooltip on the inline highlight. */
@@ -82,17 +88,41 @@ function findNeedleInFlat(index: FlatTextIndex, needle: string): number {
  * Locate active claims inside each textblock using true document positions.
  * Recomputed on every doc change so highlights track edits.
  */
+function tryOffsetRange(
+  flat: FlatTextIndex,
+  fact: FactHighlightItem,
+): { from: number; to: number } | null {
+  if (!fact.useOffsets || fact.claimStart == null || fact.claimEnd == null) return null;
+  const start = fact.claimStart;
+  const length = fact.claimEnd - start;
+  if (length <= 0 || start < 0 || start + length > flat.text.length) return null;
+  const slice = flat.text.slice(start, start + length);
+  if (normalizeClaimText(slice) !== normalizeClaimText(fact.claim.trim())) return null;
+  return rangeFromFlatMatch(flat, start, length);
+}
+
 export function findFactRanges(doc: ProseNode, facts: FactHighlightItem[]): FactRange[] {
-  const active = facts.filter((f) => !f.resolved && f.claim.trim());
+  const active = facts.filter((f) => !f.resolved && !f.stale && f.claim.trim());
   if (!active.length) return [];
 
   const ranges: FactRange[] = [];
+  const offsetMatched = new Set<string>();
+
   doc.descendants((node, pos) => {
     if (!node.isTextblock) return;
     const flat = buildFlatTextIndex(node, pos);
     if (!flat.text) return;
 
     for (const fact of active) {
+      if (offsetMatched.has(fact.id)) continue;
+
+      const offsetSpan = tryOffsetRange(flat, fact);
+      if (offsetSpan) {
+        ranges.push({ fact, from: offsetSpan.from, to: offsetSpan.to });
+        offsetMatched.add(fact.id);
+        continue;
+      }
+
       const needle = fact.claim.trim();
       const positions: number[] = [];
       let at = flat.text.indexOf(needle);

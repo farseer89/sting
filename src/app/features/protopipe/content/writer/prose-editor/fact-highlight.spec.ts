@@ -37,6 +37,37 @@ describe('findFactRanges', () => {
     expect(slice).toBe('$800–$1,500');
   });
 
+  it('uses claimStart/claimEnd when useOffsets is set', () => {
+    const claim = 'live wedding painting';
+    const doc = schema.node('doc', null, [
+      schema.node('paragraph', null, [
+        schema.text('We offer live wedding painting on your day.'),
+      ]),
+    ]);
+
+    const start = doc.textContent.indexOf(claim);
+    const ranges = findFactRanges(doc, [
+      {
+        id: 'f1',
+        claim,
+        severity: 'critical',
+        resolved: false,
+        useOffsets: true,
+        claimStart: start,
+        claimEnd: start + claim.length,
+      },
+    ]);
+    expect(ranges).toHaveLength(1);
+    expect(doc.textBetween(ranges[0].from, ranges[0].to)).toBe(claim);
+  });
+
+  it('skips stale facts', () => {
+    const doc = schema.node('doc', null, [
+      schema.node('paragraph', null, [schema.text('live wedding painting')]),
+    ]);
+    expect(findFactRanges(doc, [{ ...fact('live wedding painting'), stale: true }])).toHaveLength(0);
+  });
+
   it('finds claims with normalized dash variants', () => {
     const doc = schema.node('doc', null, [
       schema.node('paragraph', null, [

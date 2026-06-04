@@ -568,9 +568,18 @@
           <section class="pw__panel pw__panel--facts">
             <h3 class="pw__panel-title">Fact check</h3>
             @if (flaggedFactCount()) {
-              <p class="pw__meta-count" [class.is-warn]="unresolvedCriticalFacts() > 0">
-                {{ flaggedFactCount() }} flagged · {{ unresolvedCriticalFacts() }} need your decision
-              </p>
+              @if (factReviewComplete()) {
+                <p class="pw__meta-count">Fact review complete</p>
+              } @else {
+                <p class="pw__meta-count" [class.is-warn]="unresolvedCriticalFacts() > 0">
+                  {{ flaggedFactCount() }} flagged · {{ unresolvedCriticalFacts() }} critical need your decision
+                </p>
+              }
+              @if (!isReadOnly() && !factReviewComplete() && unresolvedCriticalFacts() === 0) {
+                <button type="button" class="pw__btn pw__btn--accent pw__run-apply" (click)="markFactReviewComplete()">
+                  <i class="pi pi-check-circle"></i> Mark fact review complete
+                </button>
+              }
               @for (sec of flaggedSections(); track sec.sectionIndex) {
                 <div class="pw__fact-section">
                   <button
@@ -593,7 +602,11 @@
                         @if (fact.severity === 'critical') {
                           <span class="pw__fact-tag is-critical">Critical</span>
                         }
-                        @if (fact.resolution) {
+                        @if (fact.stale) {
+                          <span class="pw__fact-tag is-stale">Text changed</span>
+                        } @else if (fact.addressedInText && !fact.resolution) {
+                          <span class="pw__fact-tag is-done">Fixed in text</span>
+                        } @else if (fact.resolution) {
                           <span class="pw__fact-tag is-done">
                             {{ fact.resolution === 'confirmed' ? 'Confirmed' : 'Dismissed' }}
                           </span>

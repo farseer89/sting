@@ -13,10 +13,10 @@ import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import type {
-  ArticleGenerationContentTarget,
   ArticleGenerationFlaggedFact,
   ArticleGenerationRunDto,
   ArticleGenerationStep,
+  ProtopipeContentTemplate,
   ProtopipeFactResolution,
   ProtopipeFactReview,
 } from '@hive/contracts';
@@ -47,6 +47,14 @@ import type {
   ProseSelectionEvent,
   ProseSlashEvent,
 } from './prose-editor/prose-editor.component';
+import {
+  bodyForTarget,
+  enrichFact,
+  hashCacheKey,
+  hashContentFieldAsync,
+  resolveFactTarget,
+  templateContentFingerprint,
+} from './fact-review.util';
 
 type AiPanelKind = 'research' | 'ideas' | 'links';
 
@@ -112,6 +120,9 @@ interface FlaggedFactView extends ArticleGenerationFlaggedFact {
   /** Stable key for tracking + resolution state. */
   id: string;
   resolution: FactResolution | null;
+  stale: boolean;
+  addressedInText: boolean;
+  offsetsReliable: boolean;
 }
 
 interface HighlightSegment {
@@ -139,12 +150,6 @@ function flaggedFactId(fact: ArticleGenerationFlaggedFact): string {
   return target.kind === 'intro'
     ? `intro::${fact.claim}`
     : `section:${target.index}::${fact.claim}`;
-}
-
-function resolveFactTarget(fact: ArticleGenerationFlaggedFact): ArticleGenerationContentTarget {
-  if (fact.target) return fact.target;
-  if (fact.sectionIndex <= 0) return { kind: 'intro' };
-  return { kind: 'section', index: Math.max(0, fact.sectionIndex - 1) };
 }
 
 function factTargetsIntro(fact: ArticleGenerationFlaggedFact): boolean {
@@ -425,9 +430,14 @@ export class ProtopipeWriterComponent implements OnDestroy {
   /** Fact review snapshot from the loaded content post (survives refresh). */
   private readonly postFactReview = signal<ProtopipeFactReview | null>(null);
 
+  /** Per-target body hashes for staleness (sha256, matches bagend). */
+  private readonly targetBodyHashes = signal<Record<string, string>>({});
+
   readonly generationFlaggedFacts = computed<FlaggedFactView[]>(() => {
     const postReview = this.postFactReview();
     const review = this.generationReview();
+    const template = this.session()?.template;
+    const bodyHashes = this.targetBodyHashes();
     const flags =
       postReview?.flags?.length
         ? postReview.flags
@@ -443,7 +453,14 @@ export class ProtopipeWriterComponent implements OnDestroy {
         : persisted?.status === 'confirmed' || persisted?.status === 'dismissed'
           ? persisted.status
           : null;
-      return { ...fact, id, target: resolveFactTarget(fact), resolution };
+      const enrichment = enrichFact(fact, template, bodyHashes);
+      return {
+        ...fact,
+        id,
+        target: resolveFactTarget(fact),
+        resolution,
+        ...enrichment,
+      };
     });
   });
 
@@ -485,13 +502,18 @@ export class ProtopipeWriterComponent implements OnDestroy {
 
   readonly flaggedFactCount = computed(() => this.generationFlaggedFacts().length);
 
-  /** Critical facts still needing the owner's decision before a clean pull. */
-  readonly unresolvedCriticalFacts = computed(
-    () =>
-      this.generationFlaggedFacts().filter(
-        (f) => f.severity === 'critical' && f.resolution === null,
-      ).length,
+  /** Critical facts that still need confirm/dismiss (excludes fixed-in-text and stale). */
+  readonly pendingCriticalFacts = computed(() =>
+    this.generationFlaggedFacts().filter((f) => this.isFactPendingCritical(f)),
   );
+
+  readonly unresolvedCriticalFacts = computed(() => this.pendingCriticalFacts().length);
+
+  readonly factReviewComplete = computed(() => {
+    if (!this.flaggedFactCount()) return true;
+    if (this.postFactReview()?.completedAt) return true;
+    return this.pendingCriticalFacts().length === 0;
+  });
 
   /** Review failed with unresolved critical facts (informational; pull is not blocked). */
   readonly factCheckBlocksPull = computed(
@@ -509,6 +531,15 @@ export class ProtopipeWriterComponent implements OnDestroy {
 
   private introEditor: Editor | null = null;
 
+  private isFactPendingCritical(fact: FlaggedFactView): boolean {
+    return (
+      fact.severity === 'critical' &&
+      fact.resolution === null &&
+      !fact.addressedInText &&
+      !fact.stale
+    );
+  }
+
   private toFactHighlightItem(
     fact: FlaggedFactView,
     selectedId: string | null,
@@ -517,10 +548,25 @@ export class ProtopipeWriterComponent implements OnDestroy {
       id: fact.id,
       claim: fact.claim,
       severity: fact.severity,
-      resolved: fact.resolution !== null,
+      resolved: fact.resolution !== null || fact.addressedInText,
+      stale: fact.stale,
+      claimStart: fact.claimStart,
+      claimEnd: fact.claimEnd,
+      useOffsets: fact.offsetsReliable,
       selected: fact.id === selectedId,
       suggestion: fact.suggestion,
     };
+  }
+
+  private async refreshTargetBodyHashes(template: ProtopipeContentTemplate): Promise<void> {
+    const hashes: Record<string, string> = {};
+    hashes['intro'] = await hashContentFieldAsync(template.intro ?? '');
+    for (let i = 0; i < template.sections.length; i++) {
+      hashes[hashCacheKey({ kind: 'section', index: i })] = await hashContentFieldAsync(
+        template.sections[i]?.body ?? '',
+      );
+    }
+    this.targetBodyHashes.set(hashes);
   }
 
   /**
@@ -643,6 +689,12 @@ export class ProtopipeWriterComponent implements OnDestroy {
         this.content.saveCreatedId.set(null);
         this.bootstrappedKey.set(createdId);
       });
+    });
+
+    effect(() => {
+      const tpl = this.session()?.template;
+      if (!tpl) return;
+      untracked(() => void this.refreshTargetBodyHashes(tpl));
     });
 
     effect(() => {
@@ -872,6 +924,20 @@ export class ProtopipeWriterComponent implements OnDestroy {
     return true;
   }
 
+  /** Block publish while critical flagged facts still need a decision. */
+  private promptIfFactReviewIncomplete(): boolean {
+    const pending = this.pendingCriticalFacts().length;
+    if (!pending) return false;
+    this.openPanels.update((set) => new Set(set).add('facts'));
+    this.messages.add({
+      severity: 'warn',
+      summary: 'Fact review incomplete',
+      detail: `Confirm or dismiss ${pending} critical flagged claim(s) before publishing.`,
+      life: 6000,
+    });
+    return true;
+  }
+
   /** Link or clear the post's primary plan keyword. */
   linkKeyword(keywordId: string): void {
     this.content.setPrimaryKeyword(keywordId);
@@ -879,6 +945,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
 
   publish(): void {
     if (this.promptIfIncomplete()) return;
+    if (this.promptIfFactReviewIncomplete()) return;
     if (this.content.dirty()) {
       this.publishAfterSave.set(true);
       this.content.saveFromWritingSession();
@@ -1033,6 +1100,49 @@ export class ProtopipeWriterComponent implements OnDestroy {
   // --- fact check actions ---------------------------------------------------
 
   /** Mark a flagged fact as resolved (client-side; write-back handled separately). */
+  markFactReviewComplete(): void {
+    if (this.pendingCriticalFacts().length > 0) return;
+    const siteId = this.content.siteId();
+    const postId = this.content.editingId();
+    const runId = this.run()?.id;
+    if (!siteId || !postId || postId === 'new' || !runId) return;
+
+    const factReview: ProtopipeFactReview = {
+      runId,
+      flags: this.generationFlaggedFacts().map(
+        ({ id, sectionIndex, h2, claim, category, severity, suggestion, target, claimStart, claimEnd, contentHash }) => ({
+          id,
+          sectionIndex,
+          h2,
+          claim,
+          category,
+          severity,
+          suggestion,
+          target,
+          claimStart,
+          claimEnd,
+          contentHash,
+        }),
+      ),
+      resolutions: [...this.factResolutions().entries()]
+        .filter(([, status]) => status === 'confirmed' || status === 'dismissed')
+        .map(([factId, status]) => ({
+          factId,
+          status,
+          resolvedAt: new Date().toISOString(),
+        })),
+      completedAt: new Date().toISOString(),
+    };
+    this.postFactReview.set(factReview);
+    this.persistFactReview();
+    this.messages.add({
+      severity: 'success',
+      summary: 'Fact review complete',
+      detail: 'You can publish when the rest of the article is ready.',
+      life: 4000,
+    });
+  }
+
   resolveFact(fact: FlaggedFactView, resolution: FactResolution): void {
     this.factResolutions.update((prev) => {
       const next = new Map(prev);
@@ -1089,10 +1199,14 @@ export class ProtopipeWriterComponent implements OnDestroy {
         resolvedAt: new Date().toISOString(),
       }));
 
+    const prior = this.postFactReview();
     const factReview: ProtopipeFactReview = {
       runId,
       flags,
       resolutions,
+      completedAt:
+        prior?.completedAt ??
+        (this.pendingCriticalFacts().length === 0 ? new Date().toISOString() : undefined),
     };
 
     this.api.updateContent$(siteId, postId, { factReview }).subscribe({
@@ -1557,18 +1671,29 @@ export class ProtopipeWriterComponent implements OnDestroy {
     this.dismissNote(note.id);
   }
 
-  /** Pull the generated outline/draft (assembled template) into the document. */
-  /** Pull assembled template into the session when the canvas is still empty. */
+  /** Sync assembled template when the canvas is empty or still on a prior run's draft. */
   private maybeAutoApplyTemplateFromRun(run?: ArticleGenerationRunDto): void {
     const active = run ?? this.run();
     if (!active || active.status !== 'complete' || !active.artifacts?.template) return;
     const s = this.session();
     if (!s || s.readOnly) return;
-    const hasContent =
-      (s.template.intro?.trim().length ?? 0) > 0 ||
-      s.template.sections.some((sec) => (sec.body?.trim().length ?? 0) > 0);
-    if (hasContent) return;
-    this.applyGenerated({ silent: true });
+
+    void (async () => {
+      const artifactTpl = active.artifacts!.template!;
+      const sessionFp = await templateContentFingerprint(s.template);
+      const artifactFp = await templateContentFingerprint(artifactTpl);
+      if (sessionFp === artifactFp) return;
+
+      const hasContent =
+        (s.template.intro?.trim().length ?? 0) > 0 ||
+        s.template.sections.some((sec) => (sec.body?.trim().length ?? 0) > 0);
+      const reviewRunId = this.postFactReview()?.runId;
+      const staleForRun = Boolean(active.id && reviewRunId && reviewRunId !== active.id);
+
+      if (!hasContent || staleForRun) {
+        this.applyGenerated({ silent: true });
+      }
+    })();
   }
 
   applyGenerated(options?: { silent?: boolean }): void {

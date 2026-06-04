@@ -1114,6 +1114,11 @@
     background: color-mix(in srgb, var(--green-500, #22c55e) 18%, transparent);
     color: var(--green-500, #22c55e);
   }
+
+  &.is-stale {
+    background: color-mix(in srgb, var(--text-color-secondary) 14%, transparent);
+    color: var(--text-color-secondary);
+  }
 }
 
 .pw__fact-claim {

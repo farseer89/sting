@@ -121,10 +121,31 @@
 
 .kwpick__panels {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.35fr 0.85fr;
   gap: 0.45rem;
   flex: 1;
   min-height: 0;
+}
+
+.kwpick__panel--suggested {
+  display: flex;
+  flex-direction: column;
+  min-height: 12rem;
+}
+
+.kwpick__legend {
+  margin: 0;
+  padding: 0.35rem 0.5rem;
+  font-size: 8px;
+  line-height: 1.5;
+  color: var(--void-ink-secondary);
+  border-bottom: 0.5px solid var(--void-tile-border);
+  background: rgba(var(--void-ocean-rgb), 0.03);
+
+  strong {
+    color: var(--void-ink-body);
+    font-weight: 600;
+  }
 }
 
 .kwpick__panel {
@@ -161,82 +182,115 @@
 }
 
 .kwpick__grid {
-  list-style: none;
-  margin: 0;
-  padding: 0.45rem;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.35rem;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  align-content: start;
+  display: none;
 }
 
-.kwpick__card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.25rem;
-  width: 100%;
-  padding: 0.45rem 0.5rem;
-  border: 0.5px solid var(--void-tile-border);
-  border-radius: 4px;
-  background: #fff;
-  color: inherit;
-  font: inherit;
-  text-align: left;
+.kwpick__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.kwpick__table-wrap--suggested {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
+}
+
+.kwpick__table--plan {
+  th,
+  td {
+    padding: 0.32rem 0.4rem;
+  }
+}
+
+.kwpick__th-check {
+  width: 1.75rem;
+}
+
+.kwpick__th-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.kwpick__th-sub {
+  display: block;
+  font-size: 7px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--void-ink-muted);
+  margin-top: 0.05rem;
+}
+
+.kwpick__plan-row {
   cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: background 0.12s ease;
 
   &:hover {
-    border-color: var(--void-ocean-line);
-    box-shadow: 0 2px 6px rgba(20, 30, 40, 0.06);
+    background: var(--void-tile-bg);
   }
 
   &--selected {
-    border-color: var(--void-ocean-line);
-    background: linear-gradient(180deg, #fff 0%, rgba(var(--void-ocean-rgb), 0.04) 100%);
-    box-shadow: 0 0 0 0.5px var(--void-ocean-line);
+    background: rgba(var(--void-ocean-rgb), 0.05);
 
-    .kwpick__card-check {
-      color: var(--void-ocean);
-      border-color: var(--void-ocean-line);
-      background: var(--void-ocean-fill);
+    .kwpick__td-phrase {
+      color: var(--void-ink-strong);
     }
   }
 }
 
-.kwpick__card-check {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 0.85rem;
-  height: 0.85rem;
-  border: 0.5px solid var(--void-tile-border);
-  border-radius: 2px;
-  font-size: 8px;
-  line-height: 1;
-  color: transparent;
-  flex-shrink: 0;
+.kwpick__td-check {
+  width: 1.75rem;
+  vertical-align: middle;
 }
 
-.kwpick__card-phrase {
-  font-size: 10px;
+.kwpick__check {
+  width: 0.75rem;
+  height: 0.75rem;
+  margin: 0;
+  accent-color: var(--void-ocean);
+  cursor: pointer;
+}
+
+.kwpick__td-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.kwpick__td-comp {
+  min-width: 5.5rem;
+}
+
+.kwpick__td-main {
+  display: block;
   font-weight: 500;
-  line-height: 1.3;
   color: var(--void-ink-body);
 }
 
-.kwpick__card-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  width: 100%;
+.kwpick__td-sub {
+  display: block;
+  margin-top: 0.06rem;
+  font-size: 7px;
+  color: var(--void-ink-muted);
+  font-weight: 400;
+}
+
+.kwpick__td-opp .kwpick__td-main {
+  color: var(--void-ocean);
+  font-weight: 600;
+}
+
+.kwpick__card {
+  display: none;
 }
 
 .kwpick__pill {
@@ -510,10 +564,6 @@
     grid-template-columns: 1fr;
   }
 
-  .kwpick__grid {
-    grid-template-columns: 1fr;
-  }
-
   .kwpick__intro {
     flex-direction: column;
   }
@@ -524,9 +574,11 @@
     gap: 0.65rem;
   }
 
-  .kwpick__table {
-    th:nth-child(4),
-    td:nth-child(4) {
+  .kwpick__table--plan {
+    th:nth-child(7),
+    td:nth-child(7),
+    th:nth-child(5),
+    td:nth-child(5) {
       display: none;
     }
   }

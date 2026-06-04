@@ -1,4 +1,4 @@
-export type KeywordPickerSource = 'ranked' | 'ads' | 'ads_related' | 'research' | 'custom';
+export type KeywordPickerSource = 'ranked' | 'ads' | 'ads_related' | 'research' | 'custom' | 'gsc';
 
 export interface KeywordPickerOption {
   phraseKey: string;
@@ -10,6 +10,7 @@ export interface KeywordPickerOption {
   position?: number;
   source: KeywordPickerSource;
   opportunityScore?: number;
+  relevanceScore?: number;
 }
 
 export const SUGGESTED_PANEL_COUNT = 16;
@@ -50,6 +51,8 @@ export function sourceLabel(source: KeywordPickerSource): string {
       return 'Related';
     case 'research':
       return 'Search';
+    case 'gsc':
+      return 'Search traffic';
     default:
       return 'Custom';
   }

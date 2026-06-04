@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import type {
   ProtopipeDiscoverAdsIdea,
+  ProtopipeDiscoverGscQuery,
   ProtopipeDiscoverRankedKeyword,
   ProtopipeKeywordDiscoveryResponse,
   ProtopipeResearchRelatedKeyword,
@@ -9,6 +10,11 @@ import { ContentPlanStore } from '../../content-plan/content-plan.store';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 import { ProtopipeApiService } from '../../protopipe-api.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
+import {
+  buildRelevanceContext,
+  isRelevantForPicker,
+  type KeywordRelevanceContext,
+} from './keyword-picker.relevance';
 import {
   mergeKeywordOption,
   pickPreselectedKeys,
@@ -30,6 +36,7 @@ export class ProtopipeKeywordPickerStore {
 
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
   private siteId: string | null = null;
+  private relevanceCtx: KeywordRelevanceContext = buildRelevanceContext({});
 
   private readonly _loading = signal(false);
   private readonly _error = signal<string | null>(null);
@@ -83,6 +90,11 @@ export class ProtopipeKeywordPickerStore {
       }
       this.siteId = siteId;
       this.contentPlan.setSiteId(siteId);
+      this.relevanceCtx = buildRelevanceContext({
+        strategySummary: this.strategy.strategy().summary,
+        displayName: this.strategy.site()?.displayName,
+        hostname: this.strategy.site()?.hostname,
+      });
 
       const discovery = await this.api.discoverKeywords(siteId);
       this._hostname.set(discovery.hostname ?? this.strategy.site()?.hostname ?? '');
@@ -214,14 +226,30 @@ export class ProtopipeKeywordPickerStore {
     for (const k of res.ranked.keywords ?? []) {
       this.mergeRanked(k, map);
     }
+    for (const q of res.gsc.queries ?? []) {
+      this.mergeGsc(q, map);
+    }
     for (const idea of res.ads.ideas ?? []) {
       this.mergeAdsIdea(idea, map, 'ads');
     }
   }
 
+  private mergeGsc(q: ProtopipeDiscoverGscQuery, map: Map<string, KeywordPickerOption>): void {
+    const phrase = (q.query ?? '').trim();
+    if (!phrase) return;
+    if (!isRelevantForPicker(phrase, this.relevanceCtx, 'gsc')) return;
+    mergeKeywordOption(map, {
+      phraseKey: normalizePhraseKey(phrase),
+      phrase,
+      position: q.position,
+      source: 'gsc',
+    });
+  }
+
   private mergeRanked(k: ProtopipeDiscoverRankedKeyword, map: Map<string, KeywordPickerOption>): void {
     const phrase = (k.phrase ?? '').trim();
     if (!phrase) return;
+    if (!isRelevantForPicker(phrase, this.relevanceCtx, 'ranked')) return;
     mergeKeywordOption(map, {
       phraseKey: normalizePhraseKey(phrase),
       phrase,
@@ -239,6 +267,7 @@ export class ProtopipeKeywordPickerStore {
   ): void {
     const phrase = (idea.phrase ?? '').trim();
     if (!phrase) return;
+    if (!isRelevantForPicker(phrase, this.relevanceCtx, source)) return;
     mergeKeywordOption(map, {
       phraseKey: normalizePhraseKey(phrase),
       phrase,
@@ -277,24 +306,51 @@ export class ProtopipeKeywordPickerStore {
     map: Map<string, KeywordPickerOption>,
     discovery: ProtopipeKeywordDiscoveryResponse,
   ): string[] {
+    const seeds: string[] = [];
+    const seen = new Set<string>();
+
+    const addSeed = (phrase: string | undefined): void => {
+      const trimmed = (phrase ?? '').trim();
+      if (!trimmed) return;
+      const key = normalizePhraseKey(trimmed);
+      if (seen.has(key)) return;
+      seen.add(key);
+      seeds.push(trimmed);
+    };
+
+    const summary = this.strategy.strategy().summary;
+    const seedMatch = summary.match(/Primary goal: rank for "([^"]+)"/i);
+    if (seedMatch?.[1]) addSeed(seedMatch[1]);
+
+    const tradeMatch = summary.match(/Trade:\s*([^.]+)/i);
+    if (tradeMatch?.[1]) addSeed(tradeMatch[1]);
+
     const ranked = (discovery.ranked.keywords ?? [])
-      .filter((k) => (k.phrase ?? '').trim())
+      .filter((k) => {
+        const phrase = (k.phrase ?? '').trim();
+        return phrase && isRelevantForPicker(phrase, this.relevanceCtx, 'ranked');
+      })
       .sort((a, b) => (b.searchVolume ?? 0) - (a.searchVolume ?? 0));
-    const fromRanked = ranked.slice(0, SEED_PHRASE_COUNT).map((k) => k.phrase.trim());
+    for (const k of ranked) {
+      if (seeds.length >= SEED_PHRASE_COUNT) break;
+      addSeed(k.phrase);
+    }
 
-    if (fromRanked.length >= SEED_PHRASE_COUNT) return fromRanked;
+    if (seeds.length < SEED_PHRASE_COUNT) {
+      const scored = scoreKeywordOptions([...map.values()], this.relevanceCtx);
+      for (const o of scored) {
+        if (seeds.length >= SEED_PHRASE_COUNT) break;
+        addSeed(o.phrase);
+      }
+    }
 
-    const scored = scoreKeywordOptions([...map.values()]);
-    const extras = scored
-      .filter((o) => !fromRanked.some((p) => normalizePhraseKey(p) === o.phraseKey))
-      .slice(0, SEED_PHRASE_COUNT - fromRanked.length)
-      .map((o) => o.phrase);
-    return [...fromRanked, ...extras];
+    return seeds.slice(0, SEED_PHRASE_COUNT);
   }
 
   private mergeRelated(related: ProtopipeResearchRelatedKeyword, map: Map<string, KeywordPickerOption>): void {
     const phrase = (related.phrase ?? '').trim();
     if (!phrase) return;
+    if (!isRelevantForPicker(phrase, this.relevanceCtx, 'ads_related')) return;
     mergeKeywordOption(map, {
       phraseKey: normalizePhraseKey(phrase),
       phrase,
@@ -305,7 +361,7 @@ export class ProtopipeKeywordPickerStore {
   }
 
   private applyScoredPool(map: Map<string, KeywordPickerOption>): void {
-    const scored = scoreKeywordOptions([...map.values()]);
+    const scored = scoreKeywordOptions([...map.values()], this.relevanceCtx);
     this._pool.set(scored);
     this._suggested.set(pickSuggestedPanel(scored));
 
@@ -336,7 +392,7 @@ export class ProtopipeKeywordPickerStore {
   private mergeIntoPool(option: KeywordPickerOption): void {
     const map = new Map(this._pool().map((o) => [o.phraseKey, o]));
     mergeKeywordOption(map, option);
-    const scored = scoreKeywordOptions([...map.values()]);
+    const scored = scoreKeywordOptions([...map.values()], this.relevanceCtx);
     this._pool.set(scored);
   }
 
@@ -372,6 +428,7 @@ export class ProtopipeKeywordPickerStore {
       for (const row of res.ads.related ?? []) {
         const p = (row.phrase ?? '').trim();
         if (!p) continue;
+        if (!isRelevantForPicker(p, this.relevanceCtx, 'ads_related')) continue;
         related.push({
           phraseKey: normalizePhraseKey(p),
           phrase: p,

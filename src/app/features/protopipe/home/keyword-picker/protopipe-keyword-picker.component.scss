@@ -1,19 +1,17 @@
 :host {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
-  height: 100%;
   overflow: hidden;
   color: var(--void-ink);
 }
 
 .kwpick {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
-  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
   min-height: 0;
-  height: 100%;
   gap: 0.55rem;
   overflow: hidden;
   animation: kwpickIn 0.5s ease both;
@@ -121,21 +119,14 @@
   background: rgba(180, 40, 40, 0.06);
   color: #8b2020;
   font-size: 10px;
+  flex-shrink: 0;
 }
 
 .kwpick__panels {
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(0, 0.85fr);
-  grid-template-rows: minmax(0, 1fr);
   gap: 0.45rem;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.kwpick__panel--suggested,
-.kwpick__panel--search {
-  display: flex;
-  flex-direction: column;
+  flex: 1 1 0;
   min-height: 0;
   overflow: hidden;
 }
@@ -144,10 +135,10 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
   border: 0.5px solid var(--void-glass-border);
   border-radius: 6px;
   background: var(--void-glass-bg);
-  overflow: hidden;
 }
 
 .kwpick__panel-head {
@@ -190,18 +181,40 @@
 }
 
 .kwpick__panel-body {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 0;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.kwpick__table-wrap--suggested {
   flex: 1 1 0;
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
+}
+
+.kwpick__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9px;
+
+  th {
+    text-align: left;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--void-ink-label);
+    border-bottom: 0.5px solid var(--void-tile-border);
+    white-space: nowrap;
+  }
+
+  td {
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.04);
+    color: var(--void-ink-body);
+    vertical-align: middle;
+  }
+}
+
+.kwpick__td-phrase {
+  font-weight: 500;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .kwpick__table--plan {
@@ -425,9 +438,10 @@
   flex-direction: column;
   gap: 0.2rem;
   padding: 0.35rem 0.45rem 0.45rem;
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .kwpick__result {
@@ -504,78 +518,9 @@
   line-height: 1.45;
 }
 
-.kwpick__confirm {
-  flex-shrink: 0;
-  border: 0.5px solid var(--void-glass-border);
-  border-radius: 6px;
-  background: var(--void-glass-bg);
-  padding: 0.35rem 0.5rem 0.45rem;
-}
-
-.kwpick__confirm-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.35rem;
-}
-
-.kwpick__table-wrap {
-  overflow-x: auto;
-  max-height: 8rem;
-  overflow-y: auto;
-}
-
-.kwpick__table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 9px;
-
-  th {
-    text-align: left;
-    font-weight: 500;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--void-ink-label);
-    padding: 0.2rem 0.35rem;
-    border-bottom: 0.5px solid var(--void-tile-border);
-    white-space: nowrap;
-  }
-
-  td {
-    padding: 0.28rem 0.35rem;
-    border-bottom: 0.5px solid rgba(0, 0, 0, 0.04);
-    color: var(--void-ink-body);
-    vertical-align: middle;
-  }
-}
-
-.kwpick__td-phrase {
-  font-weight: 500;
-  max-width: 14rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.kwpick__remove {
-  border: none;
-  background: transparent;
-  color: var(--void-ink-muted);
-  font-size: 14px;
-  line-height: 1;
-  padding: 0 0.25rem;
-  cursor: pointer;
-
-  &:hover {
-    color: #8b2020;
-  }
-}
-
 .kwpick__footer {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 0.55rem;
   flex-shrink: 0;
   padding: 0.35rem 0.2rem 0.15rem;
@@ -585,6 +530,35 @@
     justify-content: center;
     border-top: none;
     padding-top: 0;
+  }
+}
+
+.kwpick__selected-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  flex: 1 1 0;
+  min-width: 0;
+  max-height: 2.4rem;
+  overflow: auto;
+}
+
+.kwpick__selected-chip {
+  border: 0.5px solid var(--void-ocean-line);
+  border-radius: 999px;
+  background: var(--void-ocean-fill);
+  color: var(--void-ocean);
+  font: inherit;
+  font-size: 8px;
+  padding: 0.12rem 0.35rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 10rem;
+  cursor: pointer;
+
+  &:hover {
+    filter: brightness(0.96);
   }
 }
 
@@ -621,7 +595,6 @@
 @media (max-width: 720px) {
   .kwpick__panels {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, 1.2fr) minmax(0, 0.8fr);
   }
 
   .kwpick__intro {

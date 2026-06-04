@@ -237,65 +237,20 @@
       </article>
     </div>
 
-    <section class="kwpick__confirm" aria-label="Confirm selection">
-      <header class="kwpick__confirm-head">
-        <span class="kwpick__panel-label">Your selection</span>
-        <span class="kwpick__panel-meta">{{ store.selectedCount() }} keywords</span>
-      </header>
-
-      @if (store.selectedCount() === 0) {
-        <p class="kwpick__hint">Select at least one keyword to continue.</p>
-      } @else {
-        <div class="kwpick__table-wrap">
-          <table class="kwpick__table kwpick__table--plan">
-            <thead>
-              <tr>
-                <th>Keyword</th>
-                <th class="kwpick__th-num">Volume</th>
-                <th>Competition</th>
-                <th class="kwpick__th-num">Opportunity</th>
-                <th>Source</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (kw of store.selectedList(); track kw.phraseKey) {
-                <tr>
-                  <td class="kwpick__td-phrase">{{ kw.phrase }}</td>
-                  <td class="kwpick__td-num">{{ formatVolume(kw.searchVolume) }}/mo</td>
-                  <td class="kwpick__td-comp">
-                    @if (formatCompetitionCell(kw); as comp) {
-                      <span class="kwpick__td-main">
-                        @if (comp.score != null) {
-                          <span class="kwpick__score-num">{{ comp.score }}</span>
-                          <span class="kwpick__score-sep">·</span>
-                        }
-                        {{ comp.label }}
-                      </span>
-                    }
-                  </td>
-                  <td class="kwpick__td-num kwpick__td-opp">{{ formatOpportunity(kw) }}</td>
-                  <td><span class="kwpick__pill">{{ sourceLabel(kw.source) }}</span></td>
-                  <td>
-                    <button
-                      type="button"
-                      class="kwpick__remove"
-                      (click)="remove(kw.phraseKey)"
-                      [attr.aria-label]="'Remove ' + kw.phrase"
-                    >
-                      ×
-                    </button>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      }
-    </section>
-
     <footer class="kwpick__footer" [class.kwpick__footer--empty]="store.selectedCount() === 0">
       @if (store.selectedCount() > 0) {
+        <div class="kwpick__selected-strip" aria-label="Selected keywords">
+          @for (kw of store.selectedList(); track kw.phraseKey) {
+            <button
+              type="button"
+              class="kwpick__selected-chip"
+              (click)="remove(kw.phraseKey)"
+              [attr.aria-label]="'Remove ' + kw.phrase"
+            >
+              {{ kw.phrase }} ×
+            </button>
+          }
+        </div>
         <button
           type="button"
           class="kwpick__continue"
@@ -304,6 +259,8 @@
         >
           {{ store.confirming() ? 'Saving…' : 'Confirm & build plan' }}
         </button>
+      } @else {
+        <p class="kwpick__hint">Select at least one keyword to continue.</p>
       }
     </footer>
   }

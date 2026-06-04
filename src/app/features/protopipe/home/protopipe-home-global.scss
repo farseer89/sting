@@ -2,6 +2,8 @@
 html.void-home,
 html.void-home body {
   height: 100%;
+  min-height: 100dvh;
+  overflow: hidden;
 }
 
 html.void-home body {
@@ -10,9 +12,24 @@ html.void-home body {
 }
 
 html.void-home app-root {
+  display: block;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+html.void-home app-protopipe-user-home {
+  display: block;
+  height: 100%;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+html.void-home .glass--full > app-protopipe-keyword-picker,
+html.void-home .glass--full > app-protopipe-home-plan-progress {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1 1 0;
   min-height: 0;
 }
 

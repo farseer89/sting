@@ -236,21 +236,28 @@
 
 .pw__scroll {
   min-height: 0;
+  height: 100%;
   overflow-y: auto;
   display: flex;
-  justify-content: center;
-  padding: 1rem 1.5rem 2rem;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
   position: relative;
   z-index: 0;
+  /* Gutter only outside the paper column */
+  background: #eef2f5;
 }
 
 .pw__canvas {
+  /* One continuous sheet for the full article (grows with content, fills viewport when short) */
+  flex: 1 0 auto;
   width: min(58rem, 100%);
-  margin: 0 auto;
+  min-height: 100%;
+  margin: 0;
   padding: clamp(2rem, 7vh, 4rem) clamp(1.5rem, 4vw, 2.5rem) 4rem;
   background: var(--pw-paper);
-  border-radius: 14px;
   box-shadow: var(--pw-paper-shadow);
+  box-sizing: border-box;
 }
 
 .pw__topic {

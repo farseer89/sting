@@ -106,7 +106,7 @@
           } @else {
             @switch (activeView()) {
               @case ('keywords') {
-                <section class="glass glass--full glass--premiere" aria-label="Choose keywords">
+                <section class="glass glass--full glass--premiere home-keywords" aria-label="Choose keywords">
                   <app-protopipe-keyword-picker
                     [siteLabel]="siteHostname() || siteDisplayName()"
                     (confirmed)="onKeywordsConfirmed()"

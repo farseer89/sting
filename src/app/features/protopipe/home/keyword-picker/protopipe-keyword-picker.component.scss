@@ -1,17 +1,21 @@
 :host {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
+  height: 100%;
+  overflow: hidden;
   color: var(--void-ink);
 }
 
 .kwpick {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  flex: 1 1 auto;
   min-height: 0;
+  height: 100%;
   gap: 0.55rem;
+  overflow: hidden;
   animation: kwpickIn 0.5s ease both;
 }
 
@@ -122,18 +126,18 @@
 .kwpick__panels {
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(0, 0.85fr);
+  grid-template-rows: minmax(0, 1fr);
   gap: 0.45rem;
-  flex: 1 1 auto;
-  min-height: 14rem;
-  align-items: stretch;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.kwpick__panel--suggested {
+.kwpick__panel--suggested,
+.kwpick__panel--search {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
   min-height: 0;
-  height: 100%;
+  overflow: hidden;
 }
 
 .kwpick__panel {
@@ -185,18 +189,35 @@
   border: 0;
 }
 
+.kwpick__panel-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .kwpick__table-wrap--suggested {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .kwpick__table--plan {
-  height: 100%;
+  width: 100%;
 
   th,
   td {
     padding: 0.34rem 0.4rem;
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--void-glass-bg);
+    box-shadow: 0 0.5px 0 var(--void-tile-border);
   }
 
   tbody tr:last-child td {
@@ -600,6 +621,7 @@
 @media (max-width: 720px) {
   .kwpick__panels {
     grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1.2fr) minmax(0, 0.8fr);
   }
 
   .kwpick__intro {

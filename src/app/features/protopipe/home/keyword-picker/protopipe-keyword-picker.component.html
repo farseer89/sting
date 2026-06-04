@@ -35,9 +35,10 @@
           </span>
         </header>
         @if (sortedPlanRows().length === 0) {
-          <p class="kwpick__empty">No suggestions yet — search or add keywords manually.</p>
+          <p class="kwpick__empty kwpick__panel-body">No suggestions yet — search or add keywords manually.</p>
         } @else {
-          <div class="kwpick__table-wrap kwpick__table-wrap--suggested">
+          <div class="kwpick__panel-body">
+            <div class="kwpick__table-wrap kwpick__table-wrap--suggested">
             <table class="kwpick__table kwpick__table--plan" aria-label="Suggested keywords ranked by opportunity">
               <thead>
                 <tr>
@@ -154,6 +155,7 @@
                 }
               </tbody>
             </table>
+            </div>
           </div>
         }
       </article>

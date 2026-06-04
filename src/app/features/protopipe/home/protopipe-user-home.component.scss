@@ -480,6 +480,14 @@
   border-color: transparent;
 }
 
+.home-keywords {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .home-welcome {
   align-items: center;
   justify-content: center;

@@ -170,12 +170,18 @@
 .kwpick__panel {
   display: flex;
   flex-direction: column;
+  flex: 1 1 0;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
   border: 0.5px solid var(--void-glass-border);
   border-radius: 6px;
   background: var(--void-glass-bg);
+}
+
+.kwpick__panel--suggested {
+  flex: 1 1 0;
+  min-height: 0;
 }
 
 .kwpick__panel-head {
@@ -218,6 +224,14 @@
 }
 
 .kwpick__panel-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.kwpick__table-wrap--suggested {
   flex: 1 1 0;
   min-height: 0;
   overflow: auto;

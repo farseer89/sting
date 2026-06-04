@@ -1,0 +1,73 @@
+<header class="kwsearch__head">
+  <span class="kwsearch__label">Search &amp; add</span>
+  <span class="kwsearch__meta">Google Ads related keywords</span>
+</header>
+
+<div class="kwsearch__search">
+  <span class="kwsearch__search-icon" aria-hidden="true">⌕</span>
+  <input
+    type="search"
+    class="kwsearch__search-input"
+    placeholder="Search keywords…"
+    [value]="store.searchQuery()"
+    (input)="onSearchInput($any($event.target).value)"
+    aria-label="Search keywords"
+  />
+  @if (store.hasSearchQuery()) {
+    <button type="button" class="kwsearch__search-clear" (click)="clearSearch()" aria-label="Clear search">
+      ×
+    </button>
+  }
+</div>
+
+<div class="kwsearch__results" role="listbox" aria-label="Search results">
+  @if (store.searching()) {
+    <p class="kwsearch__empty">Searching…</p>
+  } @else if (store.hasSearchQuery()) {
+    @if (store.searchPrimary(); as primary) {
+      <button type="button" class="kwsearch__result kwsearch__result--primary" (click)="addFromSearch(primary)">
+        <span class="kwsearch__result-phrase">{{ primary.phrase }}</span>
+        <span class="kwsearch__result-meta">
+          <span class="kwsearch__vol">{{ formatVolume(primary.searchVolume) }}/mo</span>
+          <span class="kwsearch__metric">{{ formatCompetition(primary) }}</span>
+          <span class="kwsearch__add">Add</span>
+        </span>
+      </button>
+    }
+    @for (kw of store.searchRelated(); track kw.phraseKey) {
+      <button type="button" class="kwsearch__result" role="option" (click)="addFromSearch(kw)">
+        <span class="kwsearch__result-phrase">{{ kw.phrase }}</span>
+        <span class="kwsearch__result-meta">
+          <span class="kwsearch__pill">Related</span>
+          <span class="kwsearch__vol">{{ formatVolume(kw.searchVolume) }}/mo</span>
+          <span class="kwsearch__metric">{{ formatCompetition(kw) }}</span>
+          <span class="kwsearch__add">Add</span>
+        </span>
+      </button>
+    }
+    @if (!store.searchPrimary() && store.searchRelated().length === 0) {
+      <button type="button" class="kwsearch__result" (click)="addCustomFromSearch()">
+        <span class="kwsearch__result-phrase">Add "{{ store.searchQuery().trim() }}"</span>
+        <span class="kwsearch__result-meta">
+          <span class="kwsearch__add">Add custom</span>
+        </span>
+      </button>
+    }
+  } @else {
+    @if (store.filteredPool().length === 0) {
+      <p class="kwsearch__empty">Type to search related keywords, or pick from suggestions.</p>
+    } @else {
+      @for (kw of store.filteredPool(); track kw.phraseKey) {
+        <button type="button" class="kwsearch__result" role="option" (click)="toggle(kw)">
+          <span class="kwsearch__result-phrase">{{ kw.phrase }}</span>
+          <span class="kwsearch__result-meta">
+            <span class="kwsearch__pill">{{ sourceLabel(kw.source) }}</span>
+            <span class="kwsearch__vol">{{ formatVolume(kw.searchVolume) }}/mo</span>
+            <span class="kwsearch__metric">{{ formatCompetition(kw) }}</span>
+            <span class="kwsearch__add">{{ store.isSelected(kw.phraseKey) ? 'Selected' : 'Add' }}</span>
+          </span>
+        </button>
+      }
+    }
+  }
+</div>

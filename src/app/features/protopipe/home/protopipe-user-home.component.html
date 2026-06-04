@@ -97,30 +97,70 @@
     </nav>
 
     <div class="void__main">
-      <div class="void__viewport">
-        <div class="void__panel-stack">
-          @if (loading()) {
-            <section class="glass glass--full glass--premiere home-welcome" aria-label="Home">
-              <p class="home-welcome__loading">Loading workspace…</p>
-            </section>
-          } @else {
-            @switch (activeView()) {
-              @case ('keywords') {
-                <section class="glass glass--full glass--premiere home-keywords" aria-label="Choose keywords">
-                  <app-protopipe-keyword-picker
-                    [siteLabel]="siteHostname() || siteDisplayName()"
-                    (confirmed)="onKeywordsConfirmed()"
-                  />
-                </section>
-              }
-              @case ('plan') {
-                <section class="glass glass--full glass--premiere" aria-label="Content plan">
-                  <app-protopipe-home-plan-progress />
-                </section>
+      <div
+        #homeWorkspace
+        class="void__workspace-shell"
+        [class.has-side-panel]="showKeywordSidePanel()"
+        [style.--side-panel-width.%]="sidePanel.widthPct()"
+      >
+        <div class="void__viewport">
+          <div class="void__panel-stack">
+            @if (loading()) {
+              <section class="glass glass--full glass--premiere home-welcome" aria-label="Home">
+                <p class="home-welcome__loading">Loading workspace…</p>
+              </section>
+            } @else {
+              @switch (activeView()) {
+                @case ('keywords') {
+                  <section class="glass glass--full glass--premiere home-keywords" aria-label="Choose keywords">
+                    <app-protopipe-keyword-picker
+                      [siteLabel]="siteHostname() || siteDisplayName()"
+                      (confirmed)="onKeywordsConfirmed()"
+                    />
+                  </section>
+                }
+                @case ('plan') {
+                  <section class="glass glass--full glass--premiere" aria-label="Content plan">
+                    <app-protopipe-home-plan-progress />
+                  </section>
+                }
               }
             }
-          }
+          </div>
         </div>
+
+        @if (showKeywordSidePanel()) {
+          <div
+            class="void__side-splitter"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize search panel"
+            (pointerdown)="onSideSplitterPointerDown($event)"
+          ></div>
+
+          <aside class="void__side-panel" aria-label="Search and add keywords">
+            <app-protopipe-keyword-search-panel />
+          </aside>
+        }
+
+        @if (activeView() === 'keywords' && !loading()) {
+          <nav class="void__side-rail" aria-label="Panel shortcuts">
+            <button
+              type="button"
+              class="void__side-rail-btn"
+              [class.is-active]="sidePanel.open()"
+              [attr.aria-pressed]="sidePanel.open()"
+              aria-label="Search and add keywords"
+              title="Search & add"
+              (click)="sidePanel.toggle()"
+            >
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <circle cx="7" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="0.9" />
+                <path d="M10.5 10.5L13 13" fill="none" stroke="currentColor" stroke-width="0.9" />
+              </svg>
+            </button>
+          </nav>
+        }
       </div>
     </div>
   </div>

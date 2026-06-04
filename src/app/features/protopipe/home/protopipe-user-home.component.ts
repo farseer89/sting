@@ -2,17 +2,22 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
   OnInit,
   computed,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ContentPlanStore } from '../content-plan/content-plan.store';
 import { ProtopipeOnboardingStateService } from '../onboarding/protopipe-onboarding-state.service';
 import { ProtopipeStrategyService } from '../protopipe-strategy.service';
+import { ProtopipeKeywordSearchPanelComponent } from './keyword-picker/protopipe-keyword-search-panel.component';
+import { ProtopipeKeywordPickerStore } from './keyword-picker/protopipe-keyword-picker.store';
 import { ProtopipeHomePlanProgressComponent } from './plan-progress/protopipe-home-plan-progress.component';
 import { ProtopipeKeywordPickerComponent } from './keyword-picker/protopipe-keyword-picker.component';
+import { ProtopipeHomeSidePanelService } from './protopipe-home-side-panel.service';
 import {
   PROTOPIPE_HOME_NAV,
   PROTOPIPE_HOME_NAV_DEFAULT_OPEN,
@@ -32,7 +37,12 @@ function initialsFromName(name: string): string {
   selector: 'app-protopipe-user-home',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ProtopipeKeywordPickerComponent, ProtopipeHomePlanProgressComponent],
+  providers: [ProtopipeKeywordPickerStore, ProtopipeHomeSidePanelService],
+  imports: [
+    ProtopipeKeywordPickerComponent,
+    ProtopipeKeywordSearchPanelComponent,
+    ProtopipeHomePlanProgressComponent,
+  ],
   templateUrl: './protopipe-user-home.component.html',
   styleUrl: './protopipe-user-home.component.scss',
 })
@@ -42,6 +52,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
   private readonly onboarding = inject(ProtopipeOnboardingStateService);
   private readonly strategy = inject(ProtopipeStrategyService);
   private readonly contentPlan = inject(ContentPlanStore);
+  readonly sidePanel = inject(ProtopipeHomeSidePanelService);
+  private readonly homeWorkspaceEl = viewChild<ElementRef<HTMLElement>>('homeWorkspace');
 
   constructor() {
     document.documentElement.classList.add('void-home', 'void-white');
@@ -68,7 +80,18 @@ export class ProtopipeUserHomeComponent implements OnInit {
   readonly userInitials = computed(() => initialsFromName(this.userName()));
 
   ngOnInit(): void {
+    this.destroyRef.onDestroy(() => this.sidePanel.detachResizeListeners());
     void this.loadBootstrap();
+  }
+
+  showKeywordSidePanel(): boolean {
+    return this.activeView() === 'keywords' && this.sidePanel.open();
+  }
+
+  onSideSplitterPointerDown(event: PointerEvent): void {
+    const host = this.homeWorkspaceEl()?.nativeElement;
+    if (!host) return;
+    this.sidePanel.startResize(event, host);
   }
 
   isNavGroupOpen(id: string): boolean {

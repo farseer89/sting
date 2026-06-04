@@ -19,10 +19,10 @@
       <button
         type="button"
         class="kwpick__slider-toggle"
-        [class.is-active]="sliderOpen()"
-        [attr.aria-pressed]="sliderOpen()"
-        [attr.aria-label]="sliderOpen() ? 'Hide search panel' : 'Show search panel'"
-        (click)="toggleSlider()"
+        [class.is-active]="sidePanel.open()"
+        [attr.aria-pressed]="sidePanel.open()"
+        [attr.aria-label]="sidePanel.open() ? 'Hide search panel' : 'Show search panel'"
+        (click)="sidePanel.toggle()"
       >
         <svg viewBox="0 0 16 16" aria-hidden="true">
           <circle cx="7" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="0.9" />
@@ -40,12 +40,7 @@
       <div class="kwpick__alert" role="alert">{{ err }}</div>
     }
 
-    <div
-      #workspace
-      class="kwpick__workspace"
-      [class.has-slider]="sliderOpen()"
-      [style.--slider-width.%]="sliderWidthPct()"
-    >
+    <div class="kwpick__body">
       <article class="kwpick__panel kwpick__panel--suggested">
         <header class="kwpick__panel-head">
           <span class="kwpick__panel-label">Suggested for you</span>
@@ -178,109 +173,6 @@
           </div>
         }
       </article>
-
-      @if (sliderOpen()) {
-        <div
-          class="kwpick__splitter"
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Resize search panel"
-          (pointerdown)="onSplitterPointerDown($event)"
-        ></div>
-
-        <aside class="kwpick__slider" aria-label="Search and add keywords">
-          <header class="kwpick__panel-head">
-            <span class="kwpick__panel-label">Search &amp; add</span>
-            <span class="kwpick__panel-meta">Google Ads related keywords</span>
-          </header>
-
-          <div class="kwpick__search">
-            <span class="kwpick__search-icon" aria-hidden="true">⌕</span>
-            <input
-              type="search"
-              class="kwpick__search-input"
-              placeholder="Search keywords…"
-              [value]="store.searchQuery()"
-              (input)="onSearchInput($any($event.target).value)"
-              aria-label="Search keywords"
-            />
-            @if (store.hasSearchQuery()) {
-              <button type="button" class="kwpick__search-clear" (click)="clearSearch()" aria-label="Clear search">
-                ×
-              </button>
-            }
-          </div>
-
-          <div class="kwpick__results" role="listbox" aria-label="Search results">
-            @if (store.searching()) {
-              <p class="kwpick__empty">Searching…</p>
-            } @else if (store.hasSearchQuery()) {
-              @if (store.searchPrimary(); as primary) {
-                <button type="button" class="kwpick__result kwpick__result--primary" (click)="addFromSearch(primary)">
-                  <span class="kwpick__result-phrase">{{ primary.phrase }}</span>
-                  <span class="kwpick__result-meta">
-                    <span class="kwpick__vol">{{ formatVolume(primary.searchVolume) }}/mo</span>
-                    <span class="kwpick__metric">{{ formatCompetition(primary) }}</span>
-                    <span class="kwpick__add">Add</span>
-                  </span>
-                </button>
-              }
-              @for (kw of store.searchRelated(); track kw.phraseKey) {
-                <button type="button" class="kwpick__result" role="option" (click)="addFromSearch(kw)">
-                  <span class="kwpick__result-phrase">{{ kw.phrase }}</span>
-                  <span class="kwpick__result-meta">
-                    <span class="kwpick__pill">Related</span>
-                    <span class="kwpick__vol">{{ formatVolume(kw.searchVolume) }}/mo</span>
-                    <span class="kwpick__metric">{{ formatCompetition(kw) }}</span>
-                    <span class="kwpick__add">Add</span>
-                  </span>
-                </button>
-              }
-              @if (!store.searchPrimary() && store.searchRelated().length === 0) {
-                <button type="button" class="kwpick__result" (click)="addCustomFromSearch()">
-                  <span class="kwpick__result-phrase">Add "{{ store.searchQuery().trim() }}"</span>
-                  <span class="kwpick__result-meta">
-                    <span class="kwpick__add">Add custom</span>
-                  </span>
-                </button>
-              }
-            } @else {
-              @if (store.filteredPool().length === 0) {
-                <p class="kwpick__empty">Type to search related keywords, or pick from suggestions.</p>
-              } @else {
-                @for (kw of store.filteredPool(); track kw.phraseKey) {
-                  <button type="button" class="kwpick__result" role="option" (click)="toggle(kw)">
-                    <span class="kwpick__result-phrase">{{ kw.phrase }}</span>
-                    <span class="kwpick__result-meta">
-                      <span class="kwpick__pill">{{ sourceLabel(kw.source) }}</span>
-                      <span class="kwpick__vol">{{ formatVolume(kw.searchVolume) }}/mo</span>
-                      <span class="kwpick__metric">{{ formatCompetition(kw) }}</span>
-                      <span class="kwpick__add">{{ store.isSelected(kw.phraseKey) ? 'Selected' : 'Add' }}</span>
-                    </span>
-                  </button>
-                }
-              }
-            }
-          </div>
-        </aside>
-      }
-
-      <nav class="kwpick__side-rail" aria-label="Panel shortcuts">
-        <button
-          type="button"
-          class="kwpick__side-rail-btn"
-          [class.is-active]="sliderOpen()"
-          [attr.aria-pressed]="sliderOpen()"
-          aria-label="Search and add keywords"
-          title="Search & add"
-          (click)="toggleSlider()"
-        >
-          <svg viewBox="0 0 16 16" aria-hidden="true">
-            <circle cx="7" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="0.9" />
-            <path d="M10.5 10.5L13 13" fill="none" stroke="currentColor" stroke-width="0.9" />
-          </svg>
-        </button>
-      </nav>
     </div>
 
     <footer class="kwpick__footer" [class.kwpick__footer--empty]="store.selectedCount() === 0">

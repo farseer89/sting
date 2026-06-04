@@ -1,0 +1,201 @@
+<div class="kwpick">
+  <header class="kwpick__intro">
+    <div class="kwpick__intro-copy">
+      <span class="kwpick__eyebrow">Your keyword strategy</span>
+      <h1 class="kwpick__headline">Choose what you want to rank for</h1>
+      <p class="kwpick__lede">
+        We scored opportunities from your site — ranking data, ads ideas, and related keywords.
+        Confirm your list to build your content plan.
+      </p>
+      @if (store.discoveryNote(); as note) {
+        <p class="kwpick__note">{{ note }}</p>
+      }
+    </div>
+    <div class="kwpick__intro-meta">
+      @if (siteLabel()) {
+        <span class="kwpick__site">{{ siteLabel() }}</span>
+      }
+      <span class="kwpick__count">{{ store.selectedCount() }} selected</span>
+    </div>
+  </header>
+
+  @if (store.loading()) {
+    <p class="kwpick__loading">Loading keyword suggestions…</p>
+  } @else {
+    @if (store.error(); as err) {
+      <div class="kwpick__alert" role="alert">{{ err }}</div>
+    }
+
+    <div class="kwpick__panels">
+      <article class="kwpick__panel">
+        <header class="kwpick__panel-head">
+          <span class="kwpick__panel-label">Suggested for you</span>
+          <span class="kwpick__panel-meta">{{ store.suggested().length }} keywords</span>
+        </header>
+        @if (store.suggested().length === 0) {
+          <p class="kwpick__empty">No suggestions yet — search or add keywords manually.</p>
+        } @else {
+          <ul class="kwpick__grid" aria-label="Suggested keywords">
+            @for (kw of store.suggested(); track kw.phraseKey) {
+              <li>
+                <button
+                  type="button"
+                  class="kwpick__card"
+                  [class.kwpick__card--selected]="store.isSelected(kw.phraseKey)"
+                  [attr.aria-pressed]="store.isSelected(kw.phraseKey)"
+                  (click)="toggle(kw)"
+                >
+                  <span class="kwpick__card-check" aria-hidden="true">
+                    @if (store.isSelected(kw.phraseKey)) {
+                      ✓
+                    }
+                  </span>
+                  <span class="kwpick__card-phrase">{{ kw.phrase }}</span>
+                  <span class="kwpick__card-meta">
+                    <span class="kwpick__pill">{{ sourceLabel(kw.source) }}</span>
+                    <span class="kwpick__vol">{{ formatVolume(kw.searchVolume) }}/mo</span>
+                    <span class="kwpick__metric">{{ formatCompetition(kw) }}</span>
+                  </span>
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </article>
+
+      <article class="kwpick__panel kwpick__panel--search">
+        <header class="kwpick__panel-head">
+          <span class="kwpick__panel-label">Search &amp; add</span>
+          <span class="kwpick__panel-meta">Related keywords from Google Ads</span>
+        </header>
+
+        <div class="kwpick__search">
+          <span class="kwpick__search-icon" aria-hidden="true">⌕</span>
+          <input
+            type="search"
+            class="kwpick__search-input"
+            placeholder="Search keywords…"
+            [value]="store.searchQuery()"
+            (input)="onSearchInput($any($event.target).value)"
+            aria-label="Search keywords"
+          />
+          @if (store.hasSearchQuery()) {
+            <button type="button" class="kwpick__search-clear" (click)="clearSearch()" aria-label="Clear search">
+              ×
+            </button>
+          }
+        </div>
+
+        <div class="kwpick__results" role="listbox" aria-label="Search results">
+          @if (store.searching()) {
+            <p class="kwpick__empty">Searching…</p>
+          } @else if (store.hasSearchQuery()) {
+            @if (store.searchPrimary(); as primary) {
+              <button type="button" class="kwpick__result kwpick__result--primary" (click)="addFromSearch(primary)">
+                <span class="kwpick__result-phrase">{{ primary.phrase }}</span>
+                <span class="kwpick__result-meta">
+                  <span class="kwpick__vol">{{ formatVolume(primary.searchVolume) }}/mo</span>
+                  <span class="kwpick__metric">{{ formatCompetition(primary) }}</span>
+                  <span class="kwpick__add">Add</span>
+                </span>
+              </button>
+            }
+            @for (kw of store.searchRelated(); track kw.phraseKey) {
+              <button type="button" class="kwpick__result" role="option" (click)="addFromSearch(kw)">
+                <span class="kwpick__result-phrase">{{ kw.phrase }}</span>
+                <span class="kwpick__result-meta">
+                  <span class="kwpick__pill">Related</span>
+                  <span class="kwpick__vol">{{ formatVolume(kw.searchVolume) }}/mo</span>
+                  <span class="kwpick__metric">{{ formatCompetition(kw) }}</span>
+                  <span class="kwpick__add">Add</span>
+                </span>
+              </button>
+            }
+            @if (!store.searchPrimary() && store.searchRelated().length === 0) {
+              <button type="button" class="kwpick__result" (click)="addCustomFromSearch()">
+                <span class="kwpick__result-phrase">Add "{{ store.searchQuery().trim() }}"</span>
+                <span class="kwpick__result-meta">
+                  <span class="kwpick__add">Add custom</span>
+                </span>
+              </button>
+            }
+          } @else {
+            @if (store.filteredPool().length === 0) {
+              <p class="kwpick__empty">Type to search related keywords, or pick from suggestions.</p>
+            } @else {
+              @for (kw of store.filteredPool(); track kw.phraseKey) {
+                <button type="button" class="kwpick__result" role="option" (click)="toggle(kw)">
+                  <span class="kwpick__result-phrase">{{ kw.phrase }}</span>
+                  <span class="kwpick__result-meta">
+                    <span class="kwpick__pill">{{ sourceLabel(kw.source) }}</span>
+                    <span class="kwpick__vol">{{ formatVolume(kw.searchVolume) }}/mo</span>
+                    <span class="kwpick__metric">{{ formatCompetition(kw) }}</span>
+                    <span class="kwpick__add">{{ store.isSelected(kw.phraseKey) ? 'Selected' : 'Add' }}</span>
+                  </span>
+                </button>
+              }
+            }
+          }
+        </div>
+      </article>
+    </div>
+
+    <section class="kwpick__confirm" aria-label="Confirm selection">
+      <header class="kwpick__confirm-head">
+        <span class="kwpick__panel-label">Your selection</span>
+        <span class="kwpick__panel-meta">{{ store.selectedCount() }} keywords</span>
+      </header>
+
+      @if (store.selectedCount() === 0) {
+        <p class="kwpick__hint">Select at least one keyword to continue.</p>
+      } @else {
+        <div class="kwpick__table-wrap">
+          <table class="kwpick__table">
+            <thead>
+              <tr>
+                <th>Keyword</th>
+                <th>Volume</th>
+                <th>KD / Comp</th>
+                <th>Source</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (kw of store.selectedList(); track kw.phraseKey) {
+                <tr>
+                  <td class="kwpick__td-phrase">{{ kw.phrase }}</td>
+                  <td>{{ formatVolume(kw.searchVolume) }}/mo</td>
+                  <td>{{ formatCompetition(kw) }}</td>
+                  <td><span class="kwpick__pill">{{ sourceLabel(kw.source) }}</span></td>
+                  <td>
+                    <button
+                      type="button"
+                      class="kwpick__remove"
+                      (click)="remove(kw.phraseKey)"
+                      [attr.aria-label]="'Remove ' + kw.phrase"
+                    >
+                      ×
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <footer class="kwpick__footer" [class.kwpick__footer--empty]="store.selectedCount() === 0">
+      @if (store.selectedCount() > 0) {
+        <button
+          type="button"
+          class="kwpick__continue"
+          [disabled]="store.confirming()"
+          (click)="confirm()"
+        >
+          {{ store.confirming() ? 'Saving…' : 'Confirm & build plan' }}
+        </button>
+      }
+    </footer>
+  }
+</div>

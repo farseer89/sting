@@ -27,7 +27,7 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
     label: 'Get started',
     icon: 'sparkles',
     children: [
-      { id: 'start-keywords', label: 'Choose keywords', icon: 'search', disabled: true },
+      { id: 'start-keywords', label: 'Choose keywords', icon: 'search' },
     ],
   },
   {

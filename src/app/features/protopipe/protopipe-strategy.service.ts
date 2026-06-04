@@ -139,6 +139,28 @@ export class ProtopipeStrategyService {
     this._dirty.set(true);
   }
 
+  /** Replace the full keyword list (e.g. home picker confirm). */
+  replaceKeywords(inputs: NewProtopipeKeyword[]): void {
+    const keywords: ProtopipeKeywordDto[] = [];
+    const seen = new Set<string>();
+    for (const input of inputs) {
+      const phrase = this.clampPhrase(input.phrase);
+      if (!phrase) continue;
+      const key = phrase.trim().toLowerCase().replace(/\s+/g, ' ');
+      if (seen.has(key)) continue;
+      seen.add(key);
+      keywords.push({
+        id: `temp-${crypto.randomUUID()}`,
+        phrase,
+        intent: input.intent,
+        priority: input.priority,
+        notes: this.clampNotes(input.notes),
+      });
+    }
+    this._keywords.set(keywords);
+    this._dirty.set(true);
+  }
+
   /** Dev/integration check: bagend → DataForSEO (v2 status endpoint). */
   async refreshMarketData(): Promise<boolean> {
     const siteId = this._siteId();

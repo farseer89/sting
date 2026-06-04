@@ -272,6 +272,16 @@
     opacity: 0.38;
     cursor: not-allowed;
   }
+
+  &.is-active {
+    color: var(--shell-rail-ink);
+    background: rgba(var(--void-ocean-rgb), 0.08);
+    border-color: rgba(var(--void-ocean-rgb), 0.2);
+
+    .void-rail__sub-mark {
+      background: var(--void-ocean);
+    }
+  }
 }
 
 .void-rail__row--group {

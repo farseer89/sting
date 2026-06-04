@@ -8,12 +8,18 @@ import {
   signal,
 } from '@angular/core';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ContentPlanStore } from '../content-plan/content-plan.store';
 import { ProtopipeOnboardingStateService } from '../onboarding/protopipe-onboarding-state.service';
+import { ProtopipeStrategyService } from '../protopipe-strategy.service';
+import { ProtopipeHomePlanProgressComponent } from './plan-progress/protopipe-home-plan-progress.component';
+import { ProtopipeKeywordPickerComponent } from './keyword-picker/protopipe-keyword-picker.component';
 import {
   PROTOPIPE_HOME_NAV,
   PROTOPIPE_HOME_NAV_DEFAULT_OPEN,
   type ProtopipeHomeNavItem,
 } from './protopipe-home-nav';
+
+export type ProtopipeHomeView = 'keywords' | 'plan';
 
 function initialsFromName(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -26,6 +32,7 @@ function initialsFromName(name: string): string {
   selector: 'app-protopipe-user-home',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ProtopipeKeywordPickerComponent, ProtopipeHomePlanProgressComponent],
   templateUrl: './protopipe-user-home.component.html',
   styleUrl: './protopipe-user-home.component.scss',
 })
@@ -33,6 +40,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly auth = inject(AuthService);
   private readonly onboarding = inject(ProtopipeOnboardingStateService);
+  private readonly strategy = inject(ProtopipeStrategyService);
+  private readonly contentPlan = inject(ContentPlanStore);
 
   constructor() {
     document.documentElement.classList.add('void-home', 'void-white');
@@ -48,6 +57,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
   readonly siteHostname = signal('');
   readonly subscriptionLabel = signal('Workspace');
   readonly loading = signal(true);
+  readonly activeView = signal<ProtopipeHomeView>('keywords');
+  readonly activeNavId = signal('start-keywords');
 
   readonly userName = computed(() => {
     const full = this.auth.getCurrentUserFullName()?.trim();
@@ -79,6 +90,19 @@ export class ProtopipeUserHomeComponent implements OnInit {
 
   selectNavItem(item: ProtopipeHomeNavItem): void {
     if (item.disabled) return;
+    if (item.id === 'start-keywords') {
+      this.activeNavId.set(item.id);
+      this.activeView.set('keywords');
+    }
+  }
+
+  onKeywordsConfirmed(): void {
+    this.activeView.set('plan');
+    this.activeNavId.set('start-keywords');
+  }
+
+  isNavItemActive(item: ProtopipeHomeNavItem): boolean {
+    return !item.disabled && this.activeNavId() === item.id;
   }
 
   private async loadBootstrap(): Promise<void> {
@@ -95,6 +119,16 @@ export class ProtopipeUserHomeComponent implements OnInit {
         this.subscriptionLabel.set('Pro');
       } else {
         this.subscriptionLabel.set('Workspace');
+      }
+
+      if (site?.id) {
+        await this.strategy.ensureLoaded();
+        this.contentPlan.setSiteId(site.id);
+        await this.contentPlan.loadLatest();
+        const planStatus = this.contentPlan.status();
+        if (planStatus === 'running' || planStatus === 'pending' || planStatus === 'complete') {
+          this.activeView.set('plan');
+        }
       }
     } catch {
       this.siteDisplayName.set('Your workspace');

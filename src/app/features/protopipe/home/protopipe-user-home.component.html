@@ -57,6 +57,7 @@
                           type="button"
                           class="void-rail__row void-rail__row--sub"
                           [class.is-disabled]="child.disabled"
+                          [class.is-active]="isNavItemActive(child)"
                           [disabled]="child.disabled"
                           (click)="selectNavItem(child)"
                         >
@@ -98,20 +99,27 @@
     <div class="void__main">
       <div class="void__viewport">
         <div class="void__panel-stack">
-          <section class="glass glass--full glass--premiere home-welcome" aria-label="Home">
-            @if (loading()) {
+          @if (loading()) {
+            <section class="glass glass--full glass--premiere home-welcome" aria-label="Home">
               <p class="home-welcome__loading">Loading workspace…</p>
-            } @else {
-              <div class="home-welcome__content">
-                <p class="home-welcome__eyebrow">Welcome</p>
-                <h1 class="home-welcome__title">{{ siteDisplayName() }}</h1>
-                @if (siteHostname()) {
-                  <p class="home-welcome__hostname">{{ siteHostname() }}</p>
-                }
-                <p class="home-welcome__body">Your workspace is ready. More tools are on the way.</p>
-              </div>
+            </section>
+          } @else {
+            @switch (activeView()) {
+              @case ('keywords') {
+                <section class="glass glass--full glass--premiere" aria-label="Choose keywords">
+                  <app-protopipe-keyword-picker
+                    [siteLabel]="siteHostname() || siteDisplayName()"
+                    (confirmed)="onKeywordsConfirmed()"
+                  />
+                </section>
+              }
+              @case ('plan') {
+                <section class="glass glass--full glass--premiere" aria-label="Content plan">
+                  <app-protopipe-home-plan-progress />
+                </section>
+              }
             }
-          </section>
+          }
         </div>
       </div>
     </div>

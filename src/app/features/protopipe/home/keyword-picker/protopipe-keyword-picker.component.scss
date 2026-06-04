@@ -92,6 +92,136 @@
   flex-shrink: 0;
 }
 
+.kwpick__slider-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.15rem;
+  border: 0.5px solid var(--void-tile-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--void-ink-secondary);
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  padding: 0.22rem 0.45rem;
+  cursor: pointer;
+  transition:
+    color 0.12s ease,
+    background 0.12s ease,
+    border-color 0.12s ease;
+
+  svg {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+
+  &:hover {
+    color: var(--void-ink-body);
+    background: var(--void-tile-bg);
+    border-color: var(--void-ocean-line);
+  }
+
+  &.is-active {
+    color: var(--void-ocean);
+    background: var(--void-ocean-fill);
+    border-color: var(--void-ocean-line);
+  }
+}
+
+.kwpick__workspace {
+  --slider-width: 32%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 2rem;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  gap: 0;
+
+  &.has-slider {
+    grid-template-columns: minmax(0, 1fr) 5px minmax(260px, var(--slider-width)) 2rem;
+  }
+}
+
+.kwpick__splitter {
+  background: transparent;
+  cursor: col-resize;
+  position: relative;
+  user-select: none;
+  touch-action: none;
+  min-height: 0;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.04);
+    transition: background 120ms ease;
+  }
+
+  &:hover::before,
+  &:active::before {
+    background: rgba(var(--void-ocean-rgb), 0.22);
+  }
+}
+
+.kwpick__slider {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 0.5px solid var(--void-glass-border);
+  border-radius: 6px;
+  background: var(--void-glass-bg);
+}
+
+.kwpick__side-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.15rem;
+  padding: 0.35rem 0.15rem;
+  border-left: 0.5px solid var(--void-tile-border);
+  background: rgba(0, 0, 0, 0.015);
+  min-height: 0;
+}
+
+.kwpick__side-rail-btn {
+  appearance: none;
+  border: 0.5px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: rgba(10, 10, 10, 0.38);
+  height: 1.65rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    color 0.12s ease,
+    background 0.12s ease,
+    border-color 0.12s ease;
+
+  svg {
+    width: 0.85rem;
+    height: 0.85rem;
+  }
+
+  &:hover {
+    color: var(--void-ink-body);
+    background: var(--void-tile-bg);
+    border-color: var(--void-tile-border);
+  }
+
+  &.is-active {
+    color: var(--void-ocean);
+    background: var(--void-ocean-fill);
+    border-color: var(--void-ocean-line);
+  }
+}
+
 .kwpick__site {
   font-size: 9px;
   letter-spacing: 0.02em;
@@ -122,18 +252,10 @@
   flex-shrink: 0;
 }
 
-.kwpick__panels {
-  display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(0, 0.85fr);
-  gap: 0.45rem;
-  flex: 1 1 0;
-  min-height: 0;
-  overflow: hidden;
-}
-
 .kwpick__panel {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   min-height: 0;
   overflow: hidden;
   border: 0.5px solid var(--void-glass-border);
@@ -593,8 +715,27 @@
 }
 
 @media (max-width: 720px) {
-  .kwpick__panels {
-    grid-template-columns: 1fr;
+  .kwpick__workspace.has-slider {
+    grid-template-columns: minmax(0, 1fr) 2rem;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .kwpick__workspace.has-slider .kwpick__splitter,
+  .kwpick__workspace.has-slider .kwpick__slider {
+    grid-column: 1;
+  }
+
+  .kwpick__workspace.has-slider .kwpick__slider {
+    max-height: 42vh;
+  }
+
+  .kwpick__workspace.has-slider .kwpick__splitter {
+    display: none;
+  }
+
+  .kwpick__workspace.has-slider .kwpick__side-rail {
+    grid-row: 1 / span 2;
+    grid-column: 2;
   }
 
   .kwpick__intro {

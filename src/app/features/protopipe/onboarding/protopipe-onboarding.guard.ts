@@ -38,7 +38,7 @@ export const skipWhenOnboardingCompleteGuard: CanActivateFn = async () => {
   try {
     const boot = await onboarding.load();
     if (boot.onboardingCompletedAt) {
-      return router.createUrlTree(['/protopipe']);
+      return router.createUrlTree(['/home']);
     }
   } catch {
     /* fall through to show the wizard */

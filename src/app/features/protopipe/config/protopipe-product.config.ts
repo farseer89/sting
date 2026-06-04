@@ -21,6 +21,6 @@ export const protopipeProductConfig: ProductConfig = {
     signupSuccess: '/signup/success',
     postSignupRedirect: '/protopipe/onboarding',
     login: '/login',
-    home: '/protopipe',
+    home: '/home',
   },
 };

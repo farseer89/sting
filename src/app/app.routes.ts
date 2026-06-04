@@ -105,15 +105,20 @@ export const routes: Routes = [
       import('./features/signup/signup-success.component').then((m) => m.SignupSuccessComponent),
   },
   {
+    // User-facing home — void white dashboard, outside the PrimeNG admin shell.
+    path: 'home',
+    canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],
+    loadComponent: () =>
+      import('./features/protopipe/home/protopipe-user-home.component').then(
+        (m) => m.ProtopipeUserHomeComponent,
+      ),
+  },
+  {
     path: '',
     loadComponent: () => import('./layout/shell/shell.component').then((m) => m.ShellComponent),
     canActivate: [authGuard, operatorOnlyGuard],
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'protopipe' },
-      {
-        path: 'home',
-        loadComponent: () => import('./features/home/home.component').then((m) => m.HomeComponent),
-      },
+      { path: '', pathMatch: 'full', redirectTo: '/home' },
       // protopipe — SEO SaaS product (protopipe branch)
       {
         path: 'protopipe',
@@ -302,5 +307,5 @@ export const routes: Routes = [
       },
     ],
   },
-  { path: '**', redirectTo: 'protopipe' },
+  { path: '**', redirectTo: '/home' },
 ];

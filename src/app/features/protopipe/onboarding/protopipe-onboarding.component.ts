@@ -260,7 +260,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
   }
 
   async enterApp(): Promise<void> {
-    await this.router.navigateByUrl('/protopipe/keywords/discover/diy');
+    await this.router.navigateByUrl('/home');
   }
 
   private focusForStep(s: Step): void {

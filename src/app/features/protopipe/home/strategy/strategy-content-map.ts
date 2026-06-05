@@ -186,7 +186,7 @@ export function planToContentSpoke(
       ...ARTICLE_CLUSTER,
       startAngle: 90,
       endAngle: 210,
-      nodes: capNodes(articleNodes, 8),
+      nodes: articleNodes,
     },
   ];
 

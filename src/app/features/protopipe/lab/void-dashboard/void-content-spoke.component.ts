@@ -212,8 +212,11 @@ export class VoidContentSpokeComponent {
 
   readonly placedNodes = computed(() => this.layoutNodes());
   readonly nodeBox = computed(() => {
-    const w = this.embedded() ? 112 : 152;
-    const h = this.embedded() ? 48 : 56;
+    const articleCount =
+      this.clusters().find((cluster) => cluster.id === 'articles')?.nodes.length ?? 0;
+    const denseArticles = this.embedded() && articleCount > 6;
+    const w = this.embedded() ? (denseArticles ? 98 : 112) : 152;
+    const h = this.embedded() ? (denseArticles ? 44 : 48) : 56;
     return { w, h, halfW: w / 2, halfH: h / 2 };
   });
   readonly clusterArcs = computed(() => this.layoutClusterArcs());
@@ -527,6 +530,23 @@ export class VoidContentSpokeComponent {
   }
 
   // --- radial layout ---
+  /** Stagger article nodes on inner/outer rings when the calendar is dense. */
+  private radialRadiusFactor(
+    clusterId: string,
+    nodeCount: number,
+    index: number,
+    linearT: number,
+  ): number {
+    if (clusterId !== 'articles' || nodeCount <= 5) {
+      return 0.35 + linearT * 0.55;
+    }
+    const ringIndex = Math.floor(index / 2);
+    const ringCount = Math.ceil(nodeCount / 2);
+    const ringT = ringCount <= 1 ? 0.5 : ringIndex / (ringCount - 1);
+    const isOuter = index % 2 === 1;
+    return isOuter ? 0.56 + ringT * 0.34 : 0.3 + ringT * 0.24;
+  }
+
   private layoutClusterArcs(): { cluster: SpokeCluster; path: string }[] {
     const { innerRadius, outerRadius, wedgeOuterPad } = this.geo();
     const { cx, cy } = this.hub();
@@ -550,7 +570,8 @@ export class VoidContentSpokeComponent {
       nodes.forEach((node, index) => {
         const t = nodes.length <= 1 ? 0.5 : index / (nodes.length - 1);
         const angle = cluster.startAngle + step * index;
-        const radius = innerRadius + (outerRadius - innerRadius) * (0.35 + t * 0.55);
+        const radiusFactor = this.radialRadiusFactor(cluster.id, nodes.length, index, t);
+        const radius = innerRadius + (outerRadius - innerRadius) * radiusFactor;
         const pos = this.polar(cx, cy, radius, angle);
         const elbow = this.polar(cx, cy, hubRadius + 24 + t * 28, angle);
         placed.push({

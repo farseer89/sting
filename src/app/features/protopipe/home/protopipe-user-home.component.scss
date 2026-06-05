@@ -294,7 +294,7 @@
   overflow: hidden;
 
   &.has-side-panel {
-    grid-template-columns: minmax(0, 1fr) 5px minmax(240px, var(--side-panel-width, 32%)) 2rem;
+    grid-template-columns: minmax(0, 1fr) 5px minmax(240px, var(--side-panel-width, 32%));
   }
 }
 
@@ -774,8 +774,12 @@
 
 @media (max-width: 900px) {
   .void__workspace-shell.has-side-panel {
-    grid-template-columns: minmax(0, 1fr) 2rem;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .void__workspace-shell.has-side-panel:has(.void__side-rail) {
+    grid-template-columns: minmax(0, 1fr) 2rem;
   }
 
   .void__workspace-shell.has-side-panel .void__viewport {

@@ -6,6 +6,7 @@ import {
   HostListener,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
   viewChild,
@@ -72,10 +73,40 @@ export class ProtopipeUserHomeComponent implements OnInit {
   private readonly keywordStore = inject(ProtopipeKeywordPickerStore);
   private readonly homeWorkspaceEl = viewChild<ElementRef<HTMLElement>>('homeWorkspace');
 
+  readonly showSidePanel = computed(() => {
+    if (!this.sidePanel.open()) {
+      return false;
+    }
+    const view = this.activeView();
+    return view === 'keywords' || view === 'strategy' || view === 'writer';
+  });
+
+  readonly showKeywordSidePanel = computed(
+    () => this.showSidePanel() && this.activeView() === 'keywords',
+  );
+
+  readonly showStrategySidePanel = computed(
+    () => this.showSidePanel() && this.activeView() === 'strategy',
+  );
+
+  readonly showWriterSidePanel = computed(
+    () => this.showSidePanel() && this.activeView() === 'writer',
+  );
+
+  readonly sidePanelArticleOpen = computed(
+    () => this.activeView() === 'strategy' && this.strategyViewState.selectedArticle() !== null,
+  );
+
   constructor() {
     document.documentElement.classList.add('void-home', 'void-white');
     this.destroyRef.onDestroy(() => {
       document.documentElement.classList.remove('void-home', 'void-white');
+    });
+
+    effect(() => {
+      if (this.strategyViewState.selectedArticle()) {
+        this.sidePanel.ensureOpen();
+      }
     });
   }
 
@@ -108,31 +139,6 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.destroyRef.onDestroy(() => this.sidePanel.detachResizeListeners());
     this.writerViewState.setExitHandler(() => this.leaveWriterFocus());
     void this.loadBootstrap();
-  }
-
-  showSidePanel(): boolean {
-    if (!this.sidePanel.open()) return false;
-    return (
-      this.activeView() === 'keywords' ||
-      this.activeView() === 'strategy' ||
-      this.activeView() === 'writer'
-    );
-  }
-
-  showKeywordSidePanel(): boolean {
-    return this.showSidePanel() && this.activeView() === 'keywords';
-  }
-
-  showStrategySidePanel(): boolean {
-    return this.showSidePanel() && this.activeView() === 'strategy';
-  }
-
-  showWriterSidePanel(): boolean {
-    return this.showSidePanel() && this.activeView() === 'writer';
-  }
-
-  sidePanelArticleOpen(): boolean {
-    return this.activeView() === 'strategy' && this.strategyViewState.selectedArticle() !== null;
   }
 
   onSideSplitterPointerDown(event: PointerEvent): void {

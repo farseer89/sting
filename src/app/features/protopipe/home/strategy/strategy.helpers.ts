@@ -117,12 +117,50 @@ export function calendarItemForPhrase(
   return matches.find((item) => item.clusterRole === 'pillar') ?? matches[0];
 }
 
+export function calendarItemByKey(
+  plan: ProtopipeSiteContentPlan,
+  key: string,
+): ProtopipeContentPlanCalendarItem | null {
+  const exact = plan.calendar.find((item) => calendarItemKey(item) === key);
+  if (exact) {
+    return exact;
+  }
+  const title = key.includes('|') ? key.slice(key.indexOf('|') + 1) : key;
+  return plan.calendar.find((item) => item.workingTitle === title) ?? null;
+}
+
+function calendarItemByTitle(
+  plan: ProtopipeSiteContentPlan,
+  title: string,
+): ProtopipeContentPlanCalendarItem | null {
+  const normalized = title.trim().toLowerCase();
+  const exact = plan.calendar.find((item) => item.workingTitle.trim().toLowerCase() === normalized);
+  if (exact) {
+    return exact;
+  }
+  return (
+    plan.calendar.find((item) => {
+      const itemTitle = item.workingTitle.trim().toLowerCase();
+      return itemTitle.startsWith(normalized) || normalized.startsWith(itemTitle);
+    }) ?? null
+  );
+}
+
 export function calendarItemFromSpokeNode(
   plan: ProtopipeSiteContentPlan,
   node: SpokeNode,
 ): ProtopipeContentPlanCalendarItem | null {
-  if (node.kind === 'article' && node.calendarItemKey) {
-    return plan.calendar.find((item) => calendarItemKey(item) === node.calendarItemKey) ?? null;
+  if (node.kind === 'article') {
+    if (node.calendarItemKey) {
+      const byKey = calendarItemByKey(plan, node.calendarItemKey);
+      if (byKey) {
+        return byKey;
+      }
+    }
+    const byTitle = calendarItemByTitle(plan, node.label);
+    if (byTitle) {
+      return byTitle;
+    }
   }
   return calendarItemForPhrase(plan, node.label);
 }

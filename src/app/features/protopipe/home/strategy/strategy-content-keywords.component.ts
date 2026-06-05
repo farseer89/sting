@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import type { ProtopipeSiteContentPlan, ProtopipeScoredKeyword } from '@hive/contracts';
+import { ProtopipeHomeSidePanelService } from '../protopipe-home-side-panel.service';
 import { ProtopipeHomeStrategyViewState } from './protopipe-home-strategy-view.state';
 
 interface KeywordRow {
@@ -24,6 +25,7 @@ interface KeywordRow {
 })
 export class StrategyContentKeywordsComponent {
   private readonly viewState = inject(ProtopipeHomeStrategyViewState);
+  private readonly sidePanel = inject(ProtopipeHomeSidePanelService);
 
   readonly plan = input.required<ProtopipeSiteContentPlan>();
 
@@ -60,5 +62,8 @@ export class StrategyContentKeywordsComponent {
 
   openKeyword(phrase: string): void {
     this.viewState.selectFromKeywordPhrase(this.plan(), phrase);
+    if (this.viewState.selectedArticle()) {
+      this.sidePanel.setOpen(true);
+    }
   }
 }

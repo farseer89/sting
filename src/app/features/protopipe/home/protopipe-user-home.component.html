@@ -134,7 +134,7 @@
       <div
         #homeWorkspace
         class="void__workspace-shell"
-        [class.has-side-panel]="showSidePanel()"
+        [class.has-side-panel]="sidePanel.open() && (activeView() === 'keywords' || activeView() === 'strategy' || activeView() === 'writer')"
         [style.--side-panel-width.%]="sidePanel.widthPct()"
       >
         <div class="void__viewport">
@@ -168,7 +168,7 @@
           </div>
         </div>
 
-        @if (showSidePanel()) {
+        @if (sidePanel.open() && (activeView() === 'keywords' || activeView() === 'strategy' || activeView() === 'writer')) {
           <div
             class="void__side-splitter"
             role="separator"
@@ -183,17 +183,17 @@
             (pointerdown)="onSideSplitterPointerDown($event)"
           ></div>
 
-          @if (showKeywordSidePanel()) {
+          @if (activeView() === 'keywords') {
             <aside class="void__side-panel" aria-label="Search and add keywords">
               <app-protopipe-keyword-search-panel />
             </aside>
           }
-          @if (showStrategySidePanel()) {
+          @if (activeView() === 'strategy') {
             <aside class="void__side-panel" [attr.aria-label]="sidePanelArticleOpen() ? 'Article details' : 'Strategy brief'">
               <app-protopipe-strategy-context-panel />
             </aside>
           }
-          @if (showWriterSidePanel()) {
+          @if (activeView() === 'writer') {
             <aside class="void__side-panel" aria-label="Writer tools">
               <app-protopipe-writer-context-panel />
             </aside>

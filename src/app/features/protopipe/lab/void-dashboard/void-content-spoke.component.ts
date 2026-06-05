@@ -410,13 +410,18 @@ export class VoidContentSpokeComponent {
 
   selectNode(id: string): void {
     const placed = this.placedNodes().find((entry) => entry.node.id === id);
-    if (!placed) {
+    const node =
+      placed?.node ??
+      this.clusters()
+        .flatMap((cluster) => cluster.nodes)
+        .find((entry) => entry.id === id);
+    if (!node) {
       return;
     }
 
     if (this.embedded()) {
       this.selectedNodeId.set(id);
-      this.nodeSelected.emit(placed.node);
+      this.nodeSelected.emit(node);
       return;
     }
 

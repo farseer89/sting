@@ -1,5 +1,6 @@
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   DestroyRef,
   ElementRef,
@@ -9,6 +10,7 @@ import {
   effect,
   inject,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -71,6 +73,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   private readonly strategyViewState = inject(ProtopipeHomeStrategyViewState);
   readonly writerViewState = inject(ProtopipeHomeWriterViewState);
   private readonly keywordStore = inject(ProtopipeKeywordPickerStore);
+  private readonly cdr = inject(ChangeDetectorRef);
   private readonly homeWorkspaceEl = viewChild<ElementRef<HTMLElement>>('homeWorkspace');
 
   readonly showSidePanel = computed(() => {
@@ -104,9 +107,10 @@ export class ProtopipeUserHomeComponent implements OnInit {
     });
 
     effect(() => {
-      if (this.strategyViewState.selectedArticle()) {
-        this.sidePanel.ensureOpen();
-      }
+      this.sidePanel.open();
+      this.strategyViewState.selectedArticle();
+      this.activeView();
+      untracked(() => this.cdr.markForCheck());
     });
   }
 

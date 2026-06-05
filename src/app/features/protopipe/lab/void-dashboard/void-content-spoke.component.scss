@@ -323,11 +323,6 @@
   inset: 0;
   pointer-events: none;
   z-index: 2;
-
-  &--pick {
-    pointer-events: auto;
-    cursor: pointer;
-  }
 }
 
 .spoke-node {
@@ -376,6 +371,13 @@
 
 .spoke-node--kind-article {
   z-index: 2;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: 8px;
+  }
 }
 
 .spoke-node__kind,
@@ -746,18 +748,20 @@
   flex: 1 1 0;
   min-height: 0;
 
-  .spoke-node {
-    /* Labels only — picks handled by spoke__nodes--pick geometry. */
+  /* Keyword/pillar labels are visual-only — clicks pass through to article cards below. */
+  .spoke-node--kind-keyword,
+  .spoke-node--kind-pillar {
     pointer-events: none;
-    animation: none;
-    opacity: 1;
-    transform: translate(-50%, -50%);
   }
 
   .spoke-node--anim {
     animation: none;
     opacity: 1;
     transform: translate(-50%, -50%);
+  }
+
+  .spoke-node--kind-article::before {
+    inset: -10px;
   }
 
   .spoke__toolbar--embedded {

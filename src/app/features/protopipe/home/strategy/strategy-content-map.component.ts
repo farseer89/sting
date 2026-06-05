@@ -73,11 +73,6 @@ export class StrategyContentMapComponent {
 
   /** Map node click → same right panel as Brief (via ProtopipeHomeStrategyViewState). */
   onSpokeNodeSelected(node: SpokeNode): void {
-    console.info('[strategy-map] 4 parent received nodeSelected', {
-      kind: node.kind,
-      label: node.label,
-      calendarItemKey: node.calendarItemKey,
-    });
     this.viewState.selectFromSpokeNode(this.plan(), node);
   }
 }

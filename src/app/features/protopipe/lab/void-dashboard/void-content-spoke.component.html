@@ -166,34 +166,67 @@
           <text class="spoke__hub-sub" [attr.x]="hub().cx" [attr.y]="hub().cy + 12" text-anchor="middle">
             seed keyword
           </text>
-        </svg>
 
-        @if (mounted()) {
-          <div class="spoke__nodes" [style.--graph-size.px]="geo().viewSize">
-            @for (placed of placedNodesForRender(); track placed.node.id) {
-              <button
-                type="button"
-                class="spoke-node spoke-node--anim"
-                [ngClass]="nodeClass(placed.node)"
-                [class.is-dimmed]="!isClusterActive(placed.cluster.id)"
-                [class.is-selected]="isNodeSelected(placed.node.id)"
-                [style.left.%]="(placed.x / geo().viewSize) * 100"
-                [style.top.%]="(placed.y / geo().viewSize) * 100"
-                [style.--node-color]="placed.cluster.color"
-                [style.animation-delay.s]="0.45 + placed.order * 0.05"
-                [attr.data-node-id]="placed.node.id"
-                [attr.data-node-kind]="placed.node.kind"
-                (click)="onNodeButtonClick($event, placed.node)"
-              >
-                <span class="spoke-node__kind">{{ placed.node.kind }}</span>
-                <span class="spoke-node__label">{{ placed.node.label }}</span>
-                @if (placed.node.meta) {
-                  <span class="spoke-node__meta">{{ placed.node.meta }}</span>
-                }
-              </button>
+          @if (mounted()) {
+            @for (placed of placedNodes(); track placed.node.id) {
+              @if (isRadialNodeInteractive(placed)) {
+                <g [attr.transform]="nodeTransform(placed)">
+                <g
+                  class="spoke-node-g spoke-node-g--anim"
+                  [class.is-dimmed]="!isClusterActive(placed.cluster.id)"
+                  [class.is-selected]="isNodeSelected(placed.node.id)"
+                  [style.animation-delay.s]="0.45 + placed.order * 0.05"
+                >
+                  <foreignObject
+                    [attr.x]="-nodeBox().halfW"
+                    [attr.y]="-nodeBox().halfH"
+                    [attr.width]="nodeBox().w"
+                    [attr.height]="nodeBox().h"
+                  >
+                    <div
+                      xmlns="http://www.w3.org/1999/xhtml"
+                      class="spoke-node-fo"
+                      [style.--node-color]="placed.cluster.color"
+                    >
+                      <button
+                        type="button"
+                        class="spoke-node"
+                        [ngClass]="nodeClass(placed.node)"
+                        (click)="onNodeClick($event, placed.node)"
+                      >
+                        <span class="spoke-node__kind">{{ placed.node.kind }}</span>
+                        <span class="spoke-node__label">{{ placed.node.label }}</span>
+                        @if (placed.node.meta) {
+                          <span class="spoke-node__meta">{{ placed.node.meta }}</span>
+                        }
+                      </button>
+                    </div>
+                  </foreignObject>
+                </g>
+                </g>
+              } @else {
+                <g
+                  class="spoke-node-label"
+                  [attr.transform]="nodeTransform(placed)"
+                  [class.is-dimmed]="!isClusterActive(placed.cluster.id)"
+                  pointer-events="none"
+                >
+                  <text
+                    class="spoke-node-label__kind"
+                    y="-5"
+                    text-anchor="middle"
+                    [attr.fill]="placed.cluster.color"
+                  >
+                    {{ placed.node.kind }}
+                  </text>
+                  <text class="spoke-node-label__title" y="7" text-anchor="middle">
+                    {{ truncatedLabel(placed.node.label, 32) }}
+                  </text>
+                </g>
+              }
             }
-          </div>
-        }
+          }
+        </svg>
       } @else {
         <div
           class="spoke__neural"

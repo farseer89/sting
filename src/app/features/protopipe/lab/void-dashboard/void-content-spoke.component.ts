@@ -211,13 +211,10 @@ export class VoidContentSpokeComponent {
   });
 
   readonly placedNodes = computed(() => this.layoutNodes());
-  /** Articles painted last so stacked cards prefer the topmost hit target. */
-  readonly placedNodesForRender = computed(() => {
-    const kindRank: Record<SpokeNode['kind'], number> = { keyword: 0, pillar: 1, article: 2 };
-    return [...this.placedNodes()].sort((a, b) => {
-      const byKind = kindRank[a.node.kind] - kindRank[b.node.kind];
-      return byKind !== 0 ? byKind : a.order - b.order;
-    });
+  readonly nodeBox = computed(() => {
+    const w = this.embedded() ? 112 : 152;
+    const h = this.embedded() ? 48 : 56;
+    return { w, h, halfW: w / 2, halfH: h / 2 };
   });
   readonly clusterArcs = computed(() => this.layoutClusterArcs());
 
@@ -412,27 +409,28 @@ export class VoidContentSpokeComponent {
   }
 
   replay(): void {
+    if (this.embedded()) {
+      return;
+    }
     this.mounted.set(false);
     setTimeout(() => this.mounted.set(true), 40);
   }
 
-  onNodeButtonClick(event: MouseEvent, node: SpokeNode): void {
-    event.stopPropagation();
-    if (this.embedded() && node.kind !== 'article') {
-      return;
-    }
-    this.onNodeClick(event, node);
+  isRadialNodeInteractive(placed: PlacedNode): boolean {
+    return !this.embedded() || placed.node.kind === 'article';
   }
 
-  /** Lab radial view — direct button click. */
+  nodeTransform(placed: PlacedNode): string {
+    return `translate(${placed.x}, ${placed.y})`;
+  }
+
+  truncatedLabel(label: string, max: number): string {
+    const trimmed = label.trim();
+    return trimmed.length <= max ? trimmed : `${trimmed.slice(0, max - 1)}…`;
+  }
+
   onNodeClick(event: MouseEvent, node: SpokeNode): void {
     event.stopPropagation();
-    console.info('[strategy-map] 1 click received', {
-      nodeId: node.id,
-      kind: node.kind,
-      label: node.label,
-      embedded: this.embedded(),
-    });
     this.selectNode(node.id, node);
   }
 
@@ -445,20 +443,11 @@ export class VoidContentSpokeComponent {
         .flatMap((cluster) => cluster.nodes)
         .find((entry) => entry.id === id);
     if (!node) {
-      console.warn('[strategy-map] 2 selectNode — node not found', { id });
       return;
     }
 
-    console.info('[strategy-map] 2 selectNode resolved', {
-      id,
-      kind: node.kind,
-      label: node.label,
-      embedded: this.embedded(),
-    });
-
     if (this.embedded()) {
       this.selectedNodeId.set(id);
-      console.info('[strategy-map] 3 emitting nodeSelected', { kind: node.kind, label: node.label });
       this.nodeSelected.emit(node);
       return;
     }
@@ -480,7 +469,7 @@ export class VoidContentSpokeComponent {
   }
 
   nodeClass(node: SpokeNode): string {
-    return `spoke-node--${node.status ?? 'gap'} spoke-node--kind-${node.kind}`;
+    return `spoke-node--${node.status ?? 'gap'}`;
   }
 
   statusLabel(status?: SpokeNode['status']): string {

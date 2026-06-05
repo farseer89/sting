@@ -258,7 +258,15 @@
   height: auto;
   aspect-ratio: 1;
   display: block;
-  /* Decorative — never steal clicks from spoke-node buttons layered above. */
+}
+
+.spoke__glow,
+.spoke__wedge,
+.spoke__branch,
+.spoke__hub-ring,
+.spoke__hub,
+.spoke__hub-label,
+.spoke__hub-sub {
   pointer-events: none;
 }
 
@@ -318,23 +326,31 @@
   text-transform: uppercase;
 }
 
-.spoke__nodes {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 2;
+.spoke-node-g {
+  transition: opacity 0.18s ease;
+
+  &.is-dimmed {
+    opacity: 0.22;
+  }
+}
+
+.spoke-node-g foreignObject {
+  overflow: visible;
+}
+
+.spoke-node-fo {
+  width: 100%;
+  height: 100%;
 }
 
 .spoke-node {
-  position: absolute;
-  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.08rem;
-  max-width: 9.5rem;
-  min-width: 4.5rem;
-  min-height: 2.25rem;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
   padding: 0.32rem 0.45rem;
   border: 0.5px solid var(--void-tile-border);
   border-left: 2px solid var(--node-color, var(--void-ocean));
@@ -342,49 +358,39 @@
   background: rgba(255, 255, 255, 0.94);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   text-align: left;
-  pointer-events: auto;
   cursor: pointer;
-  z-index: 1;
   font: inherit;
   appearance: none;
   transition:
-    transform 0.18s ease,
     box-shadow 0.18s ease,
-    opacity 0.18s ease,
     border-color 0.18s ease;
 
   &:hover,
-  &.is-selected {
-    transform: translate(-50%, -50%) scale(1.03);
+  .spoke-node-g.is-selected & {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
     border-color: color-mix(in srgb, var(--node-color, #0a9396) 35%, var(--void-tile-border));
-    z-index: 4;
   }
+}
+
+.spoke-node-label {
+  transition: opacity 0.18s ease;
 
   &.is-dimmed {
     opacity: 0.22;
-    /* Dimmed legend-hover nodes must not block clicks on active cards underneath. */
-    pointer-events: none;
-    z-index: 0;
   }
 }
 
-.spoke-node--kind-article {
-  z-index: 2;
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: -6px;
-    border-radius: 8px;
-  }
+.spoke-node-label__kind {
+  font-size: 7px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.spoke-node__kind,
-.spoke-node__label,
-.spoke-node__meta {
-  pointer-events: none;
-  width: 100%;
+.spoke-node-label__title {
+  font-size: 8px;
+  fill: var(--void-ink-body);
+  font-weight: 500;
 }
 
 .spoke-node__kind {
@@ -507,11 +513,6 @@
   animation: spoke-branch-draw 0.6s ease forwards;
 }
 
-.spoke-node--anim {
-  opacity: 0;
-  animation: spoke-node-pop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
 @keyframes spoke-wedge-in {
   from {
     opacity: 0;
@@ -538,12 +539,18 @@
 @keyframes spoke-node-pop {
   from {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.55);
+    transform: scale(0.55);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: scale(1);
   }
+}
+
+.spoke-node-g--anim {
+  opacity: 0;
+  transform-origin: center;
+  animation: spoke-node-pop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 /* ---- 3D neural map ---- */
@@ -688,7 +695,7 @@
 @media (prefers-reduced-motion: reduce) {
   .spoke__wedge--anim,
   .spoke__branch--anim,
-  .spoke-node--anim,
+  .spoke-node-g--anim,
   .neural-edge,
   .neural-hub,
   .spoke__neural {
@@ -704,9 +711,9 @@
     opacity: 0.42;
   }
 
-  .spoke-node--anim {
+  .spoke-node-g--anim {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: scale(1);
   }
 }
 
@@ -748,20 +755,9 @@
   flex: 1 1 0;
   min-height: 0;
 
-  /* Keyword/pillar labels are visual-only — clicks pass through to article cards below. */
-  .spoke-node--kind-keyword,
-  .spoke-node--kind-pillar {
-    pointer-events: none;
-  }
-
-  .spoke-node--anim {
+  .spoke-node-g--anim {
     animation: none;
     opacity: 1;
-    transform: translate(-50%, -50%);
-  }
-
-  .spoke-node--kind-article::before {
-    inset: -10px;
   }
 
   .spoke__toolbar--embedded {
@@ -797,6 +793,7 @@
     align-self: stretch;
     display: flex;
     flex-direction: column;
+    overflow: visible;
   }
 
   .spoke__graph {
@@ -817,10 +814,7 @@
   }
 
   .spoke-node {
-    max-width: 7.5rem;
-    min-width: 5rem;
-    min-height: 2.5rem;
-    padding: 0.3rem 0.42rem;
+    padding: 0.28rem 0.38rem;
   }
 
   .spoke-node__kind {

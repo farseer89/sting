@@ -69,14 +69,9 @@ export class ProtopipeHomeStrategyViewState {
 
   /** Same right panel as Brief — shows article detail in app-protopipe-strategy-context-panel. */
   openArticlePanel(item: ProtopipeContentPlanCalendarItem): void {
-    console.info('[strategy-map] 6 openArticlePanel attempt', { title: item.workingTitle });
     this.writerView.clearPanel();
     this._selectedArticle.set(item);
     this.openStrategyPanel();
-    console.info('[strategy-map] 7 panel open result', {
-      sidePanelOpen: this.sidePanel.open(),
-      selectedArticle: this._selectedArticle()?.workingTitle ?? null,
-    });
   }
 
   selectArticle(item: ProtopipeContentPlanCalendarItem): void {
@@ -89,23 +84,15 @@ export class ProtopipeHomeStrategyViewState {
 
   selectFromSpokeNode(plan: ProtopipeSiteContentPlan, node: SpokeNode): void {
     const resolvedPlan = this._plan() ?? plan;
-    console.info('[strategy-map] 5 resolving calendar item', {
-      nodeKind: node.kind,
-      nodeLabel: node.label,
-      calendarItemKey: node.calendarItemKey,
-      calendarCount: resolvedPlan.calendar.length,
-    });
     const item = calendarItemFromSpokeNode(resolvedPlan, node);
     if (!item) {
-      console.warn('[strategy-map] 5 FAILED — no calendar item matched', {
+      console.warn('[strategy-panel] Map node did not resolve to a calendar item.', {
         nodeKind: node.kind,
         nodeLabel: node.label,
         calendarItemKey: node.calendarItemKey,
-        calendarTitles: resolvedPlan.calendar.map((entry) => entry.workingTitle),
       });
       return;
     }
-    console.info('[strategy-map] 5 resolved calendar item', { title: item.workingTitle });
     this.openArticlePanel(item);
   }
 
@@ -149,8 +136,6 @@ export class ProtopipeHomeStrategyViewState {
 
   /** Opens the home-scoped right panel (void__side-panel). Matches Brief button behavior. */
   private openStrategyPanel(): void {
-    const wasOpen = this.sidePanel.open();
     this.sidePanel.setOpen(true);
-    console.info('[strategy-map] 6b sidePanel.setOpen(true)', { wasOpen, nowOpen: this.sidePanel.open() });
   }
 }

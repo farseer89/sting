@@ -215,3 +215,34 @@
   font-size: 9px;
   color: var(--void-ocean);
 }
+
+.stratctx__actions {
+  display: flex;
+  padding-top: 0.35rem;
+  margin-top: 0.15rem;
+  border-top: 0.5px solid var(--void-tile-border);
+}
+
+.stratctx__writer-btn {
+  width: 100%;
+  border: 0.5px solid rgba(var(--void-ocean-rgb), 0.45);
+  border-radius: 4px;
+  background: var(--void-ocean-fill);
+  color: var(--void-ocean);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.45rem 0.55rem;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: rgba(var(--void-ocean-rgb), 0.16);
+    border-color: rgba(var(--void-ocean-rgb), 0.65);
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: wait;
+  }
+}

@@ -10,6 +10,14 @@
   --pw-chrome: rgba(255, 255, 255, 0.94);
 }
 
+:host.pw-host--embedded {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
 .pw {
   display: flex;
   flex-direction: column;

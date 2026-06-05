@@ -181,6 +181,21 @@
             </ul>
           </section>
         }
+
+        <footer class="stratctx__actions">
+          <button
+            type="button"
+            class="stratctx__writer-btn"
+            [disabled]="view.openingWriter()"
+            (click)="openInWriter(article)"
+          >
+            @if (view.openingWriter()) {
+              Opening…
+            } @else {
+              Open in writer
+            }
+          </button>
+        </footer>
       </section>
     }
   } @else if (view.plan(); as plan) {

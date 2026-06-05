@@ -1,12 +1,15 @@
 import { Injectable, inject, signal } from '@angular/core';
 import type { ProtopipeContentPlanCalendarItem, ProtopipeSiteContentPlan } from '@hive/contracts';
+import { ContentPlanStore } from '../../content-plan/content-plan.store';
 import type { SpokeNode } from '../../lab/void-dashboard/void-content-spoke.mock';
+import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { ProtopipeHomeSidePanelService } from '../protopipe-home-side-panel.service';
 import { ProtopipeHomeWriterViewState } from '../protopipe-home-writer-view.state';
 import {
   calendarItemByKey,
   calendarItemForPhrase,
   calendarItemFromSpokeNode,
+  calendarItemKey,
 } from './strategy.helpers';
 import type { StrategyVisualView } from './strategy-visual-view';
 
@@ -26,8 +29,13 @@ import type { StrategyVisualView } from './strategy-visual-view';
 export class ProtopipeHomeStrategyViewState {
   private readonly sidePanel = inject(ProtopipeHomeSidePanelService);
   private readonly writerView = inject(ProtopipeHomeWriterViewState);
+  private readonly contentPlan = inject(ContentPlanStore);
+  private readonly strategy = inject(ProtopipeStrategyService);
+
+  private enterWriterFocus: (() => void) | null = null;
 
   private readonly _plan = signal<ProtopipeSiteContentPlan | null>(null);
+  private readonly _openingWriter = signal(false);
   private readonly _siteLabel = signal('');
   private readonly _strategySummary = signal('');
   private readonly _selectedArticle = signal<ProtopipeContentPlanCalendarItem | null>(null);
@@ -38,6 +46,11 @@ export class ProtopipeHomeStrategyViewState {
   readonly strategySummary = this._strategySummary.asReadonly();
   readonly selectedArticle = this._selectedArticle.asReadonly();
   readonly visualView = this._visualView.asReadonly();
+  readonly openingWriter = this._openingWriter.asReadonly();
+
+  setEnterWriterHandler(handler: () => void): void {
+    this.enterWriterFocus = handler;
+  }
 
   setPlan(plan: ProtopipeSiteContentPlan | null): void {
     this._plan.set(plan);
@@ -121,6 +134,39 @@ export class ProtopipeHomeStrategyViewState {
 
   clearArticle(): void {
     this._selectedArticle.set(null);
+  }
+
+  /** Materialize draft post if needed, then switch to the embedded home writer. */
+  async openInWriter(article: ProtopipeContentPlanCalendarItem): Promise<void> {
+    if (this._openingWriter()) return;
+    this._openingWriter.set(true);
+    try {
+      let postId = article.contentPostId;
+      if (!postId) {
+        await this.strategy.ensureLoaded();
+        const siteId = this.strategy.siteId();
+        if (!siteId) return;
+        this.contentPlan.setSiteId(siteId);
+        const res = await this.contentPlan.confirmCalendarItem({
+          proposedPublishAt: article.proposedPublishAt,
+          workingTitle: article.workingTitle,
+        });
+        if (!res) return;
+        postId = res.contentPostId;
+        const plan = this.contentPlan.plan();
+        const key = calendarItemKey(article);
+        const updated = plan?.calendar.find((item) => calendarItemKey(item) === key) ?? {
+          ...article,
+          contentPostId: postId,
+        };
+        this._plan.set(plan);
+        this._selectedArticle.set(updated);
+      }
+      this.writerView.openPost(postId);
+      this.enterWriterFocus?.();
+    } finally {
+      this._openingWriter.set(false);
+    }
   }
 
   setVisualView(view: StrategyVisualView): void {

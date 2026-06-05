@@ -94,6 +94,22 @@ export class ContentPlanStore {
    * posts and returns the plan with contentPostId back-links. Returns the
    * created/skipped counts for a user-facing message, or null on failure.
    */
+  async confirmCalendarItem(
+    item: { proposedPublishAt: string; workingTitle: string },
+  ): Promise<{ contentPostId: string; created: boolean } | null> {
+    const siteId = this._siteId();
+    if (!siteId) return null;
+    this._error.set(null);
+    try {
+      const res = await this.api.confirmItem(siteId, item);
+      this._plan.set(res.plan);
+      return { contentPostId: res.contentPostId, created: res.created };
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Failed to open article in writer'));
+      return null;
+    }
+  }
+
   async confirm(): Promise<{ createdCount: number; skippedCount: number } | null> {
     const siteId = this._siteId();
     if (!siteId) return null;

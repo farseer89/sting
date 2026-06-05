@@ -1,3 +1,9 @@
 <section class="home-writer" aria-label="Article writer">
-  <app-strategy-content-writer [full]="true" />
+  <app-protopipe-writer
+    [embedded]="true"
+    [postId]="writerView.activePostId()"
+    [createMode]="writerView.createMode()"
+    (exit)="onExit()"
+    (postSaved)="writerView.openPost($event)"
+  />
 </section>

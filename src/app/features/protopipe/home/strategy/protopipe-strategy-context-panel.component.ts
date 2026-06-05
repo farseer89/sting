@@ -45,4 +45,8 @@ export class ProtopipeStrategyContextPanelComponent {
     }
     return `${value}${suffix}`;
   }
+
+  openInWriter(article: ProtopipeContentPlanCalendarItem): void {
+    void this.view.openInWriter(article);
+  }
 }

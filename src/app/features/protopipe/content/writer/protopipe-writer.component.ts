@@ -4,7 +4,9 @@ import {
   computed,
   effect,
   inject,
+  input,
   OnDestroy,
+  output,
   signal,
   untracked,
 } from '@angular/core';
@@ -230,8 +232,22 @@ const PIPELINE_STEP_LABELS: ReadonlyArray<{ step: ArticleGenerationStep; label: 
   providers: [MessageService],
   templateUrl: './protopipe-writer.component.html',
   styleUrl: './protopipe-writer.component.scss',
+  host: {
+    '[class.pw-host--embedded]': 'embedded()',
+  },
 })
 export class ProtopipeWriterComponent implements OnDestroy {
+  /** When true, writer is hosted inside the Protopipe home dashboard shell. */
+  readonly embedded = input(false);
+  /** Post to load when embedded (replaces route :postId). */
+  readonly postId = input<string | null>(null);
+  /** Blank create session when embedded (replaces /content/new route). */
+  readonly createMode = input(false);
+  /** Emitted when the user leaves embedded writer (back control). */
+  readonly exit = output<void>();
+  /** Emitted after first save in embedded create mode so the host can load the new post. */
+  readonly postSaved = output<string>();
+
   protected readonly content = inject(ProtopipeContentService);
   private readonly api = inject(ProtopipeApiService);
   private readonly route = inject(ActivatedRoute);
@@ -280,8 +296,16 @@ export class ProtopipeWriterComponent implements OnDestroy {
     { initialValue: null as string | null },
   );
 
+  private readonly effectiveCreate = computed(() =>
+    this.embedded() ? this.createMode() : this.isCreateRoute(),
+  );
+
+  private readonly effectivePostId = computed(() =>
+    this.embedded() ? this.postId() : this.routePostId(),
+  );
+
   private readonly editorBootKey = computed(
-    () => `${this.isCreateRoute()}:${this.routePostId() ?? ''}`,
+    () => `${this.effectiveCreate()}:${this.effectivePostId() ?? ''}`,
   );
 
   private readonly bootstrappedKey = signal<string | null>(null);
@@ -683,11 +707,16 @@ export class ProtopipeWriterComponent implements OnDestroy {
 
     effect(() => {
       const createdId = this.content.saveCreatedId();
-      if (!createdId || !this.isCreateRoute()) return;
+      if (!createdId || !this.effectiveCreate()) return;
       untracked(() => {
-        void this.router.navigate(['/protopipe/content', createdId], { replaceUrl: true });
-        this.content.saveCreatedId.set(null);
-        this.bootstrappedKey.set(createdId);
+        if (this.embedded()) {
+          this.content.saveCreatedId.set(null);
+          this.postSaved.emit(createdId);
+        } else {
+          void this.router.navigate(['/protopipe/content', createdId], { replaceUrl: true });
+          this.content.saveCreatedId.set(null);
+          this.bootstrappedKey.set(createdId);
+        }
       });
     });
 
@@ -719,6 +748,9 @@ export class ProtopipeWriterComponent implements OnDestroy {
             detail: 'Your site will update via GitHub Actions.',
             life: 5000,
           });
+          if (this.embedded()) {
+            return;
+          }
           this.content.clearEditor();
           void this.router.navigate(['/protopipe/content']);
         }
@@ -734,7 +766,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
   }
 
   private bootstrapEditor(key: string): void {
-    if (this.isCreateRoute()) {
+    if (this.effectiveCreate()) {
       this.content.startCreate();
       this.content.openWritingSession({
         template: emptyContentTemplate(),
@@ -748,8 +780,11 @@ export class ProtopipeWriterComponent implements OnDestroy {
       return;
     }
 
-    const id = this.routePostId();
+    const id = this.effectivePostId();
     if (!id) {
+      if (this.embedded()) {
+        return;
+      }
       void this.router.navigate(['/protopipe/content']);
       return;
     }
@@ -792,6 +827,10 @@ export class ProtopipeWriterComponent implements OnDestroy {
           detail: 'That post could not be loaded.',
           life: 4000,
         });
+        if (this.embedded()) {
+          this.exit.emit();
+          return;
+        }
         void this.router.navigate(['/protopipe/content']);
       },
     });
@@ -879,7 +918,15 @@ export class ProtopipeWriterComponent implements OnDestroy {
   backToLibrary(): void {
     this.content.clearEditor();
     this.bootstrappedKey.set(null);
+    if (this.embedded()) {
+      this.exit.emit();
+      return;
+    }
     void this.router.navigate(['/protopipe/content']);
+  }
+
+  backLabel(): string {
+    return this.embedded() ? 'Strategy' : 'Content';
   }
 
   saveDraft(): void {

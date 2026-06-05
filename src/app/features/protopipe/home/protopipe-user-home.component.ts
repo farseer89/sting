@@ -144,6 +144,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   ngOnInit(): void {
     this.destroyRef.onDestroy(() => this.sidePanel.detachResizeListeners());
     this.writerViewState.setExitHandler(() => this.leaveWriterFocus());
+    this.strategyViewState.setEnterWriterHandler(() => this.enterWriterFocus());
     void this.loadBootstrap();
   }
 
@@ -187,6 +188,9 @@ export class ProtopipeUserHomeComponent implements OnInit {
   }
 
   enterWriterFocus(): void {
+    if (!this.writerViewState.activePostId()) {
+      this.writerViewState.openCreate();
+    }
     this.writerViewState.clearPanel();
     this.sidePanel.setOpen(false);
     this.activeNavId.set('content-writer');
@@ -195,6 +199,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
 
   leaveWriterFocus(): void {
     this.writerViewState.clearPanel();
+    this.writerViewState.clearSession();
     this.sidePanel.setOpen(false);
     if (this.activeView() === 'writer') {
       this.activeView.set('strategy');

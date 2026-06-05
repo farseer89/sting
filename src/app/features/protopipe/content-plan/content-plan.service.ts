@@ -2,6 +2,8 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { ProtopipeEndpoints } from '@hive/contracts';
 import type {
+  ProtopipeConfirmContentPlanItemRequest,
+  ProtopipeConfirmContentPlanItemResponse,
   ProtopipeConfirmContentPlanResponse,
   ProtopipeGenerateContentPlanResponse,
   ProtopipeGetContentPlanResponse,
@@ -53,6 +55,18 @@ export class ContentPlanService {
       this.http.post<ProtopipeConfirmContentPlanResponse>(
         protopipeApiUrl(ProtopipeEndpoints.contentPlanConfirm.path, { siteId }),
         {},
+      ),
+    );
+  }
+
+  confirmItem(
+    siteId: string,
+    body: ProtopipeConfirmContentPlanItemRequest,
+  ): Promise<ProtopipeConfirmContentPlanItemResponse> {
+    return firstValueFrom(
+      this.http.post<ProtopipeConfirmContentPlanItemResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.contentPlanConfirmItem.path, { siteId }),
+        body,
       ),
     );
   }

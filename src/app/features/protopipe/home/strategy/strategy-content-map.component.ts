@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import type { ProtopipeSiteContentPlan } from '@hive/contracts';
 import type { SpokeNode } from '../../lab/void-dashboard/void-content-spoke.mock';
 import { VoidContentSpokeComponent } from '../../lab/void-dashboard/void-content-spoke.component';
-import { ProtopipeHomeSidePanelService } from '../protopipe-home-side-panel.service';
 import { ProtopipeHomeStrategyViewState } from './protopipe-home-strategy-view.state';
 import { StrategyContentCalendarComponent } from './strategy-content-calendar.component';
 import { StrategyContentKeywordsComponent } from './strategy-content-keywords.component';
@@ -30,7 +29,6 @@ const EXPANDED_VIEWS: StrategyVisualView[] = ['map', 'calendar', 'keywords', 'co
 })
 export class StrategyContentMapComponent {
   private readonly viewState = inject(ProtopipeHomeStrategyViewState);
-  private readonly sidePanel = inject(ProtopipeHomeSidePanelService);
 
   readonly plan = input.required<ProtopipeSiteContentPlan>();
   readonly siteLabel = input('');
@@ -73,10 +71,8 @@ export class StrategyContentMapComponent {
     return this.view() === active;
   }
 
+  /** Map node click → same right panel as Brief (via ProtopipeHomeStrategyViewState). */
   onSpokeNodeSelected(node: SpokeNode): void {
     this.viewState.selectFromSpokeNode(this.plan(), node);
-    if (this.viewState.selectedArticle()) {
-      this.sidePanel.setOpen(true);
-    }
   }
 }

@@ -60,6 +60,7 @@
 
   <div class="strat-map__stage" [class.strat-map__stage--expanded]="isExpandedView()">
     <div class="strat-map__panel" [class.is-active]="isView('map')" [attr.aria-hidden]="!isView('map')">
+      <!-- TROUBLESHOOT: nodeSelected → viewState.selectFromSpokeNode → openArticlePanel (same panel as Brief) -->
       <div class="strat-map__viz">
         <app-void-content-spoke
           [account]="spoke().account"

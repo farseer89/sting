@@ -11,7 +11,7 @@
       <div class="strat__shimmer" style="height: 3.5rem"></div>
       <div class="strat__shimmer" style="height: 12rem"></div>
     </div>
-  } @else if (hasFailed() && !useMockPreview()) {
+  } @else if (hasFailed()) {
     <div class="strat-shell__error">
       <p>Something went wrong while building your strategy.</p>
       @if (error(); as e) {
@@ -26,52 +26,6 @@
         {{ buildingStageLabel() }}
       </div>
     }
-    @switch (layout()) {
-      @case ('a') {
-        <app-strategy-layout-a [plan]="displayPlan()" [siteLabel]="siteLabel()" />
-      }
-      @case ('b') {
-        <app-strategy-layout-b [plan]="displayPlan()" [siteLabel]="siteLabel()" />
-      }
-      @case ('c') {
-        <app-strategy-layout-c [plan]="displayPlan()" [siteLabel]="siteLabel()" />
-      }
-    }
+    <app-strategy-layout-a [plan]="displayPlan()" [siteLabel]="siteLabel()" />
   }
-
-  <div class="strat__dev-toggle" aria-label="Layout preview controls">
-    <button
-      type="button"
-      class="strat__dev-btn"
-      [class.is-active]="layout() === 'a'"
-      (click)="setLayout('a')"
-    >
-      A
-    </button>
-    <button
-      type="button"
-      class="strat__dev-btn"
-      [class.is-active]="layout() === 'b'"
-      (click)="setLayout('b')"
-    >
-      B
-    </button>
-    <button
-      type="button"
-      class="strat__dev-btn"
-      [class.is-active]="layout() === 'c'"
-      (click)="setLayout('c')"
-    >
-      C
-    </button>
-    <button
-      type="button"
-      class="strat__dev-btn"
-      [class.is-active]="useMockPreview()"
-      (click)="toggleMockPreview()"
-      title="Toggle mock vs live plan data"
-    >
-      {{ useMockPreview() ? 'Mock' : 'Live' }}
-    </button>
-  </div>
 </section>

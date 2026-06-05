@@ -421,6 +421,7 @@ export class VoidContentSpokeComponent {
 
     if (this.embedded()) {
       this.selectedNodeId.set(id);
+      // Embedded strategy map: parent handles nodeSelected → openArticlePanel (same panel as Brief).
       this.nodeSelected.emit(node);
       return;
     }

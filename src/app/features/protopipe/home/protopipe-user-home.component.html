@@ -168,6 +168,7 @@
           </div>
         </div>
 
+        <!-- TROUBLESHOOT: strategy slider requires activeView=strategy AND sidePanel.open(); inspect data-* on aside -->
         @if (sidePanel.open() && (activeView() === 'keywords' || activeView() === 'strategy' || activeView() === 'writer')) {
           <div
             class="void__side-splitter"
@@ -189,7 +190,13 @@
             </aside>
           }
           @if (activeView() === 'strategy') {
-            <aside class="void__side-panel" [attr.aria-label]="sidePanelArticleOpen() ? 'Article details' : 'Strategy brief'">
+            <aside
+              class="void__side-panel"
+              [attr.aria-label]="sidePanelArticleOpen() ? 'Article details' : 'Strategy brief'"
+              [attr.data-strategy-panel-open]="sidePanel.open()"
+              [attr.data-strategy-active-view]="activeView()"
+              [attr.data-strategy-article]="strategyViewState.selectedArticle()?.workingTitle ?? ''"
+            >
               <app-protopipe-strategy-context-panel />
             </aside>
           }

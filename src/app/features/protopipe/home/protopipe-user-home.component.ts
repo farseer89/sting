@@ -70,7 +70,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
   private readonly strategy = inject(ProtopipeStrategyService);
   private readonly contentPlan = inject(ContentPlanStore);
   readonly sidePanel = inject(ProtopipeHomeSidePanelService);
-  private readonly strategyViewState = inject(ProtopipeHomeStrategyViewState);
+  /** Shared with strategy children + context panel — inspect selectedArticle() when debugging clicks. */
+  readonly strategyViewState = inject(ProtopipeHomeStrategyViewState);
   readonly writerViewState = inject(ProtopipeHomeWriterViewState);
   private readonly keywordStore = inject(ProtopipeKeywordPickerStore);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -106,6 +107,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
       document.documentElement.classList.remove('void-home', 'void-white');
     });
 
+    // TROUBLESHOOT: OnPush shell — re-check when panel open state or article selection changes.
     effect(() => {
       this.sidePanel.open();
       this.strategyViewState.selectedArticle();

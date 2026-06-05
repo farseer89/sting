@@ -8,22 +8,18 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
 import type { ProtopipeSiteContentPlan } from '@hive/contracts';
 import { ContentPlanStore } from '../../content-plan/content-plan.store';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { MOCK_STRATEGY_PLAN } from './strategy.mock';
-import { parseStrategyLayout, type StrategyLayoutId } from './strategy.helpers';
 import { ProtopipeHomeStrategyViewState } from './protopipe-home-strategy-view.state';
 import { StrategyLayoutAComponent } from './strategy-layout-a.component';
-import { StrategyLayoutBComponent } from './strategy-layout-b.component';
-import { StrategyLayoutCComponent } from './strategy-layout-c.component';
 
 @Component({
   selector: 'app-protopipe-home-strategy',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [StrategyLayoutAComponent, StrategyLayoutBComponent, StrategyLayoutCComponent],
+  imports: [StrategyLayoutAComponent],
   templateUrl: './protopipe-home-strategy.component.html',
   styleUrl: './protopipe-home-strategy.component.scss',
 })
@@ -31,14 +27,9 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
   private readonly store = inject(ContentPlanStore);
   private readonly strategy = inject(ProtopipeStrategyService);
   private readonly viewState = inject(ProtopipeHomeStrategyViewState);
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly siteLabel = signal('');
-  readonly layout = signal<StrategyLayoutId>('a');
-  /** Dev-only: explicit mock preview. Live plan is default when a run exists. */
-  readonly useMockPreview = signal(false);
 
   readonly isRunning = this.store.isRunning;
   readonly starting = this.store.starting;
@@ -48,20 +39,17 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
   readonly error = this.store.error;
   readonly currentStep = this.store.currentStep;
 
-  readonly displayPlan = computed<ProtopipeSiteContentPlan>(() => {
-    if (this.useMockPreview()) return MOCK_STRATEGY_PLAN;
-    return this.store.plan() ?? MOCK_STRATEGY_PLAN;
-  });
+  /** Layout A only — live plan when the store has one, otherwise mock fallback for empty state. */
+  readonly displayPlan = computed<ProtopipeSiteContentPlan>(
+    () => this.store.plan() ?? MOCK_STRATEGY_PLAN,
+  );
 
   readonly showLoading = computed(
-    () =>
-      !this.useMockPreview() &&
-      (this.loading() || this.starting()) &&
-      !this.store.plan(),
+    () => (this.loading() || this.starting()) && !this.store.plan(),
   );
 
   readonly showBuildingBanner = computed(
-    () => !this.useMockPreview() && this.isRunning() && !!this.store.plan(),
+    () => this.isRunning() && !!this.store.plan(),
   );
 
   readonly buildingStageLabel = computed(() => {
@@ -78,7 +66,6 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
   });
 
   readonly showResults = computed(() => {
-    if (this.useMockPreview()) return true;
     if (this.hasFailed()) return false;
     return this.isComplete() || this.isRunning() || !!this.store.plan();
   });
@@ -92,25 +79,7 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
 
   ngOnInit(): void {
     this.destroyRef.onDestroy(() => this.store.stopPolling());
-
-    const layoutParam = this.route.snapshot.queryParamMap.get('strategyLayout');
-    this.layout.set(parseStrategyLayout(layoutParam));
-
     void this.bootstrap();
-  }
-
-  setLayout(id: StrategyLayoutId): void {
-    this.layout.set(id);
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { strategyLayout: id },
-      queryParamsHandling: 'merge',
-      replaceUrl: true,
-    });
-  }
-
-  toggleMockPreview(): void {
-    this.useMockPreview.update((v) => !v);
   }
 
   retry(): void {
@@ -131,13 +100,6 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
     if (siteId) {
       this.store.setSiteId(siteId);
       await this.store.loadLatest();
-      const live = this.store.plan();
-      if (
-        live &&
-        (live.status === 'pending' || live.status === 'running' || live.status === 'complete')
-      ) {
-        this.useMockPreview.set(false);
-      }
     }
   }
 }

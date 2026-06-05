@@ -3,9 +3,25 @@ import type { ProtopipeContentPlanCalendarItem, ProtopipeSiteContentPlan } from 
 import type { SpokeNode } from '../../lab/void-dashboard/void-content-spoke.mock';
 import { ProtopipeHomeSidePanelService } from '../protopipe-home-side-panel.service';
 import { ProtopipeHomeWriterViewState } from '../protopipe-home-writer-view.state';
-import { calendarItemForPhrase, calendarItemFromSpokeNode } from './strategy.helpers';
+import {
+  calendarItemByKey,
+  calendarItemForPhrase,
+  calendarItemFromSpokeNode,
+} from './strategy.helpers';
 import type { StrategyVisualView } from './strategy-visual-view';
 
+/**
+ * Strategy selection + right-panel coordination.
+ *
+ * TROUBLESHOOT — panel visibility chain (all must be true for the slider to show):
+ * 1. User is on home nav "Your strategy" → protopipe-user-home activeView() === 'strategy'
+ * 2. ProtopipeHomeSidePanelService.open() === true (set here or via Brief toggle)
+ * 3. protopipe-user-home template renders <app-protopipe-strategy-context-panel> in void__side-panel
+ * 4. selectedArticle() set → context panel shows article block; null → strategy brief
+ *
+ * Brief button (strategy-hero) and article clicks must both call methods on this service
+ * so they hit the same sidePanel instance provided by protopipe-user-home.
+ */
 @Injectable()
 export class ProtopipeHomeStrategyViewState {
   private readonly sidePanel = inject(ProtopipeHomeSidePanelService);
@@ -35,28 +51,75 @@ export class ProtopipeHomeStrategyViewState {
     this._strategySummary.set(summary);
   }
 
-  selectArticle(item: ProtopipeContentPlanCalendarItem): void {
+  /** Same right panel as Brief — shows strategy brief (no article selected). */
+  openBriefPanel(): void {
+    this.clearArticle();
+    this.openStrategyPanel();
+  }
+
+  /** Brief button: toggle closed when brief is showing; otherwise open brief panel. */
+  toggleBriefPanel(): void {
+    this.writerView.clearPanel();
+    if (this.sidePanel.open() && !this._selectedArticle()) {
+      this.sidePanel.setOpen(false);
+      return;
+    }
+    this.openBriefPanel();
+  }
+
+  /** Same right panel as Brief — shows article detail in app-protopipe-strategy-context-panel. */
+  openArticlePanel(item: ProtopipeContentPlanCalendarItem): void {
     this.writerView.clearPanel();
     this._selectedArticle.set(item);
-    this.sidePanel.ensureOpen();
+    this.openStrategyPanel();
+    this.logPanelState('openArticlePanel', item.workingTitle);
+  }
+
+  selectArticle(item: ProtopipeContentPlanCalendarItem): void {
+    this.openArticlePanel(item);
   }
 
   openArticle(item: ProtopipeContentPlanCalendarItem): void {
-    this.selectArticle(item);
+    this.openArticlePanel(item);
   }
 
   selectFromSpokeNode(plan: ProtopipeSiteContentPlan, node: SpokeNode): void {
-    const item = calendarItemFromSpokeNode(plan, node);
-    if (item) {
-      this.selectArticle(item);
+    const resolvedPlan = this._plan() ?? plan;
+    const item = calendarItemFromSpokeNode(resolvedPlan, node);
+    if (!item) {
+      // TROUBLESHOOT: map node click reached here but no calendar row matched.
+      console.warn('[strategy-panel] Map node did not resolve to a calendar item.', {
+        nodeKind: node.kind,
+        nodeLabel: node.label,
+        calendarItemKey: node.calendarItemKey,
+        calendarCount: resolvedPlan.calendar.length,
+      });
+      return;
     }
+    this.openArticlePanel(item);
   }
 
   selectFromKeywordPhrase(plan: ProtopipeSiteContentPlan, phrase: string): void {
-    const item = calendarItemForPhrase(plan, phrase);
-    if (item) {
-      this.selectArticle(item);
+    const resolvedPlan = this._plan() ?? plan;
+    const item = calendarItemForPhrase(resolvedPlan, phrase);
+    if (!item) {
+      console.warn('[strategy-panel] Keyword row did not resolve to a scheduled article.', {
+        phrase,
+        calendarCount: resolvedPlan.calendar.length,
+      });
+      return;
     }
+    this.openArticlePanel(item);
+  }
+
+  selectFromCalendarKey(plan: ProtopipeSiteContentPlan, itemKey: string): void {
+    const resolvedPlan = this._plan() ?? plan;
+    const item = calendarItemByKey(resolvedPlan, itemKey);
+    if (!item) {
+      console.warn('[strategy-panel] Calendar sticky did not resolve to a plan item.', { itemKey });
+      return;
+    }
+    this.openArticlePanel(item);
   }
 
   clearArticle(): void {
@@ -72,5 +135,20 @@ export class ProtopipeHomeStrategyViewState {
 
   isVisualView(view: StrategyVisualView): boolean {
     return this._visualView() === view;
+  }
+
+  /** Opens the home-scoped right panel (void__side-panel). Matches Brief button behavior. */
+  private openStrategyPanel(): void {
+    // Use setOpen(true) — same effect as Brief's sidePanel.toggle() when panel was closed.
+    this.sidePanel.setOpen(true);
+    this.logPanelState('openStrategyPanel');
+  }
+
+  /** Inspect in DevTools → Console when article clicks appear to do nothing. */
+  private logPanelState(action: string, articleTitle?: string): void {
+    console.info('[strategy-panel]', action, {
+      sidePanelOpen: this.sidePanel.open(),
+      selectedArticle: articleTitle ?? this._selectedArticle()?.workingTitle ?? null,
+    });
   }
 }

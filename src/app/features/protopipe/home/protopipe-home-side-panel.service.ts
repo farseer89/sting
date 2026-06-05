@@ -7,6 +7,10 @@ const WIDTH_MIN = 22;
 const WIDTH_MAX = 48;
 const RAIL_WIDTH_PX = 32;
 
+/**
+ * Home right-panel open state. Provided once on protopipe-user-home — all strategy
+ * clicks and the Brief button must inject this same instance (not a new provider).
+ */
 @Injectable()
 export class ProtopipeHomeSidePanelService {
   readonly open = signal(this.readOpen());

@@ -7,6 +7,7 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import {
   formatCompetitionCell,
   fitLabel,
@@ -16,8 +17,10 @@ import {
   type KeywordPlanSortDirection,
 } from './keyword-picker.table';
 import { sourceLabel, formatKeywordVolume } from './keyword-picker.types';
+import type { ProtopipeSuggestedAvatar } from '@hive/contracts';
 import type { KeywordPickerOption } from './keyword-picker.types';
 import { ProtopipeHomeSidePanelService } from '../protopipe-home-side-panel.service';
+import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { ProtopipeAvatarSuggestionPanelComponent } from './protopipe-avatar-suggestion-panel.component';
 import {
   ProtopipeKeywordPickerStore,
@@ -35,6 +38,8 @@ import {
 export class ProtopipeKeywordPickerComponent {
   readonly store = inject(ProtopipeKeywordPickerStore);
   readonly sidePanel = inject(ProtopipeHomeSidePanelService);
+  private readonly router = inject(Router);
+  private readonly strategy = inject(ProtopipeStrategyService);
 
   readonly siteLabel = input('');
   readonly confirmed = output<void>();
@@ -50,6 +55,28 @@ export class ProtopipeKeywordPickerComponent {
 
   readonly sortedPlanRows = computed(() =>
     sortPlanRows(this.store.pool(), this.sortColumn(), this.sortDirection()),
+  );
+
+  readonly planSections = computed(() => {
+    const selectedAvatars = this.store
+      .suggestedAvatars()
+      .filter((a) => this.store.selectedAvatarIds().has(a.id));
+    const keywords = this.store.selectedList();
+    const sections = selectedAvatars.map((avatar) => ({
+      id: avatar.id,
+      avatar,
+      keywords: keywords.filter((k) => k.avatarId === avatar.id),
+    }));
+    const assignedIds = new Set(selectedAvatars.map((a) => a.id));
+    const other = keywords.filter((k) => !k.avatarId || !assignedIds.has(k.avatarId));
+    if (other.length > 0) {
+      sections.push({ id: '_other', avatar: null, keywords: other });
+    }
+    return sections;
+  });
+
+  readonly planTotalVolume = computed(() =>
+    this.store.selectedList().reduce((sum, k) => sum + (k.searchVolume ?? 0), 0),
   );
 
   readonly wizardSteps: { id: KeywordPickerWizardStep; label: string }[] = [
@@ -145,5 +172,53 @@ export class ProtopipeKeywordPickerComponent {
 
   avatarLabel(id: string): string {
     return this.store.suggestedAvatars().find((a) => a.id === id)?.description ?? id;
+  }
+
+  avatarById(id: string): ProtopipeSuggestedAvatar | undefined {
+    return this.store.suggestedAvatars().find((a) => a.id === id);
+  }
+
+  keywordsForAvatar(avatarId: string): KeywordPickerOption[] {
+    return this.store.selectedList().filter((k) => k.avatarId === avatarId);
+  }
+
+  avatarInitials(av: ProtopipeSuggestedAvatar): string {
+    const source = av.intentCluster?.trim() || av.description.trim();
+    const words = source.split(/\s+/).filter(Boolean);
+    if (words.length >= 2) {
+      return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+    }
+    if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+    return '?';
+  }
+
+  funnelLabel(stage: KeywordPickerOption['funnelStage']): string {
+    switch (stage) {
+      case 'awareness':
+        return 'Awareness';
+      case 'consideration':
+        return 'Consideration';
+      case 'decision':
+        return 'Decision';
+      default:
+        return '';
+    }
+  }
+
+  formatPlanVolume(total: number): string {
+    if (total >= 1000) {
+      return `${(total / 1000).toFixed(1).replace(/\.0$/, '')}k`;
+    }
+    return total.toLocaleString();
+  }
+
+  /** TODO(pre-launch): remove temporary operator debug entry to the discovery Thinker lab. */
+  viewDiscoveryRun(): void {
+    const siteId = this.strategy.siteId();
+    const runId = this.store.discoveryRunId();
+    if (!siteId || !runId) return;
+    void this.router.navigate(['/protopipe/lab/keyword-discovery'], {
+      queryParams: { siteId, runId, returnTo: '/home' },
+    });
   }
 }

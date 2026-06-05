@@ -130,6 +130,7 @@ export class ProtopipeKeywordPickerStore {
   readonly confirming = this._confirming.asReadonly();
   readonly discoveryNote = this._discoveryNote.asReadonly();
   readonly discoveryProgress = this._discoveryProgress.asReadonly();
+  readonly discoveryRunId = this._discoveryRunId.asReadonly();
   readonly suggestedAvatars = this._suggestedAvatars.asReadonly();
   readonly selectedAvatarIds = this._selectedAvatarIds.asReadonly();
   readonly hoveredAvatarId = this._hoveredAvatarId.asReadonly();
@@ -191,6 +192,7 @@ export class ProtopipeKeywordPickerStore {
       const map = new Map<string, KeywordPickerOption>();
       try {
         const start = await this.api.startKeywordDiscoveryRun(siteId);
+        this._discoveryRunId.set(start.run.id);
         this._hostname.set(this.strategy.site()?.hostname ?? '');
         const run = await this.pollDiscoveryRun(siteId, start.run.id);
         this._discoveryRunId.set(run.id);

@@ -2,11 +2,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  OnInit,
   computed,
   inject,
   signal,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 import { ThinkerComponent, type ThinkerMode } from '../thinker/thinker.component';
 import { discoveryRunToThought } from './discovery-run-to-thought';
@@ -35,8 +37,9 @@ const POLL_MS = 1800;
   templateUrl: './keyword-discovery-lab.component.html',
   styleUrl: './keyword-discovery-lab.component.scss',
 })
-export class KeywordDiscoveryLabComponent {
+export class KeywordDiscoveryLabComponent implements OnInit {
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly api = inject(KeywordDiscoveryLabApiService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -92,6 +95,27 @@ export class KeywordDiscoveryLabComponent {
     });
   }
 
+  ngOnInit(): void {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const siteId = params.get('siteId')?.trim() ?? '';
+      const runId = params.get('runId')?.trim() ?? '';
+      if (!siteId || !runId) return;
+      if (
+        this.source() === 'live' &&
+        this.liveSiteId() === siteId &&
+        this.liveRunId() === runId &&
+        this.run()?.id === runId
+      ) {
+        return;
+      }
+      this.liveSiteId.set(siteId);
+      this.liveRunId.set(runId);
+      this.source.set('live');
+      this.run.set(null);
+      this.loadLive();
+    });
+  }
+
   toggleMode(): void {
     this.mode.update((m) => (m === 'calm' ? 'debug' : 'calm'));
   }
@@ -123,6 +147,11 @@ export class KeywordDiscoveryLabComponent {
   }
 
   back(): void {
+    const returnTo = this.route.snapshot.queryParamMap.get('returnTo');
+    if (returnTo?.startsWith('/')) {
+      void this.router.navigateByUrl(returnTo);
+      return;
+    }
     void this.router.navigate(['/protopipe/lab/thinker']);
   }
 

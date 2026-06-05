@@ -1,7 +1,7 @@
 <div class="kwavatar">
   <p class="kwavatar__lede">
-    We grouped your keywords by who is searching. Pick one to three audiences — your content plan
-    will speak to them.
+    Each profile represents a type of person searching for your services. Choose up to
+    {{ maxSelected() }} — your content plan will be written for them.
   </p>
   <div class="kwavatar__grid" role="list">
     @for (av of avatars(); track av.id) {
@@ -12,27 +12,52 @@
         [class.kwavatar__card--selected]="isSelected(av.id)"
         [class.kwavatar__card--disabled]="!canSelect(av.id)"
         [class.kwavatar__card--hovered]="hoveredId() === av.id"
+        [style]="avatarStyle(av.id)"
         [attr.aria-pressed]="isSelected(av.id)"
         (click)="onCardClick(av.id)"
         (mouseenter)="onCardEnter(av.id)"
         (mouseleave)="onCardLeave()"
       >
-        <span class="kwavatar__card-head">
-          <span class="kwavatar__check" aria-hidden="true">{{ isSelected(av.id) ? '✓' : '' }}</span>
-          <span class="kwavatar__intent">{{ av.intentCluster }}</span>
-          @if (av.matchedOnboarding) {
-            <span class="kwavatar__badge">From onboarding</span>
-          }
-        </span>
-        <span class="kwavatar__desc">{{ av.description }}</span>
-        @if (av.exampleQueries.length) {
-          <span class="kwavatar__examples">
-            e.g. {{ av.exampleQueries.slice(0, 2).join(' · ') }}
+        <div class="kwavatar__profile">
+          <span class="kwavatar__portrait" aria-hidden="true">{{ initials(av) }}</span>
+          <div class="kwavatar__identity">
+            <span class="kwavatar__role">{{ profileTitle(av) }}</span>
+            <span class="kwavatar__subtitle">{{ profileSubtitle(av) }}</span>
+          </div>
+          <span class="kwavatar__select" [class.kwavatar__select--on]="isSelected(av.id)" aria-hidden="true">
+            @if (isSelected(av.id)) {
+              <svg viewBox="0 0 12 12" width="10" height="10"><path d="M2 6l3 3 5-6" fill="none" stroke="currentColor" stroke-width="1.4" /></svg>
+            }
           </span>
+        </div>
+
+        <p class="kwavatar__bio">{{ av.description }}</p>
+
+        @if (av.exampleQueries.length) {
+          <div class="kwavatar__searches" aria-label="Example searches">
+            <span class="kwavatar__searches-label">They search for</span>
+            <div class="kwavatar__chips">
+              @for (q of av.exampleQueries.slice(0, 3); track q) {
+                <span class="kwavatar__chip">{{ q }}</span>
+              }
+            </div>
+          </div>
         }
-        @if (av.clusterVolume != null) {
-          <span class="kwavatar__meta">{{ av.clusterVolume | number }} vol/mo cluster</span>
-        }
+
+        <footer class="kwavatar__foot">
+          @if (av.clusterVolume != null) {
+            <span class="kwavatar__stat">
+              <span class="kwavatar__stat-val">{{ formatVolume(av.clusterVolume) }}</span>
+              <span class="kwavatar__stat-lbl">cluster volume</span>
+            </span>
+          }
+          @if (av.matchedOnboarding) {
+            <span class="kwavatar__badge">Onboarding match</span>
+          }
+          @if (isSelected(av.id)) {
+            <span class="kwavatar__badge kwavatar__badge--selected">Selected</span>
+          }
+        </footer>
       </button>
     }
   </div>

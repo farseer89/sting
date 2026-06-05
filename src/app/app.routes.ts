@@ -49,10 +49,10 @@ export const routes: Routes = [
       ),
   },
   {
-    // Keyword Discovery Lab — dev surface that renders the discovery pipeline in
-    // the Thinker view, defaulting to hardcoded fixtures (live backend = Phase 2).
+    // Keyword Discovery Lab — Thinker view for the discovery pipeline.
+    // TODO(pre-launch): revert to devRoutesGuard and remove the home "View run" button.
     path: 'protopipe/lab/keyword-discovery',
-    canMatch: [devRoutesGuard],
+    canActivate: [authGuard, operatorOnlyGuard],
     loadComponent: () =>
       import('./features/protopipe/lab/keyword-discovery/keyword-discovery-lab.component').then(
         (m) => m.KeywordDiscoveryLabComponent,

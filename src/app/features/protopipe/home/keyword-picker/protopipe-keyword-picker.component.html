@@ -25,6 +25,16 @@
       @if (siteLabel()) {
         <span class="kwpick__site">{{ siteLabel() }}</span>
       }
+      @if (store.discoveryRunId(); as runId) {
+        <button
+          type="button"
+          class="kwpick__dev-run"
+          title="Open keyword discovery Thinker run (temporary)"
+          (click)="viewDiscoveryRun()"
+        >
+          View discovery run
+        </button>
+      }
       @if (store.wizardStep() === 'keywords' || !store.wizardEnabled()) {
         <span class="kwpick__count">{{ store.selectedCount() }} selected</span>
         <button
@@ -64,15 +74,24 @@
       @case ('avatars') {
         <div class="kwpick__body kwpick__body--avatars">
           <aside class="kwpick__avatar-keywords" aria-label="Selected keywords by audience">
+            <p class="kwpick__avatar-keywords-head">Your keywords</p>
+            @for (av of store.suggestedAvatars(); track av.id) {
+              @if (keywordsForAvatar(av.id).length > 0) {
+                <div
+                  class="kwpick__avgroup"
+                  [class.kwpick__avgroup--highlight]="store.hoveredAvatarId() === av.id"
+                >
+                  <span class="kwpick__avgroup-head">{{ av.intentCluster }}</span>
+                  @for (kw of keywordsForAvatar(av.id); track kw.phraseKey) {
+                    <span class="kwpick__avatar-kw">{{ kw.phrase }}</span>
+                  }
+                </div>
+              }
+            }
             @for (kw of store.selectedList(); track kw.phraseKey) {
-              <span
-                class="kwpick__avatar-kw"
-                [class.kwpick__avatar-kw--highlight]="
-                  store.hoveredAvatarId() && kw.avatarId === store.hoveredAvatarId()
-                "
-              >
-                {{ kw.phrase }}
-              </span>
+              @if (!kw.avatarId) {
+                <span class="kwpick__avatar-kw kwpick__avatar-kw--loose">{{ kw.phrase }}</span>
+              }
             }
           </aside>
           <article class="kwpick__panel">
@@ -88,27 +107,86 @@
       }
       @case ('build') {
         <div class="kwpick__body kwpick__body--build">
-          <article class="kwpick__panel kwpick__panel--summary">
-            <header class="kwpick__panel-head">
-              <span class="kwpick__panel-label">Summary</span>
+          <article class="kwpick__panel kwpick__panel--plan">
+            <header class="kwpick__plan-hero">
+              <div class="kwpick__plan-stats">
+                <div class="kwpick__plan-stat">
+                  <span class="kwpick__plan-stat-val">{{ store.selectedCount() }}</span>
+                  <span class="kwpick__plan-stat-lbl">Keywords</span>
+                </div>
+                <div class="kwpick__plan-stat">
+                  <span class="kwpick__plan-stat-val">{{ store.selectedAvatarCount() }}</span>
+                  <span class="kwpick__plan-stat-lbl">Audiences</span>
+                </div>
+                @if (planTotalVolume() > 0) {
+                  <div class="kwpick__plan-stat">
+                    <span class="kwpick__plan-stat-val">{{ formatPlanVolume(planTotalVolume()) }}</span>
+                    <span class="kwpick__plan-stat-lbl">Vol / mo</span>
+                  </div>
+                }
+              </div>
+              <p class="kwpick__plan-next">
+                We will save this strategy, attach audience context to each keyword, and generate
+                your content calendar from these targets.
+              </p>
             </header>
-            <div class="kwpick__summary">
-              <section class="kwpick__summary-block">
-                <h2 class="kwpick__summary-title">{{ store.selectedCount() }} keywords</h2>
-                <ul class="kwpick__summary-list">
-                  @for (kw of store.selectedList(); track kw.phraseKey) {
-                    <li>{{ kw.phrase }}</li>
+
+            <div class="kwpick__plan-sections">
+              @for (section of planSections(); track section.id) {
+                <section class="kwpick__plan-section">
+                  <header class="kwpick__plan-section-head">
+                    @if (section.avatar; as av) {
+                      <span class="kwpick__plan-avatar" aria-hidden="true">{{ avatarInitials(av) }}</span>
+                      <div class="kwpick__plan-section-copy">
+                        <h2 class="kwpick__plan-section-title">{{ av.intentCluster }}</h2>
+                        <p class="kwpick__plan-section-desc">{{ av.description }}</p>
+                      </div>
+                      <span class="kwpick__plan-section-count">{{ section.keywords.length }} kw</span>
+                    } @else {
+                      <div class="kwpick__plan-section-copy">
+                        <h2 class="kwpick__plan-section-title">General targets</h2>
+                        <p class="kwpick__plan-section-desc">Keywords not mapped to a specific audience.</p>
+                      </div>
+                      <span class="kwpick__plan-section-count">{{ section.keywords.length }} kw</span>
+                    }
+                  </header>
+
+                  @if (section.keywords.length > 0) {
+                    <div class="kwpick__plan-table-wrap">
+                      <table class="kwpick__plan-table">
+                        <thead>
+                          <tr>
+                            <th scope="col">Keyword</th>
+                            <th scope="col">Volume</th>
+                            <th scope="col">Stage</th>
+                            <th scope="col">Source</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (kw of section.keywords; track kw.phraseKey) {
+                            <tr>
+                              <td class="kwpick__plan-kw">{{ kw.phrase }}</td>
+                              <td>{{ formatVolume(kw.searchVolume) }}</td>
+                              <td>
+                                @if (funnelLabel(kw.funnelStage); as stage) {
+                                  <span class="kwpick__plan-stage">{{ stage }}</span>
+                                } @else {
+                                  —
+                                }
+                              </td>
+                              <td>
+                                <span class="kwpick__pill">{{ sourceLabel(kw.source, kw.discoverySource) }}</span>
+                              </td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  } @else {
+                    <p class="kwpick__plan-empty">No keywords mapped to this audience yet.</p>
                   }
-                </ul>
-              </section>
-              <section class="kwpick__summary-block">
-                <h2 class="kwpick__summary-title">{{ store.selectedAvatarCount() }} audiences</h2>
-                <ul class="kwpick__summary-list">
-                  @for (id of store.selectedAvatarIds(); track id) {
-                    <li>{{ avatarLabel(id) }}</li>
-                  }
-                </ul>
-              </section>
+                </section>
+              }
             </div>
           </article>
         </div>

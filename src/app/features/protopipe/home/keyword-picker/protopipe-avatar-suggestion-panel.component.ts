@@ -2,6 +2,15 @@ import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import type { ProtopipeSuggestedAvatar } from '@hive/contracts';
 
+const AVATAR_PALETTES = [
+  { bg: '#e8f4fc', ink: '#1a6b8a', ring: '#7ec8e3' },
+  { bg: '#f3eef9', ink: '#5c3d7a', ring: '#c4a8e0' },
+  { bg: '#eef6ee', ink: '#2d5c3a', ring: '#8ec99a' },
+  { bg: '#fdf4e8', ink: '#8a5a1a', ring: '#e8c07e' },
+  { bg: '#fceef0', ink: '#8a2d3d', ring: '#e0a8b4' },
+  { bg: '#eef0f6', ink: '#3d4a6b', ring: '#a8b4d8' },
+] as const;
+
 @Component({
   selector: 'app-protopipe-avatar-suggestion-panel',
   standalone: true,
@@ -42,5 +51,50 @@ export class ProtopipeAvatarSuggestionPanelComponent {
 
   onCardLeave(): void {
     this.hoverAvatar.emit(null);
+  }
+
+  profileTitle(av: ProtopipeSuggestedAvatar): string {
+    const cluster = av.intentCluster?.trim();
+    if (cluster) return cluster;
+    const first = av.description.split(/[.!?]/)[0]?.trim();
+    return first && first.length <= 48 ? first : 'Customer profile';
+  }
+
+  profileSubtitle(av: ProtopipeSuggestedAvatar): string {
+    if (av.matchedOnboarding) return 'Matches your onboarding profile';
+    return 'Discovered from search behavior';
+  }
+
+  initials(av: ProtopipeSuggestedAvatar): string {
+    const source = av.intentCluster?.trim() || av.description.trim();
+    const words = source.split(/\s+/).filter(Boolean);
+    if (words.length >= 2) {
+      return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+    }
+    if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+    return '?';
+  }
+
+  palette(id: string): (typeof AVATAR_PALETTES)[number] {
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) {
+      hash = (hash + id.charCodeAt(i) * (i + 1)) % AVATAR_PALETTES.length;
+    }
+    return AVATAR_PALETTES[hash];
+  }
+
+  avatarStyle(id: string): Record<string, string> {
+    const p = this.palette(id);
+    return {
+      '--kwav-bg': p.bg,
+      '--kwav-ink': p.ink,
+      '--kwav-ring': p.ring,
+    };
+  }
+
+  formatVolume(value: number | undefined): string {
+    if (value == null) return '';
+    if (value >= 1000) return `${(value / 1000).toFixed(1).replace(/\.0$/, '')}k/mo`;
+    return `${value}/mo`;
   }
 }

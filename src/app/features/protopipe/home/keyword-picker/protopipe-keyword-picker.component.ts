@@ -57,12 +57,20 @@ export class ProtopipeKeywordPickerComponent {
     sortPlanRows(this.store.pool(), this.sortColumn(), this.sortDirection()),
   );
 
-  readonly planSections = computed(() => {
+  readonly planSections = computed((): {
+    id: string;
+    avatar: ProtopipeSuggestedAvatar | null;
+    keywords: KeywordPickerOption[];
+  }[] => {
     const selectedAvatars = this.store
       .suggestedAvatars()
       .filter((a) => this.store.selectedAvatarIds().has(a.id));
     const keywords = this.store.selectedList();
-    const sections = selectedAvatars.map((avatar) => ({
+    const sections: {
+      id: string;
+      avatar: ProtopipeSuggestedAvatar | null;
+      keywords: KeywordPickerOption[];
+    }[] = selectedAvatars.map((avatar) => ({
       id: avatar.id,
       avatar,
       keywords: keywords.filter((k) => k.avatarId === avatar.id),

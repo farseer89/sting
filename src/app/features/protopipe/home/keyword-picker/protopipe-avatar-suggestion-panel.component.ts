@@ -1,4 +1,3 @@
-import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import type { ProtopipeSuggestedAvatar } from '@hive/contracts';
 
@@ -14,7 +13,6 @@ const AVATAR_PALETTES = [
 @Component({
   selector: 'app-protopipe-avatar-suggestion-panel',
   standalone: true,
-  imports: [DecimalPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './protopipe-avatar-suggestion-panel.component.html',
   styleUrl: './protopipe-avatar-suggestion-panel.component.scss',

@@ -68,10 +68,20 @@
                     type="button"
                     class="strat-cal__sticky strat-cal__sticky--{{ sticky.status }}"
                     [class.is-selected]="isStickySelected(sticky.itemKey)"
-                    [title]="sticky.title + ' · ' + sticky.clusterName"
+                    [title]="sticky.title + ' · ' + sticky.clusterName + (sticky.hint ? ' · ' + sticky.hint : '')"
                     (click)="openArticle(sticky.itemKey)"
                   >
-                    {{ sticky.title }}
+                    <span class="strat-cal__sticky-title">{{ sticky.title }}</span>
+                    @if (sticky.hint || sticky.isGap) {
+                      <span class="strat-cal__sticky-meta">
+                        @if (sticky.isGap) {
+                          <span class="strat-cal__sticky-badge">Gap</span>
+                        }
+                        @if (sticky.hint) {
+                          <span class="strat-cal__sticky-hint">{{ sticky.hint }}</span>
+                        }
+                      </span>
+                    }
                   </button>
                 }
               </div>
@@ -101,10 +111,20 @@
                       type="button"
                       class="strat-cal__sticky strat-cal__sticky--{{ sticky.status }}"
                       [class.is-selected]="isStickySelected(sticky.itemKey)"
-                      [title]="sticky.title + ' · ' + sticky.clusterName"
+                      [title]="sticky.title + ' · ' + sticky.clusterName + (sticky.hint ? ' · ' + sticky.hint : '')"
                       (click)="openArticle(sticky.itemKey)"
                     >
-                      {{ sticky.title }}
+                      <span class="strat-cal__sticky-title">{{ sticky.title }}</span>
+                      @if (sticky.hint || sticky.isGap) {
+                        <span class="strat-cal__sticky-meta">
+                          @if (sticky.isGap) {
+                            <span class="strat-cal__sticky-badge">Gap</span>
+                          }
+                          @if (sticky.hint) {
+                            <span class="strat-cal__sticky-hint">{{ sticky.hint }}</span>
+                          }
+                        </span>
+                      }
                     </button>
                   }
                 }

@@ -16,6 +16,11 @@
           <th>Vol</th>
           <th>Opp</th>
           <th>Tier</th>
+          <th>Audience</th>
+          <th>Source</th>
+          <th>Funnel</th>
+          <th>Gap</th>
+          <th>SERP</th>
         </tr>
       </thead>
       <tbody>
@@ -25,6 +30,11 @@
             <td>{{ row.searchVolume ?? '—' }}</td>
             <td>{{ row.opportunityScore }}</td>
             <td><span class="strat-kw__tier-badge strat-kw__tier-badge--{{ row.tierKey }}">{{ row.tier }}</span></td>
+            <td class="strat-kw__meta-cell" [title]="row.avatarLabel">{{ row.avatarLabel }}</td>
+            <td>{{ row.source }}</td>
+            <td>{{ row.funnel }}</td>
+            <td>{{ row.gap }}</td>
+            <td class="strat-kw__meta-cell" [title]="row.serpFeatures">{{ row.serpFeatures }}</td>
           </tr>
         }
       </tbody>

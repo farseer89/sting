@@ -11,6 +11,8 @@ export interface StrategyCalendarSticky {
   title: string;
   status: StrategyCalendarStatus;
   clusterName: string;
+  hint?: string;
+  isGap?: boolean;
 }
 
 export type StrategyCalendarViewMode = 'week' | 'month';
@@ -113,6 +115,25 @@ function weekLabel(weekStart: Date, today: Date): string {
   return `${startFmt} – ${endFmt}${sameMonth ? '' : `, ${weekEnd.getFullYear()}`}`;
 }
 
+function avatarHint(
+  plan: ProtopipeSiteContentPlan,
+  avatarId?: string | null,
+): string | undefined {
+  if (!avatarId) return undefined;
+  const avatar = plan.keywordStrategySnapshot?.confirmedAvatars?.find((a) => a.id === avatarId);
+  if (!avatar) return undefined;
+  const label = avatar.intentCluster || avatar.description;
+  return label.length > 24 ? `${label.slice(0, 21)}…` : label;
+}
+
+function stickyHint(plan: ProtopipeSiteContentPlan, item: ProtopipeContentPlanCalendarItem): string | undefined {
+  const parts: string[] = [];
+  const audience = avatarHint(plan, item.avatarId);
+  if (audience) parts.push(audience);
+  if (item.funnelStage) parts.push(item.funnelStage);
+  return parts.length ? parts.join(' · ') : undefined;
+}
+
 function indexPostsByDate(
   plan: ProtopipeSiteContentPlan,
   now = Date.now(),
@@ -128,6 +149,8 @@ function indexPostsByDate(
       title: item.workingTitle,
       status: calendarStatus(item, now),
       clusterName: item.clusterName ?? 'Unassigned',
+      hint: stickyHint(plan, item),
+      isGap: item.isGap,
     });
     byDate.set(key, dayPosts);
   }

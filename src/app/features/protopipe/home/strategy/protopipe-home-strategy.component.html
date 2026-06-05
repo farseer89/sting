@@ -20,6 +20,12 @@
       <button type="button" class="strat-shell__retry" (click)="retry()">Try again</button>
     </div>
   } @else if (showResults()) {
+    @if (showBuildingBanner()) {
+      <div class="strat-shell__building" role="status" aria-live="polite">
+        <span class="strat-shell__building-dot" aria-hidden="true"></span>
+        {{ buildingStageLabel() }}
+      </div>
+    }
     @switch (layout()) {
       @case ('a') {
         <app-strategy-layout-a [plan]="displayPlan()" [siteLabel]="siteLabel()" />

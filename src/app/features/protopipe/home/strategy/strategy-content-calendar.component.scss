@@ -198,6 +198,10 @@
 }
 
 .strat-cal__sticky {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.08rem;
   border: none;
   font: inherit;
   text-align: left;
@@ -207,9 +211,8 @@
   padding: 0.12rem 0.24rem;
   border-radius: 3px;
   color: #fff;
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+  max-width: 100%;
   box-shadow: 0 1px 2px rgba(20, 30, 40, 0.16);
   transform: rotate(-0.6deg);
   transition:
@@ -245,6 +248,41 @@
   &--research {
     background: #8a8f98;
   }
+}
+
+.strat-cal__sticky-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.strat-cal__sticky-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem;
+  max-width: 100%;
+}
+
+.strat-cal__sticky-badge {
+  font-size: 6px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.05rem 0.2rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.strat-cal__sticky-hint {
+  font-size: 6px;
+  opacity: 0.88;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .strat-cal__legend {

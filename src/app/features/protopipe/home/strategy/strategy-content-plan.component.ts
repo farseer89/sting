@@ -4,7 +4,7 @@ import { ProtopipeHomeSidePanelService } from '../protopipe-home-side-panel.serv
 import { ProtopipeHomeWriterViewState } from '../protopipe-home-writer-view.state';
 import { ProtopipeHomeStrategyViewState } from './protopipe-home-strategy-view.state';
 import { calendarItemKey, formatPublishDate } from './strategy.helpers';
-import { planClustersWithArticles } from './strategy-content-plan';
+import { planAudienceSections, planClustersWithArticles } from './strategy-content-plan';
 
 @Component({
   selector: 'app-strategy-content-plan',
@@ -21,6 +21,8 @@ export class StrategyContentPlanComponent {
   readonly plan = input.required<ProtopipeSiteContentPlan>();
 
   readonly clusters = computed(() => planClustersWithArticles(this.plan()));
+
+  readonly audiences = computed(() => planAudienceSections(this.plan()));
 
   readonly articleCount = computed(() => this.plan().calendar.length);
 

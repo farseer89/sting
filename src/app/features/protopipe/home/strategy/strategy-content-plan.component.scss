@@ -39,6 +39,44 @@
   padding-right: 0.1rem;
 }
 
+.strat-plan__audiences {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.strat-plan__audience {
+  flex: 1 1 10rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.35rem 0.45rem;
+  border: 0.5px solid var(--void-tile-border);
+  border-radius: 8px;
+  background: rgba(10, 147, 150, 0.04);
+}
+
+.strat-plan__audience-label {
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #0a9396;
+}
+
+.strat-plan__audience-desc {
+  font-size: 9px;
+  color: var(--void-ink-body);
+  line-height: 1.35;
+}
+
+.strat-plan__audience-meta {
+  font-size: 7px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--void-ink-muted);
+}
+
 .strat-plan__cluster {
   border: 0.5px solid var(--void-tile-border);
   border-radius: 8px;
@@ -76,6 +114,13 @@
   margin: 0;
   font-size: 9px;
   color: var(--void-ocean);
+}
+
+.strat-plan__cluster-audience {
+  margin: 0;
+  font-size: 8px;
+  line-height: 1.35;
+  color: #0a9396;
 }
 
 .strat-plan__cluster-sub {

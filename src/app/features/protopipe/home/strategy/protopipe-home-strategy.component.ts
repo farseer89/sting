@@ -37,7 +37,8 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
 
   readonly siteLabel = signal('');
   readonly layout = signal<StrategyLayoutId>('a');
-  readonly useMockPreview = signal(true);
+  /** Dev-only: explicit mock preview. Live plan is default when a run exists. */
+  readonly useMockPreview = signal(false);
 
   readonly isRunning = this.store.isRunning;
   readonly starting = this.store.starting;
@@ -45,21 +46,42 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
   readonly isComplete = this.store.isComplete;
   readonly hasFailed = this.store.hasFailed;
   readonly error = this.store.error;
+  readonly currentStep = this.store.currentStep;
 
   readonly displayPlan = computed<ProtopipeSiteContentPlan>(() => {
     if (this.useMockPreview()) return MOCK_STRATEGY_PLAN;
-    const live = this.store.plan();
-    if (live && this.isComplete()) return live;
-    return MOCK_STRATEGY_PLAN;
+    return this.store.plan() ?? MOCK_STRATEGY_PLAN;
   });
 
   readonly showLoading = computed(
-    () => !this.useMockPreview() && (this.loading() || this.isRunning() || this.starting()),
+    () =>
+      !this.useMockPreview() &&
+      (this.loading() || this.starting()) &&
+      !this.store.plan(),
   );
 
-  readonly showResults = computed(
-    () => this.useMockPreview() || this.isComplete() || (!this.showLoading() && !this.hasFailed()),
+  readonly showBuildingBanner = computed(
+    () => !this.useMockPreview() && this.isRunning() && !!this.store.plan(),
   );
+
+  readonly buildingStageLabel = computed(() => {
+    const step = this.currentStep();
+    if (!step || step === 'done') return 'Building your strategy…';
+    const labels: Record<string, string> = {
+      audit: 'Auditing your site',
+      score_tier: 'Scoring keywords',
+      cluster: 'Grouping topics',
+      deep_scan: 'Deep-scanning focus keywords',
+      unify: 'Building your calendar',
+    };
+    return labels[step] ?? 'Building your strategy…';
+  });
+
+  readonly showResults = computed(() => {
+    if (this.useMockPreview()) return true;
+    if (this.hasFailed()) return false;
+    return this.isComplete() || this.isRunning() || !!this.store.plan();
+  });
 
   constructor() {
     effect(() => {
@@ -109,7 +131,11 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
     if (siteId) {
       this.store.setSiteId(siteId);
       await this.store.loadLatest();
-      if (this.isComplete()) {
+      const live = this.store.plan();
+      if (
+        live &&
+        (live.status === 'pending' || live.status === 'running' || live.status === 'complete')
+      ) {
         this.useMockPreview.set(false);
       }
     }

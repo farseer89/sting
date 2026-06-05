@@ -38,6 +38,39 @@
   font-size: 9px;
 }
 
+.strat-shell__building {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  margin: 0.35rem 0.45rem 0;
+  padding: 0.35rem 0.5rem;
+  border: 0.5px solid rgba(10, 147, 150, 0.25);
+  border-radius: 8px;
+  background: rgba(10, 147, 150, 0.06);
+  font-size: 9px;
+  letter-spacing: 0.02em;
+  color: #0a9396;
+}
+
+.strat-shell__building-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #0a9396;
+  animation: strat-building-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes strat-building-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 .strat-shell__retry {
   margin-top: 0.5rem;
   border: 0.5px solid var(--void-ocean-line);

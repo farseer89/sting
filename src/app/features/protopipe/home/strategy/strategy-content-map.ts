@@ -1,4 +1,8 @@
-import type { ProtopipeSiteContentPlan } from '@hive/contracts';
+import type {
+  ProtopipeScoredKeyword,
+  ProtopipeSiteContentPlan,
+  ProtopipeContentPlanCalendarItem,
+} from '@hive/contracts';
 import type {
   ContentSpokeAccount,
   SpokeCluster,
@@ -60,6 +64,39 @@ function capNodes<T>(items: T[], max: number): T[] {
   return items.length <= max ? items : items.slice(0, max);
 }
 
+function avatarShortLabel(plan: ProtopipeSiteContentPlan, avatarId?: string | null): string | undefined {
+  if (!avatarId) return undefined;
+  const avatar = plan.keywordStrategySnapshot?.confirmedAvatars?.find((a) => a.id === avatarId);
+  if (!avatar) return undefined;
+  const label = avatar.intentCluster || avatar.description;
+  return label.length > 28 ? `${label.slice(0, 25)}…` : label;
+}
+
+function keywordMeta(plan: ProtopipeSiteContentPlan, kw: ProtopipeScoredKeyword): string | undefined {
+  const parts: string[] = [];
+  if (kw.searchVolume != null) parts.push(`${kw.searchVolume} vol`);
+  const audience = avatarShortLabel(plan, kw.avatarId);
+  if (audience) parts.push(audience);
+  if (kw.isGap) parts.push('competitor gap');
+  if (kw.funnelStage) parts.push(kw.funnelStage);
+  return parts.length ? parts.join(' · ') : undefined;
+}
+
+function articleMeta(plan: ProtopipeSiteContentPlan, item: ProtopipeContentPlanCalendarItem): string {
+  const date = formatPublishDate(item.proposedPublishAt);
+  const parts = [date];
+  const audience = avatarShortLabel(plan, item.avatarId);
+  if (audience) parts.push(audience);
+  if (item.isGap) parts.push('gap');
+  return parts.join(' · ');
+}
+
+function clusterAudienceMeta(plan: ProtopipeSiteContentPlan, clusterName?: string): string | undefined {
+  if (!clusterName) return undefined;
+  const cluster = plan.clusters.find((c) => c.name === clusterName);
+  return cluster?.audienceLabel ?? avatarShortLabel(plan, cluster?.avatarId);
+}
+
 /** Plan → hub/spoke clusters: keywords, pillars, scheduled articles (reading order). */
 export function planToContentSpoke(
   plan: ProtopipeSiteContentPlan,
@@ -97,25 +134,29 @@ export function planToContentSpoke(
       id: slugId('kw', kw.phrase, keywordNodes.length),
       label: kw.phrase,
       kind: 'keyword',
-      status: keywordStatus(kw.phrase, rankingPhrases, scheduledPhrases),
-      meta: kw.searchVolume != null ? `${kw.searchVolume} vol` : undefined,
+      status: kw.isGap ? 'gap' : keywordStatus(kw.phrase, rankingPhrases, scheduledPhrases),
+      meta: keywordMeta(plan, kw),
     });
   }
 
-  const pillarNodes: SpokeNode[] = plan.pillars.map((pillar, i) => ({
-    id: slugId('pillar', pillar.pillarKeyword, i),
-    label: pillar.pillarKeyword,
-    kind: 'pillar' as const,
-    status: keywordStatus(pillar.pillarKeyword, rankingPhrases, scheduledPhrases),
-    meta: pillar.clusterName,
-  }));
+  const pillarNodes: SpokeNode[] = plan.pillars.map((pillar, i) => {
+    const audience = clusterAudienceMeta(plan, pillar.clusterName);
+    const meta = [pillar.clusterName, audience].filter(Boolean).join(' · ');
+    return {
+      id: slugId('pillar', pillar.pillarKeyword, i),
+      label: pillar.pillarKeyword,
+      kind: 'pillar' as const,
+      status: keywordStatus(pillar.pillarKeyword, rankingPhrases, scheduledPhrases),
+      meta: meta || undefined,
+    };
+  });
 
   const articleNodes: SpokeNode[] = plan.calendar.map((item, i) => ({
     id: slugId('art', item.workingTitle, i),
     label: item.workingTitle,
     kind: 'article' as const,
     status: articleStatus(item.kind, item.proposedPublishAt),
-    meta: formatPublishDate(item.proposedPublishAt),
+    meta: articleMeta(plan, item),
   }));
 
   const clusters: SpokeCluster[] = [

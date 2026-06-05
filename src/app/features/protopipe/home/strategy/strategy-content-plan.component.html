@@ -6,12 +6,29 @@
   </header>
 
   <div class="strat-plan__scroll">
+    @if (audiences().length) {
+      <section class="strat-plan__audiences" aria-label="Confirmed audiences">
+        @for (audience of audiences(); track audience.id) {
+          <div class="strat-plan__audience">
+            <span class="strat-plan__audience-label">{{ audience.label }}</span>
+            <span class="strat-plan__audience-desc">{{ audience.description }}</span>
+            <span class="strat-plan__audience-meta">
+              {{ audience.keywordCount }} kw · {{ audience.articleCount }} articles
+            </span>
+          </div>
+        }
+      </section>
+    }
+
     @for (cluster of clusters(); track cluster.name) {
       <section class="strat-plan__cluster">
         <header class="strat-plan__cluster-head">
           <div class="strat-plan__cluster-copy">
             <h3 class="strat-plan__cluster-name">{{ cluster.name }}</h3>
             <p class="strat-plan__cluster-kw">{{ cluster.pillarKeyword }}</p>
+            @if (cluster.audienceLabel) {
+              <p class="strat-plan__cluster-audience">{{ cluster.audienceLabel }}</p>
+            }
             @if (cluster.subtopic) {
               <p class="strat-plan__cluster-sub">{{ cluster.subtopic }}</p>
             }

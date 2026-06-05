@@ -258,6 +258,8 @@
   height: auto;
   aspect-ratio: 1;
   display: block;
+  /* Decorative — never steal clicks from spoke-node buttons layered above. */
+  pointer-events: none;
 }
 
 .spoke__wedge {
@@ -320,6 +322,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 2;
 }
 
 .spoke-node {
@@ -330,6 +333,8 @@
   align-items: flex-start;
   gap: 0.08rem;
   max-width: 9.5rem;
+  min-width: 4.5rem;
+  min-height: 2.25rem;
   padding: 0.32rem 0.45rem;
   border: 0.5px solid var(--void-tile-border);
   border-left: 2px solid var(--node-color, var(--void-ocean));
@@ -339,6 +344,9 @@
   text-align: left;
   pointer-events: auto;
   cursor: pointer;
+  z-index: 1;
+  font: inherit;
+  appearance: none;
   transition:
     transform 0.18s ease,
     box-shadow 0.18s ease,
@@ -350,11 +358,26 @@
     transform: translate(-50%, -50%) scale(1.03);
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
     border-color: color-mix(in srgb, var(--node-color, #0a9396) 35%, var(--void-tile-border));
+    z-index: 4;
   }
 
   &.is-dimmed {
     opacity: 0.22;
+    /* Dimmed legend-hover nodes must not block clicks on active cards underneath. */
+    pointer-events: none;
+    z-index: 0;
   }
+}
+
+.spoke-node--kind-article {
+  z-index: 2;
+}
+
+.spoke-node__kind,
+.spoke-node__label,
+.spoke-node__meta {
+  pointer-events: none;
+  width: 100%;
 }
 
 .spoke-node__kind {

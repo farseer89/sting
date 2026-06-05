@@ -408,20 +408,43 @@ export class VoidContentSpokeComponent {
     setTimeout(() => this.mounted.set(true), 40);
   }
 
-  selectNode(id: string): void {
+  /** Radial map card — pointerup on the <button> so the whole card is the hit target. */
+  onNodePointerUp(event: PointerEvent, node: SpokeNode): void {
+    event.stopPropagation();
+    event.preventDefault();
+    console.info('[strategy-map] 1 click received', {
+      nodeId: node.id,
+      kind: node.kind,
+      label: node.label,
+      embedded: this.embedded(),
+      target: (event.target as HTMLElement)?.className,
+    });
+    this.selectNode(node.id, node);
+  }
+
+  selectNode(id: string, nodeHint?: SpokeNode): void {
     const placed = this.placedNodes().find((entry) => entry.node.id === id);
     const node =
+      nodeHint ??
       placed?.node ??
       this.clusters()
         .flatMap((cluster) => cluster.nodes)
         .find((entry) => entry.id === id);
     if (!node) {
+      console.warn('[strategy-map] 2 selectNode — node not found', { id });
       return;
     }
 
+    console.info('[strategy-map] 2 selectNode resolved', {
+      id,
+      kind: node.kind,
+      label: node.label,
+      embedded: this.embedded(),
+    });
+
     if (this.embedded()) {
       this.selectedNodeId.set(id);
-      // Embedded strategy map: parent handles nodeSelected → openArticlePanel (same panel as Brief).
+      console.info('[strategy-map] 3 emitting nodeSelected', { kind: node.kind, label: node.label });
       this.nodeSelected.emit(node);
       return;
     }
@@ -443,7 +466,7 @@ export class VoidContentSpokeComponent {
   }
 
   nodeClass(node: SpokeNode): string {
-    return `spoke-node--${node.status ?? 'gap'}`;
+    return `spoke-node--${node.status ?? 'gap'} spoke-node--kind-${node.kind}`;
   }
 
   statusLabel(status?: SpokeNode['status']): string {

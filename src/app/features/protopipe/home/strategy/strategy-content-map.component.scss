@@ -217,25 +217,15 @@
 .strat-map__panel {
   position: absolute;
   inset: 0;
-  display: flex;
+  display: none;
   flex-direction: column;
   min-height: 0;
   min-width: 0;
   overflow: hidden;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(8px) scale(0.988);
-  transition:
-    opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
-    visibility 0.38s;
-  pointer-events: none;
 
   &.is-active {
-    opacity: 1;
-    visibility: visible;
-    transform: none;
-    pointer-events: auto;
+    display: flex;
+    z-index: 1;
   }
 
   > app-strategy-content-calendar,

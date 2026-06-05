@@ -69,10 +69,14 @@ export class ProtopipeHomeStrategyViewState {
 
   /** Same right panel as Brief — shows article detail in app-protopipe-strategy-context-panel. */
   openArticlePanel(item: ProtopipeContentPlanCalendarItem): void {
+    console.info('[strategy-map] 6 openArticlePanel attempt', { title: item.workingTitle });
     this.writerView.clearPanel();
     this._selectedArticle.set(item);
     this.openStrategyPanel();
-    this.logPanelState('openArticlePanel', item.workingTitle);
+    console.info('[strategy-map] 7 panel open result', {
+      sidePanelOpen: this.sidePanel.open(),
+      selectedArticle: this._selectedArticle()?.workingTitle ?? null,
+    });
   }
 
   selectArticle(item: ProtopipeContentPlanCalendarItem): void {
@@ -85,17 +89,23 @@ export class ProtopipeHomeStrategyViewState {
 
   selectFromSpokeNode(plan: ProtopipeSiteContentPlan, node: SpokeNode): void {
     const resolvedPlan = this._plan() ?? plan;
+    console.info('[strategy-map] 5 resolving calendar item', {
+      nodeKind: node.kind,
+      nodeLabel: node.label,
+      calendarItemKey: node.calendarItemKey,
+      calendarCount: resolvedPlan.calendar.length,
+    });
     const item = calendarItemFromSpokeNode(resolvedPlan, node);
     if (!item) {
-      // TROUBLESHOOT: map node click reached here but no calendar row matched.
-      console.warn('[strategy-panel] Map node did not resolve to a calendar item.', {
+      console.warn('[strategy-map] 5 FAILED — no calendar item matched', {
         nodeKind: node.kind,
         nodeLabel: node.label,
         calendarItemKey: node.calendarItemKey,
-        calendarCount: resolvedPlan.calendar.length,
+        calendarTitles: resolvedPlan.calendar.map((entry) => entry.workingTitle),
       });
       return;
     }
+    console.info('[strategy-map] 5 resolved calendar item', { title: item.workingTitle });
     this.openArticlePanel(item);
   }
 
@@ -139,16 +149,8 @@ export class ProtopipeHomeStrategyViewState {
 
   /** Opens the home-scoped right panel (void__side-panel). Matches Brief button behavior. */
   private openStrategyPanel(): void {
-    // Use setOpen(true) — same effect as Brief's sidePanel.toggle() when panel was closed.
+    const wasOpen = this.sidePanel.open();
     this.sidePanel.setOpen(true);
-    this.logPanelState('openStrategyPanel');
-  }
-
-  /** Inspect in DevTools → Console when article clicks appear to do nothing. */
-  private logPanelState(action: string, articleTitle?: string): void {
-    console.info('[strategy-panel]', action, {
-      sidePanelOpen: this.sidePanel.open(),
-      selectedArticle: articleTitle ?? this._selectedArticle()?.workingTitle ?? null,
-    });
+    console.info('[strategy-map] 6b sidePanel.setOpen(true)', { wasOpen, nowOpen: this.sidePanel.open() });
   }
 }

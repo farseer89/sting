@@ -1,0 +1,95 @@
+<div class="strat-c">
+  <app-strategy-hero [plan]="plan()" [siteLabel]="siteLabel()" readyLabel="Strategy ready" />
+
+  <app-strategy-content-map [plan]="plan()" [siteLabel]="siteLabel()" />
+
+  @let s = stats(plan());
+
+  <div class="strat-c__stack">
+    <article class="strat__card">
+      <button type="button" class="strat__card-head" (click)="toggleCard('keywords')">
+        <div>
+          <span class="strat__card-num strat__card-num--keywords">1 · Your keywords</span>
+          <p class="strat__card-title">
+            {{ s.keywordCount }} scored · {{ s.immediateCount }} immediate · {{ s.longTermCount }} long-term
+          </p>
+        </div>
+        <span class="strat__card-action">{{ isCardOpen('keywords') ? 'Close' : 'View' }}</span>
+      </button>
+      @if (isCardOpen('keywords')) {
+        <div class="strat__card-detail">
+          @for (kw of plan().keywordTiers.immediateFocus; track kw.phrase) {
+            <p class="strat-c__detail-row">{{ kw.phrase }} · vol {{ kw.searchVolume ?? '—' }} · opp {{ kw.opportunityScore }}</p>
+          }
+        </div>
+      }
+    </article>
+
+    <article class="strat__card">
+      <button type="button" class="strat__card-head" (click)="toggleCard('pillars')">
+        <div>
+          <span class="strat__card-num strat__card-num--pillars">2 · Topic pillars</span>
+          <p class="strat__card-title">{{ s.pillarCount }} content pillars mapped to your keywords</p>
+          <p class="strat__card-body">{{ pillarSummary(plan()) }}</p>
+        </div>
+        <span class="strat__card-action">{{ isCardOpen('pillars') ? 'Close' : 'View' }}</span>
+      </button>
+      @if (isCardOpen('pillars')) {
+        <div class="strat__card-detail">
+          @for (pillar of plan().pillars; track pillar.clusterName) {
+            <p class="strat-c__detail-row">
+              <strong>{{ pillar.clusterName }}</strong> — {{ pillar.pillarKeyword }}
+            </p>
+          }
+        </div>
+      }
+    </article>
+
+    <article class="strat__card">
+      <button type="button" class="strat__card-head" (click)="toggleCard('calendar')">
+        <div>
+          <span class="strat__card-num strat__card-num--scheduled">3 · Scheduled</span>
+          <p class="strat__card-title">{{ s.calendarCount }} articles scheduled · {{ dateRange(plan()) }}</p>
+          @if (plan().calendar[0]; as first) {
+            <p class="strat__card-body">
+              Next up: {{ first.workingTitle }} ({{ formatDate(first.proposedPublishAt) }})
+            </p>
+          }
+        </div>
+        <span class="strat__card-action">{{ isCardOpen('calendar') ? 'Close' : 'View' }}</span>
+      </button>
+      @if (isCardOpen('calendar')) {
+        <div class="strat__card-detail">
+          <ul class="strat__timeline">
+            @for (item of plan().calendar; track item.workingTitle) {
+              <li class="strat__timeline-row">
+                <span class="strat__timeline-date">{{ formatDate(item.proposedPublishAt) }}</span>
+                <span class="strat__timeline-title">{{ item.workingTitle }}</span>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </article>
+
+    <article class="strat__card">
+      <button type="button" class="strat__card-head" (click)="toggleCard('wins')">
+        <div>
+          <span class="strat__card-num">4 · Site wins</span>
+          <p class="strat__card-title">Already ranking for {{ s.rankingCount }} keywords on your site</p>
+          @if (bestRanking(plan()); as best) {
+            <p class="strat__card-body">Best: {{ best }}</p>
+          }
+        </div>
+        <span class="strat__card-action">{{ isCardOpen('wins') ? 'Close' : 'View' }}</span>
+      </button>
+      @if (isCardOpen('wins') && plan().existingContent; as audit) {
+        <div class="strat__card-detail">
+          @for (r of audit.alreadyRanking; track r.phrase) {
+            <p class="strat-c__detail-row">#{{ r.position }} {{ r.phrase }}</p>
+          }
+        </div>
+      }
+    </article>
+  </div>
+</div>

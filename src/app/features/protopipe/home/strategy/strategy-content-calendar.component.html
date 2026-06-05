@@ -1,0 +1,153 @@
+@if (viewMode() === 'week' || activeCalendar()) {
+  <div
+    class="strat-cal"
+    [class.strat-cal--week]="viewMode() === 'week'"
+    [class.strat-cal--month]="viewMode() === 'month'"
+    aria-label="Content calendar"
+  >
+    <header class="strat-cal__head">
+      <div class="strat-cal__viewtoggle" role="tablist" aria-label="Calendar range">
+        @for (mode of viewModes; track mode.id) {
+          <button
+            type="button"
+            role="tab"
+            class="strat-cal__chip"
+            [class.strat-cal__chip--active]="viewMode() === mode.id"
+            [attr.aria-selected]="viewMode() === mode.id"
+            (click)="setViewMode(mode.id)"
+          >
+            {{ mode.label }}
+          </button>
+        }
+      </div>
+
+      <div class="strat-cal__nav">
+        <button
+          type="button"
+          class="strat-cal__nav-btn"
+          [disabled]="!canGoPrev()"
+          (click)="prevPeriod()"
+          [attr.aria-label]="viewMode() === 'week' ? 'Previous week' : 'Previous month'"
+        >
+          ‹
+        </button>
+        <span class="strat-cal__period">{{ navLabel() }}</span>
+        <button
+          type="button"
+          class="strat-cal__nav-btn"
+          [disabled]="!canGoNext()"
+          (click)="nextPeriod()"
+          [attr.aria-label]="viewMode() === 'week' ? 'Next week' : 'Next month'"
+        >
+          ›
+        </button>
+      </div>
+
+      <span class="strat-cal__meta">{{ metaLabel() }}</span>
+    </header>
+
+    <div class="strat-cal__grid-wrap">
+      @if (viewMode() === 'week') {
+        @if (activeWeek(); as week) {
+          <div class="strat-cal__weekdays">
+            @for (wd of week.weekdays; track wd) {
+              <span class="strat-cal__weekday">{{ wd }}</span>
+            }
+          </div>
+          <div class="strat-cal__grid strat-cal__grid--week">
+            @for (cell of week.days; track cell.dateKey) {
+              <div
+                class="strat-cal__cell"
+                [class.strat-cal__cell--weekend]="cell.weekend"
+                [class.strat-cal__cell--posts]="cell.stickies.length > 0"
+                [class.strat-cal__cell--today]="cell.isToday"
+              >
+                <span class="strat-cal__daynum">{{ cell.day }}</span>
+                @for (sticky of cell.stickies; track sticky.itemKey) {
+                  <button
+                    type="button"
+                    class="strat-cal__sticky strat-cal__sticky--{{ sticky.status }}"
+                    [class.is-selected]="isStickySelected(sticky.itemKey)"
+                    [title]="sticky.title + ' · ' + sticky.clusterName"
+                    (click)="openArticle(sticky.itemKey)"
+                  >
+                    {{ sticky.title }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        }
+      } @else if (activeCalendar(); as cal) {
+        <div class="strat-cal__weekdays">
+          @for (wd of cal.weekdays; track wd) {
+            <span class="strat-cal__weekday">{{ wd }}</span>
+          }
+        </div>
+        <div class="strat-cal__grid strat-cal__grid--month">
+          @for (week of cal.weeks; track $index) {
+            @for (cell of week; track $index) {
+              <div
+                class="strat-cal__cell"
+                [class.strat-cal__cell--blank]="cell.day === null"
+                [class.strat-cal__cell--weekend]="cell.weekend"
+                [class.strat-cal__cell--posts]="cell.stickies.length > 0"
+                [class.strat-cal__cell--today]="cell.isToday"
+              >
+                @if (cell.day !== null) {
+                  <span class="strat-cal__daynum">{{ cell.day }}</span>
+                  @for (sticky of cell.stickies; track sticky.itemKey) {
+                    <button
+                      type="button"
+                      class="strat-cal__sticky strat-cal__sticky--{{ sticky.status }}"
+                      [class.is-selected]="isStickySelected(sticky.itemKey)"
+                      [title]="sticky.title + ' · ' + sticky.clusterName"
+                      (click)="openArticle(sticky.itemKey)"
+                    >
+                      {{ sticky.title }}
+                    </button>
+                  }
+                }
+              </div>
+            }
+          }
+        </div>
+      }
+    </div>
+
+    <footer class="strat-cal__legend">
+      <span class="strat-cal__legend-item">
+        <span class="strat-cal__legend-dot strat-cal__legend-dot--scheduled" aria-hidden="true"></span>
+        Scheduled
+      </span>
+      <span class="strat-cal__legend-item">
+        <span class="strat-cal__legend-dot strat-cal__legend-dot--published" aria-hidden="true"></span>
+        Live
+      </span>
+      <span class="strat-cal__legend-item">
+        <span class="strat-cal__legend-dot strat-cal__legend-dot--draft" aria-hidden="true"></span>
+        Draft
+      </span>
+    </footer>
+  </div>
+} @else {
+  <div class="strat-cal strat-cal--empty">
+    <header class="strat-cal__head strat-cal__head--empty">
+      <div class="strat-cal__viewtoggle" role="tablist" aria-label="Calendar range">
+        @for (mode of viewModes; track mode.id) {
+          <button
+            type="button"
+            role="tab"
+            class="strat-cal__chip"
+            [class.strat-cal__chip--active]="viewMode() === mode.id"
+            [attr.aria-selected]="viewMode() === mode.id"
+            (click)="setViewMode(mode.id)"
+          >
+            {{ mode.label }}
+          </button>
+        }
+      </div>
+    </header>
+    <p>No articles scheduled yet.</p>
+  </div>
+}

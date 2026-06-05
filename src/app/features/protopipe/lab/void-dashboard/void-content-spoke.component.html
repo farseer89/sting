@@ -1,0 +1,339 @@
+<div class="spoke" [class.spoke--neural]="view() === 'neural'" [class.spoke--embedded]="embedded()">
+  @if (!embedded()) {
+    <header class="spoke__toolbar">
+      <div class="spoke__toolbar-left">
+        <span class="spoke__host">{{ account().host }}</span>
+        <span class="spoke__plan">{{ account().planLabel }}</span>
+      </div>
+
+      <div class="spoke__controls">
+        @if (showViewToggle()) {
+          <div class="spoke__viewtoggle" role="tablist" aria-label="Graph view">
+            <button
+              type="button"
+              role="tab"
+              class="spoke__viewbtn"
+              [class.is-active]="view() === 'radial'"
+              [attr.aria-selected]="view() === 'radial'"
+              (click)="setView('radial')"
+            >
+              Radial
+            </button>
+            <button
+              type="button"
+              role="tab"
+              class="spoke__viewbtn"
+              [class.is-active]="view() === 'neural'"
+              [attr.aria-selected]="view() === 'neural'"
+              (click)="setView('neural')"
+            >
+              3D neural
+            </button>
+          </div>
+        }
+        <button type="button" class="spoke__replay" (click)="replay()" aria-label="Replay animation">
+          Replay
+        </button>
+      </div>
+
+      <div class="spoke__metrics">
+        @for (m of account().metrics; track m.label) {
+          <span class="spoke__metric">
+            <span class="spoke__metric-value">{{ m.value }}</span>
+            <span class="spoke__metric-label">{{ m.label }}</span>
+          </span>
+        }
+      </div>
+    </header>
+  } @else if (showToolbar()) {
+    <div class="spoke__toolbar spoke__toolbar--embedded">
+      @if (showViewToggle()) {
+        <div class="spoke__viewtoggle" role="tablist" aria-label="Graph view">
+          <button
+            type="button"
+            role="tab"
+            class="spoke__viewbtn"
+            [class.is-active]="view() === 'radial'"
+            [attr.aria-selected]="view() === 'radial'"
+            (click)="setView('radial')"
+          >
+            Radial
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="spoke__viewbtn"
+            [class.is-active]="view() === 'neural'"
+            [attr.aria-selected]="view() === 'neural'"
+            (click)="setView('neural')"
+          >
+            3D
+          </button>
+        </div>
+      }
+      <button type="button" class="spoke__replay" (click)="replay()" aria-label="Replay animation">
+        Replay
+      </button>
+    </div>
+  }
+
+  <div class="spoke__layout">
+    <aside class="spoke__legend">
+      @for (cluster of clusters(); track cluster.id) {
+        <button
+          type="button"
+          class="spoke__legend-item"
+          [class.is-dimmed]="!isClusterActive(cluster.id)"
+          [style.--cluster-color]="cluster.color"
+          (mouseenter)="hoverCluster(cluster.id)"
+          (mouseleave)="hoverCluster(null)"
+          (focus)="hoverCluster(cluster.id)"
+          (blur)="hoverCluster(null)"
+        >
+          <span class="spoke__legend-dot" aria-hidden="true"></span>
+          <span class="spoke__legend-copy">
+            <span class="spoke__legend-title">{{ cluster.label }}</span>
+            <span class="spoke__legend-sub">{{ cluster.sublabel }}</span>
+          </span>
+          <span class="spoke__legend-count">{{ cluster.nodes.length }}</span>
+        </button>
+      }
+
+      <div class="spoke__legend-foot">
+        <span class="spoke__legend-title">Node types</span>
+        @for (item of legend; track item.id) {
+          <span class="spoke__type-chip">{{ item.label }}</span>
+        }
+        @if (view() === 'neural') {
+          <span class="spoke__legend-hint">Drag to orbit · auto-rotates</span>
+        }
+      </div>
+    </aside>
+
+    <div class="spoke__graph-wrap">
+      @if (view() === 'radial') {
+        <svg
+          class="spoke__graph"
+          [attr.viewBox]="'0 0 ' + geo().viewSize + ' ' + geo().viewSize"
+          role="img"
+          aria-label="Content pillar and keyword hub graph"
+        >
+          <defs>
+            <radialGradient id="spoke-hub-glow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="rgba(10, 147, 150, 0.14)" />
+              <stop offset="100%" stop-color="rgba(10, 147, 150, 0)" />
+            </radialGradient>
+          </defs>
+
+          <circle
+            class="spoke__glow"
+            [attr.cx]="hub().cx"
+            [attr.cy]="hub().cy"
+            [attr.r]="geo().outerRadius + 36"
+            fill="url(#spoke-hub-glow)"
+          />
+
+          @if (mounted()) {
+            @for (arc of clusterArcs(); track arc.cluster.id; let i = $index) {
+              <path
+                class="spoke__wedge spoke__wedge--anim"
+                [class.is-dimmed]="!isClusterActive(arc.cluster.id)"
+                [attr.d]="arc.path"
+                [attr.fill]="arc.cluster.colorSoft"
+                [attr.stroke]="arc.cluster.color"
+                [style.animation-delay.s]="i * 0.07"
+              />
+            }
+
+            @for (placed of placedNodes(); track placed.node.id) {
+              <path
+                class="spoke__branch spoke__branch--anim"
+                pathLength="1"
+                [class.is-dimmed]="!isClusterActive(placed.cluster.id)"
+                [class.is-selected]="isNodeSelected(placed.node.id)"
+                [attr.d]="placed.path"
+                [attr.stroke]="placed.cluster.color"
+                [style.animation-delay.s]="0.3 + placed.order * 0.045"
+              />
+            }
+          }
+
+          <circle class="spoke__hub-ring" [attr.cx]="hub().cx" [attr.cy]="hub().cy" [attr.r]="geo().hubRadius + 10" />
+          <circle class="spoke__hub" [attr.cx]="hub().cx" [attr.cy]="hub().cy" [attr.r]="geo().hubRadius" />
+          <text class="spoke__hub-label" [attr.x]="hub().cx" [attr.y]="hub().cy - 6" text-anchor="middle">
+            {{ account().seed }}
+          </text>
+          <text class="spoke__hub-sub" [attr.x]="hub().cx" [attr.y]="hub().cy + 12" text-anchor="middle">
+            seed keyword
+          </text>
+        </svg>
+
+        @if (mounted()) {
+          <div class="spoke__nodes" [style.--graph-size.px]="geo().viewSize">
+            @for (placed of placedNodes(); track placed.node.id) {
+              <button
+                type="button"
+                class="spoke-node spoke-node--anim"
+                [ngClass]="nodeClass(placed.node)"
+                [class.is-dimmed]="!isClusterActive(placed.cluster.id)"
+                [class.is-selected]="isNodeSelected(placed.node.id)"
+                [style.left.%]="(placed.x / geo().viewSize) * 100"
+                [style.top.%]="(placed.y / geo().viewSize) * 100"
+                [style.--node-color]="placed.cluster.color"
+                [style.animation-delay.s]="0.45 + placed.order * 0.05"
+                (click)="selectNode(placed.node.id)"
+              >
+                <span class="spoke-node__kind">{{ placed.node.kind }}</span>
+                <span class="spoke-node__label">{{ placed.node.label }}</span>
+                @if (placed.node.meta) {
+                  <span class="spoke-node__meta">{{ placed.node.meta }}</span>
+                }
+              </button>
+            }
+          </div>
+        }
+      } @else {
+        <div
+          class="spoke__neural"
+          (pointerdown)="onPointerDown($event)"
+          (pointermove)="onPointerMove($event)"
+          (pointerup)="onPointerUp()"
+          (pointerleave)="onPointerUp()"
+        >
+          <svg
+            class="spoke__graph spoke__graph--neural"
+            [attr.viewBox]="'0 0 ' + geo().viewSize + ' ' + geo().viewSize"
+            role="img"
+            aria-label="3D neural content map"
+          >
+            <defs>
+              <radialGradient id="neural-hub-glow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="rgba(10, 147, 150, 0.22)" />
+                <stop offset="100%" stop-color="rgba(10, 147, 150, 0)" />
+              </radialGradient>
+            </defs>
+
+            <circle
+              [attr.cx]="hubProjected().x"
+              [attr.cy]="hubProjected().y"
+              [attr.r]="geo().sunGlowRadius"
+              fill="url(#neural-hub-glow)"
+            />
+
+            @for (ring of orbitRings(); track ring.radius) {
+              <path class="neural-orbit" [attr.d]="ring.d" />
+            }
+
+            @for (arc of sectionArcs(); track arc.cluster.id) {
+              <path
+                class="neural-section"
+                [class.is-dimmed]="!isClusterActive(arc.cluster.id)"
+                [attr.d]="arc.d"
+                [attr.stroke]="arc.cluster.color"
+              />
+              <text
+                class="neural-section__label"
+                [class.is-dimmed]="!isClusterActive(arc.cluster.id)"
+                [attr.x]="arc.lx"
+                [attr.y]="arc.ly"
+                [attr.fill]="arc.cluster.color"
+                text-anchor="middle"
+              >
+                {{ arc.cluster.label }}
+              </text>
+            }
+
+            @for (edge of projectedEdges(); track $index) {
+              <line
+                class="neural-edge"
+                [class.neural-edge--hub]="edge.hub"
+                [attr.x1]="edge.x1"
+                [attr.y1]="edge.y1"
+                [attr.x2]="edge.x2"
+                [attr.y2]="edge.y2"
+                [attr.stroke]="edge.color"
+                [attr.stroke-width]="edge.width"
+                [style.opacity]="edge.opacity"
+              />
+            }
+
+            @for (n of projectedNodes(); track n.node.id) {
+              <g
+                class="neural-node"
+                [class.is-dimmed]="!isClusterActive(n.cluster.id)"
+                [class.is-selected]="isNodeSelected(n.node.id)"
+                [style.opacity]="isClusterActive(n.cluster.id) ? n.opacity : 0.08"
+                (click)="selectNode(n.node.id)"
+              >
+                <circle
+                  class="neural-node__halo"
+                  [attr.cx]="n.x"
+                  [attr.cy]="n.y"
+                  [attr.r]="11 * n.scale"
+                  [attr.fill]="n.cluster.color"
+                />
+                <circle
+                  class="neural-node__dot"
+                  [attr.cx]="n.x"
+                  [attr.cy]="n.y"
+                  [attr.r]="5 * n.scale"
+                  [attr.fill]="n.cluster.color"
+                />
+                @if (n.scale > 1.02 || isNodeSelected(n.node.id)) {
+                  <text
+                    class="neural-node__label"
+                    [attr.x]="n.x + 9 * n.scale"
+                    [attr.y]="n.y + 3"
+                    [style.font-size.px]="9 * n.scale"
+                  >
+                    {{ n.node.label }}
+                  </text>
+                }
+              </g>
+            }
+
+            <g class="rubik" aria-hidden="true">
+              @for (face of cubeFaces(); track $index) {
+                <polygon
+                  class="rubik__sticker"
+                  [attr.points]="face.points"
+                  [attr.fill]="face.color"
+                  [style.opacity]="face.opacity"
+                />
+              }
+            </g>
+          </svg>
+        </div>
+      }
+    </div>
+
+    @if (!embedded()) {
+      <aside class="spoke__detail">
+        @if (selectedNode(); as node) {
+          <div class="spoke__detail-card">
+            <span class="spoke__detail-kind">{{ node.node.kind }}</span>
+            <h3 class="spoke__detail-title">{{ node.node.label }}</h3>
+            <p class="spoke__detail-status">{{ statusLabel(node.node.status) }}</p>
+            @if (node.node.meta) {
+              <p class="spoke__detail-meta">{{ node.node.meta }}</p>
+            }
+            <p class="spoke__detail-cluster">{{ node.cluster.label }} · {{ node.cluster.sublabel }}</p>
+          </div>
+        } @else {
+          <div class="spoke__detail-empty">
+            <p class="spoke__detail-hint">{{ view() === 'neural' ? '3D neural map' : 'Hub & spoke map' }}</p>
+            <p class="spoke__detail-copy">
+              @if (view() === 'neural') {
+                Keywords orbit the outer ring, pillars sit closest to the seed, and scheduled articles ring the middle.
+                Drag to tilt and spin the system.
+              } @else {
+                Read clockwise: your keywords, the pillars they roll up into, then what is scheduled on the calendar —
+                all radiating from your seed phrase.
+              }
+            </p>
+          </div>
+        }
+      </aside>
+    }
+  </div>
+</div>

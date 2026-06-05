@@ -2,11 +2,21 @@
   <header class="kwpick__intro">
     <div class="kwpick__intro-copy">
       <span class="kwpick__eyebrow">Your keyword strategy</span>
-      <h1 class="kwpick__headline">Choose what you want to rank for</h1>
-      <p class="kwpick__lede">
-        Suggestions are matched to your business profile from onboarding — wedding, destination,
-        and live painting terms, not generic art keywords. Add or remove before building your plan.
-      </p>
+      @if (store.wizardEnabled()) {
+        <nav class="kwpick__wizard" aria-label="Setup steps">
+          @for (step of wizardSteps; track step.id) {
+            <span
+              class="kwpick__wizard-step"
+              [class.kwpick__wizard-step--active]="isWizardStepActive(step.id)"
+              [class.kwpick__wizard-step--done]="isWizardStepDone(step.id)"
+            >
+              {{ step.label }}
+            </span>
+          }
+        </nav>
+      }
+      <h1 class="kwpick__headline">{{ headline() }}</h1>
+      <p class="kwpick__lede">{{ lede() }}</p>
       @if (store.discoveryNote(); as note) {
         <p class="kwpick__note">{{ note }}</p>
       }
@@ -15,190 +25,298 @@
       @if (siteLabel()) {
         <span class="kwpick__site">{{ siteLabel() }}</span>
       }
-      <span class="kwpick__count">{{ store.selectedCount() }} selected</span>
-      <button
-        type="button"
-        class="kwpick__slider-toggle"
-        [class.is-active]="sidePanel.open()"
-        [attr.aria-pressed]="sidePanel.open()"
-        [attr.aria-label]="sidePanel.open() ? 'Hide search panel' : 'Show search panel'"
-        (click)="sidePanel.toggle()"
-      >
-        <svg viewBox="0 0 16 16" aria-hidden="true">
-          <circle cx="7" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="0.9" />
-          <path d="M10.5 10.5L13 13" fill="none" stroke="currentColor" stroke-width="0.9" />
-        </svg>
-        <span>Search</span>
-      </button>
+      @if (store.wizardStep() === 'keywords' || !store.wizardEnabled()) {
+        <span class="kwpick__count">{{ store.selectedCount() }} selected</span>
+        <button
+          type="button"
+          class="kwpick__slider-toggle"
+          [class.is-active]="sidePanel.open()"
+          [attr.aria-pressed]="sidePanel.open()"
+          [attr.aria-label]="sidePanel.open() ? 'Hide search panel' : 'Show search panel'"
+          (click)="sidePanel.toggle()"
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <circle cx="7" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="0.9" />
+            <path d="M10.5 10.5L13 13" fill="none" stroke="currentColor" stroke-width="0.9" />
+          </svg>
+          <span>Search</span>
+        </button>
+      } @else if (store.wizardStep() === 'avatars') {
+        <span class="kwpick__count">{{ store.selectedAvatarCount() }} audiences</span>
+      }
     </div>
   </header>
 
   @if (store.loading()) {
-    <p class="kwpick__loading">Loading keyword suggestions…</p>
+    <p class="kwpick__loading">
+      @if (store.discoveryProgress(); as progress) {
+        {{ progress }}
+      } @else {
+        Loading keyword suggestions…
+      }
+    </p>
   } @else {
     @if (store.error(); as err) {
       <div class="kwpick__alert" role="alert">{{ err }}</div>
     }
 
-    <div class="kwpick__body">
-      <article class="kwpick__panel kwpick__panel--suggested">
-        <header class="kwpick__panel-head">
-          <span class="kwpick__panel-label">Suggested for you</span>
-          <span class="kwpick__panel-meta">
-            {{ sortedPlanRows().length }} keywords · click headers to sort
-          </span>
-        </header>
-        @if (sortedPlanRows().length === 0) {
-          <p class="kwpick__empty kwpick__panel-body">No suggestions yet — open Search on the right to add keywords.</p>
-        } @else {
-          <div class="kwpick__panel-body">
-            <div class="kwpick__table-wrap kwpick__table-wrap--suggested">
-            <table class="kwpick__table kwpick__table--plan" aria-label="Suggested keywords ranked by opportunity">
-              <thead>
-                <tr>
-                  <th class="kwpick__th-check" scope="col"><span class="kwpick__sr">Include</span></th>
-                  <th scope="col">
-                    <button
-                      type="button"
-                      class="kwpick__th-sort"
-                      [title]="columnTooltips.phrase"
-                      (click)="toggleSort('phrase')"
-                    >
-                      Keyword <span class="kwpick__sort-ind">{{ sortIndicator('phrase') }}</span>
-                    </button>
-                  </th>
-                  <th scope="col" class="kwpick__th-num">
-                    <button
-                      type="button"
-                      class="kwpick__th-sort"
-                      [title]="columnTooltips.volume"
-                      (click)="toggleSort('volume')"
-                    >
-                      Volume<span class="kwpick__th-sub">/mo searches</span>
-                      <span class="kwpick__sort-ind">{{ sortIndicator('volume') }}</span>
-                    </button>
-                  </th>
-                  <th scope="col">
-                    <button
-                      type="button"
-                      class="kwpick__th-sort"
-                      [title]="columnTooltips.competition"
-                      (click)="toggleSort('competition')"
-                    >
-                      Competition<span class="kwpick__th-sub">0–100 score</span>
-                      <span class="kwpick__sort-ind">{{ sortIndicator('competition') }}</span>
-                    </button>
-                  </th>
-                  <th scope="col" class="kwpick__th-num">
-                    <button
-                      type="button"
-                      class="kwpick__th-sort"
-                      [title]="columnTooltips.fit"
-                      (click)="toggleSort('fit')"
-                    >
-                      Fit<span class="kwpick__th-sub">on-brand</span>
-                      <span class="kwpick__sort-ind">{{ sortIndicator('fit') }}</span>
-                    </button>
-                  </th>
-                  <th scope="col" class="kwpick__th-num">
-                    <button
-                      type="button"
-                      class="kwpick__th-sort"
-                      [title]="columnTooltips.opportunity"
-                      (click)="toggleSort('opportunity')"
-                    >
-                      Opportunity<span class="kwpick__th-sub">score</span>
-                      <span class="kwpick__sort-ind">{{ sortIndicator('opportunity') }}</span>
-                    </button>
-                  </th>
-                  <th scope="col">
-                    <button
-                      type="button"
-                      class="kwpick__th-sort"
-                      [title]="columnTooltips.source"
-                      (click)="toggleSort('source')"
-                    >
-                      Source <span class="kwpick__sort-ind">{{ sortIndicator('source') }}</span>
-                    </button>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (kw of sortedPlanRows(); track kw.phraseKey) {
-                  <tr
-                    class="kwpick__plan-row"
-                    [class.kwpick__plan-row--selected]="store.isSelected(kw.phraseKey)"
-                    (click)="onSuggestedRowClick($event, kw)"
-                  >
-                    <td class="kwpick__td-check">
-                      <input
-                        type="checkbox"
-                        class="kwpick__check"
-                        [checked]="store.isSelected(kw.phraseKey)"
-                        (change)="toggle(kw)"
-                        [attr.aria-label]="'Include ' + kw.phrase"
-                      />
-                    </td>
-                    <td class="kwpick__td-phrase">{{ kw.phrase }}</td>
-                    <td class="kwpick__td-num">
-                      <span class="kwpick__td-main">{{ formatVolume(kw.searchVolume) }}</span>
-                    </td>
-                    <td class="kwpick__td-comp">
-                      @if (formatCompetitionCell(kw); as comp) {
-                        <span class="kwpick__td-main">
-                          @if (comp.score != null) {
-                            <span class="kwpick__score-num">{{ comp.score }}</span>
-                            <span class="kwpick__score-sep">·</span>
-                          }
-                          {{ comp.label }}
-                        </span>
-                        <span class="kwpick__td-sub">{{ comp.band }}</span>
-                      }
-                    </td>
-                    <td class="kwpick__td-num">
-                      <span class="kwpick__td-main">{{ fitLabel(kw.relevanceScore) }}</span>
-                      @if (kw.relevanceScore != null) {
-                        <span class="kwpick__td-sub">{{ kw.relevanceScore }}%</span>
-                      }
-                    </td>
-                    <td class="kwpick__td-num kwpick__td-opp">
-                      <span class="kwpick__td-main">{{ formatOpportunity(kw) }}</span>
-                    </td>
-                    <td><span class="kwpick__pill">{{ sourceLabel(kw.source) }}</span></td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+    @switch (store.wizardStep()) {
+      @case ('avatars') {
+        <div class="kwpick__body kwpick__body--avatars">
+          <aside class="kwpick__avatar-keywords" aria-label="Selected keywords by audience">
+            @for (kw of store.selectedList(); track kw.phraseKey) {
+              <span
+                class="kwpick__avatar-kw"
+                [class.kwpick__avatar-kw--highlight]="
+                  store.hoveredAvatarId() && kw.avatarId === store.hoveredAvatarId()
+                "
+              >
+                {{ kw.phrase }}
+              </span>
+            }
+          </aside>
+          <article class="kwpick__panel">
+            <app-protopipe-avatar-suggestion-panel
+              [avatars]="store.suggestedAvatars()"
+              [selectedIds]="store.selectedAvatarIds()"
+              [hoveredId]="store.hoveredAvatarId()"
+              (toggleAvatar)="store.toggleAvatar($event)"
+              (hoverAvatar)="store.setHoveredAvatarId($event)"
+            />
+          </article>
+        </div>
+      }
+      @case ('build') {
+        <div class="kwpick__body kwpick__body--build">
+          <article class="kwpick__panel kwpick__panel--summary">
+            <header class="kwpick__panel-head">
+              <span class="kwpick__panel-label">Summary</span>
+            </header>
+            <div class="kwpick__summary">
+              <section class="kwpick__summary-block">
+                <h2 class="kwpick__summary-title">{{ store.selectedCount() }} keywords</h2>
+                <ul class="kwpick__summary-list">
+                  @for (kw of store.selectedList(); track kw.phraseKey) {
+                    <li>{{ kw.phrase }}</li>
+                  }
+                </ul>
+              </section>
+              <section class="kwpick__summary-block">
+                <h2 class="kwpick__summary-title">{{ store.selectedAvatarCount() }} audiences</h2>
+                <ul class="kwpick__summary-list">
+                  @for (id of store.selectedAvatarIds(); track id) {
+                    <li>{{ avatarLabel(id) }}</li>
+                  }
+                </ul>
+              </section>
             </div>
-          </div>
-        }
-      </article>
-    </div>
+          </article>
+        </div>
+      }
+      @default {
+        <div class="kwpick__body">
+          <article class="kwpick__panel kwpick__panel--suggested">
+            <header class="kwpick__panel-head">
+              <span class="kwpick__panel-label">Suggested for you</span>
+              <span class="kwpick__panel-meta">
+                {{ sortedPlanRows().length }} keywords · click headers to sort
+              </span>
+            </header>
+            @if (sortedPlanRows().length === 0) {
+              <p class="kwpick__empty kwpick__panel-body">
+                No suggestions yet — open Search on the right to add keywords.
+              </p>
+            } @else {
+              <div class="kwpick__panel-body">
+                <div class="kwpick__table-wrap kwpick__table-wrap--suggested">
+                  <table class="kwpick__table kwpick__table--plan" aria-label="Suggested keywords ranked by opportunity">
+                    <thead>
+                      <tr>
+                        <th class="kwpick__th-check" scope="col"><span class="kwpick__sr">Include</span></th>
+                        <th scope="col">
+                          <button
+                            type="button"
+                            class="kwpick__th-sort"
+                            [title]="columnTooltips.phrase"
+                            (click)="toggleSort('phrase')"
+                          >
+                            Keyword <span class="kwpick__sort-ind">{{ sortIndicator('phrase') }}</span>
+                          </button>
+                        </th>
+                        <th scope="col" class="kwpick__th-num">
+                          <button
+                            type="button"
+                            class="kwpick__th-sort"
+                            [title]="columnTooltips.volume"
+                            (click)="toggleSort('volume')"
+                          >
+                            Volume<span class="kwpick__th-sub">/mo searches</span>
+                            <span class="kwpick__sort-ind">{{ sortIndicator('volume') }}</span>
+                          </button>
+                        </th>
+                        <th scope="col">
+                          <button
+                            type="button"
+                            class="kwpick__th-sort"
+                            [title]="columnTooltips.competition"
+                            (click)="toggleSort('competition')"
+                          >
+                            Competition<span class="kwpick__th-sub">0–100 score</span>
+                            <span class="kwpick__sort-ind">{{ sortIndicator('competition') }}</span>
+                          </button>
+                        </th>
+                        <th scope="col" class="kwpick__th-num">
+                          <button
+                            type="button"
+                            class="kwpick__th-sort"
+                            [title]="columnTooltips.fit"
+                            (click)="toggleSort('fit')"
+                          >
+                            Fit<span class="kwpick__th-sub">on-brand</span>
+                            <span class="kwpick__sort-ind">{{ sortIndicator('fit') }}</span>
+                          </button>
+                        </th>
+                        <th scope="col" class="kwpick__th-num">
+                          <button
+                            type="button"
+                            class="kwpick__th-sort"
+                            [title]="columnTooltips.opportunity"
+                            (click)="toggleSort('opportunity')"
+                          >
+                            Opportunity<span class="kwpick__th-sub">score</span>
+                            <span class="kwpick__sort-ind">{{ sortIndicator('opportunity') }}</span>
+                          </button>
+                        </th>
+                        <th scope="col">
+                          <button
+                            type="button"
+                            class="kwpick__th-sort"
+                            [title]="columnTooltips.source"
+                            (click)="toggleSort('source')"
+                          >
+                            Source <span class="kwpick__sort-ind">{{ sortIndicator('source') }}</span>
+                          </button>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (kw of sortedPlanRows(); track kw.phraseKey) {
+                        <tr
+                          class="kwpick__plan-row"
+                          [class.kwpick__plan-row--selected]="store.isSelected(kw.phraseKey)"
+                          [class.kwpick__plan-row--avatar-hover]="
+                            store.hoveredAvatarId() && kw.avatarId === store.hoveredAvatarId()
+                          "
+                          (click)="onSuggestedRowClick($event, kw)"
+                        >
+                          <td class="kwpick__td-check">
+                            <input
+                              type="checkbox"
+                              class="kwpick__check"
+                              [checked]="store.isSelected(kw.phraseKey)"
+                              (change)="toggle(kw)"
+                              [attr.aria-label]="'Include ' + kw.phrase"
+                            />
+                          </td>
+                          <td class="kwpick__td-phrase">{{ kw.phrase }}</td>
+                          <td class="kwpick__td-num">
+                            <span class="kwpick__td-main">{{ formatVolume(kw.searchVolume) }}</span>
+                          </td>
+                          <td class="kwpick__td-comp">
+                            @if (formatCompetitionCell(kw); as comp) {
+                              <span class="kwpick__td-main">
+                                @if (comp.score != null) {
+                                  <span class="kwpick__score-num">{{ comp.score }}</span>
+                                  <span class="kwpick__score-sep">·</span>
+                                }
+                                {{ comp.label }}
+                              </span>
+                              <span class="kwpick__td-sub">{{ comp.band }}</span>
+                            }
+                          </td>
+                          <td class="kwpick__td-num">
+                            <span class="kwpick__td-main">{{ fitLabel(kw.relevanceScore) }}</span>
+                            @if (kw.relevanceScore != null) {
+                              <span class="kwpick__td-sub">{{ kw.relevanceScore }}%</span>
+                            }
+                          </td>
+                          <td class="kwpick__td-num kwpick__td-opp">
+                            <span class="kwpick__td-main">{{ formatOpportunity(kw) }}</span>
+                          </td>
+                          <td>
+                            <span class="kwpick__pill">{{ sourceLabel(kw.source, kw.discoverySource) }}</span>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            }
+          </article>
+        </div>
+      }
+    }
 
     <footer class="kwpick__footer" [class.kwpick__footer--empty]="store.selectedCount() === 0">
-      @if (store.selectedCount() > 0) {
-        <div class="kwpick__selected-strip" aria-label="Selected keywords">
-          @for (kw of store.selectedList(); track kw.phraseKey) {
+      @switch (store.wizardStep()) {
+        @case ('avatars') {
+          <div class="kwpick__footer-actions">
+            <button type="button" class="kwpick__back" (click)="store.backWizardStep()">Back</button>
+            @if (store.selectedAvatarCount() > 0) {
+              <button type="button" class="kwpick__continue" (click)="continueFromAvatars()">
+                Continue to review
+              </button>
+            } @else {
+              <p class="kwpick__hint">Select at least one audience (up to 3).</p>
+            }
+          </div>
+        }
+        @case ('build') {
+          <div class="kwpick__footer-actions">
+            <button type="button" class="kwpick__back" (click)="store.backWizardStep()">Back</button>
             <button
               type="button"
-              class="kwpick__selected-chip"
-              (click)="remove(kw.phraseKey)"
-              [attr.aria-label]="'Remove ' + kw.phrase"
+              class="kwpick__continue"
+              [disabled]="store.confirming()"
+              (click)="confirm()"
             >
-              {{ kw.phrase }} ×
+              {{ store.confirming() ? 'Building plan…' : 'Build content plan' }}
             </button>
+          </div>
+        }
+        @default {
+          @if (store.selectedCount() > 0) {
+            <div class="kwpick__selected-strip" aria-label="Selected keywords">
+              @for (kw of store.selectedList(); track kw.phraseKey) {
+                <button
+                  type="button"
+                  class="kwpick__selected-chip"
+                  (click)="remove(kw.phraseKey)"
+                  [attr.aria-label]="'Remove ' + kw.phrase"
+                >
+                  {{ kw.phrase }} ×
+                </button>
+              }
+            </div>
+            <button
+              type="button"
+              class="kwpick__continue"
+              [disabled]="store.confirming()"
+              (click)="continueFromKeywords()"
+            >
+              @if (store.confirming()) {
+                Saving…
+              } @else if (store.wizardEnabled()) {
+                Continue to audiences
+              } @else {
+                Confirm & build plan
+              }
+            </button>
+          } @else {
+            <p class="kwpick__hint">Select at least one keyword to continue.</p>
           }
-        </div>
-        <button
-          type="button"
-          class="kwpick__continue"
-          [disabled]="store.confirming()"
-          (click)="confirm()"
-        >
-          {{ store.confirming() ? 'Saving…' : 'Confirm & build plan' }}
-        </button>
-      } @else {
-        <p class="kwpick__hint">Select at least one keyword to continue.</p>
+        }
       }
     </footer>
   }

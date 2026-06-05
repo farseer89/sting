@@ -1,0 +1,124 @@
+<header class="stratctx__head">
+  @if (view.selectedArticle(); as article) {
+    <button type="button" class="stratctx__back" (click)="view.clearArticle()">
+      <span aria-hidden="true">←</span>
+      Back to brief
+    </button>
+    <span class="stratctx__label">Article</span>
+  } @else {
+    <span class="stratctx__label">Strategy brief</span>
+    @if (view.siteLabel(); as site) {
+      <span class="stratctx__meta">{{ site }}</span>
+    }
+  }
+</header>
+
+<div class="stratctx__scroll">
+  @if (view.selectedArticle(); as article) {
+    <section class="stratctx__block stratctx__block--article">
+      <span class="stratctx__status stratctx__status--{{ articleStatus(article) }}">
+        {{ articleStatusLabel(article) }}
+      </span>
+      <h2 class="stratctx__title">{{ article.workingTitle }}</h2>
+      <p class="stratctx__lede">{{ article.rationale ?? 'Scheduled from your content strategy.' }}</p>
+
+      <dl class="stratctx__facts">
+        <div class="stratctx__fact">
+          <dt>Publish date</dt>
+          <dd>{{ formatDate(article.proposedPublishAt) }}</dd>
+        </div>
+        <div class="stratctx__fact">
+          <dt>Target keyword</dt>
+          <dd>{{ article.suggestedKeyword }}</dd>
+        </div>
+        <div class="stratctx__fact">
+          <dt>Pillar</dt>
+          <dd>{{ article.clusterName ?? 'Unassigned' }} · {{ article.clusterRole }}</dd>
+        </div>
+        <div class="stratctx__fact">
+          <dt>Intent</dt>
+          <dd>{{ article.intent }} · {{ article.priority }} priority</dd>
+        </div>
+        <div class="stratctx__fact">
+          <dt>Article type</dt>
+          <dd>{{ article.articleType }}</dd>
+        </div>
+        <div class="stratctx__fact">
+          <dt>Kind</dt>
+          <dd>{{ article.kind === 'refresh-existing' ? 'Refresh existing page' : 'New article' }}</dd>
+        </div>
+        @if (article.existingUrl) {
+          <div class="stratctx__fact">
+            <dt>Existing URL</dt>
+            <dd class="stratctx__url">{{ article.existingUrl }}</dd>
+          </div>
+        }
+      </dl>
+    </section>
+  } @else if (view.plan(); as plan) {
+    @if (plan.narrative; as n) {
+      <section class="stratctx__block">
+        <h2 class="stratctx__title">{{ n.headline }}</h2>
+        <p class="stratctx__lede">{{ n.why }}</p>
+      </section>
+    }
+
+    @if (view.strategySummary(); as summary) {
+      <section class="stratctx__block">
+        <h3 class="stratctx__h3">Your business</h3>
+        <p class="stratctx__body">{{ summary }}</p>
+      </section>
+    }
+
+    <section class="stratctx__block">
+      <h3 class="stratctx__h3">Topic pillars</h3>
+      <p class="stratctx__body">
+        Keywords grouped into {{ plan.pillars.length }} themes. Each pillar gets one lead article
+        plus supporting posts that build topical authority.
+      </p>
+      <ul class="stratctx__list">
+        @for (pillar of plan.pillars; track pillar.clusterName) {
+          <li class="stratctx__list-item">
+            <span class="stratctx__list-title">{{ pillar.clusterName }}</span>
+            <span class="stratctx__list-kw">{{ pillar.pillarKeyword }}</span>
+            @if (pillar.angle) {
+              <span class="stratctx__list-note">{{ pillar.angle }}</span>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section class="stratctx__block">
+      <h3 class="stratctx__h3">Content calendar</h3>
+      <p class="stratctx__body">
+        {{ plan.calendar.length }} articles scheduled from your highest-opportunity keywords —
+        pillars first, then supporting pieces, with refresh items woven in where you already have thin pages.
+      </p>
+    </section>
+
+    @if (plan.existingContent; as audit) {
+      <section class="stratctx__block">
+        <h3 class="stratctx__h3">Site wins</h3>
+        <p class="stratctx__body">
+          You're already ranking for {{ audit.alreadyRanking.length }} keywords.
+          @if (audit.refreshCandidates.length) {
+            We flagged {{ audit.refreshCandidates.length }} existing pages worth refreshing.
+          }
+        </p>
+        @if (audit.alreadyRanking.length) {
+          <ul class="stratctx__list stratctx__list--compact">
+            @for (r of audit.alreadyRanking.slice(0, 5); track r.phrase) {
+              <li class="stratctx__rank-row">
+                <span class="stratctx__rank-pos">#{{ r.position }}</span>
+                <span>{{ r.phrase }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    }
+  } @else {
+    <p class="stratctx__empty">Strategy details will appear here once your plan is ready.</p>
+  }
+</div>

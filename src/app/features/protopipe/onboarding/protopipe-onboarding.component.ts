@@ -8,6 +8,7 @@ import {
   inject,
   signal,
   viewChild,
+  type WritableSignal,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
@@ -19,23 +20,31 @@ import {
 } from 'primeng/autocomplete';
 import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
-import { Textarea } from 'primeng/textarea';
 import { MessageService } from 'primeng/api';
 import { Toast } from 'primeng/toast';
-import type { ProtopipeSerpLocationOption } from '@hive/contracts';
+import type { ProtopipeOnboardingProfile, ProtopipeSerpLocationOption } from '@hive/contracts';
 import { ProtopipeApiService } from '../protopipe-api.service';
 import { ProtopipeOnboardingStateService } from './protopipe-onboarding-state.service';
 import { parseProtopipeApiError } from '../protopipe-http.util';
 import { PRODUCT_CONFIG } from '../../../core/config/product-config';
+import {
+  MARKET_COUNTRIES,
+  MARKET_SCOPE_OPTIONS,
+  type CustomerMarketScope,
+  type MarketCountryOption,
+} from './onboarding-market.constants';
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 const TOTAL_STEPS = 6 as const;
+
+const MAX_SERVICES = 8;
+const MAX_COMPETITORS = 3;
 
 @Component({
   selector: 'app-protopipe-onboarding',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, AutoComplete, Button, InputText, Textarea, Toast],
+  imports: [ReactiveFormsModule, AutoComplete, Button, InputText, Toast],
   providers: [MessageService],
   templateUrl: './protopipe-onboarding.component.html',
   styleUrl: './protopipe-onboarding.component.scss',
@@ -49,6 +58,8 @@ export class ProtopipeOnboardingComponent implements OnInit {
   readonly product = inject(PRODUCT_CONFIG);
 
   readonly totalSteps = TOTAL_STEPS;
+  readonly maxServices = MAX_SERVICES;
+  readonly maxCompetitors = MAX_COMPETITORS;
   readonly step = signal<Step>(1);
   readonly isSubmitting = signal(false);
   readonly isComplete = signal(false);
@@ -57,35 +68,34 @@ export class ProtopipeOnboardingComponent implements OnInit {
   readonly selectedLocation = signal<ProtopipeSerpLocationOption | null>(null);
   readonly isSearchingLocations = signal(false);
 
+  readonly marketScopeOptions = MARKET_SCOPE_OPTIONS;
+  readonly customerScope = signal<CustomerMarketScope | null>(null);
+  readonly countrySuggestions = signal<MarketCountryOption[]>([]);
+  readonly selectedCountry = signal<MarketCountryOption | null>(null);
+
+  // List-based inputs are tracked as signals (not reactive-form controls) so the
+  // chip add/remove UX stays simple; drafts hold the in-progress text entry.
+  readonly services = signal<string[]>([]);
+  readonly serviceDraft = signal('');
+  readonly competitors = signal<string[]>([]);
+  readonly competitorDraft = signal('');
+
+  /** Three customer avatars — what each person wants (simple text per slot). */
+  readonly avatarSlots = [0, 1, 2] as const;
+  readonly customerAvatars = signal<string[]>(['', '', '']);
+
   readonly form = this.fb.nonNullable.group({
-    websiteUrl: ['', [Validators.maxLength(300)]],
+    websiteUrl: ['', [Validators.required, Validators.maxLength(300)]],
+    city: ['', [Validators.maxLength(80)]],
+    state: ['', [Validators.maxLength(80)]],
     businessName: [
       '',
       [Validators.required, Validators.minLength(2), Validators.maxLength(120)],
     ],
-    businessDescription: [
-      '',
-      [Validators.required, Validators.minLength(10), Validators.maxLength(800)],
-    ],
-    trade: ['', [Validators.maxLength(80)]],
-    city: ['', [Validators.maxLength(80)]],
-    state: ['', [Validators.maxLength(80)]],
-    seedPhrase: ['', [Validators.maxLength(200)]],
   });
 
   private readonly formValue = toSignal(this.form.valueChanges, {
     initialValue: this.form.getRawValue(),
-  });
-
-  readonly seedSuggestions = computed<readonly string[]>(() => {
-    const v = this.formValue();
-    const trade = (v.trade ?? '').trim().toLowerCase();
-    const city = (v.city ?? '').trim().toLowerCase();
-    if (!trade) return [];
-    if (city) {
-      return [`${trade} ${city}`, `best ${trade} in ${city}`, `${trade} near ${city}`];
-    }
-    return [`${trade} near me`, `local ${trade}`, `${trade} services`];
   });
 
   readonly progressPercent = computed(() =>
@@ -94,31 +104,48 @@ export class ProtopipeOnboardingComponent implements OnInit {
 
   readonly summaryChips = computed<readonly { label: string; value: string }[]>(() => {
     const v = this.formValue();
-    const location = this.selectedLocation();
     const chips: { label: string; value: string }[] = [];
+
     const name = (v.businessName ?? '').trim();
     if (name) chips.push({ label: 'Business', value: name });
-    const trade = (v.trade ?? '').trim();
-    if (trade) chips.push({ label: 'Trade', value: trade });
-    const cityState = [v.city, v.state]
-      .map((s) => (s ?? '').trim())
-      .filter(Boolean)
-      .join(', ');
-    if (location?.name) chips.push({ label: 'Service area', value: location.name });
-    else if (cityState) chips.push({ label: 'Service area', value: cityState });
+
+    const services = this.services();
+    if (services.length > 0) {
+      chips.push({ label: 'Services', value: services.join(', ') });
+    }
+
+    const avatars = this.customerAvatars().filter((a) => a.trim().length > 0);
+    if (avatars.length > 0) {
+      const summary =
+        avatars.length === 1
+          ? avatars[0]
+          : `${avatars.length} customer profiles`;
+      chips.push({
+        label: 'Customers',
+        value: summary.length > 60 ? `${summary.slice(0, 57).trimEnd()}…` : summary,
+      });
+    }
+
+    const competitors = this.competitors();
+    if (competitors.length > 0) {
+      chips.push({ label: 'Competitors', value: competitors.join(', ') });
+    }
+
+    const marketLabel = this.marketSummaryLabel();
+    if (marketLabel) chips.push({ label: 'Market', value: marketLabel });
+
     const url = (v.websiteUrl ?? '').trim();
     if (url) chips.push({ label: 'Site', value: url.replace(/^https?:\/\//i, '') });
-    const seed = (v.seedPhrase ?? '').trim();
-    if (seed) chips.push({ label: 'First goal', value: seed });
+
     return chips;
   });
 
   private readonly urlInput = viewChild<ElementRef<HTMLInputElement>>('urlInput');
+  private readonly serviceInput = viewChild<ElementRef<HTMLInputElement>>('serviceInput');
+  private readonly avatarInput0 = viewChild<ElementRef<HTMLInputElement>>('avatarInput0');
+  private readonly competitorInput =
+    viewChild<ElementRef<HTMLInputElement>>('competitorInput');
   private readonly nameInput = viewChild<ElementRef<HTMLInputElement>>('nameInput');
-  private readonly descriptionInput =
-    viewChild<ElementRef<HTMLTextAreaElement>>('descriptionInput');
-  private readonly tradeInput = viewChild<ElementRef<HTMLInputElement>>('tradeInput');
-  private readonly seedInput = viewChild<ElementRef<HTMLInputElement>>('seedInput');
 
   constructor() {
     effect(() => {
@@ -169,9 +196,124 @@ export class ProtopipeOnboardingComponent implements OnInit {
     }
   }
 
-  applySuggestion(phrase: string): void {
-    this.form.controls.seedPhrase.setValue(phrase);
-    this.form.controls.seedPhrase.markAsDirty();
+  // --- Services chip input ---
+
+  addService(event?: Event): void {
+    event?.preventDefault();
+    this.commitDraft(this.serviceDraft, this.services, MAX_SERVICES);
+  }
+
+  removeService(index: number): void {
+    this.services.update((list) => list.filter((_, i) => i !== index));
+  }
+
+  onServiceDraftInput(value: string): void {
+    this.serviceDraft.set(value);
+  }
+
+  // --- Competitor chip input ---
+
+  addCompetitor(event?: Event): void {
+    event?.preventDefault();
+    this.commitDraft(this.competitorDraft, this.competitors, MAX_COMPETITORS, (v) =>
+      v.replace(/^https?:\/\//i, '').replace(/\/.*$/, '').toLowerCase(),
+    );
+  }
+
+  removeCompetitor(index: number): void {
+    this.competitors.update((list) => list.filter((_, i) => i !== index));
+  }
+
+  onCompetitorDraftInput(value: string): void {
+    this.competitorDraft.set(value);
+  }
+
+  updateCustomerAvatar(index: number, value: string): void {
+    this.customerAvatars.update((list) => {
+      const next = [...list];
+      next[index] = value.slice(0, 200);
+      return next;
+    });
+  }
+
+  avatarPlaceholder(index: number): string {
+    const samples = [
+      'Wants a trusted electrician before a kitchen remodel…',
+      'Comparing EV charger options for a new home…',
+      'Needs emergency help after a panel issue…',
+    ];
+    return samples[index] ?? 'What does this person want?';
+  }
+
+  selectMarketScope(scope: CustomerMarketScope): void {
+    this.customerScope.set(scope);
+    if (scope === 'local') {
+      this.selectedCountry.set(null);
+    } else if (scope === 'national') {
+      this.selectedLocation.set(null);
+      this.form.controls.city.setValue('');
+      this.form.controls.state.setValue('');
+      this.countrySuggestions.set([...MARKET_COUNTRIES].slice(0, 12));
+    } else {
+      this.selectedLocation.set(null);
+      this.selectedCountry.set(null);
+      this.form.controls.city.setValue('');
+      this.form.controls.state.setValue('');
+    }
+  }
+
+  searchCountries(event: AutoCompleteCompleteEvent): void {
+    const q = (event.query ?? '').trim().toLowerCase();
+    const matches = q
+      ? MARKET_COUNTRIES.filter(
+          (c) =>
+            c.name.toLowerCase().includes(q) || c.iso.toLowerCase().includes(q),
+        )
+      : [...MARKET_COUNTRIES];
+    this.countrySuggestions.set(matches.slice(0, 12));
+  }
+
+  onCountrySelected(event: AutoCompleteSelectEvent): void {
+    const option = event.value as MarketCountryOption | null;
+    this.selectedCountry.set(option);
+  }
+
+  onCountryCleared(): void {
+    this.selectedCountry.set(null);
+  }
+
+  marketSummaryLabel(): string | null {
+    const scope = this.customerScope();
+    if (!scope) return null;
+    if (scope === 'worldwide') return 'Worldwide';
+    if (scope === 'national') return this.selectedCountry()?.name ?? 'National';
+    return this.selectedLocation()?.name ?? null;
+  }
+
+  private commitDraft(
+    draft: WritableSignal<string>,
+    list: WritableSignal<string[]>,
+    max: number,
+    normalize?: (value: string) => string,
+  ): void {
+    // Support comma-separated paste; add each non-duplicate entry up to the cap.
+    const raw = draft();
+    const parts = raw
+      .split(',')
+      .map((p) => (normalize ? normalize(p.trim()) : p.trim()))
+      .filter(Boolean);
+    if (parts.length === 0) return;
+    list.update((current) => {
+      const next = [...current];
+      for (const part of parts) {
+        if (next.length >= max) break;
+        if (!next.some((e) => e.toLowerCase() === part.toLowerCase())) {
+          next.push(part);
+        }
+      }
+      return next;
+    });
+    draft.set('');
   }
 
   async searchLocations(event: AutoCompleteCompleteEvent): Promise<void> {
@@ -222,7 +364,10 @@ export class ProtopipeOnboardingComponent implements OnInit {
       });
       return;
     }
-    if (!this.form.valid) {
+    // Flush any unconfirmed chip drafts before validating.
+    this.addService();
+    this.addCompetitor();
+    if (!this.form.valid || this.services().length === 0 || !this.isMarketStepValid()) {
       this.form.markAllAsTouched();
       this.step.set(this.firstInvalidStep());
       return;
@@ -230,20 +375,49 @@ export class ProtopipeOnboardingComponent implements OnInit {
 
     this.isSubmitting.set(true);
     const v = this.form.getRawValue();
-    const location = this.selectedLocation();
     const websiteUrl = this.normalizeUrl(v.websiteUrl);
+    const scope = this.customerScope();
+    const localLocation = this.selectedLocation();
+    const country = this.selectedCountry();
+
+    let defaultSerpLocationCode: number | undefined;
+    let defaultSerpLocationName: string | undefined;
+    let city: string | undefined;
+    let state: string | undefined;
+
+    if (scope === 'local' && localLocation) {
+      defaultSerpLocationCode = localLocation.code;
+      defaultSerpLocationName = localLocation.name;
+      city = v.city.trim() || undefined;
+      state = v.state.trim() || undefined;
+    } else if (scope === 'national' && country) {
+      defaultSerpLocationCode = country.code;
+      defaultSerpLocationName = country.name;
+    }
+
+    const services = this.services();
 
     try {
+      const avatars = this.customerAvatars()
+        .map((a) => a.trim())
+        .filter(Boolean);
+
+      const profile: ProtopipeOnboardingProfile = {
+        services,
+        customerAvatars: avatars,
+        competitors: this.competitors(),
+        marketScope: scope!,
+        serpLocationCode: defaultSerpLocationCode,
+        serpLocationName: defaultSerpLocationName,
+        city,
+        state,
+        countryIso: country?.iso,
+      };
+
       await this.api.completeOnboarding(siteId, {
         businessName: v.businessName.trim(),
-        businessDescription: v.businessDescription.trim(),
-        trade: v.trade.trim() || undefined,
-        city: v.city.trim() || undefined,
-        state: v.state.trim() || undefined,
-        defaultSerpLocationCode: location?.code,
-        defaultSerpLocationName: location?.name,
-        websiteUrl: websiteUrl || undefined,
-        seedPhrase: v.seedPhrase.trim() || undefined,
+        websiteUrl: websiteUrl || '',
+        profile,
       });
 
       this.state.invalidate();
@@ -265,10 +439,10 @@ export class ProtopipeOnboardingComponent implements OnInit {
 
   private focusForStep(s: Step): void {
     if (s === 1) this.urlInput()?.nativeElement?.focus();
-    else if (s === 2) this.nameInput()?.nativeElement?.focus();
-    else if (s === 3) this.descriptionInput()?.nativeElement?.focus();
-    else if (s === 4) this.tradeInput()?.nativeElement?.focus();
-    else if (s === 6) this.seedInput()?.nativeElement?.focus();
+    else if (s === 2) this.serviceInput()?.nativeElement?.focus();
+    else if (s === 3) this.avatarInput0()?.nativeElement?.focus();
+    else if (s === 4) this.competitorInput()?.nativeElement?.focus();
+    else if (s === 6) this.nameInput()?.nativeElement?.focus();
   }
 
   private isStepValid(step: Step): boolean {
@@ -277,35 +451,58 @@ export class ProtopipeOnboardingComponent implements OnInit {
       case 1:
         return c.websiteUrl.valid;
       case 2:
-        return c.businessName.valid;
+        return this.services().length > 0 || this.serviceDraft().trim().length > 0;
       case 3:
-        return c.businessDescription.valid;
+        return this.isAvatarsStepValid();
       case 4:
-        return c.trade.valid;
+        return true; // competitors optional
       case 5:
-        return c.city.valid && c.state.valid;
+        return this.isMarketStepValid();
       case 6:
-        return c.seedPhrase.valid;
+        return c.businessName.valid;
     }
   }
 
   private markStepTouched(step: Step): void {
     const c = this.form.controls;
-    if (step === 2) c.businessName.markAsTouched();
-    else if (step === 3) c.businessDescription.markAsTouched();
-    else if (step === 4) c.trade.markAsTouched();
+    if (step === 1) c.websiteUrl.markAsTouched();
+    else if (step === 6) c.businessName.markAsTouched();
+  }
+
+  private isAvatarsStepValid(): boolean {
+    const first = (this.customerAvatars()[0] ?? '').trim();
+    return first.length >= 5;
+  }
+
+  private isMarketStepValid(): boolean {
+    const scope = this.customerScope();
+    if (!scope) return false;
+    if (scope === 'local') return this.selectedLocation() != null;
+    if (scope === 'national') return this.selectedCountry() != null;
+    return true;
   }
 
   private stepHint(step: Step): string {
-    if (step === 2) return 'Add your business name to continue.';
-    if (step === 3) return 'Add a short description (10+ characters) to continue.';
+    if (step === 1) return 'Add your website to continue.';
+    if (step === 2) return 'Add at least one service you want to sell.';
+    if (step === 3) return 'Describe what at least one customer wants (5+ characters).';
+    if (step === 5) {
+      const scope = this.customerScope();
+      if (!scope) return 'Choose local, national, or worldwide.';
+      if (scope === 'local') return 'Pick your town or city to continue.';
+      if (scope === 'national') return 'Pick a country to continue.';
+      return 'One of the fields above is invalid.';
+    }
+    if (step === 6) return 'Add your business name to continue.';
     return 'One of the fields above is invalid.';
   }
 
   private firstInvalidStep(): Step {
-    const c = this.form.controls;
-    if (!c.businessName.valid) return 2;
-    if (!c.businessDescription.valid) return 3;
+    if (!this.form.controls.websiteUrl.valid) return 1;
+    if (this.services().length === 0) return 2;
+    if (!this.isAvatarsStepValid()) return 3;
+    if (!this.isMarketStepValid()) return 5;
+    if (!this.form.controls.businessName.valid) return 6;
     return 6;
   }
 

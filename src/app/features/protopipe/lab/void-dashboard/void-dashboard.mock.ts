@@ -2,6 +2,9 @@ import type { KeywordIntent, KeywordPriority } from '../../protopipe.models';
 
 export type VoidWindowId =
   | 'overview'
+  | 'keyword-picker'
+  | 'scheduler'
+  | 'spoke'
   | 'keywords'
   | 'content'
   | 'writer'
@@ -115,6 +118,9 @@ export interface CalendarDay {
 }
 
 export const VOID_WINDOWS: VoidWindowOption[] = [
+  { id: 'keyword-picker', label: 'Keywords' },
+  { id: 'scheduler', label: 'Calendar' },
+  { id: 'spoke', label: 'Content map' },
   { id: 'overview', label: 'Home' },
   { id: 'analytics', label: 'Analytics' },
   { id: 'keywords', label: 'SEO' },

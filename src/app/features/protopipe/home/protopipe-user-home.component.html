@@ -1,14 +1,18 @@
-<div class="void void--shell" data-bg="white" (click)="closeUserMenu()">
+<div class="void void--shell" [class.void--writer-focus]="isWriterFocus()" data-bg="white" (click)="closeUserMenu()">
   <div class="void__backdrop" aria-hidden="true"></div>
   <div class="void__veil" aria-hidden="true"></div>
 
   <header class="void-topnav">
     <span class="void-topnav__brand">futureproof<span class="void-topnav__brand-dot">.</span></span>
     <nav class="void-topnav__links" aria-label="Primary">
-      <span class="void-topnav__tab void-topnav__tab--active">Content</span>
-      <span class="void-topnav__tab">SEO</span>
-      <span class="void-topnav__tab">Analytics</span>
-      <span class="void-topnav__tab">Settings</span>
+      @if (!isWriterFocus()) {
+        <span class="void-topnav__tab void-topnav__tab--active">Content</span>
+        <span class="void-topnav__tab">SEO</span>
+        <span class="void-topnav__tab">Analytics</span>
+        <span class="void-topnav__tab">Settings</span>
+      } @else {
+        <span class="void-topnav__focus-label">Writing</span>
+      }
     </nav>
 
     <div class="void-topnav__right">
@@ -41,11 +45,12 @@
   </header>
 
   <div class="void__frame">
-    <nav
-      class="void-rail"
-      [class.is-collapsed]="navCollapsed()"
-      aria-label="Workspace navigation"
-    >
+    @if (!isWriterFocus()) {
+      <nav
+        class="void-rail"
+        [class.is-collapsed]="navCollapsed()"
+        aria-label="Workspace navigation"
+      >
       <div class="void-rail__scroll">
         @if (siteHostname()) {
           <div class="void-rail__site">
@@ -123,12 +128,13 @@
         <span aria-hidden="true">{{ navCollapsed() ? '›' : '‹' }}</span>
       </button>
     </nav>
+    }
 
     <div class="void__main">
       <div
         #homeWorkspace
         class="void__workspace-shell"
-        [class.has-side-panel]="showKeywordSidePanel()"
+        [class.has-side-panel]="showSidePanel()"
         [style.--side-panel-width.%]="sidePanel.widthPct()"
       >
         <div class="void__viewport">
@@ -147,9 +153,14 @@
                     />
                   </section>
                 }
-                @case ('plan') {
-                  <section class="glass glass--full glass--premiere" aria-label="Content plan">
-                    <app-protopipe-home-plan-progress />
+                @case ('strategy') {
+                  <section class="glass glass--full glass--premiere" aria-label="Your strategy">
+                    <app-protopipe-home-strategy />
+                  </section>
+                }
+                @case ('writer') {
+                  <section class="glass glass--full glass--premiere glass--writer" aria-label="Article writer">
+                    <app-protopipe-home-writer />
                   </section>
                 }
               }
@@ -157,18 +168,36 @@
           </div>
         </div>
 
-        @if (showKeywordSidePanel()) {
+        @if (showSidePanel()) {
           <div
             class="void__side-splitter"
             role="separator"
             aria-orientation="vertical"
-            aria-label="Resize search panel"
+            [attr.aria-label]="
+              activeView() === 'writer'
+                ? 'Resize writer panel'
+                : activeView() === 'strategy'
+                  ? 'Resize strategy brief panel'
+                  : 'Resize search panel'
+            "
             (pointerdown)="onSideSplitterPointerDown($event)"
           ></div>
 
-          <aside class="void__side-panel" aria-label="Search and add keywords">
-            <app-protopipe-keyword-search-panel />
-          </aside>
+          @if (showKeywordSidePanel()) {
+            <aside class="void__side-panel" aria-label="Search and add keywords">
+              <app-protopipe-keyword-search-panel />
+            </aside>
+          }
+          @if (showStrategySidePanel()) {
+            <aside class="void__side-panel" [attr.aria-label]="sidePanelArticleOpen() ? 'Article details' : 'Strategy brief'">
+              <app-protopipe-strategy-context-panel />
+            </aside>
+          }
+          @if (showWriterSidePanel()) {
+            <aside class="void__side-panel" aria-label="Writer tools">
+              <app-protopipe-writer-context-panel />
+            </aside>
+          }
         }
 
         @if (activeView() === 'keywords' && !loading()) {

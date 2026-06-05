@@ -1,0 +1,261 @@
+<div class="strat-tune" aria-label="Tune your content">
+  <nav class="strat-tune__tabs" role="tablist" aria-label="Tune sections">
+    @for (tab of tabs; track tab.id) {
+      <button
+        type="button"
+        role="tab"
+        class="strat-tune__tab"
+        [class.is-active]="isTab(tab.id)"
+        [attr.aria-selected]="isTab(tab.id)"
+        (click)="setTab(tab.id)"
+      >
+        <span class="strat-tune__tab-glyph" aria-hidden="true">{{ tab.glyph }}</span>
+        <span class="strat-tune__tab-copy">
+          <span class="strat-tune__tab-label">{{ tab.label }}</span>
+          <span class="strat-tune__tab-sub">{{ tab.sublabel }}</span>
+        </span>
+        <span class="strat-tune__tab-count">{{ tabCount(tab.id) }}</span>
+      </button>
+    }
+  </nav>
+
+  <div class="strat-tune__stage">
+    <!-- Voice -->
+    <div class="strat-tune__panel" [class.is-active]="isTab('voice')" [attr.aria-hidden]="!isTab('voice')">
+      <div class="strat-tune__voice">
+        <div class="strat-tune__voice-styles">
+          <p class="strat-tune__panel-label">Pick your style</p>
+          <div class="strat-tune__style-grid" role="group" aria-label="Style options">
+            @for (option of styleOptions; track option.id) {
+              <button
+                type="button"
+                class="strat-tune__style-card"
+                [class.is-active]="isStyleActive(option.id)"
+                [style.--style-accent]="option.accent"
+                (click)="toggleStyle(option.id)"
+              >
+                <span class="strat-tune__style-glyph" aria-hidden="true">{{ option.glyph }}</span>
+                <span class="strat-tune__style-label">{{ option.label }}</span>
+                <span class="strat-tune__style-desc">{{ option.description }}</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="strat-tune__voice-notes">
+          <p class="strat-tune__panel-label">Additional context</p>
+          <div class="strat-tune__notes-card">
+            <textarea
+              class="strat-tune__notes"
+              rows="6"
+              [value]="styleNotes()"
+              placeholder="Describe tone, audience, and what to avoid…"
+              (input)="onNotesInput($event)"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inspiration -->
+    <div class="strat-tune__panel" [class.is-active]="isTab('inspiration')" [attr.aria-hidden]="!isTab('inspiration')">
+      <div class="strat-tune__inspo">
+        <div class="strat-tune__inspo-toolbar">
+          <div class="strat-tune__filter-row" role="group" aria-label="Inspiration type">
+            @for (filter of inspoFilters; track filter.id) {
+              <button
+                type="button"
+                class="strat-tune__filter"
+                [class.is-active]="isInspoFilter(filter.id)"
+                (click)="setInspoFilter(filter.id)"
+              >
+                {{ filter.label }}
+              </button>
+            }
+          </div>
+          <button type="button" class="strat-tune__upload-btn" (click)="onDropZoneClick()">
+            <span aria-hidden="true">↑</span> Upload
+          </button>
+        </div>
+
+        @if (dropHint(); as hint) {
+          <p class="strat-tune__drop-hint">{{ hint }}</p>
+        }
+
+        <div class="strat-tune__inspo-grid">
+          <button type="button" class="strat-tune__inspo-add" (click)="onDropZoneClick()">
+            <span class="strat-tune__inspo-add-icon" aria-hidden="true">+</span>
+            <span class="strat-tune__inspo-add-label">Add inspiration</span>
+            <span class="strat-tune__inspo-add-sub">Drop image, PDF, or paste link</span>
+          </button>
+
+          @for (item of filteredInspirations(); track item.id) {
+            <article class="strat-tune__inspo-card">
+              <div
+                class="strat-tune__inspo-visual"
+                [style.background]="'linear-gradient(145deg, ' + item.accent + ', rgba(255,255,255,0.15))'"
+              >
+                <span class="strat-tune__inspo-badge">{{ inspirationKindLabel(item) }}</span>
+              </div>
+              <p class="strat-tune__inspo-label">{{ item.label }}</p>
+            </article>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- References -->
+    <div class="strat-tune__panel" [class.is-active]="isTab('references')" [attr.aria-hidden]="!isTab('references')">
+      <div class="strat-tune__refs-panel">
+        <div class="strat-tune__ref-grid">
+          @for (ref of references(); track ref.id) {
+            <article class="strat-tune__site-card" [style.--site-accent]="ref.accent">
+              <div class="strat-tune__site-chrome">
+                <span class="strat-tune__site-dot"></span>
+                <span class="strat-tune__site-dot"></span>
+                <span class="strat-tune__site-dot"></span>
+                <span class="strat-tune__site-url">{{ referenceHost(ref.url) }}</span>
+              </div>
+              <div class="strat-tune__site-body">
+                <a class="strat-tune__site-title" [href]="ref.url" target="_blank" rel="noopener noreferrer">
+                  {{ ref.label }}
+                </a>
+                @if (ref.note) {
+                  <p class="strat-tune__site-note">{{ ref.note }}</p>
+                }
+              </div>
+              <button
+                type="button"
+                class="strat-tune__site-remove"
+                aria-label="Remove reference"
+                (click)="removeReference(ref.id)"
+              >
+                ×
+              </button>
+            </article>
+          }
+
+          <article class="strat-tune__site-card strat-tune__site-card--add">
+            <p class="strat-tune__panel-label">Add reference site</p>
+            <input
+              type="url"
+              class="strat-tune__input"
+              placeholder="https://example.com"
+              [value]="newLinkUrl()"
+              (input)="onLinkUrlInput($event)"
+            />
+            <input
+              type="text"
+              class="strat-tune__input"
+              placeholder="Label (optional)"
+              [value]="newLinkLabel()"
+              (input)="onLinkLabelInput($event)"
+            />
+            <button type="button" class="strat-tune__add-btn" (click)="addReference()">Add site</button>
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <!-- Facts -->
+    <div class="strat-tune__panel" [class.is-active]="isTab('facts')" [attr.aria-hidden]="!isTab('facts')">
+      <div class="strat-tune__facts">
+        <section class="strat-tune__facts-known" aria-label="Known business facts">
+          <div class="strat-tune__facts-head">
+            <p class="strat-tune__panel-label">Known facts</p>
+            <span class="strat-tune__facts-count">{{ knownFacts().length }} saved</span>
+          </div>
+
+          <div class="strat-tune__facts-list">
+            @for (fact of knownFacts(); track fact.id) {
+              <article class="strat-tune__fact-card strat-tune__fact-card--known">
+                <div class="strat-tune__fact-head">
+                  <span class="strat-tune__fact-cat">{{ knownFactCategoryLabel(fact.category) }}</span>
+                  <button
+                    type="button"
+                    class="strat-tune__fact-remove"
+                    aria-label="Remove fact"
+                    (click)="removeKnownFact(fact.id)"
+                  >
+                    ×
+                  </button>
+                </div>
+                <p class="strat-tune__fact-statement">{{ fact.statement }}</p>
+                @if (fact.source) {
+                  <p class="strat-tune__fact-source">Source: {{ fact.source }}</p>
+                }
+              </article>
+            }
+
+            <article class="strat-tune__fact-card strat-tune__fact-card--add">
+              <p class="strat-tune__panel-label">Add a fact</p>
+              <select
+                class="strat-tune__select"
+                [value]="newFactCategory()"
+                (change)="onFactCategoryChange($event)"
+              >
+                @for (cat of knownFactCategories; track cat.id) {
+                  <option [value]="cat.id">{{ cat.label }}</option>
+                }
+              </select>
+              <textarea
+                class="strat-tune__fact-input"
+                rows="3"
+                placeholder="State something true about your business — services, pricing, locations…"
+                [value]="newFactStatement()"
+                (input)="onFactStatementInput($event)"
+              ></textarea>
+              <input
+                type="text"
+                class="strat-tune__input"
+                placeholder="Source (optional)"
+                [value]="newFactSource()"
+                (input)="onFactSourceInput($event)"
+              />
+              <button type="button" class="strat-tune__add-btn" (click)="addKnownFact()">Save fact</button>
+            </article>
+          </div>
+        </section>
+
+        <section class="strat-tune__facts-checks" aria-label="Fact-checking results">
+          <div class="strat-tune__facts-head">
+            <p class="strat-tune__panel-label">From fact-checking</p>
+            @if (pendingFactCheckCount(); as pending) {
+              @if (pending > 0) {
+                <span class="strat-tune__facts-pending">{{ pending }} need review</span>
+              }
+            }
+          </div>
+          <p class="strat-tune__facts-lede">
+            Claims flagged during article review appear here. Confirm, dismiss, or promote them to known facts.
+          </p>
+
+          <div class="strat-tune__checks-list">
+            @for (check of factChecks; track check.id) {
+              <article
+                class="strat-tune__fact-card strat-tune__fact-card--check"
+                [class.is-pending]="check.status === 'pending'"
+                [class.is-confirmed]="check.status === 'confirmed'"
+                [class.is-dismissed]="check.status === 'dismissed'"
+              >
+                <div class="strat-tune__fact-head">
+                  <span class="strat-tune__fact-cat">{{ factCheckCategoryLabel(check) }}</span>
+                  <span class="strat-tune__fact-status">{{ factCheckStatusLabel(check.status) }}</span>
+                </div>
+                <p class="strat-tune__fact-claim">“{{ check.claim }}”</p>
+                <p class="strat-tune__fact-article">{{ check.articleTitle }}</p>
+                @if (check.suggestion) {
+                  <p class="strat-tune__fact-suggestion">{{ check.suggestion }}</p>
+                }
+              </article>
+            } @empty {
+              <p class="strat-tune__facts-empty">
+                No fact-check results yet. They will show up after you generate and review articles.
+              </p>
+            }
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>

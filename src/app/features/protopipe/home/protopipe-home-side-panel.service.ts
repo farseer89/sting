@@ -16,7 +16,16 @@ export class ProtopipeHomeSidePanelService {
   private dragUpListener: ((e: PointerEvent) => void) | null = null;
 
   toggle(): void {
-    const next = !this.open();
+    this.setOpen(!this.open());
+  }
+
+  ensureOpen(): void {
+    if (!this.open()) {
+      this.setOpen(true);
+    }
+  }
+
+  setOpen(next: boolean): void {
     this.open.set(next);
     try {
       localStorage.setItem(OPEN_KEY, next ? '1' : '0');
@@ -25,15 +34,15 @@ export class ProtopipeHomeSidePanelService {
     }
   }
 
-  startResize(event: PointerEvent, host: HTMLElement): void {
+  startResize(event: PointerEvent, host: HTMLElement, railWidthPx = RAIL_WIDTH_PX): void {
     event.preventDefault();
     (event.target as HTMLElement).setPointerCapture?.(event.pointerId);
 
     const move = (e: PointerEvent) => {
       const rect = host.getBoundingClientRect();
-      const fromRightPx = rect.right - e.clientX - RAIL_WIDTH_PX;
+      const fromRightPx = rect.right - e.clientX - railWidthPx;
       const pct = clamp(
-        (fromRightPx / Math.max(rect.width - RAIL_WIDTH_PX, 1)) * 100,
+        (fromRightPx / Math.max(rect.width - railWidthPx, 1)) * 100,
         WIDTH_MIN,
         WIDTH_MAX,
       );
@@ -76,10 +85,10 @@ export class ProtopipeHomeSidePanelService {
   private readOpen(): boolean {
     try {
       const raw = localStorage.getItem(OPEN_KEY);
-      if (raw === null) return true;
+      if (raw === null) return false;
       return raw === '1';
     } catch {
-      return true;
+      return false;
     }
   }
 

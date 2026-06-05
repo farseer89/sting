@@ -29,7 +29,11 @@ import {
   VOID_WINDOWS,
   type VoidWindowId,
 } from './void-dashboard.mock';
+import { VOID_NAV, VOID_NAV_DEFAULT_OPEN, VOID_NAV_SITE, VOID_PREMIERE_DEFAULT_OPEN, VOID_PREMIERE_NAV, VOID_PREMIERE_SITE, type VoidNavItem } from './void-nav.mock';
 import { VoidContentWriterComponent } from './void-content-writer.component';
+import { VoidContentSpokeComponent } from './void-content-spoke.component';
+import { VoidPremiereSchedulerComponent } from './void-premiere-scheduler.component';
+import { VoidKeywordPickerComponent } from './void-keyword-picker.component';
 
 interface TrafficPoint {
   v: number;
@@ -44,7 +48,13 @@ interface BackgroundOption {
   selector: 'app-void-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, VoidContentWriterComponent],
+  imports: [
+    FormsModule,
+    VoidContentWriterComponent,
+    VoidPremiereSchedulerComponent,
+    VoidContentSpokeComponent,
+    VoidKeywordPickerComponent,
+  ],
   templateUrl: './void-dashboard.component.html',
   styleUrl: './void-dashboard.component.scss',
 })
@@ -54,19 +64,24 @@ export class VoidDashboardComponent implements OnInit {
 
   constructor() {
     document.documentElement.classList.add('void-lab');
+    this.syncThemeClass(this.backgroundId());
     this.destroyRef.onDestroy(() => {
-      document.documentElement.classList.remove('void-lab');
+      document.documentElement.classList.remove('void-lab', 'void-white');
     });
   }
 
-  readonly backgroundId = signal('ocean');
-  readonly activeWindow = signal<VoidWindowId>('overview');
+  readonly backgroundId = signal('white');
+  readonly activeWindow = signal<VoidWindowId>('keyword-picker');
+  readonly navMode = signal<'rail' | 'dock'>('rail');
+  readonly navCollapsed = signal(false);
+  readonly activeNavId = signal('start-keywords');
   readonly aiOpen = signal(false);
   readonly aiQuery = signal('');
   readonly loadingWindow = signal(false);
   readonly clock = signal(this.formatClock());
 
   readonly backgrounds: BackgroundOption[] = [
+    { id: 'white', label: 'Void white' },
     { id: 'ocean', label: 'Ocean depth' },
     { id: 'dawn', label: 'Dawn horizon' },
     { id: 'alpine', label: 'Alpine light' },
@@ -75,6 +90,9 @@ export class VoidDashboardComponent implements OnInit {
   ];
 
   readonly windows = VOID_WINDOWS;
+  readonly isShellMode = computed(() => this.backgroundId() === 'white');
+  readonly navItems = computed(() => (this.isShellMode() ? VOID_PREMIERE_NAV : VOID_NAV));
+  readonly navSite = computed(() => (this.isShellMode() ? VOID_PREMIERE_SITE : VOID_NAV_SITE));
   readonly metrics = signal(VOID_METRICS);
   readonly keywords = signal(VOID_KEYWORDS);
   readonly articles = signal(VOID_ARTICLES);
@@ -102,6 +120,8 @@ export class VoidDashboardComponent implements OnInit {
   readonly barMax = computed(() => Math.max(...this.barChart.map((b) => b.value), 1));
   readonly channelMax = computed(() => Math.max(...this.channelBars.map((b) => b.value), 1));
 
+  private readonly openNavGroups = new Set<string>([...VOID_NAV_DEFAULT_OPEN, ...VOID_PREMIERE_DEFAULT_OPEN]);
+
   ngOnInit(): void {
     const trafficTick = window.setInterval(() => this.driftTraffic(), 2400);
     const clockTick = window.setInterval(() => this.clock.set(this.formatClock()), 1000);
@@ -113,6 +133,54 @@ export class VoidDashboardComponent implements OnInit {
 
   setBackground(id: string): void {
     this.backgroundId.set(id);
+    this.syncThemeClass(id);
+    if (id === 'white') {
+      this.activeWindow.set('keyword-picker');
+      this.activeNavId.set('start-keywords');
+    } else if (this.activeWindow() === 'scheduler') {
+      this.activeWindow.set('overview');
+      this.activeNavId.set('my-plan');
+    }
+  }
+
+  private syncThemeClass(bgId: string): void {
+    document.documentElement.classList.toggle('void-white', bgId === 'white');
+  }
+
+  toggleNavMode(): void {
+    this.navMode.update((mode) => (mode === 'rail' ? 'dock' : 'rail'));
+  }
+
+  toggleNavCollapse(): void {
+    this.navCollapsed.update((v) => !v);
+  }
+
+  isNavGroupOpen(id: string): boolean {
+    return this.openNavGroups.has(id);
+  }
+
+  toggleNavGroup(id: string): void {
+    if (this.openNavGroups.has(id)) {
+      this.openNavGroups.delete(id);
+    } else {
+      this.openNavGroups.add(id);
+    }
+  }
+
+  selectNavItem(item: VoidNavItem): void {
+    if (item.disabled || item.separator || !item.window) {
+      return;
+    }
+    this.activeNavId.set(item.id);
+    this.selectWindow(item.window);
+  }
+
+  isNavActive(item: VoidNavItem): boolean {
+    return this.activeNavId() === item.id;
+  }
+
+  onKeywordPickerContinue(_phrases: readonly string[]): void {
+    this.selectWindow('scheduler');
   }
 
   selectWindow(id: string): void {
@@ -122,6 +190,10 @@ export class VoidDashboardComponent implements OnInit {
     this.loadingWindow.set(true);
     window.setTimeout(() => {
       this.activeWindow.set(id as VoidWindowId);
+      const navId = this.navIdForWindow(id as VoidWindowId);
+      if (navId) {
+        this.activeNavId.set(navId);
+      }
       this.loadingWindow.set(false);
     }, 280);
   }
@@ -247,5 +319,17 @@ export class VoidDashboardComponent implements OnInit {
   private nowTime(): string {
     const d = new Date();
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+
+  private navIdForWindow(window: VoidWindowId): string | undefined {
+    const groups = this.isShellMode() ? VOID_PREMIERE_NAV : VOID_NAV;
+    for (const group of groups) {
+      for (const child of group.children ?? []) {
+        if (child.window === window) {
+          return child.id;
+        }
+      }
+    }
+    return undefined;
   }
 }

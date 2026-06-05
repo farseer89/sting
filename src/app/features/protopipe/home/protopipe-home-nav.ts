@@ -28,6 +28,7 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
     icon: 'sparkles',
     children: [
       { id: 'start-keywords', label: 'Choose keywords', icon: 'search' },
+      { id: 'start-strategy', label: 'Your strategy', icon: 'sitemap' },
     ],
   },
   {
@@ -37,7 +38,7 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
     children: [
       { id: 'content-calendar', label: 'Content calendar', icon: 'grid', disabled: true },
       { id: 'content-articles', label: 'Articles', icon: 'list', disabled: true },
-      { id: 'content-writer', label: 'Writer', icon: 'write', disabled: true },
+      { id: 'content-writer', label: 'Writer', icon: 'write' },
     ],
   },
   {

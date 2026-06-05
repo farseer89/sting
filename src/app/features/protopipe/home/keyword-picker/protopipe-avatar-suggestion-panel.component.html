@@ -1,0 +1,39 @@
+<div class="kwavatar">
+  <p class="kwavatar__lede">
+    We grouped your keywords by who is searching. Pick one to three audiences — your content plan
+    will speak to them.
+  </p>
+  <div class="kwavatar__grid" role="list">
+    @for (av of avatars(); track av.id) {
+      <button
+        type="button"
+        class="kwavatar__card"
+        role="listitem"
+        [class.kwavatar__card--selected]="isSelected(av.id)"
+        [class.kwavatar__card--disabled]="!canSelect(av.id)"
+        [class.kwavatar__card--hovered]="hoveredId() === av.id"
+        [attr.aria-pressed]="isSelected(av.id)"
+        (click)="onCardClick(av.id)"
+        (mouseenter)="onCardEnter(av.id)"
+        (mouseleave)="onCardLeave()"
+      >
+        <span class="kwavatar__card-head">
+          <span class="kwavatar__check" aria-hidden="true">{{ isSelected(av.id) ? '✓' : '' }}</span>
+          <span class="kwavatar__intent">{{ av.intentCluster }}</span>
+          @if (av.matchedOnboarding) {
+            <span class="kwavatar__badge">From onboarding</span>
+          }
+        </span>
+        <span class="kwavatar__desc">{{ av.description }}</span>
+        @if (av.exampleQueries.length) {
+          <span class="kwavatar__examples">
+            e.g. {{ av.exampleQueries.slice(0, 2).join(' · ') }}
+          </span>
+        }
+        @if (av.clusterVolume != null) {
+          <span class="kwavatar__meta">{{ av.clusterVolume | number }} vol/mo cluster</span>
+        }
+      </button>
+    }
+  </div>
+</div>

@@ -1,0 +1,113 @@
+<div class="kwpick">
+  <header class="kwpick__intro">
+    <div class="kwpick__intro-copy">
+      <span class="kwpick__eyebrow">Your keyword strategy</span>
+      <h1 class="kwpick__headline">Choose what you want to rank for</h1>
+      <p class="kwpick__lede">
+        We picked a starting set from your business profile. Add or remove keywords — you can
+        refine these anytime.
+      </p>
+    </div>
+    <div class="kwpick__intro-meta">
+      <span class="kwpick__site">{{ siteLabel() }}</span>
+      <span class="kwpick__count">{{ selectedCount() }} selected</span>
+    </div>
+  </header>
+
+  <div class="kwpick__panels">
+    <article class="kwpick__panel">
+      <header class="kwpick__panel-head">
+        <span class="kwpick__panel-label">Suggested for you</span>
+        <span class="kwpick__panel-meta">{{ suggested.length }} keywords</span>
+      </header>
+      <ul class="kwpick__grid" aria-label="Suggested keywords">
+        @for (kw of suggested; track kw.id) {
+          <li>
+            <button
+              type="button"
+              class="kwpick__card"
+              [class.kwpick__card--selected]="isSelected(kw.id)"
+              [attr.aria-pressed]="isSelected(kw.id)"
+              (click)="toggleKeyword(kw)"
+            >
+              <span class="kwpick__card-check" aria-hidden="true">
+                @if (isSelected(kw.id)) {
+                  ✓
+                }
+              </span>
+              <span class="kwpick__card-phrase">{{ kw.phrase }}</span>
+              <span class="kwpick__card-meta">
+                <span class="kwpick__pill">{{ intentShort(kw.intent) }}</span>
+                <span class="kwpick__vol">{{ formatVolume(kw.volume) }}/mo</span>
+              </span>
+            </button>
+          </li>
+        }
+      </ul>
+    </article>
+
+    <article class="kwpick__panel kwpick__panel--search">
+      <header class="kwpick__panel-head">
+        <span class="kwpick__panel-label">Search &amp; add</span>
+        <span class="kwpick__panel-meta">Find more keywords</span>
+      </header>
+
+      <div class="kwpick__search">
+        <span class="kwpick__search-icon" aria-hidden="true">⌕</span>
+        <input
+          type="search"
+          class="kwpick__search-input"
+          placeholder="Search keywords…"
+          [value]="searchQuery()"
+          (input)="onSearchInput($any($event.target).value)"
+          aria-label="Search keywords"
+        />
+        @if (hasSearchQuery()) {
+          <button type="button" class="kwpick__search-clear" (click)="clearSearch()" aria-label="Clear search">
+            ×
+          </button>
+        }
+      </div>
+
+      <div class="kwpick__results" role="listbox" aria-label="Search results">
+        @if (searchResults().length === 0) {
+          <p class="kwpick__empty">
+            @if (hasSearchQuery()) {
+              No matches — try a shorter phrase or different wording.
+            } @else {
+              All suggested keywords are already selected.
+            }
+          </p>
+        } @else {
+          @for (kw of searchResults(); track kw.id) {
+            <button type="button" class="kwpick__result" role="option" (click)="toggleKeyword(kw)">
+              <span class="kwpick__result-phrase">{{ kw.phrase }}</span>
+              <span class="kwpick__result-meta">
+                <span class="kwpick__pill">{{ intentShort(kw.intent) }}</span>
+                <span class="kwpick__vol">{{ formatVolume(kw.volume) }}/mo</span>
+                <span class="kwpick__add">Add</span>
+              </span>
+            </button>
+          }
+        }
+      </div>
+    </article>
+  </div>
+
+  @if (selectedCount() > 0) {
+    <footer class="kwpick__footer">
+      <div class="kwpick__selected-strip" aria-label="Selected keywords">
+        @for (phrase of selectedPhrases(); track phrase) {
+          <span class="kwpick__selected-chip">{{ phrase }}</span>
+        }
+      </div>
+      <button type="button" class="kwpick__continue" (click)="continue()">
+        Continue with {{ selectedCount() }} keywords
+      </button>
+    </footer>
+  } @else {
+    <footer class="kwpick__footer kwpick__footer--empty">
+      <p class="kwpick__hint">Select at least one keyword to continue.</p>
+    </footer>
+  }
+</div>

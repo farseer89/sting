@@ -1,0 +1,58 @@
+@use './strategy.shared' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  color: var(--void-ink);
+}
+
+.strat-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.strat-shell > app-strategy-layout-a,
+.strat-shell > app-strategy-layout-b,
+.strat-shell > app-strategy-layout-c {
+  display: flex;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.strat-shell__error {
+  padding: 0.75rem;
+  font-size: 10px;
+  color: var(--void-ink-secondary);
+}
+
+.strat-shell__error-detail {
+  color: #8b2020;
+  font-size: 9px;
+}
+
+.strat-shell__retry {
+  margin-top: 0.5rem;
+  border: 0.5px solid var(--void-ocean-line);
+  border-radius: 4px;
+  background: var(--void-ocean);
+  color: #fff;
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.65rem;
+  cursor: pointer;
+}
+
+.strat__loading {
+  @include strat-base;
+  padding: 0.35rem 0.45rem;
+}

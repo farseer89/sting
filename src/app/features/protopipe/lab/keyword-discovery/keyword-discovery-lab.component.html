@@ -1,0 +1,125 @@
+<div class="void" data-bg="white">
+  <div class="void__backdrop" aria-hidden="true"></div>
+  <div class="void__veil" aria-hidden="true"></div>
+
+  <header class="top">
+    <div class="top__brand">
+      <span class="top__mark" aria-hidden="true"></span>
+      <span class="top__name">Thinker</span>
+      <span class="top__train">Keyword Discovery Lab</span>
+    </div>
+
+    <div class="top__controls">
+      <div class="seg" role="tablist" aria-label="Run source">
+        <button
+          type="button"
+          class="seg__btn"
+          [class.is-on]="source() === 'fixture'"
+          (click)="setSource('fixture')"
+        >
+          Fixture
+        </button>
+        <button
+          type="button"
+          class="seg__btn"
+          [class.is-on]="source() === 'live'"
+          (click)="setSource('live')"
+        >
+          Live
+        </button>
+      </div>
+      <button type="button" class="top__back" (click)="back()">← Thinkers</button>
+      <button
+        type="button"
+        class="top__mode"
+        [class.is-on]="mode() === 'debug'"
+        (click)="toggleMode()"
+      >
+        {{ mode() === 'debug' ? 'Debug' : 'Calm' }}
+      </button>
+    </div>
+  </header>
+
+  <div class="body">
+    <aside class="rail">
+      @if (source() === 'fixture') {
+        <p class="rail__head">Fixtures</p>
+        @for (f of fixtures; track f.id) {
+          <button
+            type="button"
+            class="rail__item"
+            [class.is-on]="activeFixtureId() === f.id"
+            (click)="selectFixture(f.id)"
+          >
+            <span class="rail__label">{{ f.label }}</span>
+            <span class="rail__desc">{{ f.description }}</span>
+          </button>
+        }
+      } @else {
+        <p class="rail__head">Live run</p>
+        <p class="rail__note">
+          Hits the Phase 2 discovery backend. Enter a site id to start a fresh run, or a run id to
+          reattach.
+        </p>
+        <label class="rail__field">
+          <span>Site id</span>
+          <input
+            type="text"
+            [value]="liveSiteId()"
+            (input)="onLiveSiteId($any($event.target).value)"
+            placeholder="site _id"
+          />
+        </label>
+        <label class="rail__field">
+          <span>Run id (optional)</span>
+          <input
+            type="text"
+            [value]="liveRunId()"
+            (input)="onLiveRunId($any($event.target).value)"
+            placeholder="discovery run id"
+          />
+        </label>
+        <div class="rail__actions">
+          <button type="button" class="rail__go" [disabled]="liveBusy()" (click)="startLive()">
+            {{ liveBusy() ? 'Working…' : 'Start run' }}
+          </button>
+          <button type="button" class="rail__go rail__go--ghost" [disabled]="liveBusy()" (click)="loadLive()">
+            Load
+          </button>
+        </div>
+      }
+
+      @if (costTotal() != null) {
+        <div class="rail__cost">
+          <span class="rail__cost-label">Run cost</span>
+          <span class="rail__cost-value">{{ formatUsd(costTotal()) }}</span>
+        </div>
+      }
+    </aside>
+
+    <div class="stagewrap">
+      @if (statusLabel(); as status) {
+        <div class="statusbar" [class]="'is-' + (run()?.status ?? 'idle')">
+          <span class="statusbar__chip">{{ status }}</span>
+          @if (isActive()) {
+            <span class="statusbar__conn is-live"><span class="statusbar__pulse"></span> Live</span>
+          }
+        </div>
+      }
+
+      @if (loadError(); as err) {
+        <div class="trun__notice trun__notice--error">
+          <p>{{ err }}</p>
+        </div>
+      }
+
+      @if (thought(); as t) {
+        <app-thinker [thought]="t" [mode]="mode()" [canRerun]="false" (back)="back()" />
+      } @else {
+        <div class="trun__notice">
+          <p>Pick a fixture or start a live run.</p>
+        </div>
+      }
+    </div>
+  </div>
+</div>

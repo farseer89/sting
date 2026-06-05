@@ -1,0 +1,93 @@
+<header class="wrctx__head">
+  <button type="button" class="wrctx__close" (click)="close()" aria-label="Close panel">
+    <span aria-hidden="true">×</span>
+  </button>
+  <span class="wrctx__label">{{ panelLabel() }}</span>
+</header>
+
+<div class="wrctx__scroll">
+  @switch (activePanel()) {
+    @case ('brief') {
+      <section class="wrctx__block">
+        <p class="wrctx__meta">Target ~{{ mock.brief.targetWords }} words</p>
+        <p class="wrctx__body">{{ mock.brief.positioning }}</p>
+        <div class="wrctx__group">
+          <span class="wrctx__group-label">Angle</span>
+          <p class="wrctx__body">{{ mock.brief.angle }}</p>
+        </div>
+        <div class="wrctx__group">
+          <span class="wrctx__group-label">Must cover</span>
+          <div class="wrctx__chips">
+            @for (term of mock.brief.mustCover; track term) {
+              <span class="wrctx__chip">{{ term }}</span>
+            }
+          </div>
+        </div>
+        <div class="wrctx__group">
+          <span class="wrctx__group-label">Secondary keywords</span>
+          <div class="wrctx__chips">
+            @for (term of mock.brief.secondaryKeywords; track term) {
+              <span class="wrctx__chip wrctx__chip--soft">{{ term }}</span>
+            }
+          </div>
+        </div>
+      </section>
+    }
+    @case ('preview') {
+      <section class="wrctx__block">
+        <div class="wrctx__serp">
+          <span class="wrctx__serp-url">{{ mock.serp.url }}</span>
+          <span class="wrctx__serp-title">{{ mock.serp.title }}</span>
+          <p class="wrctx__serp-desc">{{ mock.serp.description }}</p>
+        </div>
+        <p class="wrctx__hint">Preview uses your meta title and description.</p>
+      </section>
+    }
+    @case ('hints') {
+      <section class="wrctx__block">
+        <ul class="wrctx__hints">
+          @for (hint of mock.hints; track hint.id) {
+            <li class="wrctx__hint-row" [class.is-done]="hint.done">
+              <span class="wrctx__hint-check" aria-hidden="true">{{ hint.done ? '✓' : '○' }}</span>
+              <div class="wrctx__hint-copy">
+                <span class="wrctx__hint-label">{{ hint.label }}</span>
+                <span class="wrctx__hint-detail">{{ hint.detail }}</span>
+              </div>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+    @case ('seo') {
+      <section class="wrctx__block">
+        <label class="wrctx__field">
+          <span class="wrctx__field-label">Meta title</span>
+          <span class="wrctx__field-value">{{ mock.metaTitle }}</span>
+          <span class="wrctx__field-count">{{ mock.metaTitle.length }} chars</span>
+        </label>
+        <label class="wrctx__field">
+          <span class="wrctx__field-label">Meta description</span>
+          <span class="wrctx__field-value wrctx__field-value--multiline">{{ mock.metaDescription }}</span>
+          <span class="wrctx__field-count">{{ mock.metaDescription.length }} chars</span>
+        </label>
+        <div class="wrctx__group">
+          <span class="wrctx__group-label">Schedule</span>
+          <p class="wrctx__body">{{ mock.scheduleLabel }}</p>
+        </div>
+      </section>
+    }
+    @case ('facts') {
+      <section class="wrctx__block">
+        <ul class="wrctx__facts">
+          @for (fact of mock.facts; track fact.id) {
+            <li class="wrctx__fact" [class.is-flagged]="fact.status === 'flagged'">
+              <span class="wrctx__fact-status">{{ fact.status === 'flagged' ? 'Review' : 'OK' }}</span>
+              <p class="wrctx__fact-claim">{{ fact.claim }}</p>
+              <p class="wrctx__fact-note">{{ fact.note }}</p>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  }
+</div>

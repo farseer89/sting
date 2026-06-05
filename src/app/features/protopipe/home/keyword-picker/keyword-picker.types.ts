@@ -1,3 +1,9 @@
+import type {
+  KeywordIntent,
+  ProtopipeDiscoveryCandidateSource,
+  ProtopipeDiscoveryFunnelStage,
+} from '@hive/contracts';
+
 export type KeywordPickerSource = 'ranked' | 'ads' | 'ads_related' | 'research' | 'custom' | 'gsc';
 
 export interface KeywordPickerOption {
@@ -11,6 +17,13 @@ export interface KeywordPickerOption {
   source: KeywordPickerSource;
   opportunityScore?: number;
   relevanceScore?: number;
+  intent?: KeywordIntent;
+  funnelStage?: ProtopipeDiscoveryFunnelStage;
+  discoverySource?: ProtopipeDiscoveryCandidateSource;
+  avatarId?: string | null;
+  isGap?: boolean;
+  cpc?: number;
+  serpFeatures?: string[];
 }
 
 export const SUGGESTED_PANEL_COUNT = 16;
@@ -41,7 +54,13 @@ export function formatCompetitionLabel(option: KeywordPickerOption): string {
   return '—';
 }
 
-export function sourceLabel(source: KeywordPickerSource): string {
+export function sourceLabel(
+  source: KeywordPickerSource,
+  discoverySource?: ProtopipeDiscoveryCandidateSource,
+): string {
+  if (discoverySource === 'spyfu_gap') return 'Competitor gap';
+  if (discoverySource === 'paa') return 'People also ask';
+  if (discoverySource === 'geo') return 'Local';
   switch (source) {
     case 'ranked':
       return 'Ranking';

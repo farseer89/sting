@@ -3,8 +3,13 @@ import type {
   ProtopipeDiscoverAdsIdea,
   ProtopipeDiscoverGscQuery,
   ProtopipeDiscoverRankedKeyword,
+  ProtopipeDiscoveryCandidate,
+  ProtopipeDiscoveryCandidateSource,
+  ProtopipeDiscoveryCurrentStep,
   ProtopipeKeywordDiscoveryResponse,
+  ProtopipeKeywordDiscoveryRunDto,
   ProtopipeResearchRelatedKeyword,
+  ProtopipeSuggestedAvatar,
 } from '@hive/contracts';
 import { ContentPlanStore } from '../../content-plan/content-plan.store';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
@@ -21,12 +26,67 @@ import {
   pickSuggestedPanel,
   scoreKeywordOptions,
 } from './keyword-picker.scoring';
-import type { KeywordPickerOption } from './keyword-picker.types';
+import type { KeywordPickerOption, KeywordPickerSource } from './keyword-picker.types';
 import { normalizePhraseKey } from './keyword-picker.types';
 
 const SEARCH_DEBOUNCE_MS = 350;
 const RELATED_LIMIT = 25;
 const SEED_PHRASE_COUNT = 2;
+const DISCOVERY_POLL_MS = 1500;
+const DISCOVERY_POLL_MAX = 120;
+const MAX_AVATARS = 3;
+
+export type KeywordPickerWizardStep = 'keywords' | 'avatars' | 'build';
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function mapDiscoverySourceToPicker(
+  source: ProtopipeDiscoveryCandidateSource,
+): KeywordPickerSource {
+  switch (source) {
+    case 'gsc':
+      return 'gsc';
+    case 'ranked':
+      return 'ranked';
+    case 'ads_ideas':
+      return 'ads';
+    case 'ads_related':
+      return 'ads_related';
+    default:
+      return 'research';
+  }
+}
+
+function discoveryStepLabel(step: ProtopipeDiscoveryCurrentStep): string {
+  switch (step) {
+    case 'load_profile':
+      return 'Loading your business profile…';
+    case 'fetch_gsc':
+      return 'Reading Search Console…';
+    case 'fetch_ranked':
+      return 'Checking what you already rank for…';
+    case 'fetch_ads_ideas':
+      return 'Finding ad keyword ideas…';
+    case 'spyfu_gaps':
+      return 'Scanning competitor gaps…';
+    case 'geo_expansion':
+      return 'Expanding local terms…';
+    case 'seed_expansion':
+      return 'Growing your keyword pool…';
+    case 'merge_score':
+      return 'Scoring opportunities…';
+    case 'serp_enrichment':
+      return 'Analyzing search results…';
+    case 'infer_avatars':
+      return 'Grouping audiences…';
+    case 'confirm':
+      return 'Almost ready…';
+    default:
+      return 'Discovering keywords…';
+  }
+}
 
 @Injectable()
 export class ProtopipeKeywordPickerStore {
@@ -50,6 +110,12 @@ export class ProtopipeKeywordPickerStore {
   private readonly _searchPrimary = signal<KeywordPickerOption | null>(null);
   private readonly _confirming = signal(false);
   private readonly _discoveryNote = signal<string | null>(null);
+  private readonly _discoveryProgress = signal<string | null>(null);
+  private readonly _discoveryRunId = signal<string | null>(null);
+  private readonly _suggestedAvatars = signal<ProtopipeSuggestedAvatar[]>([]);
+  private readonly _selectedAvatarIds = signal<Set<string>>(new Set());
+  private readonly _hoveredAvatarId = signal<string | null>(null);
+  private readonly _wizardStep = signal<KeywordPickerWizardStep>('keywords');
 
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
@@ -63,10 +129,19 @@ export class ProtopipeKeywordPickerStore {
   readonly searchPrimary = this._searchPrimary.asReadonly();
   readonly confirming = this._confirming.asReadonly();
   readonly discoveryNote = this._discoveryNote.asReadonly();
+  readonly discoveryProgress = this._discoveryProgress.asReadonly();
+  readonly suggestedAvatars = this._suggestedAvatars.asReadonly();
+  readonly selectedAvatarIds = this._selectedAvatarIds.asReadonly();
+  readonly hoveredAvatarId = this._hoveredAvatarId.asReadonly();
+  readonly wizardStep = this._wizardStep.asReadonly();
 
   readonly selectedCount = computed(() => this._selected().size);
-
   readonly selectedList = computed(() => [...this._selected().values()]);
+  readonly selectedAvatarCount = computed(() => this._selectedAvatarIds().size);
+
+  readonly wizardEnabled = computed(
+    () => this._discoveryRunId() != null && this._suggestedAvatars().length > 0,
+  );
 
   readonly filteredPool = computed(() => {
     const q = this._searchQuery().trim().toLowerCase();
@@ -96,6 +171,8 @@ export class ProtopipeKeywordPickerStore {
     this._loading.set(true);
     this._error.set(null);
     this._discoveryNote.set(null);
+    this._discoveryProgress.set(null);
+    this._wizardStep.set('keywords');
     try {
       await this.strategy.ensureLoaded();
       const siteId = this.strategy.siteId();
@@ -106,21 +183,208 @@ export class ProtopipeKeywordPickerStore {
       this.contentPlan.setSiteId(siteId);
       this.relevanceCtx = buildRelevanceContext({
         strategySummary: this.strategy.strategy().summary,
+        onboardingProfile: this.strategy.onboardingProfile() ?? undefined,
         displayName: this.strategy.site()?.displayName,
         hostname: this.strategy.site()?.hostname,
       });
 
-      const discovery = await this.api.discoverKeywords(siteId);
-      this._hostname.set(discovery.hostname ?? this.strategy.site()?.hostname ?? '');
-
       const map = new Map<string, KeywordPickerOption>();
-      this.mergeDiscovery(discovery, map);
-      await this.seedRelatedKeywords(map, discovery);
+      try {
+        const start = await this.api.startKeywordDiscoveryRun(siteId);
+        this._hostname.set(this.strategy.site()?.hostname ?? '');
+        const run = await this.pollDiscoveryRun(siteId, start.run.id);
+        this._discoveryRunId.set(run.id);
+        this.mergeDiscoveryRun(run, map);
+        this.applySuggestedAvatars(run.artifacts.suggestedAvatars ?? []);
+      } catch {
+        const discovery = await this.api.discoverKeywords(siteId);
+        this._hostname.set(discovery.hostname ?? this.strategy.site()?.hostname ?? '');
+        this._discoveryRunId.set(null);
+        this._suggestedAvatars.set([]);
+        this._selectedAvatarIds.set(new Set());
+        this.mergeDiscovery(discovery, map);
+        await this.seedRelatedKeywords(map, discovery);
+        this._discoveryNote.set(
+          (this._discoveryNote() ? `${this._discoveryNote()} · ` : '') +
+            'Using quick discovery — audience suggestions unavailable.',
+        );
+      }
+
       this.applyScoredPool(map);
     } catch (err) {
       this._error.set(parseProtopipeApiError(err, 'Failed to load keyword suggestions'));
     } finally {
       this._loading.set(false);
+      this._discoveryProgress.set(null);
+    }
+  }
+
+  private async pollDiscoveryRun(
+    siteId: string,
+    runId: string,
+  ): Promise<ProtopipeKeywordDiscoveryRunDto> {
+    for (let attempt = 0; attempt < DISCOVERY_POLL_MAX; attempt++) {
+      const { run } = await this.api.getKeywordDiscoveryRun(siteId, runId);
+      if (run.status === 'ready' || run.status === 'confirmed') {
+        return run;
+      }
+      if (run.status === 'failed') {
+        throw new Error(run.error?.message ?? 'Keyword discovery failed');
+      }
+      this._discoveryProgress.set(discoveryStepLabel(run.currentStep));
+      await sleep(DISCOVERY_POLL_MS);
+    }
+    throw new Error('Keyword discovery timed out — try again in a moment.');
+  }
+
+  confirmKeywordSelection(): boolean {
+    if (this._selected().size === 0) return false;
+    if (!this.wizardEnabled()) {
+      return false;
+    }
+    this._wizardStep.set('avatars');
+    this._error.set(null);
+    return true;
+  }
+
+  goToBuildStep(): boolean {
+    const count = this._selectedAvatarIds().size;
+    if (count === 0 || count > MAX_AVATARS) return false;
+    this._wizardStep.set('build');
+    this._error.set(null);
+    return true;
+  }
+
+  backWizardStep(): void {
+    const step = this._wizardStep();
+    if (step === 'build') {
+      this._wizardStep.set('avatars');
+    } else if (step === 'avatars') {
+      this._wizardStep.set('keywords');
+    }
+    this._error.set(null);
+  }
+
+  setHoveredAvatarId(id: string | null): void {
+    this._hoveredAvatarId.set(id);
+  }
+
+  toggleAvatar(id: string): void {
+    this._selectedAvatarIds.update((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else if (next.size < MAX_AVATARS) {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  isAvatarSelected(id: string): boolean {
+    return this._selectedAvatarIds().has(id);
+  }
+
+  async confirmAvatarsAndBuildPlan(): Promise<boolean> {
+    if (this._confirming()) return false;
+    const runId = this._discoveryRunId();
+    if (runId) {
+      return this.confirmViaDiscoveryApi(runId);
+    }
+    return this.confirmLegacyAndBuildPlan();
+  }
+
+  /** @deprecated Legacy single-step confirm when discovery run is unavailable. */
+  async confirmAndBuildPlan(): Promise<boolean> {
+    if (this.wizardEnabled() && this._wizardStep() !== 'build') {
+      return false;
+    }
+    return this.confirmAvatarsAndBuildPlan();
+  }
+
+  private async confirmViaDiscoveryApi(discoveryRunId: string): Promise<boolean> {
+    const siteId = this.siteId;
+    if (!siteId) return false;
+    const avatarIds = this._selectedAvatarIds();
+    if (avatarIds.size === 0 || avatarIds.size > MAX_AVATARS) {
+      this._error.set(`Select 1–${MAX_AVATARS} audiences to continue.`);
+      return false;
+    }
+    if (this._selected().size === 0) {
+      this._error.set('Select at least one keyword.');
+      return false;
+    }
+
+    this._confirming.set(true);
+    this._error.set(null);
+    try {
+      const avatarsById = new Map(this._suggestedAvatars().map((a) => [a.id, a]));
+      const confirmedAvatars = [...avatarIds].map((id) => {
+        const av = avatarsById.get(id);
+        return {
+          id,
+          description: av?.description ?? id,
+          exampleQueries: av?.exampleQueries ?? [],
+          intentCluster: av?.intentCluster ?? 'general',
+        };
+      });
+
+      const confirmedKeywords = [...this._selected().values()].map((o) => ({
+        phrase: o.phrase,
+        searchVolume: o.searchVolume,
+        difficulty: o.keywordDifficulty,
+        cpc: o.cpc,
+        fit: o.relevanceScore,
+        opportunity: o.opportunityScore,
+        intent: o.intent,
+        funnelStage: o.funnelStage,
+        source: o.discoverySource,
+        isGap: o.isGap,
+        serpFeatures: o.serpFeatures,
+        avatarId: o.avatarId ?? null,
+      }));
+
+      await this.api.confirmKeywordStrategy(siteId, {
+        discoveryRunId,
+        confirmedKeywords,
+        confirmedAvatars,
+      });
+
+      await this.strategy.reload();
+      await this.contentPlan.loadLatest();
+      return true;
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Failed to confirm strategy and start plan'));
+      return false;
+    } finally {
+      this._confirming.set(false);
+    }
+  }
+
+  private async confirmLegacyAndBuildPlan(): Promise<boolean> {
+    if (this._selected().size === 0) return false;
+    this._confirming.set(true);
+    this._error.set(null);
+    try {
+      const inputs = [...this._selected().values()].map((o) => ({
+        phrase: o.phrase,
+        intent: 'commercial' as const,
+        priority: 'medium' as const,
+        notes: 'Confirmed on home',
+      }));
+      this.strategy.replaceKeywords(inputs);
+      const saved = await this.strategy.saveKeywords();
+      if (!saved) {
+        this._error.set(this.strategy.error() ?? 'Failed to save keywords');
+        return false;
+      }
+      await this.contentPlan.generate();
+      return true;
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Failed to save keywords and start plan'));
+      return false;
+    } finally {
+      this._confirming.set(false);
     }
   }
 
@@ -195,31 +459,61 @@ export class ProtopipeKeywordPickerStore {
     this.mergeIntoPool(option);
   }
 
-  async confirmAndBuildPlan(): Promise<boolean> {
-    if (this._confirming() || this._selected().size === 0) return false;
-    this._confirming.set(true);
-    this._error.set(null);
-    try {
-      const inputs = [...this._selected().values()].map((o) => ({
-        phrase: o.phrase,
-        intent: 'commercial' as const,
-        priority: 'medium' as const,
-        notes: 'Confirmed on home',
-      }));
-      this.strategy.replaceKeywords(inputs);
-      const saved = await this.strategy.saveKeywords();
-      if (!saved) {
-        this._error.set(this.strategy.error() ?? 'Failed to save keywords');
-        return false;
+  private mergeDiscoveryRun(
+    run: ProtopipeKeywordDiscoveryRunDto,
+    map: Map<string, KeywordPickerOption>,
+  ): void {
+    const notes: string[] = [];
+    const failed = run.events.filter((e) => e.status === 'failed');
+    for (const ev of failed) {
+      if (ev.note || ev.error) {
+        notes.push(ev.note ?? ev.error ?? `${ev.step} failed`);
       }
-      await this.contentPlan.generate();
-      return true;
-    } catch (err) {
-      this._error.set(parseProtopipeApiError(err, 'Failed to save keywords and start plan'));
-      return false;
-    } finally {
-      this._confirming.set(false);
     }
+    if (notes.length) {
+      this._discoveryNote.set(notes.slice(0, 2).join(' · '));
+    }
+    for (const c of run.artifacts.scoredCandidates ?? []) {
+      this.mergeDiscoveryCandidate(c, map);
+    }
+  }
+
+  private mergeDiscoveryCandidate(
+    c: ProtopipeDiscoveryCandidate,
+    map: Map<string, KeywordPickerOption>,
+  ): void {
+    const phrase = (c.phrase ?? '').trim();
+    if (!phrase) return;
+    const pickerSource = mapDiscoverySourceToPicker(c.source);
+    if (!isRelevantForPicker(phrase, this.relevanceCtx, pickerSource)) return;
+    mergeKeywordOption(map, {
+      phraseKey: normalizePhraseKey(phrase),
+      phrase,
+      searchVolume: c.searchVolume,
+      keywordDifficulty: c.difficulty,
+      opportunityScore: c.opportunity,
+      relevanceScore: c.fit,
+      source: pickerSource,
+      intent: c.intent,
+      funnelStage: c.funnelStage,
+      discoverySource: c.source,
+      avatarId: c.avatarId,
+      isGap: c.isGap,
+      cpc: c.cpc,
+      serpFeatures: c.serpFeatures ?? c.serpItemTypes,
+    });
+  }
+
+  private applySuggestedAvatars(avatars: ProtopipeSuggestedAvatar[]): void {
+    this._suggestedAvatars.set(avatars);
+    const preselected = new Set<string>();
+    for (const av of avatars) {
+      if (av.preselected) preselected.add(av.id);
+    }
+    if (preselected.size === 0 && avatars.length > 0) {
+      preselected.add(avatars[0].id);
+    }
+    this._selectedAvatarIds.set(preselected);
   }
 
   private mergeDiscovery(
@@ -332,12 +626,20 @@ export class ProtopipeKeywordPickerStore {
       seeds.push(trimmed);
     };
 
-    const summary = this.strategy.strategy().summary;
-    const seedMatch = summary.match(/Primary goal: rank for "([^"]+)"/i);
-    if (seedMatch?.[1]) addSeed(seedMatch[1]);
+    const profile = this.strategy.onboardingProfile();
+    if (profile?.services?.length) {
+      for (const service of profile.services) {
+        if (seeds.length >= SEED_PHRASE_COUNT) break;
+        addSeed(service);
+      }
+    } else {
+      const summary = this.strategy.strategy().summary;
+      const seedMatch = summary.match(/Primary goal: rank for "([^"]+)"/i);
+      if (seedMatch?.[1]) addSeed(seedMatch[1]);
 
-    const tradeMatch = summary.match(/Trade:\s*([^.]+)/i);
-    if (tradeMatch?.[1]) addSeed(tradeMatch[1]);
+      const tradeMatch = summary.match(/Trade:\s*([^.]+)/i);
+      if (tradeMatch?.[1]) addSeed(tradeMatch[1]);
+    }
 
     const ranked = (discovery.ranked.keywords ?? [])
       .filter((k) => {

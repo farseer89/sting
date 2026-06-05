@@ -1,4 +1,5 @@
 import { normalizePhraseKey } from './keyword-picker.types';
+import type { ProtopipeOnboardingProfile } from '@hive/contracts';
 
 const STOP_WORDS = new Set([
   'a',
@@ -84,6 +85,7 @@ export interface KeywordRelevanceContext {
 
 export function buildRelevanceContext(input: {
   strategySummary?: string;
+  onboardingProfile?: ProtopipeOnboardingProfile;
   displayName?: string;
   hostname?: string;
 }): KeywordRelevanceContext {
@@ -103,13 +105,24 @@ export function buildRelevanceContext(input: {
     }
   };
 
-  const summary = (input.strategySummary ?? '').trim();
-  if (summary) {
-    addText(summary);
-    const seedMatch = summary.match(/Primary goal: rank for "([^"]+)"/i);
-    if (seedMatch?.[1]) addPhrase(seedMatch[1]);
-    const tradeMatch = summary.match(/Trade:\s*([^.]+)/i);
-    if (tradeMatch?.[1]) addPhrase(tradeMatch[1]);
+  const profile = input.onboardingProfile;
+  if (profile) {
+    for (const service of profile.services ?? []) {
+      addPhrase(service);
+      addText(service);
+    }
+    for (const avatar of profile.customerAvatars ?? []) {
+      addText(avatar);
+    }
+  } else {
+    const summary = (input.strategySummary ?? '').trim();
+    if (summary) {
+      addText(summary);
+      const seedMatch = summary.match(/Primary goal: rank for "([^"]+)"/i);
+      if (seedMatch?.[1]) addPhrase(seedMatch[1]);
+      const tradeMatch = summary.match(/Trade:\s*([^.]+)/i);
+      if (tradeMatch?.[1]) addPhrase(tradeMatch[1]);
+    }
   }
 
   addText(input.displayName);

@@ -49,6 +49,16 @@ export const routes: Routes = [
       ),
   },
   {
+    // Keyword Discovery Lab — dev surface that renders the discovery pipeline in
+    // the Thinker view, defaulting to hardcoded fixtures (live backend = Phase 2).
+    path: 'protopipe/lab/keyword-discovery',
+    canMatch: [devRoutesGuard],
+    loadComponent: () =>
+      import('./features/protopipe/lab/keyword-discovery/keyword-discovery-lab.component').then(
+        (m) => m.KeywordDiscoveryLabComponent,
+      ),
+  },
+  {
     // Live Thinker run — renders a real ArticleGenerationRun in the Thought
     // stepper. Operator-gated; opened from the writer's behind-the-curtain panel.
     path: 'protopipe/lab/thinker/run/:siteId/:runId',

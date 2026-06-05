@@ -31,7 +31,7 @@
 .writer__back {
   border: none;
   background: transparent;
-  color: rgba(180, 195, 220, 0.55);
+  color: var(--void-ink-secondary);
   font-size: 10px;
   cursor: pointer;
   padding: 0.15rem 0.3rem;
@@ -41,7 +41,7 @@
   flex: 1;
   text-align: center;
   font-size: 9px;
-  color: rgba(170, 185, 210, 0.45);
+  color: var(--void-ink-muted);
 
   &.is-dirty {
     color: var(--void-ocean);
@@ -70,7 +70,7 @@
   cursor: pointer;
 
   &--ghost {
-    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    border: 0.5px solid var(--void-tile-border);
     background: transparent;
     color: rgba(200, 210, 230, 0.7);
   }
@@ -98,14 +98,14 @@
   align-items: stretch;
   gap: 0.12rem;
   padding: 0.2rem 0;
-  border-right: 0.5px solid rgba(255, 255, 255, 0.05);
+  border-right: 0.5px solid var(--void-row-border);
   flex-shrink: 0;
 }
 
 .writer__tool-divider {
   height: 0.5px;
   margin: 0.25rem 0.15rem;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--void-hover-strong);
 }
 
 .writer__tool {
@@ -138,7 +138,7 @@
 
   &:hover {
     color: rgba(215, 225, 240, 0.78);
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--void-hover);
   }
 
   &.is-active {
@@ -178,9 +178,9 @@
   transform: translate(4px, -50%);
   padding: 0.15rem 0.35rem;
   border-radius: 3px;
-  border: 0.5px solid rgba(255, 255, 255, 0.08);
-  background: rgba(8, 12, 20, 0.92);
-  color: rgba(210, 220, 235, 0.8);
+  border: 0.5px solid var(--void-glass-border);
+  background: var(--void-tooltip-bg);
+  color: var(--void-ink-group-hover);
   font-size: 8px;
   letter-spacing: 0.04em;
   white-space: nowrap;
@@ -236,7 +236,7 @@
   text-align: center;
   font-size: 9px;
   letter-spacing: 0.03em;
-  color: rgba(170, 185, 210, 0.48);
+  color: var(--void-ink-label);
 
   strong {
     color: var(--void-ocean);
@@ -321,7 +321,7 @@
   background: transparent;
   padding: 0.1rem 0;
   cursor: pointer;
-  color: rgba(170, 185, 210, 0.42);
+  color: var(--void-ink-faint);
   text-align: left;
 }
 
@@ -373,7 +373,7 @@
   padding: 0.38rem 0.42rem;
   border-radius: 5px;
   border: 0.5px solid rgba(var(--void-ocean-rgb), 0.18);
-  background: rgba(6, 10, 18, 0.78);
+  background: var(--void-panel-bg);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   animation: aiNoteIn 0.22s ease backwards;
@@ -428,7 +428,7 @@
 }
 
 .ai-note__dismiss {
-  color: rgba(170, 185, 210, 0.45);
+  color: var(--void-ink-muted);
 }
 
 .ai-note__dismiss:hover {
@@ -444,7 +444,7 @@
   width: 100%;
   border: none;
   background: transparent;
-  color: rgba(245, 248, 255, 0.96);
+  color: var(--void-ink-strong);
   font-size: clamp(1.05rem, 2.2vw, 1.35rem);
   font-weight: 500;
   line-height: 1.3;
@@ -452,7 +452,7 @@
   outline: none;
 
   &::placeholder {
-    color: rgba(170, 185, 210, 0.32);
+    color: var(--void-placeholder);
   }
 }
 
@@ -461,16 +461,19 @@
   width: 100%;
   border: none;
   background: transparent;
-  color: rgba(225, 232, 245, 0.9);
+  color: var(--void-input-ink);
+  font-family: inherit;
   font-size: 11.5px;
   line-height: 1.65;
-  resize: vertical;
+  resize: none;
+  overflow: hidden;
   outline: none;
   margin-bottom: 0.55rem;
-  @include void-scrollbar;
+  min-height: 1.65em;
+  field-sizing: content;
 
   &::placeholder {
-    color: rgba(170, 185, 210, 0.32);
+    color: var(--void-placeholder);
   }
 }
 
@@ -487,14 +490,14 @@
 .writer__block:nth-child(n + 4):not(.writer__block--foot) {
   margin-top: 0.55rem;
   padding-top: 0.55rem;
-  border-top: 0.5px solid rgba(255, 255, 255, 0.05);
+  border-top: 0.5px solid var(--void-row-border);
 }
 
 .writer__h2 {
   width: 100%;
   border: none;
   background: transparent;
-  color: rgba(235, 240, 250, 0.92);
+  color: var(--void-ink-body);
   font-size: 12px;
   font-weight: 500;
   text-align: center;
@@ -502,12 +505,168 @@
   outline: none;
 
   &::placeholder {
-    color: rgba(170, 185, 210, 0.32);
+    color: var(--void-placeholder);
   }
 }
 
 .writer__section-body {
   text-align: left;
+}
+
+.writer__block--insert {
+  margin: 0.15rem 0 0.35rem;
+
+  .writer__block-main {
+    display: flex;
+    justify-content: center;
+  }
+}
+
+.writer__insert {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 1.75rem;
+  opacity: 0.28;
+  transition: opacity 0.18s ease;
+
+  &:hover,
+  &.is-open {
+    opacity: 1;
+  }
+}
+
+.writer__insert-btn {
+  display: grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    transform 0.2s cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  .writer__insert.is-open & {
+    transform: rotate(45deg);
+    background: rgba(var(--void-ocean-rgb), 0.1);
+  }
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+}
+
+.writer__insert-icon {
+  position: relative;
+  width: 0.75rem;
+  height: 0.75rem;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    background: var(--void-ink-muted);
+    border-radius: 1px;
+    transform: translate(-50%, -50%);
+    transition: background 0.15s ease;
+  }
+
+  &::before {
+    width: 100%;
+    height: 1.5px;
+  }
+
+  &::after {
+    width: 1.5px;
+    height: 100%;
+  }
+
+  .writer__insert:hover &,
+  .writer__insert.is-open & {
+    &::before,
+    &::after {
+      background: var(--void-ocean);
+    }
+  }
+}
+
+.writer__fan {
+  position: absolute;
+  left: 50%;
+  bottom: 50%;
+  width: 0;
+  height: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.writer__fan-option {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  width: 2.75rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translate(calc(-50% + var(--fan-x, 0px)), var(--fan-y, 0px)) scale(0.35);
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1.1, 0.36, 1),
+    opacity 0.2s ease;
+  transition-delay: var(--fan-delay, 0ms);
+
+  .writer__insert.is-open & {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--fan-x, 0px)), var(--fan-y, 0px)) scale(1);
+  }
+
+  &:hover .writer__fan-icon {
+    background: rgba(var(--void-ocean-rgb), 0.14);
+    border-color: rgba(var(--void-ocean-rgb), 0.35);
+    color: var(--void-ocean);
+    transform: scale(1.06);
+  }
+}
+
+.writer__fan-icon {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  border: 0.5px solid var(--void-tile-border);
+  background: var(--void-panel-bg, #fff);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  color: var(--void-ink-body);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.writer__fan-label {
+  font-size: 8px;
+  letter-spacing: 0.02em;
+  color: var(--void-ink-secondary);
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .writer__column-foot {
@@ -516,22 +675,21 @@
   margin-top: 0.35rem;
 }
 
-.writer__add-section,
-.writer__remove-section {
-  border: 0.5px dashed rgba(255, 255, 255, 0.12);
-  border-radius: 4px;
-  background: transparent;
-  color: rgba(180, 195, 220, 0.5);
-  font-size: 9px;
-  padding: 0.25rem 0.4rem;
-  cursor: pointer;
-}
-
 .writer__remove-section {
   display: block;
   margin: 0.15rem auto 0;
-  border-style: solid;
-  border-color: rgba(255, 255, 255, 0.06);
+  border: none;
+  background: transparent;
+  color: var(--void-ink-muted);
+  font-size: 8px;
+  padding: 0.15rem 0.3rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+
+  .writer__section:hover & {
+    opacity: 1;
+  }
 }
 
 .writer__aside {
@@ -557,7 +715,7 @@
 .writer__serp-url {
   margin: 0.25rem 0 0.1rem;
   font-size: 8px;
-  color: rgba(170, 185, 210, 0.45);
+  color: var(--void-ink-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -573,7 +731,7 @@
 .writer__serp-desc {
   margin: 0;
   font-size: 9px;
-  color: rgba(180, 195, 220, 0.55);
+  color: var(--void-ink-secondary);
   line-height: 1.35;
 }
 
@@ -640,7 +798,7 @@
     font-size: 8px;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: rgba(170, 185, 210, 0.42);
+    color: var(--void-ink-faint);
   }
 
   input,
@@ -658,7 +816,7 @@
 
 .writer__meta-count {
   font-size: 8px;
-  color: rgba(170, 185, 210, 0.45);
+  color: var(--void-ink-muted);
 
   &.is-warn {
     color: var(--void-ocean);

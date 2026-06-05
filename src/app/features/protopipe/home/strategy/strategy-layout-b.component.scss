@@ -1,0 +1,57 @@
+@use './strategy.shared' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.strat-b {
+  @include strat-base;
+  overflow: hidden;
+}
+
+.strat-b app-strategy-content-map {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.strat-b__below-fold {
+  flex-shrink: 0;
+  max-height: 40vh;
+  overflow-y: auto;
+  border-top: 0.5px solid var(--void-tile-border);
+  padding-top: 0.35rem;
+}
+
+.strat-b__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.strat-b__kw-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.strat-b__kw-chip {
+  font-size: 9px;
+  padding: 0.22rem 0.45rem;
+  border-radius: 999px;
+  border: 0.5px solid rgba(238, 155, 0, 0.35);
+  background: rgba(238, 155, 0, 0.08);
+  color: var(--void-ink-body);
+}
+
+.strat-b__kw-chip--long {
+  border-color: var(--void-tile-border);
+  background: rgba(0, 0, 0, 0.03);
+  color: var(--void-ink-secondary);
+}

@@ -9,6 +9,11 @@ html.void-lab body {
   background: #040810;
 }
 
+html.void-lab.void-white body {
+  color-scheme: light;
+  background: #f4f6f8;
+}
+
 html.void-lab app-root {
   display: flex;
   flex-direction: column;
@@ -26,9 +31,25 @@ html.void-lab .slim-table--wide,
 html.void-lab .mosaic,
 html.void-lab .folder-tree,
 html.void-lab .kanban__cards,
-html.void-lab .cal-grid {
+html.void-lab .cal-grid,
+html.void-lab .void-rail__scroll {
   scrollbar-width: thin;
   scrollbar-color: rgba(10, 147, 150, 0.45) rgba(4, 8, 16, 0.9);
+}
+
+html.void-lab.void-white .writer__scroll,
+html.void-lab.void-white .writer__aside,
+html.void-lab.void-white .writer__intro,
+html.void-lab.void-white .writer__section-body,
+html.void-lab.void-white .writer__field textarea,
+html.void-lab.void-white .slim-list,
+html.void-lab.void-white .slim-table--wide,
+html.void-lab.void-white .mosaic,
+html.void-lab.void-white .folder-tree,
+html.void-lab.void-white .kanban__cards,
+html.void-lab.void-white .cal-grid,
+html.void-lab.void-white .void-rail__scroll {
+  scrollbar-color: rgba(10, 147, 150, 0.55) rgba(236, 240, 244, 0.95);
 }
 
 html.void-lab .writer__scroll::-webkit-scrollbar,
@@ -41,7 +62,8 @@ html.void-lab .slim-table--wide::-webkit-scrollbar,
 html.void-lab .mosaic::-webkit-scrollbar,
 html.void-lab .folder-tree::-webkit-scrollbar,
 html.void-lab .kanban__cards::-webkit-scrollbar,
-html.void-lab .cal-grid::-webkit-scrollbar {
+html.void-lab .cal-grid::-webkit-scrollbar,
+html.void-lab .void-rail__scroll::-webkit-scrollbar {
   width: 5px;
   height: 5px;
 }
@@ -56,7 +78,8 @@ html.void-lab .slim-table--wide::-webkit-scrollbar-track,
 html.void-lab .mosaic::-webkit-scrollbar-track,
 html.void-lab .folder-tree::-webkit-scrollbar-track,
 html.void-lab .kanban__cards::-webkit-scrollbar-track,
-html.void-lab .cal-grid::-webkit-scrollbar-track {
+html.void-lab .cal-grid::-webkit-scrollbar-track,
+html.void-lab .void-rail__scroll::-webkit-scrollbar-track {
   background: rgba(4, 8, 16, 0.9);
 }
 
@@ -70,9 +93,25 @@ html.void-lab .slim-table--wide::-webkit-scrollbar-thumb,
 html.void-lab .mosaic::-webkit-scrollbar-thumb,
 html.void-lab .folder-tree::-webkit-scrollbar-thumb,
 html.void-lab .kanban__cards::-webkit-scrollbar-thumb,
-html.void-lab .cal-grid::-webkit-scrollbar-thumb {
+html.void-lab .cal-grid::-webkit-scrollbar-thumb,
+html.void-lab .void-rail__scroll::-webkit-scrollbar-thumb {
   background-color: rgba(10, 147, 150, 0.4);
   border-radius: 999px;
+}
+
+html.void-lab.void-white .writer__scroll::-webkit-scrollbar-track,
+html.void-lab.void-white .writer__aside::-webkit-scrollbar-track,
+html.void-lab.void-white .writer__intro::-webkit-scrollbar-track,
+html.void-lab.void-white .writer__section-body::-webkit-scrollbar-track,
+html.void-lab.void-white .writer__field textarea::-webkit-scrollbar-track,
+html.void-lab.void-white .slim-list::-webkit-scrollbar-track,
+html.void-lab.void-white .slim-table--wide::-webkit-scrollbar-track,
+html.void-lab.void-white .mosaic::-webkit-scrollbar-track,
+html.void-lab.void-white .folder-tree::-webkit-scrollbar-track,
+html.void-lab.void-white .kanban__cards::-webkit-scrollbar-track,
+html.void-lab.void-white .cal-grid::-webkit-scrollbar-track,
+html.void-lab.void-white .void-rail__scroll::-webkit-scrollbar-track {
+  background: rgba(236, 240, 244, 0.95);
 }
 
 html.void-lab .hud-nav__windows {

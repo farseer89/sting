@@ -1,0 +1,19 @@
+<div class="strat-b">
+  <app-strategy-hero [plan]="plan()" [siteLabel]="siteLabel()" />
+
+  <app-strategy-content-map [plan]="plan()" [siteLabel]="siteLabel()" />
+
+  <div class="strat__accordion strat-b__below-fold">
+    <button type="button" class="strat__acc-btn" [class.is-open]="isOpen('wins')" (click)="toggleAccordion('wins')">
+      Site wins
+      <span>{{ isOpen('wins') ? '▲' : '▸' }}</span>
+    </button>
+    @if (isOpen('wins') && plan().existingContent; as audit) {
+      <div class="strat__acc-panel">
+        @for (r of audit.alreadyRanking.slice(0, 5); track r.phrase) {
+          <div>#{{ r.position }} {{ r.phrase }}</div>
+        }
+      </div>
+    }
+  </div>
+</div>

@@ -66,9 +66,10 @@
     @if (step() === 1) {
       <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
         <p class="eyebrow">Your website</p>
-        <h1 class="question">Got a website?</h1>
+        <h1 class="question">What's your website?</h1>
         <p class="helper">
-          Paste your URL — or skip if you don't have one yet.
+          This is how we find the keywords you already rank for and the ones
+          worth chasing.
         </p>
 
         <div class="field">
@@ -83,8 +84,8 @@
             placeholder="mauielectric.com"
           />
           <small class="helper-inline">
-            Optional — we'll use it to set up your site profile. We'll layer in
-            an automatic audit of your homepage soon.
+            We'll scan your site to understand what you do and tailor your
+            keyword suggestions.
           </small>
         </div>
 
@@ -102,20 +103,57 @@
 
     @if (step() === 2) {
       <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
-        <p class="eyebrow">Getting started</p>
-        <h1 class="question">What's the business called?</h1>
-        <p class="helper">We'll use this name across your dashboard.</p>
+        <p class="eyebrow">Your offer</p>
+        <h1 class="question">What services are you trying to sell?</h1>
+        <p class="helper">
+          Add the things you want more customers for — one at a time. These
+          drive your keyword suggestions.
+        </p>
 
         <div class="field">
-          <input
-            #nameInput
-            id="businessName"
-            type="text"
-            formControlName="businessName"
-            pInputText
-            autocomplete="organization"
-            placeholder="Maui Electric"
-          />
+          <div class="chip-input">
+            <input
+              #serviceInput
+              id="serviceDraft"
+              type="text"
+              pInputText
+              [value]="serviceDraft()"
+              (input)="onServiceDraftInput($any($event.target).value)"
+              (keydown.enter)="addService($event)"
+              [disabled]="services().length >= maxServices"
+              placeholder="e.g. EV charger installation"
+            />
+            <button
+              type="button"
+              class="chip-add"
+              (click)="addService($event)"
+              [disabled]="!serviceDraft().trim() || services().length >= maxServices"
+            >
+              <i class="pi pi-plus" aria-hidden="true"></i>
+              Add
+            </button>
+          </div>
+
+          @if (services().length > 0) {
+            <ul class="chip-list" aria-label="Services added">
+              @for (svc of services(); track svc; let i = $index) {
+                <li class="chip">
+                  <span>{{ svc }}</span>
+                  <button
+                    type="button"
+                    class="chip-remove"
+                    (click)="removeService(i)"
+                    [attr.aria-label]="'Remove ' + svc"
+                  >
+                    <i class="pi pi-times" aria-hidden="true"></i>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+          <small class="helper-inline">
+            Add up to {{ maxServices }}. Press Enter or tap Add.
+          </small>
         </div>
 
         <div class="actions">
@@ -132,20 +170,54 @@
 
     @if (step() === 3) {
       <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
-        <p class="eyebrow">About your business</p>
-        <h1 class="question">What does your business do?</h1>
-        <p class="helper">One sentence is fine — we'll use this to suggest keywords.</p>
+        <p class="eyebrow">Your customers</p>
+        <h1 class="question">Who are your perfect customers?</h1>
+        <p class="helper">Describe what each person wants — keep it simple.</p>
 
-        <div class="field">
-          <textarea
-            #descriptionInput
-            id="businessDescription"
-            formControlName="businessDescription"
-            pTextarea
-            rows="3"
-            placeholder="We're a residential electrician in Maui specializing in panel upgrades and EV chargers."
-          ></textarea>
-          <small class="counter">10–800 characters</small>
+        <div class="avatar-list" role="group" aria-label="Customer avatars">
+          @for (slot of avatarSlots; track slot) {
+            <div
+              class="avatar-row"
+              [class.avatar-row--filled]="customerAvatars()[slot].trim().length > 0"
+            >
+              <span class="avatar-head" aria-hidden="true">
+                <i class="pi pi-user"></i>
+              </span>
+              @if (slot === 0) {
+                <input
+                  #avatarInput0
+                  id="avatarInput0"
+                  type="text"
+                  pInputText
+                  class="avatar-row__input"
+                  [value]="customerAvatars()[slot]"
+                  (input)="updateCustomerAvatar(slot, $any($event.target).value)"
+                  [placeholder]="avatarPlaceholder(slot)"
+                  aria-label="Customer 1: what they want"
+                  aria-required="true"
+                />
+              } @else {
+                <input
+                  [id]="'avatarInput' + slot"
+                  type="text"
+                  pInputText
+                  class="avatar-row__input"
+                  [value]="customerAvatars()[slot]"
+                  (input)="updateCustomerAvatar(slot, $any($event.target).value)"
+                  [placeholder]="avatarPlaceholder(slot)"
+                  [attr.aria-label]="'Customer ' + (slot + 1) + ': what they want'"
+                />
+              }
+            </div>
+          }
+        </div>
+
+        <div class="avatar-add-more">
+          <button type="button" class="avatar-add-more__btn" disabled aria-disabled="true">
+            <i class="pi pi-plus" aria-hidden="true"></i>
+            Add more
+          </button>
+          <span class="avatar-add-more__hint">We'll define additional avatars later.</span>
         </div>
 
         <div class="actions">
@@ -162,19 +234,59 @@
 
     @if (step() === 4) {
       <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
-        <p class="eyebrow">Trade</p>
-        <h1 class="question">What kind of work do you do?</h1>
-        <p class="helper">A short phrase is fine — Electrician, Photographer, Attorney…</p>
+        <p class="eyebrow">Your competition</p>
+        <h1 class="question">Who are your competitors?</h1>
+        <p class="helper">
+          Add a few competitor sites (or ones you admire). We'll mine the
+          keywords they already rank for. Optional, but it makes your
+          suggestions much sharper.
+        </p>
 
         <div class="field">
-          <input
-            #tradeInput
-            id="trade"
-            type="text"
-            formControlName="trade"
-            pInputText
-            placeholder="Electrician"
-          />
+          <div class="chip-input">
+            <input
+              #competitorInput
+              id="competitorDraft"
+              type="text"
+              pInputText
+              [value]="competitorDraft()"
+              (input)="onCompetitorDraftInput($any($event.target).value)"
+              (keydown.enter)="addCompetitor($event)"
+              [disabled]="competitors().length >= maxCompetitors"
+              inputmode="url"
+              placeholder="e.g. competitorelectric.com"
+            />
+            <button
+              type="button"
+              class="chip-add"
+              (click)="addCompetitor($event)"
+              [disabled]="!competitorDraft().trim() || competitors().length >= maxCompetitors"
+            >
+              <i class="pi pi-plus" aria-hidden="true"></i>
+              Add
+            </button>
+          </div>
+
+          @if (competitors().length > 0) {
+            <ul class="chip-list" aria-label="Competitors added">
+              @for (comp of competitors(); track comp; let i = $index) {
+                <li class="chip">
+                  <span>{{ comp }}</span>
+                  <button
+                    type="button"
+                    class="chip-remove"
+                    (click)="removeCompetitor(i)"
+                    [attr.aria-label]="'Remove ' + comp"
+                  >
+                    <i class="pi pi-times" aria-hidden="true"></i>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+          <small class="helper-inline">
+            Add up to {{ maxCompetitors }}, or skip with Continue.
+          </small>
         </div>
 
         <div class="actions">
@@ -191,27 +303,72 @@
 
     @if (step() === 5) {
       <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
-        <p class="eyebrow">Service area</p>
-        <h1 class="question">Where do you serve customers?</h1>
-        <p class="helper">We use this to target local search results.</p>
+        <p class="eyebrow">Your market</p>
+        <h1 class="question">Where are your customers?</h1>
+        <p class="helper">Choose how far your customers reach — local, national, or worldwide.</p>
 
-        <div class="field">
-          <p-autocomplete
-            inputId="locationSearch"
-            [suggestions]="locationSuggestions()"
-            (completeMethod)="searchLocations($event)"
-            (onSelect)="onLocationSelected($event)"
-            (onClear)="onLocationCleared()"
-            field="name"
-            optionLabel="name"
-            placeholder="Start typing a city or region (e.g. Maui)"
-            [forceSelection]="false"
-            [minLength]="2"
-            [delay]="250"
-            appendTo="body"
-            styleClass="onboarding-autocomplete"
-          />
+        <div class="scope-picker" role="radiogroup" aria-label="Customer market scope">
+          @for (option of marketScopeOptions; track option.id) {
+            <button
+              type="button"
+              class="scope-option"
+              role="radio"
+              [class.scope-option--active]="customerScope() === option.id"
+              [attr.aria-checked]="customerScope() === option.id"
+              (click)="selectMarketScope(option.id)"
+            >
+              <i [class]="option.icon" aria-hidden="true"></i>
+              <span class="scope-option__title">{{ option.label }}</span>
+              <span class="scope-option__desc">{{ option.description }}</span>
+            </button>
+          }
         </div>
+
+        @if (customerScope() === 'local') {
+          <div class="field scope-detail">
+            <label class="field-label" for="locationSearch">Your town or city</label>
+            <p-autocomplete
+              inputId="locationSearch"
+              [suggestions]="locationSuggestions()"
+              (completeMethod)="searchLocations($event)"
+              (onSelect)="onLocationSelected($event)"
+              (onClear)="onLocationCleared()"
+              field="name"
+              optionLabel="name"
+              placeholder="Start typing (e.g. Maui)"
+              [forceSelection]="false"
+              [minLength]="2"
+              [delay]="250"
+              appendTo="body"
+              styleClass="onboarding-autocomplete"
+            />
+          </div>
+        }
+
+        @if (customerScope() === 'national') {
+          <div class="field scope-detail">
+            <label class="field-label" for="countrySearch">Country</label>
+            <p-autocomplete
+              inputId="countrySearch"
+              [suggestions]="countrySuggestions()"
+              (completeMethod)="searchCountries($event)"
+              (onSelect)="onCountrySelected($event)"
+              (onClear)="onCountryCleared()"
+              field="name"
+              optionLabel="name"
+              placeholder="Search countries"
+              [forceSelection]="true"
+              [minLength]="0"
+              [delay]="0"
+              appendTo="body"
+              styleClass="onboarding-autocomplete"
+            />
+          </div>
+        }
+
+        @if (customerScope() === 'worldwide') {
+          <p class="scope-worldwide-note">No location needed — you're ready to continue.</p>
+        }
 
         <div class="actions">
           <span class="enter-hint">press Enter ↵</span>
@@ -227,40 +384,20 @@
 
     @if (step() === 6 && !isComplete()) {
       <form [formGroup]="form" class="step" (ngSubmit)="submit()">
-        <p class="eyebrow">Your first goal</p>
-        <h1 class="question">What would you love to rank for?</h1>
-        <p class="helper">
-          Optional — we'll use it to pre-fill keyword discovery. You can change it
-          anytime.
-        </p>
+        <p class="eyebrow">Last thing</p>
+        <h1 class="question">What's the business called?</h1>
+        <p class="helper">We'll use this name across your dashboard.</p>
 
         <div class="field">
           <input
-            #seedInput
-            id="seedPhrase"
+            #nameInput
+            id="businessName"
             type="text"
-            formControlName="seedPhrase"
+            formControlName="businessName"
             pInputText
-            placeholder="e.g. electrician maui"
+            autocomplete="organization"
+            placeholder="Maui Electric"
           />
-
-          @if (seedSuggestions().length > 0) {
-            <div class="suggestions">
-              <span class="suggestions-label">Suggested for you</span>
-              <div class="suggestion-pills">
-                @for (s of seedSuggestions(); track s) {
-                  <button
-                    type="button"
-                    class="suggestion"
-                    (click)="applySuggestion(s)"
-                  >
-                    <i class="pi pi-arrow-up-right" aria-hidden="true"></i>
-                    <span>{{ s }}</span>
-                  </button>
-                }
-              </div>
-            </div>
-          }
         </div>
 
         <div class="actions">

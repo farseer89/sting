@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  HostListener,
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -21,9 +22,18 @@ import {
   type AiSuggestion,
 } from './void-writer-suggestions';
 
-interface WriterSection {
+export type SectionBlockType = 'text' | 'heading' | 'image' | 'quote' | 'faq' | 'list';
+
+export interface WriterSection {
   h2: string;
   body: string;
+  type: SectionBlockType;
+}
+
+export interface SectionInsertOption {
+  id: SectionBlockType;
+  label: string;
+  icon: string;
 }
 
 type WriterToolId =
@@ -42,6 +52,15 @@ interface WriterTool {
   label: string;
   group: 'write' | 'inspect';
 }
+
+const SECTION_DEFAULTS: Record<SectionBlockType, Pick<WriterSection, 'h2' | 'body'>> = {
+  text: { h2: '', body: '' },
+  heading: { h2: '', body: '' },
+  image: { h2: 'Image', body: '' },
+  quote: { h2: '', body: '' },
+  faq: { h2: 'FAQ', body: '' },
+  list: { h2: '', body: '' },
+};
 
 @Component({
   selector: 'app-void-content-writer',
@@ -65,7 +84,17 @@ export class VoidContentWriterComponent {
   readonly showSeoPanel = signal(true);
   readonly showAiNotes = signal(true);
   readonly expandedNoteId = signal<string | null>(null);
+  readonly openFanAt = signal<number | null>(null);
   private readonly dismissedNoteIds = signal<ReadonlySet<string>>(new Set());
+
+  readonly sectionInsertOptions: SectionInsertOption[] = [
+    { id: 'text', label: 'Text', icon: '¶' },
+    { id: 'heading', label: 'Heading', icon: 'H' },
+    { id: 'list', label: 'List', icon: '≡' },
+    { id: 'quote', label: 'Quote', icon: '❝' },
+    { id: 'image', label: 'Image', icon: '▣' },
+    { id: 'faq', label: 'FAQ', icon: '?' },
+  ];
 
   readonly tools: WriterTool[] = [
     { id: 'text', label: 'Text', group: 'write' },
@@ -96,17 +125,19 @@ export class VoidContentWriterComponent {
   readonly slug = signal('how-much-does-a-wedding-painter-cost');
   readonly sections = signal<WriterSection[]>([
     {
+      type: 'text',
       h2: 'What is how much does a wedding painter cost?',
       body:
         'Live wedding painting is a premium add-on where an artist paints your ceremony or reception on canvas. Pricing reflects travel, time on-site, canvas size, and whether the painter works internationally.',
     },
     {
+      type: 'text',
       h2: 'How the process works',
       body:
         'Most destination painters quote a flat fee that includes consultation, the wedding day, and finishing work in the studio. Deposits typically secure your date six to twelve months out.',
     },
-    { h2: 'Why couples book early', body: '' },
-    { h2: 'Questions to ask before you commit', body: '' },
+    { type: 'text', h2: 'Why couples book early', body: '' },
+    { type: 'text', h2: 'Questions to ask before you commit', body: '' },
   ]);
 
   readonly introSuggestion = computed(() =>
@@ -175,11 +206,86 @@ export class VoidContentWriterComponent {
     return blockers;
   });
 
+  @HostListener('document:click', ['$event'])
+  closeFanOnOutsideClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (target.closest('.writer__insert')) {
+      return;
+    }
+    this.openFanAt.set(null);
+  }
+
+  autoGrow(event: Event): void {
+    const el = event.target as HTMLTextAreaElement;
+    el.style.height = '0';
+    el.style.height = `${el.scrollHeight}px`;
+  }
+
+  fanStyle(index: number, total: number): { [key: string]: string } {
+    const spread = 108;
+    const start = -90 - spread / 2;
+    const angleDeg = total <= 1 ? -90 : start + (spread / (total - 1)) * index;
+    const rad = (angleDeg * Math.PI) / 180;
+    const radius = 54;
+    return {
+      '--fan-x': `${Math.cos(rad) * radius}px`,
+      '--fan-y': `${Math.sin(rad) * radius}px`,
+      '--fan-delay': `${index * 40}ms`,
+    };
+  }
+
+  isFanOpen(at: number): boolean {
+    return this.openFanAt() === at;
+  }
+
+  toggleFan(at: number, event: Event): void {
+    event.stopPropagation();
+    this.openFanAt.update((current) => (current === at ? null : at));
+  }
+
+  insertSectionAt(index: number, type: SectionBlockType, event: Event): void {
+    event.stopPropagation();
+    const defaults = SECTION_DEFAULTS[type];
+    this.sections.update((list) => {
+      const next = [...list];
+      next.splice(index, 0, { type, h2: defaults.h2, body: defaults.body });
+      return next;
+    });
+    this.openFanAt.set(null);
+    this.markDirty();
+  }
+
+  sectionPlaceholder(section: WriterSection): string {
+    if (section.type === 'quote') {
+      return 'Pull quote or testimonial…';
+    }
+    if (section.type === 'list') {
+      return 'One item per line…';
+    }
+    if (section.type === 'faq') {
+      return 'Question and answer…';
+    }
+    if (section.type === 'image') {
+      return 'Caption or alt text…';
+    }
+    return 'Write this section…';
+  }
+
+  headingPlaceholder(section: WriterSection): string {
+    if (section.type === 'heading') {
+      return 'Heading';
+    }
+    if (section.type === 'faq') {
+      return 'Question';
+    }
+    return 'Section heading';
+  }
+
   insertIntroSuggestion(): void {
     const text = this.introSuggestion();
     if (text) {
       this.intro.set(text);
-      this.dirty.set(true);
+      this.markDirty();
       this.dismissNote('intro-open');
     }
   }
@@ -269,7 +375,7 @@ export class VoidContentWriterComponent {
   }
 
   addSection(): void {
-    this.sections.update((list) => [...list, { h2: '', body: '' }]);
+    this.sections.update((list) => [...list, { type: 'text', h2: '', body: '' }]);
     this.markDirty();
   }
 
@@ -302,7 +408,7 @@ export class VoidContentWriterComponent {
       return;
     }
     if (id === 'section') {
-      this.addSection();
+      this.openFanAt.set(this.sections().length);
       this.activeTool.set('section');
       return;
     }

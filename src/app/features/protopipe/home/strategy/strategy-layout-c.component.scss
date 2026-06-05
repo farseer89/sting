@@ -1,0 +1,45 @@
+@use './strategy.shared' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.strat-c {
+  @include strat-base;
+  overflow-y: auto;
+}
+
+.strat-c app-strategy-content-map {
+  flex-shrink: 0;
+  min-height: min(58vh, 560px);
+  display: flex;
+  flex-direction: column;
+}
+
+.strat-c__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.strat-c__detail-row {
+  margin: 0 0 0.25rem;
+  font-size: 9px;
+  color: var(--void-ink-secondary);
+}
+
+.strat__card-num--keywords {
+  color: #c47a00;
+}
+
+.strat__card-num--pillars {
+  color: #0a9396;
+}
+
+.strat__card-num--scheduled {
+  color: #2a9d8f;
+}

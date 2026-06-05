@@ -1,0 +1,78 @@
+@use './strategy.shared' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.strat-a {
+  @include strat-base;
+  overflow: hidden;
+  width: 100%;
+  min-width: 0;
+}
+
+.strat-a app-strategy-content-map {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.strat-a__below-fold {
+  flex-shrink: 0;
+  max-height: 40vh;
+  overflow-y: auto;
+  border-top: 0.5px solid var(--void-tile-border);
+  padding-top: 0.35rem;
+}
+
+.strat-a__cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.strat-a__cal-label {
+  margin: 0;
+}
+
+.strat-a__cal-toggle {
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 9px;
+  color: var(--void-ocean);
+  cursor: pointer;
+  padding: 0.15rem 0.25rem;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.strat-a__tier-label {
+  margin: 0 0 0.25rem;
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--void-ink-muted);
+}
+
+.strat-a__cluster-name {
+  margin: 0.35rem 0 0.15rem;
+  font-weight: 600;
+  color: var(--void-ink-body);
+}
+
+.strat-a__members {
+  margin: 0 0 0.35rem;
+  padding-left: 1rem;
+  font-size: 9px;
+  color: var(--void-ink-secondary);
+}

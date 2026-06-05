@@ -1,0 +1,91 @@
+<section
+  class="strat-map"
+  [class.strat-map--expanded]="isExpandedView()"
+  aria-label="Strategy visual"
+>
+  <nav class="strat-map__nav" role="tablist" aria-label="Strategy views">
+    @for (tab of visualViews; track tab.id) {
+      @if (tab.tune) {
+        <span class="strat-map__nav-gap" aria-hidden="true"></span>
+      }
+      <button
+        type="button"
+        role="tab"
+        class="strat-map__nav-item"
+        [class.is-active]="isView(tab.id)"
+        [class.strat-map__nav-item--tune]="tab.tune"
+        [attr.aria-selected]="isView(tab.id)"
+        (click)="setView(tab.id)"
+      >
+        {{ tab.label }}
+      </button>
+    }
+  </nav>
+
+  <header class="strat-map__head">
+    <p class="strat-map__lede">{{ panelLede() }}</p>
+    @if (showPlanSteps()) {
+      <ol class="strat-map__steps" aria-label="Strategy reading order">
+        <li
+          class="strat-map__step strat-map__step--keywords"
+          [class.is-emphasis]="isView('keywords')"
+        >
+          <span class="strat-map__step-num">1</span>
+          <span class="strat-map__step-label">Keywords</span>
+          <span class="strat-map__step-count">{{ stats().keywordCount }}</span>
+        </li>
+        <li class="strat-map__step-arrow" aria-hidden="true">→</li>
+        <li
+          class="strat-map__step strat-map__step--pillars"
+          [class.is-emphasis]="isView('content')"
+        >
+          <span class="strat-map__step-num">2</span>
+          <span class="strat-map__step-label">Pillars</span>
+          <span class="strat-map__step-count">{{ stats().pillarCount }}</span>
+        </li>
+        <li class="strat-map__step-arrow" aria-hidden="true">→</li>
+        <li
+          class="strat-map__step strat-map__step--scheduled"
+          [class.is-emphasis]="isView('calendar')"
+        >
+          <span class="strat-map__step-num">3</span>
+          <span class="strat-map__step-label">Scheduled</span>
+          <span class="strat-map__step-count">{{ stats().calendarCount }}</span>
+        </li>
+      </ol>
+    } @else {
+      <span class="strat-map__tune-badge">Creative direction</span>
+    }
+  </header>
+
+  <div class="strat-map__stage" [class.strat-map__stage--expanded]="isExpandedView()">
+    <div class="strat-map__panel" [class.is-active]="isView('map')" [attr.aria-hidden]="!isView('map')">
+      <div class="strat-map__viz">
+        <app-void-content-spoke
+          [account]="spoke().account"
+          [clusters]="spoke().clusters"
+          [embedded]="true"
+          [showToolbar]="false"
+          [showViewToggle]="false"
+          [initialView]="'radial'"
+        />
+      </div>
+    </div>
+
+    <div class="strat-map__panel" [class.is-active]="isView('calendar')" [attr.aria-hidden]="!isView('calendar')">
+      <app-strategy-content-calendar [plan]="plan()" />
+    </div>
+
+    <div class="strat-map__panel" [class.is-active]="isView('keywords')" [attr.aria-hidden]="!isView('keywords')">
+      <app-strategy-content-keywords [plan]="plan()" />
+    </div>
+
+    <div class="strat-map__panel" [class.is-active]="isView('content')" [attr.aria-hidden]="!isView('content')">
+      <app-strategy-content-plan [plan]="plan()" />
+    </div>
+
+    <div class="strat-map__panel" [class.is-active]="isView('tune')" [attr.aria-hidden]="!isView('tune')">
+      <app-strategy-content-tune />
+    </div>
+  </div>
+</section>

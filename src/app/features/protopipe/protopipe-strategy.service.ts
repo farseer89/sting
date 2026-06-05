@@ -1,5 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import type { ProtopipeDataForSeoStatusResponse } from '@hive/contracts';
+import type { ProtopipeOnboardingProfile } from '@hive/contracts';
 import type {
   KeywordIntent,
   KeywordPriority,
@@ -29,6 +30,7 @@ export class ProtopipeStrategyService {
   private readonly _siteId = signal<string | null>(null);
   private readonly _site = signal<ProtopipeSite | null>(null);
   private readonly _summary = signal('');
+  private readonly _onboardingProfile = signal<ProtopipeOnboardingProfile | null>(null);
   private readonly _keywords = signal<ProtopipeKeywordDto[]>([]);
   private readonly _marketRefreshing = signal(false);
   private readonly _lastEnrichSummary = signal<string | null>(null);
@@ -54,6 +56,7 @@ export class ProtopipeStrategyService {
   readonly marketRefreshing = this._marketRefreshing.asReadonly();
   readonly lastEnrichSummary = this._lastEnrichSummary.asReadonly();
   readonly site = this._site.asReadonly();
+  readonly onboardingProfile = this._onboardingProfile.asReadonly();
 
   readonly strategy = computed<ProtopipeStrategySummary>(() => ({
     site: this._site() ?? {
@@ -65,6 +68,7 @@ export class ProtopipeStrategyService {
     summary: this._summary(),
     keywords: this._keywords(),
     updatedAt: this._updatedAt(),
+    onboardingProfile: this._onboardingProfile() ?? undefined,
   }));
 
   readonly keywordCount = computed(() => this._keywords().length);
@@ -246,6 +250,7 @@ export class ProtopipeStrategyService {
     this._siteId.set(plan.site.id);
     this._site.set(plan.site);
     this._summary.set(plan.summary);
+    this._onboardingProfile.set(plan.onboardingProfile ?? null);
     this._keywords.set(plan.keywords);
     this._updatedAt.set(plan.updatedAt);
   }

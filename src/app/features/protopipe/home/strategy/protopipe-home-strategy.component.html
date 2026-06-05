@@ -1,0 +1,71 @@
+<section class="strat-shell" aria-label="Your content strategy">
+  @if (showLoading()) {
+    <div class="strat__loading" aria-busy="true">
+      <header class="strat__intro">
+        <div class="strat__intro-copy">
+          <span class="strat__eyebrow">Your content strategy</span>
+          <h1 class="strat__title">Building your strategy…</h1>
+          <p class="strat__lede">Researching keywords, mapping topics, and lining up your calendar.</p>
+        </div>
+      </header>
+      <div class="strat__shimmer" style="height: 3.5rem"></div>
+      <div class="strat__shimmer" style="height: 12rem"></div>
+    </div>
+  } @else if (hasFailed() && !useMockPreview()) {
+    <div class="strat-shell__error">
+      <p>Something went wrong while building your strategy.</p>
+      @if (error(); as e) {
+        <p class="strat-shell__error-detail">{{ e }}</p>
+      }
+      <button type="button" class="strat-shell__retry" (click)="retry()">Try again</button>
+    </div>
+  } @else if (showResults()) {
+    @switch (layout()) {
+      @case ('a') {
+        <app-strategy-layout-a [plan]="displayPlan()" [siteLabel]="siteLabel()" />
+      }
+      @case ('b') {
+        <app-strategy-layout-b [plan]="displayPlan()" [siteLabel]="siteLabel()" />
+      }
+      @case ('c') {
+        <app-strategy-layout-c [plan]="displayPlan()" [siteLabel]="siteLabel()" />
+      }
+    }
+  }
+
+  <div class="strat__dev-toggle" aria-label="Layout preview controls">
+    <button
+      type="button"
+      class="strat__dev-btn"
+      [class.is-active]="layout() === 'a'"
+      (click)="setLayout('a')"
+    >
+      A
+    </button>
+    <button
+      type="button"
+      class="strat__dev-btn"
+      [class.is-active]="layout() === 'b'"
+      (click)="setLayout('b')"
+    >
+      B
+    </button>
+    <button
+      type="button"
+      class="strat__dev-btn"
+      [class.is-active]="layout() === 'c'"
+      (click)="setLayout('c')"
+    >
+      C
+    </button>
+    <button
+      type="button"
+      class="strat__dev-btn"
+      [class.is-active]="useMockPreview()"
+      (click)="toggleMockPreview()"
+      title="Toggle mock vs live plan data"
+    >
+      {{ useMockPreview() ? 'Mock' : 'Live' }}
+    </button>
+  </div>
+</section>

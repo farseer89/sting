@@ -1,0 +1,117 @@
+.kwavatar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-height: 0;
+}
+
+.kwavatar__lede {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--void-ink-secondary);
+  max-width: 36rem;
+}
+
+.kwavatar__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kwavatar__card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0.55rem 0.6rem;
+  text-align: left;
+  border: 0.5px solid var(--void-tile-border);
+  border-radius: 6px;
+  background: var(--void-surface, #fff);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.kwavatar__card:hover:not(.kwavatar__card--disabled),
+.kwavatar__card--hovered:not(.kwavatar__card--disabled) {
+  border-color: var(--void-ocean);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+.kwavatar__card--selected {
+  border-color: var(--void-ocean);
+  background: color-mix(in srgb, var(--void-ocean) 6%, #fff);
+}
+
+.kwavatar__card--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.kwavatar__card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.kwavatar__check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--void-ocean);
+  border: 0.5px solid var(--void-tile-border);
+  border-radius: 3px;
+}
+
+.kwavatar__card--selected .kwavatar__check {
+  border-color: var(--void-ocean);
+  background: var(--void-ocean);
+  color: #fff;
+}
+
+.kwavatar__intent {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--void-ink-strong);
+}
+
+.kwavatar__badge {
+  font-size: 8px;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--void-ocean) 12%, transparent);
+  color: var(--void-ocean);
+}
+
+.kwavatar__desc {
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--void-ink);
+}
+
+.kwavatar__examples {
+  font-size: 9px;
+  line-height: 1.35;
+  color: var(--void-ink-secondary);
+}
+
+.kwavatar__meta {
+  font-size: 8px;
+  color: var(--void-ink-secondary);
+}

@@ -1,0 +1,31 @@
+<div class="strat-a">
+  <app-strategy-hero [plan]="plan()" [siteLabel]="siteLabel()" />
+
+  <app-strategy-content-map [plan]="plan()" [siteLabel]="siteLabel()" />
+
+  <div class="strat__accordion strat-a__below-fold">
+    <button
+      type="button"
+      class="strat__acc-btn"
+      [class.is-open]="isOpen('wins')"
+      (click)="toggleAccordion('wins')"
+    >
+      Site wins ({{ plan().existingContent?.alreadyRanking?.length ?? 0 }} ranking, {{ plan().existingContent?.refreshCandidates?.length ?? 0 }} refresh)
+      <span>{{ isOpen('wins') ? '▲' : '▸' }}</span>
+    </button>
+    @if (isOpen('wins') && plan().existingContent; as audit) {
+      <div class="strat__acc-panel">
+        @if (audit.alreadyRanking.length) {
+          <table class="strat__mini-table">
+            <thead><tr><th>Keyword</th><th>Pos</th></tr></thead>
+            <tbody>
+              @for (r of audit.alreadyRanking; track r.phrase) {
+                <tr><td>{{ r.phrase }}</td><td>#{{ r.position }}</td></tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    }
+  </div>
+</div>

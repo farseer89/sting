@@ -32,6 +32,10 @@ import type {
   ProtopipeGoogleOAuthConfigResponse,
   ProtopipeGoogleOAuthStartResponse,
   ProtopipeKeywordDiscoveryResponse,
+  ProtopipeGetDiscoveryRunResponse,
+  ProtopipeStartDiscoveryResponse,
+  ProtopipeStrategyConfirmRequest,
+  ProtopipeStrategyConfirmResponse,
   ProtopipeResearchQueryRequest,
   ProtopipeResearchResponse,
   ProtopipeKeywordMetricHistoryResponse,
@@ -238,6 +242,38 @@ export class ProtopipeApiService {
     options?: { gscRowLimit?: number; rankedRowLimit?: number; adsLimit?: number },
   ): Promise<ProtopipeKeywordDiscoveryResponse> {
     return firstValueFrom(this.discoverKeywords$(siteId, options));
+  }
+
+  startKeywordDiscoveryRun(siteId: string): Promise<ProtopipeStartDiscoveryResponse> {
+    return firstValueFrom(
+      this.http.post<ProtopipeStartDiscoveryResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.keywordDiscoveryStart.path, { siteId }),
+        {},
+      ),
+    );
+  }
+
+  getKeywordDiscoveryRun(
+    siteId: string,
+    runId: string,
+  ): Promise<ProtopipeGetDiscoveryRunResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeGetDiscoveryRunResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.keywordDiscoveryGetRun.path, { siteId, runId }),
+      ),
+    );
+  }
+
+  confirmKeywordStrategy(
+    siteId: string,
+    body: ProtopipeStrategyConfirmRequest,
+  ): Promise<ProtopipeStrategyConfirmResponse> {
+    return firstValueFrom(
+      this.http.post<ProtopipeStrategyConfirmResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.keywordDiscoveryConfirm.path, { siteId }),
+        body,
+      ),
+    );
   }
 
   getAccountGoogleStatus(): Promise<ProtopipeAccountGoogleStatusResponse> {

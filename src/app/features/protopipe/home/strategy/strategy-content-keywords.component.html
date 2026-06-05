@@ -1,0 +1,33 @@
+<div class="strat-kw" aria-label="Your keywords">
+  <header class="strat-kw__head">
+    <span class="strat-kw__meta">{{ rows().length }} scored keywords</span>
+    <div class="strat-kw__tiers">
+      <span class="strat-kw__tier strat-kw__tier--immediate">Immediate</span>
+      <span class="strat-kw__tier strat-kw__tier--long">Long-term</span>
+      <span class="strat-kw__tier strat-kw__tier--tail">Long-tail</span>
+    </div>
+  </header>
+
+  <div class="strat-kw__table-wrap">
+    <table class="strat-kw__table">
+      <thead>
+        <tr>
+          <th>Phrase</th>
+          <th>Vol</th>
+          <th>Opp</th>
+          <th>Tier</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track row.phrase) {
+          <tr [class]="'strat-kw__row--' + row.tierKey">
+            <td class="strat-kw__phrase">{{ row.phrase }}</td>
+            <td>{{ row.searchVolume ?? '—' }}</td>
+            <td>{{ row.opportunityScore }}</td>
+            <td><span class="strat-kw__tier-badge strat-kw__tier-badge--{{ row.tierKey }}">{{ row.tier }}</span></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

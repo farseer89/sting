@@ -1,0 +1,94 @@
+<section
+  class="strat-writer"
+  [class.strat-writer--full]="full()"
+  aria-label="Content writer"
+>
+  <header class="strat-writer__head">
+    <div class="strat-writer__head-left">
+      @if (full()) {
+        <button type="button" class="strat-writer__back" (click)="exitFocus()">
+          <span aria-hidden="true">←</span>
+          Strategy
+        </button>
+      } @else {
+        <span class="strat__section-label">Writer</span>
+      }
+      <span class="strat-writer__kw">{{ mock.primaryKeyword }}</span>
+    </div>
+    <span class="strat-writer__status" [class.is-dirty]="dirty()">{{ saveLabel() }}</span>
+    <div class="strat-writer__actions">
+      <span class="strat-writer__schedule">{{ mock.scheduleLabel }}</span>
+      <button type="button" class="strat-writer__btn strat-writer__btn--ghost" (click)="saveDraft()">
+        Save draft
+      </button>
+      <button type="button" class="strat-writer__btn strat-writer__btn--accent">Publish</button>
+    </div>
+  </header>
+
+  <nav class="strat-writer__tools" role="tablist" aria-label="Writer tools">
+    @for (panel of panels; track panel.id) {
+      <button
+        type="button"
+        role="tab"
+        class="strat-writer__tool"
+        [class.is-active]="isPanel(panel.id)"
+        [attr.aria-selected]="isPanel(panel.id)"
+        (click)="selectPanel(panel.id)"
+      >
+        {{ panel.label }}
+        @if (panel.id === 'facts' && flaggedFactCount() > 0) {
+          <span class="strat-writer__tool-badge">{{ flaggedFactCount() }}</span>
+        }
+      </button>
+    }
+  </nav>
+
+  <div class="strat-writer__stage">
+    <div class="strat-writer__scroll">
+      <article class="strat-writer__paper">
+        <div class="strat-writer__kw-strip">
+          @for (kw of mock.keywords; track kw) {
+            <span class="strat-writer__kw-chip">{{ kw }}</span>
+          }
+        </div>
+
+        <textarea
+          class="strat-writer__h1"
+          rows="1"
+          [ngModel]="h1()"
+          (ngModelChange)="h1.set($event); markDirty()"
+          (input)="autoGrow($event)"
+          aria-label="Headline"
+        ></textarea>
+
+        <textarea
+          class="strat-writer__intro strat-writer__grow"
+          [ngModel]="intro()"
+          (ngModelChange)="intro.set($event); markDirty()"
+          (input)="autoGrow($event)"
+          aria-label="Introduction"
+        ></textarea>
+
+        @for (section of sections(); track $index; let si = $index) {
+          <div class="strat-writer__section">
+            <textarea
+              class="strat-writer__h2"
+              rows="1"
+              [ngModel]="section.h2"
+              (ngModelChange)="sections.update((list) => list.map((s, i) => (i === si ? { ...s, h2: $event } : s))); markDirty()"
+              (input)="autoGrow($event)"
+              aria-label="Section heading"
+            ></textarea>
+            <textarea
+              class="strat-writer__body strat-writer__grow"
+              [ngModel]="section.body"
+              (ngModelChange)="sections.update((list) => list.map((s, i) => (i === si ? { ...s, body: $event } : s))); markDirty()"
+              (input)="autoGrow($event)"
+              aria-label="Section body"
+            ></textarea>
+          </div>
+        }
+      </article>
+    </div>
+  </div>
+</section>

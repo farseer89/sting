@@ -1,0 +1,272 @@
+<div class="premiere">
+  <header class="premiere__toolbar">
+    <div class="premiere__toolbar-left">
+      @if (isFocused()) {
+        <button type="button" class="premiere__back" (click)="clearFocus()">
+          <span aria-hidden="true">←</span>
+          All plans
+        </button>
+      }
+      <div class="premiere__search">
+        <span class="premiere__search-icon" aria-hidden="true">⌕</span>
+        <input type="search" placeholder="Search articles, keywords, plans…" />
+      </div>
+    </div>
+
+    <div class="premiere__toolbar-center">
+      @for (mode of viewModes; track mode.id) {
+        <button
+          type="button"
+          class="premiere__chip"
+          [class.premiere__chip--active]="viewMode() === mode.id"
+          (click)="setViewMode(mode.id)"
+        >
+          {{ mode.label }}
+        </button>
+      }
+    </div>
+
+    <div class="premiere__toolbar-right">
+      <span class="premiere__site">destinationweddingpainter.com</span>
+      <button
+        type="button"
+        class="premiere__edit"
+        [class.premiere__edit--on]="editMode()"
+        (click)="toggleEditMode()"
+      >
+        {{ editMode() ? 'Done' : 'Edit calendar' }}
+      </button>
+    </div>
+  </header>
+
+  <div class="premiere__workspace">
+    @if (isFocused()) {
+      <section class="premiere__monitors">
+        <article class="premiere__monitor premiere__monitor--calendar">
+          <header class="premiere__monitor-head">
+            <span class="premiere__monitor-label">Content Monitor A</span>
+            <span class="premiere__monitor-meta">{{ calendar.month }}</span>
+          </header>
+          <div class="premiere__cal">
+            <div class="premiere__cal-weekdays">
+              @for (wd of calendar.weekdays; track $index) {
+                <span class="premiere__cal-weekday">{{ wd }}</span>
+              }
+            </div>
+            <div class="premiere__cal-grid">
+              @for (week of calendar.weeks; track $index) {
+                @for (cell of week; track $index) {
+                  <div
+                    class="premiere__cal-cell"
+                    [class.premiere__cal-cell--blank]="cell.day === null"
+                    [class.premiere__cal-cell--weekend]="cell.weekend"
+                    [class.premiere__cal-cell--posts]="cell.stickies.length > 0"
+                  >
+                    @if (cell.day !== null) {
+                      <span class="premiere__cal-daynum">{{ cell.day }}</span>
+                      @for (sticky of cell.stickies; track $index) {
+                        <span
+                          class="premiere__cal-sticky premiere__cal-sticky--{{ sticky.status }}"
+                          [title]="sticky.title"
+                        >
+                          {{ sticky.title }}
+                        </span>
+                      }
+                    }
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        </article>
+
+        <article class="premiere__monitor premiere__monitor--board">
+          <header class="premiere__monitor-head">
+            <span class="premiere__monitor-label">Content Monitor B</span>
+            <span class="premiere__monitor-meta">Keyword board</span>
+          </header>
+          <div class="premiere__board">
+            @for (note of notes; track note.text) {
+              <div class="premiere__note premiere__note--{{ note.status }}">
+                <span class="premiere__note-tape" aria-hidden="true"></span>
+                <span class="premiere__note-pin">{{ note.pin }}</span>
+                <span class="premiere__note-text">{{ note.text }}</span>
+                <span class="premiere__note-meta">{{ note.meta }}</span>
+                <span class="premiere__note-status">{{ coverageLabels[note.status] }}</span>
+              </div>
+            }
+          </div>
+        </article>
+      </section>
+    } @else {
+      <section class="premiere__plans-grid">
+        @for (plan of plans; track plan.id) {
+          <button type="button" class="premiere__plan-card" (click)="focusPlan(plan)">
+            <span class="premiere__plan-code">{{ plan.code }}</span>
+            <span class="premiere__plan-name">{{ plan.name }}</span>
+            <span class="premiere__plan-meta">{{ plan.pieceCount }} articles · {{ plan.status }}</span>
+            <span class="premiere__plan-bar" [style.background]="plan.color"></span>
+          </button>
+        }
+      </section>
+    }
+
+    <section
+      class="premiere__timeline"
+      [class.premiere__timeline--week]="viewMode() === 'week'"
+      [class.premiere__timeline--month]="viewMode() === 'month'"
+    >
+      <div class="premiere__timeline-head">
+        <div class="premiere__timeline-controls">
+          @for (mode of rowModes; track mode.id) {
+            <button
+              type="button"
+              class="premiere__row-chip"
+              [class.premiere__row-chip--active]="rowMode() === mode.id"
+              (click)="setRowMode(mode.id)"
+            >
+              {{ mode.label }}
+            </button>
+          }
+        </div>
+        <div class="premiere__timeline-dates">
+          @for (day of days; track $index) {
+            <div
+              class="premiere__day"
+              [class.premiere__day--weekend]="day.isWeekend"
+              [class.premiere__day--today]="day.isToday"
+            >
+              <span class="premiere__day-label">{{ day.label }}</span>
+              <span class="premiere__day-sub">{{ day.sub }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="premiere__timeline-body">
+        <div class="premiere__playhead" [style.left.%]="playheadPct()"></div>
+
+        @if (isFocused()) {
+          <div class="premiere__track premiere__track--master">
+            <div class="premiere__track-label">
+              <span>Content plan</span>
+              <small>{{ focusedPlan().name }}</small>
+            </div>
+            <div class="premiere__track-lane">
+              <div
+                class="premiere__bar premiere__bar--master"
+                [style.left.%]="focusedPlan().startPct"
+                [style.width.%]="focusedPlan().widthPct"
+                [style.background]="focusedPlan().color"
+              >
+                <span>{{ focusedPlan().code }} · {{ focusedPlan().pieceCount }} articles</span>
+              </div>
+            </div>
+          </div>
+
+          @if (rowMode() === 'pipeline') {
+            @for (stage of stagesForPlan(focusedPlan().id); track stage.id) {
+              <div
+                class="premiere__track"
+                [class.premiere__track--selected]="isStageSelected(stage.id)"
+                (click)="selectStage(stage.id)"
+              >
+                <div class="premiere__track-label">
+                  <span>{{ stage.name }}</span>
+                  <small>{{ stage.pieceCount }} items</small>
+                </div>
+                <div class="premiere__track-lane">
+                  <div
+                    class="premiere__bar premiere__bar--stage"
+                    [style.left.%]="stage.startPct"
+                    [style.width.%]="stage.widthPct"
+                    [style.background]="stage.color"
+                  ></div>
+                </div>
+              </div>
+            }
+          }
+
+          @if (rowMode() === 'articles') {
+            @for (piece of piecesForPlan(focusedPlan().id); track piece.id) {
+              <div class="premiere__track premiere__track--article">
+                <div class="premiere__track-label">
+                  <span>{{ truncate(piece.title, 28) }}</span>
+                  <small>{{ truncate(piece.keyword, 32) }}</small>
+                </div>
+                <div class="premiere__track-lane">
+                  <div
+                    class="premiere__bar premiere__bar--content"
+                    [class.premiere__bar--draft]="piece.status === 'draft'"
+                    [class.premiere__bar--scheduled]="piece.status === 'scheduled'"
+                    [class.premiere__bar--published]="piece.status === 'published'"
+                    [class.premiere__bar--research]="piece.status === 'research'"
+                    [style.left.%]="piece.startPct"
+                    [style.width.%]="piece.widthPct"
+                    [style.background]="piece.color"
+                  >
+                    <span class="premiere__bar-title">{{ truncate(piece.title, 24) }}</span>
+                    <span class="premiere__bar-meta">
+                      <span class="premiere__bar-status">{{ statusLabels[piece.status] }}</span>
+                      @if (piece.publishLabel) {
+                        <span class="premiere__bar-date">{{ piece.publishLabel }}</span>
+                      }
+                    </span>
+                  </div>
+                </div>
+              </div>
+            }
+          }
+
+          @if (rowMode() === 'traffic') {
+            <div class="premiere__track premiere__track--traffic">
+              <div class="premiere__track-label">
+                <span>Organic clicks</span>
+                <small>GSC · daily</small>
+              </div>
+              <div class="premiere__track-lane premiere__track-lane--spark">
+                @for (val of trafficSparkline; track $index) {
+                  <div class="premiere__spark-cell" [style.height.%]="sparkHeight(val)"></div>
+                }
+              </div>
+            </div>
+            <div class="premiere__track premiere__track--traffic">
+              <div class="premiere__track-label">
+                <span>Avg position</span>
+                <small>Target keywords</small>
+              </div>
+              <div class="premiere__track-lane premiere__track-lane--spark premiere__track-lane--spark-alt">
+                @for (val of trafficSparkline; track $index) {
+                  <div
+                    class="premiere__spark-cell premiere__spark-cell--alt"
+                    [style.height.%]="100 - sparkHeight(val) * 0.55"
+                  ></div>
+                }
+              </div>
+            </div>
+          }
+        } @else {
+          @for (plan of plans; track plan.id) {
+            <div class="premiere__track">
+              <div class="premiere__track-label">
+                <span>{{ plan.code }}</span>
+                <small>{{ plan.name }}</small>
+              </div>
+              <div class="premiere__track-lane">
+                <div
+                  class="premiere__bar premiere__bar--master"
+                  [style.left.%]="plan.startPct"
+                  [style.width.%]="plan.widthPct"
+                  [style.background]="plan.color"
+                  (click)="focusPlan(plan)"
+                >
+                  <span>{{ plan.pieceCount }} articles · {{ plan.status }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        }
+      </div>
+    </section>
+  </div>
+</div>

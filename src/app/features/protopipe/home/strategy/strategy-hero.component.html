@@ -1,0 +1,23 @@
+<header class="strat__intro strat__intro--compact">
+  <div class="strat__intro-copy">
+    <span class="strat__eyebrow">{{ readyLabel() }}</span>
+  </div>
+  <div class="strat__intro-meta">
+    @if (siteLabel()) {
+      <span class="strat__site">{{ siteLabel() }}</span>
+    }
+    <button
+      type="button"
+      class="strat__brief-toggle"
+      [class.is-active]="sidePanel.open()"
+      [attr.aria-pressed]="sidePanel.open()"
+      [attr.aria-label]="sidePanel.open() ? 'Hide strategy brief' : 'Show strategy brief'"
+      (click)="toggleBrief()"
+    >
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M3 4.5h10v7H3zM6 4.5v7M10 4.5v7" fill="none" stroke="currentColor" stroke-width="0.85" />
+      </svg>
+      <span>Brief</span>
+    </button>
+  </div>
+</header>

@@ -20,6 +20,7 @@ Append one line per session (step 7):
 | Date | Slice | Platform PRs to main |
 |------|-------|----------------------|
 | 2026-05-20 | Dashboard: destinationweddingpainter.com site card + keyword strategy table (seed data) | — |
+| 2026-05-29 | Pipeline content writer (immersive editor, brief panel, generate/poll run); deployed hive `b6f4ad4` bagend `dbd90a5` sting `71dcf92` | — |
 
 ## Do not merge to sting `main`
 

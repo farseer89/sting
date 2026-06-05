@@ -16,7 +16,12 @@ import { ProtopipeOnboardingStateService } from '../onboarding/protopipe-onboard
 import { ProtopipeStrategyService } from '../protopipe-strategy.service';
 import { ProtopipeKeywordSearchPanelComponent } from './keyword-picker/protopipe-keyword-search-panel.component';
 import { ProtopipeKeywordPickerStore } from './keyword-picker/protopipe-keyword-picker.store';
-import { ProtopipeHomePlanProgressComponent } from './plan-progress/protopipe-home-plan-progress.component';
+import { ProtopipeHomeStrategyComponent } from './strategy/protopipe-home-strategy.component';
+import { ProtopipeStrategyContextPanelComponent } from './strategy/protopipe-strategy-context-panel.component';
+import { ProtopipeHomeStrategyViewState } from './strategy/protopipe-home-strategy-view.state';
+import { ProtopipeHomeWriterComponent } from './protopipe-home-writer.component';
+import { ProtopipeHomeWriterViewState } from './protopipe-home-writer-view.state';
+import { ProtopipeWriterContextPanelComponent } from './strategy/protopipe-writer-context-panel.component';
 import { ProtopipeKeywordPickerComponent } from './keyword-picker/protopipe-keyword-picker.component';
 import { ProtopipeHomeSidePanelService } from './protopipe-home-side-panel.service';
 import {
@@ -25,7 +30,7 @@ import {
   type ProtopipeHomeNavItem,
 } from './protopipe-home-nav';
 
-export type ProtopipeHomeView = 'keywords' | 'plan';
+export type ProtopipeHomeView = 'keywords' | 'strategy' | 'writer';
 
 function initialsFromName(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -38,11 +43,19 @@ function initialsFromName(name: string): string {
   selector: 'app-protopipe-user-home',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [ProtopipeKeywordPickerStore, ProtopipeHomeSidePanelService],
+  providers: [
+    ProtopipeKeywordPickerStore,
+    ProtopipeHomeSidePanelService,
+    ProtopipeHomeStrategyViewState,
+    ProtopipeHomeWriterViewState,
+  ],
   imports: [
     ProtopipeKeywordPickerComponent,
     ProtopipeKeywordSearchPanelComponent,
-    ProtopipeHomePlanProgressComponent,
+    ProtopipeHomeStrategyComponent,
+    ProtopipeHomeWriterComponent,
+    ProtopipeStrategyContextPanelComponent,
+    ProtopipeWriterContextPanelComponent,
   ],
   templateUrl: './protopipe-user-home.component.html',
   styleUrl: './protopipe-user-home.component.scss',
@@ -54,6 +67,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
   private readonly strategy = inject(ProtopipeStrategyService);
   private readonly contentPlan = inject(ContentPlanStore);
   readonly sidePanel = inject(ProtopipeHomeSidePanelService);
+  private readonly strategyViewState = inject(ProtopipeHomeStrategyViewState);
+  readonly writerViewState = inject(ProtopipeHomeWriterViewState);
   private readonly keywordStore = inject(ProtopipeKeywordPickerStore);
   private readonly homeWorkspaceEl = viewChild<ElementRef<HTMLElement>>('homeWorkspace');
 
@@ -87,19 +102,44 @@ export class ProtopipeUserHomeComponent implements OnInit {
     return photo.includes('avatar-f-1.png') ? '' : photo;
   });
 
+  readonly isWriterFocus = computed(() => this.activeView() === 'writer');
+
   ngOnInit(): void {
     this.destroyRef.onDestroy(() => this.sidePanel.detachResizeListeners());
+    this.writerViewState.setExitHandler(() => this.leaveWriterFocus());
     void this.loadBootstrap();
   }
 
+  showSidePanel(): boolean {
+    if (!this.sidePanel.open()) return false;
+    return (
+      this.activeView() === 'keywords' ||
+      this.activeView() === 'strategy' ||
+      this.activeView() === 'writer'
+    );
+  }
+
   showKeywordSidePanel(): boolean {
-    return this.activeView() === 'keywords' && this.sidePanel.open();
+    return this.showSidePanel() && this.activeView() === 'keywords';
+  }
+
+  showStrategySidePanel(): boolean {
+    return this.showSidePanel() && this.activeView() === 'strategy';
+  }
+
+  showWriterSidePanel(): boolean {
+    return this.showSidePanel() && this.activeView() === 'writer';
+  }
+
+  sidePanelArticleOpen(): boolean {
+    return this.activeView() === 'strategy' && this.strategyViewState.selectedArticle() !== null;
   }
 
   onSideSplitterPointerDown(event: PointerEvent): void {
     const host = this.homeWorkspaceEl()?.nativeElement;
     if (!host) return;
-    this.sidePanel.startResize(event, host);
+    const railWidth = this.activeView() === 'keywords' ? 32 : 0;
+    this.sidePanel.startResize(event, host, railWidth);
   }
 
   isNavGroupOpen(id: string): boolean {
@@ -122,14 +162,37 @@ export class ProtopipeUserHomeComponent implements OnInit {
   selectNavItem(item: ProtopipeHomeNavItem): void {
     if (item.disabled) return;
     if (item.id === 'start-keywords') {
+      this.leaveWriterFocus();
       this.activeNavId.set(item.id);
       this.activeView.set('keywords');
+    } else if (item.id === 'start-strategy') {
+      this.leaveWriterFocus();
+      this.activeNavId.set(item.id);
+      this.activeView.set('strategy');
+    } else if (item.id === 'content-writer') {
+      this.enterWriterFocus();
+    }
+  }
+
+  enterWriterFocus(): void {
+    this.writerViewState.clearPanel();
+    this.sidePanel.setOpen(false);
+    this.activeNavId.set('content-writer');
+    this.activeView.set('writer');
+  }
+
+  leaveWriterFocus(): void {
+    this.writerViewState.clearPanel();
+    this.sidePanel.setOpen(false);
+    if (this.activeView() === 'writer') {
+      this.activeView.set('strategy');
+      this.activeNavId.set('start-strategy');
     }
   }
 
   onKeywordsConfirmed(): void {
-    this.activeView.set('plan');
-    this.activeNavId.set('start-keywords');
+    this.activeView.set('strategy');
+    this.activeNavId.set('start-strategy');
   }
 
   toggleUserMenu(event: Event): void {
@@ -149,6 +212,9 @@ export class ProtopipeUserHomeComponent implements OnInit {
   @HostListener('document:keydown.escape')
   onEscape(): void {
     this.closeUserMenu();
+    if (this.activeView() === 'writer') {
+      this.leaveWriterFocus();
+    }
   }
 
   isNavItemActive(item: ProtopipeHomeNavItem): boolean {
@@ -178,7 +244,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
         void this.keywordStore.load();
         const planStatus = this.contentPlan.status();
         if (planStatus === 'running' || planStatus === 'pending' || planStatus === 'complete') {
-          this.activeView.set('plan');
+          this.activeView.set('strategy');
+          this.activeNavId.set('start-strategy');
         }
       }
     } catch {

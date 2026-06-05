@@ -1,0 +1,53 @@
+<div class="strat-plan" aria-label="Content plan by cluster">
+  <header class="strat-plan__head">
+    <span class="strat-plan__meta">
+      {{ clusters().length }} clusters · {{ articleCount() }} articles
+    </span>
+  </header>
+
+  <div class="strat-plan__scroll">
+    @for (cluster of clusters(); track cluster.name) {
+      <section class="strat-plan__cluster">
+        <header class="strat-plan__cluster-head">
+          <div class="strat-plan__cluster-copy">
+            <h3 class="strat-plan__cluster-name">{{ cluster.name }}</h3>
+            <p class="strat-plan__cluster-kw">{{ cluster.pillarKeyword }}</p>
+            @if (cluster.subtopic) {
+              <p class="strat-plan__cluster-sub">{{ cluster.subtopic }}</p>
+            }
+          </div>
+          <span class="strat-plan__cluster-count">
+            {{ cluster.articles.length }} article{{ cluster.articles.length === 1 ? '' : 's' }}
+          </span>
+        </header>
+
+        @if (cluster.articles.length) {
+          <ul class="strat-plan__articles">
+            @for (article of cluster.articles; track itemKey(article)) {
+              <li>
+                <button
+                  type="button"
+                  class="strat-plan__article"
+                  [class.is-selected]="isArticleSelected(article)"
+                  (click)="openArticle(article)"
+                >
+                  <span class="strat-plan__article-date">{{ formatDate(article.proposedPublishAt) }}</span>
+                  <span class="strat-plan__article-main">
+                    <span class="strat-plan__article-title">{{ article.workingTitle }}</span>
+                    <span class="strat-plan__article-kw">{{ article.suggestedKeyword }}</span>
+                  </span>
+                  <span class="strat-plan__article-badges">
+                    <span class="strat-plan__badge strat-plan__badge--role">{{ roleLabel(article) }}</span>
+                    <span class="strat-plan__badge">{{ kindLabel(article) }}</span>
+                  </span>
+                </button>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="strat-plan__empty">No articles scheduled in this cluster yet.</p>
+        }
+      </section>
+    }
+  </div>
+</div>

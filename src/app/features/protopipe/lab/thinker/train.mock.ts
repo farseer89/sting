@@ -10,6 +10,27 @@ import type { TrainOfThought } from './train.model';
  */
 
 export const THINKERS: Record<string, Thinker> = {
+  'keyword-discovery': {
+    kind: 'keyword-discovery',
+    label: 'Keyword Discovery',
+    description: 'Mines + scores keywords and suggests customer avatars from the onboarding profile.',
+    icon: 'search',
+    inputs: [{ id: 'profile', label: 'Onboarding profile', artifactKind: 'json' }],
+    outputs: [{ id: 'shortlist', label: 'Confirmed shortlist', artifactKind: 'json' }],
+    stepSpecs: [
+      { id: 'load_profile', label: 'Profile' },
+      { id: 'fetch_gsc', label: 'Search Console' },
+      { id: 'fetch_ranked', label: 'Ranked' },
+      { id: 'fetch_ads_ideas', label: 'Ad Ideas' },
+      { id: 'spyfu_gaps', label: 'Competitor Gaps' },
+      { id: 'geo_expansion', label: 'Geo Expansion' },
+      { id: 'seed_expansion', label: 'Seed Expansion' },
+      { id: 'merge_score', label: 'Merge & Score' },
+      { id: 'serp_enrichment', label: 'SERP Enrich' },
+      { id: 'infer_avatars', label: 'Avatars' },
+      { id: 'confirm', label: 'Confirm' },
+    ],
+  },
   research: {
     kind: 'research',
     label: 'Research',

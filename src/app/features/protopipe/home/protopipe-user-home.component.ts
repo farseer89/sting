@@ -13,6 +13,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ContentPlanStore } from '../content-plan/content-plan.store';
 import { ProtopipeOnboardingStateService } from '../onboarding/protopipe-onboarding-state.service';
@@ -65,6 +66,7 @@ function initialsFromName(name: string): string {
 })
 export class ProtopipeUserHomeComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly onboarding = inject(ProtopipeOnboardingStateService);
   private readonly strategy = inject(ProtopipeStrategyService);
@@ -184,6 +186,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.activeView.set('strategy');
     } else if (item.id === 'content-writer') {
       this.enterWriterFocus();
+    } else if (item.id === 'int-wordpress' || item.id === 'int-google') {
+      void this.router.navigate(['/protopipe/settings/integrations']);
     }
   }
 

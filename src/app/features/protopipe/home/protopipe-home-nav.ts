@@ -62,8 +62,8 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
     label: 'Integrations',
     icon: 'link',
     children: [
-      { id: 'int-slack', label: 'Slack', icon: 'inbox', disabled: true },
-      { id: 'int-mail', label: 'Mail', icon: 'inbox', disabled: true },
+      { id: 'int-wordpress', label: 'WordPress', icon: 'link' },
+      { id: 'int-google', label: 'Google', icon: 'search' },
     ],
   },
 ];

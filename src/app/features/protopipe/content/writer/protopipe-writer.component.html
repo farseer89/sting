@@ -94,6 +94,16 @@
       <button
         type="button"
         class="pw__tool"
+        [class.is-active]="isPanelOpen('blog')"
+        (click)="togglePanel('blog')"
+        title="Blog preview"
+      >
+        <i class="pi pi-eye"></i>
+        <span class="pw__tool-tip">Blog preview</span>
+      </button>
+      <button
+        type="button"
+        class="pw__tool"
         [class.is-active]="isPanelOpen('hints')"
         (click)="togglePanel('hints')"
         title="Writing hints"
@@ -249,6 +259,68 @@
                     [disabled]="isReadOnly()"
                     placeholder="Write this section…"
                   ></app-prose-editor>
+                  @if (!isReadOnly()) {
+                    <div class="pw__media">
+                      <div class="pw__media-head">
+                        <span>Images</span>
+                        <button type="button" class="pw__media-add" (click)="addSectionImage($index)">
+                          <i class="pi pi-image"></i> Add image URL
+                        </button>
+                      </div>
+                      @for (img of sec.images ?? []; track $index; let ii = $index) {
+                        <div class="pw__media-row">
+                          <input
+                            type="url"
+                            placeholder="https://…"
+                            [ngModel]="img.url"
+                            (ngModelChange)="updateSectionImage($index, ii, { url: $event })"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Alt text (required)"
+                            [ngModel]="img.alt"
+                            (ngModelChange)="updateSectionImage($index, ii, { alt: $event })"
+                          />
+                          <button type="button" class="pw__media-remove" (click)="removeSectionImage($index, ii)" aria-label="Remove image">×</button>
+                        </div>
+                      }
+                      <div class="pw__media-head pw__media-head--embeds">
+                        <span>Video / embeds</span>
+                      </div>
+                      @for (embed of sec.embeds ?? []; track $index; let ei = $index) {
+                        <div class="pw__embed-row">
+                          <input
+                            type="url"
+                            placeholder="YouTube, Vimeo, or URL"
+                            [ngModel]="embed.url"
+                            (ngModelChange)="updateSectionEmbed($index, ei, { url: $event, kind: detectEmbedKind($event) })"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Caption (optional)"
+                            [ngModel]="embed.caption ?? ''"
+                            (ngModelChange)="updateSectionEmbed($index, ei, { caption: $event })"
+                          />
+                          <button type="button" class="pw__media-remove" (click)="removeSectionEmbed($index, ei)" aria-label="Remove embed">×</button>
+                        </div>
+                      }
+                      <div class="pw__embed-add">
+                        <input
+                          #embedInput
+                          type="url"
+                          placeholder="Paste YouTube or Vimeo link…"
+                          (keydown.enter)="addSectionEmbed($index, embedInput.value); embedInput.value = ''"
+                        />
+                        <button
+                          type="button"
+                          class="pw__media-add"
+                          (click)="addSectionEmbed($index, embedInput.value); embedInput.value = ''"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  }
                   @if (!isReadOnly() && s.template.sections.length > 1) {
                     <button type="button" class="pw__remove" (click)="removeSection($index)">
                       Remove section
@@ -354,6 +426,26 @@
           </section>
         }
 
+        @if (isPanelOpen('blog')) {
+          <section class="pw__panel pw__panel--blog">
+            <div class="pw__panel-head">
+              <h3 class="pw__panel-title">Blog preview</h3>
+              <button type="button" class="pw__refresh" (click)="refreshBlogPreview()" [disabled]="blogPreviewLoading()">
+                <i class="pi" [class.pi-spin]="blogPreviewLoading()" [class.pi-spinner]="blogPreviewLoading()" [class.pi-refresh]="!blogPreviewLoading()"></i>
+              </button>
+            </div>
+            @if (blogPreviewLoading()) {
+              <p class="pw__panel-empty">Rendering preview…</p>
+            } @else if (blogPreviewError(); as err) {
+              <p class="pw__panel-empty pw__panel-empty--error">{{ err }}</p>
+            } @else if (blogPreviewSafeHtml()) {
+              <div class="pw__blog-preview" [innerHTML]="blogPreviewSafeHtml()"></div>
+            } @else {
+              <p class="pw__panel-empty">Preview will appear when you add content.</p>
+            }
+          </section>
+        }
+
         @if (isPanelOpen('hints')) {
           <section class="pw__panel">
             <h3 class="pw__panel-title">Hints</h3>
@@ -401,6 +493,35 @@
                   {{ metaLen() }} / {{ metaMin }}–{{ metaMax }}
                 </span>
               </label>
+              @if (!isReadOnly()) {
+                <label class="pw__field">
+                  <span>Publish to</span>
+                  <select [ngModel]="publishTarget()" (ngModelChange)="setPublishTarget($event)">
+                    <option value="astro">Protopipe site (Astro)</option>
+                    <option value="wordpress">WordPress</option>
+                  </select>
+                </label>
+                @if (publishTarget() === 'wordpress') {
+                  <label class="pw__field">
+                    <span>WordPress connection</span>
+                    @if (wordpressConnections().length) {
+                      <select
+                        [ngModel]="publishConnectionId() ?? ''"
+                        (ngModelChange)="setPublishConnectionId($event)"
+                      >
+                        @for (conn of wordpressConnections(); track conn.id) {
+                          <option [value]="conn.id">{{ conn.label }} ({{ conn.metadata['siteUrl'] }})</option>
+                        }
+                      </select>
+                    } @else {
+                      <p class="pw__panel-empty">
+                        No WordPress connection.
+                        <a href="/protopipe/settings/integrations">Connect in Integrations</a>
+                      </p>
+                    }
+                  </label>
+                }
+              }
               <label class="pw__field">
                 <span>Schedule</span>
                 <p-datepicker

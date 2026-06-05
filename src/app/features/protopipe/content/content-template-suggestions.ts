@@ -75,7 +75,7 @@ export function applyKeywordToTemplate(
   const sections = [...template.sections];
   for (let i = 0; i < s.sectionHeadings.length; i++) {
     if (!sections[i]) {
-      sections.push({ h2: '', body: '', images: [] });
+      sections.push({ h2: '', body: '', images: [], embeds: [] });
     }
     if (!sections[i].h2?.trim()) {
       sections[i] = { ...sections[i], h2: s.sectionHeadings[i] };

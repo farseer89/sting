@@ -43,7 +43,13 @@ import type {
   ProtopipeOnboardingRequest,
   ProtopipeOnboardingResponse,
   ProtopipePlan,
+  ProtopipePublishContentRequest,
   ProtopipePublishContentResponse,
+  ProtopipeContentPreviewRequest,
+  ProtopipeContentPreviewResponse,
+  ProtopipeListSiteConnectionsResponse,
+  ProtopipeSiteConnectionResponse,
+  ProtopipeUpsertWordPressConnectionRequest,
   ProtopipeContentGenerateResponse,
   ArticleGenerationGetResponse,
   ArticleGenerationRerunStepResponse,
@@ -451,15 +457,92 @@ export class ProtopipeApiService {
     return firstValueFrom(this.updateContent$(siteId, postId, body));
   }
 
-  publishContent$(siteId: string, postId: string): Observable<ProtopipePublishContentResponse> {
+  publishContent$(
+    siteId: string,
+    postId: string,
+    body: ProtopipePublishContentRequest = {},
+  ): Observable<ProtopipePublishContentResponse> {
     return this.http.post<ProtopipePublishContentResponse>(
       protopipeApiUrl(ProtopipeEndpoints.publishContent.path, { siteId, postId }),
-      {},
+      body,
     );
   }
 
-  publishContent(siteId: string, postId: string): Promise<ProtopipePublishContentResponse> {
-    return firstValueFrom(this.publishContent$(siteId, postId));
+  publishContent(
+    siteId: string,
+    postId: string,
+    body: ProtopipePublishContentRequest = {},
+  ): Promise<ProtopipePublishContentResponse> {
+    return firstValueFrom(this.publishContent$(siteId, postId, body));
+  }
+
+  previewContent$(
+    siteId: string,
+    body: ProtopipeContentPreviewRequest,
+  ): Observable<ProtopipeContentPreviewResponse> {
+    return this.http.post<ProtopipeContentPreviewResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.previewContent.path, { siteId }),
+      body,
+    );
+  }
+
+  previewContent(
+    siteId: string,
+    body: ProtopipeContentPreviewRequest,
+  ): Promise<ProtopipeContentPreviewResponse> {
+    return firstValueFrom(this.previewContent$(siteId, body));
+  }
+
+  previewContentPost$(
+    siteId: string,
+    postId: string,
+  ): Observable<ProtopipeContentPreviewResponse> {
+    return this.http.get<ProtopipeContentPreviewResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.previewContentPost.path, { siteId, postId }),
+    );
+  }
+
+  listSiteConnections$(siteId: string): Observable<ProtopipeListSiteConnectionsResponse> {
+    return this.http.get<ProtopipeListSiteConnectionsResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.listSiteConnections.path, { siteId }),
+    );
+  }
+
+  listSiteConnections(siteId: string): Promise<ProtopipeListSiteConnectionsResponse> {
+    return firstValueFrom(this.listSiteConnections$(siteId));
+  }
+
+  upsertWordPressConnection$(
+    siteId: string,
+    body: ProtopipeUpsertWordPressConnectionRequest,
+  ): Observable<ProtopipeSiteConnectionResponse> {
+    return this.http.put<ProtopipeSiteConnectionResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.upsertWordPressConnection.path, { siteId }),
+      body,
+    );
+  }
+
+  upsertWordPressConnection(
+    siteId: string,
+    body: ProtopipeUpsertWordPressConnectionRequest,
+  ): Promise<ProtopipeSiteConnectionResponse> {
+    return firstValueFrom(this.upsertWordPressConnection$(siteId, body));
+  }
+
+  deleteSiteConnection$(
+    siteId: string,
+    connectionId: string,
+  ): Observable<ProtopipeSiteConnectionResponse> {
+    return this.http.delete<ProtopipeSiteConnectionResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.deleteSiteConnection.path, { siteId, connectionId }),
+    );
+  }
+
+  deleteSiteConnection(
+    siteId: string,
+    connectionId: string,
+  ): Promise<ProtopipeSiteConnectionResponse> {
+    return firstValueFrom(this.deleteSiteConnection$(siteId, connectionId));
   }
 
   /** Launch (or relaunch) an ArticleGeneration run wired to a content post. */

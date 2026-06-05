@@ -21,6 +21,7 @@ export function cloneTemplate(t: ProtopipeContentTemplate): ProtopipeContentTemp
     sections: t.sections.map((s) => ({
       ...s,
       images: [...(s.images ?? [])],
+      embeds: [...(s.embeds ?? [])],
     })),
     internalLinks: [...(t.internalLinks ?? [])],
   };

@@ -10,6 +10,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -18,9 +19,13 @@ import type {
   ArticleGenerationFlaggedFact,
   ArticleGenerationRunDto,
   ArticleGenerationStep,
+  ProtopipeContentEmbedKind,
+  ProtopipeContentSectionEmbed,
   ProtopipeContentTemplate,
   ProtopipeFactResolution,
   ProtopipeFactReview,
+  ProtopipePublishTarget,
+  ProtopipeSiteConnection,
 } from '@hive/contracts';
 import { MessageService } from 'primeng/api';
 import { DatePicker } from 'primeng/datepicker';
@@ -31,6 +36,7 @@ import {
   PROTOPIPE_CONTENT_META_MIN,
 } from '../../protopipe.constants';
 import { ProtopipeApiService } from '../../protopipe-api.service';
+import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 import {
   ProtopipeContentService,
@@ -106,7 +112,14 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { id: 'quote', label: 'Quote', icon: 'pi pi-comment', keywords: 'quote blockquote' },
 ];
 
-type InspectorPanel = 'brief' | 'preview' | 'hints' | 'seo' | 'behind' | 'facts';
+type InspectorPanel = 'brief' | 'preview' | 'blog' | 'hints' | 'seo' | 'behind' | 'facts';
+
+function detectEmbedKind(url: string): ProtopipeContentEmbedKind {
+  const lower = url.trim().toLowerCase();
+  if (lower.includes('youtube.com') || lower.includes('youtu.be')) return 'youtube';
+  if (lower.includes('vimeo.com')) return 'vimeo';
+  return 'url';
+}
 
 type PipelineStepStatus = 'pending' | 'running' | 'complete' | 'failed';
 
@@ -250,9 +263,11 @@ export class ProtopipeWriterComponent implements OnDestroy {
 
   protected readonly content = inject(ProtopipeContentService);
   private readonly api = inject(ProtopipeApiService);
+  private readonly strategy = inject(ProtopipeStrategyService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly messages = inject(MessageService);
+  private readonly sanitizer = inject(DomSanitizer);
 
   readonly loading = this.content.loading;
   readonly saving = this.content.saving;
@@ -346,6 +361,21 @@ export class ProtopipeWriterComponent implements OnDestroy {
     return t ? writingHints(t) : [];
   });
 
+  readonly siteHost = computed(() => {
+    const site = this.strategy.site();
+    const host = site?.hostname?.trim();
+    if (host && !host.endsWith('pending.local')) return host.replace(/^www\./, '');
+    const url = site?.url?.trim() || site?.previewBaseUrl?.trim();
+    if (url) {
+      try {
+        return new URL(url.startsWith('http') ? url : `https://${url}`).hostname.replace(/^www\./, '');
+      } catch {
+        return url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      }
+    }
+    return 'yoursite.com';
+  });
+
   readonly serp = computed(() => {
     const s = this.session();
     if (!s) return null;
@@ -353,9 +383,26 @@ export class ProtopipeWriterComponent implements OnDestroy {
       title: s.template.title,
       metaDescription: s.template.metaDescription,
       slug: s.slug,
-      siteHost: 'destinationweddingpainter.com',
+      siteHost: this.siteHost(),
     });
   });
+
+  readonly blogPreviewHtml = signal<string | null>(null);
+  readonly blogPreviewSafeHtml = computed<SafeHtml | null>(() => {
+    const html = this.blogPreviewHtml();
+    return html ? this.sanitizer.bypassSecurityTrustHtml(html) : null;
+  });
+  readonly blogPreviewLoading = signal(false);
+  readonly blogPreviewError = signal<string | null>(null);
+
+  readonly publishTarget = signal<ProtopipePublishTarget>('astro');
+  readonly publishConnectionId = signal<string | null>(null);
+  readonly siteConnections = signal<ProtopipeSiteConnection[]>([]);
+  readonly wordpressConnections = computed(() =>
+    this.siteConnections().filter((c) => c.provider === 'wordpress' && c.status === 'connected'),
+  );
+  readonly deployStatus = this.content.lastDeployStatus;
+  readonly publishedUrl = this.content.lastPublishedUrl;
 
   readonly metaLen = computed(() => this.session()?.template.metaDescription.length ?? 0);
 
@@ -732,20 +779,35 @@ export class ProtopipeWriterComponent implements OnDestroy {
         if (postId && postId !== 'new') {
           untracked(() => {
             this.publishAfterSave.set(false);
-            this.content.publishNow(postId);
+            this.content.publishNow(postId, this.publishRequestBody());
           });
         }
       }
     });
 
     effect(() => {
+      if (!this.isPanelOpen('blog')) return;
+      const s = this.session();
+      if (!s) return;
+      untracked(() => void this.refreshBlogPreview());
+    });
+
+    effect(() => {
       if (!this.content.publishSucceeded()) return;
       untracked(() => {
         if (this.content.consumePublishSucceeded()) {
+          const status = this.deployStatus();
+          const url = this.publishedUrl();
+          const detail =
+            status === 'building'
+              ? 'Published to GitHub — your site is building via GitHub Actions.'
+              : status === 'live' && url
+                ? `Published — live at ${url}`
+                : 'Published successfully.';
           this.messages.add({
             severity: 'success',
             summary: 'Published',
-            detail: 'Your site will update via GitHub Actions.',
+            detail,
             life: 5000,
           });
           if (this.embedded()) {
@@ -777,6 +839,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
         readOnly: false,
       });
       this.bootstrappedKey.set(key);
+      void this.loadSiteConnections();
       return;
     }
 
@@ -818,6 +881,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
           this.loadRun(post.articleGenerationRunId);
         }
         this.maybeAutoApplyTemplateFromRun();
+        void this.loadSiteConnections();
       },
       error: () => {
         this.loadingPost.set(false);
@@ -847,6 +911,130 @@ export class ProtopipeWriterComponent implements OnDestroy {
     if (next.has(panel)) next.delete(panel);
     else next.add(panel);
     this.openPanels.set(next);
+    if (panel === 'blog' && next.has('blog')) {
+      void this.refreshBlogPreview();
+    }
+  }
+
+  private publishRequestBody(): { target: ProtopipePublishTarget; connectionId?: string } {
+    const target = this.publishTarget();
+    const connectionId = this.publishConnectionId();
+    return {
+      target,
+      connectionId: target === 'wordpress' && connectionId ? connectionId : undefined,
+    };
+  }
+
+  async refreshBlogPreview(): Promise<void> {
+    const siteId = this.content.siteId();
+    const s = this.session();
+    if (!siteId || !s) return;
+
+    this.blogPreviewLoading.set(true);
+    this.blogPreviewError.set(null);
+    try {
+      const publishAt = s.scheduleAt?.toISOString();
+      const response = await this.api.previewContent(siteId, {
+        template: s.template,
+        slug: s.slug,
+        publishAt,
+      });
+      this.blogPreviewHtml.set(response.html);
+    } catch (err) {
+      this.blogPreviewHtml.set(null);
+      this.blogPreviewError.set(parseProtopipeApiError(err, 'Could not load blog preview'));
+    } finally {
+      this.blogPreviewLoading.set(false);
+    }
+  }
+
+  async loadSiteConnections(): Promise<void> {
+    const siteId = this.content.siteId();
+    if (!siteId) return;
+    try {
+      const { connections } = await this.api.listSiteConnections(siteId);
+      this.siteConnections.set(connections);
+      const wp = connections.find((c) => c.provider === 'wordpress' && c.status === 'connected');
+      if (wp && !this.publishConnectionId()) {
+        this.publishConnectionId.set(wp.id);
+      }
+    } catch {
+      this.siteConnections.set([]);
+    }
+  }
+
+  setPublishTarget(target: ProtopipePublishTarget): void {
+    this.publishTarget.set(target);
+    if (target === 'astro') {
+      this.publishConnectionId.set(null);
+    } else if (!this.publishConnectionId() && this.wordpressConnections()[0]) {
+      this.publishConnectionId.set(this.wordpressConnections()[0].id);
+    }
+  }
+
+  setPublishConnectionId(connectionId: string): void {
+    this.publishConnectionId.set(connectionId || null);
+  }
+
+  addSectionImage(sectionIndex: number): void {
+    const s = this.session();
+    if (!s || s.readOnly) return;
+    const section = s.template.sections[sectionIndex];
+    const images = [...(section.images ?? []), { url: '', alt: '' }];
+    this.patchSection(sectionIndex, { images });
+  }
+
+  updateSectionImage(
+    sectionIndex: number,
+    imageIndex: number,
+    partial: { url?: string; alt?: string },
+  ): void {
+    const s = this.session();
+    if (!s || s.readOnly) return;
+    const images = [...(s.template.sections[sectionIndex].images ?? [])];
+    images[imageIndex] = { ...images[imageIndex], ...partial };
+    this.patchSection(sectionIndex, { images });
+  }
+
+  removeSectionImage(sectionIndex: number, imageIndex: number): void {
+    const s = this.session();
+    if (!s || s.readOnly) return;
+    const images = (s.template.sections[sectionIndex].images ?? []).filter((_, i) => i !== imageIndex);
+    this.patchSection(sectionIndex, { images });
+  }
+
+  addSectionEmbed(sectionIndex: number, url: string): void {
+    const s = this.session();
+    if (!s || s.readOnly || !url.trim()) return;
+    const section = s.template.sections[sectionIndex];
+    const embeds: ProtopipeContentSectionEmbed[] = [
+      ...(section.embeds ?? []),
+      { kind: detectEmbedKind(url), url: url.trim() },
+    ];
+    this.patchSection(sectionIndex, { embeds });
+  }
+
+  updateSectionEmbed(
+    sectionIndex: number,
+    embedIndex: number,
+    partial: Partial<ProtopipeContentSectionEmbed>,
+  ): void {
+    const s = this.session();
+    if (!s || s.readOnly) return;
+    const embeds = [...(s.template.sections[sectionIndex].embeds ?? [])];
+    embeds[embedIndex] = { ...embeds[embedIndex], ...partial };
+    this.patchSection(sectionIndex, { embeds });
+  }
+
+  protected detectEmbedKind(url: string): ProtopipeContentEmbedKind {
+    return detectEmbedKind(url);
+  }
+
+  removeSectionEmbed(sectionIndex: number, embedIndex: number): void {
+    const s = this.session();
+    if (!s || s.readOnly) return;
+    const embeds = (s.template.sections[sectionIndex].embeds ?? []).filter((_, i) => i !== embedIndex);
+    this.patchSection(sectionIndex, { embeds });
   }
 
   // --- canvas editing -------------------------------------------------------
@@ -887,7 +1075,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
     const s = this.session();
     if (!s || s.readOnly) return;
     const sections = [...s.template.sections];
-    sections.splice(atIndex, 0, { h2: '', body: '', images: [] });
+    sections.splice(atIndex, 0, { h2: '', body: '', images: [], embeds: [] });
     this.content.patchWritingTemplate({ sections });
     this.content.setFocusedSection(atIndex);
   }
@@ -1008,7 +1196,17 @@ export class ProtopipeWriterComponent implements OnDestroy {
       });
       return;
     }
-    this.content.publishNow(postId);
+    if (this.publishTarget() === 'wordpress' && !this.publishConnectionId()) {
+      this.messages.add({
+        severity: 'warn',
+        summary: 'WordPress not connected',
+        detail: 'Connect WordPress in Integrations or choose Astro publish.',
+        life: 5000,
+      });
+      this.openPanels.update((set) => new Set(set).add('seo'));
+      return;
+    }
+    this.content.publishNow(postId, this.publishRequestBody());
   }
 
   dismissPublishReview(): void {
@@ -1783,6 +1981,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
         h2: sec.h2,
         body: drafted[i]?.prose ?? '',
         images: [] as { url: string; alt: string }[],
+        embeds: [] as { kind: 'youtube' | 'vimeo' | 'url'; url: string }[],
       }));
       this.content.updateWritingSession({
         template: {

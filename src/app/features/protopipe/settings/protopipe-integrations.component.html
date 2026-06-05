@@ -13,6 +13,94 @@
   <article class="integration-card">
     <header class="integration-card__header">
       <div class="integration-card__brand">
+        <span class="integration-card__logo integration-card__logo--wp" aria-hidden="true">
+          <i class="pi pi-wordpress"></i>
+        </span>
+        <div>
+          <h2 class="integration-card__name">WordPress</h2>
+          <p class="integration-card__tagline">
+            Publish blog posts to your existing WordPress site via REST API.
+          </p>
+        </div>
+      </div>
+      @if (wpConnections().length) {
+        <p-tag severity="success" value="Connected"></p-tag>
+      } @else {
+        <p-tag severity="warn" value="Not connected"></p-tag>
+      }
+    </header>
+
+    <div class="integration-card__body">
+      @if (wpLoading()) {
+        <div class="integration-card__loading">
+          <p-progressSpinner styleClass="integration-card__spinner"></p-progressSpinner>
+          <span>Loading WordPress…</span>
+        </div>
+      } @else {
+        @if (wpConnections().length) {
+          <dl class="integration-card__facts">
+            @for (conn of wpConnections(); track conn.id) {
+              <div>
+                <dt>{{ conn.label }}</dt>
+                <dd>{{ conn.metadata['siteUrl'] }}</dd>
+              </div>
+            }
+          </dl>
+        }
+        <p class="integration-card__message">
+          Use a WordPress application password (Users → Profile → Application Passwords).
+        </p>
+        <div class="integration-card__form">
+          <label>
+            <span>Label</span>
+            <input pInputText type="text" [ngModel]="wpLabel()" (ngModelChange)="wpLabel.set($event)" />
+          </label>
+          <label>
+            <span>Site URL</span>
+            <input pInputText type="url" placeholder="https://yoursite.com" [ngModel]="wpSiteUrl()" (ngModelChange)="wpSiteUrl.set($event)" />
+          </label>
+          <label>
+            <span>Username</span>
+            <input pInputText type="text" [ngModel]="wpUsername()" (ngModelChange)="wpUsername.set($event)" />
+          </label>
+          <label>
+            <span>Application password</span>
+            <p-password
+              [ngModel]="wpAppPassword()"
+              (ngModelChange)="wpAppPassword.set($event)"
+              [feedback]="false"
+              [toggleMask]="true"
+              placeholder="xxxx xxxx xxxx xxxx"
+              styleClass="w-full"
+              inputStyleClass="w-full"
+            />
+          </label>
+        </div>
+        <div class="integration-card__actions">
+          <p-button
+            [label]="wpConnections().length ? 'Update connection' : 'Connect WordPress'"
+            icon="pi pi-link"
+            [loading]="wpBusy()"
+            (onClick)="saveWordPress()"
+          ></p-button>
+          @if (wpConnections().length) {
+            <p-button
+              label="Disconnect"
+              icon="pi pi-times"
+              severity="danger"
+              [text]="true"
+              [loading]="wpBusy()"
+              (onClick)="disconnectWordPress(wpConnections()[0].id)"
+            ></p-button>
+          }
+        </div>
+      }
+    </div>
+  </article>
+
+  <article class="integration-card">
+    <header class="integration-card__header">
+      <div class="integration-card__brand">
         <span class="integration-card__logo" aria-hidden="true">
           <i class="pi pi-google"></i>
         </span>

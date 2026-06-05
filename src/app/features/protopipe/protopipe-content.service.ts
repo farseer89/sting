@@ -7,6 +7,8 @@ import type {
   ProtopipeContentPost,
   ProtopipeContentPostStatus,
   ProtopipeContentTemplate,
+  ProtopipePublishContentRequest,
+  ProtopipePublishContentResponse,
   ProtopipeKeywordDto,
   SeoValidationResult,
   UpdateContentPostRequest,
@@ -34,7 +36,7 @@ export function emptyContentTemplate(): ProtopipeContentTemplate {
     h1: '',
     metaDescription: '',
     intro: '',
-    sections: [{ h2: '', body: '', images: [] }],
+    sections: [{ h2: '', body: '', images: [], embeds: [] }],
     internalLinks: [],
     cta: { label: 'Get in touch', href: '/get-in-touch' },
   };
@@ -58,6 +60,8 @@ export class ProtopipeContentService {
   /** Fires after a successful create (for editor route replace). */
   readonly saveCreatedId = signal<string | null>(null);
   readonly publishSucceeded = signal(false);
+  readonly lastDeployStatus = signal<ProtopipePublishContentResponse['deployStatus'] | null>(null);
+  readonly lastPublishedUrl = signal<string | null>(null);
 
   /** Reactive catalog load (bootstrap → posts + plan keywords). */
   readonly catalogResource = rxResource({
@@ -231,7 +235,7 @@ export class ProtopipeContentService {
     this.updateWritingSession({
       template: {
         ...s.template,
-        sections: [...s.template.sections, { h2: '', body: '', images: [] }],
+        sections: [...s.template.sections, { h2: '', body: '', images: [], embeds: [] }],
       },
       focusedSectionIndex: s.template.sections.length,
     });
@@ -434,7 +438,7 @@ export class ProtopipeContentService {
     });
   }
 
-  publishNow(postId: string): void {
+  publishNow(postId: string, options: ProtopipePublishContentRequest = {}): void {
     const siteId = this.siteId();
     if (!siteId) {
       this._error.set('No site loaded');
@@ -444,13 +448,18 @@ export class ProtopipeContentService {
     this._publishing.set(true);
     this._error.set(null);
     this._publishReview.set(false);
+    this.lastDeployStatus.set(null);
+    this.lastPublishedUrl.set(null);
 
-    this.api.publishContent$(siteId, postId).subscribe({
-      next: ({ post }) => {
+    this.api.publishContent$(siteId, postId, options).subscribe({
+      next: (response: ProtopipePublishContentResponse) => {
+        const { post } = response;
         this.patchCatalogPosts((list) => list.map((p) => (p.id === post.id ? post : p)));
         this._activeTab.set('published');
         this._seoValidation.set(null);
         this._publishing.set(false);
+        this.lastDeployStatus.set(response.deployStatus ?? null);
+        this.lastPublishedUrl.set(response.publishedUrl ?? post.publishedUrl ?? null);
         this.publishSucceeded.set(true);
       },
       error: (err) => {

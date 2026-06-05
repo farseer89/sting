@@ -25,7 +25,15 @@
       </thead>
       <tbody>
         @for (row of rows(); track row.phrase) {
-          <tr [class]="'strat-kw__row--' + row.tierKey">
+          <tr
+            [class]="'strat-kw__row--' + row.tierKey"
+            class="strat-kw__row"
+            tabindex="0"
+            role="button"
+            (click)="openKeyword(row.phrase)"
+            (keydown.enter)="openKeyword(row.phrase)"
+            (keydown.space)="$event.preventDefault(); openKeyword(row.phrase)"
+          >
             <td class="strat-kw__phrase">{{ row.phrase }}</td>
             <td>{{ row.searchVolume ?? '—' }}</td>
             <td>{{ row.opportunityScore }}</td>

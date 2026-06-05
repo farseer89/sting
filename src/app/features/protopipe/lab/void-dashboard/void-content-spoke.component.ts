@@ -7,6 +7,7 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
 } from '@angular/core';
 import {
@@ -165,6 +166,8 @@ export class VoidContentSpokeComponent {
   /** Radial / replay bar above the graph in embedded mode. Off in strategy home embed. */
   readonly showToolbar = input(true);
   readonly initialView = input<SpokeView>('radial');
+  /** Fired when a graph node is clicked (always emitted in embedded mode). */
+  readonly nodeSelected = output<SpokeNode>();
 
   readonly account = computed(() => this.accountOverride() ?? CONTENT_SPOKE_ACCOUNT);
   readonly clusters = computed(() => this.clustersOverride() ?? CONTENT_SPOKE_CLUSTERS);
@@ -406,6 +409,17 @@ export class VoidContentSpokeComponent {
   }
 
   selectNode(id: string): void {
+    const placed = this.placedNodes().find((entry) => entry.node.id === id);
+    if (!placed) {
+      return;
+    }
+
+    if (this.embedded()) {
+      this.selectedNodeId.set(id);
+      this.nodeSelected.emit(placed.node);
+      return;
+    }
+
     this.selectedNodeId.update((current) => (current === id ? null : id));
   }
 

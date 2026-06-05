@@ -1,7 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import type { ProtopipeSiteContentPlan } from '@hive/contracts';
-import { ProtopipeHomeSidePanelService } from '../protopipe-home-side-panel.service';
-import { ProtopipeHomeWriterViewState } from '../protopipe-home-writer-view.state';
 import { ProtopipeHomeStrategyViewState } from './protopipe-home-strategy-view.state';
 import { calendarItemKey } from './strategy.helpers';
 import {
@@ -21,8 +19,6 @@ import {
 })
 export class StrategyContentCalendarComponent {
   private readonly viewState = inject(ProtopipeHomeStrategyViewState);
-  private readonly sidePanel = inject(ProtopipeHomeSidePanelService);
-  private readonly writerView = inject(ProtopipeHomeWriterViewState);
 
   readonly plan = input.required<ProtopipeSiteContentPlan>();
 
@@ -140,9 +136,7 @@ export class StrategyContentCalendarComponent {
     if (!item) {
       return;
     }
-    this.writerView.clearPanel();
-    this.viewState.openArticle(item);
-    this.sidePanel.ensureOpen();
+    this.viewState.selectArticle(item);
   }
 
   isStickySelected(itemKey: string): boolean {

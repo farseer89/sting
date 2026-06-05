@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import type { ProtopipeSiteContentPlan } from '@hive/contracts';
+import type { SpokeNode } from '../../lab/void-dashboard/void-content-spoke.mock';
 import { VoidContentSpokeComponent } from '../../lab/void-dashboard/void-content-spoke.component';
 import { ProtopipeHomeStrategyViewState } from './protopipe-home-strategy-view.state';
 import { StrategyContentCalendarComponent } from './strategy-content-calendar.component';
@@ -68,5 +69,9 @@ export class StrategyContentMapComponent {
 
   isView(active: StrategyVisualView): boolean {
     return this.view() === active;
+  }
+
+  onSpokeNodeSelected(node: SpokeNode): void {
+    this.viewState.selectFromSpokeNode(this.plan(), node);
   }
 }

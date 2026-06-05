@@ -8,6 +8,8 @@ export interface SpokeNode {
   kind: SpokeNodeKind;
   status?: SpokeNodeStatus;
   meta?: string;
+  /** Calendar sticky key when kind === 'article'. */
+  calendarItemKey?: string;
 }
 
 export interface SpokeCluster {

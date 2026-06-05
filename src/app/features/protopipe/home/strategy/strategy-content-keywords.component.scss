@@ -105,6 +105,19 @@
     vertical-align: middle;
   }
 
+  tbody tr.strat-kw__row {
+    cursor: pointer;
+
+    &:hover td {
+      background: rgba(10, 147, 150, 0.06);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--void-ocean);
+      outline-offset: -2px;
+    }
+  }
+
   tbody tr:last-child td {
     border-bottom: none;
   }

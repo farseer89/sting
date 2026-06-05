@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import type { ProtopipeSiteContentPlan, ProtopipeScoredKeyword } from '@hive/contracts';
+import { ProtopipeHomeStrategyViewState } from './protopipe-home-strategy-view.state';
 
 interface KeywordRow {
   phrase: string;
@@ -22,6 +23,8 @@ interface KeywordRow {
   styleUrl: './strategy-content-keywords.component.scss',
 })
 export class StrategyContentKeywordsComponent {
+  private readonly viewState = inject(ProtopipeHomeStrategyViewState);
+
   readonly plan = input.required<ProtopipeSiteContentPlan>();
 
   readonly rows = computed(() => {
@@ -53,5 +56,9 @@ export class StrategyContentKeywordsComponent {
       gap: kw.isGap ? 'Gap' : '—',
       serpFeatures: kw.serpFeatures?.length ? kw.serpFeatures.join(', ') : '—',
     }));
+  }
+
+  openKeyword(phrase: string): void {
+    this.viewState.selectFromKeywordPhrase(this.plan(), phrase);
   }
 }

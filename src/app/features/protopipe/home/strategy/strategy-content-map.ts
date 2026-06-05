@@ -9,7 +9,7 @@ import type {
   SpokeNode,
   SpokeNodeStatus,
 } from '../../lab/void-dashboard/void-content-spoke.mock';
-import { formatPublishDate, strategyStats } from './strategy.helpers';
+import { calendarItemKey, formatPublishDate, strategyStats } from './strategy.helpers';
 
 const KEYWORD_CLUSTER: Pick<SpokeCluster, 'color' | 'colorSoft'> = {
   color: '#ee9b00',
@@ -157,6 +157,7 @@ export function planToContentSpoke(
     kind: 'article' as const,
     status: articleStatus(item.kind, item.proposedPublishAt),
     meta: articleMeta(plan, item),
+    calendarItemKey: calendarItemKey(item),
   }));
 
   const clusters: SpokeCluster[] = [

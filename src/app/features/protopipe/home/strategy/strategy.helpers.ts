@@ -1,7 +1,13 @@
 import type {
+  ArticleGenerationContentPlanIdea,
+  ArticleGenerationContentStrategy,
   ProtopipeContentPlanCalendarItem,
+  ProtopipeContentPlanPillar,
+  ProtopipeProposedCluster,
+  ProtopipeScoredKeyword,
   ProtopipeSiteContentPlan,
 } from '@hive/contracts';
+import type { SpokeNode } from '../../lab/void-dashboard/void-content-spoke.mock';
 
 export type StrategyLayoutId = 'a' | 'b' | 'c';
 
@@ -72,4 +78,88 @@ export function calendarDateRange(items: ProtopipeContentPlanCalendarItem[]): st
 export function parseStrategyLayout(value: string | null | undefined): StrategyLayoutId {
   if (value === 'b' || value === 'c') return value;
   return 'a';
+}
+
+export interface StrategyArticlePanelContext {
+  scoredKeyword: ProtopipeScoredKeyword | null;
+  cluster: ProtopipeProposedCluster | null;
+  pillar: ProtopipeContentPlanPillar | null;
+  audienceLabel: string | null;
+  focusStrategy: ArticleGenerationContentStrategy | null;
+  focusIdea: ArticleGenerationContentPlanIdea | null;
+}
+
+export function allScoredKeywords(plan: ProtopipeSiteContentPlan): ProtopipeScoredKeyword[] {
+  const tiers = plan.keywordTiers;
+  return [...tiers.immediateFocus, ...tiers.longTerm, ...tiers.longTail];
+}
+
+export function scoredKeywordForPhrase(
+  plan: ProtopipeSiteContentPlan,
+  phrase: string,
+): ProtopipeScoredKeyword | null {
+  const key = phrase.toLowerCase();
+  return allScoredKeywords(plan).find((kw) => kw.phrase.toLowerCase() === key) ?? null;
+}
+
+export function calendarItemForPhrase(
+  plan: ProtopipeSiteContentPlan,
+  phrase: string,
+): ProtopipeContentPlanCalendarItem | null {
+  const key = phrase.toLowerCase();
+  const matches = plan.calendar.filter(
+    (item) =>
+      item.suggestedKeyword.toLowerCase() === key || item.workingTitle.toLowerCase() === key,
+  );
+  if (matches.length === 0) {
+    return null;
+  }
+  return matches.find((item) => item.clusterRole === 'pillar') ?? matches[0];
+}
+
+export function calendarItemFromSpokeNode(
+  plan: ProtopipeSiteContentPlan,
+  node: SpokeNode,
+): ProtopipeContentPlanCalendarItem | null {
+  if (node.kind === 'article' && node.calendarItemKey) {
+    return plan.calendar.find((item) => calendarItemKey(item) === node.calendarItemKey) ?? null;
+  }
+  return calendarItemForPhrase(plan, node.label);
+}
+
+export function buildArticlePanelContext(
+  plan: ProtopipeSiteContentPlan,
+  article: ProtopipeContentPlanCalendarItem,
+): StrategyArticlePanelContext {
+  const scoredKeyword = scoredKeywordForPhrase(plan, article.suggestedKeyword);
+  const cluster = article.clusterName
+    ? (plan.clusters.find((entry) => entry.name === article.clusterName) ?? null)
+    : null;
+  const pillar = article.clusterName
+    ? (plan.pillars.find((entry) => entry.clusterName === article.clusterName) ?? null)
+    : null;
+
+  const avatars = plan.keywordStrategySnapshot?.confirmedAvatars ?? [];
+  const avatarId = article.avatarId ?? scoredKeyword?.avatarId ?? cluster?.avatarId ?? null;
+  const audienceLabel = avatarId
+    ? (avatars.find((avatar) => avatar.id === avatarId)?.description ??
+      cluster?.audienceLabel ??
+      null)
+    : (cluster?.audienceLabel ?? null);
+
+  const focusStrategy =
+    plan.focusStrategies.find(
+      (strategy) => strategy.keyword.phrase.toLowerCase() === article.suggestedKeyword.toLowerCase(),
+    ) ?? null;
+
+  const focusIdea =
+    focusStrategy?.articleIdeas.find(
+      (idea) =>
+        idea.workingTitle === article.workingTitle ||
+        idea.suggestedKeyword.toLowerCase() === article.suggestedKeyword.toLowerCase(),
+    ) ??
+    focusStrategy?.articleIdeas[0] ??
+    null;
+
+  return { scoredKeyword, cluster, pillar, audienceLabel, focusStrategy, focusIdea };
 }

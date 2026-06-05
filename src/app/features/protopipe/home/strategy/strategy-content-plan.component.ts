@@ -1,7 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import type { ProtopipeContentPlanCalendarItem, ProtopipeSiteContentPlan } from '@hive/contracts';
-import { ProtopipeHomeSidePanelService } from '../protopipe-home-side-panel.service';
-import { ProtopipeHomeWriterViewState } from '../protopipe-home-writer-view.state';
 import { ProtopipeHomeStrategyViewState } from './protopipe-home-strategy-view.state';
 import { calendarItemKey, formatPublishDate } from './strategy.helpers';
 import { planAudienceSections, planClustersWithArticles } from './strategy-content-plan';
@@ -15,8 +13,6 @@ import { planAudienceSections, planClustersWithArticles } from './strategy-conte
 })
 export class StrategyContentPlanComponent {
   private readonly viewState = inject(ProtopipeHomeStrategyViewState);
-  private readonly sidePanel = inject(ProtopipeHomeSidePanelService);
-  private readonly writerView = inject(ProtopipeHomeWriterViewState);
 
   readonly plan = input.required<ProtopipeSiteContentPlan>();
 
@@ -35,9 +31,7 @@ export class StrategyContentPlanComponent {
   itemKey = calendarItemKey;
 
   openArticle(item: ProtopipeContentPlanCalendarItem): void {
-    this.writerView.clearPanel();
-    this.viewState.openArticle(item);
-    this.sidePanel.ensureOpen();
+    this.viewState.selectArticle(item);
   }
 
   isArticleSelected(item: ProtopipeContentPlanCalendarItem): boolean {

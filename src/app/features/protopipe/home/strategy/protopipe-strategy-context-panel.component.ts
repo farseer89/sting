@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import type { ProtopipeContentPlanCalendarItem } from '@hive/contracts';
-import { formatPublishDate } from './strategy.helpers';
+import { buildArticlePanelContext, formatPublishDate } from './strategy.helpers';
 import { ProtopipeHomeStrategyViewState } from './protopipe-home-strategy-view.state';
 
 @Component({
@@ -12,6 +12,15 @@ import { ProtopipeHomeStrategyViewState } from './protopipe-home-strategy-view.s
 })
 export class ProtopipeStrategyContextPanelComponent {
   readonly view = inject(ProtopipeHomeStrategyViewState);
+
+  readonly articleContext = computed(() => {
+    const plan = this.view.plan();
+    const article = this.view.selectedArticle();
+    if (!plan || !article) {
+      return null;
+    }
+    return buildArticlePanelContext(plan, article);
+  });
 
   formatDate = formatPublishDate;
 
@@ -28,5 +37,12 @@ export class ProtopipeStrategyContextPanelComponent {
       return item.kind === 'refresh-existing' ? 'Refresh queued' : 'Published';
     }
     return 'Scheduled';
+  }
+
+  formatMetric(value: number | string | null | undefined, suffix = ''): string {
+    if (value == null || value === '') {
+      return '—';
+    }
+    return `${value}${suffix}`;
   }
 }

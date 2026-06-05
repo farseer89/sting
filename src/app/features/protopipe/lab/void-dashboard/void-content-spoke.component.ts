@@ -211,6 +211,14 @@ export class VoidContentSpokeComponent {
   });
 
   readonly placedNodes = computed(() => this.layoutNodes());
+  /** Articles painted last so stacked cards prefer the topmost hit target. */
+  readonly placedNodesForRender = computed(() => {
+    const kindRank: Record<SpokeNode['kind'], number> = { keyword: 0, pillar: 1, article: 2 };
+    return [...this.placedNodes()].sort((a, b) => {
+      const byKind = kindRank[a.node.kind] - kindRank[b.node.kind];
+      return byKind !== 0 ? byKind : a.order - b.order;
+    });
+  });
   readonly clusterArcs = computed(() => this.layoutClusterArcs());
 
   private readonly neuralBase = computed(() => this.buildNeural());
@@ -408,16 +416,74 @@ export class VoidContentSpokeComponent {
     setTimeout(() => this.mounted.set(true), 40);
   }
 
-  /** Radial map card — pointerup on the <button> so the whole card is the hit target. */
-  onNodePointerUp(event: PointerEvent, node: SpokeNode): void {
+  /**
+   * Embedded strategy map: geometric pick on the nodes layer.
+   * DOM stacking cannot be trusted when cards overlap — find the card whose
+   * bounding box contains the click, preferring the nearest center on ties.
+   */
+  onRadialMapPick(event: MouseEvent): void {
+    if (!this.embedded() || this.view() !== 'radial') {
+      return;
+    }
     event.stopPropagation();
-    event.preventDefault();
+    const layer = event.currentTarget as HTMLElement;
+    const rect = layer.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) {
+      return;
+    }
+
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const viewSize = this.geo().viewSize;
+    const halfW = rect.width * 0.105;
+    const halfH = rect.height * 0.062;
+
+    let best: PlacedNode | null = null;
+
+    // Reverse paint order — topmost stacked card wins when boxes overlap.
+    for (const placed of [...this.placedNodesForRender()].reverse()) {
+      if (!this.isClusterActive(placed.cluster.id)) {
+        continue;
+      }
+      if (placed.node.kind !== 'article') {
+        continue;
+      }
+      const nx = (placed.x / viewSize) * rect.width;
+      const ny = (placed.y / viewSize) * rect.height;
+      if (Math.abs(x - nx) <= halfW && Math.abs(y - ny) <= halfH) {
+        best = placed;
+        break;
+      }
+    }
+
+    if (!best) {
+      console.info('[strategy-map] pick miss', { x: Math.round(x), y: Math.round(y) });
+      return;
+    }
+
+    console.info('[strategy-map] 1 pick received', {
+      nodeId: best.node.id,
+      kind: best.node.kind,
+      label: best.node.label,
+    });
+    this.selectNode(best.node.id, best.node);
+  }
+
+  onNodeButtonClick(event: MouseEvent, node: SpokeNode): void {
+    if (this.embedded()) {
+      return;
+    }
+    this.onNodeClick(event, node);
+  }
+
+  /** Lab radial view — direct button click. */
+  onNodeClick(event: MouseEvent, node: SpokeNode): void {
+    event.stopPropagation();
     console.info('[strategy-map] 1 click received', {
       nodeId: node.id,
       kind: node.kind,
       label: node.label,
       embedded: this.embedded(),
-      target: (event.target as HTMLElement)?.className,
     });
     this.selectNode(node.id, node);
   }

@@ -169,8 +169,13 @@
         </svg>
 
         @if (mounted()) {
-          <div class="spoke__nodes" [style.--graph-size.px]="geo().viewSize">
-            @for (placed of placedNodes(); track placed.node.id) {
+          <div
+            class="spoke__nodes"
+            [class.spoke__nodes--pick]="embedded()"
+            [style.--graph-size.px]="geo().viewSize"
+            (click)="onRadialMapPick($event)"
+          >
+            @for (placed of placedNodesForRender(); track placed.node.id) {
               <button
                 type="button"
                 class="spoke-node spoke-node--anim"
@@ -183,7 +188,8 @@
                 [style.animation-delay.s]="0.45 + placed.order * 0.05"
                 [attr.data-node-id]="placed.node.id"
                 [attr.data-node-kind]="placed.node.kind"
-                (pointerup)="onNodePointerUp($event, placed.node)"
+                [attr.tabindex]="embedded() ? -1 : 0"
+                (click)="onNodeButtonClick($event, placed.node)"
               >
                 <span class="spoke-node__kind">{{ placed.node.kind }}</span>
                 <span class="spoke-node__label">{{ placed.node.label }}</span>

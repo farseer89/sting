@@ -9,6 +9,10 @@ export interface TypeReadinessItem {
   message?: string;
 }
 
+function txt(value: string | undefined | null): string {
+  return value?.trim() ?? '';
+}
+
 function visibleBlocks(blocks: ProtopipeArticleBlock[]): ProtopipeArticleBlock[] {
   return blocks.filter((b) => b.visible !== false);
 }
@@ -19,18 +23,18 @@ function introWordCount(template: ProtopipeContentTemplate): number {
       (b) => b.kind === 'prose' && b.slotId === 'intro',
     );
     if (intro?.kind === 'prose') {
-      return intro.body.trim().split(/\s+/).filter(Boolean).length;
+      return txt(intro.body).split(/\s+/).filter(Boolean).length;
     }
   }
-  return template.intro.trim().split(/\s+/).filter(Boolean).length;
+  return txt(template.intro).split(/\s+/).filter(Boolean).length;
 }
 
 function hasCta(template: ProtopipeContentTemplate): boolean {
   if (template.blocks?.length) {
     const cta = visibleBlocks(template.blocks).find((b) => b.kind === 'cta');
-    return cta?.kind === 'cta' ? Boolean(cta.label.trim() && cta.href.trim()) : false;
+    return cta?.kind === 'cta' ? Boolean(txt(cta.label) && txt(cta.href)) : false;
   }
-  return Boolean(template.cta?.label?.trim() && template.cta?.href?.trim());
+  return Boolean(txt(template.cta?.label) && txt(template.cta?.href));
 }
 
 function item(
@@ -67,15 +71,14 @@ export function computeTypeReadiness(template: ProtopipeContentTemplate): TypeRe
   const layoutVariant = template.layoutVariant;
 
   items.push(
-    item('title', 'Title', template.title.trim() ? 'pass' : 'warn', 'Add a search title'),
+    item('title', 'Title', txt(template.title) ? 'pass' : 'warn', 'Add a search title'),
   );
+  const metaLen = txt(template.metaDescription).length;
   items.push(
     item(
       'meta',
       'Meta description',
-      template.metaDescription.trim().length >= 140 && template.metaDescription.trim().length <= 160
-        ? 'pass'
-        : 'warn',
+      metaLen >= 140 && metaLen <= 160 ? 'pass' : 'warn',
       'Aim for 140–160 characters',
     ),
   );
@@ -93,7 +96,7 @@ export function computeTypeReadiness(template: ProtopipeContentTemplate): TypeRe
       const stepsBlock = blocks.find((b) => b.kind === 'howto_steps');
       const stepCount =
         stepsBlock?.kind === 'howto_steps'
-          ? stepsBlock.steps.filter((s) => s.name.trim() && s.body.trim()).length
+          ? stepsBlock.steps.filter((s) => txt(s.name) && txt(s.body)).length
           : 0;
       items.push(
         item(
@@ -118,7 +121,7 @@ export function computeTypeReadiness(template: ProtopipeContentTemplate): TypeRe
       const faq = blocks.find((b) => b.kind === 'faq_list');
       const count =
         faq?.kind === 'faq_list'
-          ? faq.items.filter((i) => i.question.trim() && i.answer.trim()).length
+          ? faq.items.filter((i) => txt(i.question) && txt(i.answer)).length
           : 0;
       items.push(
         item(
@@ -134,7 +137,7 @@ export function computeTypeReadiness(template: ProtopipeContentTemplate): TypeRe
       if (layoutVariant === 'list') {
         const list = blocks.find((b) => b.kind === 'list_items');
         const count =
-          list?.kind === 'list_items' ? list.items.filter((i) => i.title.trim()).length : 0;
+          list?.kind === 'list_items' ? list.items.filter((i) => txt(i.title)).length : 0;
         items.push(
           item(
             'comparison_list',
@@ -160,7 +163,7 @@ export function computeTypeReadiness(template: ProtopipeContentTemplate): TypeRe
         item(
           'recommendation',
           'Recommendation',
-          rec?.kind === 'prose' && rec.body.trim() ? 'pass' : 'warn',
+          rec?.kind === 'prose' && txt(rec.body) ? 'pass' : 'warn',
           'Add a clear pick',
         ),
       );
@@ -172,7 +175,7 @@ export function computeTypeReadiness(template: ProtopipeContentTemplate): TypeRe
         item(
           'service_area',
           'Service area',
-          area?.kind === 'prose' && area.body.trim() ? 'pass' : 'warn',
+          area?.kind === 'prose' && txt(area.body) ? 'pass' : 'warn',
           'Mention where you serve',
         ),
       );
@@ -182,7 +185,7 @@ export function computeTypeReadiness(template: ProtopipeContentTemplate): TypeRe
       if (layoutVariant === 'listicle') {
         const list = blocks.find((b) => b.kind === 'list_items');
         const count =
-          list?.kind === 'list_items' ? list.items.filter((i) => i.title.trim()).length : 0;
+          list?.kind === 'list_items' ? list.items.filter((i) => txt(i.title)).length : 0;
         items.push(
           item(
             'listicle_items',
@@ -203,8 +206,8 @@ export function computeTypeReadiness(template: ProtopipeContentTemplate): TypeRe
   const links = blocks.find((b) => b.kind === 'internal_links');
   const linkCount =
     links?.kind === 'internal_links'
-      ? links.links.filter((l) => l.href?.trim() && l.label?.trim()).length
-      : template.internalLinks?.filter((l) => l.href?.trim() && l.label?.trim()).length ?? 0;
+      ? links.links.filter((l) => txt(l.href) && txt(l.label)).length
+      : template.internalLinks?.filter((l) => txt(l.href) && txt(l.label)).length ?? 0;
   items.push(
     item(
       'internal_links',

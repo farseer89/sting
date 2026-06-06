@@ -436,7 +436,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
   readonly deployStatus = this.content.lastDeployStatus;
   readonly publishedUrl = this.content.lastPublishedUrl;
 
-  readonly metaLen = computed(() => this.session()?.template.metaDescription.length ?? 0);
+  readonly metaLen = computed(() => this.session()?.template.metaDescription?.length ?? 0);
 
   readonly metaWarn = computed(() => {
     const len = this.metaLen();
@@ -453,7 +453,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
     const s = this.session();
     if (!s) return null;
     const kw = this.content.planKeywords().find((k) => k.id === s.selectedKeywordId);
-    if (!kw || s.template.intro.trim()) return null;
+    if (!kw || (s.template.intro?.trim() ?? '')) return null;
     return buildKeywordSuggestions(kw).intro;
   });
 

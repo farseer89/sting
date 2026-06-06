@@ -33,6 +33,7 @@ import type {
   ProtopipeGoogleOAuthStartResponse,
   ProtopipeKeywordDiscoveryResponse,
   ProtopipeGetDiscoveryRunResponse,
+  ProtopipeGetLatestDiscoveryRunResponse,
   ProtopipeStartDiscoveryResponse,
   ProtopipeStrategyConfirmRequest,
   ProtopipeStrategyConfirmResponse,
@@ -268,6 +269,14 @@ export class ProtopipeApiService {
     return firstValueFrom(
       this.http.get<ProtopipeGetDiscoveryRunResponse>(
         protopipeApiUrl(ProtopipeEndpoints.keywordDiscoveryGetRun.path, { siteId, runId }),
+      ),
+    );
+  }
+
+  getLatestKeywordDiscoveryRun(siteId: string): Promise<ProtopipeGetLatestDiscoveryRunResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeGetLatestDiscoveryRunResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.keywordDiscoveryGetLatestRun.path, { siteId }),
       ),
     );
   }

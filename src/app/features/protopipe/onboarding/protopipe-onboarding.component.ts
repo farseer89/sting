@@ -420,6 +420,10 @@ export class ProtopipeOnboardingComponent implements OnInit {
         profile,
       });
 
+      void this.api.startKeywordDiscoveryRun(siteId).catch(() => {
+        // Non-blocking — home loads the run when the user enters the app.
+      });
+
       this.state.invalidate();
       this.isSubmitting.set(false);
       this.isComplete.set(true);

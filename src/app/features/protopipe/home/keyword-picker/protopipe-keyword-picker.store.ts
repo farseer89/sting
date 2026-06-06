@@ -189,27 +189,32 @@ export class ProtopipeKeywordPickerStore {
         hostname: this.strategy.site()?.hostname,
       });
 
+      this._hostname.set(this.strategy.site()?.hostname ?? '');
       const map = new Map<string, KeywordPickerOption>();
-      try {
-        const start = await this.api.startKeywordDiscoveryRun(siteId);
-        this._discoveryRunId.set(start.run.id);
-        this._hostname.set(this.strategy.site()?.hostname ?? '');
-        const run = await this.pollDiscoveryRun(siteId, start.run.id);
-        this._discoveryRunId.set(run.id);
-        this.mergeDiscoveryRun(run, map);
-        this.applySuggestedAvatars(run.artifacts.suggestedAvatars ?? []);
-      } catch {
-        const discovery = await this.api.discoverKeywords(siteId);
-        this._hostname.set(discovery.hostname ?? this.strategy.site()?.hostname ?? '');
+      const latest = await this.api.getLatestKeywordDiscoveryRun(siteId);
+      const existing = latest.run;
+
+      if (existing) {
+        this._discoveryRunId.set(existing.id);
+        if (existing.status === 'pending' || existing.status === 'discovering') {
+          const run = await this.pollDiscoveryRun(siteId, existing.id);
+          this.mergeDiscoveryRun(run, map);
+          this.applySuggestedAvatars(run.artifacts.suggestedAvatars ?? []);
+        } else if (existing.status === 'ready' || existing.status === 'confirmed') {
+          this.mergeDiscoveryRun(existing, map);
+          this.applySuggestedAvatars(existing.artifacts.suggestedAvatars ?? []);
+        } else if (existing.status === 'failed') {
+          this._discoveryNote.set(
+            existing.error?.message ?? 'Keyword discovery failed. Your saved keywords are shown below.',
+          );
+          this.loadFromSavedStrategy(map);
+        }
+      } else {
         this._discoveryRunId.set(null);
         this._suggestedAvatars.set([]);
         this._selectedAvatarIds.set(new Set());
-        this.mergeDiscovery(discovery, map);
-        await this.seedRelatedKeywords(map, discovery);
-        this._discoveryNote.set(
-          (this._discoveryNote() ? `${this._discoveryNote()} · ` : '') +
-            'Using quick discovery — audience suggestions unavailable.',
-        );
+        this._discoveryNote.set('Keyword research has not run yet. Complete onboarding to start discovery.');
+        this.loadFromSavedStrategy(map);
       }
 
       this.applyScoredPool(map);
@@ -676,6 +681,18 @@ export class ProtopipeKeywordPickerStore {
       competition: related.competition,
       source: 'ads_related',
     });
+  }
+
+  private loadFromSavedStrategy(map: Map<string, KeywordPickerOption>): void {
+    for (const kw of this.strategy.keywords()) {
+      const phrase = kw.phrase?.trim();
+      if (!phrase) continue;
+      mergeKeywordOption(map, {
+        phraseKey: normalizePhraseKey(phrase),
+        phrase,
+        source: 'custom',
+      });
+    }
   }
 
   private applyScoredPool(map: Map<string, KeywordPickerOption>): void {

@@ -54,7 +54,13 @@ import {
   slugifyTitle,
   writingHints,
 } from '../content-template-suggestions';
+import {
+  articleTypeLabel,
+  computeTypeReadiness,
+  type TypeReadinessItem,
+} from '../type-readiness.util';
 import { ProseEditorComponent } from './prose-editor/prose-editor.component';
+import { ProtopipeBlockSlotsPanelComponent } from './block-slots-panel/block-slots-panel.component';
 import type { Editor } from '@tiptap/core';
 import type { FactHighlightItem } from './prose-editor/fact-highlight.extension';
 import type {
@@ -118,7 +124,7 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { id: 'quote', label: 'Quote', icon: 'pi pi-comment', keywords: 'quote blockquote' },
 ];
 
-type InspectorPanel = 'brief' | 'preview' | 'blog' | 'hints' | 'seo' | 'behind' | 'facts';
+type InspectorPanel = 'brief' | 'preview' | 'blog' | 'layout' | 'hints' | 'seo' | 'behind' | 'facts';
 
 function detectEmbedKind(url: string): ProtopipeContentEmbedKind {
   const lower = url.trim().toLowerCase();
@@ -234,7 +240,7 @@ function buildHighlightSegments(prose: string, claims: string[]): HighlightSegme
   selector: 'app-protopipe-writer',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePicker, Toast, ProseEditorComponent, NgTemplateOutlet],
+  imports: [FormsModule, DatePicker, Toast, ProseEditorComponent, NgTemplateOutlet, ProtopipeBlockSlotsPanelComponent],
   providers: [MessageService],
   templateUrl: './protopipe-writer.component.html',
   styleUrl: './protopipe-writer.component.scss',
@@ -359,6 +365,30 @@ export class ProtopipeWriterComponent implements OnDestroy {
     return t ? writingHints(t) : [];
   });
 
+  readonly typeReadiness = computed((): TypeReadinessItem[] => {
+    const s = this.session();
+    if (!s) return [];
+    const template: ProtopipeContentTemplate = {
+      ...s.template,
+      articleType: s.template.articleType ?? s.brief?.articleType,
+    };
+    return computeTypeReadiness(template);
+  });
+
+  readonly typeReadinessSummary = computed(() => {
+    const items = this.typeReadiness();
+    const pass = items.filter((i) => i.status === 'pass').length;
+    const fail = items.filter((i) => i.status === 'fail').length;
+    return { pass, total: items.length, fail };
+  });
+
+  readonly articleTypeDisplay = computed(() => {
+    const s = this.session();
+    const t = s?.template;
+    const articleType = t?.articleType ?? s?.brief?.articleType;
+    return articleTypeLabel(articleType, t?.layoutVariant);
+  });
+
   readonly siteHost = computed(() => {
     const site = this.strategy.site();
     const host = site?.hostname?.trim();
@@ -392,6 +422,10 @@ export class ProtopipeWriterComponent implements OnDestroy {
   });
   readonly blogPreviewLoading = signal(false);
   readonly blogPreviewError = signal<string | null>(null);
+  readonly previewTakeover = signal(false);
+  private previewRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+  readonly hasBlockLayout = computed(() => (this.session()?.template.blocks?.length ?? 0) > 0);
 
   readonly publishTarget = signal<ProtopipePublishTarget>('astro');
   readonly publishConnectionId = signal<string | null>(null);
@@ -795,6 +829,13 @@ export class ProtopipeWriterComponent implements OnDestroy {
     });
 
     effect(() => {
+      if (!this.previewTakeover()) return;
+      const tpl = this.session()?.template;
+      if (!tpl) return;
+      untracked(() => this.schedulePreviewRefresh());
+    });
+
+    effect(() => {
       if (!this.content.publishSucceeded()) return;
       untracked(() => {
         if (this.content.consumePublishSucceeded()) {
@@ -825,6 +866,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
   ngOnDestroy(): void {
     this.content.setWriterImmersive(false);
     this.stopPolling();
+    if (this.previewRefreshTimer) clearTimeout(this.previewRefreshTimer);
     this.introEditor = null;
     this.sectionEditors.clear();
   }
@@ -915,6 +957,41 @@ export class ProtopipeWriterComponent implements OnDestroy {
     this.openPanels.set(next);
     if (panel === 'blog' && next.has('blog')) {
       void this.refreshBlogPreview();
+    }
+  }
+
+  enterPreviewTakeover(): void {
+    this.previewTakeover.set(true);
+    void this.refreshBlogPreview();
+  }
+
+  exitPreviewTakeover(): void {
+    this.previewTakeover.set(false);
+  }
+
+  private schedulePreviewRefresh(): void {
+    if (this.previewRefreshTimer) clearTimeout(this.previewRefreshTimer);
+    this.previewRefreshTimer = setTimeout(() => {
+      this.previewRefreshTimer = null;
+      void this.refreshBlogPreview();
+    }, 600);
+  }
+
+  onBlocksTemplateChange(template: ProtopipeContentTemplate): void {
+    this.content.patchWritingTemplate(template);
+  }
+
+  focusCanvasSlot(slotId: string): void {
+    const s = this.session();
+    if (!s) return;
+    if (slotId === 'intro') {
+      this.introEditor?.commands.focus('end');
+      return;
+    }
+    const block = s.template.blocks?.find((b) => b.slotId === slotId);
+    if (block?.kind === 'prose' && block.h2) {
+      const idx = s.template.sections.findIndex((sec) => sec.h2 === block.h2);
+      if (idx >= 0) this.focusSection(idx);
     }
   }
 
@@ -2086,6 +2163,12 @@ export class ProtopipeWriterComponent implements OnDestroy {
             body: sec.body ?? '',
             images: sec.images ?? [],
           })),
+          blocks: tpl.blocks ?? s.template.blocks,
+          cta: tpl.cta ?? s.template.cta,
+          internalLinks: tpl.internalLinks ?? s.template.internalLinks,
+          articleType: tpl.articleType ?? s.template.articleType,
+          layoutVariant: tpl.layoutVariant ?? s.template.layoutVariant,
+          layoutVersion: tpl.layoutVersion ?? s.template.layoutVersion,
         },
       });
       const reviewFlags = artifacts.review?.flaggedFacts ?? [];

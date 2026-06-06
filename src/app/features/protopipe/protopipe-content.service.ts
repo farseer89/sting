@@ -428,6 +428,9 @@ export class ProtopipeContentService {
           );
           this.saveCreatedId.set(null);
         }
+        if (response.seoValidation) {
+          this._seoValidation.set(response.seoValidation);
+        }
         this._dirty.set(false);
         this._saving.set(false);
       },

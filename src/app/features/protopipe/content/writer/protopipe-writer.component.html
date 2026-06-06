@@ -62,6 +62,40 @@
     </div>
   </header>
 
+  @if (typeReadiness().length) {
+    <div class="pw__readiness" role="status" aria-live="polite">
+      <div class="pw__readiness-head">
+        <span class="pw__readiness-type">{{ articleTypeDisplay() }}</span>
+        <span class="pw__readiness-score">
+          {{ typeReadinessSummary().pass }}/{{ typeReadinessSummary().total }} ready
+        </span>
+        @if (typeReadinessSummary().fail > 0) {
+          <span class="pw__readiness-blockers">{{ typeReadinessSummary().fail }} blocking</span>
+        }
+      </div>
+      <ul class="pw__readiness-chips">
+        @for (chip of typeReadiness(); track chip.id) {
+          <li
+            class="pw__readiness-chip"
+            [class.is-pass]="chip.status === 'pass'"
+            [class.is-warn]="chip.status === 'warn'"
+            [class.is-fail]="chip.status === 'fail'"
+            [attr.title]="chip.message ?? null"
+          >
+            @if (chip.status === 'pass') {
+              <i class="pi pi-check" aria-hidden="true"></i>
+            } @else if (chip.status === 'fail') {
+              <i class="pi pi-times" aria-hidden="true"></i>
+            } @else {
+              <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+            }
+            {{ chip.label }}
+          </li>
+        }
+      </ul>
+    </div>
+  }
+
   <!-- Workspace: tool-rail · stage(canvas + inspector) -->
   <div class="pw__workspace">
     <nav class="pw__rail" aria-label="Writer tools">
@@ -109,6 +143,18 @@
         <i class="pi pi-eye"></i>
         <span class="pw__tool-tip">Blog preview</span>
       </button>
+      @if (hasBlockLayout()) {
+        <button
+          type="button"
+          class="pw__tool"
+          [class.is-active]="isPanelOpen('layout')"
+          (click)="togglePanel('layout')"
+          title="Layout slots"
+        >
+          <i class="pi pi-th-large"></i>
+          <span class="pw__tool-tip">Layout slots</span>
+        </button>
+      }
       <button
         type="button"
         class="pw__tool"
@@ -157,8 +203,39 @@
     </nav>
 
     <div class="pw__stage">
-      <div class="pw__scroll">
-        @if (session(); as s) {
+      <div class="pw__scroll" [class.pw__scroll--preview]="previewTakeover()">
+        @if (previewTakeover()) {
+          <div class="pw__preview-stage">
+            <header class="pw__preview-bar">
+              <button type="button" class="pw__btn pw__btn--ghost" (click)="exitPreviewTakeover()">
+                <i class="pi pi-arrow-left"></i> Back to writing
+              </button>
+              <span class="pw__preview-bar-title">Live preview</span>
+              <button
+                type="button"
+                class="pw__refresh"
+                (click)="refreshBlogPreview()"
+                [disabled]="blogPreviewLoading()"
+              >
+                <i
+                  class="pi"
+                  [class.pi-spin]="blogPreviewLoading()"
+                  [class.pi-spinner]="blogPreviewLoading()"
+                  [class.pi-refresh]="!blogPreviewLoading()"
+                ></i>
+              </button>
+            </header>
+            @if (blogPreviewLoading()) {
+              <p class="pw__panel-empty">Rendering preview…</p>
+            } @else if (blogPreviewError(); as err) {
+              <p class="pw__panel-empty pw__panel-empty--error">{{ err }}</p>
+            } @else if (blogPreviewSafeHtml()) {
+              <div class="pw__blog-preview pw__blog-preview--takeover" [innerHTML]="blogPreviewSafeHtml()"></div>
+            } @else {
+              <p class="pw__panel-empty">Preview will appear when you add content.</p>
+            }
+          </div>
+        } @else if (session(); as s) {
           <article class="pw__canvas">
             @if (topicLabel(); as topic) {
               <p class="pw__topic">Writing for <strong>{{ topic }}</strong></p>
@@ -407,6 +484,12 @@
                 </div>
               </div>
             }
+
+            <div class="pw__preview-strip">
+              <button type="button" class="pw__preview-strip-btn" (click)="enterPreviewTakeover()">
+                <i class="pi pi-eye"></i> Preview on site
+              </button>
+            </div>
           </article>
         }
       </div>
@@ -498,9 +581,14 @@
           <section class="pw__panel pw__panel--blog">
             <div class="pw__panel-head">
               <h3 class="pw__panel-title">Blog preview</h3>
-              <button type="button" class="pw__refresh" (click)="refreshBlogPreview()" [disabled]="blogPreviewLoading()">
-                <i class="pi" [class.pi-spin]="blogPreviewLoading()" [class.pi-spinner]="blogPreviewLoading()" [class.pi-refresh]="!blogPreviewLoading()"></i>
-              </button>
+              <div class="pw__panel-head-actions">
+                <button type="button" class="pw__refresh" (click)="enterPreviewTakeover()" title="Expand preview">
+                  <i class="pi pi-window-maximize"></i>
+                </button>
+                <button type="button" class="pw__refresh" (click)="refreshBlogPreview()" [disabled]="blogPreviewLoading()">
+                  <i class="pi" [class.pi-spin]="blogPreviewLoading()" [class.pi-spinner]="blogPreviewLoading()" [class.pi-refresh]="!blogPreviewLoading()"></i>
+                </button>
+              </div>
             </div>
             @if (blogPreviewLoading()) {
               <p class="pw__panel-empty">Rendering preview…</p>
@@ -514,9 +602,52 @@
           </section>
         }
 
+        @if (isPanelOpen('layout') && session(); as s) {
+          <section class="pw__panel pw__panel--layout">
+            <h3 class="pw__panel-title">Layout slots</h3>
+            @if (s.template.blocks?.length) {
+              <app-protopipe-block-slots-panel
+                [template]="s.template"
+                [readOnly]="isReadOnly()"
+                (templateChange)="onBlocksTemplateChange($event)"
+                (focusCanvasSlot)="focusCanvasSlot($event)"
+              />
+            } @else {
+              <p class="pw__panel-empty">
+                Typed layout slots appear when this post has a blueprint — confirm from a content plan or run generation.
+              </p>
+            }
+          </section>
+        }
+
         @if (isPanelOpen('hints')) {
           <section class="pw__panel">
             <h3 class="pw__panel-title">Hints</h3>
+            @if (typeReadiness().length) {
+              <div class="pw__readiness pw__readiness--panel">
+                <p class="pw__readiness-type-label">{{ articleTypeDisplay() }} readiness</p>
+                <ul class="pw__readiness-chips">
+                  @for (chip of typeReadiness(); track chip.id) {
+                    <li
+                      class="pw__readiness-chip"
+                      [class.is-pass]="chip.status === 'pass'"
+                      [class.is-warn]="chip.status === 'warn'"
+                      [class.is-fail]="chip.status === 'fail'"
+                      [attr.title]="chip.message ?? null"
+                    >
+                      @if (chip.status === 'pass') {
+                        <i class="pi pi-check" aria-hidden="true"></i>
+                      } @else if (chip.status === 'fail') {
+                        <i class="pi pi-times" aria-hidden="true"></i>
+                      } @else {
+                        <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+                      }
+                      {{ chip.label }}
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
             <ul class="pw__hints">
               @for (h of writingHints(); track h.id) {
                 <li class="pw__hint" [class.is-done]="h.done">
@@ -530,6 +661,15 @@
         @if (isPanelOpen('seo')) {
           <section class="pw__panel">
             <h3 class="pw__panel-title">SEO &amp; schedule</h3>
+            @if (content.seoValidation(); as validation) {
+              @if (validation.errors.length) {
+                <ul class="pw__seo-blockers">
+                  @for (err of validation.errors; track err.code) {
+                    <li>{{ err.message }}</li>
+                  }
+                </ul>
+              }
+            }
             @if (session(); as s) {
               <label class="pw__field">
                 <span>Title</span>

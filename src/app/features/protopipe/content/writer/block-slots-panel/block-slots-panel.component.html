@@ -1,0 +1,189 @@
+<div class="slots">
+  <p class="slots__meta">{{ visibleCount() }} visible slots · drag to reorder</p>
+
+  <ul class="slots__list" cdkDropList (cdkDropListDropped)="onDrop($event)">
+    @for (block of slotBlocks(); track block.id) {
+      <li
+        class="slots__item"
+        cdkDrag
+        [cdkDragDisabled]="readOnly()"
+        [class.is-hidden]="block.visible === false"
+        [class.is-expanded]="isExpanded(block)"
+      >
+        <button type="button" class="slots__head" (click)="toggleExpand(block.slotId)">
+          <span class="slots__drag" cdkDragHandle aria-hidden="true">⋮⋮</span>
+          <span class="slots__label">{{ block.label || block.slotId }}</span>
+          <span class="slots__kind">{{ kindLabel(block.kind) }}</span>
+          @if (block.optional) {
+            <span
+              class="slots__optional"
+              role="button"
+              tabindex="0"
+              (click)="toggleVisible(block, $event)"
+              (keydown.enter)="toggleVisible(block, $event)"
+            >
+              {{ block.visible === false ? 'Show' : 'Hide' }}
+            </span>
+          }
+        </button>
+
+        @if (isExpanded(block)) {
+          <div class="slots__body">
+            @if (asProse(block); as prose) {
+              @if (prose.slotId !== 'intro' && prose.h2 !== undefined) {
+                <label class="slots__field">
+                  <span>Heading</span>
+                  <input
+                    type="text"
+                    [ngModel]="prose.h2 ?? ''"
+                    (ngModelChange)="patchProse(prose, 'h2', $event)"
+                    [disabled]="readOnly()"
+                  />
+                </label>
+              }
+              <label class="slots__field">
+                <span>Body</span>
+                <textarea
+                  rows="4"
+                  [ngModel]="prose.body"
+                  (ngModelChange)="patchProse(prose, 'body', $event)"
+                  [disabled]="readOnly()"
+                ></textarea>
+              </label>
+              @if (prose.slotId === 'intro') {
+                <button type="button" class="slots__link" (click)="focusCanvasSlot.emit('intro')">
+                  Jump to intro in canvas
+                </button>
+              }
+            }
+
+            @if (asHowto(block); as howto) {
+              @for (step of howto.steps; track $index) {
+                <div class="slots__row">
+                  <input
+                    type="text"
+                    placeholder="Step name"
+                    [ngModel]="step.name"
+                    (ngModelChange)="patchStep(howto, $index, 'name', $event)"
+                    [disabled]="readOnly()"
+                  />
+                  <textarea
+                    rows="2"
+                    placeholder="Step details"
+                    [ngModel]="step.body"
+                    (ngModelChange)="patchStep(howto, $index, 'body', $event)"
+                    [disabled]="readOnly()"
+                  ></textarea>
+                  @if (!readOnly() && howto.steps.length > 1) {
+                    <button type="button" class="slots__remove" (click)="removeStep(howto, $index)">×</button>
+                  }
+                </div>
+              }
+              @if (!readOnly()) {
+                <button type="button" class="slots__add" (click)="addStep(howto)">Add step</button>
+              }
+            }
+
+            @if (asList(block); as list) {
+              @for (item of list.items; track $index) {
+                <div class="slots__row">
+                  <input
+                    type="text"
+                    placeholder="Item title"
+                    [ngModel]="item.title"
+                    (ngModelChange)="patchListItem(list, $index, 'title', $event)"
+                    [disabled]="readOnly()"
+                  />
+                  <textarea
+                    rows="2"
+                    placeholder="Item details"
+                    [ngModel]="item.body"
+                    (ngModelChange)="patchListItem(list, $index, 'body', $event)"
+                    [disabled]="readOnly()"
+                  ></textarea>
+                </div>
+              }
+              @if (!readOnly()) {
+                <button type="button" class="slots__add" (click)="addListItem(list)">Add item</button>
+              }
+            }
+
+            @if (asFaq(block); as faq) {
+              @for (item of faq.items; track $index) {
+                <div class="slots__row">
+                  <input
+                    type="text"
+                    placeholder="Question"
+                    [ngModel]="item.question"
+                    (ngModelChange)="patchFaqItem(faq, $index, 'question', $event)"
+                    [disabled]="readOnly()"
+                  />
+                  <textarea
+                    rows="2"
+                    placeholder="Answer"
+                    [ngModel]="item.answer"
+                    (ngModelChange)="patchFaqItem(faq, $index, 'answer', $event)"
+                    [disabled]="readOnly()"
+                  ></textarea>
+                </div>
+              }
+              @if (!readOnly()) {
+                <button type="button" class="slots__add" (click)="addFaqItem(faq)">Add Q&amp;A</button>
+              }
+            }
+
+            @if (asLinks(block); as links) {
+              @for (link of links.links; track $index) {
+                <div class="slots__row slots__row--inline">
+                  <input
+                    type="text"
+                    placeholder="Label"
+                    [ngModel]="link.label"
+                    (ngModelChange)="patchLink(links, $index, 'label', $event)"
+                    [disabled]="readOnly()"
+                  />
+                  <input
+                    type="text"
+                    placeholder="/path"
+                    [ngModel]="link.href"
+                    (ngModelChange)="patchLink(links, $index, 'href', $event)"
+                    [disabled]="readOnly()"
+                  />
+                </div>
+              }
+              @if (!readOnly()) {
+                <button type="button" class="slots__add" (click)="addLink(links)">Add link</button>
+              }
+            }
+          </div>
+        }
+      </li>
+    }
+  </ul>
+
+  @for (block of pinnedBlocks(); track block.id) {
+    @if (asCta(block); as cta) {
+      <div class="slots__pinned">
+        <span class="slots__pinned-label">{{ cta.label || 'Call to action' }}</span>
+        <label class="slots__field">
+          <span>Button label</span>
+          <input
+            type="text"
+            [ngModel]="cta.label"
+            (ngModelChange)="patchCta(cta, 'label', $event)"
+            [disabled]="readOnly()"
+          />
+        </label>
+        <label class="slots__field">
+          <span>Link</span>
+          <input
+            type="text"
+            [ngModel]="cta.href"
+            (ngModelChange)="patchCta(cta, 'href', $event)"
+            [disabled]="readOnly()"
+          />
+        </label>
+      </div>
+    }
+  }
+</div>

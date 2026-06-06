@@ -60,9 +60,9 @@ export class ArticlePipelineOutlineComponent {
 
     if (run.currentStep === 'done') return 'complete';
 
-    // By here, currentStep is narrowed to one of the ArticleGenerationStep values.
-    const stepOrder = ALL_STEPS.indexOf(step);
-    const currentOrder = ALL_STEPS.indexOf(run.currentStep as ArticleGenerationStep);
+    const steps = generationStepsForRun(run);
+    const stepOrder = steps.indexOf(step);
+    const currentOrder = steps.indexOf(run.currentStep as ArticleGenerationStep);
 
     if (stepOrder < currentOrder) return 'complete';
     if (stepOrder === currentOrder) {

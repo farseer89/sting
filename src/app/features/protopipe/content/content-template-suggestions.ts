@@ -1,5 +1,7 @@
 import type { ProtopipeContentTemplate, ProtopipeKeywordDto } from '@hive/contracts';
 
+import { txt } from './type-readiness.util';
+
 function titleCasePhrase(phrase: string): string {
   return phrase
     .split(/\s+/)
@@ -85,10 +87,10 @@ export function applyKeywordToTemplate(
     ...template,
     primaryKeywordId: keyword.id,
     primaryKeywordPhrase: keyword.phrase,
-    title: template.title.trim() ? template.title : s.title,
-    h1: template.h1.trim() ? template.h1 : s.h1,
-    metaDescription: template.metaDescription.trim() ? template.metaDescription : s.metaDescription,
-    intro: template.intro.trim() ? template.intro : s.intro,
+    title: txt(template.title) ? template.title : s.title,
+    h1: txt(template.h1) ? template.h1 : s.h1,
+    metaDescription: txt(template.metaDescription) ? template.metaDescription : s.metaDescription,
+    intro: txt(template.intro) ? template.intro : s.intro,
     sections,
   };
 }
@@ -101,22 +103,23 @@ export interface WritingHint {
 
 /** Soft progress hints while writing — not publish validation. */
 export function writingHints(template: ProtopipeContentTemplate): WritingHint[] {
-  const kw = template.primaryKeywordPhrase.trim().toLowerCase();
-  const inText = (text: string) =>
-    kw ? text.toLowerCase().includes(kw) : false;
+  const kw = txt(template.primaryKeywordPhrase).toLowerCase();
+  const inText = (text: string | undefined) =>
+    kw ? txt(text).toLowerCase().includes(kw) : false;
 
-  const metaLen = template.metaDescription.length;
+  const metaLen = txt(template.metaDescription).length;
   const metaOk = metaLen >= 140 && metaLen <= 160;
 
   const words = [template.intro, ...template.sections.map((s) => s.body)]
+    .map((part) => txt(part))
     .join(' ')
     .split(/\s+/)
     .filter(Boolean).length;
 
   return [
     { id: 'keyword', label: 'Keyword chosen', done: !!kw },
-    { id: 'title', label: 'Title for search', done: !!template.title.trim() },
-    { id: 'h1', label: 'Page headline', done: !!template.h1.trim() },
+    { id: 'title', label: 'Title for search', done: !!txt(template.title) },
+    { id: 'h1', label: 'Page headline', done: !!txt(template.h1) },
     {
       id: 'meta',
       label: metaOk ? 'Meta description length' : 'Meta description (140–160 chars)',
@@ -127,7 +130,11 @@ export function writingHints(template: ProtopipeContentTemplate): WritingHint[] 
       label: 'Keyword in opening',
       done: !kw || inText(template.intro),
     },
-    { id: 'sections', label: 'At least one section', done: template.sections.some((s) => s.h2.trim()) },
+    {
+      id: 'sections',
+      label: 'At least one section',
+      done: (template.sections ?? []).some((s) => !!txt(s.h2)),
+    },
     { id: 'words', label: 'Substantial draft (300+ words)', done: words >= 300 },
   ];
 }
@@ -164,9 +171,9 @@ export function serpPreview(input: {
   const slug = input.slug.replace(/^\/+|\/+$/g, '') || 'your-post';
   return {
     url: `https://${host}/blog/${slug}/`,
-    title: input.title.trim() || 'Untitled post',
+    title: txt(input.title) || 'Untitled post',
     description:
-      input.metaDescription.trim() ||
+      txt(input.metaDescription) ||
       'Add a short meta description — it appears under your title in search results.',
   };
 }

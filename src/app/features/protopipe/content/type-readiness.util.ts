@@ -9,7 +9,7 @@ export interface TypeReadinessItem {
   message?: string;
 }
 
-function txt(value: string | undefined | null): string {
+export function txt(value: string | undefined | null): string {
   return value?.trim() ?? '';
 }
 

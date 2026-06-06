@@ -4,22 +4,11 @@ import type {
   ArticleGenerationStep,
   ArticleGenerationType,
 } from '@hive/contracts';
+import { GENERATION_STEPS_V1 } from '../../article-pipeline-steps';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 import { ArticlePipelineApiService } from './article-pipeline-api.service';
 
 const POLL_INTERVAL_MS = 800;
-const GENERATION_STEPS: ArticleGenerationStep[] = [
-  'infer_type',
-  'analyse_competition',
-  'content_plan',
-  'research',
-  'build_brief',
-  'outline',
-  'draft',
-  'metadata',
-  'assemble',
-  'review',
-];
 
 @Injectable({ providedIn: 'root' })
 export class ArticlePipelineRunStore {
@@ -149,4 +138,4 @@ export class ArticlePipelineRunStore {
   }
 }
 
-export { GENERATION_STEPS };
+export { GENERATION_STEPS_V1 as GENERATION_STEPS };

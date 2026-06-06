@@ -51,6 +51,8 @@ import type {
   ProtopipeSiteConnectionResponse,
   ProtopipeUpsertWordPressConnectionRequest,
   ProtopipeContentGenerateResponse,
+  ProtopipeContentMediaPresignRequest,
+  ProtopipeContentMediaPresignResponse,
   ArticleGenerationGetResponse,
   ArticleGenerationRerunStepResponse,
   ArticleGenerationStep,
@@ -551,6 +553,25 @@ export class ProtopipeApiService {
       protopipeApiUrl(ProtopipeEndpoints.generateContent.path, { siteId, postId }),
       {},
     );
+  }
+
+  presignContentMedia$(
+    siteId: string,
+    postId: string,
+    body: ProtopipeContentMediaPresignRequest,
+  ): Observable<ProtopipeContentMediaPresignResponse> {
+    return this.http.post<ProtopipeContentMediaPresignResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.presignContentMedia.path, { siteId, postId }),
+      body,
+    );
+  }
+
+  presignContentMedia(
+    siteId: string,
+    postId: string,
+    body: ProtopipeContentMediaPresignRequest,
+  ): Promise<ProtopipeContentMediaPresignResponse> {
+    return firstValueFrom(this.presignContentMedia$(siteId, postId, body));
   }
 
   /** Poll a single ArticleGeneration run (for the writer's pipeline inspector). */

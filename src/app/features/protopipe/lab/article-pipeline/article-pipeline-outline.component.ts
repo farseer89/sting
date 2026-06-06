@@ -9,6 +9,7 @@ import type {
   ArticleGenerationRunDto,
   ArticleGenerationStep,
 } from '@hive/contracts';
+import { generationStepsForRun, STEP_LABELS } from '../../article-pipeline-steps';
 
 interface StepRailEntry {
   step: ArticleGenerationStep;
@@ -16,32 +17,6 @@ interface StepRailEntry {
   label: string;
   status: 'pending' | 'running' | 'complete' | 'failed';
 }
-
-const STEP_LABELS: Record<ArticleGenerationStep, string> = {
-  infer_type: 'Infer type',
-  analyse_competition: 'Analyse competition',
-  content_plan: 'Content plan',
-  research: 'Research',
-  build_brief: 'Build brief',
-  outline: 'Outline',
-  draft: 'Drafts',
-  review: 'Review',
-  metadata: 'Metadata',
-  assemble: 'Assemble',
-};
-
-const ALL_STEPS: ArticleGenerationStep[] = [
-  'infer_type',
-  'analyse_competition',
-  'content_plan',
-  'research',
-  'build_brief',
-  'outline',
-  'draft',
-  'review',
-  'metadata',
-  'assemble',
-];
 
 @Component({
   selector: 'app-article-pipeline-outline',
@@ -58,7 +33,8 @@ export class ArticlePipelineOutlineComponent {
 
   readonly entries = computed<StepRailEntry[]>(() => {
     const run = this.run();
-    return ALL_STEPS.map((step, index) => ({
+    const steps = run ? generationStepsForRun(run) : generationStepsForRun({ pipelineVersion: 1 });
+    return steps.map((step, index) => ({
       step,
       index: index + 1,
       label: STEP_LABELS[step],

@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import type { ArticleGenerationStep } from '@hive/contracts';
+import { STEP_LABELS } from '../../article-pipeline-steps';
 
 interface ChatMessage {
   id: string;
@@ -14,19 +15,6 @@ interface ChatMessage {
   text: string;
   ts: number;
 }
-
-const STEP_LABELS: Record<ArticleGenerationStep, string> = {
-  infer_type: 'Infer type',
-  analyse_competition: 'Analyse competition',
-  content_plan: 'Content plan',
-  research: 'Research',
-  build_brief: 'Build brief',
-  outline: 'Outline',
-  draft: 'Drafts',
-  review: 'Review',
-  metadata: 'Metadata',
-  assemble: 'Assemble',
-};
 
 @Component({
   selector: 'app-article-pipeline-chat',

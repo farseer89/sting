@@ -9,6 +9,7 @@ import type {
   ArticleGenerationRunDto,
   ArticleGenerationStep,
 } from '@hive/contracts';
+import { STEP_LABELS } from '../../article-pipeline-steps';
 
 interface StepEventRow {
   status: string;
@@ -143,25 +144,13 @@ const CONTENT_STRATEGY_MODEL: ModelGroup[] = [
   },
 ];
 
-const STEP_LABELS: Record<ArticleGenerationStep, string> = {
-  infer_type: 'Infer type',
-  analyse_competition: 'Analyse competition',
-  content_plan: 'Content plan',
-  research: 'Research',
-  build_brief: 'Build brief',
-  outline: 'Outline',
-  draft: 'Drafts',
-  review: 'Review',
-  metadata: 'Metadata',
-  assemble: 'Assemble',
-};
-
 const STEP_TO_ARTIFACT_KEY: Record<ArticleGenerationStep, keyof ArticleGenerationRunDto['artifacts'] | null> = {
   infer_type: null,
   analyse_competition: 'competitionAnalysis',
   content_plan: 'contentStrategy',
   research: 'research',
   build_brief: 'brief',
+  compile_context: 'writingContext',
   outline: 'outline',
   draft: 'sections',
   review: 'review',

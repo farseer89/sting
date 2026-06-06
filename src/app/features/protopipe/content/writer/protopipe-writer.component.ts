@@ -3,12 +3,14 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   input,
   OnDestroy,
   output,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -31,6 +33,10 @@ import { MessageService } from 'primeng/api';
 import { DatePicker } from 'primeng/datepicker';
 import { Toast } from 'primeng/toast';
 import { map } from 'rxjs/operators';
+import {
+  generationStepsForRun,
+  STEP_SHORT_LABELS,
+} from '../../article-pipeline-steps';
 import {
   PROTOPIPE_CONTENT_META_MAX,
   PROTOPIPE_CONTENT_META_MIN,
@@ -218,19 +224,6 @@ function buildHighlightSegments(prose: string, claims: string[]): HighlightSegme
   return segments;
 }
 
-const PIPELINE_STEP_LABELS: ReadonlyArray<{ step: ArticleGenerationStep; label: string }> = [
-  { step: 'infer_type', label: 'Classify' },
-  { step: 'analyse_competition', label: 'Competition' },
-  { step: 'content_plan', label: 'Strategy' },
-  { step: 'research', label: 'Research' },
-  { step: 'build_brief', label: 'Brief' },
-  { step: 'outline', label: 'Outline' },
-  { step: 'draft', label: 'Draft' },
-  { step: 'metadata', label: 'Metadata' },
-  { step: 'assemble', label: 'Assemble' },
-  { step: 'review', label: 'Review' },
-];
-
 /**
  * Immersive "pipeline" content writer. Mirrors the lab void-writer LAYOUT
  * (top bar · left tool-rail · centered canvas · right inspector) but renders
@@ -268,6 +261,10 @@ export class ProtopipeWriterComponent implements OnDestroy {
   private readonly router = inject(Router);
   private readonly messages = inject(MessageService);
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly imageFileInput = viewChild<ElementRef<HTMLInputElement>>('imageFileInput');
+
+  readonly imageUploading = signal(false);
+  private readonly imageUploadSectionIndex = signal<number | null>(null);
 
   readonly loading = this.content.loading;
   readonly saving = this.content.saving;
@@ -438,9 +435,13 @@ export class ProtopipeWriterComponent implements OnDestroy {
   readonly pipelineSteps = computed<PipelineStepView[]>(() => {
     const run = this.run();
     if (!run) return [];
-    const currentIdx = PIPELINE_STEP_LABELS.findIndex((s) => s.step === run.currentStep);
+    const stepList = generationStepsForRun(run).map((step) => ({
+      step,
+      label: STEP_SHORT_LABELS[step],
+    }));
+    const currentIdx = stepList.findIndex((s) => s.step === run.currentStep);
     const done = run.status === 'complete' || run.currentStep === 'done';
-    return PIPELINE_STEP_LABELS.map(({ step, label }, idx) => {
+    return stepList.map(({ step, label }, idx) => {
       let status: PipelineStepStatus;
       if (run.status === 'failed' && run.error?.step === step) {
         status = 'failed';
@@ -982,6 +983,98 @@ export class ProtopipeWriterComponent implements OnDestroy {
     const section = s.template.sections[sectionIndex];
     const images = [...(section.images ?? []), { url: '', alt: '' }];
     this.patchSection(sectionIndex, { images });
+  }
+
+  triggerSectionImageUpload(sectionIndex: number): void {
+    const siteId = this.content.siteId();
+    const postId = this.content.editingId();
+    if (!siteId || !postId || postId === 'new') {
+      this.messages.add({
+        severity: 'warn',
+        summary: 'Save draft first',
+        detail: 'Save the post before uploading images.',
+        life: 4000,
+      });
+      return;
+    }
+    this.imageUploadSectionIndex.set(sectionIndex);
+    this.imageFileInput()?.nativeElement.click();
+  }
+
+  async onSectionImageFileSelected(event: Event): Promise<void> {
+    const sectionIndex = this.imageUploadSectionIndex();
+    this.imageUploadSectionIndex.set(null);
+
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+
+    if (sectionIndex == null || !file) return;
+
+    const allowed = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+    if (!allowed.has(file.type)) {
+      this.messages.add({
+        severity: 'error',
+        summary: 'Unsupported file',
+        detail: 'Use JPEG, PNG, WebP, or GIF.',
+        life: 5000,
+      });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      this.messages.add({
+        severity: 'error',
+        summary: 'File too large',
+        detail: 'Images must be 5MB or smaller.',
+        life: 5000,
+      });
+      return;
+    }
+
+    const siteId = this.content.siteId();
+    const postId = this.content.editingId();
+    if (!siteId || !postId || postId === 'new') return;
+
+    this.imageUploading.set(true);
+    try {
+      const presign = await this.api.presignContentMedia(siteId, postId, {
+        fileName: file.name,
+        mimeType: file.type,
+        fileSize: file.size,
+      });
+      const uploadRes = await fetch(presign.uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type },
+      });
+      if (!uploadRes.ok) {
+        throw new Error('S3 upload failed');
+      }
+
+      const altHint = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim();
+      const s = this.session();
+      if (!s || s.readOnly) return;
+      const section = s.template.sections[sectionIndex];
+      const images = [...(section.images ?? []), { url: presign.publicUrl, alt: altHint }];
+      this.patchSection(sectionIndex, { images });
+
+      this.messages.add({
+        severity: 'success',
+        summary: 'Image uploaded',
+        detail: 'Add or edit alt text before publishing.',
+        life: 4000,
+      });
+    } catch (err) {
+      const detail = parseProtopipeApiError(err, 'Could not upload image');
+      this.messages.add({
+        severity: 'error',
+        summary: 'Upload failed',
+        detail,
+        life: 6000,
+      });
+    } finally {
+      this.imageUploading.set(false);
+    }
   }
 
   updateSectionImage(

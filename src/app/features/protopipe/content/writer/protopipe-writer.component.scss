@@ -1601,6 +1601,16 @@
   border-top: 1px dashed var(--pw-paper-edge);
 }
 
+.pw__file-input {
+  display: none;
+}
+
+.pw__media-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 .pw__media-head {
   display: flex;
   align-items: center;
@@ -1628,6 +1638,11 @@
   font-size: 0.7rem;
   cursor: pointer;
   padding: 0.15rem 0.35rem;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 
 .pw__media-row,

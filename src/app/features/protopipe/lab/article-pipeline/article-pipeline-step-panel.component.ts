@@ -24,6 +24,7 @@ import type {
   ArticleGenerationType,
   ProtopipeContentTemplate,
 } from '@hive/contracts';
+import { STEP_LABELS } from '../../article-pipeline-steps';
 
 interface KeywordFact {
   label: string;
@@ -37,19 +38,6 @@ interface LensRow {
   tier: string;
   detail?: string;
 }
-
-const STEP_LABELS: Record<ArticleGenerationStep, string> = {
-  infer_type: 'Infer type',
-  analyse_competition: 'Analyse competition',
-  content_plan: 'Content plan',
-  research: 'Research',
-  build_brief: 'Build brief',
-  outline: 'Outline',
-  draft: 'Drafts',
-  review: 'Review',
-  metadata: 'Metadata',
-  assemble: 'Assemble',
-};
 
 const ARTICLE_TYPE_LABEL: Record<ArticleGenerationType, string> = {
   local_service: 'Local service page',
@@ -81,6 +69,7 @@ const STEP_TITLES: Record<ArticleGenerationStep, string> = {
   content_plan: 'Content plan',
   research: 'Research bundle',
   build_brief: 'SEO brief',
+  compile_context: 'Writing context',
   outline: 'Outline',
   draft: 'Drafts',
   review: 'Review',
@@ -310,6 +299,7 @@ export class ArticlePipelineStepPanelComponent {
       case 'research':
         return !!run.artifacts?.research;
       case 'build_brief':
+      case 'compile_context':
         return !!run.artifacts?.brief;
       case 'outline':
         return !!run.artifacts?.outline;

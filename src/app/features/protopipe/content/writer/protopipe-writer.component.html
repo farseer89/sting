@@ -1,5 +1,13 @@
 <p-toast />
 
+<input
+  #imageFileInput
+  type="file"
+  class="pw__file-input"
+  accept="image/jpeg,image/png,image/webp,image/gif"
+  (change)="onSectionImageFileSelected($event)"
+/>
+
 <div class="pw" [class.pw--readonly]="isReadOnly()">
   <!-- Top bar -->
   <header class="pw__bar">
@@ -263,9 +271,19 @@
                     <div class="pw__media">
                       <div class="pw__media-head">
                         <span>Images</span>
-                        <button type="button" class="pw__media-add" (click)="addSectionImage($index)">
-                          <i class="pi pi-image"></i> Add image URL
-                        </button>
+                        <div class="pw__media-actions">
+                          <button
+                            type="button"
+                            class="pw__media-add"
+                            [disabled]="imageUploading()"
+                            (click)="triggerSectionImageUpload($index)"
+                          >
+                            <i class="pi pi-upload"></i> Upload
+                          </button>
+                          <button type="button" class="pw__media-add" (click)="addSectionImage($index)">
+                            <i class="pi pi-image"></i> Add URL
+                          </button>
+                        </div>
                       </div>
                       @for (img of sec.images ?? []; track $index; let ii = $index) {
                         <div class="pw__media-row">

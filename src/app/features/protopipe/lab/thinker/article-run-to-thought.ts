@@ -7,6 +7,7 @@ import type {
   ArticleGenerationRunDto,
   ArticleGenerationStep,
 } from '@hive/contracts';
+import { generationStepsForRun, STEP_SHORT_LABELS } from '../../article-pipeline-steps';
 import type {
   Thought,
   ThoughtArtifact,
@@ -22,19 +23,6 @@ import type {
  * Pure + synchronous so it can run inside a computed() on every poll tick.
  */
 
-const STEP_ORDER: ArticleGenerationStep[] = [
-  'infer_type',
-  'analyse_competition',
-  'content_plan',
-  'research',
-  'build_brief',
-  'outline',
-  'draft',
-  'review',
-  'metadata',
-  'assemble',
-];
-
 const STEP_META: Record<
   ArticleGenerationStep,
   { label: string; summary: string }
@@ -44,6 +32,10 @@ const STEP_META: Record<
   content_plan: { label: 'Strategy', summary: 'Consolidate the competitor scan into a strategy.' },
   research: { label: 'Research', summary: 'Gather SERP, PAA, site + brand context.' },
   build_brief: { label: 'Brief', summary: 'Compile the SEO brief.' },
+  compile_context: {
+    label: 'Context',
+    summary: 'Load the plan brief and compile the writing context.',
+  },
   outline: { label: 'Outline', summary: 'Design the H1 and section outline.' },
   draft: { label: 'Draft', summary: 'Write the section prose.' },
   review: { label: 'Review', summary: 'Score the draft against the brief.' },
@@ -131,6 +123,7 @@ function stepOutput(
         ? [json('research', 'Research bundle', a.research, a.research.inferenceRationale)]
         : [];
     case 'build_brief':
+    case 'compile_context':
       return a.brief
         ? [
             json(
@@ -139,6 +132,9 @@ function stepOutput(
               a.brief,
               `${a.brief.primaryKeyword.phrase} · ${a.brief.targetWordCount} words`,
             ),
+            ...(a.writingContext
+              ? [json('writing-context', 'Writing context', a.writingContext)]
+              : []),
           ]
         : [];
     case 'outline':
@@ -223,10 +219,11 @@ export function articleRunToThought(run: ArticleGenerationRunDto): Thought {
     eventsByStep.set(e.step, list);
   }
 
-  const currentIdx = STEP_ORDER.indexOf(run.currentStep as ArticleGenerationStep);
+  const stepOrder = generationStepsForRun(run);
+  const currentIdx = stepOrder.indexOf(run.currentStep as ArticleGenerationStep);
   const allDone = run.status === 'complete' || run.currentStep === 'done';
 
-  const steps: ThoughtStep[] = STEP_ORDER.map((step, idx) => {
+  const steps: ThoughtStep[] = stepOrder.map((step, idx) => {
     const evs = eventsByStep.get(step) ?? [];
     const started = evs.find((e) => e.status === 'started');
     const finished = [...evs].reverse().find(
@@ -252,7 +249,10 @@ export function articleRunToThought(run: ArticleGenerationRunDto): Thought {
       status = 'pending';
     }
 
-    const meta = STEP_META[step];
+    const meta = STEP_META[step] ?? {
+      label: STEP_SHORT_LABELS[step],
+      summary: STEP_SHORT_LABELS[step],
+    };
     const reviewArtifact = step === 'review' ? run.artifacts?.review : undefined;
     const reviewFailed = reviewArtifact && !reviewArtifact.passesThreshold;
 

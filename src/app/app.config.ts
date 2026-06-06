@@ -1,4 +1,6 @@
 import { APP_INITIALIZER, ApplicationConfig, inject, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { Title } from '@angular/platform-browser';
+import { environment } from '../environments/environment';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
@@ -11,6 +13,11 @@ import { FieldwavePreset } from './core/theme/fieldwave-preset';
 import { ThemeService } from './core/theme/theme.service';
 import { PRODUCT_CONFIG } from './core/config/product-config';
 import { protopipeProductConfig } from './features/protopipe/config/protopipe-product.config';
+
+function appTitleInitializer(): () => void {
+  const title = inject(Title);
+  return () => title.setTitle(environment.appName);
+}
 
 /** Touch the ThemeService during bootstrap so its constructor effect runs
  *  before first paint — applies any persisted theme synchronously. */
@@ -28,6 +35,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withInterceptors([authInterceptor])),
     { provide: APP_INITIALIZER, useFactory: authInitializer, multi: true },
+    { provide: APP_INITIALIZER, useFactory: appTitleInitializer, multi: true },
     { provide: APP_INITIALIZER, useFactory: themeInitializer, multi: true },
     provideAnimationsAsync(),
     providePrimeNG({

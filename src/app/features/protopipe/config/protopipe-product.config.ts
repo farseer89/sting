@@ -2,9 +2,9 @@ import type { ProductConfig } from '../../../core/config/product-config';
 
 export const protopipeProductConfig: ProductConfig = {
   id: 'protopipe',
-  displayName: 'Protopipe',
+  displayName: 'SearchClimber.ai',
   auth: {
-    loginWelcome: 'Welcome to Protopipe',
+    loginWelcome: 'Welcome to SearchClimber.ai',
     loginTagline: 'Sign in to your SEO workspace',
     signupCta: 'Start 3-day free trial',
     loginHeroTitle: 'SEO content that ranks.',

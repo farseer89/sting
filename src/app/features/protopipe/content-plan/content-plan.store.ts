@@ -1,9 +1,11 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import type {
+  ProtopipeContentPlanProgress,
   ProtopipeContentPlanRunSummary,
   ProtopipeContentPlanStepEvent,
   ProtopipeSiteContentPlan,
 } from '@hive/contracts';
+import { AuthService } from '../../../core/auth/auth.service';
 import { parseProtopipeApiError } from '../protopipe-http.util';
 import { ContentPlanService } from './content-plan.service';
 
@@ -12,6 +14,7 @@ const POLL_INTERVAL_MS = 1200;
 @Injectable({ providedIn: 'root' })
 export class ContentPlanStore {
   private readonly api = inject(ContentPlanService);
+  private readonly auth = inject(AuthService);
 
   private readonly _siteId = signal<string | null>(null);
   private readonly _plan = signal<ProtopipeSiteContentPlan | null>(null);
@@ -40,6 +43,10 @@ export class ContentPlanStore {
   readonly hasFailed = computed(() => this._plan()?.status === 'failed');
 
   readonly currentStep = computed(() => this._plan()?.currentStep ?? null);
+  readonly progress = computed<ProtopipeContentPlanProgress | null>(
+    () => this._plan()?.progress ?? null,
+  );
+  readonly planError = computed(() => this._plan()?.error ?? null);
   readonly events = computed<ProtopipeContentPlanStepEvent[]>(
     () => this._plan()?.events ?? [],
   );
@@ -178,6 +185,10 @@ export class ContentPlanStore {
   private async pollOnce(): Promise<void> {
     const siteId = this._siteId();
     if (!siteId) return;
+    if (!(await this.ensureAuthenticated())) {
+      this.pollTimer = setTimeout(() => this.pollOnce(), POLL_INTERVAL_MS * 2);
+      return;
+    }
     if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
       this.pollTimer = setTimeout(() => this.pollOnce(), POLL_INTERVAL_MS * 4);
       return;
@@ -188,6 +199,12 @@ export class ContentPlanStore {
         ? await this.api.getRun(siteId, selectedRunId)
         : await this.api.getLatest(siteId);
       this._plan.set(res.plan);
+      this._error.set(null);
+      if (res.plan?.status === 'failed') {
+        this.stopPolling();
+        void this.loadRuns();
+        return;
+      }
       if (res.plan && (res.plan.status === 'running' || res.plan.status === 'pending')) {
         this.pollTimer = setTimeout(() => this.pollOnce(), POLL_INTERVAL_MS);
       } else {
@@ -196,8 +213,23 @@ export class ContentPlanStore {
         void this.loadRuns();
       }
     } catch (err) {
-      this._error.set(parseProtopipeApiError(err, 'Failed to poll content plan'));
+      const message = parseProtopipeApiError(err, 'Failed to poll content plan');
+      this._error.set(message);
+      if (this._plan()?.status === 'failed') {
+        this.stopPolling();
+        return;
+      }
+      if (this.auth.hasStoredProfile()) {
+        this.pollTimer = setTimeout(() => this.pollOnce(), POLL_INTERVAL_MS * 2);
+        return;
+      }
       this.stopPolling();
     }
+  }
+
+  private async ensureAuthenticated(): Promise<boolean> {
+    if (this.auth.hasValidAccessToken()) return true;
+    if (!this.auth.hasStoredProfile()) return false;
+    return this.auth.bootstrapSession();
   }
 }

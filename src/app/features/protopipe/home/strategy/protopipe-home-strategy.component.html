@@ -14,7 +14,9 @@
   } @else if (hasFailed()) {
     <div class="strat-shell__error">
       <p>Something went wrong while building your strategy.</p>
-      @if (error(); as e) {
+      @if (planError(); as pe) {
+        <p class="strat-shell__error-detail">{{ pe }}</p>
+      } @else if (error(); as e) {
         <p class="strat-shell__error-detail">{{ e }}</p>
       }
       <button type="button" class="strat-shell__retry" (click)="retry()">Try again</button>

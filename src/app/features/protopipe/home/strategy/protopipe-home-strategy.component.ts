@@ -37,6 +37,8 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
   readonly isComplete = this.store.isComplete;
   readonly hasFailed = this.store.hasFailed;
   readonly error = this.store.error;
+  readonly planError = this.store.planError;
+  readonly progress = this.store.progress;
   readonly currentStep = this.store.currentStep;
 
   /** Layout A only — live plan when the store has one, otherwise mock fallback for empty state. */
@@ -54,6 +56,7 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
 
   readonly buildingStageLabel = computed(() => {
     const step = this.currentStep();
+    const progress = this.progress();
     if (!step || step === 'done') return 'Building your strategy…';
     const labels: Record<string, string> = {
       audit: 'Auditing your site',
@@ -62,7 +65,11 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
       deep_scan: 'Deep-scanning focus keywords',
       unify: 'Building your calendar',
     };
-    return labels[step] ?? 'Building your strategy…';
+    const base = labels[step] ?? 'Building your strategy…';
+    if (step === 'deep_scan' && progress && progress.total > 0) {
+      return `${base} (${progress.scanned}/${progress.total})`;
+    }
+    return base;
   });
 
   readonly showResults = computed(() => {

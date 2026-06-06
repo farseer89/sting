@@ -15,6 +15,13 @@ export function protopipeApiUrl(pathTemplate: string, params?: Record<string, st
   return `${API_BASE}${path}`;
 }
 
+const PROTOPIPE_API_ERROR_MESSAGES: Record<string, string> = {
+  run_not_ready:
+    'Keyword discovery is still running. Wait for it to finish, then try building your plan again.',
+  run_not_found:
+    'Keyword discovery run not found. Refresh the page and try again.',
+};
+
 /** User-safe message from bagend error body — never surface stack traces. */
 export function parseProtopipeApiError(err: unknown, fallback: string): string {
   if (err instanceof HttpErrorResponse) {
@@ -23,7 +30,7 @@ export function parseProtopipeApiError(err: unknown, fallback: string): string {
       return body.errors[0].message;
     }
     if (typeof body?.message === 'string' && body.message.length > 0) {
-      return body.message;
+      return PROTOPIPE_API_ERROR_MESSAGES[body.message] ?? body.message;
     }
     if (err.status === 401) {
       return 'Session expired. Sign in again.';

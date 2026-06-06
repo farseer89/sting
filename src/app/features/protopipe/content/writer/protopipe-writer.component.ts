@@ -1334,14 +1334,14 @@ export class ProtopipeWriterComponent implements OnDestroy {
     const t = s.template;
 
     let blocker: { detail: string; panel?: InspectorPanel } | null = null;
-    if (!t.title.trim()) {
+    if (!(t.title?.trim() ?? '')) {
       blocker = { detail: 'Add a title before saving.' };
-    } else if (!t.metaDescription.trim()) {
+    } else if (!(t.metaDescription?.trim() ?? '')) {
       blocker = {
         detail: 'Add a meta description before saving — it’s required.',
         panel: 'seo',
       };
-    } else if (!t.intro.trim() && t.sections.every((sec) => !sec.body.trim())) {
+    } else if (!(t.intro?.trim() ?? '') && t.sections.every((sec) => !(sec.body?.trim() ?? ''))) {
       blocker = { detail: 'Write some body content before saving.' };
     }
 

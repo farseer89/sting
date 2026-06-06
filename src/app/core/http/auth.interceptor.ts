@@ -26,6 +26,19 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const isClientApi = isApi && isClientPortalApi(req.url);
   const token = isClientApi ? clientAuth.getToken() : auth.getToken();
 
+  if (isApi && !token && !isClientApi && auth.hasStoredProfile() && !isAuthV2Endpoint(req.url)) {
+    return auth.refreshAccessToken({ silent: true }).pipe(
+      switchMap((response) => {
+        const newToken = response?.accessToken;
+        if (!newToken) {
+          return next(req);
+        }
+        return next(req.clone({ setHeaders: { Authorization: `Bearer ${newToken}` } }));
+      }),
+      catchError(() => next(req)),
+    );
+  }
+
   if (isApi && token) {
     req = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
   }

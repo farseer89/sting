@@ -285,21 +285,41 @@
                           </button>
                         </div>
                       </div>
+                      @if (imageUploading() && imageUploadSectionIndex() === $index) {
+                        <div class="pw__media-item pw__media-item--uploading">
+                          <div class="pw__media-preview">
+                            <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                            <span>Uploading image…</span>
+                          </div>
+                        </div>
+                      }
                       @for (img of sec.images ?? []; track $index; let ii = $index) {
-                        <div class="pw__media-row">
-                          <input
-                            type="url"
-                            placeholder="https://…"
-                            [ngModel]="img.url"
-                            (ngModelChange)="updateSectionImage($index, ii, { url: $event })"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Alt text (required)"
-                            [ngModel]="img.alt"
-                            (ngModelChange)="updateSectionImage($index, ii, { alt: $event })"
-                          />
-                          <button type="button" class="pw__media-remove" (click)="removeSectionImage($index, ii)" aria-label="Remove image">×</button>
+                        <div class="pw__media-item">
+                          <div class="pw__media-preview">
+                            @if (hasSectionImagePreview(img.url)) {
+                              <img [src]="img.url" [alt]="img.alt || 'Section image preview'" loading="lazy" />
+                            } @else {
+                              <div class="pw__media-preview-placeholder">
+                                <i class="pi pi-image" aria-hidden="true"></i>
+                                <span>Add a URL or upload an image</span>
+                              </div>
+                            }
+                          </div>
+                          <div class="pw__media-fields">
+                            <input
+                              type="url"
+                              placeholder="https://…"
+                              [ngModel]="img.url"
+                              (ngModelChange)="updateSectionImage($index, ii, { url: $event })"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Alt text (required)"
+                              [ngModel]="img.alt"
+                              (ngModelChange)="updateSectionImage($index, ii, { alt: $event })"
+                            />
+                            <button type="button" class="pw__media-remove" (click)="removeSectionImage($index, ii)" aria-label="Remove image">×</button>
+                          </div>
                         </div>
                       }
                       <div class="pw__media-head pw__media-head--embeds">

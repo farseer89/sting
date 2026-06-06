@@ -264,7 +264,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
   private readonly imageFileInput = viewChild<ElementRef<HTMLInputElement>>('imageFileInput');
 
   readonly imageUploading = signal(false);
-  private readonly imageUploadSectionIndex = signal<number | null>(null);
+  readonly imageUploadSectionIndex = signal<number | null>(null);
 
   readonly loading = this.content.loading;
   readonly saving = this.content.saving;
@@ -1001,18 +1001,25 @@ export class ProtopipeWriterComponent implements OnDestroy {
     this.imageFileInput()?.nativeElement.click();
   }
 
+  hasSectionImagePreview(url: string | undefined): boolean {
+    return !!url?.trim();
+  }
+
   async onSectionImageFileSelected(event: Event): Promise<void> {
     const sectionIndex = this.imageUploadSectionIndex();
-    this.imageUploadSectionIndex.set(null);
 
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     input.value = '';
 
-    if (sectionIndex == null || !file) return;
+    if (sectionIndex == null || !file) {
+      this.imageUploadSectionIndex.set(null);
+      return;
+    }
 
     const allowed = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
     if (!allowed.has(file.type)) {
+      this.imageUploadSectionIndex.set(null);
       this.messages.add({
         severity: 'error',
         summary: 'Unsupported file',
@@ -1022,6 +1029,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
+      this.imageUploadSectionIndex.set(null);
       this.messages.add({
         severity: 'error',
         summary: 'File too large',
@@ -1033,7 +1041,10 @@ export class ProtopipeWriterComponent implements OnDestroy {
 
     const siteId = this.content.siteId();
     const postId = this.content.editingId();
-    if (!siteId || !postId || postId === 'new') return;
+    if (!siteId || !postId || postId === 'new') {
+      this.imageUploadSectionIndex.set(null);
+      return;
+    }
 
     this.imageUploading.set(true);
     try {
@@ -1074,6 +1085,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
       });
     } finally {
       this.imageUploading.set(false);
+      this.imageUploadSectionIndex.set(null);
     }
   }
 

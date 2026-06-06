@@ -265,6 +265,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
 
   readonly imageUploading = signal(false);
   readonly imageUploadSectionIndex = signal<number | null>(null);
+  readonly imageMenuSectionIndex = signal<number | null>(null);
 
   readonly loading = this.content.loading;
   readonly saving = this.content.saving;
@@ -983,6 +984,24 @@ export class ProtopipeWriterComponent implements OnDestroy {
     const section = s.template.sections[sectionIndex];
     const images = [...(section.images ?? []), { url: '', alt: '' }];
     this.patchSection(sectionIndex, { images });
+  }
+
+  toggleImageMenu(sectionIndex: number): void {
+    this.imageMenuSectionIndex.update((current) => (current === sectionIndex ? null : sectionIndex));
+  }
+
+  closeImageMenu(): void {
+    this.imageMenuSectionIndex.set(null);
+  }
+
+  onImageMenuUpload(sectionIndex: number): void {
+    this.closeImageMenu();
+    this.triggerSectionImageUpload(sectionIndex);
+  }
+
+  onImageMenuAddUrl(sectionIndex: number): void {
+    this.closeImageMenu();
+    this.addSectionImage(sectionIndex);
   }
 
   triggerSectionImageUpload(sectionIndex: number): void {

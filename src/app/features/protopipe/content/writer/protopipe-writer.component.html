@@ -271,18 +271,48 @@
                     <div class="pw__media">
                       <div class="pw__media-head">
                         <span>Images</span>
-                        <div class="pw__media-actions">
-                          <button
-                            type="button"
-                            class="pw__media-add"
-                            [disabled]="imageUploading()"
-                            (click)="triggerSectionImageUpload($index)"
-                          >
-                            <i class="pi pi-upload"></i> Upload
-                          </button>
-                          <button type="button" class="pw__media-add" (click)="addSectionImage($index)">
-                            <i class="pi pi-image"></i> Add URL
-                          </button>
+                        <div class="pw__media-add-menu">
+                          @if (imageMenuSectionIndex() === $index) {
+                            <button
+                              type="button"
+                              class="pw__media-add-backdrop"
+                              aria-label="Close image options"
+                              (click)="closeImageMenu()"
+                            ></button>
+                          }
+                          <div class="pw__media-add-cluster" [class.is-open]="imageMenuSectionIndex() === $index">
+                            @if (imageMenuSectionIndex() === $index) {
+                              <button
+                                type="button"
+                                class="pw__media-opt"
+                                title="Upload image"
+                                [disabled]="imageUploading()"
+                                (click)="onImageMenuUpload($index)"
+                              >
+                                <i class="pi pi-upload" aria-hidden="true"></i>
+                                <span class="pw__media-opt-tip">Upload</span>
+                              </button>
+                              <button
+                                type="button"
+                                class="pw__media-opt"
+                                title="Add image URL"
+                                (click)="onImageMenuAddUrl($index)"
+                              >
+                                <i class="pi pi-link" aria-hidden="true"></i>
+                                <span class="pw__media-opt-tip">URL</span>
+                              </button>
+                            }
+                            <button
+                              type="button"
+                              class="pw__media-add-trigger"
+                              [class.is-open]="imageMenuSectionIndex() === $index"
+                              [attr.aria-expanded]="imageMenuSectionIndex() === $index"
+                              aria-label="Add image"
+                              (click)="toggleImageMenu($index)"
+                            >
+                              <i class="pi pi-plus" aria-hidden="true"></i>
+                            </button>
+                          </div>
                         </div>
                       </div>
                       @if (imageUploading() && imageUploadSectionIndex() === $index) {

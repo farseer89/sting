@@ -268,12 +268,19 @@ export class ProtopipeContentService {
     const s = this._writingSession();
     if (!s || s.readOnly) return;
     const kw = this.planKeywords().find((k) => k.id === keywordId);
+    const phrase = kw?.phrase ?? s.template.primaryKeywordPhrase;
     this.updateWritingSession({
       template: {
         ...s.template,
         primaryKeywordId: kw?.id ?? '',
-        primaryKeywordPhrase: kw?.phrase ?? s.template.primaryKeywordPhrase,
+        primaryKeywordPhrase: phrase,
       },
+      brief: s.brief
+        ? {
+            ...s.brief,
+            primaryKeywordPhrase: phrase || s.brief.primaryKeywordPhrase,
+          }
+        : s.brief,
       selectedKeywordId: kw?.id ?? null,
     });
   }

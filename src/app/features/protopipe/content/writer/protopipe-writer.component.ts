@@ -60,7 +60,15 @@ import {
   type TypeReadinessItem,
 } from '../type-readiness.util';
 import { ProseEditorComponent } from './prose-editor/prose-editor.component';
+import {
+  getHeroImageBlock,
+  imagePlaceholderHint,
+  patchBlock,
+  proseBlocksForSections,
+  syncTemplateImagesToSections,
+} from '../block-template.util';
 import { ProtopipeBlockSlotsPanelComponent } from './block-slots-panel/block-slots-panel.component';
+import { ProtopipeImagePlaceholderComponent } from './image-placeholder/image-placeholder.component';
 import type { Editor } from '@tiptap/core';
 import type { FactHighlightItem } from './prose-editor/fact-highlight.extension';
 import type {
@@ -240,7 +248,15 @@ function buildHighlightSegments(prose: string, claims: string[]): HighlightSegme
   selector: 'app-protopipe-writer',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePicker, Toast, ProseEditorComponent, NgTemplateOutlet, ProtopipeBlockSlotsPanelComponent],
+  imports: [
+    FormsModule,
+    DatePicker,
+    Toast,
+    ProseEditorComponent,
+    NgTemplateOutlet,
+    ProtopipeBlockSlotsPanelComponent,
+    ProtopipeImagePlaceholderComponent,
+  ],
   providers: [MessageService],
   templateUrl: './protopipe-writer.component.html',
   styleUrl: './protopipe-writer.component.scss',
@@ -272,6 +288,20 @@ export class ProtopipeWriterComponent implements OnDestroy {
   readonly imageUploading = signal(false);
   readonly imageUploadSectionIndex = signal<number | null>(null);
   readonly imageMenuSectionIndex = signal<number | null>(null);
+  readonly imageUploadTarget = signal<
+    | { kind: 'hero'; blockId: string }
+    | { kind: 'section'; sectionIndex: number }
+    | { kind: 'prose'; blockId: string; imageIndex: number }
+    | null
+  >(null);
+
+  readonly heroImageBlock = computed(() => {
+    const s = this.session();
+    if (!s) return null;
+    return getHeroImageBlock(s.template);
+  });
+
+  protected readonly imagePlaceholderHint = imagePlaceholderHint;
 
   readonly loading = this.content.loading;
   readonly saving = this.content.saving;
@@ -908,7 +938,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
       next: ({ post }) => {
         this.content.startEdit(id);
         this.content.openWritingSession({
-          template: post.template ?? emptyContentTemplate(),
+          template: syncTemplateImagesToSections(post.template ?? emptyContentTemplate()),
           brief: post.brief ?? null,
           slug: post.slug,
           scheduleAt: post.publishAt ? new Date(post.publishAt) : null,
@@ -978,7 +1008,91 @@ export class ProtopipeWriterComponent implements OnDestroy {
   }
 
   onBlocksTemplateChange(template: ProtopipeContentTemplate): void {
-    this.content.patchWritingTemplate(template);
+    this.content.patchWritingTemplate(syncTemplateImagesToSections(template));
+  }
+
+  onBlockImageUploadRequest(event: { blockId: string; imageIndex?: number }): void {
+    const block = this.session()?.template.blocks?.find((b) => b.id === event.blockId);
+    if (!block) return;
+    if (block.kind === 'image') {
+      this.imageUploadTarget.set({ kind: 'hero', blockId: block.id });
+    } else if (block.kind === 'prose' && event.imageIndex != null) {
+      this.imageUploadTarget.set({
+        kind: 'prose',
+        blockId: block.id,
+        imageIndex: event.imageIndex,
+      });
+    } else {
+      return;
+    }
+    this.imageFileInput()?.nativeElement.click();
+  }
+
+  patchHeroImage(field: 'url' | 'alt', value: string): void {
+    const hero = this.heroImageBlock();
+    if (!hero) return;
+    this.patchBlockById(hero.id, { [field]: value });
+  }
+
+  clearHeroImage(): void {
+    const hero = this.heroImageBlock();
+    if (!hero) return;
+    this.patchBlockById(hero.id, { url: '', alt: '' });
+  }
+
+  patchBlockImage(
+    blockId: string,
+    imageIndex: number,
+    field: 'url' | 'alt',
+    value: string,
+  ): void {
+    const s = this.session();
+    if (!s) return;
+    const block = s.template.blocks?.find((b) => b.id === blockId);
+    if (block?.kind !== 'prose') return;
+    const images = [...(block.images ?? [])];
+    images[imageIndex] = { ...images[imageIndex], [field]: value };
+    this.patchBlockById(blockId, { images });
+  }
+
+  triggerHeroImageUpload(): void {
+    const hero = this.heroImageBlock();
+    if (!hero) return;
+    this.imageUploadTarget.set({ kind: 'hero', blockId: hero.id });
+    this.imageFileInput()?.nativeElement.click();
+  }
+
+  triggerProseImageUpload(blockId: string, imageIndex: number): void {
+    this.imageUploadTarget.set({ kind: 'prose', blockId, imageIndex });
+    this.imageFileInput()?.nativeElement.click();
+  }
+
+  proseBlockIdForSection(sectionIndex: number): string | null {
+    const s = this.session();
+    if (!s?.template.blocks?.length) return null;
+    const block = proseBlocksForSections(s.template)[sectionIndex];
+    return block?.id ?? null;
+  }
+
+  isHeroImageUploading(blockId: string): boolean {
+    const target = this.imageUploadTarget();
+    return this.imageUploading() && target?.kind === 'hero' && target.blockId === blockId;
+  }
+
+  isProseImageUploading(blockId: string, imageIndex: number): boolean {
+    const target = this.imageUploadTarget();
+    return (
+      this.imageUploading() &&
+      target?.kind === 'prose' &&
+      target.blockId === blockId &&
+      target.imageIndex === imageIndex
+    );
+  }
+
+  private patchBlockById(blockId: string, patch: Partial<import('@hive/contracts').ProtopipeArticleBlock>): void {
+    const s = this.session();
+    if (!s || s.readOnly) return;
+    this.content.patchWritingTemplate(syncTemplateImagesToSections(patchBlock(s.template, blockId, patch)));
   }
 
   focusCanvasSlot(slotId: string): void {
@@ -1103,19 +1217,22 @@ export class ProtopipeWriterComponent implements OnDestroy {
 
   async onSectionImageFileSelected(event: Event): Promise<void> {
     const sectionIndex = this.imageUploadSectionIndex();
+    const uploadTarget = this.imageUploadTarget();
 
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     input.value = '';
 
-    if (sectionIndex == null || !file) {
+    if ((!uploadTarget && sectionIndex == null) || !file) {
       this.imageUploadSectionIndex.set(null);
+      this.imageUploadTarget.set(null);
       return;
     }
 
     const allowed = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
     if (!allowed.has(file.type)) {
       this.imageUploadSectionIndex.set(null);
+      this.imageUploadTarget.set(null);
       this.messages.add({
         severity: 'error',
         summary: 'Unsupported file',
@@ -1126,6 +1243,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
     }
     if (file.size > 5 * 1024 * 1024) {
       this.imageUploadSectionIndex.set(null);
+      this.imageUploadTarget.set(null);
       this.messages.add({
         severity: 'error',
         summary: 'File too large',
@@ -1139,6 +1257,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
     const postId = this.content.editingId();
     if (!siteId || !postId || postId === 'new') {
       this.imageUploadSectionIndex.set(null);
+      this.imageUploadTarget.set(null);
       return;
     }
 
@@ -1161,9 +1280,31 @@ export class ProtopipeWriterComponent implements OnDestroy {
       const altHint = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim();
       const s = this.session();
       if (!s || s.readOnly) return;
-      const section = s.template.sections[sectionIndex];
-      const images = [...(section.images ?? []), { url: presign.publicUrl, alt: altHint }];
-      this.patchSection(sectionIndex, { images });
+
+      if (uploadTarget?.kind === 'hero') {
+        this.patchBlockById(uploadTarget.blockId, { url: presign.publicUrl, alt: altHint });
+      } else if (uploadTarget?.kind === 'prose') {
+        const block = s.template.blocks?.find((b) => b.id === uploadTarget.blockId);
+        if (block?.kind === 'prose') {
+          const images = [...(block.images ?? [])];
+          images[uploadTarget.imageIndex] = {
+            ...(images[uploadTarget.imageIndex] ?? { url: '', alt: '' }),
+            url: presign.publicUrl,
+            alt: images[uploadTarget.imageIndex]?.alt?.trim() || altHint,
+          };
+          this.patchBlockById(uploadTarget.blockId, { images });
+        }
+      } else if (sectionIndex != null) {
+        const section = s.template.sections[sectionIndex];
+        const images = [...(section.images ?? [])];
+        const emptyIdx = images.findIndex((img) => !img.url?.trim());
+        if (emptyIdx >= 0) {
+          images[emptyIdx] = { ...images[emptyIdx], url: presign.publicUrl, alt: altHint };
+        } else {
+          images.push({ url: presign.publicUrl, alt: altHint });
+        }
+        this.patchSection(sectionIndex, { images });
+      }
 
       this.messages.add({
         severity: 'success',
@@ -1182,6 +1323,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
     } finally {
       this.imageUploading.set(false);
       this.imageUploadSectionIndex.set(null);
+      this.imageUploadTarget.set(null);
     }
   }
 

@@ -29,6 +29,20 @@
 
         @if (isExpanded(block)) {
           <div class="slots__body">
+            @if (asImage(block); as imageBlock) {
+              <app-protopipe-image-placeholder
+                [label]="imageBlock.label || 'Hero image'"
+                [hint]="imageHint(imageBlock)"
+                [url]="imageBlock.url"
+                [alt]="imageBlock.alt"
+                [readOnly]="readOnly()"
+                (urlChange)="patchImageBlock(imageBlock, 'url', $event)"
+                (altChange)="patchImageBlock(imageBlock, 'alt', $event)"
+                (upload)="imageUploadRequest.emit({ blockId: imageBlock.id })"
+                (remove)="clearImageBlock(imageBlock)"
+              />
+            }
+
             @if (asProse(block); as prose) {
               @if (prose.slotId !== 'intro' && prose.h2 !== undefined) {
                 <label class="slots__field">
@@ -50,6 +64,19 @@
                   [disabled]="readOnly()"
                 ></textarea>
               </label>
+              @for (img of prose.images ?? []; track $index) {
+                <app-protopipe-image-placeholder
+                  [label]="prose.label || prose.slotId"
+                  [hint]="imageHint(img)"
+                  [url]="img.url"
+                  [alt]="img.alt"
+                  [readOnly]="readOnly()"
+                  (urlChange)="patchProseImage(prose, $index, 'url', $event)"
+                  (altChange)="patchProseImage(prose, $index, 'alt', $event)"
+                  (upload)="imageUploadRequest.emit({ blockId: prose.id, imageIndex: $index })"
+                  (remove)="clearProseImage(prose, $index)"
+                />
+              }
               @if (prose.slotId === 'intro') {
                 <button type="button" class="slots__link" (click)="focusCanvasSlot.emit('intro')">
                   Jump to intro in canvas

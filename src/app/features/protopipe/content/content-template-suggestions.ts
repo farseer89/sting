@@ -1,5 +1,6 @@
 import type { ProtopipeContentTemplate, ProtopipeKeywordDto } from '@hive/contracts';
 
+import { pendingTemplateImages } from './block-template.util';
 import { txt } from './type-readiness.util';
 
 function titleCasePhrase(phrase: string): string {
@@ -136,6 +137,11 @@ export function writingHints(template: ProtopipeContentTemplate): WritingHint[] 
       done: (template.sections ?? []).some((s) => !!txt(s.h2)),
     },
     { id: 'words', label: 'Substantial draft (300+ words)', done: words >= 300 },
+    ...pendingTemplateImages(template).map((img) => ({
+      id: img.id,
+      label: img.label,
+      done: false,
+    })),
   ];
 }
 

@@ -1,5 +1,7 @@
 import type { ProtopipeArticleBlock, ProtopipeContentTemplate } from '@hive/contracts';
 
+import { pendingTemplateImages } from './block-template.util';
+
 export type ReadinessStatus = 'pass' | 'warn' | 'fail';
 
 export interface TypeReadinessItem {
@@ -216,6 +218,10 @@ export function computeTypeReadiness(template: ProtopipeContentTemplate): TypeRe
       'Link to related posts or pages',
     ),
   );
+
+  for (const img of pendingTemplateImages(template)) {
+    items.push(item(img.id, img.label, 'warn', 'Add an image with alt text'));
+  }
 
   return items;
 }

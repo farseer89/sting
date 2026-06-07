@@ -19,9 +19,9 @@ import {
   slugifyTitle,
 } from './content/content-template-suggestions';
 import type { ContentCatalog } from './content/content-catalog.model';
+import { patchSectionWithBlocks } from './content/block-template.util';
 import {
   cloneTemplate,
-  patchSection,
   type WritingSession,
 } from './content/protopipe-writing-session';
 import { parseProtopipeApiError } from './protopipe-http.util';
@@ -210,10 +210,13 @@ export class ProtopipeContentService {
     this.updateWritingSession({ template: { ...s.template, ...partial } });
   }
 
-  patchWritingSection(index: number, partial: Parameters<typeof patchSection>[2]): void {
+  patchWritingSection(
+    index: number,
+    partial: Parameters<typeof patchSectionWithBlocks>[2],
+  ): void {
     const s = this._writingSession();
     if (!s) return;
-    this.updateWritingSession({ template: patchSection(s.template, index, partial) });
+    this.updateWritingSession({ template: patchSectionWithBlocks(s.template, index, partial) });
   }
 
   reorderWritingSections(previousIndex: number, currentIndex: number): void {

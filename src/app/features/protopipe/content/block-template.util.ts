@@ -1,4 +1,9 @@
-import type { ProtopipeArticleBlock, ProtopipeContentTemplate } from '@hive/contracts';
+import type {
+  ProtopipeArticleBlock,
+  ProtopipeContentSectionImage,
+  ProtopipeContentTemplate,
+} from '@hive/contracts';
+import { patchSection } from './protopipe-writing-session';
 
 export function visibleBlocks(blocks: ProtopipeArticleBlock[]): ProtopipeArticleBlock[] {
   return blocks.filter((b) => b.visible !== false);
@@ -6,6 +11,51 @@ export function visibleBlocks(blocks: ProtopipeArticleBlock[]): ProtopipeArticle
 
 export function isPinnedBlock(block: ProtopipeArticleBlock): boolean {
   return block.slotId === 'cta';
+}
+
+export function getHeroImageBlock(
+  template: ProtopipeContentTemplate,
+): Extract<ProtopipeArticleBlock, { kind: 'image' }> | null {
+  const block = (template.blocks ?? []).find((b) => b.kind === 'image' && b.slotId === 'hero');
+  return block?.kind === 'image' ? block : null;
+}
+
+export function proseBlocksForSections(template: ProtopipeContentTemplate): Extract<
+  ProtopipeArticleBlock,
+  { kind: 'prose' }
+>[] {
+  return visibleBlocks(template.blocks ?? []).filter(
+    (b): b is Extract<ProtopipeArticleBlock, { kind: 'prose' }> =>
+      b.kind === 'prose' && b.slotId !== 'intro',
+  );
+}
+
+export function sectionIndexForProseBlock(
+  template: ProtopipeContentTemplate,
+  blockId: string,
+): number {
+  return proseBlocksForSections(template).findIndex((b) => b.id === blockId);
+}
+
+export function syncTemplateImagesToSections(
+  template: ProtopipeContentTemplate,
+): ProtopipeContentTemplate {
+  if (!template.blocks?.length) return template;
+  const proseList = proseBlocksForSections(template);
+  if (!proseList.length) return template;
+
+  const sections = [...template.sections];
+  for (let i = 0; i < proseList.length; i++) {
+    const block = proseList[i];
+    if (!sections[i]) continue;
+    if (block.images !== undefined) {
+      sections[i] = {
+        ...sections[i],
+        images: block.images.map((img) => ({ ...img })),
+      };
+    }
+  }
+  return { ...template, sections };
 }
 
 export function patchBlock(
@@ -19,14 +69,18 @@ export function patchBlock(
     block.id === blockId ? ({ ...block, ...patch } as ProtopipeArticleBlock) : block,
   );
 
-  const updated = blocks.find((b) => b.id === blockId);
   let next: ProtopipeContentTemplate = { ...template, blocks };
 
+  const updated = blocks.find((b) => b.id === blockId);
   if (updated?.kind === 'prose' && updated.slotId === 'intro' && patch.kind === undefined) {
     const prose = updated as Extract<ProtopipeArticleBlock, { kind: 'prose' }>;
     if ('body' in patch) {
       next = { ...next, intro: prose.body };
     }
+  }
+
+  if (updated?.kind === 'prose' && updated.slotId !== 'intro' && 'images' in patch) {
+    next = syncTemplateImagesToSections(next);
   }
 
   if (updated?.kind === 'cta') {
@@ -40,6 +94,23 @@ export function patchBlock(
   }
 
   return next;
+}
+
+export function patchSectionWithBlocks(
+  template: ProtopipeContentTemplate,
+  index: number,
+  partial: Parameters<typeof patchSection>[2],
+): ProtopipeContentTemplate {
+  let next = patchSection(template, index, partial);
+  if (!next.blocks?.length || !('images' in partial)) return next;
+
+  const proseList = proseBlocksForSections(next);
+  const target = proseList[index];
+  if (!target) return next;
+
+  return patchBlock(next, target.id, {
+    images: partial.images as ProtopipeContentSectionImage[] | undefined,
+  });
 }
 
 export function toggleBlockVisibility(
@@ -71,6 +142,8 @@ export function blockKindLabel(kind: ProtopipeArticleBlock['kind']): string {
   switch (kind) {
     case 'prose':
       return 'Prose';
+    case 'image':
+      return 'Image';
     case 'howto_steps':
       return 'Steps';
     case 'list_items':
@@ -88,4 +161,49 @@ export function blockKindLabel(kind: ProtopipeArticleBlock['kind']): string {
     default:
       return kind;
   }
+}
+
+export function imagePlaceholderHint(block: {
+  label?: string;
+  promptHint?: string;
+  role?: string;
+}): string {
+  if (block.promptHint?.trim()) return block.promptHint.trim();
+  if (block.role === 'hero') return 'Wide hero photo for this article';
+  return block.label?.trim() || 'Upload an image or add a URL';
+}
+
+export function imageIsComplete(img: { url?: string; alt?: string }): boolean {
+  return Boolean(img.url?.trim() && img.alt?.trim());
+}
+
+export interface PendingTemplateImage {
+  id: string;
+  label: string;
+}
+
+/** Images seeded by layout that still need url + alt before publish. */
+export function pendingTemplateImages(template: ProtopipeContentTemplate): PendingTemplateImage[] {
+  if (!template.blocks?.length) return [];
+
+  const pending: PendingTemplateImage[] = [];
+  const hero = getHeroImageBlock(template);
+  if (hero && !imageIsComplete(hero)) {
+    pending.push({ id: 'hero-image', label: hero.label?.trim() || 'Hero image' });
+  }
+
+  for (const block of visibleBlocks(template.blocks)) {
+    if (block.kind !== 'prose' || !block.images?.length) continue;
+    const slotLabel = block.label?.trim() || block.slotId;
+    for (let i = 0; i < block.images.length; i++) {
+      if (!imageIsComplete(block.images[i])) {
+        pending.push({
+          id: `section-image-${block.slotId}-${i}`,
+          label: `${slotLabel} photo`,
+        });
+      }
+    }
+  }
+
+  return pending;
 }

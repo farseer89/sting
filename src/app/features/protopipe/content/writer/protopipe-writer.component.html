@@ -279,6 +279,23 @@
               </div>
             </div>
 
+            @if (hasBlockLayout() && heroImageBlock(); as hero) {
+              <div class="pw__block pw__block--hero-image">
+                <app-protopipe-image-placeholder
+                  [label]="hero.label || 'Hero image'"
+                  [hint]="imagePlaceholderHint(hero)"
+                  [url]="hero.url"
+                  [alt]="hero.alt"
+                  [readOnly]="isReadOnly()"
+                  [uploading]="isHeroImageUploading(hero.id)"
+                  (urlChange)="patchHeroImage('url', $event)"
+                  (altChange)="patchHeroImage('alt', $event)"
+                  (upload)="triggerHeroImageUpload()"
+                  (remove)="clearHeroImage()"
+                />
+              </div>
+            }
+
             <!-- Intro -->
             <div class="pw__block">
               <div class="pw__block-main">
@@ -330,6 +347,26 @@
                     [disabled]="isReadOnly()"
                     placeholder="Section heading…"
                   ></textarea>
+                  @if (hasBlockLayout() && sec.images?.length) {
+                    @for (img of sec.images; track $index; let imgIdx = $index) {
+                      @if (proseBlockIdForSection($index); as blockId) {
+                        <app-protopipe-image-placeholder
+                          class="pw__inline-image"
+                          [compact]="true"
+                          [label]="sec.h2 || 'Section image'"
+                          [hint]="imagePlaceholderHint(img)"
+                          [url]="img.url"
+                          [alt]="img.alt"
+                          [readOnly]="isReadOnly()"
+                          [uploading]="isProseImageUploading(blockId, imgIdx)"
+                          (urlChange)="patchBlockImage(blockId, imgIdx, 'url', $event)"
+                          (altChange)="patchBlockImage(blockId, imgIdx, 'alt', $event)"
+                          (upload)="triggerProseImageUpload(blockId, imgIdx)"
+                          (remove)="patchBlockImage(blockId, imgIdx, 'url', ''); patchBlockImage(blockId, imgIdx, 'alt', '')"
+                        />
+                      }
+                    }
+                  }
                   <app-prose-editor
                     class="pw__section-body pw__section-body--editor"
                     [value]="sec.body"
@@ -344,7 +381,7 @@
                     [disabled]="isReadOnly()"
                     placeholder="Write this section…"
                   ></app-prose-editor>
-                  @if (!isReadOnly()) {
+                  @if (!isReadOnly() && !hasBlockLayout()) {
                     <div class="pw__media">
                       <div class="pw__media-head">
                         <span>Images</span>
@@ -611,6 +648,7 @@
                 [readOnly]="isReadOnly()"
                 (templateChange)="onBlocksTemplateChange($event)"
                 (focusCanvasSlot)="focusCanvasSlot($event)"
+                (imageUploadRequest)="onBlockImageUploadRequest($event)"
               />
             } @else {
               <p class="pw__panel-empty">

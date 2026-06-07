@@ -11,18 +11,20 @@ import { FormsModule } from '@angular/forms';
 import type { ProtopipeArticleBlock, ProtopipeContentTemplate } from '@hive/contracts';
 import {
   blockKindLabel,
+  imagePlaceholderHint,
   isPinnedBlock,
   patchBlock,
   reorderBlocks,
   toggleBlockVisibility,
   visibleBlocks,
 } from '../../block-template.util';
+import { ProtopipeImagePlaceholderComponent } from '../image-placeholder/image-placeholder.component';
 
 @Component({
   selector: 'app-protopipe-block-slots-panel',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, CdkDropList, CdkDrag],
+  imports: [FormsModule, CdkDropList, CdkDrag, ProtopipeImagePlaceholderComponent],
   templateUrl: './block-slots-panel.component.html',
   styleUrl: './block-slots-panel.component.scss',
 })
@@ -31,6 +33,9 @@ export class ProtopipeBlockSlotsPanelComponent {
   readonly readOnly = input(false);
   readonly templateChange = output<ProtopipeContentTemplate>();
   readonly focusCanvasSlot = output<string>();
+  readonly imageUploadRequest = output<{ blockId: string; imageIndex?: number }>();
+
+  readonly imageHint = imagePlaceholderHint;
 
   readonly expandedSlotId = signal<string | null>(null);
 
@@ -163,5 +168,41 @@ export class ProtopipeBlockSlotsPanelComponent {
 
   asCta(block: ProtopipeArticleBlock): Extract<ProtopipeArticleBlock, { kind: 'cta' }> | null {
     return block.kind === 'cta' ? block : null;
+  }
+
+  asImage(block: ProtopipeArticleBlock): Extract<ProtopipeArticleBlock, { kind: 'image' }> | null {
+    return block.kind === 'image' ? block : null;
+  }
+
+  patchImageBlock(
+    block: Extract<ProtopipeArticleBlock, { kind: 'image' }>,
+    field: 'url' | 'alt',
+    value: string,
+  ): void {
+    this.patch(block.id, { [field]: value });
+  }
+
+  patchProseImage(
+    block: Extract<ProtopipeArticleBlock, { kind: 'prose' }>,
+    imageIndex: number,
+    field: 'url' | 'alt',
+    value: string,
+  ): void {
+    const images = [...(block.images ?? [])];
+    images[imageIndex] = { ...images[imageIndex], [field]: value };
+    this.patch(block.id, { images });
+  }
+
+  clearImageBlock(block: Extract<ProtopipeArticleBlock, { kind: 'image' }>): void {
+    this.patch(block.id, { url: '', alt: '' });
+  }
+
+  clearProseImage(
+    block: Extract<ProtopipeArticleBlock, { kind: 'prose' }>,
+    imageIndex: number,
+  ): void {
+    const images = [...(block.images ?? [])];
+    images[imageIndex] = { ...images[imageIndex], url: '', alt: '' };
+    this.patch(block.id, { images });
   }
 }

@@ -1,0 +1,54 @@
+<div class="img-ph" [class.img-ph--compact]="compact()" [class.img-ph--uploading]="uploading()">
+  <div class="img-ph__preview">
+    @if (uploading()) {
+      <div class="img-ph__placeholder">
+        <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        <span>Uploading…</span>
+      </div>
+    } @else if (hasPreview()) {
+      <img [src]="url()" [alt]="alt() || label()" />
+    } @else {
+      <div class="img-ph__placeholder">
+        <i class="pi pi-image" aria-hidden="true"></i>
+        <span>{{ hint() }}</span>
+      </div>
+    }
+  </div>
+
+  @if (!readOnly()) {
+    <div class="img-ph__actions">
+      <button type="button" class="img-ph__btn" (click)="upload.emit()" [disabled]="uploading()">
+        <i class="pi pi-upload" aria-hidden="true"></i> Upload
+      </button>
+      @if (url()) {
+        <button type="button" class="img-ph__btn img-ph__btn--ghost" (click)="remove.emit()">
+          Remove
+        </button>
+      }
+    </div>
+
+    <div class="img-ph__fields">
+      <label class="img-ph__field">
+        <span>Image URL</span>
+        <input
+          type="url"
+          [ngModel]="url()"
+          (ngModelChange)="urlChange.emit($event)"
+          placeholder="https://…"
+        />
+      </label>
+      <label class="img-ph__field">
+        <span>Alt text</span>
+        <input
+          type="text"
+          [ngModel]="alt()"
+          (ngModelChange)="altChange.emit($event)"
+          [placeholder]="label()"
+        />
+      </label>
+      @if (needsAlt()) {
+        <p class="img-ph__warn">Add alt text — preview and publish need both URL and alt.</p>
+      }
+    </div>
+  }
+</div>

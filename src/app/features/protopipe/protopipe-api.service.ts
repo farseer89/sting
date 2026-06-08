@@ -70,6 +70,12 @@ import type {
   ListContextCardsResponse,
   PatchContextCardRequest,
   PatchContextCardResponse,
+  ListOfferingsResponse,
+  CreateOfferingRequest,
+  CreateOfferingResponse,
+  PatchOfferingRequest,
+  PatchOfferingResponse,
+  ActivateOfferingResponse,
   SiteBuilderComponentsResponse,
   SiteBuilderTemplatesResponse,
   SiteBuilderTemplateDetailResponse,
@@ -856,6 +862,36 @@ export class ProtopipeApiService {
     return this.http.patch<PatchContextCardResponse>(
       protopipeApiUrl(ProtopipeEndpoints.patchContextCard.path, { siteId, cardId }),
       body,
+    );
+  }
+
+  listOfferings$(siteId: string, query?: { status?: string }) {
+    let params = new HttpParams();
+    if (query?.status) params = params.set('status', query.status);
+    return this.http.get<ListOfferingsResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.listOfferings.path, { siteId }),
+      { params },
+    );
+  }
+
+  createOffering$(siteId: string, body: CreateOfferingRequest) {
+    return this.http.post<CreateOfferingResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.createOffering.path, { siteId }),
+      body,
+    );
+  }
+
+  patchOffering$(siteId: string, offeringId: string, body: PatchOfferingRequest) {
+    return this.http.patch<PatchOfferingResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.patchOffering.path, { siteId, offeringId }),
+      body,
+    );
+  }
+
+  activateOffering$(siteId: string, offeringId: string) {
+    return this.http.post<ActivateOfferingResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.activateOffering.path, { siteId, offeringId }),
+      {},
     );
   }
 }

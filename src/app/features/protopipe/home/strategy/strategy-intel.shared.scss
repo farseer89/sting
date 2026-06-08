@@ -1,0 +1,171 @@
+@use './strategy.shared' as *;
+
+.strat-intel {
+  flex-shrink: 0;
+  padding: 0.75rem 0;
+  border-top: 0.5px solid var(--void-tile-border);
+}
+
+.strat-intel__head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.strat-intel__title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.strat-intel__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  background: var(--void-accent, #5b8def);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.strat-intel__lede {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 0.72rem;
+  color: var(--void-text-muted, rgba(255, 255, 255, 0.55));
+  line-height: 1.4;
+}
+
+.strat-intel__status {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--void-text-muted, rgba(255, 255, 255, 0.55));
+
+  &--error {
+    color: #f87171;
+  }
+}
+
+.strat-intel__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  &--compact .strat-intel__card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+}
+
+.strat-intel__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.45rem;
+  border: 0.5px solid var(--void-tile-border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.strat-intel__question {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.strat-intel__input,
+.strat-intel__field {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.4rem 0.5rem;
+  border-radius: 0.35rem;
+  border: 0.5px solid var(--void-tile-border);
+  background: rgba(0, 0, 0, 0.2);
+  color: inherit;
+  font: inherit;
+  font-size: 0.72rem;
+}
+
+.strat-intel__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+}
+
+.strat-intel__label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.68rem;
+  color: var(--void-text-muted, rgba(255, 255, 255, 0.55));
+}
+
+.strat-intel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.strat-intel__btn {
+  appearance: none;
+  border: 0.5px solid var(--void-tile-border);
+  border-radius: 0.35rem;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  &--ghost {
+    background: transparent;
+  }
+}
+
+.strat-intel__offer-active {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.45rem;
+  border: 0.5px solid var(--void-tile-border);
+  background: rgba(91, 141, 239, 0.08);
+}
+
+.strat-intel__offer-badge {
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--void-accent, #5b8def);
+}
+
+.strat-intel__offer-headline {
+  margin: 0;
+  flex: 1 1 100%;
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+
+.strat-intel__offer-discount,
+.strat-intel__offer-expiry {
+  font-size: 0.68rem;
+  color: var(--void-text-muted, rgba(255, 255, 255, 0.55));
+}

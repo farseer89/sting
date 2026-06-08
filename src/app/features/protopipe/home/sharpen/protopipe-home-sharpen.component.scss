@@ -140,12 +140,24 @@
   background: rgba(255, 255, 255, 0.65);
 }
 
+.sharpen__card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+}
+
 .sharpen__topic {
   font-size: 8px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--void-ocean-muted);
   font-weight: 500;
+}
+
+.sharpen__source {
+  font-size: 8px;
+  color: var(--void-ink-muted, rgba(10, 10, 10, 0.45));
 }
 
 .sharpen__card-text {

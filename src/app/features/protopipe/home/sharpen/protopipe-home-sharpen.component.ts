@@ -166,4 +166,21 @@ export class ProtopipeHomeSharpenComponent implements OnInit {
   topicLabel(card: ProtopipeContextCard): string {
     return card.topic.replace(/_/g, ' ');
   }
+
+  sourceLabel(card: ProtopipeContextCard): string {
+    switch (card.source.stage) {
+      case 'keyword_discovery':
+        return 'From keyword discovery';
+      case 'plan_generation':
+        return 'From content plan';
+      case 'article_generation':
+        return 'From article review';
+      case 'geo_discovery':
+        return 'From AI search analysis';
+      case 'project_capture':
+        return 'From a project';
+      default:
+        return 'From strategy';
+    }
+  }
 }

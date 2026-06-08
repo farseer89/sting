@@ -31,12 +31,15 @@
         </p>
 
         @if (questions().length === 0) {
-          <p class="sharpen__empty">No open questions. Run keyword discovery to surface new ones.</p>
+          <p class="sharpen__empty">No open questions. Run keyword discovery or build a content plan to surface new ones.</p>
         } @else {
           <ul class="sharpen__list">
             @for (card of questions(); track card.id) {
               <li class="sharpen__card">
-                <span class="sharpen__topic">{{ topicLabel(card) }}</span>
+                <div class="sharpen__card-meta">
+                  <span class="sharpen__topic">{{ topicLabel(card) }}</span>
+                  <span class="sharpen__source">{{ sourceLabel(card) }}</span>
+                </div>
                 <p class="sharpen__card-text">{{ card.cardText }}</p>
                 @if (answeringQuestionId() === card.id) {
                   <textarea
@@ -83,7 +86,10 @@
           <ul class="sharpen__list">
             @for (card of claims(); track card.id) {
               <li class="sharpen__card">
-                <span class="sharpen__topic">{{ topicLabel(card) }}</span>
+                <div class="sharpen__card-meta">
+                  <span class="sharpen__topic">{{ topicLabel(card) }}</span>
+                  <span class="sharpen__source">{{ sourceLabel(card) }}</span>
+                </div>
                 <p class="sharpen__card-text">{{ card.cardText }}</p>
                 @if (card.suggestedValue) {
                   <p class="sharpen__suggested">Draft had: “{{ card.suggestedValue }}”</p>

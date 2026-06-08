@@ -25,9 +25,11 @@ import type {
 export const DISCOVERY_STEP_ORDER: DiscoveryStepId[] = [
   'load_profile',
   'fetch_gsc',
+  'fetch_site_snapshot',
   'fetch_ranked',
-  'fetch_ads_ideas',
   'spyfu_gaps',
+  'resolve_discovery_seeds',
+  'fetch_ads_ideas',
   'geo_expansion',
   'seed_expansion',
   'merge_score',
@@ -35,6 +37,7 @@ export const DISCOVERY_STEP_ORDER: DiscoveryStepId[] = [
   // seed the avatars (PAA → informational candidates → researcher avatar).
   'serp_enrichment',
   'infer_avatars',
+  'extract_context_questions',
   'confirm',
 ];
 
@@ -47,17 +50,25 @@ const STEP_META: Record<DiscoveryStepId, { label: string; summary: string }> = {
     label: 'Search Console',
     summary: 'Pull queries the site already gets impressions for.',
   },
+  fetch_site_snapshot: {
+    label: 'Site Snapshot',
+    summary: 'Fetch homepage title and headings for seed resolution.',
+  },
   fetch_ranked: {
     label: 'Ranked',
     summary: 'DataForSEO ranked keywords for the domain.',
   },
-  fetch_ads_ideas: {
-    label: 'Ad Ideas',
-    summary: 'Google Ads keyword ideas + volumes from service seeds.',
-  },
   spyfu_gaps: {
     label: 'Competitor Gaps',
     summary: 'SpyFu keywords competitors rank for and the site does not.',
+  },
+  resolve_discovery_seeds: {
+    label: 'Resolve Seeds',
+    summary: 'Reconcile onboarding input with ranked, gap, and site signals.',
+  },
+  fetch_ads_ideas: {
+    label: 'Ad Ideas',
+    summary: 'Google Ads keyword ideas + volumes from resolved seeds.',
   },
   geo_expansion: {
     label: 'Geo Expansion',
@@ -78,6 +89,10 @@ const STEP_META: Record<DiscoveryStepId, { label: string; summary: string }> = {
   infer_avatars: {
     label: 'Avatars',
     summary: 'Cluster intent (incl. PAA questions) and suggest customer avatars.',
+  },
+  extract_context_questions: {
+    label: 'Context Questions',
+    summary: 'Surface assumption questions as strategy context cards.',
   },
   confirm: {
     label: 'Confirm',
@@ -245,9 +260,36 @@ function stepOutput(step: DiscoveryStepId, run: KeywordDiscoveryRunDto): Thought
       return a.gscQueries?.length
         ? [candidateTable('gsc', 'GSC queries', a.gscQueries)]
         : [];
+    case 'fetch_site_snapshot':
+      return a.siteSnapshot
+        ? [
+            json(
+              'site-snapshot',
+              'Homepage snapshot',
+              a.siteSnapshot,
+              a.siteSnapshot.available
+                ? [a.siteSnapshot.title, a.siteSnapshot.h1, ...a.siteSnapshot.h2s]
+                    .filter(Boolean)
+                    .slice(0, 3)
+                    .join(' · ')
+                : 'Unavailable',
+            ),
+          ]
+        : [];
     case 'fetch_ranked':
       return a.rankedKeywords?.length
         ? [candidateTable('ranked', 'Ranked keywords', a.rankedKeywords)]
+        : [];
+    case 'resolve_discovery_seeds':
+      return a.discoveryContext
+        ? [
+            json(
+              'discovery-context',
+              'Resolved seeds',
+              a.discoveryContext,
+              `${a.discoveryContext.seedPhrases.length} seed(s) · ${a.discoveryContext.profileQuality} profile · ${a.discoveryContext.resolvedBy}`,
+            ),
+          ]
         : [];
     case 'fetch_ads_ideas':
       return a.adsIdeas?.length

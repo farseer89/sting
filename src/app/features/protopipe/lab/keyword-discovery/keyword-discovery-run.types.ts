@@ -11,14 +11,17 @@
 export type DiscoveryStepId =
   | 'load_profile'
   | 'fetch_gsc'
+  | 'fetch_site_snapshot'
   | 'fetch_ranked'
-  | 'fetch_ads_ideas'
   | 'spyfu_gaps'
+  | 'resolve_discovery_seeds'
+  | 'fetch_ads_ideas'
   | 'geo_expansion'
   | 'seed_expansion'
   | 'merge_score'
-  | 'infer_avatars'
   | 'serp_enrichment'
+  | 'infer_avatars'
+  | 'extract_context_questions'
   | 'confirm';
 
 export type DiscoveryRunStatus =
@@ -146,8 +149,36 @@ export interface DiscoveryCostSummary {
   byProvider: { provider: string; costUsd: number; calls: number }[];
 }
 
+export type DiscoverySeedSource = 'profile' | 'ranked' | 'spyfu_gap' | 'site' | 'llm';
+
+export interface DiscoveryContextSeedSource {
+  phrase: string;
+  from: DiscoverySeedSource;
+}
+
+export interface DiscoveryContext {
+  profileQuality: 'strong' | 'weak';
+  seedPhrases: string[];
+  fitPhrases: string[];
+  inferredTrade?: string;
+  sources: DiscoveryContextSeedSource[];
+  rationale?: string;
+  resolvedBy: 'deterministic' | 'llm';
+}
+
+export interface DiscoverySiteSnapshot {
+  url: string;
+  title?: string;
+  h1?: string;
+  h2s: string[];
+  available: boolean;
+  error?: string;
+}
+
 export interface DiscoveryArtifacts {
   profile?: DiscoveryProfileSnapshot;
+  siteSnapshot?: DiscoverySiteSnapshot;
+  discoveryContext?: DiscoveryContext;
   gscQueries?: DiscoveryCandidate[];
   rankedKeywords?: DiscoveryCandidate[];
   adsIdeas?: DiscoveryCandidate[];

@@ -201,10 +201,69 @@
   color: var(--void-ocean);
 }
 
-.kwpick__loading {
-  margin: 1rem 0;
+.kwpick__progress {
+  margin: 1.25rem 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.kwpick__progress-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(12, 36, 64, 0.08);
+  overflow: hidden;
+}
+
+.kwpick__progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--void-ocean) 0%, #3d8fd4 100%);
+  transition: width 0.55s ease;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.35) 50%,
+      transparent 100%
+    );
+    animation: kwpick-progress-shimmer 1.8s ease-in-out infinite;
+  }
+}
+
+@keyframes kwpick-progress-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+.kwpick__progress-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.kwpick__progress-label {
+  margin: 0;
   font-size: 11px;
   color: var(--void-ink-muted);
+}
+
+.kwpick__progress-pct {
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--void-ocean);
+  flex-shrink: 0;
 }
 
 .kwpick__alert {

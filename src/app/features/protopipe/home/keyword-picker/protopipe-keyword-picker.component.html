@@ -58,13 +58,31 @@
   </header>
 
   @if (store.loading()) {
-    <p class="kwpick__loading">
-      @if (store.discoveryProgress(); as progress) {
-        {{ progress }}
-      } @else {
-        Loading keyword suggestions…
-      }
-    </p>
+    <div
+      class="kwpick__progress"
+      role="progressbar"
+      [attr.aria-valuenow]="store.discoveryProgressPercent()"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      [attr.aria-label]="store.discoveryProgress() ?? 'Loading keyword suggestions'"
+    >
+      <div class="kwpick__progress-track">
+        <div
+          class="kwpick__progress-fill"
+          [style.width.%]="store.discoveryProgressPercent()"
+        ></div>
+      </div>
+      <div class="kwpick__progress-meta">
+        <p class="kwpick__progress-label">
+          @if (store.discoveryProgress(); as progress) {
+            {{ progress }}
+          } @else {
+            Loading keyword suggestions…
+          }
+        </p>
+        <span class="kwpick__progress-pct">{{ store.discoveryProgressPercent() }}%</span>
+      </div>
+    </div>
   } @else {
     @if (store.error(); as err) {
       <div class="kwpick__alert" role="alert">{{ err }}</div>

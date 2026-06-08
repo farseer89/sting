@@ -1,7 +1,9 @@
 import type {
   DiscoveryCandidate,
+  DiscoveryContext,
   DiscoveryProfileSnapshot,
   DiscoverySerpSignal,
+  DiscoverySiteSnapshot,
   DiscoveryStepEvent,
   DiscoverySuggestedAvatar,
   KeywordDiscoveryRunDto,
@@ -27,6 +29,37 @@ export const CANONICAL_PROFILE: DiscoveryProfileSnapshot = {
   marketScope: 'national',
   serpLocationName: 'United States',
   hostname: 'brushstrokeandvow.com',
+};
+
+const SITE_SNAPSHOT: DiscoverySiteSnapshot = {
+  url: 'https://brushstrokeandvow.com',
+  title: 'Brushstroke & Vow | Live Wedding Painting',
+  h1: 'Live wedding painting for destination celebrations',
+  h2s: ['Destination wedding packages', 'How live painting works', 'Book your painter'],
+  available: true,
+};
+
+const DISCOVERY_CONTEXT: DiscoveryContext = {
+  profileQuality: 'strong',
+  seedPhrases: [
+    'live wedding painting',
+    'destination wedding art',
+    'destination wedding painter',
+    'live wedding painter',
+  ],
+  fitPhrases: [
+    'live wedding painting',
+    'destination wedding art',
+    'destination wedding painter',
+    'engaged couples planning a luxury destination wedding who want a live painter as entertainment',
+  ],
+  sources: [
+    { phrase: 'live wedding painting', from: 'profile' },
+    { phrase: 'destination wedding art', from: 'profile' },
+    { phrase: 'destination wedding painter', from: 'spyfu_gap' },
+    { phrase: 'live wedding painter', from: 'ranked' },
+  ],
+  resolvedBy: 'deterministic',
 };
 
 function c(
@@ -264,29 +297,33 @@ const FULL_EVENTS: DiscoveryStepEvent[] = [
     note: '142 queries → 3 relevant',
     apiCall: { provider: 'google_gsc', endpoint: 'searchanalytics.query', costUsd: 0, rowCount: 142 },
   }),
-  ...ev('fetch_ranked', 900, 1200, {
+  ...ev('fetch_site_snapshot', 900, 420, { note: 'Homepage snapshot (3 h2s)' }),
+  ...ev('fetch_ranked', 1400, 1200, {
     costUsd: 0.07,
     apiCall: { provider: 'dataforseo', endpoint: 'dataforseo_labs/ranked_keywords', costUsd: 0.07, rowCount: 88 },
   }),
-  ...ev('fetch_ads_ideas', 2200, 980, {
-    costUsd: 0,
-    apiCall: { provider: 'google_ads', endpoint: 'KeywordPlanIdeaService', costUsd: 0, rowCount: 64 },
-  }),
-  ...ev('spyfu_gaps', 3300, 1400, {
+  ...ev('spyfu_gaps', 2700, 1400, {
     costUsd: 0.08,
     note: '2 competitors · 31 gap keywords',
     apiCall: { provider: 'spyfu', endpoint: 'competitor/keyword_gaps', costUsd: 0.08, rowCount: 31 },
   }),
-  ...ev('geo_expansion', 4800, 760, {
+  ...ev('resolve_discovery_seeds', 4200, 180, {
+    note: '4 seed(s) · strong profile · resolved by deterministic',
+  }),
+  ...ev('fetch_ads_ideas', 4500, 980, {
+    costUsd: 0,
+    apiCall: { provider: 'google_ads', endpoint: 'KeywordPlanIdeaService', costUsd: 0, rowCount: 64 },
+  }),
+  ...ev('geo_expansion', 5600, 760, {
     costUsd: 0.07,
     apiCall: { provider: 'dataforseo', endpoint: 'keywords_data/google_ads/search_volume', costUsd: 0.07, rowCount: 24 },
   }),
-  ...ev('seed_expansion', 5700, 690, {
+  ...ev('seed_expansion', 6500, 690, {
     costUsd: 0.07,
     apiCall: { provider: 'dataforseo', endpoint: 'dataforseo_labs/related_keywords', costUsd: 0.07, rowCount: 40 },
   }),
-  ...ev('merge_score', 6500, 210, { note: `${SCORED.length} unique candidates scored` }),
-  ...ev('serp_enrichment', 6800, 2400, {
+  ...ev('merge_score', 7300, 210, { note: `${SCORED.length} unique candidates scored` }),
+  ...ev('serp_enrichment', 7600, 2400, {
     costUsd: 0.039,
     note: `Top informational candidates enriched · ${PAA_QUESTIONS.length} PAA questions captured (click depth 2)`,
     apiCall: {
@@ -296,7 +333,7 @@ const FULL_EVENTS: DiscoveryStepEvent[] = [
       rowCount: SERP_SIGNALS.length,
     },
   }),
-  ...ev('infer_avatars', 9300, 2100, {
+  ...ev('infer_avatars', 10100, 2100, {
     costUsd: 0.1227,
     note: `3 intent clusters → 3 avatars · researcher avatar seeded from ${PAA_QUESTIONS.length} PAA questions`,
     llm: {
@@ -310,6 +347,17 @@ const FULL_EVENTS: DiscoveryStepEvent[] = [
       responsePreview: '{ "avatars": [ { "description": "Couples planning a luxury destination wedding…" } ] }',
     },
   }),
+  ...ev('extract_context_questions', 12400, 900, {
+    costUsd: 0.0412,
+    note: '3 context question(s) from discovery',
+    llm: {
+      model: 'claude-sonnet-4',
+      inputTokens: 1200,
+      outputTokens: 280,
+      costUsd: 0.0412,
+      promptVersion: 'discovery-context-questions@v1',
+    },
+  }),
 ];
 
 /** Fully-completed run, ready for avatar/keyword confirmation. */
@@ -317,10 +365,12 @@ export const FIXTURE_READY: KeywordDiscoveryRunDto = {
   id: 'kd-fixture-ready',
   siteId: 'lab-site',
   status: 'ready',
-  currentStep: 'infer_avatars',
+  currentStep: 'confirm',
   events: FULL_EVENTS,
   artifacts: {
     profile: CANONICAL_PROFILE,
+    siteSnapshot: SITE_SNAPSHOT,
+    discoveryContext: DISCOVERY_CONTEXT,
     gscQueries: GSC,
     rankedKeywords: RANKED,
     adsIdeas: ADS,
@@ -333,7 +383,7 @@ export const FIXTURE_READY: KeywordDiscoveryRunDto = {
   },
   costSummary: COST_SUMMARY,
   createdAt: iso(0),
-  updatedAt: iso(10800),
+  updatedAt: iso(13400),
 };
 
 /**
@@ -348,11 +398,13 @@ export const FIXTURE_MID: KeywordDiscoveryRunDto = {
   currentStep: 'infer_avatars',
   events: [
     // Everything through serp_enrichment completed, plus infer_avatars started.
-    ...FULL_EVENTS.filter((e) => e.step !== 'infer_avatars'),
-    { step: 'infer_avatars', status: 'started', startedAt: iso(9300) },
+    ...FULL_EVENTS.filter((e) => e.step !== 'infer_avatars' && e.step !== 'extract_context_questions'),
+    { step: 'infer_avatars', status: 'started', startedAt: iso(10100) },
   ],
   artifacts: {
     profile: CANONICAL_PROFILE,
+    siteSnapshot: SITE_SNAPSHOT,
+    discoveryContext: DISCOVERY_CONTEXT,
     gscQueries: GSC,
     rankedKeywords: RANKED,
     adsIdeas: ADS,
@@ -364,7 +416,7 @@ export const FIXTURE_MID: KeywordDiscoveryRunDto = {
   },
   costSummary: { ...COST_SUMMARY, totalUsd: 0.329, byProvider: COST_SUMMARY!.byProvider.slice(0, 4) },
   createdAt: iso(0),
-  updatedAt: iso(9300),
+  updatedAt: iso(10100),
 };
 
 /** Failed run — SpyFu not connected, so the gap step errored. */
@@ -376,23 +428,23 @@ export const FIXTURE_FAILED: KeywordDiscoveryRunDto = {
   events: [
     ...ev('load_profile', 0, 120),
     ...ev('fetch_gsc', 200, 640, { costUsd: 0 }),
-    ...ev('fetch_ranked', 900, 1200, { costUsd: 0.07 }),
-    ...ev('fetch_ads_ideas', 2200, 980, { costUsd: 0 }),
-    { step: 'spyfu_gaps', status: 'started', startedAt: iso(3300) },
+    ...ev('fetch_site_snapshot', 900, 420),
+    ...ev('fetch_ranked', 1400, 1200, { costUsd: 0.07 }),
+    { step: 'spyfu_gaps', status: 'started', startedAt: iso(2700) },
     {
       step: 'spyfu_gaps',
       status: 'failed',
-      startedAt: iso(3300),
-      finishedAt: iso(3700),
+      startedAt: iso(2700),
+      finishedAt: iso(3100),
       durationMs: 400,
       error: 'SpyFu API key not configured for this site',
     },
   ],
   artifacts: {
     profile: CANONICAL_PROFILE,
+    siteSnapshot: SITE_SNAPSHOT,
     gscQueries: GSC,
     rankedKeywords: RANKED,
-    adsIdeas: ADS,
   },
   costSummary: {
     totalUsd: 0.07,

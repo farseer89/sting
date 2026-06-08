@@ -5,12 +5,12 @@ import type {
   ProtopipeDiscoverRankedKeyword,
   ProtopipeDiscoveryCandidate,
   ProtopipeDiscoveryCandidateSource,
-  ProtopipeDiscoveryCurrentStep,
   ProtopipeKeywordDiscoveryResponse,
   ProtopipeKeywordDiscoveryRunDto,
   ProtopipeResearchRelatedKeyword,
   ProtopipeSuggestedAvatar,
 } from '@hive/contracts';
+import { discoveryProgressPercent, discoveryStepLabel } from './discovery-progress';
 import { ContentPlanStore } from '../../content-plan/content-plan.store';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 import { ProtopipeApiService } from '../../protopipe-api.service';
@@ -59,35 +59,6 @@ function mapDiscoverySourceToPicker(
   }
 }
 
-function discoveryStepLabel(step: ProtopipeDiscoveryCurrentStep): string {
-  switch (step) {
-    case 'load_profile':
-      return 'Loading your business profile…';
-    case 'fetch_gsc':
-      return 'Reading Search Console…';
-    case 'fetch_ranked':
-      return 'Checking what you already rank for…';
-    case 'fetch_ads_ideas':
-      return 'Finding ad keyword ideas…';
-    case 'spyfu_gaps':
-      return 'Scanning competitor gaps…';
-    case 'geo_expansion':
-      return 'Expanding local terms…';
-    case 'seed_expansion':
-      return 'Growing your keyword pool…';
-    case 'merge_score':
-      return 'Scoring opportunities…';
-    case 'serp_enrichment':
-      return 'Analyzing search results…';
-    case 'infer_avatars':
-      return 'Grouping audiences…';
-    case 'confirm':
-      return 'Almost ready…';
-    default:
-      return 'Discovering keywords…';
-  }
-}
-
 @Injectable()
 export class ProtopipeKeywordPickerStore {
   private readonly api = inject(ProtopipeApiService);
@@ -111,6 +82,7 @@ export class ProtopipeKeywordPickerStore {
   private readonly _confirming = signal(false);
   private readonly _discoveryNote = signal<string | null>(null);
   private readonly _discoveryProgress = signal<string | null>(null);
+  private readonly _discoveryProgressPercent = signal(0);
   private readonly _discoveryRunId = signal<string | null>(null);
   private readonly _suggestedAvatars = signal<ProtopipeSuggestedAvatar[]>([]);
   private readonly _selectedAvatarIds = signal<Set<string>>(new Set());
@@ -130,6 +102,7 @@ export class ProtopipeKeywordPickerStore {
   readonly confirming = this._confirming.asReadonly();
   readonly discoveryNote = this._discoveryNote.asReadonly();
   readonly discoveryProgress = this._discoveryProgress.asReadonly();
+  readonly discoveryProgressPercent = this._discoveryProgressPercent.asReadonly();
   readonly discoveryRunId = this._discoveryRunId.asReadonly();
   readonly suggestedAvatars = this._suggestedAvatars.asReadonly();
   readonly selectedAvatarIds = this._selectedAvatarIds.asReadonly();
@@ -173,6 +146,7 @@ export class ProtopipeKeywordPickerStore {
     this._error.set(null);
     this._discoveryNote.set(null);
     this._discoveryProgress.set(null);
+    this._discoveryProgressPercent.set(0);
     this._wizardStep.set('keywords');
     try {
       await this.strategy.ensureLoaded();
@@ -197,6 +171,8 @@ export class ProtopipeKeywordPickerStore {
       if (existing) {
         this._discoveryRunId.set(existing.id);
         if (existing.status === 'pending' || existing.status === 'discovering') {
+          this._discoveryProgress.set(discoveryStepLabel(existing.currentStep));
+          this._discoveryProgressPercent.set(discoveryProgressPercent(existing));
           const run = await this.pollDiscoveryRun(siteId, existing.id);
           this.mergeDiscoveryRun(run, map);
           this.applySuggestedAvatars(run.artifacts.suggestedAvatars ?? []);
@@ -223,6 +199,7 @@ export class ProtopipeKeywordPickerStore {
     } finally {
       this._loading.set(false);
       this._discoveryProgress.set(null);
+    this._discoveryProgressPercent.set(0);
     }
   }
 
@@ -239,6 +216,7 @@ export class ProtopipeKeywordPickerStore {
         throw new Error(run.error?.message ?? 'Keyword discovery failed');
       }
       this._discoveryProgress.set(discoveryStepLabel(run.currentStep));
+      this._discoveryProgressPercent.set(discoveryProgressPercent(run));
       await sleep(DISCOVERY_POLL_MS);
     }
     throw new Error('Keyword discovery timed out — try again in a moment.');

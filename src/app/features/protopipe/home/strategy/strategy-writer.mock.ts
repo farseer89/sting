@@ -1,4 +1,6 @@
-export type StrategyWriterPanelId = 'brief' | 'preview' | 'hints' | 'seo' | 'facts';
+import type { WriterInspectorPanelId } from '../../content/writer/protopipe-writer-panels';
+
+export type StrategyWriterPanelId = WriterInspectorPanelId;
 
 export interface StrategyWriterSection {
   h2: string;
@@ -50,7 +52,7 @@ export const STRATEGY_WRITER_PANELS: { id: StrategyWriterPanelId; label: string 
   { id: 'hints', label: 'Hints' },
   { id: 'seo', label: 'SEO' },
   { id: 'facts', label: 'Facts' },
-];
+] as const;
 
 /** Fixture aligned with MOCK_STRATEGY_PLAN lead article. */
 export const MOCK_STRATEGY_WRITER: StrategyWriterMock = {

@@ -46,6 +46,18 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0.45rem 0.55rem 0.65rem;
+
+  /* Writer inspector panels use pw__* styles from the writer component. */
+  :host-context(.void__side-panel) & {
+    padding: 0.65rem 0.75rem 0.85rem;
+  }
+}
+
+.wrctx__empty {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--void-ink-muted);
 }
 
 .wrctx__block {

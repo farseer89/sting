@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import type { ProtopipeContentPlanCalendarItem, ProtopipeSiteContentPlan } from '@hive/contracts';
 import { ContentPlanStore } from '../../content-plan/content-plan.store';
 import type { SpokeNode } from '../../lab/void-dashboard/void-content-spoke.mock';
+import { ProtopipeApiService } from '../../protopipe-api.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { ProtopipeHomeSidePanelService } from '../protopipe-home-side-panel.service';
 import { ProtopipeHomeWriterViewState } from '../protopipe-home-writer-view.state';
@@ -31,6 +32,7 @@ export class ProtopipeHomeStrategyViewState {
   private readonly writerView = inject(ProtopipeHomeWriterViewState);
   private readonly contentPlan = inject(ContentPlanStore);
   private readonly strategy = inject(ProtopipeStrategyService);
+  private readonly api = inject(ProtopipeApiService);
 
   private enterWriterFocus: (() => void) | null = null;
 
@@ -47,6 +49,8 @@ export class ProtopipeHomeStrategyViewState {
   readonly selectedArticle = this._selectedArticle.asReadonly();
   readonly visualView = this._visualView.asReadonly();
   readonly openingWriter = this._openingWriter.asReadonly();
+  /** True when the content-plan store has a server-backed plan (not the UI mock fallback). */
+  readonly hasLivePlan = () => this.contentPlan.plan() != null;
 
   setEnterWriterHandler(handler: () => void): void {
     this.enterWriterFocus = handler;
@@ -141,12 +145,22 @@ export class ProtopipeHomeStrategyViewState {
     if (this._openingWriter()) return;
     this._openingWriter.set(true);
     try {
+      await this.strategy.ensureLoaded();
+      const siteId = this.strategy.siteId();
+      if (!siteId) return;
+      this.contentPlan.setSiteId(siteId);
+      if (!this.contentPlan.plan()) return;
+
       let postId = article.contentPostId;
+      if (postId) {
+        try {
+          await this.api.getContent(siteId, postId);
+        } catch {
+          postId = undefined;
+        }
+      }
+
       if (!postId) {
-        await this.strategy.ensureLoaded();
-        const siteId = this.strategy.siteId();
-        if (!siteId) return;
-        this.contentPlan.setSiteId(siteId);
         const res = await this.contentPlan.confirmCalendarItem({
           proposedPublishAt: article.proposedPublishAt,
           workingTitle: article.workingTitle,
@@ -162,6 +176,7 @@ export class ProtopipeHomeStrategyViewState {
         this._plan.set(plan);
         this._selectedArticle.set(updated);
       }
+
       this.writerView.openPost(postId);
       this.enterWriterFocus?.();
     } finally {

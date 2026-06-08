@@ -26,6 +26,7 @@ import {
 } from './content/protopipe-writing-session';
 import { parseProtopipeApiError } from './protopipe-http.util';
 import { ProtopipeApiService } from './protopipe-api.service';
+import { resolveBootstrapSiteId } from './resolve-bootstrap-site-id';
 
 export type ContentTab = 'published' | 'scheduled' | 'draft';
 
@@ -68,7 +69,7 @@ export class ProtopipeContentService {
     stream: () =>
       this.api.bootstrap$().pipe(
         switchMap((boot) => {
-          const siteId = boot.primarySiteId || boot.sites[0]?.id;
+          const siteId = resolveBootstrapSiteId(boot);
           if (!siteId) {
             return throwError(() => new Error('No site available'));
           }

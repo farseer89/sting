@@ -1,11 +1,11 @@
 import { Injectable, inject, signal } from '@angular/core';
-import type { StrategyWriterPanelId } from './strategy/strategy-writer.mock';
+import type { WriterInspectorPanelId } from '../content/writer/protopipe-writer-panels';
 import { ProtopipeHomeSidePanelService } from './protopipe-home-side-panel.service';
 
 @Injectable()
 export class ProtopipeHomeWriterViewState {
   private readonly sidePanel = inject(ProtopipeHomeSidePanelService);
-  private readonly _activePanel = signal<StrategyWriterPanelId | null>(null);
+  private readonly _activePanel = signal<WriterInspectorPanelId | null>(null);
   private readonly _activePostId = signal<string | null>(null);
   private readonly _createMode = signal(false);
   private exitHandler: (() => void) | null = null;
@@ -18,17 +18,21 @@ export class ProtopipeHomeWriterViewState {
     this.exitHandler = handler;
   }
 
-  selectPanel(id: StrategyWriterPanelId): void {
+  selectPanel(id: WriterInspectorPanelId): void {
     if (this._activePanel() === id) {
       this._activePanel.set(null);
       this.sidePanel.setOpen(false);
       return;
     }
+    this.openPanel(id);
+  }
+
+  openPanel(id: WriterInspectorPanelId): void {
     this._activePanel.set(id);
     this.sidePanel.ensureOpen();
   }
 
-  isPanel(id: StrategyWriterPanelId): boolean {
+  isPanel(id: WriterInspectorPanelId): boolean {
     return this._activePanel() === id;
   }
 

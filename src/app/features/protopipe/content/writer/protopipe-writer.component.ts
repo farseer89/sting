@@ -4,17 +4,27 @@ import {
   computed,
   effect,
   ElementRef,
+  DestroyRef,
   inject,
   input,
   OnDestroy,
   output,
   signal,
+  TemplateRef,
   untracked,
   viewChild,
 } from '@angular/core';
 import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NgTemplateOutlet } from '@angular/common';
+import { ProtopipeHomeSidePanelService } from '../../home/protopipe-home-side-panel.service';
+import { ProtopipeHomeWriterViewState } from '../../home/protopipe-home-writer-view.state';
+import { ProtopipeWriterInspectorBridge } from './protopipe-writer-inspector.bridge';
+import {
+  type WriterInspectorPanelId,
+  writerInspectorPanelLabel,
+} from './protopipe-writer-panels';
+import { ProtopipeWriterSidePanelService } from './protopipe-writer-side-panel.service';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import type {
@@ -24,6 +34,7 @@ import type {
   ProtopipeContentEmbedKind,
   ProtopipeContentSectionEmbed,
   ProtopipeContentTemplate,
+  ProtopipeContextCard,
   ProtopipeFactResolution,
   ProtopipeFactReview,
   ProtopipePublishTarget,
@@ -132,7 +143,7 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { id: 'quote', label: 'Quote', icon: 'pi pi-comment', keywords: 'quote blockquote' },
 ];
 
-type InspectorPanel = 'brief' | 'preview' | 'blog' | 'layout' | 'hints' | 'seo' | 'behind' | 'facts';
+type InspectorPanel = WriterInspectorPanelId;
 
 function detectEmbedKind(url: string): ProtopipeContentEmbedKind {
   const lower = url.trim().toLowerCase();
@@ -257,7 +268,7 @@ function buildHighlightSegments(prose: string, claims: string[]): HighlightSegme
     ProtopipeBlockSlotsPanelComponent,
     ProtopipeImagePlaceholderComponent,
   ],
-  providers: [MessageService],
+  providers: [MessageService, ProtopipeWriterSidePanelService],
   templateUrl: './protopipe-writer.component.html',
   styleUrl: './protopipe-writer.component.scss',
   host: {
@@ -283,7 +294,14 @@ export class ProtopipeWriterComponent implements OnDestroy {
   private readonly router = inject(Router);
   private readonly messages = inject(MessageService);
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly destroyRef = inject(DestroyRef);
+  protected readonly inspectorSidePanel = inject(ProtopipeWriterSidePanelService);
+  private readonly homeWriterView = inject(ProtopipeHomeWriterViewState, { optional: true });
+  private readonly homeSidePanel = inject(ProtopipeHomeSidePanelService, { optional: true });
+  private readonly inspectorBridge = inject(ProtopipeWriterInspectorBridge, { optional: true });
   private readonly imageFileInput = viewChild<ElementRef<HTMLInputElement>>('imageFileInput');
+  private readonly writerShell = viewChild<ElementRef<HTMLElement>>('writerShell');
+  private readonly inspectorPanelsRef = viewChild<TemplateRef<unknown>>('inspectorPanels');
 
   readonly imageUploading = signal(false);
   readonly imageUploadSectionIndex = signal<number | null>(null);
@@ -322,9 +340,28 @@ export class ProtopipeWriterComponent implements OnDestroy {
   /** Local fetch state for the by-id load (separate from catalog loading). */
   readonly loadingPost = signal(false);
 
-  /** Which inspector panels are expanded in the right rail. */
-  private readonly openPanels = signal<Set<InspectorPanel>>(
-    new Set<InspectorPanel>(['hints']),
+  /** Active inspector tab on standalone writer route. */
+  private readonly localActivePanel = signal<InspectorPanel | null>(null);
+
+  readonly useExternalSidePanel = computed(() => this.embedded());
+
+  readonly activeInspectorPanel = computed<InspectorPanel | null>(() => {
+    if (this.embedded() && this.homeWriterView) {
+      return this.homeWriterView.activePanel();
+    }
+    return this.localActivePanel();
+  });
+
+  readonly inspectorSliderOpen = computed(() => {
+    if (!this.activeInspectorPanel()) return false;
+    if (this.embedded() && this.homeSidePanel) {
+      return this.homeSidePanel.open();
+    }
+    return this.inspectorSidePanel.open();
+  });
+
+  readonly inspectorPanelLabel = computed(() =>
+    writerInspectorPanelLabel(this.activeInspectorPanel()),
   );
 
   private readonly publishAfterSave = signal(false);
@@ -663,6 +700,13 @@ export class ProtopipeWriterComponent implements OnDestroy {
     return `${n} critical fact(s) flagged — pull draft anyway, then confirm or dismiss in the editor`;
   });
 
+  /** Pending claim context cards for this article (persisted learning spine). */
+  readonly pendingArticleContextCards = signal<ProtopipeContextCard[]>([]);
+
+  private readonly contextCardDrafts = signal<Record<string, string>>({});
+
+  readonly pendingContextCardCount = computed(() => this.pendingArticleContextCards().length);
+
   /** Live TipTap editors keyed by template section index. */
   private readonly sectionEditors = new Map<number, Editor>();
 
@@ -852,10 +896,21 @@ export class ProtopipeWriterComponent implements OnDestroy {
     });
 
     effect(() => {
-      if (!this.isPanelOpen('blog')) return;
+      if (this.activeInspectorPanel() !== 'blog') return;
       const s = this.session();
       if (!s) return;
       untracked(() => void this.refreshBlogPreview());
+    });
+
+    effect(() => {
+      const tpl = this.inspectorPanelsRef();
+      if (!tpl || !this.inspectorBridge) return;
+      untracked(() => this.inspectorBridge!.setTemplate(tpl));
+    });
+
+    this.destroyRef.onDestroy(() => {
+      this.inspectorBridge?.clear();
+      this.inspectorSidePanel.detachResizeListeners();
     });
 
     effect(() => {
@@ -926,8 +981,13 @@ export class ProtopipeWriterComponent implements OnDestroy {
       return;
     }
 
-    const siteId = this.content.siteId();
+    const siteId =
+      (this.embedded() ? this.strategy.siteId() : null) ?? this.content.siteId();
     if (!siteId) {
+      if (this.embedded()) {
+        this.exit.emit();
+        return;
+      }
       void this.router.navigate(['/protopipe/content']);
       return;
     }
@@ -950,6 +1010,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
         this.run.set(null);
         this.postFactReview.set(post.factReview ?? null);
         this.hydrateFactResolutions(post.factReview);
+        this.loadArticleContextCards();
         this.resetMarginNotes();
         if (post.articleGenerationRunId) {
           this.loadRun(post.articleGenerationRunId);
@@ -977,17 +1038,60 @@ export class ProtopipeWriterComponent implements OnDestroy {
   // --- inspector panels -----------------------------------------------------
 
   isPanelOpen(panel: InspectorPanel): boolean {
-    return this.openPanels().has(panel);
+    return this.activeInspectorPanel() === panel;
   }
 
   togglePanel(panel: InspectorPanel): void {
-    const next = new Set(this.openPanels());
-    if (next.has(panel)) next.delete(panel);
-    else next.add(panel);
-    this.openPanels.set(next);
-    if (panel === 'blog' && next.has('blog')) {
+    if (this.embedded() && this.homeWriterView) {
+      this.homeWriterView.selectPanel(panel);
+      if (panel === 'blog' && this.homeWriterView.isPanel(panel)) {
+        void this.refreshBlogPreview();
+      }
+      return;
+    }
+    const current = this.localActivePanel();
+    if (current === panel) {
+      this.localActivePanel.set(null);
+      this.inspectorSidePanel.setOpen(false);
+      return;
+    }
+    this.localActivePanel.set(panel);
+    this.inspectorSidePanel.ensureOpen();
+    if (panel === 'blog') {
       void this.refreshBlogPreview();
     }
+  }
+
+  openInspectorPanel(panel: InspectorPanel): void {
+    if (this.embedded() && this.homeWriterView) {
+      if (this.homeWriterView.isPanel(panel)) {
+        this.homeSidePanel?.ensureOpen();
+      } else {
+        this.homeWriterView.openPanel(panel);
+      }
+      return;
+    }
+    this.localActivePanel.set(panel);
+    this.inspectorSidePanel.ensureOpen();
+    if (panel === 'facts') {
+      this.loadArticleContextCards();
+    }
+  }
+
+  closeInspectorSlider(): void {
+    if (this.embedded() && this.homeWriterView) {
+      this.homeWriterView.clearPanel();
+      this.homeSidePanel?.setOpen(false);
+      return;
+    }
+    this.localActivePanel.set(null);
+    this.inspectorSidePanel.setOpen(false);
+  }
+
+  onSideSplitterPointerDown(event: PointerEvent): void {
+    const host = this.writerShell()?.nativeElement;
+    if (!host) return;
+    this.inspectorSidePanel.startResize(event, host);
   }
 
   enterPreviewTakeover(): void {
@@ -1490,8 +1594,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
     if (!blocker) return false;
 
     if (blocker.panel) {
-      const panel = blocker.panel;
-      this.openPanels.update((set) => new Set(set).add(panel));
+      this.openInspectorPanel(blocker.panel);
     }
     this.messages.add({
       severity: 'warn',
@@ -1506,7 +1609,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
   private promptIfFactReviewIncomplete(): boolean {
     const pending = this.pendingCriticalFacts().length;
     if (!pending) return false;
-    this.openPanels.update((set) => new Set(set).add('facts'));
+    this.openInspectorPanel('facts');
     this.messages.add({
       severity: 'warn',
       summary: 'Fact review incomplete',
@@ -1546,7 +1649,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
         detail: 'Connect WordPress in Integrations or choose Astro publish.',
         life: 5000,
       });
-      this.openPanels.update((set) => new Set(set).add('seo'));
+      this.openInspectorPanel('seo');
       return;
     }
     this.content.publishNow(postId, this.publishRequestBody());
@@ -1589,7 +1692,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
         this.factResolutions.set(new Map());
         this.resetMarginNotes();
         this.generating.set(false);
-        this.openPanels.update((set) => new Set(set).add('behind'));
+        this.openInspectorPanel('behind');
         if (run.status === 'running' || run.status === 'pending') {
           this.startPolling();
         }
@@ -1619,6 +1722,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
           this.startPolling();
         } else if (run.status === 'complete') {
           this.maybeAutoApplyTemplateFromRun(run);
+          this.loadArticleContextCards();
         }
       },
       error: () => {
@@ -1653,6 +1757,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
           this.stopPolling();
           if (run.status === 'complete') {
             this.maybeAutoApplyTemplateFromRun(run);
+            this.loadArticleContextCards();
             this.messages.add({
               severity: 'success',
               summary: 'Pipeline finished',
@@ -1682,6 +1787,118 @@ export class ProtopipeWriterComponent implements OnDestroy {
     const postId = this.content.editingId();
     void this.router.navigate(['/protopipe/lab/thinker/run', siteId, runId], {
       queryParams: postId && postId !== 'new' ? { postId } : undefined,
+    });
+  }
+
+  // --- context cards (learning spine) ---------------------------------------
+
+  private loadArticleContextCards(): void {
+    const siteId = this.content.siteId();
+    const postId = this.content.editingId();
+    if (!siteId || !postId || postId === 'new') {
+      this.pendingArticleContextCards.set([]);
+      return;
+    }
+    this.api
+      .listContextCards$(siteId, { status: 'pending', type: 'claim', articleId: postId })
+      .subscribe({
+        next: ({ cards }) => {
+          this.pendingArticleContextCards.set(cards);
+          const drafts: Record<string, string> = {};
+          for (const card of cards) {
+            drafts[card.id] = card.suggestedValue ?? '';
+          }
+          this.contextCardDrafts.set(drafts);
+        },
+        error: () => {
+          this.pendingArticleContextCards.set([]);
+        },
+      });
+  }
+
+  contextCardDraft(cardId: string): string {
+    return this.contextCardDrafts()[cardId] ?? '';
+  }
+
+  setContextCardDraft(cardId: string, value: string): void {
+    this.contextCardDrafts.update((drafts) => ({ ...drafts, [cardId]: value }));
+  }
+
+  answerContextCard(card: ProtopipeContextCard): void {
+    const siteId = this.content.siteId();
+    if (!siteId || this.isReadOnly()) return;
+    const value = this.contextCardDraft(card.id).trim();
+    if (!value) {
+      this.messages.add({
+        severity: 'warn',
+        summary: 'Answer required',
+        detail: 'Enter the correct value before saving.',
+        life: 3000,
+      });
+      return;
+    }
+    this.api
+      .patchContextCard$(siteId, card.id, { status: 'answered', answer: { value } })
+      .subscribe({
+        next: () => {
+          this.pendingArticleContextCards.update((cards) =>
+            cards.filter((c) => c.id !== card.id),
+          );
+          this.messages.add({
+            severity: 'success',
+            summary: 'Claim saved',
+            detail: 'Future articles will use this correction.',
+            life: 4000,
+          });
+        },
+        error: (err) => {
+          this.messages.add({
+            severity: 'error',
+            summary: 'Could not save',
+            detail: parseProtopipeApiError(err, 'That claim could not be saved.'),
+            life: 5000,
+          });
+        },
+      });
+  }
+
+  skipContextCard(card: ProtopipeContextCard): void {
+    const siteId = this.content.siteId();
+    if (!siteId || this.isReadOnly()) return;
+    this.api.patchContextCard$(siteId, card.id, { status: 'skipped' }).subscribe({
+      next: () => {
+        this.pendingArticleContextCards.update((cards) =>
+          cards.filter((c) => c.id !== card.id),
+        );
+      },
+      error: (err) => {
+        this.messages.add({
+          severity: 'error',
+          summary: 'Could not skip',
+          detail: parseProtopipeApiError(err, 'That claim could not be skipped.'),
+          life: 5000,
+        });
+      },
+    });
+  }
+
+  dismissContextCard(card: ProtopipeContextCard): void {
+    const siteId = this.content.siteId();
+    if (!siteId || this.isReadOnly()) return;
+    this.api.patchContextCard$(siteId, card.id, { status: 'dismissed' }).subscribe({
+      next: () => {
+        this.pendingArticleContextCards.update((cards) =>
+          cards.filter((c) => c.id !== card.id),
+        );
+      },
+      error: (err) => {
+        this.messages.add({
+          severity: 'error',
+          summary: 'Could not dismiss',
+          detail: parseProtopipeApiError(err, 'That claim could not be dismissed.'),
+          life: 5000,
+        });
+      },
     });
   }
 
@@ -1807,7 +2024,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
 
   /** Open the pipeline panel and focus the editable section for a flagged fact. */
   goToFlaggedSection(sectionIndex: number): void {
-    this.openPanels.update((set) => new Set(set).add('facts'));
+    this.openInspectorPanel('facts');
     const group = this.flaggedSections().find((s) => s.sectionIndex === sectionIndex);
     const fact = group?.facts[0];
     if (fact) {

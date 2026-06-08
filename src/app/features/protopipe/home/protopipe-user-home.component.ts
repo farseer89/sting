@@ -33,6 +33,7 @@ import {
   PROTOPIPE_HOME_NAV_DEFAULT_OPEN,
   type ProtopipeHomeNavItem,
 } from './protopipe-home-nav';
+import { resolveBootstrapSiteId } from '../resolve-bootstrap-site-id';
 
 export type ProtopipeHomeView = 'keywords' | 'strategy' | 'writer';
 
@@ -245,8 +246,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
   private async loadBootstrap(): Promise<void> {
     try {
       const boot = await this.onboarding.load();
-      const site =
-        boot.sites.find((s) => s.id === boot.primarySiteId) ?? boot.sites[0] ?? null;
+      const siteId = resolveBootstrapSiteId(boot);
+      const site = siteId ? boot.sites.find((s) => s.id === siteId) ?? null : null;
       this.siteDisplayName.set(site?.displayName?.trim() || site?.hostname || 'Your site');
       this.siteHostname.set(site?.hostname || '');
       const status = boot.subscription?.subscriptionStatus;

@@ -115,7 +115,7 @@
       <button
         type="button"
         class="pw__tool"
-        [class.is-active]="isPanelOpen('brief')"
+        [class.is-active]="activeInspectorPanel() === 'brief'"
         (click)="togglePanel('brief')"
         title="Research brief"
       >
@@ -126,7 +126,7 @@
       <button
         type="button"
         class="pw__tool"
-        [class.is-active]="isPanelOpen('preview')"
+        [class.is-active]="activeInspectorPanel() === 'preview'"
         (click)="togglePanel('preview')"
         title="Search preview"
       >
@@ -136,7 +136,7 @@
       <button
         type="button"
         class="pw__tool"
-        [class.is-active]="isPanelOpen('blog')"
+        [class.is-active]="activeInspectorPanel() === 'blog'"
         (click)="togglePanel('blog')"
         title="Blog preview"
       >
@@ -147,7 +147,7 @@
         <button
           type="button"
           class="pw__tool"
-          [class.is-active]="isPanelOpen('layout')"
+          [class.is-active]="activeInspectorPanel() === 'layout'"
           (click)="togglePanel('layout')"
           title="Layout slots"
         >
@@ -158,7 +158,7 @@
       <button
         type="button"
         class="pw__tool"
-        [class.is-active]="isPanelOpen('hints')"
+        [class.is-active]="activeInspectorPanel() === 'hints'"
         (click)="togglePanel('hints')"
         title="Writing hints"
       >
@@ -168,7 +168,7 @@
       <button
         type="button"
         class="pw__tool"
-        [class.is-active]="isPanelOpen('seo')"
+        [class.is-active]="activeInspectorPanel() === 'seo'"
         (click)="togglePanel('seo')"
         title="SEO & schedule"
       >
@@ -178,7 +178,7 @@
       <button
         type="button"
         class="pw__tool"
-        [class.is-active]="isPanelOpen('behind')"
+        [class.is-active]="activeInspectorPanel() === 'behind'"
         (click)="togglePanel('behind')"
         title="Behind the curtain"
       >
@@ -186,24 +186,30 @@
         <span class="pw__tool-tip">Behind the curtain</span>
       </button>
 
-      @if (flaggedFactCount()) {
+      @if (flaggedFactCount() || pendingContextCardCount()) {
         <button
           type="button"
           class="pw__tool"
-          [class.is-active]="isPanelOpen('facts')"
-          [class.is-warn]="unresolvedCriticalFacts() > 0"
+          [class.is-active]="activeInspectorPanel() === 'facts'"
+          [class.is-warn]="unresolvedCriticalFacts() > 0 || pendingContextCardCount() > 0"
           (click)="togglePanel('facts')"
           title="Fact check"
         >
           <i class="pi pi-exclamation-triangle"></i>
-          <span class="pw__tool-badge">{{ flaggedFactCount() }}</span>
+          <span class="pw__tool-badge">{{ flaggedFactCount() || pendingContextCardCount() }}</span>
           <span class="pw__tool-tip">Fact check</span>
         </button>
       }
     </nav>
 
-    <div class="pw__stage">
-      <div class="pw__scroll" [class.pw__scroll--preview]="previewTakeover()">
+    <div
+      #writerShell
+      class="pw__shell"
+      [class.has-side-panel]="!useExternalSidePanel() && inspectorSliderOpen()"
+      [style.--side-panel-width.%]="inspectorSidePanel.widthPct()"
+    >
+      <div class="pw__stage">
+        <div class="pw__scroll" [class.pw__scroll--preview]="previewTakeover()">
         @if (previewTakeover()) {
           <div class="pw__preview-stage">
             <header class="pw__preview-bar">
@@ -529,10 +535,40 @@
             </div>
           </article>
         }
+        </div>
       </div>
 
-      <!-- Right inspector -->
-      <aside class="pw__aside">
+      @if (!useExternalSidePanel() && inspectorSliderOpen()) {
+        <div
+          class="pw__side-splitter"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize writer panel"
+          (pointerdown)="onSideSplitterPointerDown($event)"
+        ></div>
+        <aside class="pw__side-panel" aria-label="Writer tools">
+          <header class="pw__side-head">
+            <button
+              type="button"
+              class="pw__side-close"
+              (click)="closeInspectorSlider()"
+              aria-label="Close panel"
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+            <span class="pw__side-label">{{ inspectorPanelLabel() }}</span>
+          </header>
+          <div class="pw__side-scroll">
+            <ng-container *ngTemplateOutlet="inspectorPanels" />
+          </div>
+        </aside>
+      }
+    </div>
+  </div>
+</div>
+
+<ng-template #inspectorPanels>
+  <div class="pw__aside pw__aside--slider">
         @if (error(); as err) {
           <div class="pw__panel pw__panel--error">{{ err }}</div>
         }
@@ -549,7 +585,7 @@
           </section>
         }
 
-        @if (isPanelOpen('brief')) {
+        @if (activeInspectorPanel() === 'brief') {
           <section class="pw__panel pw__panel--brief">
             <h3 class="pw__panel-title">Brief</h3>
             @if (hasBrief() && brief(); as b) {
@@ -603,7 +639,7 @@
           </section>
         }
 
-        @if (isPanelOpen('preview')) {
+        @if (activeInspectorPanel() === 'preview') {
           <section class="pw__panel">
             <h3 class="pw__panel-title">Search preview</h3>
             @if (serp(); as p) {
@@ -614,7 +650,7 @@
           </section>
         }
 
-        @if (isPanelOpen('blog')) {
+        @if (activeInspectorPanel() === 'blog') {
           <section class="pw__panel pw__panel--blog">
             <div class="pw__panel-head">
               <h3 class="pw__panel-title">Blog preview</h3>
@@ -639,7 +675,7 @@
           </section>
         }
 
-        @if (isPanelOpen('layout') && session(); as s) {
+        @if (activeInspectorPanel() === 'layout' && session(); as s) {
           <section class="pw__panel pw__panel--layout">
             <h3 class="pw__panel-title">Layout slots</h3>
             @if (s.template.blocks?.length) {
@@ -658,7 +694,7 @@
           </section>
         }
 
-        @if (isPanelOpen('hints')) {
+        @if (activeInspectorPanel() === 'hints') {
           <section class="pw__panel">
             <h3 class="pw__panel-title">Hints</h3>
             @if (typeReadiness().length) {
@@ -696,7 +732,7 @@
           </section>
         }
 
-        @if (isPanelOpen('seo')) {
+        @if (activeInspectorPanel() === 'seo') {
           <section class="pw__panel">
             <h3 class="pw__panel-title">SEO &amp; schedule</h3>
             @if (content.seoValidation(); as validation) {
@@ -786,7 +822,7 @@
           </section>
         }
 
-        @if (isPanelOpen('behind')) {
+        @if (activeInspectorPanel() === 'behind') {
           <section class="pw__panel pw__panel--behind">
             <h3 class="pw__panel-title">Behind the curtain</h3>
 
@@ -931,7 +967,7 @@
           </section>
         }
 
-        @if (isPanelOpen('facts')) {
+        @if (activeInspectorPanel() === 'facts') {
           <section class="pw__panel pw__panel--facts">
             <h3 class="pw__panel-title">Fact check</h3>
             @if (flaggedFactCount()) {
@@ -1026,12 +1062,68 @@
                 claims that need grounding.
               </p>
             }
+
+            @if (pendingContextCardCount()) {
+              <div class="pw__context-cards">
+                <h4 class="pw__context-cards-title">
+                  Claims to confirm
+                  <span class="pw__meta-count">{{ pendingContextCardCount() }} pending</span>
+                </h4>
+                <p class="pw__context-cards-hint">
+                  Answers are saved for this site and reused when drafting future articles.
+                </p>
+                @for (card of pendingArticleContextCards(); track card.id) {
+                  <div class="pw__context-card">
+                    <p class="pw__context-card-text">{{ card.cardText }}</p>
+                    @if (card.suggestedValue) {
+                      <p class="pw__context-card-suggested">
+                        Draft had: “{{ card.suggestedValue }}”
+                      </p>
+                    }
+                    @if (!isReadOnly()) {
+                      <label class="pw__context-card-label" [for]="'ctx-' + card.id">
+                        Correct value
+                      </label>
+                      <input
+                        class="pw__context-card-input"
+                        [id]="'ctx-' + card.id"
+                        type="text"
+                        [ngModel]="contextCardDraft(card.id)"
+                        (ngModelChange)="setContextCardDraft(card.id, $event)"
+                        [placeholder]="card.suggestedValue ?? 'Enter the right answer'"
+                      />
+                      <div class="pw__fact-actions">
+                        <button
+                          type="button"
+                          class="pw__btn pw__btn--sm pw__btn--accent"
+                          (click)="answerContextCard(card)"
+                        >
+                          <i class="pi pi-check"></i> Save answer
+                        </button>
+                        <button
+                          type="button"
+                          class="pw__btn pw__btn--sm"
+                          (click)="skipContextCard(card)"
+                        >
+                          Skip for now
+                        </button>
+                        <button
+                          type="button"
+                          class="pw__btn pw__btn--sm"
+                          (click)="dismissContextCard(card)"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
           </section>
         }
-      </aside>
-    </div>
   </div>
-</div>
+</ng-template>
 
 @if (bubbleMenu(); as bm) {
   <div class="pw__bubble" [style.left.px]="bm.x" [style.top.px]="bm.y">

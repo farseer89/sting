@@ -15,6 +15,7 @@ import {
 } from './protopipe.constants';
 import { parseProtopipeApiError } from './protopipe-http.util';
 import { ProtopipeApiService } from './protopipe-api.service';
+import { resolveBootstrapSiteId } from './resolve-bootstrap-site-id';
 
 export interface NewProtopipeKeyword {
   phrase: string;
@@ -89,7 +90,7 @@ export class ProtopipeStrategyService {
     this._error.set(null);
     try {
       const boot = await this.api.bootstrap();
-      const activeSiteId = boot.primarySiteId || boot.sites[0]?.id;
+      const activeSiteId = resolveBootstrapSiteId(boot);
       if (!activeSiteId) {
         throw new Error('No site available for this account');
       }

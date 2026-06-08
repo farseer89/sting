@@ -186,7 +186,7 @@
           <button
             type="button"
             class="stratctx__writer-btn"
-            [disabled]="view.openingWriter()"
+            [disabled]="view.openingWriter() || !view.hasLivePlan()"
             (click)="openInWriter(article)"
           >
             @if (view.openingWriter()) {

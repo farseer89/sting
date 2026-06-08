@@ -67,6 +67,9 @@ import type {
   ProtopipeLeadsListResponse,
   ProtopipeLeadDetailResponse,
   ConvertLeadResponse,
+  ListContextCardsResponse,
+  PatchContextCardRequest,
+  PatchContextCardResponse,
   SiteBuilderComponentsResponse,
   SiteBuilderTemplatesResponse,
   SiteBuilderTemplateDetailResponse,
@@ -822,6 +825,37 @@ export class ProtopipeApiService {
         protopipeApiUrl(ProtopipeEndpoints.leadConvert.path, { siteId, leadId }),
         {},
       ),
+    );
+  }
+
+  listContextCards$(
+    siteId: string,
+    query?: {
+      status?: string;
+      type?: string;
+      geoSignal?: boolean;
+      articleId?: string;
+    },
+  ) {
+    let params = new HttpParams();
+    if (query?.status) params = params.set('status', query.status);
+    if (query?.type) params = params.set('type', query.type);
+    if (query?.geoSignal != null) params = params.set('geoSignal', String(query.geoSignal));
+    if (query?.articleId) params = params.set('articleId', query.articleId);
+    return this.http.get<ListContextCardsResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.listContextCards.path, { siteId }),
+      { params },
+    );
+  }
+
+  patchContextCard$(
+    siteId: string,
+    cardId: string,
+    body: PatchContextCardRequest,
+  ) {
+    return this.http.patch<PatchContextCardResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.patchContextCard.path, { siteId, cardId }),
+      body,
     );
   }
 }

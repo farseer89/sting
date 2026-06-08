@@ -908,6 +908,12 @@ export class ProtopipeWriterComponent implements OnDestroy {
       untracked(() => this.inspectorBridge!.setTemplate(tpl));
     });
 
+    effect(() => {
+      if (!this.embedded() || !this.inspectorBridge) return;
+      this.activeInspectorPanel();
+      untracked(() => this.inspectorBridge!.notifyPanelChange());
+    });
+
     this.destroyRef.onDestroy(() => {
       this.inspectorBridge?.clear();
       this.inspectorSidePanel.detachResizeListeners();

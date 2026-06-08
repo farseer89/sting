@@ -60,6 +60,36 @@
   color: var(--void-ink-muted);
 }
 
+/* Projected writer inspector panels (TemplateRef from app-protopipe-writer). */
+.wrctx__scroll--writer ::ng-deep .pw__aside--slider {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.wrctx__scroll--writer ::ng-deep .pw__panel {
+  padding: 0.7rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #fff;
+}
+
+.wrctx__scroll--writer ::ng-deep .pw__panel-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(15, 23, 42, 0.55);
+}
+
+.wrctx__scroll--writer ::ng-deep .pw__panel-empty {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: rgba(15, 23, 42, 0.55);
+}
+
 .wrctx__block {
   display: flex;
   flex-direction: column;

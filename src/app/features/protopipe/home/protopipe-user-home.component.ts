@@ -27,6 +27,7 @@ import { ProtopipeHomeWriterComponent } from './protopipe-home-writer.component'
 import { ProtopipeHomeWriterViewState } from './protopipe-home-writer-view.state';
 import { ProtopipeWriterContextPanelComponent } from './strategy/protopipe-writer-context-panel.component';
 import { ProtopipeKeywordPickerComponent } from './keyword-picker/protopipe-keyword-picker.component';
+import { ProtopipeWriterInspectorBridge } from '../content/writer/protopipe-writer-inspector.bridge';
 import { ProtopipeHomeSidePanelService } from './protopipe-home-side-panel.service';
 import {
   PROTOPIPE_HOME_NAV,
@@ -53,6 +54,7 @@ function initialsFromName(name: string): string {
     ProtopipeHomeSidePanelService,
     ProtopipeHomeStrategyViewState,
     ProtopipeHomeWriterViewState,
+    ProtopipeWriterInspectorBridge,
   ],
   imports: [
     ProtopipeKeywordPickerComponent,

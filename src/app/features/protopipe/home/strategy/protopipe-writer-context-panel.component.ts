@@ -19,6 +19,7 @@ export class ProtopipeWriterContextPanelComponent {
   readonly bridge = inject(ProtopipeWriterInspectorBridge);
 
   readonly activePanel = this.writerView.activePanel;
+  readonly panelRevision = this.bridge.panelRevision;
 
   readonly panelLabel = computed(() => writerInspectorPanelLabel(this.activePanel()));
 

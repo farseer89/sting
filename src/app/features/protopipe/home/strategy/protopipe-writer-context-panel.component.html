@@ -5,9 +5,12 @@
   <span class="wrctx__label">{{ panelLabel() }}</span>
 </header>
 
-<div class="wrctx__scroll">
+<div class="wrctx__scroll wrctx__scroll--writer">
   @if (bridge.template(); as tpl) {
-    <ng-container *ngTemplateOutlet="tpl" />
+    <!-- activePanel() keeps this view in sync when the writer rail changes tabs -->
+    @if (activePanel() && panelRevision() >= 0) {
+      <ng-container *ngTemplateOutlet="tpl" />
+    }
   } @else {
     <p class="wrctx__empty">Open a tool from the writer rail to see details here.</p>
   }

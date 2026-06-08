@@ -9,7 +9,8 @@ export type ProtopipeHomeNavIcon =
   | 'chart'
   | 'inbox'
   | 'link'
-  | 'grid';
+  | 'grid'
+  | 'sharpen';
 
 export interface ProtopipeHomeNavItem {
   id: string;
@@ -29,6 +30,7 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
     children: [
       { id: 'start-keywords', label: 'Choose keywords', icon: 'search' },
       { id: 'start-strategy', label: 'Your strategy', icon: 'sitemap' },
+      { id: 'start-sharpen', label: 'Sharpen', icon: 'sharpen' },
     ],
   },
   {

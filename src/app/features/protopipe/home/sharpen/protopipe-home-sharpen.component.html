@@ -1,0 +1,114 @@
+<section class="sharpen" aria-label="Sharpen your business context">
+  <header class="sharpen__intro">
+    <div class="sharpen__intro-copy">
+      <span class="sharpen__eyebrow">Content intelligence</span>
+      <h1 class="sharpen__title">Sharpen</h1>
+      <p class="sharpen__lede">
+        Answer questions and confirm facts so generated content matches how you actually run your business.
+      </p>
+    </div>
+    @if (pendingTotal() > 0) {
+      <span class="sharpen__pending-badge">{{ pendingTotal() }} pending</span>
+    }
+  </header>
+
+  @if (loading()) {
+    <p class="sharpen__status" aria-busy="true">Loading…</p>
+  } @else if (error()) {
+    <p class="sharpen__status sharpen__status--error">{{ error() }}</p>
+    <button type="button" class="sharpen__btn" (click)="reload()">Try again</button>
+  } @else {
+    <div class="sharpen__sections">
+      <section class="sharpen__section" aria-labelledby="sharpen-questions-heading">
+        <div class="sharpen__section-head">
+          <h2 id="sharpen-questions-heading" class="sharpen__section-title">Questions</h2>
+          @if (questionTotal() > 0) {
+            <span class="sharpen__section-count">{{ questionTotal() }}</span>
+          }
+        </div>
+        <p class="sharpen__section-lede">
+          Assumptions from keyword discovery and planning — answer in a sentence or two.
+        </p>
+
+        @if (questions().length === 0) {
+          <p class="sharpen__empty">No open questions. Run keyword discovery to surface new ones.</p>
+        } @else {
+          <ul class="sharpen__list">
+            @for (card of questions(); track card.id) {
+              <li class="sharpen__card">
+                <span class="sharpen__topic">{{ topicLabel(card) }}</span>
+                <p class="sharpen__card-text">{{ card.cardText }}</p>
+                @if (answeringQuestionId() === card.id) {
+                  <textarea
+                    class="sharpen__input"
+                    rows="2"
+                    [value]="questionDraft()"
+                    (input)="onQuestionDraftInput($event)"
+                    placeholder="Your answer (1–2 sentences)"
+                  ></textarea>
+                  <div class="sharpen__actions">
+                    <button type="button" class="sharpen__btn sharpen__btn--primary" (click)="submitQuestion(card)">
+                      Save
+                    </button>
+                    <button type="button" class="sharpen__btn" (click)="cancelQuestion()">Cancel</button>
+                  </div>
+                } @else {
+                  <div class="sharpen__actions">
+                    <button type="button" class="sharpen__btn sharpen__btn--primary" (click)="startQuestion(card)">
+                      Answer
+                    </button>
+                    <button type="button" class="sharpen__btn" (click)="skipQuestion(card)">Skip</button>
+                  </div>
+                }
+              </li>
+            }
+          </ul>
+        }
+      </section>
+
+      <section class="sharpen__section" aria-labelledby="sharpen-claims-heading">
+        <div class="sharpen__section-head">
+          <h2 id="sharpen-claims-heading" class="sharpen__section-title">Facts to confirm</h2>
+          @if (claimTotal() > 0) {
+            <span class="sharpen__section-count">{{ claimTotal() }}</span>
+          }
+        </div>
+        <p class="sharpen__section-lede">
+          Claims flagged during article review — corrections apply to future drafts across the site.
+        </p>
+
+        @if (claims().length === 0) {
+          <p class="sharpen__empty">No claims waiting. Generate and review articles to surface facts to verify.</p>
+        } @else {
+          <ul class="sharpen__list">
+            @for (card of claims(); track card.id) {
+              <li class="sharpen__card">
+                <span class="sharpen__topic">{{ topicLabel(card) }}</span>
+                <p class="sharpen__card-text">{{ card.cardText }}</p>
+                @if (card.suggestedValue) {
+                  <p class="sharpen__suggested">Draft had: “{{ card.suggestedValue }}”</p>
+                }
+                <label class="sharpen__label" [for]="'claim-' + card.id">Correct value</label>
+                <input
+                  class="sharpen__input sharpen__input--single"
+                  [id]="'claim-' + card.id"
+                  type="text"
+                  [value]="claimDraft(card.id)"
+                  (input)="setClaimDraft(card.id, $any($event.target).value)"
+                  [placeholder]="card.suggestedValue ?? 'Enter the right answer'"
+                />
+                <div class="sharpen__actions">
+                  <button type="button" class="sharpen__btn sharpen__btn--primary" (click)="submitClaim(card)">
+                    Save answer
+                  </button>
+                  <button type="button" class="sharpen__btn" (click)="skipClaim(card)">Skip</button>
+                  <button type="button" class="sharpen__btn" (click)="dismissClaim(card)">Dismiss</button>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    </div>
+  }
+</section>

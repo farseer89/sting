@@ -20,6 +20,7 @@ import { ProtopipeOnboardingStateService } from '../onboarding/protopipe-onboard
 import { ProtopipeStrategyService } from '../protopipe-strategy.service';
 import { ProtopipeKeywordSearchPanelComponent } from './keyword-picker/protopipe-keyword-search-panel.component';
 import { ProtopipeKeywordPickerStore } from './keyword-picker/protopipe-keyword-picker.store';
+import { ProtopipeHomeSharpenComponent } from './sharpen/protopipe-home-sharpen.component';
 import { ProtopipeHomeStrategyComponent } from './strategy/protopipe-home-strategy.component';
 import { ProtopipeStrategyContextPanelComponent } from './strategy/protopipe-strategy-context-panel.component';
 import { ProtopipeHomeStrategyViewState } from './strategy/protopipe-home-strategy-view.state';
@@ -36,7 +37,7 @@ import {
 } from './protopipe-home-nav';
 import { resolveBootstrapSiteId } from '../resolve-bootstrap-site-id';
 
-export type ProtopipeHomeView = 'keywords' | 'strategy' | 'writer';
+export type ProtopipeHomeView = 'keywords' | 'strategy' | 'sharpen' | 'writer';
 
 function initialsFromName(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -60,6 +61,7 @@ function initialsFromName(name: string): string {
     ProtopipeKeywordPickerComponent,
     ProtopipeKeywordSearchPanelComponent,
     ProtopipeHomeStrategyComponent,
+    ProtopipeHomeSharpenComponent,
     ProtopipeHomeWriterComponent,
     ProtopipeStrategyContextPanelComponent,
     ProtopipeWriterContextPanelComponent,
@@ -187,6 +189,11 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.leaveWriterFocus();
       this.activeNavId.set(item.id);
       this.activeView.set('strategy');
+    } else if (item.id === 'start-sharpen') {
+      this.leaveWriterFocus();
+      this.sidePanel.setOpen(false);
+      this.activeNavId.set(item.id);
+      this.activeView.set('sharpen');
     } else if (item.id === 'content-writer') {
       this.enterWriterFocus();
     } else if (item.id === 'int-wordpress' || item.id === 'int-google') {

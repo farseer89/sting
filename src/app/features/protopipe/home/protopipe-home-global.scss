@@ -26,7 +26,8 @@ html.void-home app-protopipe-user-home {
 }
 
 html.void-home .glass--full > app-protopipe-keyword-picker,
-html.void-home .glass--full > app-protopipe-home-strategy {
+html.void-home .glass--full > app-protopipe-home-strategy,
+html.void-home .glass--full > app-protopipe-home-sharpen {
   display: flex;
   flex-direction: column;
   flex: 1 1 0;

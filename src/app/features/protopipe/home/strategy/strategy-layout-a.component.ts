@@ -4,7 +4,6 @@ import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { StrategyContentMapComponent } from './strategy-content-map.component';
 import { StrategyHeroComponent } from './strategy-hero.component';
 import { StrategyOffersComponent } from './strategy-offers.component';
-import { StrategyTuneContentComponent } from './strategy-tune-content.component';
 
 type AccordionId = 'wins' | null;
 
@@ -15,7 +14,6 @@ type AccordionId = 'wins' | null;
   imports: [
     StrategyHeroComponent,
     StrategyContentMapComponent,
-    StrategyTuneContentComponent,
     StrategyOffersComponent,
   ],
   templateUrl: './strategy-layout-a.component.html',

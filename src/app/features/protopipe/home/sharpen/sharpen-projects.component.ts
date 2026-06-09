@@ -7,9 +7,12 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import type {
+  ProtopipeContextCard,
   ProtopipeProject,
   ProtopipeProjectCapture,
+  ProtopipeProjectPromptKey,
 } from '@hive/contracts';
 import { ProtopipeApiService } from '../../protopipe-api.service';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
@@ -19,12 +22,13 @@ import { ProjectCheckInComponent } from '../../projects/project-check-in.compone
   selector: 'app-sharpen-projects',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ProjectCheckInComponent],
+  imports: [ProjectCheckInComponent, RouterLink],
   templateUrl: './sharpen-projects.component.html',
   styleUrl: './sharpen-projects.component.scss',
 })
 export class SharpenProjectsComponent implements OnInit {
   private readonly api = inject(ProtopipeApiService);
+  private readonly router = inject(Router);
 
   readonly siteId = input.required<string>();
   readonly changed = output<void>();
@@ -44,6 +48,10 @@ export class SharpenProjectsComponent implements OnInit {
   readonly newTitle = signal('');
   readonly newService = signal('');
   readonly newLocation = signal('');
+  readonly pendingGuidedCard = signal<ProtopipeContextCard | null>(null);
+  readonly guidedAnswer = signal('');
+  readonly guidedSubmitting = signal(false);
+  readonly storyGenerating = signal(false);
 
   ngOnInit(): void {
     this.reload();
@@ -122,24 +130,85 @@ export class SharpenProjectsComponent implements OnInit {
       this.selectedProject.set(null);
       this.captures.set([]);
       this.shareUrl.set(null);
+      this.pendingGuidedCard.set(null);
+      this.guidedAnswer.set('');
       return;
     }
 
     this.selectedId.set(projectId);
     this.detailLoading.set(true);
     this.shareUrl.set(null);
+    this.pendingGuidedCard.set(null);
+    this.guidedAnswer.set('');
 
     this.api.getProject$(this.siteId(), projectId).subscribe({
       next: (res) => {
         this.selectedProject.set(res.project);
         this.captures.set(res.captures ?? []);
         this.detailLoading.set(false);
+        this.loadPendingGuidedCard(res.project);
       },
       error: (err) => {
         this.error.set(parseProtopipeApiError(err, 'Could not load project.'));
         this.detailLoading.set(false);
       },
     });
+  }
+
+  private loadPendingGuidedCard(project: ProtopipeProject): void {
+    if (project.storyReadiness >= 0.6) {
+      this.pendingGuidedCard.set(null);
+      return;
+    }
+
+    this.api
+      .listContextCards$(this.siteId(), {
+        status: 'pending',
+        type: 'question',
+        projectId: project.id,
+      })
+      .subscribe({
+        next: (res) => {
+          const cards = res.cards ?? [];
+          this.pendingGuidedCard.set(cards[0] ?? null);
+        },
+      });
+  }
+
+  onGuidedAnswerInput(event: Event): void {
+    this.guidedAnswer.set((event.target as HTMLTextAreaElement).value);
+  }
+
+  submitGuidedAnswer(): void {
+    const project = this.selectedProject();
+    const card = this.pendingGuidedCard();
+    const body = this.guidedAnswer().trim();
+    if (!project || !card || !body) return;
+
+    const promptKey = card.suggestedValue as ProtopipeProjectPromptKey | null;
+    if (!promptKey) return;
+
+    this.guidedSubmitting.set(true);
+    this.api
+      .createProjectCapture$(this.siteId(), project.id, {
+        kind: 'prompt_answer',
+        body,
+        promptKey,
+      })
+      .subscribe({
+        next: (res) => {
+          this.guidedSubmitting.set(false);
+          this.guidedAnswer.set('');
+          this.selectedProject.set(res.project);
+          this.captures.set([...this.captures(), res.capture]);
+          this.loadPendingGuidedCard(res.project);
+          this.reload();
+        },
+        error: (err) => {
+          this.guidedSubmitting.set(false);
+          this.error.set(parseProtopipeApiError(err, 'Could not save answer.'));
+        },
+      });
   }
 
   onCheckInSubmitted(): void {
@@ -149,6 +218,7 @@ export class SharpenProjectsComponent implements OnInit {
       next: (res) => {
         this.selectedProject.set(res.project);
         this.captures.set(res.captures ?? []);
+        this.loadPendingGuidedCard(res.project);
         this.reload();
       },
     });
@@ -192,6 +262,25 @@ export class SharpenProjectsComponent implements OnInit {
       },
       error: (err) => {
         this.error.set(parseProtopipeApiError(err, 'Could not update project.'));
+      },
+    });
+  }
+
+  writeStory(): void {
+    const project = this.selectedProject();
+    if (!project || project.contentPostId) return;
+
+    this.storyGenerating.set(true);
+    this.api.generateProjectStory$(this.siteId(), project.id).subscribe({
+      next: (res) => {
+        this.storyGenerating.set(false);
+        this.selectedProject.set(res.project);
+        this.reload();
+        void this.router.navigate(['/protopipe/content', res.contentPostId]);
+      },
+      error: (err) => {
+        this.storyGenerating.set(false);
+        this.error.set(parseProtopipeApiError(err, 'Could not generate story.'));
       },
     });
   }

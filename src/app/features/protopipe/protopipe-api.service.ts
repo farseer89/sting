@@ -87,6 +87,7 @@ import type {
   ProjectMediaPresignRequest,
   ProjectMediaPresignResponse,
   GenerateProjectShareLinkResponse,
+  GenerateProjectStoryResponse,
   GetProjectShareResponse,
   SiteBuilderComponentsResponse,
   SiteBuilderTemplatesResponse,
@@ -853,6 +854,7 @@ export class ProtopipeApiService {
       type?: string;
       geoSignal?: boolean;
       articleId?: string;
+      projectId?: string;
     },
   ) {
     let params = new HttpParams();
@@ -860,6 +862,7 @@ export class ProtopipeApiService {
     if (query?.type) params = params.set('type', query.type);
     if (query?.geoSignal != null) params = params.set('geoSignal', String(query.geoSignal));
     if (query?.articleId) params = params.set('articleId', query.articleId);
+    if (query?.projectId) params = params.set('projectId', query.projectId);
     return this.http.get<ListContextCardsResponse>(
       protopipeApiUrl(ProtopipeEndpoints.listContextCards.path, { siteId }),
       { params },
@@ -953,6 +956,13 @@ export class ProtopipeApiService {
   generateProjectShareLink$(siteId: string, projectId: string) {
     return this.http.post<GenerateProjectShareLinkResponse>(
       protopipeApiUrl(ProtopipeEndpoints.generateProjectShareLink.path, { siteId, projectId }),
+      {},
+    );
+  }
+
+  generateProjectStory$(siteId: string, projectId: string) {
+    return this.http.post<GenerateProjectStoryResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.generateProjectStory.path, { siteId, projectId }),
       {},
     );
   }

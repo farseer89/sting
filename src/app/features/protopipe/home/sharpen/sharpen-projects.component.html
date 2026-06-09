@@ -78,75 +78,6 @@
                   <span class="sharpen-projects__readiness-bar" [style.width.%]="readinessPercent(project)"></span>
                 </div>
               </button>
-
-              @if (selectedId() === project.id) {
-                <div class="sharpen-projects__detail">
-                  @if (detailLoading()) {
-                    <p class="sharpen-projects__status" aria-busy="true">Loading…</p>
-                  } @else if (selectedProject(); as detail) {
-                    <div class="sharpen-projects__share">
-                      @if (shareUrl()) {
-                        <div class="sharpen-projects__share-row">
-                          <input class="sharpen-projects__share-input" type="text" readonly [value]="shareUrl()" />
-                          <button type="button" class="sharpen-projects__btn" (click)="copyShareLink()">Copy link</button>
-                        </div>
-                      } @else {
-                        <button
-                          type="button"
-                          class="sharpen-projects__btn"
-                          [disabled]="shareBusy()"
-                          (click)="generateShareLink()"
-                        >
-                          {{ shareBusy() ? 'Generating…' : detail.share.enabled ? 'Regenerate share link' : 'Get share link' }}
-                        </button>
-                      }
-                      @if (detail.share.enabled && !shareUrl()) {
-                        <p class="sharpen-projects__hint">Share link is active. Regenerate to copy a fresh URL.</p>
-                      }
-                    </div>
-
-                    <app-project-check-in
-                      mode="owner"
-                      [siteId]="siteId()"
-                      [projectId]="detail.id"
-                      [projectTitle]="detail.title"
-                      [serviceType]="detail.serviceType"
-                      [locationLabel]="detail.locationLabel"
-                      (submitted)="onCheckInSubmitted()"
-                    />
-
-                    @if (captures().length) {
-                      <section class="sharpen-projects__timeline" aria-label="Recent captures">
-                        <h4 class="sharpen-projects__subheading">Timeline</h4>
-                        <ul class="sharpen-projects__captures">
-                          @for (capture of captures(); track capture.id) {
-                            <li class="sharpen-projects__capture">
-                              <time class="sharpen-projects__capture-date">{{ formatCaptureDate(capture.createdAt) }}</time>
-                              @if (capture.body) {
-                                <p class="sharpen-projects__capture-body">{{ capture.body }}</p>
-                              }
-                              @if (capture.media.length) {
-                                <span class="sharpen-projects__capture-media">{{ capture.media.length }} media</span>
-                              }
-                            </li>
-                          }
-                        </ul>
-                      </section>
-                    }
-
-                    <div class="sharpen-projects__actions">
-                      @if (detail.status === 'active') {
-                        <button type="button" class="sharpen-projects__btn" (click)="markComplete()">Mark complete</button>
-                      }
-                      @if (detail.storyReadiness >= 0.6) {
-                        <button type="button" class="sharpen-projects__btn" disabled title="Coming in CP1.5c">
-                          Write the story
-                        </button>
-                      }
-                    </div>
-                  }
-                </div>
-              }
             </li>
           }
         </ul>
@@ -158,7 +89,7 @@
         <h3 id="completed-projects-heading" class="sharpen-projects__heading">Completed</h3>
         <ul class="sharpen-projects__list sharpen-projects__list--compact">
           @for (project of completedProjects(); track project.id) {
-            <li class="sharpen-projects__card sharpen-projects__card--compact">
+            <li class="sharpen-projects__card sharpen-projects__card--compact" [class.is-selected]="selectedId() === project.id">
               <button type="button" class="sharpen-projects__card-btn" (click)="selectProject(project.id)">
                 <span class="sharpen-projects__card-title">{{ project.title }}</span>
                 <span class="sharpen-projects__card-meta">Readiness {{ readinessPercent(project) }}%</span>
@@ -166,6 +97,114 @@
             </li>
           }
         </ul>
+      </section>
+    }
+
+    @if (selectedId()) {
+      <section class="sharpen-projects__detail-panel" aria-label="Project detail">
+        @if (detailLoading()) {
+          <p class="sharpen-projects__status" aria-busy="true">Loading…</p>
+        } @else if (selectedProject(); as detail) {
+          <h3 class="sharpen-projects__detail-title">{{ detail.title }}</h3>
+
+          <div class="sharpen-projects__share">
+            @if (shareUrl()) {
+              <div class="sharpen-projects__share-row">
+                <input class="sharpen-projects__share-input" type="text" readonly [value]="shareUrl()" />
+                <button type="button" class="sharpen-projects__btn" (click)="copyShareLink()">Copy link</button>
+              </div>
+            } @else {
+              <button
+                type="button"
+                class="sharpen-projects__btn"
+                [disabled]="shareBusy()"
+                (click)="generateShareLink()"
+              >
+                {{ shareBusy() ? 'Generating…' : detail.share.enabled ? 'Regenerate share link' : 'Get share link' }}
+              </button>
+            }
+            @if (detail.share.enabled && !shareUrl()) {
+              <p class="sharpen-projects__hint">Share link is active. Regenerate to copy a fresh URL.</p>
+            }
+          </div>
+
+          @if (detail.storyReadiness < 0.6 && pendingGuidedCard(); as card) {
+            <div class="sharpen-projects__guided">
+              <h4 class="sharpen-projects__subheading">Next question</h4>
+              <p class="sharpen-projects__guided-prompt">{{ card.cardText }}</p>
+              <label class="sharpen-projects__label">
+                Your answer
+                <textarea
+                  class="sharpen-projects__field sharpen-projects__field--textarea"
+                  rows="3"
+                  [value]="guidedAnswer()"
+                  (input)="onGuidedAnswerInput($event)"
+                  placeholder="A sentence or two is enough"
+                ></textarea>
+              </label>
+              <button
+                type="button"
+                class="sharpen-projects__btn sharpen-projects__btn--primary"
+                [disabled]="guidedSubmitting() || !guidedAnswer().trim()"
+                (click)="submitGuidedAnswer()"
+              >
+                {{ guidedSubmitting() ? 'Saving…' : 'Save answer' }}
+              </button>
+            </div>
+          }
+
+          <app-project-check-in
+            mode="owner"
+            [siteId]="siteId()"
+            [projectId]="detail.id"
+            [projectTitle]="detail.title"
+            [serviceType]="detail.serviceType"
+            [locationLabel]="detail.locationLabel"
+            (submitted)="onCheckInSubmitted()"
+          />
+
+          @if (captures().length) {
+            <section class="sharpen-projects__timeline" aria-label="Recent captures">
+              <h4 class="sharpen-projects__subheading">Timeline</h4>
+              <ul class="sharpen-projects__captures">
+                @for (capture of captures(); track capture.id) {
+                  <li class="sharpen-projects__capture">
+                    <time class="sharpen-projects__capture-date">{{ formatCaptureDate(capture.createdAt) }}</time>
+                    @if (capture.body) {
+                      <p class="sharpen-projects__capture-body">{{ capture.body }}</p>
+                    }
+                    @if (capture.media.length) {
+                      <span class="sharpen-projects__capture-media">{{ capture.media.length }} media</span>
+                    }
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+
+          <div class="sharpen-projects__actions">
+            @if (detail.status === 'active') {
+              <button type="button" class="sharpen-projects__btn" (click)="markComplete()">Mark complete</button>
+            }
+            @if (detail.contentPostId) {
+              <a
+                class="sharpen-projects__btn sharpen-projects__btn--primary"
+                [routerLink]="['/protopipe/content', detail.contentPostId]"
+              >
+                View story
+              </a>
+            } @else if (detail.storyReadiness >= 0.6) {
+              <button
+                type="button"
+                class="sharpen-projects__btn sharpen-projects__btn--primary"
+                [disabled]="storyGenerating()"
+                (click)="writeStory()"
+              >
+                {{ storyGenerating() ? 'Starting…' : 'Write the story' }}
+              </button>
+            }
+          </div>
+        }
       </section>
     }
   }

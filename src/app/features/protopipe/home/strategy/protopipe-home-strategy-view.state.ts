@@ -177,7 +177,7 @@ export class ProtopipeHomeStrategyViewState {
         this._selectedArticle.set(updated);
       }
 
-      this.writerView.openPost(postId);
+      this.writerView.openPostForWriting(postId);
       this.enterWriterFocus?.();
     } finally {
       this._openingWriter.set(false);

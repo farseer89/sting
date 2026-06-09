@@ -30,6 +30,21 @@
     </div>
 
     <div class="pw__bar-actions">
+      @if (showWriteArticle()) {
+        <button
+          type="button"
+          class="pw__btn pw__btn--accent"
+          (click)="writeArticle()"
+          [disabled]="generating()"
+        >
+          <i class="pi pi-bolt"></i>
+          {{ writeArticleLabel() }}
+        </button>
+      } @else if (runIsActive()) {
+        <span class="pw__status pw__status--running">
+          <i class="pi pi-spin pi-spinner"></i> Writing…
+        </span>
+      }
       @if (generatedReady() && !isReadOnly()) {
         <button
           type="button"
@@ -826,24 +841,15 @@
           <section class="pw__panel pw__panel--behind">
             <h3 class="pw__panel-title">Behind the curtain</h3>
 
-            <label class="pw__field">
-              <span>Linked keyword</span>
-              <select
-                [ngModel]="linkedKeywordId()"
-                (ngModelChange)="linkKeyword($event)"
-                [disabled]="isReadOnly()"
-              >
-                <option value="">— Pick a plan keyword —</option>
-                @for (kw of content.planKeywords(); track kw.id) {
-                  <option [value]="kw.id">{{ kw.phrase }}</option>
-                }
-              </select>
-              @if (!linkedKeywordId()) {
-                <span class="pw__meta-count is-warn">
-                  Generation needs a linked keyword. Save after picking one.
-                </span>
-              }
-            </label>
+            @if (topicLabel(); as topic) {
+              <p class="pw__brief-target">
+                Brief keyword: <strong>{{ topic }}</strong>
+              </p>
+            } @else {
+              <p class="pw__panel-empty">
+                No brief keyword on this post — open it from your content plan before writing.
+              </p>
+            }
 
             <label class="pw__field">
               <span>CTA promotion</span>
@@ -945,10 +951,10 @@
                 <button
                   type="button"
                   class="pw__run-relaunch"
-                  (click)="generateWithPipeline()"
+                  (click)="writeArticle()"
                   [disabled]="generating()"
                 >
-                  {{ generating() ? 'Launching…' : 'Re-run pipeline' }}
+                  {{ writeArticleLabel() }}
                 </button>
               }
 
@@ -966,17 +972,18 @@
               }
             } @else {
               <p class="pw__panel-empty">
-                Run the generation pipeline to draft this article behind the scenes.
+                Run the article pipeline to draft from your brief — title, meta, outline, and body
+                are filled in automatically.
                 @if (briefSource()) { Seeded from <strong>{{ briefSource() }}</strong>. }
               </p>
               <button
                 type="button"
                 class="pw__btn pw__btn--accent pw__run-apply"
-                (click)="generateWithPipeline()"
-                [disabled]="generating() || isReadOnly()"
+                (click)="writeArticle()"
+                [disabled]="generating() || isReadOnly() || !showWriteArticle()"
               >
                 <i class="pi pi-bolt"></i>
-                {{ generating() ? 'Launching…' : 'Generate with pipeline' }}
+                {{ writeArticleLabel() }}
               </button>
             }
           </section>

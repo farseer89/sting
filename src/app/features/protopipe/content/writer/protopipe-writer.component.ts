@@ -864,6 +864,18 @@ export class ProtopipeWriterComponent implements OnDestroy {
     return Boolean(a.template || (a.sections && a.sections.length) || a.outline);
   });
 
+  readonly showWriteArticle = computed(() => {
+    if (this.isReadOnly() || this.effectiveCreate()) return false;
+    if (this.runIsActive() || this.generating()) return false;
+    return this.hasBrief() || Boolean(this.topicLabel()?.trim());
+  });
+
+  readonly writeArticleLabel = computed(() => {
+    if (this.generating()) return 'Starting…';
+    if (this.runComplete()) return 'Re-run pipeline';
+    return 'Write article';
+  });
+
   constructor() {
     this.content.ensureCatalogLoaded();
     this.content.setWriterImmersive(true);
@@ -1038,6 +1050,9 @@ export class ProtopipeWriterComponent implements OnDestroy {
         }
         this.maybeAutoApplyTemplateFromRun();
         void this.loadSiteConnections();
+        if (this.embedded() && this.homeWriterView?.consumeAutoStartPipeline()) {
+          this.maybeAutoWriteArticle();
+        }
       },
       error: () => {
         this.loadingPost.set(false);
@@ -1586,7 +1601,6 @@ export class ProtopipeWriterComponent implements OnDestroy {
   }
 
   saveDraft(): void {
-    if (this.promptIfIncomplete()) return;
     this.content.saveFromWritingSession();
   }
 
@@ -1640,9 +1654,19 @@ export class ProtopipeWriterComponent implements OnDestroy {
     return true;
   }
 
-  /** Link or clear the post's primary plan keyword. */
+  /** Link the post's primary plan keyword (legacy manual override). */
   linkKeyword(keywordId: string): void {
     this.content.setPrimaryKeyword(keywordId);
+  }
+
+  /** One-click article run — brief seeds title, meta, outline, and draft. */
+  writeArticle(): void {
+    this.generateWithPipeline();
+  }
+
+  private maybeAutoWriteArticle(): void {
+    if (!this.showWriteArticle() || this.run()) return;
+    this.writeArticle();
   }
 
   publish(): void {
@@ -1689,29 +1713,35 @@ export class ProtopipeWriterComponent implements OnDestroy {
     if (!siteId || !postId || postId === 'new') {
       this.messages.add({
         severity: 'warn',
-        summary: 'Save first',
-        detail: 'Save the draft before generating with the pipeline.',
-        life: 4000,
+        summary: 'Open from your plan',
+        detail: 'Write article from a calendar item so the brief can seed the run.',
+        life: 5000,
       });
       return;
     }
-    if (this.content.dirty()) {
+    if (!this.hasBrief() && !this.topicLabel()) {
       this.messages.add({
         severity: 'warn',
-        summary: 'Save first',
-        detail: 'Save your changes before generating with the pipeline.',
-        life: 4000,
+        summary: 'No brief',
+        detail: 'This post has no research brief. Open it from your confirmed content plan.',
+        life: 5000,
       });
       return;
     }
 
     this.generating.set(true);
     this.api.generateContent$(siteId, postId).subscribe({
-      next: ({ run }) => {
+      next: ({ run, post }) => {
         this.run.set(run);
         this.postFactReview.set(null);
         this.factResolutions.set(new Map());
         this.resetMarginNotes();
+        if (post.template?.primaryKeywordId) {
+          this.content.patchWritingTemplate({
+            primaryKeywordId: post.template.primaryKeywordId,
+            primaryKeywordPhrase: post.template.primaryKeywordPhrase,
+          });
+        }
         this.generating.set(false);
         this.openInspectorPanel('behind');
         if (run.status === 'running' || run.status === 'pending') {
@@ -1722,10 +1752,10 @@ export class ProtopipeWriterComponent implements OnDestroy {
         this.generating.set(false);
         this.messages.add({
           severity: 'error',
-          summary: 'Could not generate',
+          summary: 'Could not start writing',
           detail: parseProtopipeApiError(
             err,
-            'Make sure this post has a linked keyword, then try again.',
+            'The article run could not start. Check that this post has a brief from your content plan.',
           ),
           life: 6000,
         });

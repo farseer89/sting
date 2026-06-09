@@ -8,11 +8,13 @@ export class ProtopipeHomeWriterViewState {
   private readonly _activePanel = signal<WriterInspectorPanelId | null>(null);
   private readonly _activePostId = signal<string | null>(null);
   private readonly _createMode = signal(false);
+  private readonly _autoStartPipeline = signal(false);
   private exitHandler: (() => void) | null = null;
 
   readonly activePanel = this._activePanel.asReadonly();
   readonly activePostId = this._activePostId.asReadonly();
   readonly createMode = this._createMode.asReadonly();
+  readonly autoStartPipeline = this._autoStartPipeline.asReadonly();
 
   setExitHandler(handler: () => void): void {
     this.exitHandler = handler;
@@ -39,6 +41,22 @@ export class ProtopipeHomeWriterViewState {
   openPost(postId: string): void {
     this._createMode.set(false);
     this._activePostId.set(postId);
+    this._autoStartPipeline.set(false);
+  }
+
+  /** Open a plan-backed post and start the article pipeline once the writer loads. */
+  openPostForWriting(postId: string): void {
+    this._createMode.set(false);
+    this._activePostId.set(postId);
+    this._autoStartPipeline.set(true);
+  }
+
+  consumeAutoStartPipeline(): boolean {
+    const pending = this._autoStartPipeline();
+    if (pending) {
+      this._autoStartPipeline.set(false);
+    }
+    return pending;
   }
 
   openCreate(): void {
@@ -53,6 +71,7 @@ export class ProtopipeHomeWriterViewState {
   clearSession(): void {
     this._activePostId.set(null);
     this._createMode.set(false);
+    this._autoStartPipeline.set(false);
   }
 
   exitFocus(): void {

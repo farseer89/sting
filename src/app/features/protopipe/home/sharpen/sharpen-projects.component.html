@@ -1,0 +1,172 @@
+<div class="sharpen-projects">
+  <p class="sharpen-projects__lede">
+    Log real jobs in the field — photos, video, and progress notes build toward a case study.
+  </p>
+
+  @if (loading()) {
+    <p class="sharpen-projects__status" aria-busy="true">Loading projects…</p>
+  } @else if (error()) {
+    <p class="sharpen-projects__status sharpen-projects__status--error">{{ error() }}</p>
+    <button type="button" class="sharpen-projects__btn" (click)="reload()">Try again</button>
+  } @else {
+    @if (showCreate()) {
+      <div class="sharpen-projects__form">
+        <label class="sharpen-projects__label">
+          Project title
+          <input
+            class="sharpen-projects__field"
+            type="text"
+            [value]="newTitle()"
+            (input)="onNewField('title', $event)"
+            placeholder="Johnson panel upgrade"
+          />
+        </label>
+        <label class="sharpen-projects__label">
+          Service (optional)
+          <input
+            class="sharpen-projects__field"
+            type="text"
+            [value]="newService()"
+            (input)="onNewField('service', $event)"
+            placeholder="Panel upgrade"
+          />
+        </label>
+        <label class="sharpen-projects__label">
+          Neighborhood (optional)
+          <input
+            class="sharpen-projects__field"
+            type="text"
+            [value]="newLocation()"
+            (input)="onNewField('location', $event)"
+            placeholder="Kihei"
+          />
+        </label>
+        <div class="sharpen-projects__actions">
+          <button
+            type="button"
+            class="sharpen-projects__btn sharpen-projects__btn--primary"
+            [disabled]="creating() || !newTitle().trim()"
+            (click)="createProject()"
+          >
+            {{ creating() ? 'Creating…' : 'Create project' }}
+          </button>
+          <button type="button" class="sharpen-projects__btn" (click)="toggleCreate(false)">Cancel</button>
+        </div>
+      </div>
+    } @else {
+      <button type="button" class="sharpen-projects__btn sharpen-projects__btn--primary" (click)="toggleCreate(true)">
+        New project
+      </button>
+    }
+
+    <section class="sharpen-projects__section" aria-labelledby="active-projects-heading">
+      <h3 id="active-projects-heading" class="sharpen-projects__heading">Active projects</h3>
+      @if (activeProjects().length === 0) {
+        <p class="sharpen-projects__empty">No active projects yet. Create one to start logging field updates.</p>
+      } @else {
+        <ul class="sharpen-projects__list">
+          @for (project of activeProjects(); track project.id) {
+            <li class="sharpen-projects__card" [class.is-selected]="selectedId() === project.id">
+              <button type="button" class="sharpen-projects__card-btn" (click)="selectProject(project.id)">
+                <span class="sharpen-projects__card-title">{{ project.title }}</span>
+                @if (project.serviceType) {
+                  <span class="sharpen-projects__card-meta">{{ project.serviceType }}</span>
+                }
+                <span class="sharpen-projects__card-meta">{{ daysActive(project) }} days active</span>
+                <div class="sharpen-projects__readiness" role="progressbar" [attr.aria-valuenow]="readinessPercent(project)" aria-valuemin="0" aria-valuemax="100">
+                  <span class="sharpen-projects__readiness-label">Story readiness {{ readinessPercent(project) }}%</span>
+                  <span class="sharpen-projects__readiness-bar" [style.width.%]="readinessPercent(project)"></span>
+                </div>
+              </button>
+
+              @if (selectedId() === project.id) {
+                <div class="sharpen-projects__detail">
+                  @if (detailLoading()) {
+                    <p class="sharpen-projects__status" aria-busy="true">Loading…</p>
+                  } @else if (selectedProject(); as detail) {
+                    <div class="sharpen-projects__share">
+                      @if (shareUrl()) {
+                        <div class="sharpen-projects__share-row">
+                          <input class="sharpen-projects__share-input" type="text" readonly [value]="shareUrl()" />
+                          <button type="button" class="sharpen-projects__btn" (click)="copyShareLink()">Copy link</button>
+                        </div>
+                      } @else {
+                        <button
+                          type="button"
+                          class="sharpen-projects__btn"
+                          [disabled]="shareBusy()"
+                          (click)="generateShareLink()"
+                        >
+                          {{ shareBusy() ? 'Generating…' : detail.share.enabled ? 'Regenerate share link' : 'Get share link' }}
+                        </button>
+                      }
+                      @if (detail.share.enabled && !shareUrl()) {
+                        <p class="sharpen-projects__hint">Share link is active. Regenerate to copy a fresh URL.</p>
+                      }
+                    </div>
+
+                    <app-project-check-in
+                      mode="owner"
+                      [siteId]="siteId()"
+                      [projectId]="detail.id"
+                      [projectTitle]="detail.title"
+                      [serviceType]="detail.serviceType"
+                      [locationLabel]="detail.locationLabel"
+                      (submitted)="onCheckInSubmitted()"
+                    />
+
+                    @if (captures().length) {
+                      <section class="sharpen-projects__timeline" aria-label="Recent captures">
+                        <h4 class="sharpen-projects__subheading">Timeline</h4>
+                        <ul class="sharpen-projects__captures">
+                          @for (capture of captures(); track capture.id) {
+                            <li class="sharpen-projects__capture">
+                              <time class="sharpen-projects__capture-date">{{ formatCaptureDate(capture.createdAt) }}</time>
+                              @if (capture.body) {
+                                <p class="sharpen-projects__capture-body">{{ capture.body }}</p>
+                              }
+                              @if (capture.media.length) {
+                                <span class="sharpen-projects__capture-media">{{ capture.media.length }} media</span>
+                              }
+                            </li>
+                          }
+                        </ul>
+                      </section>
+                    }
+
+                    <div class="sharpen-projects__actions">
+                      @if (detail.status === 'active') {
+                        <button type="button" class="sharpen-projects__btn" (click)="markComplete()">Mark complete</button>
+                      }
+                      @if (detail.storyReadiness >= 0.6) {
+                        <button type="button" class="sharpen-projects__btn" disabled title="Coming in CP1.5c">
+                          Write the story
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    @if (completedProjects().length) {
+      <section class="sharpen-projects__section" aria-labelledby="completed-projects-heading">
+        <h3 id="completed-projects-heading" class="sharpen-projects__heading">Completed</h3>
+        <ul class="sharpen-projects__list sharpen-projects__list--compact">
+          @for (project of completedProjects(); track project.id) {
+            <li class="sharpen-projects__card sharpen-projects__card--compact">
+              <button type="button" class="sharpen-projects__card-btn" (click)="selectProject(project.id)">
+                <span class="sharpen-projects__card-title">{{ project.title }}</span>
+                <span class="sharpen-projects__card-meta">Readiness {{ readinessPercent(project) }}%</span>
+              </button>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  }
+</div>

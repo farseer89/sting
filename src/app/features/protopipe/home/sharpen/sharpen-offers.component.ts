@@ -4,58 +4,56 @@ import {
   inject,
   input,
   OnInit,
+  output,
   signal,
 } from '@angular/core';
 import type { ProtopipeOffering } from '@hive/contracts';
 import { ProtopipeApiService } from '../../protopipe-api.service';
 
 @Component({
-  selector: 'app-strategy-offers',
+  selector: 'app-sharpen-offers',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="strat-intel" aria-labelledby="offers-heading">
-      <div class="strat-intel__head">
-        <h2 id="offers-heading" class="strat-intel__title">Offers &amp; promotions</h2>
-      </div>
-      <p class="strat-intel__lede">
+    <div class="sharpen-offers">
+      <p class="sharpen-offers__lede">
         Tell us what you're offering — we'll work it into your content and calls to action.
       </p>
 
       @if (loading()) {
-        <p class="strat-intel__status" aria-busy="true">Loading offers…</p>
+        <p class="sharpen-offers__status" aria-busy="true">Loading offers…</p>
       } @else if (error()) {
-        <p class="strat-intel__status strat-intel__status--error">{{ error() }}</p>
+        <p class="sharpen-offers__status sharpen-offers__status--error">{{ error() }}</p>
       } @else {
         @if (activeOffer(); as active) {
-          <div class="strat-intel__offer-active">
-            <span class="strat-intel__offer-badge">Active</span>
-            <p class="strat-intel__offer-headline">{{ active.headline }}</p>
+          <div class="sharpen-offers__active">
+            <span class="sharpen-offers__badge">Active</span>
+            <p class="sharpen-offers__headline">{{ active.headline }}</p>
             @if (active.discountPercent != null) {
-              <span class="strat-intel__offer-discount">{{ active.discountPercent }}% off</span>
+              <span class="sharpen-offers__meta">{{ active.discountPercent }}% off</span>
             }
             @if (active.validUntil) {
-              <span class="strat-intel__offer-expiry">Ends {{ formatDate(active.validUntil) }}</span>
+              <span class="sharpen-offers__meta">Ends {{ formatDate(active.validUntil) }}</span>
             }
           </div>
         }
 
         @if (showForm()) {
-          <div class="strat-intel__form">
-            <label class="strat-intel__label">
+          <div class="sharpen-offers__form">
+            <label class="sharpen-offers__label">
               Headline
               <input
-                class="strat-intel__field"
+                class="sharpen-offers__field"
                 type="text"
                 [value]="headline()"
                 (input)="onField('headline', $event)"
                 placeholder="15% off panel upgrades this month"
               />
             </label>
-            <label class="strat-intel__label">
+            <label class="sharpen-offers__label">
               Discount %
               <input
-                class="strat-intel__field"
+                class="sharpen-offers__field"
                 type="number"
                 min="0"
                 max="100"
@@ -63,47 +61,46 @@ import { ProtopipeApiService } from '../../protopipe-api.service';
                 (input)="onField('discountPercent', $event)"
               />
             </label>
-            <label class="strat-intel__label">
+            <label class="sharpen-offers__label">
               End date
               <input
-                class="strat-intel__field"
+                class="sharpen-offers__field"
                 type="date"
                 [value]="validUntil()"
                 (input)="onField('validUntil', $event)"
               />
             </label>
-            <div class="strat-intel__actions">
-              <button type="button" class="strat-intel__btn" [disabled]="saving()" (click)="saveAndActivate()">
+            <div class="sharpen-offers__actions">
+              <button type="button" class="sharpen-offers__btn sharpen-offers__btn--primary" [disabled]="saving()" (click)="saveAndActivate()">
                 {{ saving() ? 'Saving…' : 'Save & activate' }}
               </button>
-              <button type="button" class="strat-intel__btn strat-intel__btn--ghost" (click)="toggleForm(false)">
-                Cancel
-              </button>
+              <button type="button" class="sharpen-offers__btn" (click)="toggleForm(false)">Cancel</button>
             </div>
           </div>
         } @else {
-          <button type="button" class="strat-intel__btn" (click)="toggleForm(true)">Add a promotion</button>
+          <button type="button" class="sharpen-offers__btn sharpen-offers__btn--primary" (click)="toggleForm(true)">
+            Add a promotion
+          </button>
         }
 
         @if (draftOffers().length) {
-          <ul class="strat-intel__list strat-intel__list--compact">
+          <ul class="sharpen-offers__drafts">
             @for (offer of draftOffers(); track offer.id) {
-              <li class="strat-intel__card strat-intel__card--compact">
+              <li class="sharpen-offers__draft">
                 <span>{{ offer.headline }}</span>
-                <button type="button" class="strat-intel__btn strat-intel__btn--ghost" (click)="activate(offer)">
-                  Activate
-                </button>
+                <button type="button" class="sharpen-offers__btn" (click)="activate(offer)">Activate</button>
               </li>
             }
           </ul>
         }
       }
-    </section>
+    </div>
   `,
-  styleUrl: './strategy-intel.shared.scss',
+  styleUrl: './sharpen-offers.component.scss',
 })
-export class StrategyOffersComponent implements OnInit {
+export class SharpenOffersComponent implements OnInit {
   readonly siteId = input.required<string>();
+  readonly changed = output<void>();
 
   private readonly api = inject(ProtopipeApiService);
 
@@ -132,6 +129,7 @@ export class StrategyOffersComponent implements OnInit {
       next: (res) => {
         this.offerings.set(res.offerings ?? []);
         this.loading.set(false);
+        this.changed.emit();
       },
       error: () => {
         this.error.set('Could not load offers.');

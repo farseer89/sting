@@ -1,0 +1,219 @@
+.sharpen-projects {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sharpen-projects__lede {
+  margin: 0;
+  color: var(--text-muted, #64748b);
+  font-size: 0.9375rem;
+}
+
+.sharpen-projects__status {
+  margin: 0;
+  font-size: 0.875rem;
+
+  &--error {
+    color: #b91c1c;
+  }
+}
+
+.sharpen-projects__heading {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #64748b);
+}
+
+.sharpen-projects__subheading {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.sharpen-projects__empty {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted, #64748b);
+}
+
+.sharpen-projects__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: 0.5rem;
+}
+
+.sharpen-projects__label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.sharpen-projects__field {
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: 0.375rem;
+  font: inherit;
+}
+
+.sharpen-projects__btn {
+  min-height: 2.5rem;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--border-subtle, #cbd5e1);
+  border-radius: 0.375rem;
+  background: #fff;
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+
+  &--primary {
+    border-color: var(--accent, #0f766e);
+    background: var(--accent, #0f766e);
+    color: #fff;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.sharpen-projects__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sharpen-projects__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sharpen-projects__card {
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: 0.5rem;
+  overflow: hidden;
+
+  &.is-selected {
+    border-color: var(--accent, #0f766e);
+  }
+}
+
+.sharpen-projects__card-btn {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.sharpen-projects__card-title {
+  display: block;
+  font-weight: 600;
+}
+
+.sharpen-projects__card-meta {
+  display: block;
+  margin-top: 0.125rem;
+  font-size: 0.8125rem;
+  color: var(--text-muted, #64748b);
+}
+
+.sharpen-projects__readiness {
+  position: relative;
+  margin-top: 0.5rem;
+  height: 0.375rem;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.sharpen-projects__readiness-label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--text-muted, #64748b);
+}
+
+.sharpen-projects__readiness-bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--accent, #0f766e);
+  border-radius: 999px;
+}
+
+.sharpen-projects__detail {
+  padding: 0 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border-top: 1px solid var(--border-subtle, #e2e8f0);
+}
+
+.sharpen-projects__share-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sharpen-projects__share-input {
+  flex: 1 1 12rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: 0.375rem;
+  font: inherit;
+  font-size: 0.8125rem;
+}
+
+.sharpen-projects__hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted, #64748b);
+}
+
+.sharpen-projects__captures {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sharpen-projects__capture {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-subtle, #f1f5f9);
+}
+
+.sharpen-projects__capture-date {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted, #64748b);
+}
+
+.sharpen-projects__capture-body {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  white-space: pre-wrap;
+}
+
+.sharpen-projects__capture-media {
+  font-size: 0.75rem;
+  color: var(--text-muted, #64748b);
+}

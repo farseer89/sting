@@ -4,7 +4,7 @@
       <span class="sharpen__eyebrow">Content intelligence</span>
       <h1 class="sharpen__title">Sharpen</h1>
       <p class="sharpen__lede">
-        Answer questions and confirm facts so generated content matches how you actually run your business.
+        Answer questions, confirm facts, manage offers, and log real jobs.
       </p>
     </div>
     @if (pendingTotal() > 0) {
@@ -12,21 +12,64 @@
     }
   </header>
 
-  @if (loading()) {
-    <p class="sharpen__status" aria-busy="true">Loading…</p>
-  } @else if (error()) {
-    <p class="sharpen__status sharpen__status--error">{{ error() }}</p>
-    <button type="button" class="sharpen__btn" (click)="reload()">Try again</button>
-  } @else {
-    <div class="sharpen__sections">
-      <section class="sharpen__section" aria-labelledby="sharpen-questions-heading">
-        <div class="sharpen__section-head">
-          <h2 id="sharpen-questions-heading" class="sharpen__section-title">Questions</h2>
-          @if (questionTotal() > 0) {
-            <span class="sharpen__section-count">{{ questionTotal() }}</span>
-          }
-        </div>
-        <p class="sharpen__section-lede">
+  <nav class="sharpen__tabs" aria-label="Sharpen sections">
+    <button
+      type="button"
+      class="sharpen__tab"
+      [class.is-active]="activeTab() === 'questions'"
+      (click)="setTab('questions')"
+    >
+      Questions
+      @if (questionTotal() > 0) {
+        <span class="sharpen__tab-count">{{ questionTotal() }}</span>
+      }
+    </button>
+    <button
+      type="button"
+      class="sharpen__tab"
+      [class.is-active]="activeTab() === 'facts'"
+      (click)="setTab('facts')"
+    >
+      Facts
+      @if (claimTotal() > 0) {
+        <span class="sharpen__tab-count">{{ claimTotal() }}</span>
+      }
+    </button>
+    <button
+      type="button"
+      class="sharpen__tab"
+      [class.is-active]="activeTab() === 'offers'"
+      (click)="setTab('offers')"
+    >
+      Offers
+      @if (hasActiveOffer()) {
+        <span class="sharpen__tab-dot" aria-label="Active promotion"></span>
+      }
+    </button>
+    <button
+      type="button"
+      class="sharpen__tab"
+      [class.is-active]="activeTab() === 'projects'"
+      (click)="setTab('projects')"
+    >
+      Projects
+      @if (activeProjectCount() > 0) {
+        <span class="sharpen__tab-count">{{ activeProjectCount() }}</span>
+      } @else if (hasReadyProject()) {
+        <span class="sharpen__tab-dot" aria-label="Story ready"></span>
+      }
+    </button>
+  </nav>
+
+  @if (activeTab() === 'questions') {
+    @if (cardsLoading()) {
+      <p class="sharpen__status" aria-busy="true">Loading…</p>
+    } @else if (error()) {
+      <p class="sharpen__status sharpen__status--error">{{ error() }}</p>
+      <button type="button" class="sharpen__btn" (click)="reload()">Try again</button>
+    } @else {
+      <section class="sharpen__panel" aria-labelledby="sharpen-questions-heading">
+        <p id="sharpen-questions-heading" class="sharpen__section-lede">
           Assumptions from keyword discovery and planning — answer in a sentence or two.
         </p>
 
@@ -68,15 +111,18 @@
           </ul>
         }
       </section>
+    }
+  }
 
-      <section class="sharpen__section" aria-labelledby="sharpen-claims-heading">
-        <div class="sharpen__section-head">
-          <h2 id="sharpen-claims-heading" class="sharpen__section-title">Facts to confirm</h2>
-          @if (claimTotal() > 0) {
-            <span class="sharpen__section-count">{{ claimTotal() }}</span>
-          }
-        </div>
-        <p class="sharpen__section-lede">
+  @if (activeTab() === 'facts') {
+    @if (cardsLoading()) {
+      <p class="sharpen__status" aria-busy="true">Loading…</p>
+    } @else if (error()) {
+      <p class="sharpen__status sharpen__status--error">{{ error() }}</p>
+      <button type="button" class="sharpen__btn" (click)="reload()">Try again</button>
+    } @else {
+      <section class="sharpen__panel" aria-labelledby="sharpen-claims-heading">
+        <p id="sharpen-claims-heading" class="sharpen__section-lede">
           Claims flagged during article review — corrections apply to future drafts across the site.
         </p>
 
@@ -115,6 +161,24 @@
           </ul>
         }
       </section>
-    </div>
+    }
+  }
+
+  @if (activeTab() === 'offers') {
+    <section class="sharpen__panel" aria-labelledby="sharpen-offers-heading">
+      <h2 id="sharpen-offers-heading" class="visually-hidden">Offers and promotions</h2>
+      @if (strategy.siteId(); as siteId) {
+        <app-sharpen-offers [siteId]="siteId" (changed)="onOffersChanged()" />
+      }
+    </section>
+  }
+
+  @if (activeTab() === 'projects') {
+    <section class="sharpen__panel" aria-labelledby="sharpen-projects-heading">
+      <h2 id="sharpen-projects-heading" class="visually-hidden">Projects</h2>
+      @if (strategy.siteId(); as siteId) {
+        <app-sharpen-projects [siteId]="siteId" (changed)="onProjectsChanged()" />
+      }
+    </section>
   }
 </section>

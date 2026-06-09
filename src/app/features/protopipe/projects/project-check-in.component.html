@@ -1,0 +1,78 @@
+<div class="check-in">
+  @if (projectTitle()) {
+    <header class="check-in__header">
+      <h2 class="check-in__title">{{ projectTitle() }}</h2>
+      @if (locationLabel() || serviceType()) {
+        <p class="check-in__meta">
+          @if (locationLabel()) {
+            <span>{{ locationLabel() }}</span>
+          }
+          @if (locationLabel() && serviceType()) {
+            <span aria-hidden="true"> · </span>
+          }
+          @if (serviceType()) {
+            <span>{{ serviceType() }}</span>
+          }
+        </p>
+      }
+    </header>
+  }
+
+  <label class="check-in__label" for="check-in-body">What's the progress?</label>
+  <textarea
+    id="check-in-body"
+    class="check-in__body"
+    rows="4"
+    [value]="body()"
+    (input)="onBodyInput($event)"
+    placeholder="Describe what happened on site today…"
+  ></textarea>
+
+  <div class="check-in__media-row">
+    <label class="check-in__add-btn">
+      <input
+        type="file"
+        accept="image/*,video/*"
+        multiple
+        capture="environment"
+        (change)="onFilesSelected($event)"
+      />
+      + Add photos/video
+    </label>
+    <span class="check-in__media-hint">Up to {{ pendingFiles().length }}/10</span>
+  </div>
+
+  @if (pendingFiles().length) {
+    <ul class="check-in__thumbs" aria-label="Selected media">
+      @for (item of pendingFiles(); track item.previewUrl; let i = $index) {
+        <li class="check-in__thumb">
+          @if (item.isVideo) {
+            <video class="check-in__thumb-media" [src]="item.previewUrl" muted playsinline></video>
+            <span class="check-in__play" aria-hidden="true">▶</span>
+          } @else {
+            <img class="check-in__thumb-media" [src]="item.previewUrl" alt="" />
+          }
+          <button type="button" class="check-in__remove" (click)="removeFile(i)" aria-label="Remove">
+            ×
+          </button>
+        </li>
+      }
+    </ul>
+  }
+
+  @if (error()) {
+    <p class="check-in__status check-in__status--error" role="alert">{{ error() }}</p>
+  }
+  @if (success()) {
+    <p class="check-in__status check-in__status--success" role="status">{{ success() }}</p>
+  }
+
+  <button
+    type="button"
+    class="check-in__submit"
+    [disabled]="submitting()"
+    (click)="submit()"
+  >
+    {{ submitting() ? 'Saving…' : 'Submit update' }}
+  </button>
+</div>

@@ -99,6 +99,13 @@ export const routes: Routes = [
     ],
   },
   {
+    path: 'protopipe/share/project/:token',
+    loadComponent: () =>
+      import('./features/protopipe/projects/project-share-capture.component').then(
+        (m) => m.ProjectShareCaptureComponent,
+      ),
+  },
+  {
     path: 'login',
     canActivate: [guestGuard],
     loadComponent: () => import('./features/login/login.component').then((m) => m.LoginComponent),

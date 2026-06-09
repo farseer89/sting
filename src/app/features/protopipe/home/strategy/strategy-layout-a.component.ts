@@ -3,8 +3,6 @@ import type { ProtopipeSiteContentPlan } from '@hive/contracts';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { StrategyContentMapComponent } from './strategy-content-map.component';
 import { StrategyHeroComponent } from './strategy-hero.component';
-import { StrategyOffersComponent } from './strategy-offers.component';
-
 type AccordionId = 'wins' | null;
 
 @Component({
@@ -14,7 +12,6 @@ type AccordionId = 'wins' | null;
   imports: [
     StrategyHeroComponent,
     StrategyContentMapComponent,
-    StrategyOffersComponent,
   ],
   templateUrl: './strategy-layout-a.component.html',
   styleUrl: './strategy-layout-a.component.scss',

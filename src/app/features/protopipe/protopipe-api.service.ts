@@ -76,6 +76,18 @@ import type {
   PatchOfferingRequest,
   PatchOfferingResponse,
   ActivateOfferingResponse,
+  ListProjectsResponse,
+  CreateProjectRequest,
+  CreateProjectResponse,
+  GetProjectResponse,
+  PatchProjectRequest,
+  PatchProjectResponse,
+  CreateProjectCaptureRequest,
+  CreateProjectCaptureResponse,
+  ProjectMediaPresignRequest,
+  ProjectMediaPresignResponse,
+  GenerateProjectShareLinkResponse,
+  GetProjectShareResponse,
   SiteBuilderComponentsResponse,
   SiteBuilderTemplatesResponse,
   SiteBuilderTemplateDetailResponse,
@@ -892,6 +904,82 @@ export class ProtopipeApiService {
     return this.http.post<ActivateOfferingResponse>(
       protopipeApiUrl(ProtopipeEndpoints.activateOffering.path, { siteId, offeringId }),
       {},
+    );
+  }
+
+  listProjects$(siteId: string, query?: { status?: string }) {
+    let params = new HttpParams();
+    if (query?.status) params = params.set('status', query.status);
+    return this.http.get<ListProjectsResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.listProjects.path, { siteId }),
+      { params },
+    );
+  }
+
+  createProject$(siteId: string, body: CreateProjectRequest) {
+    return this.http.post<CreateProjectResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.createProject.path, { siteId }),
+      body,
+    );
+  }
+
+  getProject$(siteId: string, projectId: string) {
+    return this.http.get<GetProjectResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.getProject.path, { siteId, projectId }),
+    );
+  }
+
+  patchProject$(siteId: string, projectId: string, body: PatchProjectRequest) {
+    return this.http.patch<PatchProjectResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.patchProject.path, { siteId, projectId }),
+      body,
+    );
+  }
+
+  createProjectCapture$(siteId: string, projectId: string, body: CreateProjectCaptureRequest) {
+    return this.http.post<CreateProjectCaptureResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.createProjectCapture.path, { siteId, projectId }),
+      body,
+    );
+  }
+
+  presignProjectMedia$(siteId: string, projectId: string, body: ProjectMediaPresignRequest) {
+    return this.http.post<ProjectMediaPresignResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.projectMediaPresign.path, { siteId, projectId }),
+      body,
+    );
+  }
+
+  generateProjectShareLink$(siteId: string, projectId: string) {
+    return this.http.post<GenerateProjectShareLinkResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.generateProjectShareLink.path, { siteId, projectId }),
+      {},
+    );
+  }
+
+  disableProjectShareLink$(siteId: string, projectId: string) {
+    return this.http.delete<PatchProjectResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.disableProjectShareLink.path, { siteId, projectId }),
+    );
+  }
+
+  getProjectShare$(token: string) {
+    return this.http.get<GetProjectShareResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.getProjectShare.path, { token }),
+    );
+  }
+
+  presignProjectShareMedia$(token: string, body: ProjectMediaPresignRequest) {
+    return this.http.post<ProjectMediaPresignResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.projectShareMediaPresign.path, { token }),
+      body,
+    );
+  }
+
+  createProjectShareCapture$(token: string, body: CreateProjectCaptureRequest) {
+    return this.http.post<CreateProjectCaptureResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.projectShareCapture.path, { token }),
+      body,
     );
   }
 }

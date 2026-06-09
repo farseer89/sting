@@ -10,19 +10,28 @@ import { forkJoin } from 'rxjs';
 import { ProtopipeApiService } from '../../protopipe-api.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
+import { SharpenOffersComponent } from './sharpen-offers.component';
+import { SharpenProjectsComponent } from './sharpen-projects.component';
+
+export type SharpenTab = 'questions' | 'facts' | 'offers' | 'projects';
 
 @Component({
   selector: 'app-protopipe-home-sharpen',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [SharpenOffersComponent, SharpenProjectsComponent],
   templateUrl: './protopipe-home-sharpen.component.html',
   styleUrl: './protopipe-home-sharpen.component.scss',
 })
 export class ProtopipeHomeSharpenComponent implements OnInit {
   private readonly api = inject(ProtopipeApiService);
-  private readonly strategy = inject(ProtopipeStrategyService);
+  readonly strategy = inject(ProtopipeStrategyService);
 
-  readonly loading = signal(true);
+  readonly activeTab = signal<SharpenTab>('questions');
+  readonly hasActiveOffer = signal(false);
+  readonly activeProjectCount = signal(0);
+  readonly hasReadyProject = signal(false);
+  readonly cardsLoading = signal(true);
   readonly error = signal<string | null>(null);
   readonly questions = signal<ProtopipeContextCard[]>([]);
   readonly claims = signal<ProtopipeContextCard[]>([]);
@@ -38,14 +47,40 @@ export class ProtopipeHomeSharpenComponent implements OnInit {
     this.reload();
   }
 
+  setTab(tab: SharpenTab): void {
+    this.activeTab.set(tab);
+  }
+
+  onOffersChanged(): void {
+    const siteId = this.strategy.siteId();
+    if (!siteId) return;
+    this.api.listOfferings$(siteId, { status: 'active' }).subscribe({
+      next: (res) => {
+        this.hasActiveOffer.set((res.offerings ?? []).some((o) => o.status === 'active'));
+      },
+    });
+  }
+
+  onProjectsChanged(): void {
+    const siteId = this.strategy.siteId();
+    if (!siteId) return;
+    this.api.listProjects$(siteId, { status: 'active' }).subscribe({
+      next: (res) => {
+        const projects = res.projects ?? [];
+        this.activeProjectCount.set(projects.length);
+        this.hasReadyProject.set(projects.some((p) => p.storyReadiness >= 0.6));
+      },
+    });
+  }
+
   reload(): void {
     const siteId = this.strategy.siteId();
     if (!siteId) {
-      this.loading.set(false);
+      this.cardsLoading.set(false);
       return;
     }
 
-    this.loading.set(true);
+    this.cardsLoading.set(true);
     this.error.set(null);
 
     forkJoin({
@@ -58,23 +93,29 @@ export class ProtopipeHomeSharpenComponent implements OnInit {
         status: 'pending',
         type: 'claim',
       }),
+      offerings: this.api.listOfferings$(siteId, { status: 'active' }),
+      projects: this.api.listProjects$(siteId, { status: 'active' }),
     }).subscribe({
-      next: ({ questions, claims }) => {
+      next: ({ questions, claims, offerings, projects }) => {
         this.questions.set(questions.cards ?? []);
         this.claims.set(claims.cards ?? []);
         this.questionTotal.set(questions.total ?? questions.cards?.length ?? 0);
         this.claimTotal.set(claims.total ?? claims.cards?.length ?? 0);
+        this.hasActiveOffer.set((offerings.offerings ?? []).some((o) => o.status === 'active'));
+        const projectList = projects.projects ?? [];
+        this.activeProjectCount.set(projectList.length);
+        this.hasReadyProject.set(projectList.some((p) => p.storyReadiness >= 0.6));
 
         const drafts: Record<string, string> = {};
         for (const card of claims.cards ?? []) {
           drafts[card.id] = card.suggestedValue ?? '';
         }
         this.claimDrafts.set(drafts);
-        this.loading.set(false);
+        this.cardsLoading.set(false);
       },
       error: (err) => {
         this.error.set(parseProtopipeApiError(err, 'Could not load context cards.'));
-        this.loading.set(false);
+        this.cardsLoading.set(false);
       },
     });
   }

@@ -3,10 +3,6 @@
 
   <app-strategy-content-map [plan]="plan()" [siteLabel]="siteLabel()" />
 
-  @if (siteId(); as sid) {
-    <app-strategy-offers [siteId]="sid" />
-  }
-
   <div class="strat__accordion strat-a__below-fold">
     <button
       type="button"

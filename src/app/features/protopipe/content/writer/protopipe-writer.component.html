@@ -845,6 +845,21 @@
               }
             </label>
 
+            <label class="pw__field">
+              <span>CTA promotion</span>
+              <select
+                [ngModel]="ctaOfferingId() ?? ''"
+                (ngModelChange)="onCtaOfferingChange($event)"
+                [disabled]="isReadOnly() || ctaOfferingSaving()"
+              >
+                <option value="">Site default (active promotion)</option>
+                @for (offer of ctaOfferings(); track offer.id) {
+                  <option [value]="offer.id">{{ offer.headline }}</option>
+                }
+              </select>
+              <span class="pw__meta-count">{{ ctaOfferingLabel() }}</span>
+            </label>
+
             @if (run(); as r) {
               <div class="pw__run-status" [attr.data-status]="r.status">
                 <span class="pw__run-dot"></span>

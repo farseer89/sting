@@ -35,6 +35,7 @@ import type {
   ProtopipeContentSectionEmbed,
   ProtopipeContentTemplate,
   ProtopipeContextCard,
+  ProtopipeOffering,
   ProtopipeFactResolution,
   ProtopipeFactReview,
   ProtopipePublishTarget,
@@ -707,6 +708,18 @@ export class ProtopipeWriterComponent implements OnDestroy {
 
   readonly pendingContextCardCount = computed(() => this.pendingArticleContextCards().length);
 
+  /** Per-article CTA offering override (null = site default). */
+  readonly ctaOfferingId = signal<string | null>(null);
+  readonly ctaOfferings = signal<ProtopipeOffering[]>([]);
+  readonly ctaOfferingSaving = signal(false);
+
+  readonly ctaOfferingLabel = computed(() => {
+    const id = this.ctaOfferingId();
+    if (!id) return 'Site default (active promotion)';
+    const match = this.ctaOfferings().find((o) => o.id === id);
+    return match?.headline ?? 'Selected offer';
+  });
+
   /** Live TipTap editors keyed by template section index. */
   private readonly sectionEditors = new Map<number, Editor>();
 
@@ -1015,8 +1028,10 @@ export class ProtopipeWriterComponent implements OnDestroy {
         this.loadingPost.set(false);
         this.run.set(null);
         this.postFactReview.set(post.factReview ?? null);
+        this.ctaOfferingId.set(post.ctaOfferingId ?? null);
         this.hydrateFactResolutions(post.factReview);
         this.loadArticleContextCards();
+        this.loadCtaOfferings();
         this.resetMarginNotes();
         if (post.articleGenerationRunId) {
           this.loadRun(post.articleGenerationRunId);
@@ -1793,6 +1808,44 @@ export class ProtopipeWriterComponent implements OnDestroy {
     const postId = this.content.editingId();
     void this.router.navigate(['/protopipe/lab/thinker/run', siteId, runId], {
       queryParams: postId && postId !== 'new' ? { postId } : undefined,
+    });
+  }
+
+  // --- CTA offering picker --------------------------------------------------
+
+  private loadCtaOfferings(): void {
+    const siteId = this.content.siteId();
+    if (!siteId) {
+      this.ctaOfferings.set([]);
+      return;
+    }
+    this.api.listOfferings$(siteId, { status: 'active' }).subscribe({
+      next: (res) => this.ctaOfferings.set(res.offerings ?? []),
+      error: () => this.ctaOfferings.set([]),
+    });
+  }
+
+  onCtaOfferingChange(value: string): void {
+    const siteId = this.content.siteId();
+    const postId = this.content.editingId();
+    if (!siteId || !postId || postId === 'new' || this.isReadOnly()) return;
+
+    const nextId = value.trim() || null;
+    this.ctaOfferingSaving.set(true);
+    this.api.updateContent$(siteId, postId, { ctaOfferingId: nextId }).subscribe({
+      next: ({ post }) => {
+        this.ctaOfferingId.set(post.ctaOfferingId ?? null);
+        this.ctaOfferingSaving.set(false);
+      },
+      error: () => {
+        this.ctaOfferingSaving.set(false);
+        this.messages.add({
+          severity: 'error',
+          summary: 'CTA offer not saved',
+          detail: 'Could not update the promotion for this article.',
+          life: 4000,
+        });
+      },
     });
   }
 

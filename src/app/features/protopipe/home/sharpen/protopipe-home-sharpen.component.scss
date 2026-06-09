@@ -213,6 +213,28 @@
   font-weight: 500;
 }
 
+.sharpen__citation {
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--void-ocean);
+  font-weight: 600;
+}
+
+.sharpen__actions--toolbar {
+  margin-bottom: 0.75rem;
+  align-items: center;
+}
+
+.sharpen__meta {
+  font-size: 11px;
+  color: var(--void-ink-muted);
+}
+
+.sharpen__card--geo {
+  border-left: 2px solid var(--void-ocean);
+}
+
 .sharpen__source {
   font-size: 8px;
   color: var(--void-ink-muted, rgba(10, 10, 10, 0.45));

@@ -59,6 +59,17 @@
         <span class="sharpen__tab-dot" aria-label="Story ready"></span>
       }
     </button>
+    <button
+      type="button"
+      class="sharpen__tab"
+      [class.is-active]="activeTab() === 'ai-search'"
+      (click)="setTab('ai-search')"
+    >
+      AI search
+      @if (geoTotal() > 0) {
+        <span class="sharpen__tab-count">{{ geoTotal() }}</span>
+      }
+    </button>
   </nav>
 
   @if (activeTab() === 'questions') {
@@ -180,5 +191,77 @@
         <app-sharpen-projects [siteId]="siteId" (changed)="onProjectsChanged()" />
       }
     </section>
+  }
+
+  @if (activeTab() === 'ai-search') {
+    @if (cardsLoading()) {
+      <p class="sharpen__status" aria-busy="true">Loading…</p>
+    } @else if (error()) {
+      <p class="sharpen__status sharpen__status--error">{{ error() }}</p>
+      <button type="button" class="sharpen__btn" (click)="reload()">Try again</button>
+    } @else {
+      <section class="sharpen__panel" aria-labelledby="sharpen-geo-heading">
+        <p id="sharpen-geo-heading" class="sharpen__section-lede">
+          Help AI search find you — gaps Gemini would need filled to cite this business confidently.
+        </p>
+
+        <div class="sharpen__actions sharpen__actions--toolbar">
+          <button
+            type="button"
+            class="sharpen__btn sharpen__btn--primary"
+            [disabled]="geoRunning()"
+            (click)="runGeoDiscovery()"
+          >
+            {{ geoRunning() ? 'Analyzing…' : 'Run AI search analysis' }}
+          </button>
+          @if (lastGeoRunAt()) {
+            <span class="sharpen__meta">Last run {{ lastGeoRunAt() | date: 'short' }}</span>
+          }
+        </div>
+
+        @if (geoCards().length === 0) {
+          <p class="sharpen__empty">
+            No AI search gaps yet. Run analysis after keyword discovery to surface citation opportunities.
+          </p>
+        } @else {
+          <ul class="sharpen__list">
+            @for (card of geoCards(); track card.id) {
+              <li class="sharpen__card sharpen__card--geo">
+                <div class="sharpen__card-meta">
+                  <span class="sharpen__topic">{{ topicLabel(card) }}</span>
+                  @if (citationLabel(card); as citation) {
+                    <span class="sharpen__citation">{{ citation }}</span>
+                  }
+                  <span class="sharpen__source">{{ sourceLabel(card) }}</span>
+                </div>
+                <p class="sharpen__card-text">{{ card.cardText }}</p>
+                @if (answeringGeoId() === card.id) {
+                  <textarea
+                    class="sharpen__input"
+                    rows="2"
+                    [value]="geoDraft()"
+                    (input)="onGeoDraftInput($event)"
+                    placeholder="Your answer (1–2 sentences)"
+                  ></textarea>
+                  <div class="sharpen__actions">
+                    <button type="button" class="sharpen__btn sharpen__btn--primary" (click)="submitGeo(card)">
+                      Save
+                    </button>
+                    <button type="button" class="sharpen__btn" (click)="cancelGeo()">Cancel</button>
+                  </div>
+                } @else {
+                  <div class="sharpen__actions">
+                    <button type="button" class="sharpen__btn sharpen__btn--primary" (click)="startGeo(card)">
+                      Answer
+                    </button>
+                    <button type="button" class="sharpen__btn" (click)="skipGeo(card)">Skip</button>
+                  </div>
+                }
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    }
   }
 </section>

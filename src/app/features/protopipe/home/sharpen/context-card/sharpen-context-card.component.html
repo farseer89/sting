@@ -3,143 +3,153 @@
   [class.ctx-card--geo]="mode() === 'geo'"
   [class.ctx-card--expanded]="isExpanded()"
 >
-  <div class="ctx-card__meta">
-    <span class="ctx-card__topic">{{ topicDisplay() }}</span>
-    @if (citationDisplay(); as citation) {
-      <span class="ctx-card__citation">{{ citation }}</span>
-    }
-    <span class="ctx-card__source">{{ sourceDisplay() }}</span>
-  </div>
+  <header class="ctx-card__header">
+    <div class="ctx-card__header-main">
+      <div class="ctx-card__badges">
+        <span class="ctx-card__badge ctx-card__badge--topic">{{ topicDisplay() }}</span>
+        @if (citationDisplay(); as citation) {
+          <span
+            class="ctx-card__badge ctx-card__badge--citation"
+            [class.ctx-card__badge--high]="citationTone() === 'high'"
+            [class.ctx-card__badge--medium]="citationTone() === 'medium'"
+            [class.ctx-card__badge--low]="citationTone() === 'low'"
+          >
+            {{ citation }}
+          </span>
+        }
+        <span class="ctx-card__source">{{ sourceDisplay() }}</span>
+      </div>
 
-  <p class="ctx-card__text">{{ card().cardText }}</p>
+      <p class="ctx-card__text">{{ card().cardText }}</p>
 
-  @if (showGeoHint()) {
-    <p class="ctx-card__hint">
-      AI search works best with specific numbers, names, and places.
-    </p>
-  }
+      @if (showGeoHint()) {
+        <p class="ctx-card__hint">
+          AI search works best with specific numbers, names, and places.
+        </p>
+      }
 
-  @if (isClaim() && card().suggestedValue) {
-    <p class="ctx-card__suggested">Draft had: “{{ card().suggestedValue }}”</p>
-  }
-
-  @if (!isExpanded()) {
-    <div class="ctx-card__actions">
-      <button type="button" class="sharpen-btn sharpen-btn--primary sharpen-btn--block" (click)="onAnswerClick()">
-        {{ isClaim() ? 'Review' : 'Answer' }}
-      </button>
-      <button type="button" class="sharpen-btn sharpen-btn--ghost" (click)="onSkip()">Skip</button>
-      @if (isClaim()) {
-        <button type="button" class="sharpen-btn sharpen-btn--ghost" (click)="onDismiss()">Dismiss</button>
+      @if (isClaim() && card().suggestedValue) {
+        <p class="ctx-card__suggested">Draft had: “{{ card().suggestedValue }}”</p>
       }
     </div>
-  } @else {
-    <div class="ctx-card__form">
-      @if (isClaim() && claimVerdictOptions().length) {
-        <div class="ctx-card__field">
-          <span class="sharpen-field-label">Is this accurate?</span>
-          <div class="sharpen-verdict-row" role="group" aria-label="Claim accuracy">
-            @for (option of claimVerdictOptions(); track option.value) {
-              <button
-                type="button"
-                class="sharpen-verdict-chip"
-                [class.is-selected]="claimVerdict() === option.value"
-                (click)="setVerdict($any(option.value))"
-              >
-                {{ option.label }}
-              </button>
-            }
+
+    @if (!isExpanded()) {
+      <div class="ctx-card__header-actions">
+        <button type="button" class="sharpen-btn sharpen-btn--primary" (click)="onAnswerClick()">
+          {{ isClaim() ? 'Review' : 'Answer' }}
+        </button>
+        <button type="button" class="sharpen-btn sharpen-btn--ghost" (click)="onSkip()">Skip</button>
+        @if (isClaim()) {
+          <button type="button" class="sharpen-btn sharpen-btn--ghost" (click)="onDismiss()">Dismiss</button>
+        }
+      </div>
+    }
+  </header>
+
+  @if (isExpanded()) {
+    <div class="ctx-card__body">
+      <div class="ctx-card__form" [class]="'ctx-card__form--' + formLayout()">
+        @if (isClaim() && claimVerdictOptions().length) {
+          <div class="ctx-card__field ctx-card__field--full">
+            <span class="sharpen-field-label">Is this accurate?</span>
+            <div class="sharpen-verdict-row" role="group" aria-label="Claim accuracy">
+              @for (option of claimVerdictOptions(); track option.value) {
+                <button
+                  type="button"
+                  class="sharpen-verdict-chip"
+                  [class.is-selected]="claimVerdict() === option.value"
+                  (click)="setVerdict($any(option.value))"
+                >
+                  {{ option.label }}
+                </button>
+              }
+            </div>
           </div>
-        </div>
 
-        @if (showClaimCorrection()) {
-          <label class="sharpen-field-label" [for]="'field-correction-' + card().id">
-            {{ correctionField().label }}
-            <input
-              class="sharpen-field-input"
-              [id]="'field-correction-' + card().id"
-              type="text"
-              [value]="draft()['correction'] ?? ''"
-              [placeholder]="correctionField().placeholder ?? ''"
-              (input)="onFieldInput('correction', $event)"
-            />
-            @if (fieldErrors()['correction']; as err) {
-              <span class="sharpen-field-error">{{ err }}</span>
-            }
-          </label>
-        }
-
-        @if (showClaimNotTrue()) {
-          <label class="sharpen-field-label" [for]="'field-alternative-' + card().id">
-            {{ notTrueField().label }}
-            <textarea
-              class="sharpen-field-textarea"
-              [id]="'field-alternative-' + card().id"
-              [rows]="notTrueField().rows ?? 2"
-              [value]="draft()['alternative'] ?? ''"
-              [placeholder]="notTrueField().placeholder ?? ''"
-              (input)="onFieldInput('alternative', $event)"
-            ></textarea>
-          </label>
-        }
-      } @else {
-        @for (field of fields(); track field.key) {
-          @if (field.type === 'textarea') {
-            <label class="sharpen-field-label" [for]="'field-' + field.key + '-' + card().id">
-              {{ field.label }}
-              <textarea
-                class="sharpen-field-textarea"
-                [id]="'field-' + field.key + '-' + card().id"
-                [rows]="field.rows ?? 3"
-                [value]="draft()[field.key] ?? ''"
-                [placeholder]="field.placeholder ?? ''"
-                (input)="onFieldInput(field.key, $event)"
-              ></textarea>
-              @if (fieldErrors()[field.key]; as err) {
-                <span class="sharpen-field-error">{{ err }}</span>
-              }
-            </label>
-          } @else if (field.type === 'select') {
-            <label class="sharpen-field-label" [for]="'field-' + field.key + '-' + card().id">
-              {{ field.label }}
-              <select
-                class="sharpen-field-select"
-                [id]="'field-' + field.key + '-' + card().id"
-                [value]="draft()[field.key] ?? ''"
-                (change)="onSelectChange(field.key, $event)"
-              >
-                @for (option of field.options ?? []; track option.value) {
-                  <option [value]="option.value">{{ option.label }}</option>
-                }
-              </select>
-              @if (fieldErrors()[field.key]; as err) {
-                <span class="sharpen-field-error">{{ err }}</span>
-              }
-            </label>
-          } @else {
-            <label class="sharpen-field-label" [for]="'field-' + field.key + '-' + card().id">
-              {{ field.label }}
+          @if (showClaimCorrection()) {
+            <label class="sharpen-field-label ctx-card__field ctx-card__field--full" [for]="'field-correction-' + card().id">
+              {{ correctionField().label }}
               <input
                 class="sharpen-field-input"
-                [id]="'field-' + field.key + '-' + card().id"
-                [type]="field.type === 'number' ? 'number' : 'text'"
-                [value]="draft()[field.key] ?? ''"
-                [placeholder]="field.placeholder ?? ''"
-                (input)="onFieldInput(field.key, $event)"
+                [id]="'field-correction-' + card().id"
+                type="text"
+                [value]="draft()['correction'] ?? ''"
+                [placeholder]="correctionField().placeholder ?? ''"
+                (input)="onFieldInput('correction', $event)"
               />
+              @if (fieldErrors()['correction']; as err) {
+                <span class="sharpen-field-error">{{ err }}</span>
+              }
+            </label>
+          }
+
+          @if (showClaimNotTrue()) {
+            <label class="sharpen-field-label ctx-card__field ctx-card__field--full" [for]="'field-alternative-' + card().id">
+              {{ notTrueField().label }}
+              <textarea
+                class="sharpen-field-textarea"
+                [id]="'field-alternative-' + card().id"
+                [rows]="notTrueField().rows ?? 2"
+                [value]="draft()['alternative'] ?? ''"
+                [placeholder]="notTrueField().placeholder ?? ''"
+                (input)="onFieldInput('alternative', $event)"
+              ></textarea>
+            </label>
+          }
+        } @else {
+          @for (field of fields(); track field.key) {
+            <label
+              class="sharpen-field-label ctx-card__field"
+              [class.ctx-card__field--full]="field.type === 'textarea' || field.key === 'service'"
+              [class.ctx-card__field--half]="field.key === 'lowPrice' || field.key === 'highPrice'"
+              [for]="'field-' + field.key + '-' + card().id"
+            >
+              {{ field.label }}
+              @if (field.type === 'textarea') {
+                <textarea
+                  class="sharpen-field-textarea"
+                  [id]="'field-' + field.key + '-' + card().id"
+                  [rows]="field.rows ?? 3"
+                  [value]="draft()[field.key] ?? ''"
+                  [placeholder]="field.placeholder ?? ''"
+                  (input)="onFieldInput(field.key, $event)"
+                ></textarea>
+              } @else if (field.type === 'select') {
+                <select
+                  class="sharpen-field-select"
+                  [id]="'field-' + field.key + '-' + card().id"
+                  [value]="draft()[field.key] ?? ''"
+                  (change)="onSelectChange(field.key, $event)"
+                >
+                  @for (option of field.options ?? []; track option.value) {
+                    <option [value]="option.value">{{ option.label }}</option>
+                  }
+                </select>
+              } @else {
+                <input
+                  class="sharpen-field-input"
+                  [id]="'field-' + field.key + '-' + card().id"
+                  [type]="field.type === 'number' ? 'number' : 'text'"
+                  [value]="draft()[field.key] ?? ''"
+                  [placeholder]="field.placeholder ?? ''"
+                  (input)="onFieldInput(field.key, $event)"
+                />
+              }
               @if (fieldErrors()[field.key]; as err) {
                 <span class="sharpen-field-error">{{ err }}</span>
               }
             </label>
           }
         }
-      }
 
-      @if (fieldErrors()['_form']; as formErr) {
-        <p class="sharpen-field-error">{{ formErr }}</p>
-      }
+        @if (fieldErrors()['_form']; as formErr) {
+          <p class="sharpen-field-error ctx-card__field ctx-card__field--full">{{ formErr }}</p>
+        }
+      </div>
+    </div>
 
-      <div class="sharpen-actions sharpen-actions--sticky">
+    <footer class="ctx-card__footer">
+      <div class="sharpen-actions">
         <button
           type="button"
           class="sharpen-btn sharpen-btn--primary"
@@ -152,6 +162,6 @@
           Cancel
         </button>
       </div>
-    </div>
+    </footer>
   }
 </article>

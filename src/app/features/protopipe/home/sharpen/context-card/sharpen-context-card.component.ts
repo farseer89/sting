@@ -14,6 +14,7 @@ import {
   claimCorrectionField,
   claimNotTrueField,
   composeAnswerValue,
+  effectiveTopic,
   emptyDraftForCard,
   fieldsForCard,
   sourceLabel,
@@ -49,6 +50,11 @@ export class SharpenContextCardComponent {
   readonly topicDisplay = computed(() => topicLabel(this.card().topic));
   readonly sourceDisplay = computed(() => sourceLabel(this.card().source.stage));
   readonly citationDisplay = computed(() => citationLabel(this.card()));
+  readonly citationTone = computed(() => this.card().citationPotential ?? null);
+  readonly formLayout = computed(() => {
+    if (this.isClaim()) return 'claim';
+    return effectiveTopic(this.card());
+  });
   readonly showGeoHint = computed(() => this.mode() === 'geo' || this.card().geoSignal);
   readonly isClaim = computed(() => this.card().type === 'claim');
   readonly claimVerdict = computed(() => (this.draft()['verdict'] ?? '') as ClaimVerdict);

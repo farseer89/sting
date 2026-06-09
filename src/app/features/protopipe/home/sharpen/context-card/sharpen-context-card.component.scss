@@ -2,92 +2,195 @@
 
 :host {
   display: block;
+  height: 100%;
 }
 
 .ctx-card {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  border-radius: 0.55rem;
-  border: 0.5px solid var(--void-tile-border);
-  background: rgba(255, 255, 255, 0.65);
+  height: 100%;
+  container-type: inline-size;
+  border-radius: 12px;
+  border: 1px solid var(--void-tile-border);
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(10, 10, 10, 0.04);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+
+  &:hover:not(.ctx-card--expanded) {
+    box-shadow: 0 6px 18px rgba(10, 10, 10, 0.08);
+    transform: translateY(-1px);
+  }
 
   &--geo {
-    border-left: 3px solid var(--void-ocean);
+    border-top: 3px solid var(--void-ocean);
   }
 
   &--expanded {
-    background: #fff;
-    box-shadow: 0 2px 12px rgba(10, 10, 10, 0.06);
+    box-shadow: 0 8px 24px rgba(10, 10, 10, 0.1);
+    z-index: 1;
+
+    &:hover {
+      transform: none;
+    }
   }
 }
 
-.ctx-card__meta {
+.ctx-card__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: linear-gradient(
+    135deg,
+    rgba(15, 118, 110, 0.03),
+    rgba(255, 255, 255, 0)
+  );
+  border-bottom: 1px solid var(--void-tile-border);
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+}
+
+.ctx-card__header-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.ctx-card__badges {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem 0.5rem;
 }
 
-.ctx-card__topic {
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--void-ocean-muted);
+.ctx-card__badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.65rem;
   font-weight: 600;
-}
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  border: 1px solid transparent;
 
-.ctx-card__citation {
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--void-ocean);
-  font-weight: 600;
+  &--topic {
+    color: var(--void-ocean);
+    background: var(--void-ocean-fill);
+    border-color: rgba(15, 118, 110, 0.15);
+  }
+
+  &--citation {
+    color: var(--void-ink-muted, rgba(10, 10, 10, 0.55));
+    background: rgba(255, 255, 255, 0.9);
+    border-color: var(--void-tile-border);
+  }
+
+  &--high {
+    color: #0f766e;
+    border-color: rgba(15, 118, 110, 0.45);
+    background: rgba(15, 118, 110, 0.08);
+  }
+
+  &--medium {
+    color: #b45309;
+    border-color: rgba(245, 158, 11, 0.45);
+    background: rgba(245, 158, 11, 0.08);
+  }
+
+  &--low {
+    color: var(--void-ink-muted, rgba(10, 10, 10, 0.55));
+  }
 }
 
 .ctx-card__source {
-  font-size: 10px;
+  font-size: 0.68rem;
   color: var(--void-ink-muted, rgba(10, 10, 10, 0.45));
 }
 
 .ctx-card__text {
   margin: 0;
-  font-size: 14px;
-  line-height: 1.45;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  font-weight: 500;
   color: var(--void-ink-strong);
 }
 
 .ctx-card__hint {
   margin: 0;
-  font-size: 12px;
+  font-size: 0.78rem;
   line-height: 1.4;
   color: var(--void-ocean);
 }
 
 .ctx-card__suggested {
   margin: 0;
-  font-size: 12px;
+  font-size: 0.78rem;
   line-height: 1.4;
   color: var(--void-ink-muted, rgba(10, 10, 10, 0.55));
   font-style: italic;
 }
 
-.ctx-card__actions {
+.ctx-card__header-actions {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  margin-top: 0.15rem;
+  flex-shrink: 0;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.45rem;
+    padding-top: 0.15rem;
+  }
+}
+
+.ctx-card__body {
+  padding: 0.85rem 1rem 0.25rem;
 }
 
 .ctx-card__form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  width: 100%;
+
+  @container (min-width: 22rem) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .ctx-card__field {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  min-width: 0;
+
+  &--full {
+    grid-column: 1 / -1;
+  }
+
+  &--half {
+    @container (min-width: 22rem) {
+      grid-column: span 1;
+    }
+  }
+}
+
+.ctx-card__footer {
+  padding: 0.65rem 1rem 0.85rem;
+  border-top: 1px solid var(--void-tile-border);
+  background: rgba(248, 250, 252, 0.65);
+
+  .sharpen-actions {
+    justify-content: flex-end;
+  }
 }

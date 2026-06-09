@@ -81,7 +81,7 @@
     } @else {
       <section class="sharpen__panel" aria-labelledby="sharpen-questions-heading">
         <p id="sharpen-questions-heading" class="sharpen__section-lede">
-          Assumptions from keyword discovery and planning — answer in a sentence or two.
+          Assumptions from keyword discovery and planning — answer with specific details.
         </p>
 
         @if (questions().length === 0) {
@@ -89,34 +89,17 @@
         } @else {
           <ul class="sharpen__list">
             @for (card of questions(); track card.id) {
-              <li class="sharpen__card">
-                <div class="sharpen__card-meta">
-                  <span class="sharpen__topic">{{ topicLabel(card) }}</span>
-                  <span class="sharpen__source">{{ sourceLabel(card) }}</span>
-                </div>
-                <p class="sharpen__card-text">{{ card.cardText }}</p>
-                @if (answeringQuestionId() === card.id) {
-                  <textarea
-                    class="sharpen__input"
-                    rows="2"
-                    [value]="questionDraft()"
-                    (input)="onQuestionDraftInput($event)"
-                    placeholder="Your answer (1–2 sentences)"
-                  ></textarea>
-                  <div class="sharpen__actions">
-                    <button type="button" class="sharpen__btn sharpen__btn--primary" (click)="submitQuestion(card)">
-                      Save
-                    </button>
-                    <button type="button" class="sharpen__btn" (click)="cancelQuestion()">Cancel</button>
-                  </div>
-                } @else {
-                  <div class="sharpen__actions">
-                    <button type="button" class="sharpen__btn sharpen__btn--primary" (click)="startQuestion(card)">
-                      Answer
-                    </button>
-                    <button type="button" class="sharpen__btn" (click)="skipQuestion(card)">Skip</button>
-                  </div>
-                }
+              <li>
+                <app-sharpen-context-card
+                  [card]="card"
+                  mode="question"
+                  [expanded]="isCardExpanded(card.id)"
+                  [submitting]="isCardSubmitting(card.id)"
+                  (expandRequested)="expandCard(card.id)"
+                  (cancelled)="collapseCard()"
+                  (answered)="onCardAnswered(card, $event)"
+                  (skipped)="onCardSkipped(card)"
+                />
               </li>
             }
           </ul>
@@ -142,31 +125,18 @@
         } @else {
           <ul class="sharpen__list">
             @for (card of claims(); track card.id) {
-              <li class="sharpen__card">
-                <div class="sharpen__card-meta">
-                  <span class="sharpen__topic">{{ topicLabel(card) }}</span>
-                  <span class="sharpen__source">{{ sourceLabel(card) }}</span>
-                </div>
-                <p class="sharpen__card-text">{{ card.cardText }}</p>
-                @if (card.suggestedValue) {
-                  <p class="sharpen__suggested">Draft had: “{{ card.suggestedValue }}”</p>
-                }
-                <label class="sharpen__label" [for]="'claim-' + card.id">Correct value</label>
-                <input
-                  class="sharpen__input sharpen__input--single"
-                  [id]="'claim-' + card.id"
-                  type="text"
-                  [value]="claimDraft(card.id)"
-                  (input)="setClaimDraft(card.id, $any($event.target).value)"
-                  [placeholder]="card.suggestedValue ?? 'Enter the right answer'"
+              <li>
+                <app-sharpen-context-card
+                  [card]="card"
+                  mode="claim"
+                  [expanded]="isCardExpanded(card.id)"
+                  [submitting]="isCardSubmitting(card.id)"
+                  (expandRequested)="expandCard(card.id)"
+                  (cancelled)="collapseCard()"
+                  (answered)="onCardAnswered(card, $event)"
+                  (skipped)="onCardSkipped(card)"
+                  (dismissed)="onCardDismissed(card)"
                 />
-                <div class="sharpen__actions">
-                  <button type="button" class="sharpen__btn sharpen__btn--primary" (click)="submitClaim(card)">
-                    Save answer
-                  </button>
-                  <button type="button" class="sharpen__btn" (click)="skipClaim(card)">Skip</button>
-                  <button type="button" class="sharpen__btn" (click)="dismissClaim(card)">Dismiss</button>
-                </div>
               </li>
             }
           </ul>
@@ -240,37 +210,17 @@
         } @else {
           <ul class="sharpen__list">
             @for (card of geoCards(); track card.id) {
-              <li class="sharpen__card sharpen__card--geo">
-                <div class="sharpen__card-meta">
-                  <span class="sharpen__topic">{{ topicLabel(card) }}</span>
-                  @if (citationLabel(card); as citation) {
-                    <span class="sharpen__citation">{{ citation }}</span>
-                  }
-                  <span class="sharpen__source">{{ sourceLabel(card) }}</span>
-                </div>
-                <p class="sharpen__card-text">{{ card.cardText }}</p>
-                @if (answeringGeoId() === card.id) {
-                  <textarea
-                    class="sharpen__input"
-                    rows="2"
-                    [value]="geoDraft()"
-                    (input)="onGeoDraftInput($event)"
-                    placeholder="Your answer (1–2 sentences)"
-                  ></textarea>
-                  <div class="sharpen__actions">
-                    <button type="button" class="sharpen__btn sharpen__btn--primary" (click)="submitGeo(card)">
-                      Save
-                    </button>
-                    <button type="button" class="sharpen__btn" (click)="cancelGeo()">Cancel</button>
-                  </div>
-                } @else {
-                  <div class="sharpen__actions">
-                    <button type="button" class="sharpen__btn sharpen__btn--primary" (click)="startGeo(card)">
-                      Answer
-                    </button>
-                    <button type="button" class="sharpen__btn" (click)="skipGeo(card)">Skip</button>
-                  </div>
-                }
+              <li>
+                <app-sharpen-context-card
+                  [card]="card"
+                  mode="geo"
+                  [expanded]="isCardExpanded(card.id)"
+                  [submitting]="isCardSubmitting(card.id)"
+                  (expandRequested)="expandCard(card.id)"
+                  (cancelled)="collapseCard()"
+                  (answered)="onCardAnswered(card, $event)"
+                  (skipped)="onCardSkipped(card)"
+                />
               </li>
             }
           </ul>

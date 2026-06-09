@@ -16,6 +16,9 @@ import {
   PROTOPIPE_AGENT_POLL_INTERVAL_MS,
   PROTOPIPE_AGENT_POLL_MAX_ATTEMPTS,
 } from '../../protopipe.constants';
+import {
+  SharpenContextCardComponent,
+} from './context-card/sharpen-context-card.component';
 import { SharpenOffersComponent } from './sharpen-offers.component';
 import { SharpenProjectsComponent } from './sharpen-projects.component';
 
@@ -25,7 +28,12 @@ export type SharpenTab = 'questions' | 'facts' | 'offers' | 'projects' | 'ai-sea
   selector: 'app-protopipe-home-sharpen',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SharpenOffersComponent, SharpenProjectsComponent, DatePipe],
+  imports: [
+    SharpenContextCardComponent,
+    SharpenOffersComponent,
+    SharpenProjectsComponent,
+    DatePipe,
+  ],
   templateUrl: './protopipe-home-sharpen.component.html',
   styleUrl: './protopipe-home-sharpen.component.scss',
 })
@@ -45,11 +53,8 @@ export class ProtopipeHomeSharpenComponent implements OnInit {
   readonly questionTotal = signal(0);
   readonly claimTotal = signal(0);
   readonly geoTotal = signal(0);
-  readonly answeringQuestionId = signal<string | null>(null);
-  readonly answeringGeoId = signal<string | null>(null);
-  readonly questionDraft = signal('');
-  readonly geoDraft = signal('');
-  readonly claimDrafts = signal<Record<string, string>>({});
+  readonly expandedCardId = signal<string | null>(null);
+  readonly submittingCardId = signal<string | null>(null);
   readonly geoRunning = signal(false);
   readonly geoError = signal<string | null>(null);
   readonly geoForceAvailable = signal(false);
@@ -63,6 +68,7 @@ export class ProtopipeHomeSharpenComponent implements OnInit {
 
   setTab(tab: SharpenTab): void {
     this.activeTab.set(tab);
+    this.expandedCardId.set(null);
   }
 
   onOffersChanged(): void {
@@ -96,6 +102,7 @@ export class ProtopipeHomeSharpenComponent implements OnInit {
 
     this.cardsLoading.set(true);
     this.error.set(null);
+    this.expandedCardId.set(null);
 
     forkJoin({
       questions: this.api.listContextCards$(siteId, {
@@ -126,12 +133,6 @@ export class ProtopipeHomeSharpenComponent implements OnInit {
         const projectList = projects.projects ?? [];
         this.activeProjectCount.set(projectList.length);
         this.hasReadyProject.set(projectList.some((p) => p.storyReadiness >= 0.6));
-
-        const drafts: Record<string, string> = {};
-        for (const card of claims.cards ?? []) {
-          drafts[card.id] = card.suggestedValue ?? '';
-        }
-        this.claimDrafts.set(drafts);
         this.cardsLoading.set(false);
       },
       error: (err) => {
@@ -141,39 +142,61 @@ export class ProtopipeHomeSharpenComponent implements OnInit {
     });
   }
 
-  startQuestion(card: ProtopipeContextCard): void {
-    this.answeringQuestionId.set(card.id);
-    this.questionDraft.set('');
+  expandCard(cardId: string): void {
+    this.expandedCardId.set(cardId);
   }
 
-  cancelQuestion(): void {
-    this.answeringQuestionId.set(null);
-    this.questionDraft.set('');
+  collapseCard(): void {
+    this.expandedCardId.set(null);
   }
 
-  onQuestionDraftInput(event: Event): void {
-    this.questionDraft.set((event.target as HTMLTextAreaElement).value);
+  isCardExpanded(cardId: string): boolean {
+    return this.expandedCardId() === cardId;
   }
 
-  submitQuestion(card: ProtopipeContextCard): void {
+  isCardSubmitting(cardId: string): boolean {
+    return this.submittingCardId() === cardId;
+  }
+
+  onCardAnswered(card: ProtopipeContextCard, value: string): void {
+    this.patchCard(card, { status: 'answered', answer: { value } });
+  }
+
+  onCardSkipped(card: ProtopipeContextCard): void {
+    this.patchCard(card, { status: 'skipped' });
+  }
+
+  onCardDismissed(card: ProtopipeContextCard): void {
+    this.patchCard(card, { status: 'dismissed' });
+  }
+
+  private patchCard(
+    card: ProtopipeContextCard,
+    body: { status: 'answered'; answer: { value: string } } | { status: 'skipped' | 'dismissed' },
+  ): void {
     const siteId = this.strategy.siteId();
-    const value = this.questionDraft().trim();
-    if (!siteId || !value) return;
+    if (!siteId) return;
 
-    this.api.patchContextCard$(siteId, card.id, { status: 'answered', answer: { value } }).subscribe({
+    this.submittingCardId.set(card.id);
+    this.error.set(null);
+
+    this.api.patchContextCard$(siteId, card.id, body).subscribe({
       next: () => {
-        this.cancelQuestion();
+        this.submittingCardId.set(null);
+        this.expandedCardId.set(null);
         this.reload();
       },
       error: (err) => {
-        this.error.set(parseProtopipeApiError(err, 'Could not save your answer.'));
+        this.submittingCardId.set(null);
+        const fallback =
+          body.status === 'answered'
+            ? 'Could not save your answer.'
+            : body.status === 'skipped'
+              ? 'Could not skip question.'
+              : 'Could not dismiss claim.';
+        this.error.set(parseProtopipeApiError(err, fallback));
       },
     });
-  }
-
-  citationLabel(card: ProtopipeContextCard): string | null {
-    if (!card.geoSignal || !card.citationPotential) return null;
-    return `${card.citationPotential} citation potential`;
   }
 
   async runGeoDiscovery(force = false): Promise<void> {
@@ -220,121 +243,5 @@ export class ProtopipeHomeSharpenComponent implements OnInit {
       }
     }
     throw new Error('AI search analysis timed out');
-  }
-
-  startGeo(card: ProtopipeContextCard): void {
-    this.answeringGeoId.set(card.id);
-    this.geoDraft.set('');
-  }
-
-  cancelGeo(): void {
-    this.answeringGeoId.set(null);
-    this.geoDraft.set('');
-  }
-
-  onGeoDraftInput(event: Event): void {
-    this.geoDraft.set((event.target as HTMLTextAreaElement).value);
-  }
-
-  submitGeo(card: ProtopipeContextCard): void {
-    const siteId = this.strategy.siteId();
-    const value = this.geoDraft().trim();
-    if (!siteId || !value) return;
-
-    this.api.patchContextCard$(siteId, card.id, { status: 'answered', answer: { value } }).subscribe({
-      next: () => {
-        this.cancelGeo();
-        this.reload();
-      },
-      error: (err) => {
-        this.error.set(parseProtopipeApiError(err, 'Could not save your answer.'));
-      },
-    });
-  }
-
-  skipGeo(card: ProtopipeContextCard): void {
-    const siteId = this.strategy.siteId();
-    if (!siteId) return;
-    this.api.patchContextCard$(siteId, card.id, { status: 'skipped' }).subscribe({
-      next: () => this.reload(),
-      error: (err) => {
-        this.error.set(parseProtopipeApiError(err, 'Could not skip question.'));
-      },
-    });
-  }
-
-  skipQuestion(card: ProtopipeContextCard): void {
-    const siteId = this.strategy.siteId();
-    if (!siteId) return;
-    this.api.patchContextCard$(siteId, card.id, { status: 'skipped' }).subscribe({
-      next: () => this.reload(),
-      error: (err) => {
-        this.error.set(parseProtopipeApiError(err, 'Could not skip question.'));
-      },
-    });
-  }
-
-  claimDraft(cardId: string): string {
-    return this.claimDrafts()[cardId] ?? '';
-  }
-
-  setClaimDraft(cardId: string, value: string): void {
-    this.claimDrafts.update((drafts) => ({ ...drafts, [cardId]: value }));
-  }
-
-  submitClaim(card: ProtopipeContextCard): void {
-    const siteId = this.strategy.siteId();
-    const value = this.claimDraft(card.id).trim();
-    if (!siteId || !value) return;
-
-    this.api.patchContextCard$(siteId, card.id, { status: 'answered', answer: { value } }).subscribe({
-      next: () => this.reload(),
-      error: (err) => {
-        this.error.set(parseProtopipeApiError(err, 'Could not save claim.'));
-      },
-    });
-  }
-
-  skipClaim(card: ProtopipeContextCard): void {
-    const siteId = this.strategy.siteId();
-    if (!siteId) return;
-    this.api.patchContextCard$(siteId, card.id, { status: 'skipped' }).subscribe({
-      next: () => this.reload(),
-      error: (err) => {
-        this.error.set(parseProtopipeApiError(err, 'Could not skip claim.'));
-      },
-    });
-  }
-
-  dismissClaim(card: ProtopipeContextCard): void {
-    const siteId = this.strategy.siteId();
-    if (!siteId) return;
-    this.api.patchContextCard$(siteId, card.id, { status: 'dismissed' }).subscribe({
-      next: () => this.reload(),
-      error: (err) => {
-        this.error.set(parseProtopipeApiError(err, 'Could not dismiss claim.'));
-      },
-    });
-  }
-
-  topicLabel(card: ProtopipeContextCard): string {
-    return card.topic.replace(/_/g, ' ');
-  }
-
-  sourceLabel(card: ProtopipeContextCard): string {
-    switch (card.source.stage) {
-      case 'keyword_discovery':
-        return 'From keyword discovery';
-      case 'plan_generation':
-        return 'From content plan';
-      case 'article_generation':
-        return 'From article review';
-      case 'geo_discovery':
-        return 'From AI search analysis';
-      case 'project_capture':
-        return 'From a project';
-      default:
-        return 'From strategy';
-    }
   }
 }

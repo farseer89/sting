@@ -1,4 +1,5 @@
 @use '../strategy/strategy.shared' as *;
+@use 'sharpen-fields';
 
 :host {
   display: flex;
@@ -75,10 +76,17 @@
 
 .sharpen__tabs {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.25rem;
   padding: 0.45rem 0 0.5rem;
   border-bottom: 0.5px solid var(--void-tile-border);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .sharpen__tab {
@@ -86,6 +94,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
+  flex-shrink: 0;
   border: 0;
   border-radius: 0.35rem;
   padding: 0.35rem 0.55rem;
@@ -94,10 +103,16 @@
   font-size: 10px;
   font-weight: 500;
   cursor: pointer;
+  min-height: 44px;
 
   &.is-active {
     background: var(--void-ocean-fill);
     color: var(--void-ocean);
+  }
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+    padding: 0.45rem 0.65rem;
   }
 }
 
@@ -138,43 +153,16 @@
   border: 0;
 }
 
-.sharpen__section-head {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.sharpen__section-title {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--void-ink-strong);
-}
-
-.sharpen__section-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.1rem;
-  height: 1.1rem;
-  padding: 0 0.25rem;
-  border-radius: 999px;
-  background: var(--void-ocean);
-  color: #fff;
-  font-size: 9px;
-  font-weight: 600;
-}
-
 .sharpen__section-lede {
-  margin: 0.2rem 0 0.45rem;
-  font-size: 10px;
+  margin: 0.2rem 0 0.65rem;
+  font-size: 12px;
   line-height: 1.4;
   color: var(--void-ink-muted, rgba(10, 10, 10, 0.55));
 }
 
 .sharpen__empty {
   margin: 0;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--void-ink-muted, rgba(10, 10, 10, 0.5));
   padding: 0.5rem 0;
 }
@@ -185,108 +173,29 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-}
-
-.sharpen__card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  padding: 0.55rem 0.65rem;
-  border-radius: 0.45rem;
-  border: 0.5px solid var(--void-tile-border);
-  background: rgba(255, 255, 255, 0.65);
-}
-
-.sharpen__card-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem 0.5rem;
-}
-
-.sharpen__topic {
-  font-size: 8px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--void-ocean-muted);
-  font-weight: 500;
-}
-
-.sharpen__citation {
-  font-size: 8px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--void-ocean);
-  font-weight: 600;
+  gap: 0.65rem;
 }
 
 .sharpen__actions--toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
   margin-bottom: 0.75rem;
   align-items: center;
 }
 
 .sharpen__meta {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--void-ink-muted);
-}
-
-.sharpen__card--geo {
-  border-left: 2px solid var(--void-ocean);
-}
-
-.sharpen__source {
-  font-size: 8px;
-  color: var(--void-ink-muted, rgba(10, 10, 10, 0.45));
-}
-
-.sharpen__card-text {
-  margin: 0;
-  font-size: 11px;
-  line-height: 1.45;
-  color: var(--void-ink-strong);
-}
-
-.sharpen__suggested {
-  margin: 0;
-  font-size: 10px;
-  color: var(--void-ink-muted, rgba(10, 10, 10, 0.55));
-  font-style: italic;
-}
-
-.sharpen__label {
-  font-size: 9px;
-  color: var(--void-ink-muted, rgba(10, 10, 10, 0.55));
-}
-
-.sharpen__input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0.4rem 0.5rem;
-  border-radius: 0.35rem;
-  border: 0.5px solid var(--void-tile-border);
-  background: #fff;
-  color: var(--void-ink-strong);
-  font: inherit;
-  font-size: 11px;
-
-  &--single {
-    min-height: 0;
-  }
-}
-
-.sharpen__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
 }
 
 .sharpen__btn {
   appearance: none;
+  min-height: 44px;
   border: 0.5px solid var(--void-tile-border);
-  border-radius: 0.35rem;
-  padding: 0.3rem 0.55rem;
-  font-size: 10px;
+  border-radius: 0.45rem;
+  padding: 0.45rem 0.75rem;
+  font-size: 14px;
   font-weight: 500;
   background: rgba(255, 255, 255, 0.8);
   color: var(--void-ink-strong);

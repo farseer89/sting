@@ -1,4 +1,5 @@
 import { DatePipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -50,6 +51,8 @@ export class ProtopipeHomeSharpenComponent implements OnInit {
   readonly geoDraft = signal('');
   readonly claimDrafts = signal<Record<string, string>>({});
   readonly geoRunning = signal(false);
+  readonly geoError = signal<string | null>(null);
+  readonly geoForceAvailable = signal(false);
   readonly lastGeoRunAt = signal<string | null>(null);
 
   readonly pendingTotal = () => this.questionTotal() + this.claimTotal();
@@ -178,7 +181,10 @@ export class ProtopipeHomeSharpenComponent implements OnInit {
     if (!siteId || this.geoRunning()) return;
 
     this.geoRunning.set(true);
-    this.error.set(null);
+    this.geoError.set(null);
+    if (force) {
+      this.geoForceAvailable.set(false);
+    }
 
     try {
       const { run } = await this.api.enqueueAgentRun(siteId, {
@@ -187,9 +193,13 @@ export class ProtopipeHomeSharpenComponent implements OnInit {
       });
       await this.pollGeoRun(siteId, run.id);
       this.lastGeoRunAt.set(new Date().toISOString());
+      this.geoForceAvailable.set(false);
       this.reload();
     } catch (err) {
-      this.error.set(parseProtopipeApiError(err, 'Could not run AI search analysis.'));
+      if (err instanceof HttpErrorResponse && err.status === 409) {
+        this.geoForceAvailable.set(true);
+      }
+      this.geoError.set(parseProtopipeApiError(err, 'Could not run AI search analysis.'));
     } finally {
       this.geoRunning.set(false);
     }

@@ -205,6 +205,10 @@
           Help AI search find you — gaps Gemini would need filled to cite this business confidently.
         </p>
 
+        @if (geoError()) {
+          <p class="sharpen__status sharpen__status--error">{{ geoError() }}</p>
+        }
+
         <div class="sharpen__actions sharpen__actions--toolbar">
           <button
             type="button"
@@ -214,6 +218,16 @@
           >
             {{ geoRunning() ? 'Analyzing…' : 'Run AI search analysis' }}
           </button>
+          @if (geoForceAvailable()) {
+            <button
+              type="button"
+              class="sharpen__btn"
+              [disabled]="geoRunning()"
+              (click)="runGeoDiscovery(true)"
+            >
+              Run again anyway
+            </button>
+          }
           @if (lastGeoRunAt()) {
             <span class="sharpen__meta">Last run {{ lastGeoRunAt() | date: 'short' }}</span>
           }

@@ -20,6 +20,10 @@ const PROTOPIPE_API_ERROR_MESSAGES: Record<string, string> = {
     'Keyword discovery is still running. Wait for it to finish, then try building your plan again.',
   run_not_found:
     'Keyword discovery run not found. Refresh the page and try again.',
+  'GEO discovery was run recently. Pass params.force to run again.':
+    'Analysis ran recently. Click Run again to refresh results.',
+  'GEO discovery was run recently. Use Run again to refresh results.':
+    'Analysis ran recently. Click Run again to refresh results.',
 };
 
 /** User-safe message from bagend error body — never surface stack traces. */

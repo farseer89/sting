@@ -196,10 +196,14 @@ export class ProtopipeHomeSharpenComponent implements OnInit {
       this.geoForceAvailable.set(false);
       this.reload();
     } catch (err) {
-      if (err instanceof HttpErrorResponse && err.status === 409) {
+      const msg = parseProtopipeApiError(err, 'Could not run AI search analysis.');
+      if (
+        (err instanceof HttpErrorResponse && err.status === 409) ||
+        msg.includes('run recently')
+      ) {
         this.geoForceAvailable.set(true);
       }
-      this.geoError.set(parseProtopipeApiError(err, 'Could not run AI search analysis.'));
+      this.geoError.set(msg);
     } finally {
       this.geoRunning.set(false);
     }

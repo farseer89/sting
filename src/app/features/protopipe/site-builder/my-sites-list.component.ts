@@ -49,7 +49,7 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
                 <p-tag [value]="statusLabel(site)" [severity]="statusSeverity(site.publishStatus)" />
               </div>
               <p class="slug">slug: {{ site.clientSitesSlug ?? '—' }}</p>
-              @if (site.previewBaseUrl && site.publishStatus === 'live') {
+              @if (site.previewBaseUrl) {
                 <p>
                   <a [href]="site.previewBaseUrl" target="_blank" rel="noopener">{{ site.previewBaseUrl }}</a>
                 </p>
@@ -58,6 +58,25 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
                 <p class="error">{{ site.provisioningError }}</p>
               }
               <div class="site-card__actions">
+                @if (site.previewBaseUrl) {
+                  <a
+                    [href]="site.previewBaseUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    pButton
+                    label="Open site"
+                    icon="pi pi-external-link"
+                    size="small"
+                  ></a>
+                } @else {
+                  <a
+                    [routerLink]="['/protopipe/site-builder/sites', site.id, 'visual']"
+                    pButton
+                    label="Open editor"
+                    icon="pi pi-eye"
+                    size="small"
+                  ></a>
+                }
                 <a
                   [routerLink]="['/protopipe/site-builder/sites', site.id, 'visual']"
                   pButton
@@ -72,6 +91,7 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
                   label="Edit & publish"
                   icon="pi pi-pencil"
                   size="small"
+                  class="p-button-outlined"
                 ></a>
                 <p-button
                   label="Delete"
@@ -157,7 +177,12 @@ export class MySitesListComponent implements OnInit {
   }
 
   protected statusLabel(site: ProtopipeSite): string {
-    return site.publishStatus ?? 'draft';
+    const ps = site.publishStatus ?? 'draft';
+    if (ps === 'draft') return 'Unpublished';
+    if (ps === 'provisioning') return 'Publishing…';
+    if (ps === 'live') return 'Live';
+    if (ps === 'failed') return 'Failed';
+    return ps;
   }
 
   protected statusSeverity(

@@ -27,11 +27,11 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
             <a routerLink="/protopipe/site-builder/sites">← My sites</a>
             <h1>{{ site()?.displayName ?? 'Site' }} — page editor</h1>
             @if (publishStatus(); as ps) {
-              <p-tag [value]="ps" [severity]="statusSeverity(ps)" />
+              <p-tag [value]="statusLabel(ps)" [severity]="statusSeverity(ps)" />
             }
-            @if (site()?.previewBaseUrl && publishStatus() === 'live') {
+            @if (site()?.previewBaseUrl; as previewUrl) {
               <p>
-                <a [href]="site()!.previewBaseUrl" target="_blank" rel="noopener">{{ site()!.previewBaseUrl }}</a>
+                <a [href]="previewUrl" target="_blank" rel="noopener">{{ previewUrl }}</a>
               </p>
             }
             @if (provisionMessage()) {
@@ -236,6 +236,14 @@ export class SitePageEditorComponent implements OnInit {
     } catch {
       /* ignore invalid JSON while typing */
     }
+  }
+
+  protected statusLabel(ps: string): string {
+    if (ps === 'draft') return 'Unpublished';
+    if (ps === 'provisioning') return 'Publishing…';
+    if (ps === 'live') return 'Live';
+    if (ps === 'failed') return 'Failed';
+    return ps;
   }
 
   protected statusSeverity(

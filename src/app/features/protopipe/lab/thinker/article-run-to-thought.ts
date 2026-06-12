@@ -41,6 +41,10 @@ const STEP_META: Record<
   review: { label: 'Review', summary: 'Score the draft against the brief.' },
   metadata: { label: 'Metadata', summary: 'Generate title tag, meta and schema.' },
   assemble: { label: 'Assemble', summary: 'Assemble the final article template.' },
+  generate_images: {
+    label: 'Images',
+    summary: 'Plan hero and section images with consistent editorial style via fal.ai.',
+  },
 };
 
 function runStatus(run: ArticleGenerationRunDto): ThoughtStatus {
@@ -189,6 +193,71 @@ function stepOutput(
       return a.template
         ? [json('template', 'Article template', a.template)]
         : [];
+    case 'generate_images': {
+      if (!a.imageGeneration) return [];
+      const ig = a.imageGeneration;
+      const generated = ig.generatedCount ?? 0;
+      const failed = ig.failedCount ?? 0;
+      const slotSummary =
+        ig.mode === 'live'
+          ? generated > 0
+            ? `Live — ${generated}/${ig.plannedCount} generated${failed ? `, ${failed} failed` : ''}`
+            : ig.plannedCount === 0
+              ? 'Live — no image slots'
+              : `Live — 0/${ig.plannedCount} generated`
+          : ig.plannedCount === 0
+            ? 'Stub — no image slots'
+            : `Stub — ${ig.plannedCount} slot(s) planned`;
+      const outputs: ThoughtArtifact[] = [
+        json('image-generation', 'Image generation plan', ig, slotSummary),
+        json(
+          'image-style',
+          'Shared style profile',
+          ig.styleProfile,
+          ig.styleProfile.label,
+        ),
+        json('image-config', 'Provider config', {
+          falConfigured: ig.falConfigured,
+          s3Configured: ig.s3Configured,
+          model: ig.model,
+          mode: ig.mode,
+          generatedCount: ig.generatedCount,
+          failedCount: ig.failedCount,
+        }),
+      ];
+      for (const slot of ig.slots) {
+        outputs.push(
+          markdown(
+            `image-prompt-${slot.id}`,
+            `${slot.label} — prompt`,
+            slot.builtPrompt,
+            'Input sent to fal.ai',
+          ),
+        );
+        if (slot.status === 'generated' && slot.publicUrl?.trim()) {
+          outputs.push({
+            id: `image-out-${slot.id}`,
+            label: `${slot.label} — output`,
+            kind: 'image',
+            data: {
+              url: slot.publicUrl,
+              alt: slot.altSuggestion,
+              prompt: slot.builtPrompt,
+            },
+            summary: slot.altSuggestion ?? slot.label,
+          });
+        } else if (slot.status === 'failed') {
+          outputs.push(
+            text(
+              `image-error-${slot.id}`,
+              `${slot.label} — error`,
+              slot.error ?? 'Generation failed',
+            ),
+          );
+        }
+      }
+      return outputs;
+    }
     default:
       return [];
   }

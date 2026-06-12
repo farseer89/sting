@@ -17,6 +17,12 @@ interface MetricData {
   delta?: string;
 }
 
+interface ImageData {
+  url: string;
+  alt?: string;
+  prompt?: string;
+}
+
 /** Renders a single Thought artifact by `kind`. Copyable raw for json. */
 @Component({
   selector: 'app-thought-artifact-card',
@@ -68,6 +74,17 @@ interface MetricData {
         }
         @case ('json') {
           <pre class="art__pre">{{ pretty() }}</pre>
+        }
+        @case ('image') {
+          <figure class="art__figure">
+            <img class="art__img" [src]="image().url" [alt]="image().alt" loading="lazy" />
+            @if (image().prompt) {
+              <figcaption class="art__caption">
+                <span class="art__caption-label">Prompt</span>
+                {{ image().prompt }}
+              </figcaption>
+            }
+          </figure>
         }
         @default {
           <pre class="art__prose">{{ asText() }}</pre>
@@ -139,6 +156,30 @@ interface MetricData {
       }
       .art__metric-unit { font-size: 11px; color: var(--void-ink-muted); }
       .art__metric-delta { font-size: 11px; color: var(--void-ocean); }
+      .art__figure { margin: 0; }
+      .art__img {
+        display: block;
+        width: 100%;
+        max-height: 280px;
+        object-fit: cover;
+        border-radius: 6px;
+        border: 0.5px solid var(--void-glass-border);
+      }
+      .art__caption {
+        margin: 0.45rem 0 0;
+        font-size: 11px;
+        line-height: 1.45;
+        color: var(--void-ink-soft);
+      }
+      .art__caption-label {
+        display: block;
+        font-size: 8px;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--void-ocean-muted);
+        margin-bottom: 0.15rem;
+      }
       .art__table {
         width: 100%;
         border-collapse: collapse;
@@ -173,6 +214,11 @@ export class ThoughtArtifactCardComponent {
   readonly table = computed<TableData>(() => {
     const d = this.artifact().data as TableData;
     return d?.columns ? d : { columns: [], rows: [] };
+  });
+
+  readonly image = computed<ImageData>(() => {
+    const d = this.artifact().data as ImageData;
+    return d?.url ? d : { url: '', alt: '', prompt: '' };
   });
 
   readonly pretty = computed<string>(() => {

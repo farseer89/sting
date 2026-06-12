@@ -20,7 +20,7 @@ export type ThoughtStepStatus =
   | 'failed'
   | 'skipped';
 
-export type ThoughtArtifactKind = 'json' | 'markdown' | 'table' | 'metric' | 'text';
+export type ThoughtArtifactKind = 'json' | 'markdown' | 'table' | 'metric' | 'text' | 'image';
 
 export type ThoughtEventLevel = 'debug' | 'info' | 'warn' | 'error';
 

@@ -156,6 +156,7 @@ const STEP_TO_ARTIFACT_KEY: Record<ArticleGenerationStep, keyof ArticleGeneratio
   review: 'review',
   metadata: 'metadata',
   assemble: 'template',
+  generate_images: 'imageGeneration',
 };
 
 @Component({

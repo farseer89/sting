@@ -72,6 +72,7 @@ export const THINKERS: Record<string, Thinker> = {
       { id: 'plan_layout', label: 'Plan layout' },
       { id: 'build_sections', label: 'Build sections' },
       { id: 'assemble', label: 'Assemble' },
+      { id: 'generate_images', label: 'Images' },
     ],
   },
   seo_audit: {
@@ -220,6 +221,7 @@ const uiBuilderThought: Thought = {
     { id: 'plan_layout', label: 'Plan layout', status: 'pending', attempt: 0, events: [] },
     { id: 'build_sections', label: 'Build sections', status: 'pending', attempt: 0, events: [] },
     { id: 'assemble', label: 'Assemble', status: 'pending', attempt: 0, events: [] },
+    { id: 'generate_images', label: 'Images', status: 'pending', attempt: 0, events: [] },
   ],
 };
 

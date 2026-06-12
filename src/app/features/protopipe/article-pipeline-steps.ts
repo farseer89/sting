@@ -11,6 +11,7 @@ export const GENERATION_STEPS_V1: ArticleGenerationStep[] = [
   'draft',
   'metadata',
   'assemble',
+  'generate_images',
   'review',
 ];
 
@@ -43,6 +44,7 @@ export const STEP_LABELS: Record<ArticleGenerationStep, string> = {
   review: 'Review',
   metadata: 'Metadata',
   assemble: 'Assemble',
+  generate_images: 'Generate images',
 };
 
 export const STEP_SHORT_LABELS: Record<ArticleGenerationStep, string> = {
@@ -57,4 +59,5 @@ export const STEP_SHORT_LABELS: Record<ArticleGenerationStep, string> = {
   review: 'Review',
   metadata: 'Metadata',
   assemble: 'Assemble',
+  generate_images: 'Images',
 };

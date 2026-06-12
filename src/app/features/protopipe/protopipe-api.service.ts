@@ -98,6 +98,9 @@ import type {
   SitePageResponse,
   UpdateSitePageRequest,
   UpdateSitePageResponse,
+  DraftPreviewTokenResponse,
+  PatchSitePageFieldRequest,
+  PatchSitePageFieldResponse,
   PublishSiteResponse,
   PublishSiteCompleteRequest,
   PublishSiteCompleteResponse,
@@ -782,6 +785,27 @@ export class ProtopipeApiService {
     return firstValueFrom(
       this.http.put<UpdateSitePageResponse>(
         protopipeApiUrl(ProtopipeEndpoints.updateSitePage.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  createDraftPreviewToken(siteId: string): Promise<DraftPreviewTokenResponse> {
+    return firstValueFrom(
+      this.http.post<DraftPreviewTokenResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.createDraftPreviewToken.path, { siteId }),
+        {},
+      ),
+    );
+  }
+
+  patchSitePageField(
+    siteId: string,
+    body: PatchSitePageFieldRequest,
+  ): Promise<PatchSitePageFieldResponse> {
+    return firstValueFrom(
+      this.http.patch<PatchSitePageFieldResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.patchSitePageField.path, { siteId }),
         body,
       ),
     );

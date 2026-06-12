@@ -59,6 +59,14 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
               }
               <div class="site-card__actions">
                 <a
+                  [routerLink]="['/protopipe/site-builder/sites', site.id, 'visual']"
+                  pButton
+                  label="Visual editor"
+                  icon="pi pi-eye"
+                  size="small"
+                  class="p-button-outlined"
+                ></a>
+                <a
                   [routerLink]="['/protopipe/site-builder/sites', site.id, 'edit']"
                   pButton
                   label="Edit & publish"

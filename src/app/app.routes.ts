@@ -311,6 +311,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'protopipe/site-builder/sites/:siteId/visual',
+        loadComponent: () =>
+          import('./features/protopipe/site-builder/site-visual-editor.component').then(
+            (m) => m.SiteVisualEditorComponent,
+          ),
+      },
+      {
         path: 'dev/docs',
         canMatch: [devRoutesGuard],
         loadComponent: () =>

@@ -39,6 +39,13 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
             }
           </div>
           <div class="editor-actions">
+            <a
+              pButton
+              class="p-button-outlined"
+              [routerLink]="['/protopipe/site-builder/sites', siteId, 'visual']"
+              label="Visual editor"
+              icon="pi pi-eye"
+            ></a>
             <p-button label="Save draft" icon="pi pi-save" [loading]="saving()" (onClick)="save()" />
             <p-button
               label="Publish"
@@ -173,7 +180,7 @@ export class SitePageEditorComponent implements OnInit {
   protected readonly publishStatus = signal<string>('draft');
   protected readonly provisionMessage = signal<string | null>(null);
 
-  private siteId = '';
+  protected siteId = '';
   private pollTimer: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {

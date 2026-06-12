@@ -6,14 +6,16 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Button } from 'primeng/button';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { Tag } from 'primeng/tag';
-import type { ProtopipeSite } from '@hive/contracts';
+import type { ProtopipeSite, SiteBuilderComponentEntry } from '@hive/contracts';
 import { ProtopipeApiService } from '../protopipe-api.service';
 import { parseProtopipeApiError } from '../protopipe-http.util';
+import { SiteBlockPickerComponent } from './site-block-picker.component';
 
 interface PreviewMessage {
   source?: string;
@@ -30,14 +32,26 @@ interface PreviewMessage {
   selector: 'app-site-visual-editor',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Button, ProgressSpinner, Tag],
+  imports: [RouterLink, Button, ProgressSpinner, Tag, SiteBlockPickerComponent],
   template: `
     <div class="visual-editor">
       @if (loading()) {
-        <p-progressSpinner ariaLabel="Loading preview" />
+        <div class="visual-editor__loading">
+          <p-progressSpinner ariaLabel="Loading preview" />
+          <p class="loading-msg">{{ loadingMessage() }}</p>
+        </div>
       } @else if (error(); as err) {
-        <p class="error">{{ err }}</p>
-        <a routerLink="/protopipe/site-builder/sites">← Back to sites</a>
+        <div class="visual-editor__error">
+          <p class="error">{{ err }}</p>
+          @if (errorAction() === 'form-editor') {
+            <p-button
+              label="Open form editor"
+              icon="pi pi-list"
+              (onClick)="openFormEditor()"
+            />
+          }
+          <a routerLink="/protopipe/site-builder/sites">← Back to sites</a>
+        </div>
       } @else {
         <header class="visual-editor__header">
           <div>
@@ -53,18 +67,22 @@ interface PreviewMessage {
           </div>
           <div class="visual-editor__actions">
             <p-button
+              label="Add section"
+              icon="pi pi-plus"
+              (onClick)="openBlockPicker()"
+            />
+            <p-button
               label="Refresh preview"
               icon="pi pi-refresh"
               [outlined]="true"
               (onClick)="reloadPreview()"
             />
-            <a
-              pButton
-              class="p-button-outlined"
-              [routerLink]="['/protopipe/site-builder/sites', siteId, 'edit']"
+            <p-button
               label="Form editor"
               icon="pi pi-list"
-            ></a>
+              [outlined]="true"
+              (onClick)="openFormEditor()"
+            />
           </div>
         </header>
 
@@ -74,6 +92,12 @@ interface PreviewMessage {
           title="Draft preview"
           (load)="onFrameLoad()"
         ></iframe>
+
+        <app-site-block-picker
+          [visible]="blockPickerOpen()"
+          (visibleChange)="blockPickerOpen.set($event)"
+          (blockSelected)="onBlockSelected($event)"
+        />
       }
     </div>
   `,
@@ -84,6 +108,23 @@ interface PreviewMessage {
       gap: 1rem;
       height: calc(100vh - 6rem);
       min-height: 32rem;
+    }
+    .visual-editor__loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      padding: 3rem 0;
+    }
+    .loading-msg {
+      color: var(--text-color-secondary);
+      margin: 0;
+    }
+    .visual-editor__error {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
     }
     .visual-editor__header {
       display: flex;
@@ -118,18 +159,23 @@ interface PreviewMessage {
 })
 export class SiteVisualEditorComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly api = inject(ProtopipeApiService);
   private readonly sanitizer = inject(DomSanitizer);
 
   protected readonly loading = signal(true);
+  protected readonly loadingMessage = signal('Opening draft preview…');
   protected readonly error = signal<string | null>(null);
+  protected readonly errorAction = signal<'form-editor' | null>(null);
   protected readonly site = signal<ProtopipeSite | null>(null);
   protected readonly previewUrlSafe = signal<SafeResourceUrl | null>(null);
   protected readonly selectedSectionLabel = signal<string | null>(null);
   protected readonly saveMessage = signal<string | null>(null);
+  protected readonly blockPickerOpen = signal(false);
 
   protected siteId = '';
   private previewUrl = '';
+  private selectedSectionId: string | null = null;
   private messageHandler: ((event: MessageEvent) => void) | null = null;
   private saving = false;
 
@@ -152,6 +198,29 @@ export class SiteVisualEditorComponent implements OnInit, OnDestroy {
     }
   }
 
+  protected openFormEditor(): void {
+    void this.router.navigate(['/protopipe/site-builder/sites', this.siteId, 'edit']);
+  }
+
+  protected openBlockPicker(): void {
+    this.blockPickerOpen.set(true);
+  }
+
+  protected async onBlockSelected(entry: SiteBuilderComponentEntry): Promise<void> {
+    this.saveMessage.set('Adding section…');
+    try {
+      await this.api.insertSitePageSection(this.siteId, {
+        componentId: entry.id,
+        afterSectionId: this.selectedSectionId ?? undefined,
+      });
+      this.saveMessage.set(`Added ${entry.label}`);
+      await this.refreshPreviewToken();
+      window.setTimeout(() => this.saveMessage.set(null), 2000);
+    } catch (err) {
+      this.saveMessage.set(parseProtopipeApiError(err, 'Could not add section'));
+    }
+  }
+
   protected reloadPreview(): void {
     if (!this.previewUrl) return;
     const sep = this.previewUrl.includes('?') ? '&' : '?';
@@ -166,21 +235,62 @@ export class SiteVisualEditorComponent implements OnInit, OnDestroy {
 
   private async load(): Promise<void> {
     this.loading.set(true);
+    this.loadingMessage.set('Opening draft preview…');
     this.error.set(null);
+    this.errorAction.set(null);
     try {
-      const [site, tokenRes] = await Promise.all([
-        this.api.getSite(this.siteId),
-        this.api.createDraftPreviewToken(this.siteId),
-      ]);
+      this.loadingMessage.set('Loading site…');
+      const site = await this.api.getSite(this.siteId);
       this.site.set(site);
+
+      this.loadingMessage.set('Requesting preview token…');
+      const tokenRes = await this.api.createDraftPreviewToken(this.siteId);
       this.previewUrl = tokenRes.previewUrl;
       const url = `${tokenRes.previewUrl}${tokenRes.previewUrl.includes('?') ? '&' : '?'}editor=1`;
       this.previewUrlSafe.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
     } catch (err) {
-      this.error.set(parseProtopipeApiError(err, 'Could not load visual editor.'));
+      const { message, action } = this.describeLoadError(err);
+      this.error.set(message);
+      this.errorAction.set(action);
     } finally {
       this.loading.set(false);
     }
+  }
+
+  private describeLoadError(err: unknown): {
+    message: string;
+    action: 'form-editor' | null;
+  } {
+    if (err instanceof HttpErrorResponse) {
+      const bodyMsg =
+        typeof (err.error as { message?: string } | null)?.message === 'string'
+          ? (err.error as { message: string }).message
+          : '';
+
+      if (err.status === 400 && bodyMsg.toLowerCase().includes('no page draft')) {
+        return {
+          message: 'No draft content yet. Open the form editor to create or load page content first.',
+          action: 'form-editor',
+        };
+      }
+      if (err.status === 503 && bodyMsg.toLowerCase().includes('draft preview not configured')) {
+        return {
+          message: 'Draft preview is not configured on the server (missing PROTOPIPE_PROVISION_SECRET).',
+          action: null,
+        };
+      }
+      if (err.status === 404) {
+        return { message: 'Site not found.', action: null };
+      }
+      if (err.status === 401) {
+        return { message: 'Session expired. Sign in again.', action: null };
+      }
+    }
+
+    return {
+      message: parseProtopipeApiError(err, 'Could not load visual editor.'),
+      action: null,
+    };
   }
 
   private onPreviewMessage(event: MessageEvent): void {
@@ -188,6 +298,7 @@ export class SiteVisualEditorComponent implements OnInit, OnDestroy {
     if (!data || data.source !== 'draft-preview') return;
 
     if (data.type === 'section:select') {
+      this.selectedSectionId = data.sectionId ?? null;
       this.selectedSectionLabel.set(data.label ?? data.sectionId ?? null);
       return;
     }
@@ -209,5 +320,12 @@ export class SiteVisualEditorComponent implements OnInit, OnDestroy {
     } finally {
       this.saving = false;
     }
+  }
+
+  private async refreshPreviewToken(): Promise<void> {
+    const tokenRes = await this.api.createDraftPreviewToken(this.siteId);
+    this.previewUrl = tokenRes.previewUrl;
+    const url = `${tokenRes.previewUrl}${tokenRes.previewUrl.includes('?') ? '&' : '?'}editor=1&_=${Date.now()}`;
+    this.previewUrlSafe.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
   }
 }

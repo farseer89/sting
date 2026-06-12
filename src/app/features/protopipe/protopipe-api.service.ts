@@ -101,6 +101,8 @@ import type {
   DraftPreviewTokenResponse,
   PatchSitePageFieldRequest,
   PatchSitePageFieldResponse,
+  InsertSitePageSectionRequest,
+  InsertSitePageSectionResponse,
   PublishSiteResponse,
   PublishSiteCompleteRequest,
   PublishSiteCompleteResponse,
@@ -806,6 +808,18 @@ export class ProtopipeApiService {
     return firstValueFrom(
       this.http.patch<PatchSitePageFieldResponse>(
         protopipeApiUrl(ProtopipeEndpoints.patchSitePageField.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  insertSitePageSection(
+    siteId: string,
+    body: InsertSitePageSectionRequest,
+  ): Promise<InsertSitePageSectionResponse> {
+    return firstValueFrom(
+      this.http.post<InsertSitePageSectionResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.insertSitePageSection.path, { siteId }),
         body,
       ),
     );

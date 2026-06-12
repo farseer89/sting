@@ -1,20 +1,21 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
 import { Textarea } from 'primeng/textarea';
 import { Tag } from 'primeng/tag';
 import { ProgressSpinner } from 'primeng/progressspinner';
-import type { SitePageDraft, SitePageSectionDraft, ProtopipeSite } from '@hive/contracts';
+import type { SitePageDraft, SitePageSectionDraft, ProtopipeSite, SiteBuilderComponentEntry } from '@hive/contracts';
 import { ProtopipeApiService } from '../protopipe-api.service';
 import { parseProtopipeApiError } from '../protopipe-http.util';
+import { SiteBlockPickerComponent } from './site-block-picker.component';
 
 @Component({
   selector: 'app-site-page-editor',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, FormsModule, Button, InputText, Textarea, Tag, ProgressSpinner],
+  imports: [RouterLink, FormsModule, Button, InputText, Textarea, Tag, ProgressSpinner, SiteBlockPickerComponent],
   template: `
     <div class="editor-page">
       @if (loading()) {
@@ -39,13 +40,12 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
             }
           </div>
           <div class="editor-actions">
-            <a
-              pButton
-              class="p-button-outlined"
-              [routerLink]="['/protopipe/site-builder/sites', siteId, 'visual']"
+            <p-button
               label="Visual editor"
               icon="pi pi-eye"
-            ></a>
+              [outlined]="true"
+              (onClick)="openVisualEditor()"
+            />
             <p-button label="Save draft" icon="pi pi-save" [loading]="saving()" (onClick)="save()" />
             <p-button
               label="Publish"
@@ -69,6 +69,13 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
                 {{ s.label }}
               </button>
             }
+            <p-button
+              label="Add section"
+              icon="pi pi-plus"
+              [outlined]="true"
+              styleClass="section-rail__add"
+              (onClick)="openBlockPicker()"
+            />
           </nav>
 
           @if (selectedSection(); as sec) {
@@ -99,6 +106,12 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
           }
         </div>
       }
+
+      <app-site-block-picker
+        [visible]="blockPickerOpen()"
+        (visibleChange)="blockPickerOpen.set($event)"
+        (blockSelected)="onBlockSelected($event)"
+      />
     </div>
   `,
   styles: `
@@ -145,6 +158,10 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
       border-color: var(--primary-color);
       background: var(--primary-50, var(--surface-100));
     }
+    :host ::ng-deep .section-rail__add {
+      width: 100%;
+      margin-top: 0.5rem;
+    }
     .field {
       display: flex;
       flex-direction: column;
@@ -168,6 +185,7 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
 })
 export class SitePageEditorComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly api = inject(ProtopipeApiService);
 
   protected readonly loading = signal(true);
@@ -179,6 +197,8 @@ export class SitePageEditorComponent implements OnInit {
   protected readonly selectedIndex = signal(0);
   protected readonly publishStatus = signal<string>('draft');
   protected readonly provisionMessage = signal<string | null>(null);
+  protected readonly blockPickerOpen = signal(false);
+  protected readonly addingSection = signal(false);
 
   protected siteId = '';
   private pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -235,6 +255,32 @@ export class SitePageEditorComponent implements OnInit {
       this.touchDraft();
     } catch {
       /* ignore invalid JSON while typing */
+    }
+  }
+
+  protected openVisualEditor(): void {
+    void this.router.navigate(['/protopipe/site-builder/sites', this.siteId, 'visual']);
+  }
+
+  protected openBlockPicker(): void {
+    this.blockPickerOpen.set(true);
+  }
+
+  protected async onBlockSelected(entry: SiteBuilderComponentEntry): Promise<void> {
+    const after = this.selectedSection()?.id;
+    this.addingSection.set(true);
+    try {
+      const res = await this.api.insertSitePageSection(this.siteId, {
+        componentId: entry.id,
+        afterSectionId: after,
+      });
+      this.draft.set(res.pageDraft);
+      const idx = res.pageDraft.pages[0]?.sections.findIndex((s) => s.componentId === entry.id) ?? -1;
+      if (idx >= 0) this.selectedIndex.set(idx);
+    } catch (err) {
+      this.error.set(parseProtopipeApiError(err, 'Could not add section'));
+    } finally {
+      this.addingSection.set(false);
     }
   }
 

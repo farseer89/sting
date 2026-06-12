@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { ProtopipeApiService } from '../protopipe-api.service';
@@ -31,30 +31,24 @@ const TEMPLATE_PREVIEW_URLS: Record<string, string> = {
           <h1>{{ t.label }}</h1>
           <p>{{ t.description }}</p>
           <div class="detail-actions">
-            @if (previewDemoUrl()) {
-              <a
-                [href]="previewDemoUrl()"
-                target="_blank"
-                rel="noopener noreferrer"
-                pButton
+            @if (previewDemoUrl(); as demoUrl) {
+              <p-button
                 label="Open Live Demo"
                 icon="pi pi-external-link"
-              ></a>
-              <a
-                [routerLink]="['/protopipe/site-builder/templates', t.id, 'preview']"
-                pButton
+                (onClick)="openExternal(demoUrl)"
+              />
+              <p-button
                 label="Full-screen preview"
                 icon="pi pi-eye"
                 severity="secondary"
-              ></a>
+                (onClick)="openTemplatePreview(t.id)"
+              />
             }
-            <a
-              [routerLink]="['/protopipe/site-builder/add-site']"
-              [queryParams]="{ templateId: t.id }"
-              pButton
+            <p-button
               label="Use this template"
               icon="pi pi-plus"
-            ></a>
+              (onClick)="openAddSiteWithTemplate(t.id)"
+            />
           </div>
         </header>
 
@@ -139,8 +133,23 @@ const TEMPLATE_PREVIEW_URLS: Record<string, string> = {
 })
 export class SiteBuilderTemplateDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly api = inject(ProtopipeApiService);
   private readonly sanitizer = inject(DomSanitizer);
+
+  protected openExternal(url: string): void {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  protected openTemplatePreview(templateId: string): void {
+    void this.router.navigate(['/protopipe/site-builder/templates', templateId, 'preview']);
+  }
+
+  protected openAddSiteWithTemplate(templateId: string): void {
+    void this.router.navigate(['/protopipe/site-builder/add-site'], {
+      queryParams: { templateId },
+    });
+  }
 
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);

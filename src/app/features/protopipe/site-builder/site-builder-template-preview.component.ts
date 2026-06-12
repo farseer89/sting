@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Button } from 'primeng/button';
 import { ProgressSpinner } from 'primeng/progressspinner';
@@ -54,17 +54,21 @@ function previewUrlFor(t: SiteTemplateSummary | null): string {
         </div>
         <div class="preview-chrome__right">
           @if (demoUrl()) {
-            <a [href]="demoUrl()" target="_blank" rel="noopener" pButton label="Open in new tab" icon="pi pi-external-link" severity="secondary" size="small"></a>
+            <p-button
+              label="Open in new tab"
+              icon="pi pi-external-link"
+              severity="secondary"
+              size="small"
+              (onClick)="openExternal(demoUrl())"
+            />
           }
-          @if (templateId()) {
-            <a
-              [routerLink]="['/protopipe/site-builder/add-site']"
-              [queryParams]="{ templateId: templateId() }"
-              pButton
+          @if (templateId(); as tid) {
+            <p-button
               label="Use this template"
               icon="pi pi-plus"
               size="small"
-            ></a>
+              (onClick)="openAddSiteWithTemplate(tid)"
+            />
           }
         </div>
       </header>
@@ -169,9 +173,20 @@ function previewUrlFor(t: SiteTemplateSummary | null): string {
 })
 export class SiteBuilderTemplatePreviewComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly api = inject(ProtopipeApiService);
   private readonly sb = inject(ProtopipeSiteBuilderService);
   private readonly sanitizer = inject(DomSanitizer);
+
+  protected openExternal(url: string): void {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  protected openAddSiteWithTemplate(templateId: string): void {
+    void this.router.navigate(['/protopipe/site-builder/add-site'], {
+      queryParams: { templateId },
+    });
+  }
 
   protected readonly deviceOptions = DEVICE_OPTIONS;
   protected readonly device = signal<PreviewDevice>('desktop');

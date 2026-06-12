@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { Card } from 'primeng/card';
@@ -27,7 +27,11 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
             <h1>My landing sites</h1>
             <p class="lead">Create, edit, publish, or remove landing sites.</p>
           </div>
-          <a routerLink="/protopipe/site-builder/add-site" pButton label="Add site" icon="pi pi-plus"></a>
+          <p-button
+            label="Add site"
+            icon="pi pi-plus"
+            (onClick)="openAddSite()"
+          />
         </div>
       </header>
 
@@ -38,7 +42,11 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
       } @else if (sites().length === 0) {
         <p-card>
           <p>No sites yet.</p>
-          <a routerLink="/protopipe/site-builder/templates" pButton label="Browse templates" class="mt-2"></a>
+          <p-button
+            label="Browse templates"
+            class="mt-2"
+            (onClick)="openTemplates()"
+          />
         </p-card>
       } @else {
         <div class="site-grid">
@@ -46,7 +54,7 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
             <p-card class="site-card">
               <div class="site-card__head">
                 <h2>
-                  <a [routerLink]="['/protopipe/site-builder/sites', site.id, 'visual']" class="site-card__title">
+                  <a [routerLink]="visualRoute(site.id)" class="site-card__title">
                     {{ site.displayName }}
                   </a>
                 </h2>
@@ -63,33 +71,28 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
                 <p class="error">{{ site.provisioningError }}</p>
               }
               <div class="site-card__actions">
-                <a
-                  [routerLink]="['/protopipe/site-builder/sites', site.id, 'visual']"
-                  pButton
+                <p-button
                   label="Visual editor"
                   icon="pi pi-eye"
                   size="small"
-                ></a>
+                  (onClick)="openVisualEditor(site.id)"
+                />
                 @if (site.previewBaseUrl) {
-                  <a
-                    [href]="site.previewBaseUrl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    pButton
+                  <p-button
                     label="View live site"
                     icon="pi pi-external-link"
                     size="small"
-                    class="p-button-outlined"
-                  ></a>
+                    [outlined]="true"
+                    (onClick)="openLiveSite(site.previewBaseUrl!)"
+                  />
                 }
-                <a
-                  [routerLink]="['/protopipe/site-builder/sites', site.id, 'edit']"
-                  pButton
+                <p-button
                   label="Edit & publish"
                   icon="pi pi-pencil"
                   size="small"
-                  class="p-button-outlined"
-                ></a>
+                  [outlined]="true"
+                  (onClick)="openFormEditor(site.id)"
+                />
                 <p-button
                   label="Delete"
                   icon="pi pi-trash"
@@ -101,6 +104,11 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
                   (onClick)="confirmDelete($event, site)"
                 />
               </div>
+              <p class="action-links">
+                <a [routerLink]="visualRoute(site.id)">Visual editor</a>
+                <span aria-hidden="true"> · </span>
+                <a [routerLink]="editRoute(site.id)">Edit & publish</a>
+              </p>
             </p-card>
           }
         </div>
@@ -139,11 +147,12 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
       font-size: 1.125rem;
     }
     .site-card__title {
-      color: inherit;
-      text-decoration: none;
+      color: var(--p-primary-color, #059669);
+      text-decoration: underline;
+      text-underline-offset: 2px;
     }
     .site-card__title:hover {
-      text-decoration: underline;
+      color: var(--p-primary-600, #047857);
     }
     .slug,
     .hint,
@@ -162,6 +171,13 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
       gap: 0.5rem;
       margin-top: 1rem;
     }
+    .action-links {
+      margin: 0.75rem 0 0;
+      font-size: 0.875rem;
+    }
+    .action-links a {
+      color: var(--p-primary-color, #059669);
+    }
     .error {
       color: var(--red-500);
       font-size: 0.875rem;
@@ -173,6 +189,7 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
 })
 export class MySitesListComponent implements OnInit {
   private readonly api = inject(ProtopipeApiService);
+  private readonly router = inject(Router);
   private readonly confirm = inject(ConfirmationService);
   private readonly messages = inject(MessageService);
 
@@ -183,6 +200,34 @@ export class MySitesListComponent implements OnInit {
 
   ngOnInit(): void {
     void this.load();
+  }
+
+  protected visualRoute(siteId: string): string[] {
+    return ['/protopipe/site-builder/sites', siteId, 'visual'];
+  }
+
+  protected editRoute(siteId: string): string[] {
+    return ['/protopipe/site-builder/sites', siteId, 'edit'];
+  }
+
+  protected openAddSite(): void {
+    void this.router.navigate(['/protopipe/site-builder/add-site']);
+  }
+
+  protected openTemplates(): void {
+    void this.router.navigate(['/protopipe/site-builder/templates']);
+  }
+
+  protected openVisualEditor(siteId: string): void {
+    void this.router.navigate(this.visualRoute(siteId));
+  }
+
+  protected openFormEditor(siteId: string): void {
+    void this.router.navigate(this.editRoute(siteId));
+  }
+
+  protected openLiveSite(url: string): void {
+    window.open(url, '_blank', 'noopener,noreferrer');
   }
 
   protected statusLabel(site: ProtopipeSite): string {

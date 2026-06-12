@@ -80,4 +80,12 @@ export class ProtopipeSiteBuilderService {
     const res = await this.api.createSite(input);
     return { siteId: res.site.id, pageDraft: res.pageDraft };
   }
+
+  async insertSitePageSection(
+    siteId: string,
+    input: { componentId: string; afterSectionId?: string; pageId?: string },
+  ): Promise<SitePageDraft> {
+    const res = await this.api.insertSitePageSection(siteId, input);
+    return res.pageDraft;
+  }
 }

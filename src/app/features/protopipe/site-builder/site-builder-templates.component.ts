@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Card } from 'primeng/card';
 import { ProgressSpinner } from 'primeng/progressspinner';
@@ -30,7 +30,7 @@ const TEMPLATE_PREVIEW_URLS: Record<string, string> = {
             <h1>Site Builder — Templates</h1>
             <p class="stats">Pick a template — preview the full site before you add a client.</p>
           </div>
-          <a routerLink="/protopipe/site-builder/add-site" pButton label="Add site" icon="pi pi-plus"></a>
+          <p-button label="Add site" icon="pi pi-plus" (onClick)="openAddSite()" />
         </div>
       </header>
 
@@ -67,32 +67,25 @@ const TEMPLATE_PREVIEW_URLS: Record<string, string> = {
               </a>
               <div class="card-actions">
                 @if (previewUrl(t); as demoUrl) {
-                  <a
-                    [href]="demoUrl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    pButton
+                  <p-button
                     label="Live Demo"
                     icon="pi pi-external-link"
                     size="small"
-                  ></a>
-                  <a
-                    [routerLink]="['/protopipe/site-builder/templates', t.id, 'preview']"
-                    pButton
+                    (onClick)="openExternal(demoUrl)"
+                  />
+                  <p-button
                     label="Live preview"
                     icon="pi pi-eye"
                     severity="secondary"
                     size="small"
-                  ></a>
+                    (onClick)="openTemplatePreview(t.id)"
+                  />
                 }
-                <a
-                  [routerLink]="['/protopipe/site-builder/add-site']"
-                  [queryParams]="{ templateId: t.id }"
-                  pButton
+                <p-button
                   label="Use template"
-                  class="use-btn"
                   size="small"
-                ></a>
+                  (onClick)="openAddSiteWithTemplate(t.id)"
+                />
               </div>
             </p-card>
           }
@@ -188,7 +181,26 @@ const TEMPLATE_PREVIEW_URLS: Record<string, string> = {
 })
 export class SiteBuilderTemplatesComponent implements OnInit {
   protected readonly sb = inject(ProtopipeSiteBuilderService);
+  private readonly router = inject(Router);
   private readonly sanitizer = inject(DomSanitizer);
+
+  protected openAddSite(): void {
+    void this.router.navigate(['/protopipe/site-builder/add-site']);
+  }
+
+  protected openAddSiteWithTemplate(templateId: string): void {
+    void this.router.navigate(['/protopipe/site-builder/add-site'], {
+      queryParams: { templateId },
+    });
+  }
+
+  protected openTemplatePreview(templateId: string): void {
+    void this.router.navigate(['/protopipe/site-builder/templates', templateId, 'preview']);
+  }
+
+  protected openExternal(url: string): void {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
 
   protected previewUrl(t: SiteTemplateSummary): string {
     const fromApi = (t.previewDemoUrl || t.previewImageUrl || '').trim();

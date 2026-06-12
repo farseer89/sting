@@ -45,46 +45,43 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
           @for (site of sites(); track site.id) {
             <p-card class="site-card">
               <div class="site-card__head">
-                <h2>{{ site.displayName }}</h2>
+                <h2>
+                  <a [routerLink]="['/protopipe/site-builder/sites', site.id, 'visual']" class="site-card__title">
+                    {{ site.displayName }}
+                  </a>
+                </h2>
                 <p-tag [value]="statusLabel(site)" [severity]="statusSeverity(site.publishStatus)" />
               </div>
               <p class="slug">slug: {{ site.clientSitesSlug ?? '—' }}</p>
+              @if ((site.publishStatus ?? 'draft') === 'draft') {
+                <p class="hint">Open Visual editor to preview and edit your draft before publishing.</p>
+              }
               @if (site.previewBaseUrl) {
-                <p>
-                  <a [href]="site.previewBaseUrl" target="_blank" rel="noopener">{{ site.previewBaseUrl }}</a>
-                </p>
+                <p class="live-url">Live deploy: {{ site.previewBaseUrl }}</p>
               }
               @if (site.publishStatus === 'failed' && site.provisioningError) {
                 <p class="error">{{ site.provisioningError }}</p>
               }
               <div class="site-card__actions">
-                @if (site.previewBaseUrl) {
-                  <a
-                    [href]="site.previewBaseUrl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    pButton
-                    label="Open site"
-                    icon="pi pi-external-link"
-                    size="small"
-                  ></a>
-                } @else {
-                  <a
-                    [routerLink]="['/protopipe/site-builder/sites', site.id, 'visual']"
-                    pButton
-                    label="Open editor"
-                    icon="pi pi-eye"
-                    size="small"
-                  ></a>
-                }
                 <a
                   [routerLink]="['/protopipe/site-builder/sites', site.id, 'visual']"
                   pButton
                   label="Visual editor"
                   icon="pi pi-eye"
                   size="small"
-                  class="p-button-outlined"
                 ></a>
+                @if (site.previewBaseUrl) {
+                  <a
+                    [href]="site.previewBaseUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    pButton
+                    label="View live site"
+                    icon="pi pi-external-link"
+                    size="small"
+                    class="p-button-outlined"
+                  ></a>
+                }
                 <a
                   [routerLink]="['/protopipe/site-builder/sites', site.id, 'edit']"
                   pButton
@@ -141,10 +138,22 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
       margin: 0;
       font-size: 1.125rem;
     }
-    .slug {
+    .site-card__title {
+      color: inherit;
+      text-decoration: none;
+    }
+    .site-card__title:hover {
+      text-decoration: underline;
+    }
+    .slug,
+    .hint,
+    .live-url {
       color: var(--text-color-secondary);
       font-size: 0.875rem;
-      margin: 0.5rem 0;
+      margin: 0.35rem 0;
+    }
+    .slug {
+      margin-top: 0.5rem;
     }
     .site-card__actions {
       display: flex;

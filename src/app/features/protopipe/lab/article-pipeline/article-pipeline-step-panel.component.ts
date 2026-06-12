@@ -75,6 +75,7 @@ const STEP_TITLES: Record<ArticleGenerationStep, string> = {
   review: 'Review',
   metadata: 'Metadata',
   assemble: 'Assembled post preview',
+  generate_images: 'Generated images',
 };
 
 interface ScoreRow {
@@ -311,6 +312,10 @@ export class ArticlePipelineStepPanelComponent {
         return !!run.artifacts?.metadata;
       case 'assemble':
         return !!run.artifacts?.template;
+      case 'generate_images':
+        return !!run.artifacts?.imageGeneration;
+      default:
+        return false;
     }
   });
 

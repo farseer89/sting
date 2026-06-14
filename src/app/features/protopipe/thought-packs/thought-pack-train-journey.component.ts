@@ -89,7 +89,7 @@ export class ThoughtPackTrainJourneyComponent {
     return list[idx] ?? list[0];
   });
 
-  protected readonly trainProgress = computed(() => {
+  protected readonly progressPercent = computed(() => {
     const count = this.stepCount();
     if (count <= 1) return 0;
     return (this.activeStep() / (count - 1)) * 100;

@@ -1,0 +1,24 @@
+@if (trains().length === 0) {
+  <p class="train-acc__empty">No extra cognitive trains — uses your plan brief only.</p>
+} @else {
+  <div class="train-acc">
+    @for (train of trains(); track train.slug) {
+      <div class="train-acc__item" [class.is-open]="isOpen(train.slug)">
+        <button
+          type="button"
+          class="train-acc__trigger"
+          [attr.aria-expanded]="isOpen(train.slug)"
+          (click)="toggle(train.slug)"
+        >
+          <span class="train-acc__name">{{ train.label }}</span>
+          <span class="train-acc__chev" aria-hidden="true">{{ isOpen(train.slug) ? '−' : '+' }}</span>
+        </button>
+        @if (isOpen(train.slug)) {
+          <div class="train-acc__panel">
+            <p>{{ train.mechanism }}</p>
+          </div>
+        }
+      </div>
+    }
+  </div>
+}

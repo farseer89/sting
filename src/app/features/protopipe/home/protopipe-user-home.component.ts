@@ -13,7 +13,11 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter } from 'rxjs/operators';
+import type { CognitivePackCatalogItem } from '../thought-packs/cognitive-pack.model';
+import { ThoughtPackDetailComponent } from '../thought-packs/thought-pack-detail.component';
+import { ThoughtPackStoreComponent } from '../thought-packs/thought-pack-store.component';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ContentPlanStore } from '../content-plan/content-plan.store';
 import { ProtopipeOnboardingStateService } from '../onboarding/protopipe-onboarding-state.service';
@@ -37,7 +41,7 @@ import {
 } from './protopipe-home-nav';
 import { resolveBootstrapSiteId } from '../resolve-bootstrap-site-id';
 
-export type ProtopipeHomeView = 'keywords' | 'strategy' | 'sharpen' | 'writer';
+export type ProtopipeHomeView = 'keywords' | 'strategy' | 'sharpen' | 'writer' | 'packs';
 
 function initialsFromName(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -65,6 +69,8 @@ function initialsFromName(name: string): string {
     ProtopipeHomeWriterComponent,
     ProtopipeStrategyContextPanelComponent,
     ProtopipeWriterContextPanelComponent,
+    ThoughtPackStoreComponent,
+    ThoughtPackDetailComponent,
   ],
   templateUrl: './protopipe-user-home.component.html',
   styleUrl: './protopipe-user-home.component.scss',
@@ -132,6 +138,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
   readonly loading = signal(true);
   readonly activeView = signal<ProtopipeHomeView>('keywords');
   readonly activeNavId = signal('start-keywords');
+  readonly packDetailId = signal<string | null>(null);
+  readonly siteDefaultPackId = signal<string | null>(null);
   readonly userMenuOpen = signal(false);
 
   readonly userName = computed(() => {
@@ -152,6 +160,10 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.destroyRef.onDestroy(() => this.sidePanel.detachResizeListeners());
     this.writerViewState.setExitHandler(() => this.leaveWriterFocus());
     this.strategyViewState.setEnterWriterHandler(() => this.enterWriterFocus());
+    this.syncPacksFromRoute();
+    this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+      .subscribe(() => this.syncPacksFromRoute());
     void this.loadBootstrap();
   }
 
@@ -196,6 +208,10 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.activeView.set('sharpen');
     } else if (item.id === 'content-writer') {
       this.enterWriterFocus();
+    } else if (item.id === 'content-packs') {
+      this.leaveWriterFocus();
+      this.sidePanel.setOpen(false);
+      void this.router.navigate(['/home/packs']);
     } else if (item.id === 'int-wordpress' || item.id === 'int-google') {
       void this.router.navigate(['/protopipe/settings/integrations']);
     }
@@ -250,6 +266,41 @@ export class ProtopipeUserHomeComponent implements OnInit {
 
   isNavItemActive(item: ProtopipeHomeNavItem): boolean {
     return !item.disabled && this.activeNavId() === item.id;
+  }
+
+  openPackDetail(pack: CognitivePackCatalogItem): void {
+    void this.router.navigate(['/home/packs', pack.id]);
+  }
+
+  closePackDetail(): void {
+    void this.router.navigate(['/home/packs']);
+  }
+
+  onPackStartWriting(pack: CognitivePackCatalogItem): void {
+    if (pack.status !== 'available') return;
+    this.enterWriterFocus();
+  }
+
+  onPackSetSiteDefault(_pack: CognitivePackCatalogItem): void {
+    // API milestone — no-op until SitePlan field lands
+  }
+
+  private syncPacksFromRoute(): void {
+    const path = this.router.url.split('?')[0] ?? '';
+    if (path.startsWith('/home/packs/') && path.length > '/home/packs/'.length) {
+      const packId = decodeURIComponent(path.slice('/home/packs/'.length));
+      this.activeView.set('packs');
+      this.activeNavId.set('content-packs');
+      this.packDetailId.set(packId);
+      this.leaveWriterFocus();
+      return;
+    }
+    if (path === '/home/packs') {
+      this.activeView.set('packs');
+      this.activeNavId.set('content-packs');
+      this.packDetailId.set(null);
+      this.leaveWriterFocus();
+    }
   }
 
   private async loadBootstrap(): Promise<void> {

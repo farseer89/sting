@@ -1,0 +1,47 @@
+<article
+  class="pack-card"
+  [class.pack-card--compact]="compact()"
+  [class.pack-card--site-default]="isSiteDefault()"
+  tabindex="0"
+  role="button"
+  [attr.aria-label]="'View ' + pack().label + ' pack'"
+  (click)="onCardClick()"
+  (keydown)="onKeydown($event)"
+>
+  <div class="pack-card__media">
+    <app-thought-pack-cover [pack]="pack()" />
+    <div class="pack-card__badges">
+      @if (isSiteDefault()) {
+        <span class="pack-card__badge pack-card__badge--default">Site default</span>
+      }
+      <span
+        class="pack-card__badge"
+        [class.pack-card__badge--available]="pack().status === 'available'"
+        [class.pack-card__badge--soon]="pack().status === 'coming_soon'"
+      >
+        {{ statusLabel(pack()) }}
+      </span>
+    </div>
+  </div>
+
+  <div class="pack-card__body">
+    <h3 class="pack-card__title">{{ pack().label }}</h3>
+    <p class="pack-card__tagline">{{ pack().tagline }}</p>
+    @if (!compact()) {
+      <p class="pack-card__cost">{{ costLabel(pack()) }}</p>
+    }
+    @if (!compact() && pack().trainRefs.length) {
+      <ul class="pack-card__trains" aria-label="Trains included">
+        @for (train of pack().trainRefs.slice(0, 3); track train.slug) {
+          <li>{{ train.label }}</li>
+        }
+        @if (pack().trainRefs.length > 3) {
+          <li class="pack-card__trains-more">+{{ pack().trainRefs.length - 3 }} more</li>
+        }
+      </ul>
+    }
+    @if (!compact()) {
+      <span class="pack-card__cta">View pack →</span>
+    }
+  </div>
+</article>

@@ -1,0 +1,116 @@
+@if (pack(); as p) {
+  <div class="pack-detail">
+    <button type="button" class="pack-detail__back" (click)="back.emit()">← Back to store</button>
+
+    @if (isSiteDefault()) {
+      <div class="pack-detail__banner" role="status">Active on your site</div>
+    }
+
+    <div class="pack-detail__hero">
+      <div class="pack-detail__media">
+        <app-thought-pack-cover [pack]="p" />
+      </div>
+
+      <div class="pack-detail__buybox">
+        <p class="pack-detail__eyebrow">Thought pack · {{ p.version }}</p>
+        <h1 class="pack-detail__title">{{ p.label }}</h1>
+        <p class="pack-detail__tagline">{{ p.tagline }}</p>
+
+        <div class="pack-detail__meta">
+          <span
+            class="pack-detail__badge"
+            [class.pack-detail__badge--available]="p.status === 'available'"
+          >
+            {{ statusLabel(p) }}
+          </span>
+          <span class="pack-detail__price">{{ costLabel(p) }}</span>
+          @if (p.stepCount) {
+            <span class="pack-detail__steps">~{{ p.stepCount }} cognitive steps</span>
+          }
+        </div>
+
+        <p class="pack-detail__desc">{{ p.description }}</p>
+
+        <div class="pack-detail__actions">
+          <button
+            type="button"
+            class="pack-detail__btn pack-detail__btn--primary"
+            [disabled]="p.status !== 'available'"
+            (click)="onStartWriting()"
+          >
+            Start writing
+          </button>
+          <button type="button" class="pack-detail__btn pack-detail__btn--secondary" (click)="onSetSiteDefault()">
+            Set as site default
+          </button>
+          <button type="button" class="pack-detail__btn pack-detail__btn--ghost" (click)="onViewThinker()">
+            View in Thinker
+          </button>
+        </div>
+
+        @if (stubMessage(); as msg) {
+          <p class="pack-detail__stub" role="status">{{ msg }}</p>
+        }
+      </div>
+    </div>
+
+    <section class="pack-detail__section">
+      <h2>What&apos;s inside</h2>
+      @if (p.trainRefs.length) {
+        <ul class="pack-detail__chips">
+          @for (train of p.trainRefs; track train.slug) {
+            <li>{{ train.label }}</li>
+          }
+        </ul>
+      } @else {
+        <p class="pack-detail__muted">Uses your content plan brief — no extra cognitive rails.</p>
+      }
+    </section>
+
+    <section class="pack-detail__section pack-detail__steps-strip">
+      <h2>How it works</h2>
+      <ol>
+        <li><strong>Pick</strong> — choose a pack for this article or your site</li>
+        <li><strong>Think</strong> — parallel trains produce a thesis before prose</li>
+        <li><strong>Write</strong> — outline and draft inherit the hardened angle</li>
+      </ol>
+    </section>
+
+    <section class="pack-detail__section">
+      <h2>Best for</h2>
+      <ul class="pack-detail__bullets">
+        @for (item of p.bestFor; track item) {
+          <li>{{ item }}</li>
+        }
+      </ul>
+    </section>
+
+    <section class="pack-detail__section">
+      <h2>When to use</h2>
+      <p class="pack-detail__when">{{ p.whenToUse }}</p>
+    </section>
+
+    @if (p.trainRefs.length) {
+      <section class="pack-detail__section">
+        <h2>Trains included</h2>
+        <app-thought-pack-train-accordion [trains]="p.trainRefs" />
+      </section>
+    }
+
+    @if (pairedPacks().length) {
+      <section class="pack-detail__section">
+        <h2>Pairs well with</h2>
+        <div class="pack-detail__cross-sell">
+          @for (paired of pairedPacks(); track paired.id) {
+            <app-thought-pack-card [pack]="paired" [compact]="true" (select)="selectPack.emit($event)" />
+          }
+        </div>
+      </section>
+    }
+  </div>
+} @else {
+  <div class="pack-detail pack-detail--missing">
+    <button type="button" class="pack-detail__back" (click)="back.emit()">← Back to store</button>
+    <p>Pack not found.</p>
+  </div>
+}

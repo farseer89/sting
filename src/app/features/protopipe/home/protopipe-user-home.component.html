@@ -168,6 +168,25 @@
                     <app-protopipe-home-writer />
                   </section>
                 }
+                @case ('packs') {
+                  <section class="glass glass--full glass--premiere glass--packs home-packs" aria-label="Thought packs">
+                    @if (packDetailId(); as detailId) {
+                      <app-thought-pack-detail
+                        [packId]="detailId"
+                        [isSiteDefault]="siteDefaultPackId() === detailId"
+                        (back)="closePackDetail()"
+                        (selectPack)="openPackDetail($event)"
+                        (startWriting)="onPackStartWriting($event)"
+                        (setSiteDefault)="onPackSetSiteDefault($event)"
+                      />
+                    } @else {
+                      <app-thought-pack-store
+                        [siteDefaultPackId]="siteDefaultPackId()"
+                        (selectPack)="openPackDetail($event)"
+                      />
+                    }
+                  </section>
+                }
               }
             }
           </div>

@@ -1,0 +1,58 @@
+<div class="pack-store">
+  <header class="pack-store__hero">
+    <div class="pack-store__hero-copy">
+      <p class="pack-store__eyebrow">Content · Cognitive kits</p>
+      <h1 class="pack-store__title">Thought packs</h1>
+      <p class="pack-store__subtitle">
+        Premium thinking kits that force original angles before you write. Pick a pack for one
+        article or set a site default for your whole strategy.
+      </p>
+    </div>
+    @if (siteDefaultLabel(); as defaultName) {
+      <div class="pack-store__site-pill" role="status">
+        <span class="pack-store__site-pill-label">Site default</span>
+        <strong>{{ defaultName }}</strong>
+      </div>
+    }
+  </header>
+
+  <div class="pack-store__filters" role="tablist" aria-label="Filter packs">
+    @for (f of filters; track f.id) {
+      <button
+        type="button"
+        role="tab"
+        class="pack-store__filter"
+        [class.is-active]="filter() === f.id"
+        [attr.aria-selected]="filter() === f.id"
+        (click)="setFilter(f.id)"
+      >
+        {{ f.label }}
+      </button>
+    }
+  </div>
+
+  @if (filteredPacks().length === 0) {
+    <p class="pack-store__empty">No packs match this filter.</p>
+  } @else {
+    <div class="pack-store__grid">
+      @for (pack of filteredPacks(); track pack.id) {
+        <app-thought-pack-card
+          [pack]="pack"
+          [isSiteDefault]="isSiteDefault(pack)"
+          (select)="selectPack.emit($event)"
+        />
+      }
+    </div>
+  }
+
+  @if (standardPack(); as standard) {
+    <section class="pack-store__standard" aria-label="Default writing path">
+      <h2 class="pack-store__standard-title">Included with every workspace</h2>
+      <app-thought-pack-card
+        [pack]="standard"
+        [isSiteDefault]="isSiteDefault(standard)"
+        (select)="selectPack.emit($event)"
+      />
+    </section>
+  }
+</div>

@@ -122,6 +122,23 @@ export const routes: Routes = [
       import('./features/signup/signup-success.component').then((m) => m.SignupSuccessComponent),
   },
   {
+    // Thought pack store — product listing (PLP).
+    path: 'home/packs/:packId',
+    canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],
+    loadComponent: () =>
+      import('./features/protopipe/home/protopipe-user-home.component').then(
+        (m) => m.ProtopipeUserHomeComponent,
+      ),
+  },
+  {
+    path: 'home/packs',
+    canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],
+    loadComponent: () =>
+      import('./features/protopipe/home/protopipe-user-home.component').then(
+        (m) => m.ProtopipeUserHomeComponent,
+      ),
+  },
+  {
     // User-facing home — void white dashboard, outside the PrimeNG admin shell.
     path: 'home',
     canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],
@@ -201,6 +218,11 @@ export const routes: Routes = [
           import(
             './features/protopipe/content-plan/protopipe-content-plan.component'
           ).then((m) => m.ProtopipeContentPlanComponent),
+      },
+      {
+        path: 'protopipe/content/packs',
+        redirectTo: '/home/packs',
+        pathMatch: 'full',
       },
       {
         path: 'protopipe/content/new',

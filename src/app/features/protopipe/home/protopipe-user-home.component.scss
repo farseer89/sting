@@ -267,6 +267,21 @@
   border-color: transparent;
 }
 
+.glass--packs {
+  padding: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.home-packs {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .void__frame {
   flex: 1 1 0;
   min-height: 0;

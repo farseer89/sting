@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Writer image slots — interactive demo</title>
+  <link rel="stylesheet" href="https://unpkg.com/primeicons@7.0.0/primeicons.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Source Sans 3', system-ui, sans-serif;
+      background: #eef2f5;
+      color: #1e293b;
+    }
+    .demo-bar {
+      padding: 0.75rem 1.25rem;
+      background: #fff;
+      border-bottom: 1px solid rgba(15,23,42,0.06);
+      font-size: 0.875rem;
+    }
+    .demo-bar strong { color: #6366f1; }
+    .stage {
+      max-width: 46rem;
+      margin: 2rem auto;
+      padding: 2.5rem 2rem 3rem;
+      background: #fff;
+      box-shadow: 0 0 0 1px rgba(15,23,42,0.06), 0 10px 40px rgba(15,23,42,0.05);
+    }
+    .h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      text-align: center;
+      margin: 0 0 1rem;
+      border: none;
+      width: 100%;
+      outline: none;
+    }
+    .h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 1.5rem 0 0.35rem;
+      border: none;
+      width: 100%;
+      outline: none;
+    }
+    .body { line-height: 1.7; margin: 0.5rem 0 0; color: #334155; }
+    .hint {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ---- copied from image-placeholder.component.scss ---- */
+    .img-ph { margin: 0.1rem 0; }
+    .img-ph__anchor { position: relative; }
+    .img-ph__anchor--empty { display: inline-block; vertical-align: middle; }
+    .img-ph__anchor:not(.img-ph__anchor--empty) { display: flow-root; width: 100%; }
+
+    .img-ph__figure { margin: 0; }
+    .img-ph__figure img {
+      display: block; width: 100%; height: auto; border-radius: 4px;
+      max-height: 10rem; object-fit: cover;
+    }
+    .img-ph__figure--align-left {
+      float: left; max-width: min(46%, 16rem);
+      margin: 0.15rem 1rem 0.5rem 0;
+    }
+    .img-ph__figure--align-right {
+      float: right; max-width: min(46%, 16rem);
+      margin: 0.15rem 0 0.5rem 1rem;
+    }
+
+    .img-ph__control { position: relative; z-index: 2; }
+    .img-ph__control--empty { display: inline-flex; align-items: center; height: 1.5rem; }
+    .img-ph__anchor:not(.img-ph__anchor--empty) .img-ph__control {
+      position: absolute; top: 0.4rem; right: 0.4rem; opacity: 0; transition: opacity 0.14s;
+    }
+    .img-ph__anchor:not(.img-ph__anchor--empty):hover .img-ph__control,
+    .img-ph__anchor:not(.img-ph__anchor--empty):focus-within .img-ph__control { opacity: 1; }
+
+    .img-ph__glyph {
+      display: grid; place-items: center; width: 1.5rem; height: 1.5rem;
+      color: #64748b; opacity: 0.38; transition: opacity 0.14s, color 0.14s;
+    }
+    .img-ph__glyph svg { width: 1rem; height: 1rem; }
+    .img-ph__control:hover .img-ph__glyph,
+    .img-ph__control:focus-within .img-ph__glyph { opacity: 1; color: #1e293b; }
+
+    .img-ph__menu {
+      position: absolute; left: calc(100% + 0.3rem); top: 50%;
+      transform: translateY(-50%); display: none; align-items: center;
+      padding: 0.18rem; background: #fff;
+      border: 1px solid rgb(15 23 42 / 0.09); border-radius: 8px;
+      box-shadow: 0 6px 20px rgb(15 23 42 / 0.1); white-space: nowrap;
+    }
+    .img-ph__anchor:not(.img-ph__anchor--empty) .img-ph__menu {
+      top: calc(100% + 0.3rem); left: auto; right: 0; transform: none;
+    }
+    .img-ph__control:hover .img-ph__menu,
+    .img-ph__control:focus-within .img-ph__menu { display: flex; }
+
+    .img-ph__menu-seg { display: inline-flex; align-items: center; gap: 0.1rem; }
+    .img-ph__menu-rule {
+      width: 1px; align-self: stretch; margin: 0.2rem 0.15rem;
+      background: rgb(15 23 42 / 0.08);
+    }
+    .img-ph__opt {
+      display: inline-flex; flex-direction: column; align-items: center;
+      gap: 0.1rem; min-width: 2.35rem; padding: 0.28rem 0.35rem;
+      border: none; border-radius: 6px; background: transparent;
+      color: #64748b; font: inherit; font-size: 0.625rem; font-weight: 600;
+      letter-spacing: 0.02em; text-transform: uppercase; cursor: pointer;
+    }
+    .img-ph__opt svg { width: 0.95rem; height: 0.95rem; }
+    .img-ph__opt:hover { background: rgb(15 23 42 / 0.04); color: #1e293b; }
+    .img-ph__opt.is-active {
+      background: color-mix(in srgb, #6366f1 12%, transparent); color: #6366f1;
+    }
+    .label-tag {
+      display: inline-block; margin-top: 2rem; padding: 0.35rem 0.6rem;
+      border-radius: 6px; background: #ecfdf5; color: #166534; font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-bar">
+    <strong>Writer image slots</strong> — hover the small icons. This matches the live component in sting.
+  </div>
+
+  <article class="stage">
+    <p class="hint">Hover the faint image icons ↓</p>
+    <input class="h1" value="What to Do When You Need an Emergency Electrician" readonly />
+
+    <!-- Hero: icon only -->
+    <div class="img-ph">
+      <div class="img-ph__anchor img-ph__anchor--empty">
+        <div class="img-ph__control img-ph__control--empty" tabindex="0">
+          <span class="img-ph__glyph">
+            <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.2" stroke="currentColor" stroke-width="1.1"/><circle cx="5.5" cy="6.5" r="1.2" fill="currentColor"/><path d="M2 11l3.5-3 2.5 2 3-3.5L14 10.5" stroke="currentColor" stroke-width="1.1"/></svg>
+          </span>
+          <div class="img-ph__menu" role="toolbar">
+            <div class="img-ph__menu-seg">
+              <button class="img-ph__opt is-active" type="button"><svg viewBox="0 0 16 16"><rect x="2" y="4" width="12" height="8" rx="0.8" stroke="currentColor" fill="none"/></svg><span>Full</span></button>
+            </div>
+            <span class="img-ph__menu-rule"></span>
+            <div class="img-ph__menu-seg">
+              <button class="img-ph__opt" type="button"><i class="pi pi-upload"></i><span>Upload</span></button>
+              <button class="img-ph__opt" type="button"><i class="pi pi-link"></i><span>URL</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="body">When the power goes out or you smell burning wires, every minute counts…</p>
+
+    <input class="h2" value="Signs you need help now" readonly />
+
+    <!-- Section: empty icon (popup visible on hover - forced for screenshot row 2) -->
+    <div class="img-ph">
+      <div class="img-ph__anchor img-ph__anchor--empty">
+        <div class="img-ph__control img-ph__control--empty demo-hover" tabindex="0">
+          <span class="img-ph__glyph">
+            <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.2" stroke="currentColor" stroke-width="1.1"/><circle cx="5.5" cy="6.5" r="1.2" fill="currentColor"/><path d="M2 11l3.5-3 2.5 2 3-3.5L14 10.5" stroke="currentColor" stroke-width="1.1"/></svg>
+          </span>
+          <div class="img-ph__menu" role="toolbar" style="display:flex">
+            <div class="img-ph__menu-seg">
+              <button class="img-ph__opt is-active" type="button"><svg viewBox="0 0 16 16"><rect x="2" y="4" width="12" height="8" rx="0.8" stroke="currentColor" fill="none"/></svg><span>Full</span></button>
+              <button class="img-ph__opt" type="button"><svg viewBox="0 0 16 16"><rect x="2" y="4" width="5" height="8" rx="0.6" stroke="currentColor" fill="none"/><rect x="8" y="5" width="6" height="1.2" rx="0.4" fill="currentColor" opacity="0.45"/></svg><span>Left</span></button>
+              <button class="img-ph__opt" type="button"><svg viewBox="0 0 16 16"><rect x="9" y="4" width="5" height="8" rx="0.6" stroke="currentColor" fill="none"/><rect x="2" y="5" width="6" height="1.2" rx="0.4" fill="currentColor" opacity="0.45"/></svg><span>Right</span></button>
+              <button class="img-ph__opt" type="button"><svg viewBox="0 0 16 16"><rect x="4" y="4" width="8" height="8" rx="0.8" stroke="currentColor" fill="none"/></svg><span>Center</span></button>
+            </div>
+            <span class="img-ph__menu-rule"></span>
+            <div class="img-ph__menu-seg">
+              <button class="img-ph__opt" type="button"><i class="pi pi-upload"></i><span>Upload</span></button>
+              <button class="img-ph__opt" type="button"><i class="pi pi-link"></i><span>URL</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="body">Sparking outlets, buzzing panels, or partial outages often mean something serious behind the wall.</p>
+
+    <input class="h2" value="How to vet an electrician" readonly />
+
+    <!-- Filled image float left -->
+    <div class="img-ph">
+      <div class="img-ph__anchor">
+        <figure class="img-ph__figure img-ph__figure--align-left">
+          <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=600&fit=crop" alt="Outlet" />
+        </figure>
+        <div class="img-ph__control" tabindex="0">
+          <span class="img-ph__glyph">
+            <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.2" stroke="currentColor" stroke-width="1.1"/><circle cx="5.5" cy="6.5" r="1.2" fill="currentColor"/></svg>
+          </span>
+          <div class="img-ph__menu" role="toolbar">
+            <div class="img-ph__menu-seg">
+              <button class="img-ph__opt" type="button"><span>Full</span></button>
+              <button class="img-ph__opt is-active" type="button"><span>Left</span></button>
+              <button class="img-ph__opt" type="button"><span>Right</span></button>
+              <button class="img-ph__opt" type="button"><span>Center</span></button>
+            </div>
+            <span class="img-ph__menu-rule"></span>
+            <div class="img-ph__menu-seg">
+              <button class="img-ph__opt" type="button"><span>Upload</span></button>
+              <button class="img-ph__opt" type="button"><span>Alt</span></button>
+              <button class="img-ph__opt" type="button">×</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="body">Look for a state license number, proof of insurance, and clear after-hours pricing before anyone rolls a truck. Text wraps beside a left-floated image, like the published article.</p>
+
+    <p class="label-tag">No “IMAGES” panel · no dashed URL boxes</p>
+  </article>
+</body>
+</html>

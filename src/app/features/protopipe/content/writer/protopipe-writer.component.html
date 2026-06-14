@@ -303,14 +303,17 @@
             @if (hasBlockLayout() && heroImageBlock(); as hero) {
               <div class="pw__block pw__block--hero-image">
                 <app-protopipe-image-placeholder
+                  [hero]="true"
                   [label]="hero.label || 'Hero image'"
                   [hint]="imagePlaceholderHint(hero)"
                   [url]="hero.url"
                   [alt]="hero.alt"
+                  [align]="hero.align ?? 'full'"
                   [readOnly]="isReadOnly()"
                   [uploading]="isHeroImageUploading(hero.id)"
                   (urlChange)="patchHeroImage('url', $event)"
                   (altChange)="patchHeroImage('alt', $event)"
+                  (alignChange)="patchHeroImage('align', $event)"
                   (upload)="triggerHeroImageUpload()"
                   (remove)="clearHeroImage()"
                 />
@@ -368,24 +371,37 @@
                     [disabled]="isReadOnly()"
                     placeholder="Section heading…"
                   ></textarea>
-                  @if (hasBlockLayout() && sec.images?.length) {
-                    @for (img of sec.images; track $index; let imgIdx = $index) {
-                      @if (proseBlockIdForSection($index); as blockId) {
-                        <app-protopipe-image-placeholder
-                          class="pw__inline-image"
-                          [compact]="true"
-                          [label]="sec.h2 || 'Section image'"
-                          [hint]="imagePlaceholderHint(img)"
-                          [url]="img.url"
-                          [alt]="img.alt"
-                          [readOnly]="isReadOnly()"
-                          [uploading]="isProseImageUploading(blockId, imgIdx)"
-                          (urlChange)="patchBlockImage(blockId, imgIdx, 'url', $event)"
-                          (altChange)="patchBlockImage(blockId, imgIdx, 'alt', $event)"
-                          (upload)="triggerProseImageUpload(blockId, imgIdx)"
-                          (remove)="patchBlockImage(blockId, imgIdx, 'url', ''); patchBlockImage(blockId, imgIdx, 'alt', '')"
-                        />
-                      }
+                  @if ((sec.images ?? []).length === 0 && !isReadOnly()) {
+                    <app-protopipe-image-placeholder
+                      class="pw__inline-image"
+                      [compact]="true"
+                      label="Image"
+                      url=""
+                      alt=""
+                      align="full"
+                      [readOnly]="isReadOnly()"
+                      [uploading]="isSectionImageUploading($index, 0)"
+                      (upload)="onSectionImageUpload($index, null)"
+                      (urlChange)="onSectionImageUrl($index, null, $event)"
+                    />
+                  } @else {
+                    @for (img of sec.images ?? []; track $index; let imgIdx = $index) {
+                      <app-protopipe-image-placeholder
+                        class="pw__inline-image"
+                        [compact]="true"
+                        [label]="sec.h2 || 'Section image'"
+                        [hint]="imagePlaceholderHint(img)"
+                        [url]="img.url"
+                        [alt]="img.alt"
+                        [align]="img.align ?? 'full'"
+                        [readOnly]="isReadOnly()"
+                        [uploading]="isSectionImageUploading($index, imgIdx)"
+                        (urlChange)="patchSectionImageField($index, imgIdx, 'url', $event)"
+                        (altChange)="patchSectionImageField($index, imgIdx, 'alt', $event)"
+                        (alignChange)="patchSectionImageField($index, imgIdx, 'align', $event)"
+                        (upload)="onSectionImageUpload($index, imgIdx)"
+                        (remove)="onSectionImageRemove($index, imgIdx)"
+                      />
                     }
                   }
                   <app-prose-editor
@@ -402,92 +418,9 @@
                     [disabled]="isReadOnly()"
                     placeholder="Write this section…"
                   ></app-prose-editor>
-                  @if (!isReadOnly() && !hasBlockLayout()) {
-                    <div class="pw__media">
-                      <div class="pw__media-head">
-                        <span>Images</span>
-                        <div class="pw__media-add-menu">
-                          @if (imageMenuSectionIndex() === $index) {
-                            <button
-                              type="button"
-                              class="pw__media-add-backdrop"
-                              aria-label="Close image options"
-                              (click)="closeImageMenu()"
-                            ></button>
-                          }
-                          <div class="pw__media-add-cluster" [class.is-open]="imageMenuSectionIndex() === $index">
-                            @if (imageMenuSectionIndex() === $index) {
-                              <button
-                                type="button"
-                                class="pw__media-opt"
-                                title="Upload image"
-                                [disabled]="imageUploading()"
-                                (click)="onImageMenuUpload($index)"
-                              >
-                                <i class="pi pi-upload" aria-hidden="true"></i>
-                                <span class="pw__media-opt-tip">Upload</span>
-                              </button>
-                              <button
-                                type="button"
-                                class="pw__media-opt"
-                                title="Add image URL"
-                                (click)="onImageMenuAddUrl($index)"
-                              >
-                                <i class="pi pi-link" aria-hidden="true"></i>
-                                <span class="pw__media-opt-tip">URL</span>
-                              </button>
-                            }
-                            <button
-                              type="button"
-                              class="pw__media-add-trigger"
-                              [class.is-open]="imageMenuSectionIndex() === $index"
-                              [attr.aria-expanded]="imageMenuSectionIndex() === $index"
-                              aria-label="Add image"
-                              (click)="toggleImageMenu($index)"
-                            >
-                              <i class="pi pi-plus" aria-hidden="true"></i>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                      @if (imageUploading() && imageUploadSectionIndex() === $index) {
-                        <div class="pw__media-item pw__media-item--uploading">
-                          <div class="pw__media-preview">
-                            <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
-                            <span>Uploading image…</span>
-                          </div>
-                        </div>
-                      }
-                      @for (img of sec.images ?? []; track $index; let ii = $index) {
-                        <div class="pw__media-item">
-                          <div class="pw__media-preview">
-                            @if (hasSectionImagePreview(img.url)) {
-                              <img [src]="img.url" [alt]="img.alt || 'Section image preview'" loading="lazy" />
-                            } @else {
-                              <div class="pw__media-preview-placeholder">
-                                <i class="pi pi-image" aria-hidden="true"></i>
-                                <span>Add a URL or upload an image</span>
-                              </div>
-                            }
-                          </div>
-                          <div class="pw__media-fields">
-                            <input
-                              type="url"
-                              placeholder="https://…"
-                              [ngModel]="img.url"
-                              (ngModelChange)="updateSectionImage($index, ii, { url: $event })"
-                            />
-                            <input
-                              type="text"
-                              placeholder="Alt text (required)"
-                              [ngModel]="img.alt"
-                              (ngModelChange)="updateSectionImage($index, ii, { alt: $event })"
-                            />
-                            <button type="button" class="pw__media-remove" (click)="removeSectionImage($index, ii)" aria-label="Remove image">×</button>
-                          </div>
-                        </div>
-                      }
-                      <div class="pw__media-head pw__media-head--embeds">
+                  @if (!isReadOnly()) {
+                    <div class="pw__embeds">
+                      <div class="pw__embeds-head">
                         <span>Video / embeds</span>
                       </div>
                       @for (embed of sec.embeds ?? []; track $index; let ei = $index) {

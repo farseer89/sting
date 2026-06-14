@@ -1168,7 +1168,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
     this.imageFileInput()?.nativeElement.click();
   }
 
-  patchHeroImage(field: 'url' | 'alt', value: string): void {
+  patchHeroImage(field: 'url' | 'alt' | 'align', value: string): void {
     const hero = this.heroImageBlock();
     if (!hero) return;
     this.patchBlockById(hero.id, { [field]: value });
@@ -1183,7 +1183,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
   patchBlockImage(
     blockId: string,
     imageIndex: number,
-    field: 'url' | 'alt',
+    field: 'url' | 'alt' | 'align',
     value: string,
   ): void {
     const s = this.session();
@@ -1313,8 +1313,75 @@ export class ProtopipeWriterComponent implements OnDestroy {
     const s = this.session();
     if (!s || s.readOnly) return;
     const section = s.template.sections[sectionIndex];
-    const images = [...(section.images ?? []), { url: '', alt: '' }];
+    const slot = { url: '', alt: '', align: 'full' as const };
+    const blockId = this.proseBlockIdForSection(sectionIndex);
+    if (blockId) {
+      const block = s.template.blocks?.find((b) => b.id === blockId);
+      if (block?.kind === 'prose') {
+        const images = [...(block.images ?? []), slot];
+        this.patchBlockById(blockId, { images });
+        return;
+      }
+    }
+    const images = [...(section.images ?? []), slot];
     this.patchSection(sectionIndex, { images });
+  }
+
+  patchSectionImageField(
+    sectionIndex: number,
+    imageIndex: number,
+    field: 'url' | 'alt' | 'align',
+    value: string,
+  ): void {
+    const blockId = this.proseBlockIdForSection(sectionIndex);
+    if (blockId) {
+      this.patchBlockImage(blockId, imageIndex, field, value);
+      return;
+    }
+    this.updateSectionImage(sectionIndex, imageIndex, { [field]: value });
+  }
+
+  onSectionImageUpload(sectionIndex: number, imageIndex: number | null): void {
+    let idx = imageIndex;
+    if (idx == null) {
+      this.addSectionImage(sectionIndex);
+      const images = this.session()?.template.sections[sectionIndex]?.images ?? [];
+      idx = Math.max(0, images.length - 1);
+    }
+    const blockId = this.proseBlockIdForSection(sectionIndex);
+    if (blockId) {
+      this.triggerProseImageUpload(blockId, idx);
+    } else {
+      this.imageUploadSectionIndex.set(sectionIndex);
+      this.triggerSectionImageUpload(sectionIndex);
+    }
+  }
+
+  onSectionImageUrl(sectionIndex: number, imageIndex: number | null, url: string): void {
+    if (imageIndex == null) {
+      this.addSectionImage(sectionIndex);
+      imageIndex = (this.session()?.template.sections[sectionIndex]?.images?.length ?? 1) - 1;
+    }
+    this.patchSectionImageField(sectionIndex, imageIndex, 'url', url);
+  }
+
+  onSectionImageRemove(sectionIndex: number, imageIndex: number): void {
+    const blockId = this.proseBlockIdForSection(sectionIndex);
+    if (blockId) {
+      this.patchBlockImage(blockId, imageIndex, 'url', '');
+      this.patchBlockImage(blockId, imageIndex, 'alt', '');
+      this.patchBlockImage(blockId, imageIndex, 'align', 'full');
+      return;
+    }
+    this.removeSectionImage(sectionIndex, imageIndex);
+  }
+
+  isSectionImageUploading(sectionIndex: number, imageIndex: number): boolean {
+    const blockId = this.proseBlockIdForSection(sectionIndex);
+    if (blockId) {
+      return this.isProseImageUploading(blockId, imageIndex);
+    }
+    return this.imageUploading() && this.imageUploadSectionIndex() === sectionIndex;
   }
 
   toggleImageMenu(sectionIndex: number): void {
@@ -1470,7 +1537,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
   updateSectionImage(
     sectionIndex: number,
     imageIndex: number,
-    partial: { url?: string; alt?: string },
+    partial: { url?: string; alt?: string; align?: import('@hive/contracts').ProtopipeContentImageAlign },
   ): void {
     const s = this.session();
     if (!s || s.readOnly) return;

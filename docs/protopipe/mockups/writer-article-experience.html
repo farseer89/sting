@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Protopipe Writer — Article canvas mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --chrome-bg: rgba(255, 255, 255, 0.94);
+      --stage-bg: #eef2f5;
+      --paper: #ffffff;
+      --paper-edge: rgba(15, 23, 42, 0.06);
+      --text: #1f1c18;
+      --muted: #5f5a54;
+      --accent: #6d5218;
+      --accent-soft: rgb(109 82 24 / 0.08);
+      --primary: #6366f1;
+      --serif: 'Cormorant Garamond', Georgia, serif;
+      --sans: 'Source Sans 3', system-ui, sans-serif;
+      --prose-max: 42rem;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      font-size: 14px;
+      color: var(--text);
+      background: #f6f8fa;
+    }
+
+    .page-header {
+      padding: 1.25rem 1.5rem 0.75rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .page-header h1 {
+      margin: 0 0 0.35rem;
+      font-size: 1.15rem;
+      font-weight: 600;
+    }
+    .page-header p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 52rem;
+      line-height: 1.5;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.35rem;
+      padding: 0 1.5rem 1rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .tab {
+      border: 1px solid var(--paper-edge);
+      background: #fff;
+      border-radius: 999px;
+      padding: 0.4rem 0.9rem;
+      font: inherit;
+      cursor: pointer;
+      color: var(--muted);
+    }
+    .tab.is-active {
+      background: var(--text);
+      border-color: var(--text);
+      color: #fff;
+    }
+
+    .panels { max-width: 1400px; margin: 0 auto; padding: 0 1.5rem 2rem; }
+    .panel { display: none; }
+    .panel.is-active { display: block; }
+
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 1100px) {
+      .compare { grid-template-columns: 1fr; }
+    }
+
+    .label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    /* ---- Shared writer chrome ------------------------------------------- */
+    .writer {
+      border: 1px solid var(--paper-edge);
+      border-radius: 10px;
+      overflow: hidden;
+      background: #f6f8fa;
+      min-height: 720px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .writer__bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      height: 48px;
+      padding: 0 1rem;
+      background: var(--chrome-bg);
+      border-bottom: 1px solid var(--paper-edge);
+      font-size: 0.8125rem;
+    }
+    .writer__bar .status { margin-right: auto; color: var(--muted); }
+    .writer__bar .actions { display: flex; gap: 0.4rem; }
+    .btn {
+      border-radius: 6px;
+      padding: 0.35rem 0.75rem;
+      font: inherit;
+      font-size: 0.8125rem;
+      border: 1px solid var(--paper-edge);
+      background: #fff;
+      cursor: default;
+    }
+    .btn--accent {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .writer__body {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      min-height: 0;
+    }
+
+    .rail {
+      background: var(--chrome-bg);
+      border-right: 1px solid var(--paper-edge);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.5rem 0;
+    }
+    .rail-btn {
+      width: 34px;
+      height: 34px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .rail-btn.is-active {
+      color: var(--primary);
+      background: rgb(99 102 241 / 0.12);
+      box-shadow: inset 2px 0 0 var(--primary);
+    }
+
+    .stage {
+      background: var(--stage-bg);
+      overflow: auto;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* ---- CURRENT: generic editor canvas --------------------------------- */
+    .canvas--current {
+      width: min(58rem, 100%);
+      min-height: 100%;
+      background: var(--paper);
+      box-shadow: 0 0 0 1px var(--paper-edge), 0 10px 40px rgb(15 23 42 / 0.05);
+      padding: 2.5rem 2rem 3rem;
+    }
+    .canvas--current .topic {
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin: 0 0 1.25rem;
+    }
+    .canvas--current .h1 {
+      width: 100%;
+      border: none;
+      text-align: center;
+      font-size: 1.75rem;
+      font-weight: 600;
+      font-family: inherit;
+      margin-bottom: 1rem;
+      color: var(--text);
+    }
+    .canvas--current .intro {
+      width: 100%;
+      border: none;
+      text-align: center;
+      font-size: 1rem;
+      line-height: 1.7;
+      font-family: inherit;
+      color: var(--text);
+      margin-bottom: 1.5rem;
+    }
+    .canvas--current .h2 {
+      width: 100%;
+      border: none;
+      font-size: 1.25rem;
+      font-weight: 600;
+      font-family: inherit;
+      margin: 1rem 0 0.5rem;
+    }
+    .canvas--current .body {
+      width: 100%;
+      border: none;
+      font-size: 1rem;
+      line-height: 1.7;
+      font-family: inherit;
+      min-height: 4rem;
+      margin-bottom: 0.75rem;
+    }
+    .media-panel {
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px dashed var(--paper-edge);
+    }
+    .media-head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+    .media-item {
+      border: 1px solid var(--paper-edge);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 0.5rem;
+    }
+    .media-preview {
+      background: #f8fafc;
+      min-height: 100px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 0.72rem;
+    }
+    .media-fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 0.35rem;
+      padding: 0.5rem;
+    }
+    .media-fields input {
+      font-size: 0.75rem;
+      padding: 0.35rem 0.5rem;
+      border: 1px solid var(--paper-edge);
+      border-radius: 4px;
+    }
+    .img-ph-current {
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 0.75rem;
+      background: rgb(248 250 252 / 0.8);
+      margin: 0.5rem 0;
+    }
+    .img-ph-current__box {
+      min-height: 7rem;
+      border-radius: 6px;
+      background: #fff;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    .img-ph-current__fields {
+      display: grid;
+      gap: 0.35rem;
+      margin-top: 0.5rem;
+      font-size: 0.72rem;
+    }
+    .img-ph-current__fields input {
+      width: 100%;
+      padding: 0.35rem;
+      border: 1px solid var(--paper-edge);
+      border-radius: 4px;
+    }
+    .callout-bad {
+      margin-top: 1rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: 8px;
+      background: rgb(239 68 68 / 0.06);
+      border: 1px solid rgb(239 68 68 / 0.2);
+      font-size: 0.78rem;
+      line-height: 1.45;
+      color: #991b1b;
+    }
+
+    /* ---- TARGET: live article while writing ----------------------------- */
+    .canvas--target {
+      width: min(58rem, 100%);
+      min-height: 100%;
+      background: #f6f3ee;
+      box-shadow: 0 0 0 1px var(--paper-edge), 0 10px 40px rgb(15 23 42 / 0.05);
+      padding: clamp(2rem, 5vh, 3rem) clamp(1.25rem, 4vw, 2rem) 3rem;
+    }
+
+    .article {
+      max-width: var(--prose-max);
+      margin: 0 auto;
+      font-family: var(--sans);
+      color: var(--text);
+    }
+
+    .article__meta {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin: 0 0 0.75rem;
+    }
+
+    .article__h1 {
+      font-family: var(--serif);
+      font-size: clamp(2rem, 4vw, 2.65rem);
+      font-weight: 500;
+      line-height: 1.12;
+      margin: 0 0 1.25rem;
+      border: none;
+      width: 100%;
+      background: transparent;
+      color: var(--text);
+      padding: 0;
+    }
+    .article__h1:focus {
+      outline: 2px solid rgb(99 102 241 / 0.35);
+      outline-offset: 4px;
+      border-radius: 2px;
+    }
+
+    .figure {
+      position: relative;
+      margin: 1.25rem 0;
+    }
+    .figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .figure--hero img {
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+    }
+    .figure--empty .figure__slot {
+      aspect-ratio: 16 / 9;
+      border: 2px dashed rgb(109 82 24 / 0.28);
+      border-radius: 4px;
+      background: rgb(255 255 255 / 0.55);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    .figure__overlay {
+      position: absolute;
+      inset: 0;
+      border-radius: 4px;
+      background: rgb(15 23 42 / 0.45);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      pointer-events: none;
+    }
+    .figure:hover .figure__overlay,
+    .figure:focus-within .figure__overlay {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .figure__btn {
+      border: 1px solid rgb(255 255 255 / 0.5);
+      background: rgb(255 255 255 / 0.12);
+      color: #fff;
+      border-radius: 6px;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.75rem;
+      backdrop-filter: blur(4px);
+    }
+    .figure__caption {
+      margin-top: 0.45rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .prose-block {
+      font-size: 1.05rem;
+      line-height: 1.65;
+    }
+    .prose-block [contenteditable] {
+      outline: none;
+    }
+    .prose-block [contenteditable]:empty::before {
+      content: attr(data-placeholder);
+      color: rgb(95 90 84 / 0.55);
+    }
+    .prose-block p { margin: 0; }
+    .prose-block p + p { margin-top: 0.85rem; }
+
+    .article__h2 {
+      font-family: var(--serif);
+      font-size: clamp(1.35rem, 3vw, 1.75rem);
+      font-weight: 600;
+      margin: 2rem 0 0.75rem;
+      border: none;
+      width: 100%;
+      background: transparent;
+      color: var(--text);
+      padding: 0;
+    }
+    .article__h2:focus {
+      outline: 2px solid rgb(99 102 241 / 0.35);
+      outline-offset: 3px;
+    }
+
+    .kw-rail {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      margin: 0 -0.5rem 1rem;
+      padding: 0.45rem 0.65rem;
+      border-radius: 8px;
+      background: rgb(255 255 255 / 0.92);
+      border: 1px solid var(--paper-edge);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.72rem;
+      backdrop-filter: blur(8px);
+    }
+    .kw-rail span.label { margin: 0; }
+    .kw {
+      padding: 0.12rem 0.45rem;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .callout-good {
+      margin-top: 1.25rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: 8px;
+      background: rgb(34 197 94 / 0.06);
+      border: 1px solid rgb(34 197 94 / 0.22);
+      font-size: 0.78rem;
+      line-height: 1.45;
+      color: #166534;
+    }
+
+    .notes {
+      margin-top: 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 0.75rem;
+    }
+    .note {
+      padding: 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--paper-edge);
+      background: #fff;
+    }
+    .note h3 {
+      margin: 0 0 0.35rem;
+      font-size: 0.8rem;
+    }
+    .note p {
+      margin: 0;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+    .note ul {
+      margin: 0.35rem 0 0;
+      padding-left: 1.1rem;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <h1>Writer canvas mockup — article-as-you-write</h1>
+    <p>
+      Opens from <strong>Home → Content → Writer</strong> (<code>app-protopipe-user-home</code>).
+      Compare today’s editor-centric canvas with a target where the writing surface mirrors the published blog layout —
+      same typography, image slots in flow, minimal admin chrome until you interact.
+    </p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab is-active" type="button" data-tab="compare">Side by side</button>
+    <button class="tab" type="button" data-tab="target">Target only</button>
+    <button class="tab" type="button" data-tab="notes">Limits &amp; approach</button>
+  </div>
+
+  <div class="panels">
+    <section class="panel is-active" id="panel-compare">
+      <div class="compare">
+        <div>
+          <div class="label">Today — generic editor canvas</div>
+          <div class="writer">
+            <header class="writer__bar">
+              <span>← Strategy</span>
+              <span class="status">Saved</span>
+              <div class="actions">
+                <button class="btn" type="button">Save draft</button>
+                <button class="btn btn--accent" type="button">Publish</button>
+              </div>
+            </header>
+            <div class="writer__body">
+              <nav class="rail" aria-hidden="true">
+                <button class="rail-btn is-active" type="button">+</button>
+                <button class="rail-btn" type="button">◉</button>
+                <button class="rail-btn" type="button">👁</button>
+              </nav>
+              <div class="stage">
+                <div class="canvas--current">
+                  <p class="topic">Writing for <strong>emergency electrician near me</strong></p>
+                  <input class="h1" value="What to Do When You Need an Emergency Electrician" readonly />
+                  <textarea class="intro" rows="3" readonly>When the power goes out or you smell burning wires, every minute counts. This guide walks through safe first steps and how to choose a licensed pro fast.</textarea>
+
+                  <input class="h2" value="Signs you need help now" readonly />
+                  <textarea class="body" rows="4" readonly>Sparking outlets, buzzing panels, or partial outages often mean something serious behind the wall. Don't wait until morning if you notice heat, smoke, or a tingling sensation from switches.</textarea>
+
+                  <div class="media-panel">
+                    <div class="media-head"><span>Images</span><span>+</span></div>
+                    <div class="media-item">
+                      <div class="media-preview">Add a URL or upload an image</div>
+                      <div class="media-fields">
+                        <input type="text" value="" placeholder="https://…" readonly />
+                        <input type="text" value="" placeholder="Alt text (required)" readonly />
+                        <span>×</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="img-ph-current">
+                    <div class="img-ph-current__box">Hero image — upload or URL</div>
+                    <div class="img-ph-current__fields">
+                      <input type="text" placeholder="Image URL" readonly />
+                      <input type="text" placeholder="Alt text" readonly />
+                    </div>
+                  </div>
+
+                  <div class="callout-bad">
+                    Images sit in admin panels or dashed placeholders — not where they appear on the live blog.
+                    Preview is a separate mode; writing doesn't feel like the published article.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="label">Target — write inside the article layout</div>
+          <div class="writer">
+            <header class="writer__bar">
+              <span>← Strategy</span>
+              <span class="status">Saved</span>
+              <div class="actions">
+                <button class="btn" type="button">Save draft</button>
+                <button class="btn btn--accent" type="button">Publish</button>
+              </div>
+            </header>
+            <div class="writer__body">
+              <nav class="rail" aria-hidden="true">
+                <button class="rail-btn is-active" type="button">+</button>
+                <button class="rail-btn" type="button">◉</button>
+                <button class="rail-btn" type="button">👁</button>
+              </nav>
+              <div class="stage">
+                <div class="canvas--target">
+                  <article class="article">
+                    <div class="kw-rail">
+                      <span class="label">Keywords</span>
+                      <span class="kw">emergency electrician</span>
+                      <span class="kw">24 hour electrician</span>
+                    </div>
+
+                    <p class="article__meta">June 14, 2026 · Draft</p>
+                    <input class="article__h1" value="What to Do When You Need an Emergency Electrician" aria-label="Headline" />
+
+                    <figure class="figure figure--hero">
+                      <img src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=1200&h=675&fit=crop" alt="Electrician inspecting a residential breaker panel" />
+                      <div class="figure__overlay">
+                        <button class="figure__btn" type="button">Replace</button>
+                        <button class="figure__btn" type="button">Alt text</button>
+                        <button class="figure__btn" type="button">Remove</button>
+                      </div>
+                      <figcaption class="figure__caption">Hero · hover to edit</figcaption>
+                    </figure>
+
+                    <div class="prose-block">
+                      <p contenteditable="true" data-placeholder="Open with the promise of the piece…">When the power goes out or you smell burning wires, every minute counts. This guide walks through safe first steps and how to choose a licensed pro fast.</p>
+                    </div>
+
+                    <input class="article__h2" value="Signs you need help now" aria-label="Section heading" />
+
+                    <figure class="figure">
+                      <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&h=800&fit=crop" alt="Close-up of a sparking electrical outlet" />
+                      <div class="figure__overlay">
+                        <button class="figure__btn" type="button">Replace</button>
+                        <button class="figure__btn" type="button">Alt text</button>
+                      </div>
+                    </figure>
+
+                    <div class="prose-block">
+                      <p contenteditable="true">Sparking outlets, buzzing panels, or partial outages often mean something serious behind the wall.</p>
+                      <p contenteditable="true">Don't wait until morning if you notice heat, smoke, or a tingling sensation from switches.</p>
+                    </div>
+
+                    <input class="article__h2" value="How to vet an emergency electrician" aria-label="Section heading" />
+
+                    <figure class="figure figure--empty">
+                      <div class="figure__slot">
+                        <span>Section image</span>
+                        <span style="font-size:0.75rem">Click or drop to add · matches live slot</span>
+                      </div>
+                      <div class="figure__overlay">
+                        <button class="figure__btn" type="button">Upload</button>
+                        <button class="figure__btn" type="button">Paste URL</button>
+                      </div>
+                    </figure>
+
+                    <div class="prose-block">
+                      <p contenteditable="true" data-placeholder="Write this section…">Look for a state license number, proof of insurance, and clear after-hours pricing before anyone rolls a truck.</p>
+                    </div>
+
+                    <div class="callout-good">
+                      Typography and image order match <code>BlogPostLayout</code> + block renderer:
+                      date → H1 → hero → intro → (H2 → image → body)*. Editing stays in-flow; URL/alt fields appear on focus only.
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-target">
+      <div class="label">Target — full width</div>
+      <!-- duplicate target column only -->
+      <div class="writer" style="max-width:900px;margin:0 auto">
+        <header class="writer__bar">
+          <span>← Strategy</span>
+          <span class="status">Saved</span>
+          <div class="actions">
+            <button class="btn" type="button">Save draft</button>
+            <button class="btn btn--accent" type="button">Publish</button>
+          </div>
+        </header>
+        <div class="writer__body">
+          <nav class="rail" aria-hidden="true"><button class="rail-btn is-active" type="button">+</button></nav>
+          <div class="stage">
+            <div class="canvas--target">
+              <article class="article">
+                <p class="article__meta">June 14, 2026 · Draft</p>
+                <input class="article__h1" value="What to Do When You Need an Emergency Electrician" />
+                <figure class="figure figure--hero">
+                  <img src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=1200&h=675&fit=crop" alt="Electrician at panel" />
+                </figure>
+                <div class="prose-block"><p contenteditable="true">When the power goes out or you smell burning wires…</p></div>
+                <input class="article__h2" value="Signs you need help now" />
+                <figure class="figure">
+                  <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&h=800&fit=crop" alt="Outlet spark" />
+                </figure>
+                <div class="prose-block"><p contenteditable="true">Sparking outlets, buzzing panels…</p></div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-notes">
+      <div class="notes">
+        <div class="note">
+          <h3>How you get there today</h3>
+          <ul>
+            <li>Home nav: Content → Writer enters writer focus (hides left nav)</li>
+            <li><code>ProtopipeHomeWriterComponent</code> embeds <code>ProtopipeWriterComponent</code></li>
+            <li>Left tool rail + optional right inspector (Brief, SERP, Blog preview, etc.)</li>
+            <li>“Preview on site” is a separate takeover — not the default writing surface</li>
+          </ul>
+        </div>
+        <div class="note">
+          <h3>Current limits</h3>
+          <ul>
+            <li>Canvas uses app UI fonts; centered H1/intro — not site <code>.prose</code> theme</li>
+            <li>Legacy sections: images in a detached “Images” panel below body</li>
+            <li>Block-layout posts: dashed <code>app-protopipe-image-placeholder</code> with always-visible URL/alt fields</li>
+            <li>Published order is H2 → image → body (<code>renderArticleBlocks</code>); editor order matches only for block layout</li>
+            <li>Blog preview HTML exists but lives in inspector / takeover, not inline</li>
+          </ul>
+        </div>
+        <div class="note">
+          <h3>Target principles</h3>
+          <ul>
+            <li>One column, max-width 42rem — same as live blog</li>
+            <li>Site serif/sans + warm paper background from theme tokens</li>
+            <li>Figures are full-width in column; edit on hover/focus</li>
+            <li>Empty slots use subtle dashed frame (preview placeholder), not form chrome</li>
+            <li>SEO/meta/schedule stay in inspector — not on the article surface</li>
+          </ul>
+        </div>
+        <div class="note">
+          <h3>Implementation sketch</h3>
+          <ul>
+            <li>Add <code>.pw__canvas--article</code> mode: import theme prose tokens (or iframe site CSS)</li>
+            <li>Replace <code>app-protopipe-image-placeholder</code> inline variant with figure + overlay editor</li>
+            <li>Migrate legacy section images into flow; drop always-visible media panel</li>
+            <li>Left-align intro; add meta line (date + draft badge)</li>
+            <li>Reuse <code>renderBlogPreviewDocument</code> styles on canvas, not only in sidebar</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    document.querySelectorAll('.tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach((t) => t.classList.remove('is-active'));
+        document.querySelectorAll('.panel').forEach((p) => p.classList.remove('is-active'));
+        tab.classList.add('is-active');
+        document.getElementById('panel-' + tab.dataset.tab).classList.add('is-active');
+      });
+    });
+  </script>
+</body>
+</html>

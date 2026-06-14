@@ -1,54 +1,156 @@
-<div class="img-ph" [class.img-ph--compact]="compact()" [class.img-ph--uploading]="uploading()">
-  <div class="img-ph__preview">
-    @if (uploading()) {
-      <div class="img-ph__placeholder">
-        <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
-        <span>Uploading…</span>
-      </div>
-    } @else if (hasPreview()) {
-      <img [src]="url()" [alt]="alt() || label()" />
-    } @else {
-      <div class="img-ph__placeholder">
-        <i class="pi pi-image" aria-hidden="true"></i>
-        <span>{{ hint() }}</span>
-      </div>
+<div
+  class="img-ph"
+  [class.img-ph--insert]="isInsertMode()"
+  [class.img-ph--detail]="!isInsertMode()"
+  [class.img-ph--compact]="compact()"
+  [class.img-ph--hero]="hero()"
+  [class.img-ph--has-image]="hasPreview()"
+  [class.img-ph--uploading]="uploading()"
+>
+  @if (uploading()) {
+    <div class="img-ph__status">
+      <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+    </div>
+  } @else if (isInsertMode()) {
+    <div class="img-ph__anchor" [class.img-ph__anchor--empty]="!hasPreview()">
+      @if (hasPreview()) {
+        <figure class="img-ph__figure" [class]="figureAlignClass()">
+          <img [src]="url()" [alt]="alt() || label()" />
+        </figure>
+      }
+
+      @if (!readOnly()) {
+        <div class="img-ph__control" [class.img-ph__control--empty]="!hasPreview()">
+          <span class="img-ph__glyph" aria-hidden="true">
+            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="3" width="12" height="10" rx="1.2" stroke="currentColor" stroke-width="1.1" />
+              <circle cx="5.5" cy="6.5" r="1.2" fill="currentColor" />
+              <path d="M2 11l3.5-3 2.5 2 3-3.5L14 10.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+
+          <div class="img-ph__menu" role="toolbar" [attr.aria-label]="label() + ' options'">
+            @if (!hero()) {
+              <div class="img-ph__menu-seg">
+                @for (opt of alignOptions(); track opt.id) {
+                  <button
+                    type="button"
+                    class="img-ph__opt"
+                    [class.is-active]="align() === opt.id"
+                    [attr.title]="opt.label"
+                    (click)="selectAlign(opt.id)"
+                  >
+                    @switch (opt.id) {
+                      @case ('full') {
+                        <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="4" width="12" height="8" rx="0.8" stroke="currentColor" stroke-width="1.1" fill="none" /></svg>
+                      }
+                      @case ('left') {
+                        <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="4" width="5" height="8" rx="0.6" stroke="currentColor" stroke-width="1.1" fill="none" /><rect x="8" y="5" width="6" height="1.2" rx="0.4" fill="currentColor" opacity="0.45" /><rect x="8" y="7.4" width="6" height="1.2" rx="0.4" fill="currentColor" opacity="0.45" /><rect x="8" y="9.8" width="4" height="1.2" rx="0.4" fill="currentColor" opacity="0.45" /></svg>
+                      }
+                      @case ('right') {
+                        <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="9" y="4" width="5" height="8" rx="0.6" stroke="currentColor" stroke-width="1.1" fill="none" /><rect x="2" y="5" width="6" height="1.2" rx="0.4" fill="currentColor" opacity="0.45" /><rect x="2" y="7.4" width="6" height="1.2" rx="0.4" fill="currentColor" opacity="0.45" /><rect x="2" y="9.8" width="4" height="1.2" rx="0.4" fill="currentColor" opacity="0.45" /></svg>
+                      }
+                      @case ('center') {
+                        <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="4" y="4" width="8" height="8" rx="0.8" stroke="currentColor" stroke-width="1.1" fill="none" /></svg>
+                      }
+                    }
+                    <span>{{ opt.short }}</span>
+                  </button>
+                }
+              </div>
+              <span class="img-ph__menu-rule" aria-hidden="true"></span>
+            }
+            <div class="img-ph__menu-seg">
+              <button type="button" class="img-ph__opt" title="Upload" (click)="upload.emit()">
+                <i class="pi pi-upload" aria-hidden="true"></i>
+                <span>Upload</span>
+              </button>
+              <button type="button" class="img-ph__opt" title="Paste URL" (click)="openUrlField()">
+                <i class="pi pi-link" aria-hidden="true"></i>
+                <span>URL</span>
+              </button>
+              @if (hasPreview()) {
+                <button type="button" class="img-ph__opt" title="Alt text" [class.is-warn]="needsAlt()" (click)="openAltField()">
+                  <span class="img-ph__opt-text">Alt</span>
+                </button>
+                <button type="button" class="img-ph__opt img-ph__opt--muted" title="Remove" (click)="onRemove()">
+                  <i class="pi pi-times" aria-hidden="true"></i>
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (urlFieldOpen() && !readOnly()) {
+        <label class="img-ph__inline-field">
+          <input
+            type="url"
+            [ngModel]="url()"
+            (ngModelChange)="urlChange.emit($event)"
+            placeholder="Paste image URL…"
+          />
+        </label>
+      }
+      @if ((altFieldOpen() || needsAlt()) && hasPreview() && !readOnly()) {
+        <label class="img-ph__inline-field">
+          <input
+            type="text"
+            [ngModel]="alt()"
+            (ngModelChange)="altChange.emit($event)"
+            [placeholder]="'Alt text for ' + label()"
+          />
+        </label>
+        @if (needsAlt()) {
+          <p class="img-ph__warn">Alt text required for preview and publish.</p>
+        }
+      }
+    </div>
+  } @else {
+    <!-- detail mode (layout inspector) -->
+    @if (hasPreview()) {
+      <figure class="img-ph__figure img-ph__figure--align-full">
+        <img [src]="url()" [alt]="alt() || label()" />
+      </figure>
     }
-  </div>
-
-  @if (!readOnly()) {
-    <div class="img-ph__actions">
-      <button type="button" class="img-ph__btn" (click)="upload.emit()" [disabled]="uploading()">
-        <i class="pi pi-upload" aria-hidden="true"></i> Upload
-      </button>
-      @if (url()) {
-        <button type="button" class="img-ph__btn img-ph__btn--ghost" (click)="remove.emit()">
-          Remove
-        </button>
-      }
-    </div>
-
-    <div class="img-ph__fields">
-      <label class="img-ph__field">
-        <span>Image URL</span>
-        <input
-          type="url"
-          [ngModel]="url()"
-          (ngModelChange)="urlChange.emit($event)"
-          placeholder="https://…"
-        />
-      </label>
-      <label class="img-ph__field">
-        <span>Alt text</span>
-        <input
-          type="text"
-          [ngModel]="alt()"
-          (ngModelChange)="altChange.emit($event)"
-          [placeholder]="label()"
-        />
-      </label>
-      @if (needsAlt()) {
-        <p class="img-ph__warn">Add alt text — preview and publish need both URL and alt.</p>
-      }
-    </div>
+    @if (!readOnly()) {
+      <div class="img-ph__picker">
+        <div class="img-ph__picker-actions">
+          <button type="button" class="img-ph__btn" (click)="upload.emit()">
+            <i class="pi pi-upload" aria-hidden="true"></i> Upload
+          </button>
+        </div>
+        <label class="img-ph__field">
+          <span>Image URL</span>
+          <input type="url" [ngModel]="url()" (ngModelChange)="urlChange.emit($event)" placeholder="https://…" />
+        </label>
+        <label class="img-ph__field">
+          <span>Alt text</span>
+          <input type="text" [ngModel]="alt()" (ngModelChange)="altChange.emit($event)" [placeholder]="label()" />
+        </label>
+        @if (!hero()) {
+          <div class="img-ph__detail-align">
+            <span>Layout</span>
+            <div class="img-ph__detail-align-row">
+              @for (opt of alignOptions(); track opt.id) {
+                <button
+                  type="button"
+                  class="img-ph__opt img-ph__opt--detail"
+                  [class.is-active]="align() === opt.id"
+                  (click)="selectAlign(opt.id)"
+                >
+                  {{ opt.short }}
+                </button>
+              }
+            </div>
+          </div>
+        }
+        @if (hasPreview()) {
+          <button type="button" class="img-ph__btn img-ph__btn--ghost" (click)="onRemove()">Remove</button>
+        }
+      </div>
+    } @else if (!hasPreview()) {
+      <p class="img-ph__empty-readonly">No image</p>
+    }
   }
 </div>

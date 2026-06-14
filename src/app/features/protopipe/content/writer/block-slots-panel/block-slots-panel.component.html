@@ -31,13 +31,17 @@
           <div class="slots__body">
             @if (asImage(block); as imageBlock) {
               <app-protopipe-image-placeholder
+                mode="detail"
+                [hero]="true"
                 [label]="imageBlock.label || 'Hero image'"
                 [hint]="imageHint(imageBlock)"
                 [url]="imageBlock.url"
                 [alt]="imageBlock.alt"
+                [align]="imageBlock.align ?? 'full'"
                 [readOnly]="readOnly()"
                 (urlChange)="patchImageBlock(imageBlock, 'url', $event)"
                 (altChange)="patchImageBlock(imageBlock, 'alt', $event)"
+                (alignChange)="patchImageBlock(imageBlock, 'align', $event)"
                 (upload)="imageUploadRequest.emit({ blockId: imageBlock.id })"
                 (remove)="clearImageBlock(imageBlock)"
               />
@@ -66,13 +70,16 @@
               </label>
               @for (img of prose.images ?? []; track $index) {
                 <app-protopipe-image-placeholder
+                  mode="detail"
                   [label]="prose.label || prose.slotId"
                   [hint]="imageHint(img)"
                   [url]="img.url"
                   [alt]="img.alt"
+                  [align]="img.align ?? 'full'"
                   [readOnly]="readOnly()"
                   (urlChange)="patchProseImage(prose, $index, 'url', $event)"
                   (altChange)="patchProseImage(prose, $index, 'alt', $event)"
+                  (alignChange)="patchProseImage(prose, $index, 'align', $event)"
                   (upload)="imageUploadRequest.emit({ blockId: prose.id, imageIndex: $index })"
                   (remove)="clearProseImage(prose, $index)"
                 />

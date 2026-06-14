@@ -176,7 +176,7 @@ export class ProtopipeBlockSlotsPanelComponent {
 
   patchImageBlock(
     block: Extract<ProtopipeArticleBlock, { kind: 'image' }>,
-    field: 'url' | 'alt',
+    field: 'url' | 'alt' | 'align',
     value: string,
   ): void {
     this.patch(block.id, { [field]: value });
@@ -185,7 +185,7 @@ export class ProtopipeBlockSlotsPanelComponent {
   patchProseImage(
     block: Extract<ProtopipeArticleBlock, { kind: 'prose' }>,
     imageIndex: number,
-    field: 'url' | 'alt',
+    field: 'url' | 'alt' | 'align',
     value: string,
   ): void {
     const images = [...(block.images ?? [])];

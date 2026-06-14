@@ -512,13 +512,13 @@
 .pw__block--hero-image {
   width: 100%;
   max-width: 44rem;
-  margin: 0 auto 0.5rem;
-  padding: 0 1rem;
+  margin: 0 auto 0.15rem;
+  padding: 0;
 }
 
 .pw__inline-image {
   display: block;
-  margin: 0.5rem 0 0.75rem;
+  margin: 0.15rem 0 0.35rem;
 }
 
 /* Canvas inputs — borderless, document-like */
@@ -1910,6 +1910,27 @@
       height: auto;
       border-radius: 4px;
     }
+
+    .pp-image-block {
+      margin: 1rem 0;
+    }
+
+    .pp-image-block--align-center {
+      max-width: 85%;
+      margin-inline: auto;
+    }
+
+    .pp-image-block--align-left {
+      float: left;
+      max-width: min(46%, 20rem);
+      margin: 0.25rem 1rem 0.75rem 0;
+    }
+
+    .pp-image-block--align-right {
+      float: right;
+      max-width: min(46%, 20rem);
+      margin: 0.25rem 0 0.75rem 1rem;
+    }
   }
 
   :deep(.pp-image-placeholder) {
@@ -2069,7 +2090,24 @@
   }
 }
 
-/* ---- Section media (images + embeds) ------------------------------------ */
+/* ---- Section embeds (images use inline img-ph slots) -------------------- */
+.pw__embeds {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed var(--pw-paper-edge);
+  opacity: 0.85;
+}
+
+.pw__embeds-head {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-color-secondary);
+  margin-bottom: 0.45rem;
+}
+
+/* ---- Section media (legacy — images removed) ---------------------------- */
 .pw__media {
   margin-top: 0.75rem;
   padding-top: 0.75rem;

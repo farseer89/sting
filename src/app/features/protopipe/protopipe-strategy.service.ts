@@ -32,6 +32,7 @@ export class ProtopipeStrategyService {
   private readonly _site = signal<ProtopipeSite | null>(null);
   private readonly _summary = signal('');
   private readonly _onboardingProfile = signal<ProtopipeOnboardingProfile | null>(null);
+  private readonly _defaultCognitivePackId = signal('none');
   private readonly _keywords = signal<ProtopipeKeywordDto[]>([]);
   private readonly _marketRefreshing = signal(false);
   private readonly _lastEnrichSummary = signal<string | null>(null);
@@ -58,6 +59,7 @@ export class ProtopipeStrategyService {
   readonly lastEnrichSummary = this._lastEnrichSummary.asReadonly();
   readonly site = this._site.asReadonly();
   readonly onboardingProfile = this._onboardingProfile.asReadonly();
+  readonly defaultCognitivePackId = this._defaultCognitivePackId.asReadonly();
 
   readonly strategy = computed<ProtopipeStrategySummary>(() => ({
     site: this._site() ?? {
@@ -252,8 +254,14 @@ export class ProtopipeStrategyService {
     this._site.set(plan.site);
     this._summary.set(plan.summary);
     this._onboardingProfile.set(plan.onboardingProfile ?? null);
+    this._defaultCognitivePackId.set(plan.defaultCognitivePackId ?? 'none');
     this._keywords.set(plan.keywords);
     this._updatedAt.set(plan.updatedAt);
+  }
+
+  /** Called after PATCH site default cognitive pack without full plan reload. */
+  applyDefaultCognitivePackId(packId: string): void {
+    this._defaultCognitivePackId.set(packId || 'none');
   }
 
   private clampPhrase(value: string): string {

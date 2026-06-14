@@ -172,8 +172,11 @@
                   <section class="glass glass--full glass--premiere glass--packs home-packs" aria-label="Thought packs">
                     @if (packDetailId(); as detailId) {
                       <app-thought-pack-detail
+                        [catalog]="thoughtPacksCatalog()"
                         [packId]="detailId"
                         [isSiteDefault]="siteDefaultPackId() === detailId"
+                        [savingDefault]="savingSiteDefault()"
+                        [statusMessage]="siteDefaultMessage()"
                         (back)="closePackDetail()"
                         (selectPack)="openPackDetail($event)"
                         (startWriting)="onPackStartWriting($event)"
@@ -181,7 +184,10 @@
                       />
                     } @else {
                       <app-thought-pack-store
+                        [catalog]="thoughtPacksCatalog()"
                         [siteDefaultPackId]="siteDefaultPackId()"
+                        [loading]="thoughtPacksLoading()"
+                        [error]="thoughtPacksError()"
                         (selectPack)="openPackDetail($event)"
                       />
                     }

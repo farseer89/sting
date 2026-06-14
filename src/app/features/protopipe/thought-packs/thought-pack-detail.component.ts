@@ -23,20 +23,23 @@ import { ThoughtPackTrainAccordionComponent } from './thought-pack-train-accordi
   styleUrl: './thought-pack-detail.component.scss',
 })
 export class ThoughtPackDetailComponent {
+  readonly catalog = input.required<CognitivePackCatalogItem[]>();
   readonly packId = input.required<string>();
   readonly isSiteDefault = input(false);
+  readonly savingDefault = input(false);
+  readonly statusMessage = input<string | null>(null);
 
   readonly back = output<void>();
   readonly startWriting = output<CognitivePackCatalogItem>();
   readonly setSiteDefault = output<CognitivePackCatalogItem>();
   readonly selectPack = output<CognitivePackCatalogItem>();
 
-  protected readonly pack = computed(() => getPackById(this.packId()));
+  protected readonly pack = computed(() => getPackById(this.catalog(), this.packId()));
 
   protected readonly pairedPacks = computed(() => {
     const p = this.pack();
     if (!p) return [];
-    return getPacksByIds(p.pairsWithPackIds);
+    return getPacksByIds(this.catalog(), p.pairsWithPackIds);
   });
 
   protected readonly stubMessage = signal<string | null>(null);
@@ -62,7 +65,6 @@ export class ThoughtPackDetailComponent {
   protected onSetSiteDefault(): void {
     const p = this.pack();
     if (!p) return;
-    this.stubMessage.set('Setting site default — API coming soon.');
     this.setSiteDefault.emit(p);
   }
 

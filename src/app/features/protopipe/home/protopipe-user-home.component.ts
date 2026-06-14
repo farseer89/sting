@@ -18,6 +18,7 @@ import { filter } from 'rxjs/operators';
 import type { CognitivePackCatalogItem } from '../thought-packs/cognitive-pack.model';
 import { ThoughtPackDetailComponent } from '../thought-packs/thought-pack-detail.component';
 import { ThoughtPackStoreComponent } from '../thought-packs/thought-pack-store.component';
+import { ProtopipeThoughtPacksService } from '../thought-packs/protopipe-thought-packs.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ContentPlanStore } from '../content-plan/content-plan.store';
 import { ProtopipeOnboardingStateService } from '../onboarding/protopipe-onboarding-state.service';
@@ -81,6 +82,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly onboarding = inject(ProtopipeOnboardingStateService);
   private readonly strategy = inject(ProtopipeStrategyService);
+  private readonly thoughtPacks = inject(ProtopipeThoughtPacksService);
   private readonly contentPlan = inject(ContentPlanStore);
   readonly sidePanel = inject(ProtopipeHomeSidePanelService);
   /** Shared with strategy children + context panel — inspect selectedArticle() when debugging clicks. */
@@ -139,7 +141,12 @@ export class ProtopipeUserHomeComponent implements OnInit {
   readonly activeView = signal<ProtopipeHomeView>('keywords');
   readonly activeNavId = signal('start-keywords');
   readonly packDetailId = signal<string | null>(null);
-  readonly siteDefaultPackId = signal<string | null>(null);
+  readonly thoughtPacksCatalog = this.thoughtPacks.catalog;
+  readonly thoughtPacksLoading = this.thoughtPacks.loading;
+  readonly thoughtPacksError = this.thoughtPacks.error;
+  readonly siteDefaultPackId = this.thoughtPacks.siteDefaultPackId;
+  readonly savingSiteDefault = this.thoughtPacks.saving;
+  readonly siteDefaultMessage = this.thoughtPacks.saveMessage;
   readonly userMenuOpen = signal(false);
 
   readonly userName = computed(() => {
@@ -281,8 +288,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.enterWriterFocus();
   }
 
-  onPackSetSiteDefault(_pack: CognitivePackCatalogItem): void {
-    // API milestone — no-op until SitePlan field lands
+  onPackSetSiteDefault(pack: CognitivePackCatalogItem): void {
+    void this.thoughtPacks.setSiteDefault(pack);
   }
 
   private syncPacksFromRoute(): void {
@@ -293,6 +300,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.activeNavId.set('content-packs');
       this.packDetailId.set(packId);
       this.leaveWriterFocus();
+      void this.thoughtPacks.ensureCatalogLoaded();
       return;
     }
     if (path === '/home/packs') {
@@ -300,6 +308,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.activeNavId.set('content-packs');
       this.packDetailId.set(null);
       this.leaveWriterFocus();
+      void this.thoughtPacks.ensureCatalogLoaded();
     }
   }
 
@@ -321,6 +330,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
 
       if (site?.id) {
         await this.strategy.ensureLoaded();
+        void this.thoughtPacks.ensureCatalogLoaded();
         this.contentPlan.setSiteId(site.id);
         await this.contentPlan.loadLatest();
         void this.keywordStore.load();

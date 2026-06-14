@@ -16,6 +16,11 @@
     }
   </header>
 
+  @if (loading()) {
+    <p class="pack-store__empty" role="status">Loading thought packs…</p>
+  } @else if (error()) {
+    <p class="pack-store__empty pack-store__empty--error" role="alert">{{ error() }}</p>
+  } @else {
   <div class="pack-store__filters" role="tablist" aria-label="Filter packs">
     @for (f of filters; track f.id) {
       <button
@@ -54,5 +59,6 @@
         (select)="selectPack.emit($event)"
       />
     </section>
+  }
   }
 </div>

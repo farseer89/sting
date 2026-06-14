@@ -40,14 +40,28 @@
           >
             Start writing
           </button>
-          <button type="button" class="pack-detail__btn pack-detail__btn--secondary" (click)="onSetSiteDefault()">
-            Set as site default
+          <button
+            type="button"
+            class="pack-detail__btn pack-detail__btn--secondary"
+            [disabled]="savingDefault() || isSiteDefault()"
+            (click)="onSetSiteDefault()"
+          >
+            @if (isSiteDefault()) {
+              Site default
+            } @else if (savingDefault()) {
+              Saving…
+            } @else {
+              Set as site default
+            }
           </button>
           <button type="button" class="pack-detail__btn pack-detail__btn--ghost" (click)="onViewThinker()">
             View in Thinker
           </button>
         </div>
 
+        @if (statusMessage(); as msg) {
+          <p class="pack-detail__stub pack-detail__stub--success" role="status">{{ msg }}</p>
+        }
         @if (stubMessage(); as msg) {
           <p class="pack-detail__stub" role="status">{{ msg }}</p>
         }

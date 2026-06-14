@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import { COGNITIVE_PACK_CATALOG } from './cognitive-pack-catalog';
 import type { CognitivePackCatalogItem, PackStoreFilter } from './cognitive-pack.model';
 import { ThoughtPackCardComponent } from './thought-pack-card.component';
 
@@ -12,7 +11,10 @@ import { ThoughtPackCardComponent } from './thought-pack-card.component';
   styleUrl: './thought-pack-store.component.scss',
 })
 export class ThoughtPackStoreComponent {
+  readonly catalog = input.required<CognitivePackCatalogItem[]>();
   readonly siteDefaultPackId = input<string | null>(null);
+  readonly loading = input(false);
+  readonly error = input<string | null>(null);
 
   readonly selectPack = output<CognitivePackCatalogItem>();
 
@@ -25,12 +27,12 @@ export class ThoughtPackStoreComponent {
   ];
 
   protected readonly standardPack = computed(() =>
-    COGNITIVE_PACK_CATALOG.find((p) => p.id === 'none'),
+    this.catalog().find((p) => p.id === 'none'),
   );
 
   protected readonly filteredPacks = computed(() => {
     const f = this.filter();
-    const premium = COGNITIVE_PACK_CATALOG.filter((p) => p.id !== 'none');
+    const premium = this.catalog().filter((p) => p.id !== 'none');
     if (f === 'all') return premium;
     if (f === 'available') return premium.filter((p) => p.status === 'available');
     return premium.filter((p) => p.status === 'coming_soon' || p.status === 'beta');
@@ -39,7 +41,7 @@ export class ThoughtPackStoreComponent {
   protected readonly siteDefaultLabel = computed(() => {
     const id = this.siteDefaultPackId();
     if (!id || id === 'none') return null;
-    return COGNITIVE_PACK_CATALOG.find((p) => p.id === id)?.label ?? null;
+    return this.catalog().find((p) => p.id === id)?.label ?? null;
   });
 
   protected setFilter(id: PackStoreFilter): void {

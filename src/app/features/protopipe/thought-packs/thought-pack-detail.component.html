@@ -68,6 +68,12 @@
       </div>
     </div>
 
+    <app-thought-pack-train-journey
+      [trains]="p.trainRefs"
+      [accentColor]="p.accentColor"
+      [packLabel]="p.label"
+    />
+
     <section class="pack-detail__section">
       <h2>What&apos;s inside</h2>
       @if (p.trainRefs.length) {
@@ -79,15 +85,6 @@
       } @else {
         <p class="pack-detail__muted">Uses your content plan brief — no extra cognitive rails.</p>
       }
-    </section>
-
-    <section class="pack-detail__section pack-detail__steps-strip">
-      <h2>How it works</h2>
-      <ol>
-        <li><strong>Pick</strong> — choose a pack for this article or your site</li>
-        <li><strong>Think</strong> — parallel trains produce a thesis before prose</li>
-        <li><strong>Write</strong> — outline and draft inherit the hardened angle</li>
-      </ol>
     </section>
 
     <section class="pack-detail__section">

@@ -1,0 +1,88 @@
+<section
+  class="journey"
+  [style.--journey-accent]="accentColor()"
+  aria-label="How {{ packLabel() }} runs through its cognitive process"
+>
+  <div class="journey__header">
+    <div>
+      <h2 class="journey__title">The run</h2>
+      <p class="journey__subtitle">Watch the train stop at each cognitive station before writing starts.</p>
+    </div>
+    <button
+      type="button"
+      class="journey__play"
+      [attr.aria-pressed]="isPlaying()"
+      (click)="togglePlayback()"
+    >
+      {{ isPlaying() ? 'Pause' : 'Play' }}
+    </button>
+  </div>
+
+  <div class="journey__stage">
+    <div class="journey__sky" aria-hidden="true"></div>
+
+    <div class="journey__track-wrap">
+      <div class="journey__rails" aria-hidden="true">
+        <span class="journey__rail journey__rail--back"></span>
+        <span class="journey__rail journey__rail--front"></span>
+        <span class="journey__sleeper"></span>
+      </div>
+
+      <ol class="journey__stations" [style.--step-count]="stepCount()">
+        @for (step of steps(); track step.id; let i = $index) {
+          <li
+            class="journey__station"
+            [class.is-active]="activeStep() === i"
+            [class.is-passed]="activeStep() > i"
+            [class.journey__station--start]="step.kind === 'start'"
+            [class.journey__station--finish]="step.kind === 'finish'"
+          >
+            <button
+              type="button"
+              class="journey__station-btn"
+              [attr.aria-current]="activeStep() === i ? 'step' : null"
+              (click)="goToStep(i)"
+            >
+              <span class="journey__station-dot" aria-hidden="true"></span>
+              <span class="journey__station-label">{{ step.label }}</span>
+            </button>
+          </li>
+        }
+      </ol>
+
+      <div class="journey__train-lane" [style.--train-progress]="trainProgress()">
+        <div class="journey__train" aria-hidden="true">
+          <svg class="journey__train-svg" viewBox="0 0 120 44" xmlns="http://www.w3.org/2000/svg">
+          <g class="journey__smoke">
+            <circle cx="18" cy="8" r="3" />
+            <circle cx="24" cy="4" r="2.2" />
+            <circle cx="30" cy="7" r="1.6" />
+          </g>
+          <rect x="28" y="14" width="34" height="18" rx="3" class="journey__loco-body" />
+          <rect x="52" y="10" width="10" height="8" rx="1.5" class="journey__loco-cab" />
+          <rect x="54" y="6" width="6" height="5" rx="1" class="journey__loco-stack" />
+          <rect x="62" y="18" width="44" height="14" rx="2" class="journey__car" />
+          <rect x="68" y="12" width="32" height="8" rx="1.5" class="journey__car-top" />
+          <g class="journey__wheels">
+            <circle cx="38" cy="34" r="4.5" />
+            <circle cx="50" cy="34" r="4.5" />
+            <circle cx="74" cy="34" r="4.5" />
+            <circle cx="88" cy="34" r="4.5" />
+            <circle cx="98" cy="34" r="4.5" />
+          </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @if (activeDetail(); as step) {
+    <div class="journey__caption" role="status" aria-live="polite">
+      <span class="journey__caption-step">
+        Stop {{ activeStep() + 1 }} of {{ stepCount() }}
+      </span>
+      <strong class="journey__caption-label">{{ step.label }}</strong>
+      <p class="journey__caption-detail">{{ step.detail }}</p>
+    </div>
+  }
+</section>

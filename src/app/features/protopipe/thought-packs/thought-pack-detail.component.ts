@@ -8,6 +8,7 @@ import {
 import type { CognitivePackCatalogItem } from './cognitive-pack.model';
 import { ThoughtPackCardComponent } from './thought-pack-card.component';
 import { ThoughtPackCoverComponent } from './thought-pack-cover.component';
+import { ThoughtPackTrainJourneyComponent } from './thought-pack-train-journey.component';
 import { ThoughtPackTrainAccordionComponent } from './thought-pack-train-accordion.component';
 
 @Component({
@@ -17,6 +18,7 @@ import { ThoughtPackTrainAccordionComponent } from './thought-pack-train-accordi
   imports: [
     ThoughtPackCoverComponent,
     ThoughtPackCardComponent,
+    ThoughtPackTrainJourneyComponent,
     ThoughtPackTrainAccordionComponent,
   ],
   templateUrl: './thought-pack-detail.component.html',

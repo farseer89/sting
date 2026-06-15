@@ -6,6 +6,7 @@ import type {
   ArticleGenerationReview,
   ArticleGenerationRunDto,
   ArticleGenerationStep,
+  CognitiveTrainStep,
 } from '@hive/contracts';
 import { generationStepsForRun, STEP_SHORT_LABELS } from '../../article-pipeline-steps';
 import type {
@@ -147,7 +148,11 @@ function stepOutput(
         : [];
     case 'cognitive_pass': {
       const outputs: ThoughtArtifact[] = [];
-      if (a.cognitiveRun) {
+      if (a.cognitiveRun?.trains?.length) {
+        for (const train of a.cognitiveRun.trains) {
+          outputs.push(trainStepArtifact(train));
+        }
+      } else if (a.cognitiveRun) {
         outputs.push(
           json(
             'cognitive-run',
@@ -291,6 +296,132 @@ function stepOutput(
   }
 }
 
+function trainStepArtifact(train: CognitiveTrainStep): ThoughtArtifact {
+  const summary =
+    train.status === 'failed'
+      ? (train.error ?? 'Failed')
+      : train.slug === 'synthesis'
+        ? String((train.output as { thesis?: string }).thesis ?? train.label)
+        : `${train.status}${train.durationMs != null ? ` · ${train.durationMs}ms` : ''}`;
+
+  return json(`train-${train.slug}`, train.label, train.output, summary);
+}
+
+function mapTrainStatus(status: CognitiveTrainStep['status']): ThoughtStepStatus {
+  switch (status) {
+    case 'complete':
+      return 'complete';
+    case 'failed':
+      return 'failed';
+    case 'skipped':
+      return 'skipped';
+    default:
+      return 'pending';
+  }
+}
+
+function trainStepSummary(train: CognitiveTrainStep): string {
+  if (train.status === 'failed') {
+    return train.error ?? 'Failed';
+  }
+  if (train.slug === 'synthesis') {
+    return String((train.output as { thesis?: string }).thesis ?? 'Master synthesis');
+  }
+  if (train.durationMs != null) {
+    return `${train.durationMs}ms`;
+  }
+  return train.label;
+}
+
+/** Replace cognitive_pass with one ThoughtStep per train when cognitiveRun.trains exists. */
+function expandCognitiveTrainSteps(
+  run: ArticleGenerationRunDto,
+  steps: ThoughtStep[],
+  stepOrder: ArticleGenerationStep[],
+): ThoughtStep[] {
+  const cognitiveIdx = stepOrder.indexOf('cognitive_pass');
+  if (cognitiveIdx < 0) return steps;
+
+  const trains = run.artifacts.cognitiveRun?.trains;
+  if (!trains?.length) return steps;
+
+  const parent = steps[cognitiveIdx];
+  const trainSteps: ThoughtStep[] = trains.map((train) => ({
+    id: `train:${train.slug}`,
+    label: train.label,
+    summary: trainStepSummary(train),
+    status: mapTrainStatus(train.status),
+    startedAt: parent.startedAt,
+    finishedAt:
+      train.status === 'complete' || train.status === 'failed' || train.status === 'skipped'
+        ? parent.finishedAt
+        : undefined,
+    durationMs: train.durationMs,
+    attempt: 1,
+    input: undefined,
+    output:
+      train.status === 'complete' || train.status === 'failed'
+        ? [trainStepArtifact(train)]
+        : train.status === 'skipped'
+          ? [json(`train-${train.slug}`, train.label, train.output, 'Skipped (stub)')]
+          : undefined,
+    events: [],
+    error:
+      train.status === 'failed' && train.error ? { message: train.error } : undefined,
+    promptVersion: train.promptVersion,
+  }));
+
+  const brief = run.artifacts.brief;
+  if (brief && run.artifacts.cognitiveRun && trainSteps.length > 0) {
+    const last = trainSteps[trainSteps.length - 1];
+    last.output = [
+      ...(last.output ?? []),
+      json(
+        'enriched-brief',
+        'Enriched brief',
+        brief,
+        brief.recommendedAngle ?? brief.primaryKeyword.phrase,
+      ),
+    ];
+  }
+
+  return [...steps.slice(0, cognitiveIdx), ...trainSteps, ...steps.slice(cognitiveIdx + 1)];
+}
+
+function resolveCurrentStepId(
+  run: ArticleGenerationRunDto,
+  steps: ThoughtStep[],
+  stepOrder: ArticleGenerationStep[],
+  currentIdx: number,
+): string | undefined {
+  if (run.currentStep === 'done') {
+    return steps[steps.length - 1]?.id;
+  }
+
+  const pipelineStep = run.currentStep as ArticleGenerationStep;
+  if (pipelineStep !== 'cognitive_pass') {
+    return pipelineStep;
+  }
+
+  const cognitiveIdx = stepOrder.indexOf('cognitive_pass');
+  if (cognitiveIdx < 0 || currentIdx !== cognitiveIdx) {
+    return pipelineStep;
+  }
+
+  const trains = run.artifacts.cognitiveRun?.trains;
+  if (!trains?.length) {
+    return 'cognitive_pass';
+  }
+
+  const runningTrain = trains.find((t) => t.status !== 'complete' && t.status !== 'skipped');
+  if (runningTrain) {
+    return `train:${runningTrain.slug}`;
+  }
+
+  const lastTrain = trains[trains.length - 1];
+  return lastTrain ? `train:${lastTrain.slug}` : 'cognitive_pass';
+}
+
 function mapEvents(events: ArticleGenerationEvent[]): ThoughtEvent[] {
   return events.map((e) => {
     const parts: string[] = [e.status];
@@ -390,15 +521,14 @@ export function articleRunToThought(run: ArticleGenerationRunDto): Thought {
     } satisfies ThoughtStep;
   });
 
+  let expandedSteps = expandCognitiveTrainSteps(run, steps, stepOrder);
+
   // Chain inputs: each step takes the prior step's output as its input view.
-  for (let i = 1; i < steps.length; i++) {
-    steps[i].input = steps[i - 1].output;
+  for (let i = 1; i < expandedSteps.length; i++) {
+    expandedSteps[i].input = expandedSteps[i - 1].output;
   }
 
-  const currentStepId =
-    run.currentStep === 'done'
-      ? steps[steps.length - 1]?.id
-      : (run.currentStep as string);
+  const currentStepId = resolveCurrentStepId(run, expandedSteps, stepOrder, currentIdx);
 
   const keyword = run.artifacts.brief?.primaryKeyword.phrase;
   const startedAt = run.events[0]?.startedAt ?? run.createdAt;
@@ -417,7 +547,7 @@ export function articleRunToThought(run: ArticleGenerationRunDto): Thought {
     summary: `Writer pipeline · ${run.articleType.replace(/_/g, ' ')}`,
     status: runStatus(run),
     currentStepId,
-    steps,
+    steps: expandedSteps,
     inputs: [
       {
         portId: 'keyword',

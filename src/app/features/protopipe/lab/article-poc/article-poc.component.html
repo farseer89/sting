@@ -1,0 +1,71 @@
+<div class="article-poc">
+  <header class="article-poc__header">
+    <h1 class="article-poc__title">Article PoC</h1>
+    <p class="article-poc__lead">
+      Pinned V2 writer run with <strong>Trains of Thought</strong> on a draft content post.
+    </p>
+  </header>
+
+  @if (loadError(); as err) {
+    <div class="article-poc__error" role="alert">{{ err }}</div>
+    <button type="button" class="article-poc__btn article-poc__btn--secondary" (click)="loadPost()">
+      Retry load
+    </button>
+  } @else {
+    <section class="article-poc__card">
+      <dl class="article-poc__meta">
+        <div>
+          <dt>Keyword</dt>
+          <dd>{{ keywordLabel() }}</dd>
+        </div>
+        <div>
+          <dt>Post</dt>
+          <dd><code>{{ postId }}</code></dd>
+        </div>
+        <div>
+          <dt>Site</dt>
+          <dd><code>{{ siteId }}</code></dd>
+        </div>
+        <div>
+          <dt>Thought pack</dt>
+          <dd><code>{{ packId }}</code></dd>
+        </div>
+        <div>
+          <dt>Status</dt>
+          <dd>{{ post()?.status ?? '…' }}</dd>
+        </div>
+      </dl>
+
+      @if (actionError(); as err) {
+        <div class="article-poc__error" role="alert">{{ err }}</div>
+      }
+
+      <div class="article-poc__actions">
+        <button
+          type="button"
+          class="article-poc__btn article-poc__btn--primary"
+          [disabled]="busy() || !post()?.brief"
+          (click)="generateAndOpenThinker()"
+        >
+          @if (busy()) {
+            Starting run…
+          } @else {
+            Generate article test
+          }
+        </button>
+        <a
+          class="article-poc__btn article-poc__btn--secondary"
+          [routerLink]="['/protopipe/content', postId]"
+        >
+          Open writer
+        </a>
+      </div>
+
+      @if (!post()?.brief) {
+        <p class="article-poc__hint">
+          This post needs a research brief from a content plan before generation can start.
+        </p>
+      }
+    </section>
+  }
+</div>

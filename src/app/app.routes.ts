@@ -69,6 +69,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'protopipe/lab/article-poc',
+    canActivate: [authGuard, operatorOnlyGuard],
+    loadComponent: () =>
+      import('./features/protopipe/lab/article-poc/article-poc.component').then(
+        (m) => m.ArticlePocComponent,
+      ),
+  },
+  {
     // Content plan — void-styled variant kept for lab/aesthetic testing.
     path: 'protopipe/lab/content-plan',
     canActivate: [authGuard, operatorOnlyGuard],

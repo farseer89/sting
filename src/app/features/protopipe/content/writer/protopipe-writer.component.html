@@ -64,8 +64,14 @@
           {{ writeArticleLabel() }}
         </button>
       } @else if (runIsActive()) {
-        <span class="pw__status pw__status--running">
-          <i class="pi pi-spin pi-spinner"></i> Writing…
+        <span class="pw__status pw__status--running" title="Pipeline is running on the server">
+          <i class="pi pi-spin pi-spinner"></i>
+          @if (runActivityDetail(); as detail) {
+            {{ detail }}
+          } @else {
+            Writing…
+          }
+          · {{ runElapsedLabel() }}
         </span>
       }
       @if (generatedReady() && !isReadOnly()) {
@@ -827,13 +833,30 @@
                 <span class="pw__run-dot"></span>
                 <span class="pw__run-label">
                   @switch (r.status) {
-                    @case ('running') { Running · {{ r.currentStep }} }
+                    @case ('running') {
+                      @if (runActivityDetail(); as detail) {
+                        Running · {{ detail }} · {{ runElapsedLabel() }}
+                      } @else {
+                        Running · {{ r.currentStep }} · {{ runElapsedLabel() }}
+                      }
+                    }
                     @case ('pending') { Queued }
                     @case ('complete') { Complete }
                     @case ('failed') { Failed }
                   }
                 </span>
               </div>
+
+              @if (runOnCognitivePass()) {
+                <p class="pw__run-hint">
+                  Trains of Thought runs 16 sequential AI phases — often 5–15 minutes total.
+                  @if (cognitiveTrainProgress(); as p) {
+                    {{ p.done }} of {{ p.total }} complete so far.
+                  } @else {
+                    Progress updates as each phase finishes.
+                  }
+                </p>
+              }
 
               <ol class="pw__steps">
                 @for (st of pipelineSteps(); track st.step) {

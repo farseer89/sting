@@ -371,6 +371,21 @@ function expandCognitiveTrainSteps(
     promptVersion: train.promptVersion,
   }));
 
+  const synthesisPending =
+    parent.status === 'running' &&
+    !String(run.artifacts.cognitiveRun?.synthesis?.thesis ?? '').trim();
+  if (synthesisPending) {
+    trainSteps.push({
+      id: 'train:__in_progress__',
+      label: 'Next phase…',
+      summary: 'Running…',
+      status: 'running',
+      startedAt: parent.startedAt,
+      attempt: 1,
+      events: [],
+    });
+  }
+
   const brief = run.artifacts.brief;
   if (brief && run.artifacts.cognitiveRun && trainSteps.length > 0) {
     const last = trainSteps[trainSteps.length - 1];
@@ -411,6 +426,11 @@ function resolveCurrentStepId(
   const trains = run.artifacts.cognitiveRun?.trains;
   if (!trains?.length) {
     return 'cognitive_pass';
+  }
+
+  const synthesisPending = !String(run.artifacts.cognitiveRun?.synthesis?.thesis ?? '').trim();
+  if (synthesisPending && run.status === 'running') {
+    return 'train:__in_progress__';
   }
 
   const runningTrain = trains.find((t) => t.status !== 'complete' && t.status !== 'skipped');

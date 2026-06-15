@@ -101,6 +101,11 @@ import {
 
 type AiPanelKind = 'research' | 'ideas' | 'links';
 
+/** Expected cognitive phase counts for live progress labels. */
+const COGNITIVE_PHASE_COUNTS: Record<string, number> = {
+  'trains_of_thought/v1': 16,
+};
+
 interface AiPanelItem {
   label: string;
   detail?: string;
@@ -374,6 +379,8 @@ export class ProtopipeWriterComponent implements OnDestroy {
   /** Behind-the-curtain pipeline run wired to this post. */
   readonly run = signal<ArticleGenerationRunDto | null>(null);
   readonly generating = signal(false);
+  private readonly _runElapsedSec = signal(0);
+  private runElapsedTimer: ReturnType<typeof setInterval> | null = null;
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
   private polling = false;
 
@@ -588,6 +595,50 @@ export class ProtopipeWriterComponent implements OnDestroy {
       }
       return { step, label, status };
     });
+  });
+
+  /** Human-readable active pipeline step (includes train phase counts during Think). */
+  readonly runActivityDetail = computed(() => {
+    const run = this.run();
+    if (!run || !this.runIsActive()) return null;
+    const step = run.currentStep as ArticleGenerationStep;
+    if (step === 'cognitive_pass') {
+      const packId = run.resolvedCognitivePackId ?? 'none';
+      const total = COGNITIVE_PHASE_COUNTS[packId];
+      const trains = run.artifacts?.cognitiveRun?.trains ?? [];
+      const done = trains.filter((t) => t.status === 'complete' || t.status === 'skipped').length;
+      const inProgress = !String(run.artifacts?.cognitiveRun?.synthesis?.thesis ?? '').trim();
+      if (total) {
+        if (inProgress && done < total) {
+          return `Think · ${done}/${total} phases`;
+        }
+        return `Think · ${done}/${total} phases complete`;
+      }
+      return done > 0 ? `Think · ${done} phase(s)` : 'Think · starting…';
+    }
+    return STEP_SHORT_LABELS[step] ?? step;
+  });
+
+  readonly runElapsedLabel = computed(() => {
+    const sec = this._runElapsedSec();
+    if (sec < 60) return `${sec}s`;
+    const min = Math.floor(sec / 60);
+    return `${min}m ${sec % 60}s`;
+  });
+
+  readonly runOnCognitivePass = computed(
+    () => this.runIsActive() && this.run()?.currentStep === 'cognitive_pass',
+  );
+
+  readonly cognitiveTrainProgress = computed(() => {
+    const run = this.run();
+    if (!run?.artifacts?.cognitiveRun?.trains?.length) return null;
+    const packId = run.resolvedCognitivePackId ?? 'none';
+    const total = COGNITIVE_PHASE_COUNTS[packId] ?? run.artifacts.cognitiveRun.trains.length;
+    const done = run.artifacts.cognitiveRun.trains.filter(
+      (t) => t.status === 'complete' || t.status === 'skipped',
+    ).length;
+    return { done, total, trains: run.artifacts.cognitiveRun.trains };
   });
 
   readonly generationReview = computed(() => this.run()?.artifacts?.review ?? null);
@@ -958,6 +1009,17 @@ export class ProtopipeWriterComponent implements OnDestroy {
       untracked(() => this.inspectorBridge!.notifyPanelChange());
     });
 
+    effect(() => {
+      if (this.runIsActive()) {
+        untracked(() => {
+          this.syncRunElapsed();
+          this.startRunElapsedTimer();
+        });
+      } else {
+        untracked(() => this.stopRunElapsedTimer());
+      }
+    });
+
     this.destroyRef.onDestroy(() => {
       this.inspectorBridge?.clear();
       this.inspectorSidePanel.detachResizeListeners();
@@ -1001,6 +1063,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
   ngOnDestroy(): void {
     this.content.setWriterImmersive(false);
     this.stopPolling();
+    this.stopRunElapsedTimer();
     if (this.previewRefreshTimer) clearTimeout(this.previewRefreshTimer);
     this.introEditor = null;
     this.sectionEditors.clear();
@@ -1927,6 +1990,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
     this.api.getArticleRun$(siteId, runId).subscribe({
       next: ({ run }) => {
         this.run.set(run);
+        this.syncRunElapsed();
         if (run.status === 'running' || run.status === 'pending') {
           this.schedulePoll();
         } else {
@@ -1953,6 +2017,29 @@ export class ProtopipeWriterComponent implements OnDestroy {
       clearTimeout(this.pollTimer);
       this.pollTimer = null;
     }
+  }
+
+  private syncRunElapsed(): void {
+    const run = this.run();
+    if (!run || !this.runIsActive()) {
+      this._runElapsedSec.set(0);
+      return;
+    }
+    const started = run.events[0]?.startedAt ?? run.createdAt;
+    const sec = Math.max(0, Math.floor((Date.now() - new Date(started).getTime()) / 1000));
+    this._runElapsedSec.set(sec);
+  }
+
+  private startRunElapsedTimer(): void {
+    if (this.runElapsedTimer) return;
+    this.runElapsedTimer = setInterval(() => this.syncRunElapsed(), 1000);
+  }
+
+  private stopRunElapsedTimer(): void {
+    if (!this.runElapsedTimer) return;
+    clearInterval(this.runElapsedTimer);
+    this.runElapsedTimer = null;
+    this._runElapsedSec.set(0);
   }
 
   /** Open the live run in the generic Thinker view (Thought stepper). */

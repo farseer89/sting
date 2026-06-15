@@ -697,8 +697,9 @@
         }
       }
 
-      <!-- ===================== BUILD BRIEF ===================== -->
-      @case ('build_brief') {
+      <!-- ===================== BUILD BRIEF / COMPILE CONTEXT ===================== -->
+      @case ('build_brief')
+      @case ('compile_context') {
         @if (brief(); as b) {
           <section class="brief">
             <div class="brief__grid">
@@ -810,6 +811,47 @@
                     <p class="brief__p">{{ b.businessContext }}</p>
                   </div>
                 }
+              </div>
+            }
+          </section>
+        }
+      }
+
+      <!-- ===================== COGNITIVE PASS ===================== -->
+      @case ('cognitive_pass') {
+        @if (cognitiveRun(); as cr) {
+          <section class="brief">
+            <div class="brief__grid">
+              <div class="brief__card">
+                <span class="brief__label">Thought pack</span>
+                <span class="brief__big">{{ cr.packLabel }}</span>
+                <span class="brief__sub">{{ cr.mode }} · {{ cr.trains.length }} train(s)</span>
+              </div>
+              <div class="brief__card">
+                <span class="brief__label">Thesis</span>
+                <span class="brief__big">{{ cr.synthesis.thesis }}</span>
+              </div>
+            </div>
+            @if (cr.synthesis.recommendedAngle) {
+              <div class="brief__block">
+                <h4 class="brief__h">Recommended angle</h4>
+                <p class="brief__p">{{ cr.synthesis.recommendedAngle }}</p>
+              </div>
+            }
+            @if (cr.synthesis.positioningSummary) {
+              <div class="brief__block">
+                <h4 class="brief__h">Positioning</h4>
+                <p class="brief__p">{{ cr.synthesis.positioningSummary }}</p>
+              </div>
+            }
+            @if (cr.synthesis.mustCoverAdditions?.length) {
+              <div class="brief__block">
+                <h4 class="brief__h">Must cover (from pack)</h4>
+                <ul class="brief__bullets">
+                  @for (g of cr.synthesis.mustCoverAdditions; track g) {
+                    <li>{{ g }}</li>
+                  }
+                </ul>
               </div>
             }
           </section>

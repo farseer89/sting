@@ -36,6 +36,10 @@ const STEP_META: Record<
     label: 'Context',
     summary: 'Load the plan brief and compile the writing context.',
   },
+  cognitive_pass: {
+    label: 'Think',
+    summary: 'Run the selected thought pack before outline and draft.',
+  },
   outline: { label: 'Outline', summary: 'Design the H1 and section outline.' },
   draft: { label: 'Draft', summary: 'Write the section prose.' },
   review: { label: 'Review', summary: 'Score the draft against the brief.' },
@@ -141,6 +145,30 @@ function stepOutput(
               : []),
           ]
         : [];
+    case 'cognitive_pass': {
+      const outputs: ThoughtArtifact[] = [];
+      if (a.cognitiveRun) {
+        outputs.push(
+          json(
+            'cognitive-run',
+            'Cognitive pass',
+            a.cognitiveRun,
+            a.cognitiveRun.synthesis.thesis,
+          ),
+        );
+      }
+      if (a.brief && a.cognitiveRun) {
+        outputs.push(
+          json(
+            'enriched-brief',
+            'Enriched brief',
+            a.brief,
+            a.brief.recommendedAngle ?? a.brief.primaryKeyword.phrase,
+          ),
+        );
+      }
+      return outputs;
+    }
     case 'outline':
       return a.outline
         ? [

@@ -7,6 +7,7 @@ import {
 import type {
   ArticleGenerationBrief,
   ArticleGenerationClusterContext,
+  ArticleGenerationCognitiveRun,
   ArticleGenerationCompetitionAnalysis,
   ArticleGenerationContentStrategy,
   ArticleGenerationPageProfile,
@@ -70,6 +71,7 @@ const STEP_TITLES: Record<ArticleGenerationStep, string> = {
   research: 'Research bundle',
   build_brief: 'SEO brief',
   compile_context: 'Writing context',
+  cognitive_pass: 'Cognitive pass',
   outline: 'Outline',
   draft: 'Drafts',
   review: 'Review',
@@ -241,6 +243,10 @@ export class ArticlePipelineStepPanelComponent {
     () => this.run()?.artifacts?.brief ?? null,
   );
 
+  readonly cognitiveRun = computed<ArticleGenerationCognitiveRun | null>(
+    () => this.run()?.artifacts?.cognitiveRun ?? null,
+  );
+
   readonly outline = computed<ArticleGenerationOutline | null>(
     () => this.run()?.artifacts?.outline ?? null,
   );
@@ -302,6 +308,8 @@ export class ArticlePipelineStepPanelComponent {
       case 'build_brief':
       case 'compile_context':
         return !!run.artifacts?.brief;
+      case 'cognitive_pass':
+        return !!run.artifacts?.cognitiveRun;
       case 'outline':
         return !!run.artifacts?.outline;
       case 'draft':

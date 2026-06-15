@@ -1,5 +1,5 @@
 import type { ArticleGenerationRunDto, ArticleGenerationStep } from '@hive/contracts';
-import { ARTICLE_GENERATION_STEPS_V2 } from '@hive/contracts';
+import { resolveArticleGenerationStepsV2 } from '@hive/contracts';
 
 export const GENERATION_STEPS_V1: ArticleGenerationStep[] = [
   'infer_type',
@@ -25,10 +25,13 @@ export function resolvePipelineVersion(
 }
 
 export function generationStepsForRun(
-  run: Pick<ArticleGenerationRunDto, 'pipelineVersion' | 'contentPostId'>,
+  run: Pick<
+    ArticleGenerationRunDto,
+    'pipelineVersion' | 'contentPostId' | 'resolvedCognitivePackId'
+  >,
 ): ArticleGenerationStep[] {
   return resolvePipelineVersion(run) === 2
-    ? [...ARTICLE_GENERATION_STEPS_V2]
+    ? resolveArticleGenerationStepsV2(run.resolvedCognitivePackId)
     : GENERATION_STEPS_V1;
 }
 
@@ -39,6 +42,7 @@ export const STEP_LABELS: Record<ArticleGenerationStep, string> = {
   research: 'Research',
   build_brief: 'Build brief',
   compile_context: 'Compile context',
+  cognitive_pass: 'Cognitive pass',
   outline: 'Outline',
   draft: 'Drafts',
   review: 'Review',
@@ -54,6 +58,7 @@ export const STEP_SHORT_LABELS: Record<ArticleGenerationStep, string> = {
   research: 'Research',
   build_brief: 'Brief',
   compile_context: 'Context',
+  cognitive_pass: 'Think',
   outline: 'Outline',
   draft: 'Draft',
   review: 'Review',

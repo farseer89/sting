@@ -217,8 +217,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
     } else if (item.id === 'content-writer') {
       this.enterWriterFocus();
     } else if (item.id === 'content-packs') {
-      this.leaveWriterFocus();
-      this.sidePanel.setOpen(false);
+      this.showPacksStore();
       void this.router.navigate(['/home/packs']);
     } else if (item.id === 'int-wordpress' || item.id === 'int-google') {
       void this.router.navigate(['/protopipe/settings/integrations']);
@@ -277,10 +276,12 @@ export class ProtopipeUserHomeComponent implements OnInit {
   }
 
   openPackDetail(pack: CognitivePackCatalogItem): void {
+    this.showPackDetail(pack.id);
     void this.router.navigate(['/home/packs', pack.id]);
   }
 
   closePackDetail(): void {
+    this.showPacksStore();
     void this.router.navigate(['/home/packs']);
   }
 
@@ -299,20 +300,30 @@ export class ProtopipeUserHomeComponent implements OnInit {
     const path = this.router.url.split('?')[0] ?? '';
     if (path.startsWith('/home/packs/') && path.length > '/home/packs/'.length) {
       const packId = decodeURIComponent(path.slice('/home/packs/'.length));
-      this.activeView.set('packs');
-      this.activeNavId.set('content-packs');
-      this.packDetailId.set(packId);
-      this.leaveWriterFocus();
-      void this.thoughtPacks.ensureCatalogLoaded();
+      this.showPackDetail(packId);
       return;
     }
-    if (path === '/home/packs') {
-      this.activeView.set('packs');
-      this.activeNavId.set('content-packs');
-      this.packDetailId.set(null);
-      this.leaveWriterFocus();
-      void this.thoughtPacks.ensureCatalogLoaded();
+    if (path === '/home/packs' || path.startsWith('/home/packs')) {
+      this.showPacksStore();
     }
+  }
+
+  private showPacksStore(): void {
+    this.leaveWriterFocus();
+    this.sidePanel.setOpen(false);
+    this.activeView.set('packs');
+    this.activeNavId.set('content-packs');
+    this.packDetailId.set(null);
+    void this.thoughtPacks.ensureCatalogLoaded();
+  }
+
+  private showPackDetail(packId: string): void {
+    this.leaveWriterFocus();
+    this.sidePanel.setOpen(false);
+    this.activeView.set('packs');
+    this.activeNavId.set('content-packs');
+    this.packDetailId.set(packId);
+    void this.thoughtPacks.ensureCatalogLoaded();
   }
 
   private async loadBootstrap(): Promise<void> {
@@ -338,7 +349,11 @@ export class ProtopipeUserHomeComponent implements OnInit {
         await this.contentPlan.loadLatest();
         void this.keywordStore.load();
         const planStatus = this.contentPlan.status();
-        if (planStatus === 'running' || planStatus === 'pending' || planStatus === 'complete') {
+        const onPacksRoute = (this.router.url.split('?')[0] ?? '').startsWith('/home/packs');
+        if (
+          !onPacksRoute &&
+          (planStatus === 'running' || planStatus === 'pending' || planStatus === 'complete')
+        ) {
           this.activeView.set('strategy');
           this.activeNavId.set('start-strategy');
         }

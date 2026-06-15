@@ -13,6 +13,12 @@
     </button>
   } @else {
     <section class="article-poc__card">
+      @if (usingFallback()) {
+        <p class="article-poc__hint">
+          Pinned PoC ids were not on your account — using your active site's first draft with a brief.
+        </p>
+      }
+
       <dl class="article-poc__meta">
         <div>
           <dt>Keyword</dt>
@@ -20,11 +26,11 @@
         </div>
         <div>
           <dt>Post</dt>
-          <dd><code>{{ postId }}</code></dd>
+          <dd><code>{{ postId() }}</code></dd>
         </div>
         <div>
           <dt>Site</dt>
-          <dd><code>{{ siteId }}</code></dd>
+          <dd><code>{{ siteId() }}</code></dd>
         </div>
         <div>
           <dt>Thought pack</dt>
@@ -55,7 +61,7 @@
         </button>
         <a
           class="article-poc__btn article-poc__btn--secondary"
-          [routerLink]="['/protopipe/content', postId]"
+          [routerLink]="['/protopipe/content', postId()]"
         >
           Open writer
         </a>

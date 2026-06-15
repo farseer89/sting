@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -6,10 +7,12 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import type { ProtopipeContentPost } from '@hive/contracts';
 import { ProtopipeApiService } from '../../protopipe-api.service';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
+import { resolveBootstrapSiteId } from '../../resolve-bootstrap-site-id';
 import {
   ARTICLE_POC_COGNITIVE_PACK_ID,
   ARTICLE_POC_POST_ID,
@@ -19,6 +22,9 @@ import {
 /**
  * Operator lab surface: one-click V2 article generation on a pinned content post
  * with Trains of Thought, then redirect to the live Thinker run view.
+ *
+ * Defaults to pinned DWP ids; override with ?siteId=&postId= or falls back to the
+ * first draft post with a brief on the operator's bootstrap site.
  */
 @Component({
   selector: 'app-article-poc',
@@ -31,16 +37,20 @@ import {
 export class ArticlePocComponent implements OnInit {
   private readonly api = inject(ProtopipeApiService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly siteId = ARTICLE_POC_SITE_ID;
-  readonly postId = ARTICLE_POC_POST_ID;
   readonly packId = ARTICLE_POC_COGNITIVE_PACK_ID;
+  readonly siteId = signal(ARTICLE_POC_SITE_ID);
+  readonly postId = signal(ARTICLE_POC_POST_ID);
+  readonly usingFallback = signal(false);
 
   readonly post = signal<ProtopipeContentPost | null>(null);
   readonly loadError = signal<string | null>(null);
   readonly actionError = signal<string | null>(null);
   readonly busy = signal(false);
+
+  private queryOverride = false;
 
   constructor() {
     document.documentElement.classList.add('void-lab', 'void-white');
@@ -50,22 +60,102 @@ export class ArticlePocComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadPost();
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const siteParam = params.get('siteId')?.trim();
+      const postParam = params.get('postId')?.trim();
+      this.queryOverride = Boolean(siteParam || postParam);
+      this.siteId.set(siteParam || ARTICLE_POC_SITE_ID);
+      this.postId.set(postParam || ARTICLE_POC_POST_ID);
+      this.usingFallback.set(false);
+      this.loadPost();
+    });
   }
 
   loadPost(): void {
     this.loadError.set(null);
-    this.api.getContent$(this.siteId, this.postId).subscribe({
+    this.post.set(null);
+    const siteId = this.siteId();
+    const postId = this.postId();
+
+    this.api.getContent$(siteId, postId).subscribe({
       next: ({ post }) => this.post.set(post),
-      error: (err) =>
-        this.loadError.set(parseProtopipeApiError(err, 'Could not load the PoC content post.')),
+      error: (err) => {
+        if (
+          !this.queryOverride &&
+          err instanceof HttpErrorResponse &&
+          err.status === 404
+        ) {
+          this.tryFallbackPost();
+          return;
+        }
+        this.loadError.set(
+          this.formatLoadError(err, siteId, postId),
+        );
+      },
     });
+  }
+
+  private tryFallbackPost(): void {
+    this.api.bootstrap$().subscribe({
+      next: (boot) => {
+        const siteId = resolveBootstrapSiteId(boot);
+        if (!siteId) {
+          this.loadError.set(
+            'Pinned PoC post not found for your account and no sites are available. Sign in as the DWP operator or pass ?siteId=&postId=.',
+          );
+          return;
+        }
+        this.api.listContent$(siteId).subscribe({
+          next: ({ posts }) => {
+            const candidate =
+              posts.find((p) => p.status === 'draft' && p.brief?.primaryKeywordPhrase) ??
+              posts.find((p) => p.brief?.primaryKeywordPhrase) ??
+              posts.find((p) => p.status === 'draft') ??
+              posts[0];
+
+            if (!candidate) {
+              this.loadError.set(
+                `No content posts on site ${siteId}. Create one from a content plan, or pass ?siteId=&postId=.`,
+              );
+              return;
+            }
+
+            this.siteId.set(siteId);
+            this.postId.set(candidate.id);
+            this.usingFallback.set(true);
+            this.api.getContent$(siteId, candidate.id).subscribe({
+              next: ({ post }) => this.post.set(post),
+              error: (err) =>
+                this.loadError.set(
+                  this.formatLoadError(err, siteId, candidate.id),
+                ),
+            });
+          },
+          error: (err) =>
+            this.loadError.set(parseProtopipeApiError(err, 'Could not list content posts.')),
+        });
+      },
+      error: (err) =>
+        this.loadError.set(parseProtopipeApiError(err, 'Could not load account bootstrap.')),
+    });
+  }
+
+  private formatLoadError(err: unknown, siteId: string, postId: string): string {
+    if (err instanceof HttpErrorResponse && err.status === 404) {
+      return (
+        `Content post not found (site ${siteId}, post ${postId}). ` +
+        'It may belong to another account — open the writer for a post you own, or use ?siteId=&postId= on this URL.'
+      );
+    }
+    return parseProtopipeApiError(err, 'Could not load the PoC content post.');
   }
 
   generateAndOpenThinker(): void {
     const current = this.post();
+    const siteId = this.siteId();
+    const postId = this.postId();
     if (!current?.brief) {
-      this.actionError.set('PoC post has no brief. It must be seeded from a content plan.');
+      this.actionError.set('This post has no brief. Open it from your content plan first.');
       return;
     }
 
@@ -77,15 +167,15 @@ export class ArticlePocComponent implements OnInit {
       cognitivePackId: this.packId,
     };
 
-    this.api.updateContent$(this.siteId, this.postId, { brief }).subscribe({
+    this.api.updateContent$(siteId, postId, { brief }).subscribe({
       next: () => {
-        this.api.generateContent$(this.siteId, this.postId).subscribe({
+        this.api.generateContent$(siteId, postId).subscribe({
           next: ({ run, post }) => {
             this.post.set(post);
             this.busy.set(false);
             void this.router.navigate(
-              ['/protopipe/lab/thinker/run', this.siteId, run.id],
-              { queryParams: { postId: this.postId } },
+              ['/protopipe/lab/thinker/run', siteId, run.id],
+              { queryParams: { postId } },
             );
           },
           error: (err) => {

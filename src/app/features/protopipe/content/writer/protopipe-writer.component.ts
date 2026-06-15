@@ -1131,13 +1131,19 @@ export class ProtopipeWriterComponent implements OnDestroy {
         this.loadArticleContextCards();
         this.loadCtaOfferings();
         this.resetMarginNotes();
-        if (post.articleGenerationRunId) {
-          this.loadRun(post.articleGenerationRunId);
+        const existingRunId = post.articleGenerationRunId;
+        if (existingRunId) {
+          this.loadRun(existingRunId);
         }
         this.maybeAutoApplyTemplateFromRun();
         void this.loadSiteConnections();
         if (this.embedded() && this.homeWriterView?.consumeAutoStartPipeline()) {
-          this.maybeAutoWriteArticle();
+          // Resume an in-flight or completed run — do not spawn a second pipeline while loadRun is in flight.
+          if (!existingRunId) {
+            this.maybeAutoWriteArticle();
+          } else {
+            this.openInspectorPanel('behind');
+          }
         }
       },
       error: () => {

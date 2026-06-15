@@ -154,11 +154,13 @@ export class ProtopipeHomeStrategyViewState {
       this.content.setEditingSiteId(siteId);
 
       let postId = article.contentPostId;
+      let resumeExistingRun = false;
       if (postId) {
         try {
           const { post } = await firstValueFrom(this.content.findPost$(postId, siteId));
           postId = post.id;
           this.content.setEditingSiteId(post.siteId);
+          resumeExistingRun = Boolean(post.articleGenerationRunId);
         } catch {
           postId = undefined;
         }
@@ -181,7 +183,11 @@ export class ProtopipeHomeStrategyViewState {
         this._selectedArticle.set(updated);
       }
 
-      this.writerView.openPostForWriting(postId);
+      if (resumeExistingRun) {
+        this.writerView.openPost(postId);
+      } else {
+        this.writerView.openPostForWriting(postId);
+      }
       this.enterWriterFocus?.();
     } finally {
       this._openingWriter.set(false);

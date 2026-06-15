@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import type { CognitivePackCatalogItem, PackStoreFilter } from './cognitive-pack.model';
+import { isPackSelectable } from './cognitive-pack-catalog';
 import { ThoughtPackCardComponent } from './thought-pack-card.component';
 
 @Component({
@@ -34,7 +35,7 @@ export class ThoughtPackStoreComponent {
     const f = this.filter();
     const premium = this.catalog().filter((p) => p.id !== 'none');
     if (f === 'all') return premium;
-    if (f === 'available') return premium.filter((p) => p.status === 'available');
+    if (f === 'available') return premium.filter((p) => isPackSelectable(p));
     return premium.filter((p) => p.status === 'coming_soon' || p.status === 'beta');
   });
 

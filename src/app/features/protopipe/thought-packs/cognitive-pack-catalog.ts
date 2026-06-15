@@ -34,3 +34,8 @@ export function packStatusLabel(status: CognitivePackCatalogItem['status']): str
       return 'Beta';
   }
 }
+
+/** Packs a user can select, set as default, or start writing with. */
+export function isPackSelectable(pack: CognitivePackCatalogItem): boolean {
+  return pack.status === 'available' || pack.status === 'beta';
+}

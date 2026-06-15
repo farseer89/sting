@@ -16,6 +16,7 @@ import {
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import type { CognitivePackCatalogItem } from '../thought-packs/cognitive-pack.model';
+import { isPackSelectable } from '../thought-packs/cognitive-pack-catalog';
 import { ThoughtPackDetailComponent } from '../thought-packs/thought-pack-detail.component';
 import { ThoughtPackStoreComponent } from '../thought-packs/thought-pack-store.component';
 import { ProtopipeThoughtPacksService } from '../thought-packs/protopipe-thought-packs.service';
@@ -284,7 +285,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   }
 
   onPackStartWriting(pack: CognitivePackCatalogItem): void {
-    if (pack.status !== 'available') return;
+    if (!isPackSelectable(pack)) return;
     this.writerViewState.setPendingCognitivePackId(pack.id);
     this.writerViewState.openCreate();
     this.enterWriterFocus();

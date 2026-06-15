@@ -529,15 +529,12 @@ export class ProtopipeWriterComponent implements OnDestroy {
     return this.thoughtPacks.getPackById(id)?.label ?? id;
   });
 
-  readonly packPickerOptions = computed(() => {
-    const options: Array<{ id: string; label: string }> = [{ id: 'none', label: 'Standard' }];
-    for (const pack of this.thoughtPacks.catalog()) {
-      if (pack.status === 'available') {
-        options.push({ id: pack.id, label: pack.label });
-      }
-    }
-    return options;
-  });
+  readonly packPickerOptions = computed(() =>
+    this.thoughtPacks
+      .catalog()
+      .filter((pack) => pack.status === 'available' || pack.status === 'beta')
+      .map((pack) => ({ id: pack.id, label: pack.label })),
+  );
 
   readonly introSuggestion = computed(() => {
     const s = this.session();

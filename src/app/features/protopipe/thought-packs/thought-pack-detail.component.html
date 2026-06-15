@@ -19,7 +19,8 @@
         <div class="pack-detail__meta">
           <span
             class="pack-detail__badge"
-            [class.pack-detail__badge--available]="p.status === 'available'"
+            [class.pack-detail__badge--available]="p.status === 'available' || p.status === 'beta'"
+            [class.pack-detail__badge--beta]="p.status === 'beta'"
           >
             {{ statusLabel(p) }}
           </span>
@@ -35,7 +36,7 @@
           <button
             type="button"
             class="pack-detail__btn pack-detail__btn--primary"
-            [disabled]="p.status !== 'available'"
+            [disabled]="!isPackSelectable(p)"
             (click)="onStartWriting()"
           >
             Start writing

@@ -3,6 +3,7 @@ import {
   formatPackCost,
   getPackById,
   getPacksByIds,
+  isPackSelectable,
   packStatusLabel,
 } from './cognitive-pack-catalog';
 import type { CognitivePackCatalogItem } from './cognitive-pack.model';
@@ -54,10 +55,12 @@ export class ThoughtPackDetailComponent {
     return packStatusLabel(p.status);
   }
 
+  protected isPackSelectable = isPackSelectable;
+
   protected onStartWriting(): void {
     const p = this.pack();
     if (!p) return;
-    if (p.status !== 'available') {
+    if (!isPackSelectable(p)) {
       this.stubMessage.set('This pack is not runnable yet — engine coming soon.');
       return;
     }

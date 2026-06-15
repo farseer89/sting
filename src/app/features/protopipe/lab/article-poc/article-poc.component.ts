@@ -12,12 +12,20 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import type { ProtopipeContentPost } from '@hive/contracts';
 import { ProtopipeApiService } from '../../protopipe-api.service';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
-import { resolveBootstrapSiteId } from '../../resolve-bootstrap-site-id';
 import {
   ARTICLE_POC_COGNITIVE_PACK_ID,
   ARTICLE_POC_POST_ID,
   ARTICLE_POC_SITE_ID,
 } from './article-poc.constants';
+
+function pickContentCandidate(posts: ProtopipeContentPost[]): ProtopipeContentPost | undefined {
+  return (
+    posts.find((p) => p.status === 'draft' && p.brief?.primaryKeywordPhrase) ??
+    posts.find((p) => p.brief?.primaryKeywordPhrase) ??
+    posts.find((p) => p.status === 'draft') ??
+    posts[0]
+  );
+}
 
 /**
  * Operator lab surface: one-click V2 article generation on a pinned content post
@@ -98,45 +106,59 @@ export class ArticlePocComponent implements OnInit {
   private tryFallbackPost(): void {
     this.api.bootstrap$().subscribe({
       next: (boot) => {
-        const siteId = resolveBootstrapSiteId(boot);
-        if (!siteId) {
+        const siteIds = [
+          ...new Set([
+            ARTICLE_POC_SITE_ID,
+            ...boot.sites.map((s) => s.id),
+          ]),
+        ];
+        if (siteIds.length === 0) {
           this.loadError.set(
-            'Pinned PoC post not found for your account and no sites are available. Sign in as the DWP operator or pass ?siteId=&postId=.',
+            'No sites on your account. Complete onboarding first, or pass ?siteId=&postId=.',
           );
           return;
         }
-        this.api.listContent$(siteId).subscribe({
-          next: ({ posts }) => {
-            const candidate =
-              posts.find((p) => p.status === 'draft' && p.brief?.primaryKeywordPhrase) ??
-              posts.find((p) => p.brief?.primaryKeywordPhrase) ??
-              posts.find((p) => p.status === 'draft') ??
-              posts[0];
-
-            if (!candidate) {
-              this.loadError.set(
-                `No content posts on site ${siteId}. Create one from a content plan, or pass ?siteId=&postId=.`,
-              );
-              return;
-            }
-
-            this.siteId.set(siteId);
-            this.postId.set(candidate.id);
-            this.usingFallback.set(true);
-            this.api.getContent$(siteId, candidate.id).subscribe({
-              next: ({ post }) => this.post.set(post),
-              error: (err) =>
-                this.loadError.set(
-                  this.formatLoadError(err, siteId, candidate.id),
-                ),
-            });
-          },
-          error: (err) =>
-            this.loadError.set(parseProtopipeApiError(err, 'Could not list content posts.')),
-        });
+        this.findPostAcrossSites(siteIds, boot.sites);
       },
       error: (err) =>
         this.loadError.set(parseProtopipeApiError(err, 'Could not load account bootstrap.')),
+    });
+  }
+
+  private findPostAcrossSites(
+    siteIds: string[],
+    sites: { id: string; name?: string }[],
+    index = 0,
+  ): void {
+    if (index >= siteIds.length) {
+      const names = sites.map((s) => s.name?.trim() || s.id).join(', ');
+      this.loadError.set(
+        `No content posts with a brief found on any site (${names}). ` +
+          `Open /home, confirm an article from your content plan, then return here — ` +
+          `or use ?siteId=${ARTICLE_POC_SITE_ID}&postId=${ARTICLE_POC_POST_ID} if you have access to the DWP PoC post.`,
+      );
+      return;
+    }
+
+    const siteId = siteIds[index];
+    this.api.listContent$(siteId).subscribe({
+      next: ({ posts }) => {
+        const candidate = pickContentCandidate(posts);
+        if (!candidate) {
+          this.findPostAcrossSites(siteIds, sites, index + 1);
+          return;
+        }
+
+        this.siteId.set(siteId);
+        this.postId.set(candidate.id);
+        this.usingFallback.set(true);
+        this.api.getContent$(siteId, candidate.id).subscribe({
+          next: ({ post }) => this.post.set(post),
+          error: (err) =>
+            this.loadError.set(this.formatLoadError(err, siteId, candidate.id)),
+        });
+      },
+      error: () => this.findPostAcrossSites(siteIds, sites, index + 1),
     });
   }
 

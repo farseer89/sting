@@ -6,6 +6,7 @@ import type {
   CreateContentPostRequest,
   ProtopipeContentBrief,
   ProtopipeContentPost,
+  ProtopipeContentPostResponse,
   ProtopipeContentPostStatus,
   ProtopipeContentTemplate,
   ProtopipePublishContentRequest,
@@ -14,7 +15,8 @@ import type {
   SeoValidationResult,
   UpdateContentPostRequest,
 } from '@hive/contracts';
-import { forkJoin, map, switchMap, throwError } from 'rxjs';
+import { concatMap, first, forkJoin, from, map, of, switchMap, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import {
   applyKeywordToTemplate,
   slugifyTitle,
@@ -53,6 +55,8 @@ export class ProtopipeContentService {
   private readonly _publishing = signal(false);
   private readonly _error = signal<string | null>(null);
   private readonly _editingId = signal<string | null>(null);
+  /** Site that owns the post being edited (may differ from bootstrap primary). */
+  private readonly _editingSiteId = signal<string | null>(null);
   private readonly _dirty = signal(false);
   private readonly _seoValidation = signal<SeoValidationResult | null>(null);
   private readonly _publishReview = signal(false);
@@ -91,7 +95,7 @@ export class ProtopipeContentService {
   });
 
   readonly catalog = computed(() => this.catalogResource.value());
-  readonly siteId = computed(() => this.catalog()?.siteId ?? null);
+  readonly siteId = computed(() => this._editingSiteId() ?? this.catalog()?.siteId ?? null);
   readonly posts = computed(() => this.catalog()?.posts ?? []);
   readonly planKeywords = computed(() => this.catalog()?.keywords ?? []);
   readonly loading = this.catalogResource.isLoading;
@@ -153,6 +157,38 @@ export class ProtopipeContentService {
     }
   }
 
+  /** Pin API calls to the site that owns the open post (multi-site accounts). */
+  setEditingSiteId(siteId: string | null): void {
+    this._editingSiteId.set(siteId);
+  }
+
+  /**
+   * Load a post by id, trying preferredSiteId first then every bootstrap site.
+   * Fixes 404 when primarySiteId ≠ the site that holds the draft.
+   */
+  findPost$(postId: string, preferredSiteId?: string | null) {
+    return this.api.bootstrap$().pipe(
+      switchMap((boot) => {
+        const siteIds = boot.sites.map((s) => s.id);
+        const ordered = preferredSiteId
+          ? [preferredSiteId, ...siteIds.filter((id) => id !== preferredSiteId)]
+          : siteIds;
+        return from(ordered).pipe(
+          concatMap((siteId) =>
+            this.api.getContent$(siteId, postId).pipe(
+              map((response) => {
+                this._editingSiteId.set(response.post.siteId);
+                return response;
+              }),
+              catchError(() => of(null)),
+            ),
+          ),
+          first((response): response is ProtopipeContentPostResponse => response !== null),
+        );
+      }),
+    );
+  }
+
   setTab(tab: ContentTab): void {
     this._activeTab.set(tab);
   }
@@ -173,6 +209,7 @@ export class ProtopipeContentService {
 
   clearEditor(): void {
     this._editingId.set(null);
+    this._editingSiteId.set(null);
     this._dirty.set(false);
     this._seoValidation.set(null);
     this._publishReview.set(false);

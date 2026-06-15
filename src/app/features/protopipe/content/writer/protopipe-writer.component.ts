@@ -46,7 +46,7 @@ import { resolveCognitivePack } from '@hive/contracts';
 import { MessageService } from 'primeng/api';
 import { DatePicker } from 'primeng/datepicker';
 import { Toast } from 'primeng/toast';
-import { map } from 'rxjs/operators';
+import { map, switchMap } from 'rxjs/operators';
 import {
   generationStepsForRun,
   STEP_SHORT_LABELS,
@@ -1035,18 +1035,18 @@ export class ProtopipeWriterComponent implements OnDestroy {
 
     const siteId =
       (this.embedded() ? this.strategy.siteId() : null) ?? this.content.siteId();
-    if (!siteId) {
-      if (this.embedded()) {
-        this.exit.emit();
-        return;
-      }
+    if (!siteId && !this.embedded()) {
       void this.router.navigate(['/protopipe/content']);
       return;
     }
+    if (!siteId && this.embedded()) {
+      this.exit.emit();
+      return;
+    }
 
-    // Load fresh by id (fixes the stale-catalog draft -> list redirect).
+    // Load fresh by id — scan bootstrap sites when primary site ≠ post owner.
     this.loadingPost.set(true);
-    this.api.getContent$(siteId, id).subscribe({
+    this.content.findPost$(id, siteId).subscribe({
       next: ({ post }) => {
         void this.thoughtPacks.ensureCatalogLoaded();
         this.content.startEdit(id);
@@ -1831,8 +1831,15 @@ export class ProtopipeWriterComponent implements OnDestroy {
       return;
     }
 
+    const session = this.session();
+    if (!session) return;
+    const brief = this.briefForPipelineRun(session);
+
     this.generating.set(true);
-    this.api.generateContent$(siteId, postId).subscribe({
+    this.api
+      .updateContent$(siteId, postId, { brief })
+      .pipe(switchMap(() => this.api.generateContent$(siteId, postId)))
+      .subscribe({
       next: ({ run, post }) => {
         this.run.set(run);
         this.postFactReview.set(null);
@@ -1863,6 +1870,22 @@ export class ProtopipeWriterComponent implements OnDestroy {
         });
       },
     });
+  }
+
+  /** Persist brief + selected cognitive pack before starting the pipeline. */
+  private briefForPipelineRun(session: NonNullable<ReturnType<typeof this.session>>): ProtopipeContentBrief {
+    const packId = session.cognitivePackId ?? 'none';
+    if (session.brief) {
+      return { ...session.brief, cognitivePackId: packId };
+    }
+    return {
+      primaryKeywordPhrase: session.template.primaryKeywordPhrase || this.topicLabel()?.trim() || '',
+      secondaryKeywords: [],
+      mustCoverTerms: [],
+      contentGaps: [],
+      competitorHeadings: [],
+      cognitivePackId: packId,
+    };
   }
 
   private loadRun(runId: string): void {

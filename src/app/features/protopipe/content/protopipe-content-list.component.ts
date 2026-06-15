@@ -44,6 +44,7 @@ export class ProtopipeContentListComponent {
   }
 
   openPost(post: ProtopipeContentPost): void {
+    this.content.setEditingSiteId(post.siteId);
     void this.router.navigate(['/protopipe/content', post.id]);
   }
 

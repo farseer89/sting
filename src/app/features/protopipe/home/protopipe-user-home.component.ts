@@ -24,6 +24,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { ContentPlanStore } from '../content-plan/content-plan.store';
 import { ProtopipeOnboardingStateService } from '../onboarding/protopipe-onboarding-state.service';
 import { ProtopipeStrategyService } from '../protopipe-strategy.service';
+import { ProtopipeContentService } from '../protopipe-content.service';
 import { ProtopipeKeywordSearchPanelComponent } from './keyword-picker/protopipe-keyword-search-panel.component';
 import { ProtopipeKeywordPickerStore } from './keyword-picker/protopipe-keyword-picker.store';
 import { ProtopipeHomeSharpenComponent } from './sharpen/protopipe-home-sharpen.component';
@@ -83,6 +84,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly onboarding = inject(ProtopipeOnboardingStateService);
   private readonly strategy = inject(ProtopipeStrategyService);
+  private readonly content = inject(ProtopipeContentService);
   private readonly thoughtPacks = inject(ProtopipeThoughtPacksService);
   private readonly contentPlan = inject(ContentPlanStore);
   readonly sidePanel = inject(ProtopipeHomeSidePanelService);
@@ -237,6 +239,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   leaveWriterFocus(): void {
     this.writerViewState.clearPanel();
     this.writerViewState.clearSession();
+    this.content.setEditingSiteId(null);
     this.sidePanel.setOpen(false);
     if (this.activeView() === 'writer') {
       this.activeView.set('strategy');

@@ -1,8 +1,9 @@
 import { Injectable, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import type { ProtopipeContentPlanCalendarItem, ProtopipeSiteContentPlan } from '@hive/contracts';
 import { ContentPlanStore } from '../../content-plan/content-plan.store';
 import type { SpokeNode } from '../../lab/void-dashboard/void-content-spoke.mock';
-import { ProtopipeApiService } from '../../protopipe-api.service';
+import { ProtopipeContentService } from '../../protopipe-content.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { ProtopipeHomeSidePanelService } from '../protopipe-home-side-panel.service';
 import { ProtopipeHomeWriterViewState } from '../protopipe-home-writer-view.state';
@@ -32,7 +33,7 @@ export class ProtopipeHomeStrategyViewState {
   private readonly writerView = inject(ProtopipeHomeWriterViewState);
   private readonly contentPlan = inject(ContentPlanStore);
   private readonly strategy = inject(ProtopipeStrategyService);
-  private readonly api = inject(ProtopipeApiService);
+  private readonly content = inject(ProtopipeContentService);
 
   private enterWriterFocus: (() => void) | null = null;
 
@@ -148,13 +149,16 @@ export class ProtopipeHomeStrategyViewState {
       await this.strategy.ensureLoaded();
       const siteId = this.strategy.siteId();
       if (!siteId) return;
+      if (!this.hasLivePlan()) return;
       this.contentPlan.setSiteId(siteId);
-      if (!this.contentPlan.plan()) return;
+      this.content.setEditingSiteId(siteId);
 
       let postId = article.contentPostId;
       if (postId) {
         try {
-          await this.api.getContent(siteId, postId);
+          const { post } = await firstValueFrom(this.content.findPost$(postId, siteId));
+          postId = post.id;
+          this.content.setEditingSiteId(post.siteId);
         } catch {
           postId = undefined;
         }

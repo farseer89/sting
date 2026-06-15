@@ -386,6 +386,22 @@ function expandCognitiveTrainSteps(
     });
   }
 
+  const articlePackage = run.artifacts.cognitiveRun?.synthesis?.articlePackage;
+  if (articlePackage?.outline?.length) {
+    const synthesisStep = trainSteps.find((s) => s.id === 'train:synthesis');
+    if (synthesisStep) {
+      synthesisStep.output = [
+        ...(synthesisStep.output ?? []),
+        json(
+          'article-package-outline',
+          'Article outline',
+          articlePackage.outline,
+          `${articlePackage.outline.length} sections`,
+        ),
+      ];
+    }
+  }
+
   const brief = run.artifacts.brief;
   if (brief && run.artifacts.cognitiveRun && trainSteps.length > 0) {
     const last = trainSteps[trainSteps.length - 1];

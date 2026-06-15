@@ -37,6 +37,33 @@ function minimalV2Run(overrides: Partial<ArticleGenerationRunDto> = {}): Article
           thesis: 'Own the timing gap',
           recommendedAngle: 'Timing beats price lists',
           positioningSummary: 'Be the painter couples trust on the day.',
+          articlePackage: {
+            thesis: 'Own the timing gap',
+            coreArgument: 'Timing wins trust',
+            openingLine: 'Most painters show up late — we anchor the ceremony timeline.',
+            supportingClaims: ['Day-of timing'],
+            avoidAngles: ['Generic gift guide'],
+            outline: [
+              {
+                heading: 'Why timing matters',
+                purpose: 'Establish thesis',
+                keyPoints: ['Ceremony anchor'],
+                targetWordCount: 300,
+              },
+              {
+                heading: 'How we work the room',
+                purpose: 'Process',
+                keyPoints: ['Setup'],
+                targetWordCount: 300,
+              },
+              {
+                heading: 'Booking the right artist',
+                purpose: 'Decision',
+                keyPoints: ['Style fit'],
+                targetWordCount: 300,
+              },
+            ],
+          },
         },
         collectedAt: '2026-01-01T00:00:00.000Z',
         trains: [
@@ -94,6 +121,7 @@ describe('articleRunToThought', () => {
 
     const synthesisStep = thought.steps.find((s) => s.id === 'train:synthesis');
     expect(synthesisStep?.summary).toContain('Own the timing gap');
+    expect(synthesisStep?.output?.some((a) => a.id === 'article-package-outline')).toBe(true);
     expect(synthesisStep?.output?.some((a) => a.id === 'enriched-brief')).toBe(true);
   });
 

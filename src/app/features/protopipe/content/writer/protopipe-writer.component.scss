@@ -65,6 +65,55 @@
 
 .pw__bar-status {
   margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.pw__pack-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 14rem;
+  padding: 0.2rem 0.55rem 0.2rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid rgba(99, 102, 241, 0.22);
+  background: rgba(99, 102, 241, 0.08);
+  color: var(--primary-color);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+
+  i {
+    font-size: 0.65rem;
+    opacity: 0.85;
+  }
+
+  &--standard {
+    border-color: var(--pw-paper-edge);
+    background: rgba(15, 23, 42, 0.04);
+    color: var(--text-color-secondary);
+  }
+}
+
+.pw__pack-select {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  padding: 0;
+  max-width: 10rem;
+  text-overflow: ellipsis;
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
 }
 
 .pw__status {

@@ -31,6 +31,7 @@ import type {
   ArticleGenerationFlaggedFact,
   ArticleGenerationRunDto,
   ArticleGenerationStep,
+  ProtopipeContentBrief,
   ProtopipeContentEmbedKind,
   ProtopipeContentSectionEmbed,
   ProtopipeContentTemplate,
@@ -41,6 +42,7 @@ import type {
   ProtopipePublishTarget,
   ProtopipeSiteConnection,
 } from '@hive/contracts';
+import { resolveCognitivePack } from '@hive/contracts';
 import { MessageService } from 'primeng/api';
 import { DatePicker } from 'primeng/datepicker';
 import { Toast } from 'primeng/toast';
@@ -55,6 +57,7 @@ import {
 } from '../../protopipe.constants';
 import { ProtopipeApiService } from '../../protopipe-api.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
+import { ProtopipeThoughtPacksService } from '../../thought-packs/protopipe-thought-packs.service';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 import {
   ProtopipeContentService,
@@ -291,6 +294,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
   protected readonly content = inject(ProtopipeContentService);
   private readonly api = inject(ProtopipeApiService);
   private readonly strategy = inject(ProtopipeStrategyService);
+  private readonly thoughtPacks = inject(ProtopipeThoughtPacksService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly messages = inject(MessageService);
@@ -515,6 +519,24 @@ export class ProtopipeWriterComponent implements OnDestroy {
     if (this.saving()) return 'Saving…';
     if (this.content.dirty()) return 'Unsaved changes';
     return 'Saved';
+  });
+
+  readonly cognitivePackId = computed(() => this.session()?.cognitivePackId ?? 'none');
+
+  readonly resolvedPackLabel = computed(() => {
+    const id = this.cognitivePackId();
+    if (id === 'none') return 'Standard';
+    return this.thoughtPacks.getPackById(id)?.label ?? id;
+  });
+
+  readonly packPickerOptions = computed(() => {
+    const options: Array<{ id: string; label: string }> = [{ id: 'none', label: 'Standard' }];
+    for (const pack of this.thoughtPacks.catalog()) {
+      if (pack.status === 'available') {
+        options.push({ id: pack.id, label: pack.label });
+      }
+    }
+    return options;
   });
 
   readonly introSuggestion = computed(() => {
@@ -989,10 +1011,12 @@ export class ProtopipeWriterComponent implements OnDestroy {
 
   private bootstrapEditor(key: string): void {
     if (this.effectiveCreate()) {
+      void this.thoughtPacks.ensureCatalogLoaded();
       this.content.startCreate();
       this.content.openWritingSession({
         template: emptyContentTemplate(),
         brief: null,
+        cognitivePackId: this.resolveSessionCognitivePackId(),
         slug: '',
         scheduleAt: null,
         selectedKeywordId: null,
@@ -1027,10 +1051,12 @@ export class ProtopipeWriterComponent implements OnDestroy {
     this.loadingPost.set(true);
     this.api.getContent$(siteId, id).subscribe({
       next: ({ post }) => {
+        void this.thoughtPacks.ensureCatalogLoaded();
         this.content.startEdit(id);
         this.content.openWritingSession({
           template: syncTemplateImagesToSections(post.template ?? emptyContentTemplate()),
           brief: post.brief ?? null,
+          cognitivePackId: this.resolveSessionCognitivePackId(post.brief),
           slug: post.slug,
           scheduleAt: post.publishAt ? new Date(post.publishAt) : null,
           selectedKeywordId: post.template?.primaryKeywordId ?? null,
@@ -1069,6 +1095,18 @@ export class ProtopipeWriterComponent implements OnDestroy {
         void this.router.navigate(['/protopipe/content']);
       },
     });
+  }
+
+  private resolveSessionCognitivePackId(brief?: ProtopipeContentBrief | null): string {
+    const pending = this.homeWriterView?.consumePendingCognitivePackId() ?? null;
+    return resolveCognitivePack({
+      postPackId: pending ?? brief?.cognitivePackId,
+      siteDefaultPackId: this.strategy.defaultCognitivePackId(),
+    });
+  }
+
+  onCognitivePackChange(packId: string): void {
+    this.content.setCognitivePackId(packId);
   }
 
   // --- inspector panels -----------------------------------------------------

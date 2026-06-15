@@ -20,10 +20,12 @@ import {
   PROTOPIPE_CONTENT_META_MAX,
   PROTOPIPE_CONTENT_META_MIN,
 } from '../protopipe.constants';
+import { resolveCognitivePack } from '@hive/contracts';
 import {
   ProtopipeContentService,
   emptyContentTemplate,
 } from '../protopipe-content.service';
+import { ProtopipeStrategyService } from '../protopipe-strategy.service';
 import {
   buildKeywordSuggestions,
   serpPreview,
@@ -42,6 +44,7 @@ import {
 })
 export class ProtopipeContentEditorComponent {
   protected readonly content = inject(ProtopipeContentService);
+  private readonly strategy = inject(ProtopipeStrategyService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly messages = inject(MessageService);
@@ -165,6 +168,9 @@ export class ProtopipeContentEditorComponent {
       this.content.openWritingSession({
         template: emptyContentTemplate(),
         brief: null,
+        cognitivePackId: resolveCognitivePack({
+          siteDefaultPackId: this.strategy.defaultCognitivePackId(),
+        }),
         slug: '',
         scheduleAt: null,
         selectedKeywordId: null,
@@ -190,6 +196,10 @@ export class ProtopipeContentEditorComponent {
     this.content.openWritingSession({
       template: post.template ?? emptyContentTemplate(),
       brief: post.brief ?? null,
+      cognitivePackId: resolveCognitivePack({
+        postPackId: post.brief?.cognitivePackId,
+        siteDefaultPackId: this.strategy.defaultCognitivePackId(),
+      }),
       slug: post.slug,
       scheduleAt: post.publishAt ? new Date(post.publishAt) : null,
       selectedKeywordId: post.template?.primaryKeywordId ?? null,

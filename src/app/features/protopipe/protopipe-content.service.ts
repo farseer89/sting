@@ -4,6 +4,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import type {
   ArticleIdeaDto,
   CreateContentPostRequest,
+  ProtopipeContentBrief,
   ProtopipeContentPost,
   ProtopipeContentPostStatus,
   ProtopipeContentTemplate,
@@ -264,10 +265,6 @@ export class ProtopipeContentService {
     });
   }
 
-  /**
-   * Link (or clear) the post's primary plan keyword without touching the drafted
-   * content. This is what the generate pipeline reads (template.primaryKeywordId).
-   */
   setPrimaryKeyword(keywordId: string): void {
     const s = this._writingSession();
     if (!s || s.readOnly) return;
@@ -286,6 +283,16 @@ export class ProtopipeContentService {
           }
         : s.brief,
       selectedKeywordId: kw?.id ?? null,
+    });
+  }
+
+  setCognitivePackId(packId: string): void {
+    const s = this._writingSession();
+    if (!s || s.readOnly) return;
+    const cognitivePackId = packId.trim() || 'none';
+    this.updateWritingSession({
+      cognitivePackId,
+      brief: s.brief ? { ...s.brief, cognitivePackId } : s.brief,
     });
   }
 
@@ -381,19 +388,40 @@ export class ProtopipeContentService {
   }
 
   saveFromWritingSession(): void {
+    const s = this._writingSession();
     const snap = this.getWritingSnapshot();
-    if (!snap) return;
+    if (!snap || !s) return;
     this.savePost({
       slug: snap.slug,
       template: snap.template,
       scheduleAt: snap.scheduleAt?.toISOString(),
+      brief: this.buildBriefForSave(s),
     });
+  }
+
+  private buildBriefForSave(session: WritingSession): ProtopipeContentBrief | undefined {
+    const packId = session.cognitivePackId ?? 'none';
+    if (session.brief) {
+      return { ...session.brief, cognitivePackId: packId };
+    }
+    if (packId !== 'none') {
+      return {
+        primaryKeywordPhrase: session.template.primaryKeywordPhrase || '',
+        secondaryKeywords: [],
+        mustCoverTerms: [],
+        contentGaps: [],
+        competitorHeadings: [],
+        cognitivePackId: packId,
+      };
+    }
+    return undefined;
   }
 
   savePost(input: {
     slug: string;
     template: ProtopipeContentTemplate;
     scheduleAt?: string;
+    brief?: ProtopipeContentBrief;
   }): void {
     const siteId = this.siteId();
     if (!siteId) {
@@ -409,6 +437,7 @@ export class ProtopipeContentService {
       template: input.template,
       status,
       publishAt,
+      ...(input.brief !== undefined ? { brief: input.brief } : {}),
     };
 
     this._saving.set(true);

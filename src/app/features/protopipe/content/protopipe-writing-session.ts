@@ -8,6 +8,8 @@ export interface WritingSession {
   template: ProtopipeContentTemplate;
   /** Pre-writing research brief (present when the post was seeded from a plan). */
   brief: ProtopipeContentBrief | null;
+  /** Resolved thought pack for this session (explicit post override or site default). */
+  cognitivePackId: string;
   slug: string;
   scheduleAt: Date | null;
   selectedKeywordId: string | null;

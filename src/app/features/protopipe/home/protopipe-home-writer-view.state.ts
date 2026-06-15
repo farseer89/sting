@@ -9,6 +9,7 @@ export class ProtopipeHomeWriterViewState {
   private readonly _activePostId = signal<string | null>(null);
   private readonly _createMode = signal(false);
   private readonly _autoStartPipeline = signal(false);
+  private readonly _pendingCognitivePackId = signal<string | null>(null);
   private exitHandler: (() => void) | null = null;
 
   readonly activePanel = this._activePanel.asReadonly();
@@ -59,6 +60,18 @@ export class ProtopipeHomeWriterViewState {
     return pending;
   }
 
+  setPendingCognitivePackId(packId: string): void {
+    this._pendingCognitivePackId.set(packId);
+  }
+
+  consumePendingCognitivePackId(): string | null {
+    const pending = this._pendingCognitivePackId();
+    if (pending) {
+      this._pendingCognitivePackId.set(null);
+    }
+    return pending;
+  }
+
   openCreate(): void {
     this._createMode.set(true);
     this._activePostId.set(null);
@@ -72,6 +85,7 @@ export class ProtopipeHomeWriterViewState {
     this._activePostId.set(null);
     this._createMode.set(false);
     this._autoStartPipeline.set(false);
+    this._pendingCognitivePackId.set(null);
   }
 
   exitFocus(): void {

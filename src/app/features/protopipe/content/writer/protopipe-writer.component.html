@@ -27,6 +27,29 @@
           [class.pw__status--dirty]="content.dirty()"
         >{{ saveLabel() }}</span>
       }
+      @if (!loading() && !loadingPost()) {
+        <span
+          class="pw__pack-pill"
+          [class.pw__pack-pill--standard]="cognitivePackId() === 'none'"
+          [attr.title]="cognitivePackId() === 'none' ? 'Standard writer path' : resolvedPackLabel()"
+        >
+          <i class="pi pi-box"></i>
+          @if (isReadOnly()) {
+            {{ resolvedPackLabel() }}
+          } @else {
+            <select
+              class="pw__pack-select"
+              [ngModel]="cognitivePackId()"
+              (ngModelChange)="onCognitivePackChange($event)"
+              aria-label="Thought pack"
+            >
+              @for (opt of packPickerOptions(); track opt.id) {
+                <option [value]="opt.id">{{ opt.label }}</option>
+              }
+            </select>
+          }
+        </span>
+      }
     </div>
 
     <div class="pw__bar-actions">

@@ -285,6 +285,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
 
   onPackStartWriting(pack: CognitivePackCatalogItem): void {
     if (pack.status !== 'available') return;
+    this.writerViewState.setPendingCognitivePackId(pack.id);
+    this.writerViewState.openCreate();
     this.enterWriterFocus();
   }
 

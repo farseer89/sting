@@ -23,7 +23,5 @@ export const protopipeProductConfig: ProductConfig = {
     login: '/login',
     home: '/home',
   },
-  /** Replace with your Calendly link when ready. */
-  scheduleCallUrl:
-    'mailto:support@protopipe.com?subject=Website%20build%20consultation',
+  scheduleCallUrl: 'https://calendly.com/server-futureproofsystems/30min',
 };

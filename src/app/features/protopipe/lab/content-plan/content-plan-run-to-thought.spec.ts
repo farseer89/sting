@@ -51,6 +51,14 @@ function minimalPlan(overrides: Partial<ProtopipeSiteContentPlan> = {}): Protopi
         durationMs: 25000,
         note: '5 calendar keyword(s) scanned',
       },
+      {
+        step: 'strategy_intel',
+        status: 'completed',
+        startedAt: '2026-01-01T00:01:00.000Z',
+        finishedAt: '2026-01-01T00:01:30.000Z',
+        durationMs: 30000,
+        note: '3 keyword(s), 1 cluster(s), 2 backlog item(s)',
+      },
     ],
     keywordTiers: {
       immediateFocus: [
@@ -119,6 +127,7 @@ describe('contentPlanRunToThought', () => {
       'cluster',
       'unify',
       'deep_scan',
+      'strategy_intel',
     ]);
     expect(thought.steps.every((s) => s.status === 'complete')).toBe(true);
     expect(thought.steps.find((s) => s.id === 'unify')?.output?.length).toBeGreaterThan(0);

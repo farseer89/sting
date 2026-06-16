@@ -50,11 +50,14 @@ function keywordStatus(
 
 function articleStatus(
   kind: string,
-  publishAt: string,
+  publishAt: string | null | undefined,
   now = Date.now(),
 ): SpokeNodeStatus {
   if (kind === 'refresh-existing') {
     return 'published';
+  }
+  if (!publishAt) {
+    return 'gap';
   }
   const when = new Date(publishAt).getTime();
   return when <= now ? 'published' : 'scheduled';

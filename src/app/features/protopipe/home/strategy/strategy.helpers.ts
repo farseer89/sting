@@ -57,18 +57,22 @@ export function calendarByCluster(
 }
 
 export function calendarItemKey(item: ProtopipeContentPlanCalendarItem): string {
-  return `${item.proposedPublishAt}|${item.workingTitle}`;
+  return `${item.proposedPublishAt ?? 'backlog'}|${item.workingTitle}`;
 }
 
-export function formatPublishDate(iso: string): string {
+export function formatPublishDate(iso: string | null | undefined): string {
+  if (!iso) return 'Backlog';
   const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return 'Backlog';
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 export function calendarDateRange(items: ProtopipeContentPlanCalendarItem[]): string | null {
-  if (items.length === 0) return null;
-  const sorted = [...items].sort(
-    (a, b) => new Date(a.proposedPublishAt).getTime() - new Date(b.proposedPublishAt).getTime(),
+  const scheduled = items.filter((i) => i.proposedPublishAt);
+  if (scheduled.length === 0) return null;
+  const sorted = [...scheduled].sort(
+    (a, b) =>
+      new Date(a.proposedPublishAt!).getTime() - new Date(b.proposedPublishAt!).getTime(),
   );
   const first = formatPublishDate(sorted[0].proposedPublishAt);
   const last = formatPublishDate(sorted[sorted.length - 1].proposedPublishAt);
@@ -117,16 +121,38 @@ export function calendarItemForPhrase(
   return matches.find((item) => item.clusterRole === 'pillar') ?? matches[0];
 }
 
+export function planBacklogItems(
+  plan: ProtopipeSiteContentPlan,
+): ProtopipeContentPlanCalendarItem[] {
+  return plan.backlog ?? [];
+}
+
+export function allPlanCalendarItems(
+  plan: ProtopipeSiteContentPlan,
+): ProtopipeContentPlanCalendarItem[] {
+  return [...plan.calendar, ...planBacklogItems(plan)];
+}
+
 export function calendarItemByKey(
   plan: ProtopipeSiteContentPlan,
   key: string,
 ): ProtopipeContentPlanCalendarItem | null {
-  const exact = plan.calendar.find((item) => calendarItemKey(item) === key);
+  const pool = allPlanCalendarItems(plan);
+  const exact = pool.find((item) => calendarItemKey(item) === key);
   if (exact) {
     return exact;
   }
   const title = key.includes('|') ? key.slice(key.indexOf('|') + 1) : key;
-  return plan.calendar.find((item) => item.workingTitle === title) ?? null;
+  return pool.find((item) => item.workingTitle === title) ?? null;
+}
+
+export function compareCalendarPublishAt(
+  a: ProtopipeContentPlanCalendarItem,
+  b: ProtopipeContentPlanCalendarItem,
+): number {
+  const aTime = a.proposedPublishAt ? new Date(a.proposedPublishAt).getTime() : Number.MAX_SAFE_INTEGER;
+  const bTime = b.proposedPublishAt ? new Date(b.proposedPublishAt).getTime() : Number.MAX_SAFE_INTEGER;
+  return aTime - bTime;
 }
 
 function calendarItemByTitle(

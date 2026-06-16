@@ -8,6 +8,10 @@ Documentation for AI agents (and humans) working on Sting. Goal: **learn from pr
 |-----|---------|
 | **[active/SESSION_DEV_FLOW.md](./active/SESSION_DEV_FLOW.md)** | **Every session** — sync → build → merge-to-main prompt (required at end) |
 | [active/PROTOPYPE.md](./active/PROTOPYPE.md) | Protopipe product scope + session log |
+| [active/CONTENT_INTELLIGENCE_REMAINS.md](./active/CONTENT_INTELLIGENCE_REMAINS.md) | Content intelligence — shipped vs remaining |
+| [active/CONTENT_INTELLIGENCE_CP3.md](./active/CONTENT_INTELLIGENCE_CP3.md) | **CP3 agent handoff** — edit + style learning |
+| [active/TRAINS_ARTICLE_PACKAGE_HANDOFF.md](./active/TRAINS_ARTICLE_PACKAGE_HANDOFF.md) | **Trains agent handoff** — wire thinking into writing (ArticlePackage) |
+| [active/TRAINS_ARTICLE_PACKAGE_HANDOFF.md](./active/TRAINS_ARTICLE_PACKAGE_HANDOFF.md) | **Trains → ArticlePackage handoff** — wire thinking into outline/draft |
 | [active/SECURITY_TODO.md](./active/SECURITY_TODO.md) | **Security roadmap** — shipped vs remaining (checkboxes) |
 | [improvements/INDEX.md](./improvements/INDEX.md) | Registry of lessons — **read before auth, CI, or deploy work** |
 | [../docs/SESSION_DEV_FLOW.md](../docs/SESSION_DEV_FLOW.md) | Full session checklist + merge template (repo docs) |

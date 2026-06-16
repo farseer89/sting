@@ -149,6 +149,37 @@
         Draft
       </span>
     </footer>
+
+    @if (hasBacklog()) {
+      <section class="strat-cal__backlog" aria-label="Topic backlog">
+        <h3 class="strat-cal__backlog-title">Topic backlog</h3>
+        <p class="strat-cal__backlog-lede">
+          Unscheduled ideas from unanswered-question harvest. Review and add to the calendar when ready.
+        </p>
+        <ul class="strat-cal__backlog-list">
+          @for (item of backlogItems(); track calendarItemKey(item)) {
+            <li class="strat-cal__backlog-row">
+              <button
+                type="button"
+                class="strat-cal__backlog-item"
+                [class.is-selected]="isStickySelected(calendarItemKey(item))"
+                (click)="openBacklogItem(item)"
+              >
+                <span class="strat-cal__backlog-name">{{ item.workingTitle }}</span>
+                <span class="strat-cal__backlog-kw">{{ item.suggestedKeyword }}</span>
+              </button>
+              <button
+                type="button"
+                class="strat-cal__backlog-add"
+                (click)="openBacklogItem(item)"
+              >
+                Add to calendar
+              </button>
+            </li>
+          }
+        </ul>
+      </section>
+    }
   </div>
 } @else {
   <div class="strat-cal strat-cal--empty">

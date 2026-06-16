@@ -28,11 +28,17 @@ export class ProtopipeStrategyContextPanelComponent {
     if (item.kind === 'refresh-existing') {
       return 'published';
     }
+    if (!item.proposedPublishAt) {
+      return 'draft';
+    }
     return new Date(item.proposedPublishAt).getTime() <= Date.now() ? 'published' : 'scheduled';
   }
 
   articleStatusLabel(item: ProtopipeContentPlanCalendarItem): string {
     const status = this.articleStatus(item);
+    if (status === 'draft') {
+      return 'Backlog';
+    }
     if (status === 'published') {
       return item.kind === 'refresh-existing' ? 'Refresh queued' : 'Published';
     }

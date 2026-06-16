@@ -182,6 +182,21 @@
           </section>
         }
 
+        @if (article.strategyNarrative || article.journeyStage || article.keyQuestionToAnswer) {
+          <section class="stratctx__block">
+            <h3 class="stratctx__h3">Strategy intel</h3>
+            @if (article.journeyStage) {
+              <p class="stratctx__body"><strong>Journey stage:</strong> {{ article.journeyStage }}</p>
+            }
+            @if (article.keyQuestionToAnswer) {
+              <p class="stratctx__body"><strong>Key question:</strong> {{ article.keyQuestionToAnswer }}</p>
+            }
+            @if (article.strategyNarrative) {
+              <p class="stratctx__body">{{ article.strategyNarrative }}</p>
+            }
+          </section>
+        }
+
         <footer class="stratctx__actions">
           <button
             type="button"
@@ -239,6 +254,15 @@
         pillars first, then supporting pieces, with refresh items woven in where you already have thin pages.
       </p>
     </section>
+
+    @if (plan.backlog?.length) {
+      <section class="stratctx__block">
+        <h3 class="stratctx__h3">Topic backlog</h3>
+        <p class="stratctx__body">
+          {{ plan.backlog!.length }} unscheduled ideas from unanswered-question harvest. Promote them from the calendar view when you are ready to schedule.
+        </p>
+      </section>
+    }
 
     @if (plan.existingContent; as audit) {
       <section class="stratctx__block">

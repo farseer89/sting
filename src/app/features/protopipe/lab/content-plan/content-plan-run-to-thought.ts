@@ -23,6 +23,7 @@ export const CONTENT_PLAN_STEP_ORDER: ProtopipeContentPlanStep[] = [
   'cluster',
   'unify',
   'deep_scan',
+  'strategy_intel',
 ];
 
 const STEP_META: Record<
@@ -48,6 +49,10 @@ const STEP_META: Record<
   deep_scan: {
     label: 'Deep scan',
     summary: 'Run competition analysis on calendar focus keywords.',
+  },
+  strategy_intel: {
+    label: 'Strategy intel',
+    summary: 'Warm shared competitive strategy, journey maps, and thesis seeds.',
   },
 };
 
@@ -144,6 +149,30 @@ function stepOutput(step: ProtopipeContentPlanStep, plan: ProtopipeSiteContentPl
             ),
           ]
         : [];
+    case 'strategy_intel': {
+      const outputs: ThoughtArtifact[] = [];
+      if (plan.strategyIntel) {
+        outputs.push(
+          json(
+            'strategy-intel',
+            'Strategy graph',
+            plan.strategyIntel,
+            `${plan.strategyIntel.keywordIntel?.length ?? 0} keyword(s) · ${plan.strategyIntel.clusterIntel?.length ?? 0} cluster(s)`,
+          ),
+        );
+      }
+      if (plan.backlog?.length) {
+        outputs.push(
+          json(
+            'backlog',
+            'Topic backlog (UQ harvest)',
+            plan.backlog,
+            `${plan.backlog.length} unscheduled candidate(s)`,
+          ),
+        );
+      }
+      return outputs;
+    }
     default:
       return [];
   }

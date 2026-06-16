@@ -21,6 +21,9 @@ Append one line per session (step 7):
 |------|-------|----------------------|
 | 2026-05-20 | Dashboard: destinationweddingpainter.com site card + keyword strategy table (seed data) | — |
 | 2026-05-29 | Pipeline content writer (immersive editor, brief panel, generate/poll run); deployed hive `b6f4ad4` bagend `dbd90a5` sting `71dcf92` | — |
+| 2026-06-09 | CP2 GEO discovery (Gemini gap audit, Sharpen AI search); CP3 agent handoff in [CONTENT_INTELLIGENCE_CP3.md](./CONTENT_INTELLIGENCE_CP3.md) | — |
+| 2026-06-15 | Goal 1 PoC: 16 trains + Thinker + writer fixes; ArticlePackage handoff in [TRAINS_ARTICLE_PACKAGE_HANDOFF.md](./TRAINS_ARTICLE_PACKAGE_HANDOFF.md) | — |
+| 2026-06-15 | Goal 1 PoC: 16 trains + Thinker + writer fixes; [ArticlePackage handoff](./TRAINS_ARTICLE_PACKAGE_HANDOFF.md) for quality wiring | — |
 
 ## Do not merge to sting `main`
 

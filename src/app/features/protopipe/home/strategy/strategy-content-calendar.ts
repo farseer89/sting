@@ -53,6 +53,9 @@ function calendarStatus(item: ProtopipeContentPlanCalendarItem, now = Date.now()
   if (item.kind === 'refresh-existing') {
     return 'published';
   }
+  if (!item.proposedPublishAt) {
+    return 'research';
+  }
   const when = new Date(item.proposedPublishAt).getTime();
   return when <= now ? 'published' : 'scheduled';
 }
@@ -141,6 +144,9 @@ function indexPostsByDate(
   const byDate = new Map<string, StrategyCalendarSticky[]>();
 
   for (const item of plan.calendar) {
+    if (!item.proposedPublishAt) {
+      continue;
+    }
     const d = new Date(item.proposedPublishAt);
     const key = toDateKey(d);
     const dayPosts = byDate.get(key) ?? [];

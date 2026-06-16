@@ -2,6 +2,7 @@ import type {
   ProtopipeContentPlanCalendarItem,
   ProtopipeSiteContentPlan,
 } from '@hive/contracts';
+import { compareCalendarPublishAt } from './strategy.helpers';
 
 export interface StrategyClusterPlan {
   name: string;
@@ -29,10 +30,7 @@ export function planClustersWithArticles(plan: ProtopipeSiteContentPlan): Strate
   const articlesFor = (name: string): ProtopipeContentPlanCalendarItem[] =>
     plan.calendar
       .filter((item) => (item.clusterName ?? 'Unassigned') === name)
-      .sort(
-        (a, b) =>
-          new Date(a.proposedPublishAt).getTime() - new Date(b.proposedPublishAt).getTime(),
-      );
+      .sort(compareCalendarPublishAt);
 
   for (const pillar of plan.pillars) {
     const meta = clusterMeta.get(pillar.clusterName);

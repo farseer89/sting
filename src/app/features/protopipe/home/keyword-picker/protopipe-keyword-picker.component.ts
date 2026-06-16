@@ -38,7 +38,7 @@ import {
   styleUrl: './protopipe-keyword-picker.component.scss',
 })
 export class ProtopipeKeywordPickerComponent {
-  private static readonly EXPLORER_HINT_KEY = 'protopipe.keywords.explorerHintSeen';
+  private static readonly SELECTED_PANEL_KEY = 'protopipe.keywords.selectedPanelOpen';
 
   readonly store = inject(ProtopipeKeywordPickerStore);
   readonly sidePanel = inject(ProtopipeHomeSidePanelService);
@@ -137,15 +137,15 @@ export class ProtopipeKeywordPickerComponent {
       case 'build':
         return 'We will save your keywords and audiences, then generate your content plan in the background.';
       default:
-        return 'Suggestions are matched to your business profile. Search for a topic to explore related keywords, or pick from the list below.';
+        return 'Search for a topic to explore related keywords from Google Ads. Check rows to add them to your list on the right.';
     }
   });
 
   constructor() {
     try {
-      if (!localStorage.getItem(ProtopipeKeywordPickerComponent.EXPLORER_HINT_KEY)) {
+      if (!localStorage.getItem(ProtopipeKeywordPickerComponent.SELECTED_PANEL_KEY)) {
         this.sidePanel.ensureOpen();
-        localStorage.setItem(ProtopipeKeywordPickerComponent.EXPLORER_HINT_KEY, '1');
+        localStorage.setItem(ProtopipeKeywordPickerComponent.SELECTED_PANEL_KEY, '1');
       }
     } catch {
       /* localStorage unavailable */
@@ -202,17 +202,6 @@ export class ProtopipeKeywordPickerComponent {
     this.store.clearSearch();
   }
 
-  addFromSearch(option: KeywordPickerOption): void {
-    this.store.addFromOption(option);
-  }
-
-  addCustomFromSearch(): void {
-    const q = this.store.searchQuery().trim();
-    if (q) {
-      this.store.addCustom(q);
-    }
-  }
-
   exploreRelated(option: KeywordPickerOption, event: Event): void {
     event.stopPropagation();
     this.store.setSearchQuery(option.phrase);
@@ -226,10 +215,10 @@ export class ProtopipeKeywordPickerComponent {
 
   toggle(option: KeywordPickerOption): void {
     this.store.toggle(option);
-  }
-
-  remove(phraseKey: string): void {
-    this.store.remove(phraseKey);
+    if (!this.store.isSelected(option.phraseKey)) {
+      return;
+    }
+    this.sidePanel.ensureOpen();
   }
 
   continueFromKeywords(): void {

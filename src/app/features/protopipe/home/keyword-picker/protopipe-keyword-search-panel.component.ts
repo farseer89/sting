@@ -1,6 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { formatCompetitionLabel, formatKeywordVolume, sourceLabel } from './keyword-picker.types';
-import type { KeywordPickerOption } from './keyword-picker.types';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { fitLabel } from './keyword-picker.table';
+import {
+  formatCompetitionLabel,
+  formatKeywordVolume,
+} from './keyword-picker.types';
 import { ProtopipeKeywordPickerStore } from './protopipe-keyword-picker.store';
 
 @Component({
@@ -15,28 +18,20 @@ export class ProtopipeKeywordSearchPanelComponent {
 
   readonly formatVolume = formatKeywordVolume;
   readonly formatCompetition = formatCompetitionLabel;
-  readonly sourceLabel = sourceLabel;
+  readonly fitLabel = fitLabel;
 
-  onSearchInput(value: string): void {
-    this.store.setSearchQuery(value);
+  readonly selectedVolume = computed(() =>
+    this.store.selectedList().reduce((sum, k) => sum + (k.searchVolume ?? 0), 0),
+  );
+
+  remove(phraseKey: string): void {
+    this.store.remove(phraseKey);
   }
 
-  clearSearch(): void {
-    this.store.clearSearch();
-  }
-
-  toggle(option: KeywordPickerOption): void {
-    this.store.toggle(option);
-  }
-
-  addFromSearch(option: KeywordPickerOption): void {
-    this.store.addFromOption(option);
-  }
-
-  addCustomFromSearch(): void {
-    const q = this.store.searchQuery().trim();
-    if (q) {
-      this.store.addCustom(q);
+  formatPlanVolume(total: number): string {
+    if (total >= 1000) {
+      return `${(total / 1000).toFixed(1).replace(/\.0$/, '')}k`;
     }
+    return total.toLocaleString();
   }
 }

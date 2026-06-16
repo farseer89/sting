@@ -236,13 +236,13 @@
                 ? 'Resize writer panel'
                 : activeView() === 'strategy'
                   ? 'Resize strategy brief panel'
-                  : 'Resize search panel'
+                  : 'Resize selected keywords panel'
             "
             (pointerdown)="onSideSplitterPointerDown($event)"
           ></div>
 
           @if (activeView() === 'keywords') {
-            <aside class="void__side-panel" aria-label="Search and add keywords">
+            <aside class="void__side-panel" aria-label="Selected keywords">
               <app-protopipe-keyword-search-panel />
             </aside>
           }
@@ -271,13 +271,12 @@
               class="void__side-rail-btn"
               [class.is-active]="sidePanel.open()"
               [attr.aria-pressed]="sidePanel.open()"
-              aria-label="Search and add keywords"
-              title="Search & add"
+              aria-label="Your selected keywords"
+              title="Your keywords"
               (click)="sidePanel.toggle()"
             >
               <svg viewBox="0 0 16 16" aria-hidden="true">
-                <circle cx="7" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="0.9" />
-                <path d="M10.5 10.5L13 13" fill="none" stroke="currentColor" stroke-width="0.9" />
+                <path d="M3.5 4.5h9M3.5 8h9M3.5 11.5h6" fill="none" stroke="currentColor" stroke-width="0.9" />
               </svg>
             </button>
           </nav>

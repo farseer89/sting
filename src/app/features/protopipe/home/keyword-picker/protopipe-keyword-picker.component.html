@@ -42,14 +42,13 @@
           class="kwpick__slider-toggle"
           [class.is-active]="sidePanel.open()"
           [attr.aria-pressed]="sidePanel.open()"
-          [attr.aria-label]="sidePanel.open() ? 'Hide search panel' : 'Show search panel'"
+          [attr.aria-label]="sidePanel.open() ? 'Hide selected keywords' : 'Show selected keywords'"
           (click)="sidePanel.toggle()"
         >
           <svg viewBox="0 0 16 16" aria-hidden="true">
-            <circle cx="7" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="0.9" />
-            <path d="M10.5 10.5L13 13" fill="none" stroke="currentColor" stroke-width="0.9" />
+            <path d="M3.5 4.5h9M3.5 8h9M3.5 11.5h6" fill="none" stroke="currentColor" stroke-width="0.9" />
           </svg>
-          <span>Search</span>
+          <span>Your keywords</span>
         </button>
       } @else if (store.wizardStep() === 'avatars') {
         <span class="kwpick__count">{{ store.selectedAvatarCount() }} audiences</span>
@@ -213,12 +212,12 @@
       }
       @default {
         <div class="kwpick__body">
-          <section class="kwpick__explorer" #explorerAnchor aria-label="Keyword explorer">
-            <div class="kwpick__explorer-search">
-              <span class="kwpick__explorer-icon" aria-hidden="true">⌕</span>
+          <article class="kwpick__panel kwpick__panel--explorer" #explorerAnchor>
+            <div class="kwpick__search-bar">
+              <span class="kwpick__search-icon" aria-hidden="true">⌕</span>
               <input
                 type="search"
-                class="kwpick__explorer-input"
+                class="kwpick__search-input"
                 placeholder="Enter a topic to explore related keywords…"
                 [value]="store.searchQuery()"
                 (input)="onSearchInput($any($event.target).value)"
@@ -227,7 +226,7 @@
               @if (store.hasSearchQuery()) {
                 <button
                   type="button"
-                  class="kwpick__explorer-clear"
+                  class="kwpick__search-clear"
                   (click)="clearSearch()"
                   aria-label="Clear search"
                 >
@@ -236,92 +235,40 @@
               }
             </div>
 
-            @if (store.searching()) {
-              <p class="kwpick__explorer-status">Finding related keywords…</p>
-            } @else if (store.hasSearchQuery()) {
-              <header class="kwpick__explorer-head">
-                <span class="kwpick__explorer-title">
-                  Related ideas for "{{ store.searchQuery().trim() }}"
-                </span>
-                @if (store.searchResultCount() > 0) {
-                  <span class="kwpick__explorer-count">{{ store.searchResultCount() }} ideas</span>
-                }
-              </header>
-
-              <div class="kwpick__explorer-results">
-                @if (store.searchPrimary(); as primary) {
-                  <button
-                    type="button"
-                    class="kwpick__explorer-row kwpick__explorer-row--primary"
-                    (click)="addFromSearch(primary)"
-                  >
-                    <span class="kwpick__explorer-phrase">{{ primary.phrase }}</span>
-                    <span class="kwpick__explorer-meta">
-                      <span class="kwpick__pill">Your search</span>
-                      <span>{{ formatVolume(primary.searchVolume) }}/mo</span>
-                      <span>{{ formatCompetition(primary) }}</span>
-                      <span class="kwpick__explorer-add">Add</span>
-                    </span>
-                  </button>
-                }
-                @for (kw of store.searchRelated(); track kw.phraseKey) {
-                  <button type="button" class="kwpick__explorer-row" (click)="addFromSearch(kw)">
-                    <span class="kwpick__explorer-phrase">{{ kw.phrase }}</span>
-                    <span class="kwpick__explorer-meta">
-                      <span class="kwpick__pill">{{ sourceLabel(kw.source) }}</span>
-                      <span>{{ formatVolume(kw.searchVolume) }}/mo</span>
-                      <span>{{ formatCompetition(kw) }}</span>
-                      <span class="kwpick__explorer-fit">{{ fitLabel(kw.relevanceScore) }}</span>
-                      <span class="kwpick__explorer-add">Add</span>
-                    </span>
-                  </button>
-                }
-                <button type="button" class="kwpick__explorer-row kwpick__explorer-row--custom" (click)="addCustomFromSearch()">
-                  <span class="kwpick__explorer-phrase">Add "{{ store.searchQuery().trim() }}" as custom keyword</span>
-                  <span class="kwpick__explorer-meta">
-                    <span class="kwpick__explorer-add">Add custom</span>
-                  </span>
-                </button>
-              </div>
-            }
-          </section>
-
-          <article
-            class="kwpick__panel kwpick__panel--suggested"
-            [class.kwpick__panel--dimmed]="false"
-          >
             <header class="kwpick__panel-head">
               <span class="kwpick__panel-label">{{ tableLabel() }}</span>
               <span class="kwpick__panel-meta">
                 @if (store.hasSearchQuery()) {
-                  {{ store.searchResultCount() }} ideas from Google Ads
                   @if (store.searching()) {
-                    · searching…
+                    Searching…
+                  } @else {
+                    {{ store.searchResultCount() }} ideas from Google Ads
                   }
                 } @else {
-                  {{ sortedPlanRows().length }} keywords · click headers to sort
+                  {{ sortedPlanRows().length }} suggestions · click headers to sort
                 }
               </span>
             </header>
+
             @if (store.hasSearchQuery() && !store.searching() && store.searchResultCount() <= 1) {
               <p class="kwpick__note kwpick__panel-body">
-                No related keywords returned for this term. Try a more specific phrase (e.g. “construction dispatch software”) or add your own below.
+                No related keywords returned for this term. Try a more specific phrase (e.g. “construction dispatch software”).
               </p>
             }
             @if (!store.hasSearchQuery() && sortedPlanRows().length === 0) {
               <p class="kwpick__empty kwpick__panel-body">
-                No suggestions yet — search above to explore related keywords or add your own.
+                Search above to explore related keywords from Google Ads.
               </p>
             } @else if (store.hasSearchQuery() && store.searching()) {
               <p class="kwpick__empty kwpick__panel-body">Finding related keywords…</p>
             } @else if (tableRows().length === 0) {
               <p class="kwpick__empty kwpick__panel-body">
-                No results — try another phrase or add a custom keyword above.
+                No results — try another phrase.
               </p>
             } @else {
               <div class="kwpick__panel-body">
                 <div class="kwpick__table-wrap kwpick__table-wrap--suggested">
-                  <table class="kwpick__table kwpick__table--plan" aria-label="Suggested keywords ranked by opportunity">
+                  <table class="kwpick__table kwpick__table--plan" [attr.aria-label]="tableLabel()">
                     <thead>
                       <tr>
                         <th class="kwpick__th-check" scope="col"><span class="kwpick__sr">Include</span></th>
@@ -493,24 +440,13 @@
         }
         @default {
           @if (store.selectedCount() > 0) {
-            <div class="kwpick__selected-strip" aria-label="Selected keywords">
-              @for (kw of store.selectedList(); track kw.phraseKey) {
-                <button
-                  type="button"
-                  class="kwpick__selected-chip"
-                  (click)="remove(kw.phraseKey)"
-                  [attr.aria-label]="'Remove ' + kw.phrase"
-                >
-                  {{ kw.phrase }} ×
-                </button>
-              }
-            </div>
-            <button
-              type="button"
-              class="kwpick__continue"
-              [disabled]="store.confirming()"
-              (click)="continueFromKeywords()"
-            >
+            <div class="kwpick__footer-actions">
+              <button
+                type="button"
+                class="kwpick__continue"
+                [disabled]="store.confirming()"
+                (click)="continueFromKeywords()"
+              >
               @if (store.confirming()) {
                 Saving…
               } @else if (store.wizardEnabled()) {
@@ -518,9 +454,10 @@
               } @else {
                 Confirm & build plan
               }
-            </button>
+              </button>
+            </div>
           } @else {
-            <p class="kwpick__hint">Select at least one keyword to continue.</p>
+            <p class="kwpick__hint">Search for a topic and select keywords to continue.</p>
           }
         }
       }

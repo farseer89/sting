@@ -111,6 +111,12 @@
         @if (a.emotionalState) {
           <p class="sharpen-audiences__card-note"><strong>Feels:</strong> {{ a.emotionalState }}</p>
         }
+        @if (a.whatTheyNeed) {
+          <p class="sharpen-audiences__card-note"><strong>Needs:</strong> {{ a.whatTheyNeed }}</p>
+        }
+        @if (a.voiceTheyRespondTo) {
+          <p class="sharpen-audiences__card-note"><strong>Voice:</strong> {{ a.voiceTheyRespondTo }}</p>
+        }
         @if (pendingCountFor(a.id) > 0) {
           <button
             type="button"

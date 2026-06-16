@@ -1,0 +1,163 @@
+<div class="strat-intel" aria-label="Strategy plan detail">
+  <header class="strat-intel__head">
+    @if (plan().narrative; as narrative) {
+      <h2 class="strat-intel__title">{{ narrative.headline }}</h2>
+      <p class="strat-intel__lede">{{ narrative.why }}</p>
+    } @else {
+      <h2 class="strat-intel__title">Content strategy</h2>
+      <p class="strat-intel__lede">Plan v{{ plan().version }} — warmed competitive intel and calendar intent.</p>
+    }
+    <dl class="strat-intel__stats">
+      <div>
+        <dt>Keywords</dt>
+        <dd>{{ stats().keywordCount }}</dd>
+      </div>
+      <div>
+        <dt>Pillars</dt>
+        <dd>{{ stats().pillarCount }}</dd>
+      </div>
+      <div>
+        <dt>Scheduled</dt>
+        <dd>{{ stats().calendarCount }}</dd>
+      </div>
+      <div>
+        <dt>Backlog</dt>
+        <dd>{{ plan().backlog?.length ?? 0 }}</dd>
+      </div>
+    </dl>
+    @if (strategyIntelEvent()?.note) {
+      <p class="strat-intel__run-note">{{ strategyIntelEvent()!.note }}</p>
+    }
+  </header>
+
+  <div class="strat-intel__scroll">
+    @if (intel(); as si) {
+      @if (si.clusterIntel.length) {
+        <section class="strat-intel__block">
+          <h3 class="strat-intel__h3">Cluster mechanisms</h3>
+          @for (cluster of si.clusterIntel; track cluster.clusterName) {
+            <article class="strat-intel__card">
+              <h4 class="strat-intel__card-title">{{ cluster.clusterName }}</h4>
+              <p class="strat-intel__body"><strong>Mechanism:</strong> {{ cluster.novelMechanism }}</p>
+              @if (cluster.zeitgeistFrame) {
+                <p class="strat-intel__body"><strong>SERP angle:</strong> {{ cluster.zeitgeistFrame }}</p>
+              }
+              @if (cluster.transferredFrame) {
+                <p class="strat-intel__body"><strong>Transferred frame:</strong> {{ cluster.transferredFrame }}</p>
+              }
+            </article>
+          }
+        </section>
+      }
+
+      @if (si.keywordIntel.length) {
+        <section class="strat-intel__block">
+          <h3 class="strat-intel__h3">Keyword intelligence</h3>
+          @for (kw of si.keywordIntel; track kw.phrase) {
+            <article class="strat-intel__card">
+              <h4 class="strat-intel__card-title">{{ kw.phrase }}</h4>
+              @if (kw.highestLeverageQuestion) {
+                <p class="strat-intel__body"><strong>Key question:</strong> {{ kw.highestLeverageQuestion }}</p>
+              }
+              @if (kw.gapClusters.length) {
+                <ul class="strat-intel__list">
+                  @for (gap of kw.gapClusters.slice(0, 3); track gap.theme) {
+                    <li>
+                      <span class="strat-intel__list-label">{{ gap.theme }}</span>
+                      <span class="strat-intel__list-note">{{ gap.gaps.slice(0, 2).join(' · ') }}</span>
+                    </li>
+                  }
+                </ul>
+              }
+              @if (kw.unansweredQuestions.length) {
+                <p class="strat-intel__meta">{{ kw.unansweredQuestions.length }} unanswered question(s) harvested</p>
+              }
+            </article>
+          }
+        </section>
+      }
+
+      @if (si.avatarIntel.length) {
+        <section class="strat-intel__block">
+          <h3 class="strat-intel__h3">Audience journeys</h3>
+          @for (avatar of si.avatarIntel; track avatar.avatarId) {
+            <article class="strat-intel__card">
+              <h4 class="strat-intel__card-title">{{ avatarLabel(plan(), avatar.avatarId) }}</h4>
+              @if (avatar.emotionalArc) {
+                <p class="strat-intel__body">{{ avatar.emotionalArc }}</p>
+              }
+              @if (avatar.journeyStages.length) {
+                <ol class="strat-intel__stages">
+                  @for (stage of avatar.journeyStages.slice(0, 4); track stage.stageName) {
+                    <li>
+                      <span class="strat-intel__stage-name">{{ stage.stageName }}</span>
+                      <span class="strat-intel__stage-q">{{ stage.keyQuestion }}</span>
+                    </li>
+                  }
+                </ol>
+              }
+            </article>
+          }
+        </section>
+      }
+
+      @if (si.thesisSeeds.length) {
+        <section class="strat-intel__block">
+          <h3 class="strat-intel__h3">Thesis seeds</h3>
+          @for (seed of si.thesisSeeds.slice(0, 8); track seed.workingTitle) {
+            <article class="strat-intel__card strat-intel__card--compact">
+              <h4 class="strat-intel__card-title">{{ seed.workingTitle }}</h4>
+              <p class="strat-intel__body">{{ seed.thesisSeed }}</p>
+              @if (seed.coreCompetitorError) {
+                <p class="strat-intel__meta">Competitor blind spot: {{ seed.coreCompetitorError }}</p>
+              }
+            </article>
+          }
+        </section>
+      }
+    } @else {
+      <section class="strat-intel__block">
+        <p class="strat-intel__empty">
+          Strategy intel is not on this plan yet. Re-run the content plan to warm gap analysis, mechanisms, and thesis seeds.
+        </p>
+      </section>
+    }
+
+    @if (plan().focusStrategies.length) {
+      <section class="strat-intel__block">
+        <h3 class="strat-intel__h3">Deep-scan focus keywords</h3>
+        @for (focus of plan().focusStrategies.slice(0, 6); track focus.keyword.phrase) {
+          <article class="strat-intel__card strat-intel__card--compact">
+            <h4 class="strat-intel__card-title">{{ focus.keyword.phrase }}</h4>
+            <p class="strat-intel__meta">
+              {{ focus.scannedCount }} competitor page(s) scanned
+              @if (focus.topicGaps?.length) {
+                · {{ focus.topicGaps!.length }} topic gap(s)
+              }
+            </p>
+            @if (focus.positioningSummary) {
+              <p class="strat-intel__body">{{ focus.positioningSummary }}</p>
+            }
+          </article>
+        }
+      </section>
+    }
+
+    @if (plan().pillars.length) {
+      <section class="strat-intel__block">
+        <h3 class="strat-intel__h3">Topic pillars</h3>
+        <ul class="strat-intel__pillars">
+          @for (pillar of plan().pillars; track pillar.clusterName) {
+            <li>
+              <span class="strat-intel__pillar-name">{{ pillar.clusterName }}</span>
+              <span class="strat-intel__pillar-kw">{{ pillar.pillarKeyword }}</span>
+              @if (pillar.angle) {
+                <span class="strat-intel__pillar-angle">{{ pillar.angle }}</span>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+</div>

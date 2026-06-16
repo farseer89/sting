@@ -3,15 +3,25 @@ import type { ProtopipeSiteContentPlan } from '@hive/contracts';
 import type { SpokeNode } from '../../lab/void-dashboard/void-content-spoke.mock';
 import { VoidContentSpokeComponent } from '../../lab/void-dashboard/void-content-spoke.component';
 import { ProtopipeHomeStrategyViewState } from './protopipe-home-strategy-view.state';
+import { StrategyContentBacklogComponent } from './strategy-content-backlog.component';
 import { StrategyContentCalendarComponent } from './strategy-content-calendar.component';
 import { StrategyContentKeywordsComponent } from './strategy-content-keywords.component';
 import { StrategyContentPlanComponent } from './strategy-content-plan.component';
+import { StrategyContentStrategyComponent } from './strategy-content-strategy.component';
 import { StrategyContentTuneComponent } from './strategy-content-tune.component';
 import { strategyStats } from './strategy.helpers';
 import { planToContentSpoke } from './strategy-content-map';
 import { STRATEGY_VISUAL_VIEWS, type StrategyVisualView } from './strategy-visual-view';
 
-const EXPANDED_VIEWS: StrategyVisualView[] = ['map', 'calendar', 'keywords', 'content', 'tune'];
+const EXPANDED_VIEWS: StrategyVisualView[] = [
+  'map',
+  'calendar',
+  'backlog',
+  'keywords',
+  'content',
+  'strategy',
+  'tune',
+];
 
 @Component({
   selector: 'app-strategy-content-map',
@@ -20,8 +30,10 @@ const EXPANDED_VIEWS: StrategyVisualView[] = ['map', 'calendar', 'keywords', 'co
   imports: [
     VoidContentSpokeComponent,
     StrategyContentCalendarComponent,
+    StrategyContentBacklogComponent,
     StrategyContentKeywordsComponent,
     StrategyContentPlanComponent,
+    StrategyContentStrategyComponent,
     StrategyContentTuneComponent,
   ],
   templateUrl: './strategy-content-map.component.html',
@@ -54,10 +66,14 @@ export class StrategyContentMapComponent {
         return 'Your keywords grouped into pillars, with a publish schedule — read left to right.';
       case 'calendar':
         return 'When each article publishes — click a sticky to open details in the panel.';
+      case 'backlog':
+        return 'Unscheduled topic ideas from unanswered-question harvest — click to review in the panel.';
       case 'keywords':
         return 'Scored search phrases — immediate focus first, then long-term and long-tail opportunities.';
       case 'content':
         return 'Articles grouped by topic cluster — pillar pieces first, then supporting content.';
+      case 'strategy':
+        return 'Warmed competitive intel — cluster mechanisms, keyword gaps, journeys, and thesis seeds from your plan run.';
       case 'tune':
         return 'Voice, inspiration, and reference links — so every article matches your style.';
     }

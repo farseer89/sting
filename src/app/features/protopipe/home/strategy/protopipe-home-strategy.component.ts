@@ -63,6 +63,7 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
       score_tier: 'Scoring keywords',
       cluster: 'Grouping topics',
       deep_scan: 'Deep-scanning focus keywords',
+      strategy_intel: 'Warming strategy intel',
       unify: 'Building your calendar',
     };
     const base = labels[step] ?? 'Building your strategy…';

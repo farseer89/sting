@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import type { ProtopipeContentPlanCalendarItem, ProtopipeSiteContentPlan } from '@hive/contracts';
+import type { ProtopipeSiteContentPlan } from '@hive/contracts';
 import { ProtopipeHomeStrategyViewState } from './protopipe-home-strategy-view.state';
-import { calendarItemKey, planBacklogItems } from './strategy.helpers';
+import { calendarItemKey } from './strategy.helpers';
 import {
   buildWeekCalendarFromPlan,
   planToContentCalendars,
@@ -23,14 +23,9 @@ export class StrategyContentCalendarComponent {
   readonly plan = input.required<ProtopipeSiteContentPlan>();
 
   readonly viewModes = STRATEGY_CALENDAR_VIEW_MODES;
-  readonly calendarItemKey = calendarItemKey;
   readonly viewMode = signal<StrategyCalendarViewMode>('week');
   readonly monthKey = signal<string | null>(null);
   readonly weekStartKey = signal<string | null>(null);
-
-  readonly backlogItems = computed(() => planBacklogItems(this.plan()));
-
-  readonly hasBacklog = computed(() => this.backlogItems().length > 0);
 
   readonly calendarBundle = computed(() => planToContentCalendars(this.plan()));
 
@@ -138,10 +133,6 @@ export class StrategyContentCalendarComponent {
 
   openArticle(itemKey: string): void {
     this.viewState.selectFromCalendarKey(this.plan(), itemKey);
-  }
-
-  openBacklogItem(item: ProtopipeContentPlanCalendarItem): void {
-    this.viewState.openArticlePanel(item);
   }
 
   isStickySelected(itemKey: string): boolean {

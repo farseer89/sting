@@ -78,12 +78,20 @@
       <app-strategy-content-calendar [plan]="plan()" />
     </div>
 
+    <div class="strat-map__panel" [class.is-active]="isView('backlog')" [attr.aria-hidden]="!isView('backlog')">
+      <app-strategy-content-backlog [plan]="plan()" />
+    </div>
+
     <div class="strat-map__panel" [class.is-active]="isView('keywords')" [attr.aria-hidden]="!isView('keywords')">
       <app-strategy-content-keywords [plan]="plan()" />
     </div>
 
     <div class="strat-map__panel" [class.is-active]="isView('content')" [attr.aria-hidden]="!isView('content')">
       <app-strategy-content-plan [plan]="plan()" />
+    </div>
+
+    <div class="strat-map__panel" [class.is-active]="isView('strategy')" [attr.aria-hidden]="!isView('strategy')">
+      <app-strategy-content-strategy [plan]="plan()" />
     </div>
 
     <div class="strat-map__panel" [class.is-active]="isView('tune')" [attr.aria-hidden]="!isView('tune')">

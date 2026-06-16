@@ -19,10 +19,11 @@ import {
 import {
   SharpenContextCardComponent,
 } from './context-card/sharpen-context-card.component';
+import { SharpenAudiencesComponent } from './sharpen-audiences.component';
 import { SharpenOffersComponent } from './sharpen-offers.component';
 import { SharpenProjectsComponent } from './sharpen-projects.component';
 
-export type SharpenTab = 'questions' | 'facts' | 'offers' | 'projects' | 'ai-search';
+export type SharpenTab = 'questions' | 'audiences' | 'facts' | 'offers' | 'projects' | 'ai-search';
 
 @Component({
   selector: 'app-protopipe-home-sharpen',
@@ -30,6 +31,7 @@ export type SharpenTab = 'questions' | 'facts' | 'offers' | 'projects' | 'ai-sea
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     SharpenContextCardComponent,
+    SharpenAudiencesComponent,
     SharpenOffersComponent,
     SharpenProjectsComponent,
     DatePipe,

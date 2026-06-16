@@ -175,7 +175,7 @@
         <p class="helper">Describe what each person wants — keep it simple.</p>
 
         <div class="avatar-list" role="group" aria-label="Customer avatars">
-          @for (slot of avatarSlots; track slot) {
+          @for (slot of avatarSlots(); track slot) {
             <div
               class="avatar-row"
               [class.avatar-row--filled]="customerAvatars()[slot].trim().length > 0"
@@ -213,11 +213,15 @@
         </div>
 
         <div class="avatar-add-more">
-          <button type="button" class="avatar-add-more__btn" disabled aria-disabled="true">
+          <button
+            type="button"
+            class="avatar-add-more__btn"
+            [disabled]="!canAddCustomerAvatar()"
+            (click)="addCustomerAvatarSlot()"
+          >
             <i class="pi pi-plus" aria-hidden="true"></i>
             Add more
           </button>
-          <span class="avatar-add-more__hint">We'll define additional avatars later.</span>
         </div>
 
         <div class="actions">

@@ -119,6 +119,8 @@
               [hoveredId]="store.hoveredAvatarId()"
               (toggleAvatar)="store.toggleAvatar($event)"
               (hoverAvatar)="store.setHoveredAvatarId($event)"
+              (updateAvatar)="store.updateAvatar($event.id, $event.field, $event.value)"
+              (addCustom)="store.addCustomAvatar()"
             />
           </article>
         </div>

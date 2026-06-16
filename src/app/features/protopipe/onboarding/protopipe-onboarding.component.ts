@@ -39,6 +39,7 @@ const TOTAL_STEPS = 6 as const;
 
 const MAX_SERVICES = 8;
 const MAX_COMPETITORS = 3;
+const MAX_CUSTOMER_AVATARS = 12;
 
 @Component({
   selector: 'app-protopipe-onboarding',
@@ -80,9 +81,13 @@ export class ProtopipeOnboardingComponent implements OnInit {
   readonly competitors = signal<string[]>([]);
   readonly competitorDraft = signal('');
 
-  /** Three customer avatars — what each person wants (simple text per slot). */
-  readonly avatarSlots = [0, 1, 2] as const;
+  /** Customer avatars — what each person wants (simple text per slot). */
+  readonly maxCustomerAvatars = MAX_CUSTOMER_AVATARS;
   readonly customerAvatars = signal<string[]>(['', '', '']);
+
+  readonly avatarSlots = computed(() =>
+    this.customerAvatars().map((_, index) => index),
+  );
 
   readonly form = this.fb.nonNullable.group({
     websiteUrl: ['', [Validators.required, Validators.maxLength(300)]],
@@ -234,6 +239,17 @@ export class ProtopipeOnboardingComponent implements OnInit {
       next[index] = value.slice(0, 200);
       return next;
     });
+  }
+
+  addCustomerAvatarSlot(): void {
+    this.customerAvatars.update((list) => {
+      if (list.length >= MAX_CUSTOMER_AVATARS) return list;
+      return [...list, ''];
+    });
+  }
+
+  canAddCustomerAvatar(): boolean {
+    return this.customerAvatars().length < MAX_CUSTOMER_AVATARS;
   }
 
   avatarPlaceholder(index: number): string {

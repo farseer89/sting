@@ -27,6 +27,14 @@
     <button
       type="button"
       class="sharpen__tab"
+      [class.is-active]="activeTab() === 'audiences'"
+      (click)="setTab('audiences')"
+    >
+      Audiences
+    </button>
+    <button
+      type="button"
+      class="sharpen__tab"
       [class.is-active]="activeTab() === 'facts'"
       (click)="setTab('facts')"
     >
@@ -106,6 +114,19 @@
         }
       </section>
     }
+  }
+
+  @if (activeTab() === 'audiences') {
+    <section class="sharpen__panel" aria-labelledby="sharpen-audiences-heading">
+      <h2 id="sharpen-audiences-heading" class="visually-hidden">Audiences</h2>
+      @if (strategy.siteId(); as siteId) {
+        <app-sharpen-audiences
+          [siteId]="siteId"
+          (changed)="reload()"
+          (questionsRequested)="setTab('questions')"
+        />
+      }
+    </section>
   }
 
   @if (activeTab() === 'facts') {

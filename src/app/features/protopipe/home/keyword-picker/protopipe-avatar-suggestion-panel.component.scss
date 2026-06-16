@@ -13,6 +13,23 @@
   max-width: 40rem;
 }
 
+.kwavatar__toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.kwavatar__add {
+  appearance: none;
+  border: 0.5px solid var(--void-tile-border);
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  font-size: 9px;
+  font-weight: 600;
+  background: #fff;
+  color: var(--void-ocean);
+  cursor: pointer;
+}
+
 .kwavatar__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr));
@@ -42,6 +59,10 @@
     box-shadow 0.18s ease,
     transform 0.18s ease,
     opacity 0.15s ease;
+
+  &--expanded {
+    grid-column: 1 / -1;
+  }
 
   &:hover:not(.kwavatar__card--disabled),
   &.kwavatar__card--hovered:not(.kwavatar__card--disabled) {
@@ -133,6 +154,43 @@
     border-color: var(--kwav-ink);
     background: var(--kwav-ink);
     color: #fff;
+  }
+}
+
+.kwavatar__edit {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--void-ocean);
+  font-size: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+}
+
+.kwavatar__editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.kwavatar__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 8px;
+  font-weight: 600;
+  color: var(--void-ink-muted);
+
+  input,
+  textarea {
+    font: inherit;
+    font-size: 9px;
+    font-weight: 400;
+    padding: 0.35rem 0.45rem;
+    border: 0.5px solid var(--void-tile-border);
+    border-radius: 6px;
+    resize: vertical;
   }
 }
 

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import type { ProtopipeSuggestedAvatar } from '@hive/contracts';
 
 const AVATAR_PALETTES = [
@@ -9,6 +9,21 @@ const AVATAR_PALETTES = [
   { bg: '#fceef0', ink: '#8a2d3d', ring: '#e0a8b4' },
   { bg: '#eef0f6', ink: '#3d4a6b', ring: '#a8b4d8' },
 ] as const;
+
+export type AvatarFieldPatch = {
+  id: string;
+  field: keyof Pick<
+    ProtopipeSuggestedAvatar,
+    | 'label'
+    | 'description'
+    | 'intentCluster'
+    | 'exampleQueries'
+    | 'emotionalState'
+    | 'whatTheyNeed'
+    | 'voiceTheyRespondTo'
+  >;
+  value: string | string[];
+};
 
 @Component({
   selector: 'app-protopipe-avatar-suggestion-panel',
@@ -25,6 +40,10 @@ export class ProtopipeAvatarSuggestionPanelComponent {
 
   readonly toggleAvatar = output<string>();
   readonly hoverAvatar = output<string | null>();
+  readonly updateAvatar = output<AvatarFieldPatch>();
+  readonly addCustom = output<void>();
+
+  readonly expandedId = signal<string | null>(null);
 
   isSelected(id: string): boolean {
     return this.selectedIds().has(id);
@@ -38,9 +57,19 @@ export class ProtopipeAvatarSuggestionPanelComponent {
     return this.isSelected(id) || !this.atMax();
   }
 
-  onCardClick(id: string): void {
+  onCardClick(id: string, event: MouseEvent): void {
+    if ((event.target as HTMLElement).closest('[data-avatar-edit]')) return;
     if (!this.canSelect(id)) return;
     this.toggleAvatar.emit(id);
+  }
+
+  toggleExpanded(id: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.expandedId.update((current) => (current === id ? null : id));
+  }
+
+  isExpanded(id: string): boolean {
+    return this.expandedId() === id;
   }
 
   onCardEnter(id: string): void {
@@ -51,7 +80,26 @@ export class ProtopipeAvatarSuggestionPanelComponent {
     this.hoverAvatar.emit(null);
   }
 
+  emitField(id: string, field: AvatarFieldPatch['field'], value: string): void {
+    if (field === 'exampleQueries') {
+      const exampleQueries = value
+        .split('\n')
+        .map((q) => q.trim())
+        .filter(Boolean)
+        .slice(0, 10);
+      this.updateAvatar.emit({ id, field, value: exampleQueries });
+      return;
+    }
+    this.updateAvatar.emit({ id, field, value });
+  }
+
+  queriesText(av: ProtopipeSuggestedAvatar): string {
+    return (av.exampleQueries ?? []).join('\n');
+  }
+
   profileTitle(av: ProtopipeSuggestedAvatar): string {
+    const label = av.label?.trim();
+    if (label) return label;
     const cluster = av.intentCluster?.trim();
     if (cluster) return cluster;
     const first = av.description.split(/[.!?]/)[0]?.trim();
@@ -59,8 +107,11 @@ export class ProtopipeAvatarSuggestionPanelComponent {
   }
 
   profileSubtitle(av: ProtopipeSuggestedAvatar): string {
-    if (av.matchedOnboarding) return 'Matches your onboarding profile';
-    return 'Discovered from search behavior';
+    if (av.origin === 'onboarding' || av.matchedOnboarding) {
+      return 'From your onboarding profile';
+    }
+    if (av.origin === 'user') return 'Your custom audience';
+    return 'Inferred from search behavior';
   }
 
   initials(av: ProtopipeSuggestedAvatar): string {

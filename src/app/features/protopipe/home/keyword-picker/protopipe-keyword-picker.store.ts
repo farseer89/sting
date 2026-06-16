@@ -266,6 +266,51 @@ export class ProtopipeKeywordPickerStore {
     });
   }
 
+  updateAvatar(
+    id: string,
+    field:
+      | 'label'
+      | 'description'
+      | 'intentCluster'
+      | 'exampleQueries'
+      | 'emotionalState'
+      | 'whatTheyNeed'
+      | 'voiceTheyRespondTo',
+    value: string | string[],
+  ): void {
+    this._suggestedAvatars.update((list) =>
+      list.map((av) => {
+        if (av.id !== id) return av;
+        if (field === 'exampleQueries' && Array.isArray(value)) {
+          return { ...av, exampleQueries: value };
+        }
+        if (typeof value === 'string') {
+          return { ...av, [field]: value };
+        }
+        return av;
+      }),
+    );
+  }
+
+  addCustomAvatar(): void {
+    const id = `user-${Date.now()}`;
+    const custom: ProtopipeSuggestedAvatar = {
+      id,
+      label: 'Custom audience',
+      description: '',
+      intentCluster: 'Custom audience',
+      exampleQueries: [],
+      origin: 'user',
+    };
+    this._suggestedAvatars.update((list) => [...list, custom]);
+    this._selectedAvatarIds.update((current) => {
+      if (current.size >= MAX_AVATARS) return current;
+      const next = new Set(current);
+      next.add(id);
+      return next;
+    });
+  }
+
   isAvatarSelected(id: string): boolean {
     return this._selectedAvatarIds().has(id);
   }
@@ -308,9 +353,16 @@ export class ProtopipeKeywordPickerStore {
         const av = avatarsById.get(id);
         return {
           id,
-          description: av?.description ?? id,
+          description: av?.description?.trim() || id,
           exampleQueries: av?.exampleQueries ?? [],
-          intentCluster: av?.intentCluster ?? 'general',
+          intentCluster: av?.intentCluster?.trim() || 'general',
+          label: av?.label?.trim() || undefined,
+          emotionalState: av?.emotionalState?.trim() || undefined,
+          whatTheyNeed: av?.whatTheyNeed?.trim() || undefined,
+          voiceTheyRespondTo: av?.voiceTheyRespondTo?.trim() || undefined,
+          origin:
+            av?.origin ??
+            (av?.matchedOnboarding ? ('onboarding' as const) : ('discovery' as const)),
         };
       });
 

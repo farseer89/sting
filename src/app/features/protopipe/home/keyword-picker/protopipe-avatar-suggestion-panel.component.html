@@ -1,22 +1,25 @@
 <div class="kwavatar">
   <p class="kwavatar__lede">
-    Each profile represents a type of person searching for your services. Choose up to
-    {{ maxSelected() }} — your content plan will be written for them.
+    We inferred these from search behavior. Edit anything that doesn't sound like your customer.
   </p>
+
+  <div class="kwavatar__toolbar">
+    <button type="button" class="kwavatar__add" (click)="addCustom.emit()">Add your own</button>
+  </div>
+
   <div class="kwavatar__grid" role="list">
     @for (av of avatars(); track av.id) {
-      <button
-        type="button"
+      <div
         class="kwavatar__card"
         role="listitem"
         [class.kwavatar__card--selected]="isSelected(av.id)"
         [class.kwavatar__card--disabled]="!canSelect(av.id)"
         [class.kwavatar__card--hovered]="hoveredId() === av.id"
+        [class.kwavatar__card--expanded]="isExpanded(av.id)"
         [style]="avatarStyle(av.id)"
-        [attr.aria-pressed]="isSelected(av.id)"
-        (click)="onCardClick(av.id)"
         (mouseenter)="onCardEnter(av.id)"
         (mouseleave)="onCardLeave()"
+        (click)="onCardClick(av.id, $event)"
       >
         <div class="kwavatar__profile">
           <span class="kwavatar__portrait" aria-hidden="true">{{ initials(av) }}</span>
@@ -24,6 +27,15 @@
             <span class="kwavatar__role">{{ profileTitle(av) }}</span>
             <span class="kwavatar__subtitle">{{ profileSubtitle(av) }}</span>
           </div>
+          <button
+            type="button"
+            class="kwavatar__edit"
+            data-avatar-edit
+            [attr.aria-expanded]="isExpanded(av.id)"
+            (click)="toggleExpanded(av.id, $event)"
+          >
+            {{ isExpanded(av.id) ? 'Done' : 'Edit' }}
+          </button>
           <span class="kwavatar__select" [class.kwavatar__select--on]="isSelected(av.id)" aria-hidden="true">
             @if (isSelected(av.id)) {
               <svg viewBox="0 0 12 12" width="10" height="10"><path d="M2 6l3 3 5-6" fill="none" stroke="currentColor" stroke-width="1.4" /></svg>
@@ -31,9 +43,46 @@
           </span>
         </div>
 
-        <p class="kwavatar__bio">{{ av.description }}</p>
+        @if (isExpanded(av.id)) {
+          <div class="kwavatar__editor" data-avatar-edit (click)="$event.stopPropagation()">
+            <label class="kwavatar__field">
+              Label
+              <input
+                type="text"
+                [value]="av.label ?? ''"
+                (input)="emitField(av.id, 'label', $any($event.target).value)"
+              />
+            </label>
+            <label class="kwavatar__field">
+              Who they are
+              <textarea
+                rows="3"
+                [value]="av.description"
+                (input)="emitField(av.id, 'description', $any($event.target).value)"
+              ></textarea>
+            </label>
+            <label class="kwavatar__field">
+              Example searches (one per line)
+              <textarea
+                rows="2"
+                [value]="queriesText(av)"
+                (input)="emitField(av.id, 'exampleQueries', $any($event.target).value)"
+              ></textarea>
+            </label>
+            <label class="kwavatar__field">
+              How they feel
+              <textarea
+                rows="2"
+                [value]="av.emotionalState ?? ''"
+                (input)="emitField(av.id, 'emotionalState', $any($event.target).value)"
+              ></textarea>
+            </label>
+          </div>
+        } @else {
+          <p class="kwavatar__bio">{{ av.description }}</p>
+        }
 
-        @if (av.exampleQueries.length) {
+        @if (av.exampleQueries.length && !isExpanded(av.id)) {
           <div class="kwavatar__searches" aria-label="Example searches">
             <span class="kwavatar__searches-label">They search for</span>
             <div class="kwavatar__chips">
@@ -51,14 +100,17 @@
               <span class="kwavatar__stat-lbl">cluster volume</span>
             </span>
           }
-          @if (av.matchedOnboarding) {
+          @if (av.matchedOnboarding || av.origin === 'onboarding') {
             <span class="kwavatar__badge">Onboarding match</span>
+          }
+          @if (av.origin === 'user') {
+            <span class="kwavatar__badge">Custom</span>
           }
           @if (isSelected(av.id)) {
             <span class="kwavatar__badge kwavatar__badge--selected">Selected</span>
           }
         </footer>
-      </button>
+      </div>
     }
   </div>
 </div>

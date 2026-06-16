@@ -79,6 +79,11 @@ import type {
   PatchOfferingResponse,
   ActivateOfferingResponse,
   ListProjectsResponse,
+  ListAudiencesResponse,
+  UpsertAudienceRequest,
+  UpsertAudienceResponse,
+  DeleteAudienceRequest,
+  DeleteAudienceResponse,
   CreateProjectRequest,
   CreateProjectResponse,
   GetProjectResponse,
@@ -966,6 +971,27 @@ export class ProtopipeApiService {
     return this.http.get<ListProjectsResponse>(
       protopipeApiUrl(ProtopipeEndpoints.listProjects.path, { siteId }),
       { params },
+    );
+  }
+
+  listAudiences$(siteId: string) {
+    return this.http.get<ListAudiencesResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.listAudiences.path, { siteId }),
+    );
+  }
+
+  upsertAudience$(siteId: string, audienceId: string, body: UpsertAudienceRequest) {
+    return this.http.put<UpsertAudienceResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.upsertAudience.path, { siteId, audienceId }),
+      body,
+    );
+  }
+
+  deleteAudience$(siteId: string, audienceId: string, body: DeleteAudienceRequest) {
+    return this.http.request<DeleteAudienceResponse>(
+      'DELETE',
+      protopipeApiUrl(ProtopipeEndpoints.deleteAudience.path, { siteId, audienceId }),
+      { body },
     );
   }
 

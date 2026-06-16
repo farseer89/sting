@@ -43,6 +43,10 @@ const STEP_META: Record<
   },
   outline: { label: 'Outline', summary: 'Design the H1 and section outline.' },
   draft: { label: 'Draft', summary: 'Write the section prose.' },
+  draft_faq: {
+    label: 'FAQ',
+    summary: 'Draft FAQ answers from PAA and brief questions for pillar guides.',
+  },
   review: { label: 'Review', summary: 'Score the draft against the brief.' },
   metadata: { label: 'Metadata', summary: 'Generate title tag, meta and schema.' },
   assemble: { label: 'Assemble', summary: 'Assemble the final article template.' },
@@ -194,6 +198,17 @@ function stepOutput(
               'Draft',
               sectionsToMarkdown(a.sections),
               `${a.sections.reduce((n, s) => n + s.wordCount, 0)} words`,
+            ),
+          ]
+        : [];
+    case 'draft_faq':
+      return a.faqItems?.length
+        ? [
+            json(
+              'faq',
+              'FAQ',
+              a.faqItems,
+              `${a.faqItems.length} question(s)`,
             ),
           ]
         : [];

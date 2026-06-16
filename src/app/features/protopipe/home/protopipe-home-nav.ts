@@ -60,6 +60,7 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
     children: [{ id: 'analytics-overview', label: 'Overview', icon: 'chart', disabled: true }],
   },
   { id: 'premiere-separator', label: '', separator: true },
+  { id: 'dev-runbooks', label: 'Runbooks', icon: 'list' },
   {
     id: 'integrations',
     label: 'Integrations',

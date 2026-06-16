@@ -55,6 +55,8 @@ import type {
   ProtopipeContentMediaPresignRequest,
   ProtopipeContentMediaPresignResponse,
   ArticleGenerationGetResponse,
+  ArticleGenerationRunSummary,
+  ProtopipeListArticleGenerationRunsResponse,
   ArticleGenerationRerunStepResponse,
   ArticleGenerationStep,
   ProtopipeSerpLocationsResponse,
@@ -614,6 +616,16 @@ export class ProtopipeApiService {
   getArticleRun$(siteId: string, runId: string): Observable<ArticleGenerationGetResponse> {
     return this.http.get<ArticleGenerationGetResponse>(
       protopipeApiUrl(ProtopipeEndpoints.articleGenerationsGet.path, { siteId, runId }),
+    );
+  }
+
+  listArticleGenerationRuns(
+    siteId: string,
+  ): Promise<ProtopipeListArticleGenerationRunsResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeListArticleGenerationRunsResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.articleGenerationsListRuns.path, { siteId }),
+      ),
     );
   }
 

@@ -1,0 +1,92 @@
+<div class="runbook-viewer">
+  <header class="runbook-viewer__header">
+    <div class="runbook-viewer__title-block">
+      <button type="button" class="runbook-viewer__back" (click)="onBack()">← Runbooks</button>
+      <h2 class="runbook-viewer__title">{{ thought()?.title ?? 'Runbook' }}</h2>
+    </div>
+
+    <div class="runbook-viewer__controls">
+      @if (thought()) {
+        <button
+          type="button"
+          class="runbook-viewer__btn"
+          [disabled]="exportingRunbook()"
+          (click)="exportRunbook()"
+        >
+          {{ exportingRunbook() ? 'Exporting…' : 'Export runbook PDF' }}
+        </button>
+      }
+      <button
+        type="button"
+        class="runbook-viewer__btn runbook-viewer__btn--mode"
+        [class.is-on]="mode() === 'debug'"
+        (click)="toggleMode()"
+      >
+        {{ mode() === 'debug' ? 'Debug' : 'Calm' }}
+      </button>
+    </div>
+  </header>
+
+  @if (statusLabel(); as status) {
+    <div class="runbook-viewer__status" [class]="'is-' + status.toLowerCase()">
+      <span class="runbook-viewer__chip">{{ status }}</span>
+
+      @if (currentStepLabel(); as stepLabel) {
+        <span class="runbook-viewer__step">
+          {{ isActive() ? 'On step:' : 'Last step:' }} <strong>{{ stepLabel }}</strong>
+        </span>
+      }
+
+      <span class="runbook-viewer__spacer"></span>
+
+      @switch (connection()) {
+        @case ('live') {
+          <span class="runbook-viewer__conn is-live"><span class="runbook-viewer__pulse"></span> Live</span>
+        }
+        @case ('reconnecting') {
+          <span class="runbook-viewer__conn is-warn">Reconnecting…</span>
+        }
+        @case ('lost') {
+          <span class="runbook-viewer__conn is-err">Connection lost</span>
+          <button type="button" class="runbook-viewer__btn" (click)="retry()">Retry</button>
+        }
+      }
+    </div>
+
+    @if (failure(); as f) {
+      <div class="runbook-viewer__notice runbook-viewer__notice--error">
+        <p>
+          <strong>Run failed{{ f.step ? ' at ' + f.step : '' }}.</strong>
+          {{ f.message }}
+        </p>
+      </div>
+    }
+  }
+
+  <div class="runbook-viewer__stage">
+    @if (actionError(); as actionErr) {
+      <div class="runbook-viewer__notice runbook-viewer__notice--warn">
+        <p>{{ actionErr }}</p>
+      </div>
+    }
+
+    @if (loadError(); as err) {
+      <div class="runbook-viewer__notice">
+        <p>{{ err }}</p>
+        <button type="button" class="runbook-viewer__back" (click)="onBack()">← Back to Runbooks</button>
+      </div>
+    } @else if (thought(); as t) {
+      <app-thinker
+        [thought]="t"
+        [mode]="mode()"
+        [canRerun]="canRerun()"
+        (back)="onBack()"
+        (rerunStep)="onRerunStep($event)"
+      />
+    } @else {
+      <div class="runbook-viewer__notice">
+        <p>{{ rerunning() ? 'Rerunning step…' : 'Loading run…' }}</p>
+      </div>
+    }
+  </div>
+</div>

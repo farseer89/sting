@@ -105,6 +105,22 @@
                   </ul>
                 }
               </li>
+            } @else {
+              <li>
+                <button
+                  type="button"
+                  class="void-rail__row"
+                  [class.is-active]="isNavItemActive(item)"
+                  (click)="selectNavItem(item)"
+                >
+                  <span class="void-rail__icon" aria-hidden="true">
+                    <svg viewBox="0 0 16 16"><use [attr.href]="'#void-icon-' + item.icon" /></svg>
+                  </span>
+                  @if (!navCollapsed()) {
+                    <span class="void-rail__label">{{ item.label }}</span>
+                  }
+                </button>
+              </li>
             }
           }
         </ul>
@@ -192,6 +208,17 @@
                       />
                     }
                   </section>
+                }
+                @case ('runbooks') {
+                  @if (siteId(); as activeSiteId) {
+                    <section class="glass glass--full glass--premiere" aria-label="Runbooks">
+                      <app-protopipe-home-runbooks [siteId]="activeSiteId" />
+                    </section>
+                  } @else {
+                    <section class="glass glass--full glass--premiere home-welcome" aria-label="Runbooks">
+                      <p class="home-welcome__loading">No site selected.</p>
+                    </section>
+                  }
                 }
               }
             }

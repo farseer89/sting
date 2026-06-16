@@ -35,6 +35,7 @@ import { ProtopipeHomeWriterComponent } from './protopipe-home-writer.component'
 import { ProtopipeHomeWriterViewState } from './protopipe-home-writer-view.state';
 import { ProtopipeWriterContextPanelComponent } from './strategy/protopipe-writer-context-panel.component';
 import { ProtopipeKeywordPickerComponent } from './keyword-picker/protopipe-keyword-picker.component';
+import { ProtopipeHomeRunbooksComponent } from './runbooks/protopipe-home-runbooks.component';
 import { ProtopipeWriterInspectorBridge } from '../content/writer/protopipe-writer-inspector.bridge';
 import { ProtopipeHomeSidePanelService } from './protopipe-home-side-panel.service';
 import {
@@ -44,7 +45,7 @@ import {
 } from './protopipe-home-nav';
 import { resolveBootstrapSiteId } from '../resolve-bootstrap-site-id';
 
-export type ProtopipeHomeView = 'keywords' | 'strategy' | 'sharpen' | 'writer' | 'packs';
+export type ProtopipeHomeView = 'keywords' | 'strategy' | 'sharpen' | 'writer' | 'packs' | 'runbooks';
 
 function initialsFromName(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -74,6 +75,7 @@ function initialsFromName(name: string): string {
     ProtopipeWriterContextPanelComponent,
     ThoughtPackStoreComponent,
     ThoughtPackDetailComponent,
+    ProtopipeHomeRunbooksComponent,
   ],
   templateUrl: './protopipe-user-home.component.html',
   styleUrl: './protopipe-user-home.component.scss',
@@ -139,6 +141,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   readonly openNavGroupIds = signal<string[]>([...PROTOPIPE_HOME_NAV_DEFAULT_OPEN]);
   readonly siteDisplayName = signal('');
   readonly siteHostname = signal('');
+  readonly siteId = signal<string | null>(null);
   readonly subscriptionLabel = signal('Workspace');
   readonly loading = signal(true);
   readonly activeView = signal<ProtopipeHomeView>('keywords');
@@ -221,6 +224,11 @@ export class ProtopipeUserHomeComponent implements OnInit {
     } else if (item.id === 'content-packs') {
       this.showPacksStore();
       void this.router.navigate(['/home/packs']);
+    } else if (item.id === 'dev-runbooks') {
+      this.leaveWriterFocus();
+      this.sidePanel.setOpen(false);
+      this.activeNavId.set(item.id);
+      this.activeView.set('runbooks');
     } else if (item.id === 'int-wordpress' || item.id === 'int-google') {
       void this.router.navigate(['/protopipe/settings/integrations']);
     }
@@ -346,6 +354,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
       }
 
       if (site?.id) {
+        this.siteId.set(site.id);
         await this.strategy.ensureLoaded();
         void this.thoughtPacks.ensureCatalogLoaded();
         this.contentPlan.setSiteId(site.id);

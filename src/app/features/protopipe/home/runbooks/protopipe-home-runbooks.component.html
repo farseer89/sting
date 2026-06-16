@@ -1,0 +1,128 @@
+@if (selection(); as sel) {
+  <app-protopipe-runbook-viewer
+    [siteId]="siteId()"
+    [kind]="sel.kind"
+    [runId]="sel.runId"
+    (back)="closeViewer()"
+  />
+} @else {
+  <section class="runbooks" aria-label="Runbooks">
+    <header class="runbooks__header">
+      <div>
+        <h1 class="runbooks__title">Runbooks</h1>
+        <p class="runbooks__subtitle">
+          Inspect what happened on each major Thinker run for this site.
+        </p>
+      </div>
+      <button type="button" class="runbooks__refresh" [disabled]="loading()" (click)="reload()">
+        {{ loading() ? 'Loading…' : 'Refresh' }}
+      </button>
+    </header>
+
+    @if (loadError(); as err) {
+      <div class="runbooks__notice runbooks__notice--error">{{ err }}</div>
+    }
+
+    @if (loading()) {
+      <p class="runbooks__loading">Loading runs…</p>
+    } @else {
+      <div class="runbooks__grid">
+        <article class="runbooks__card">
+          <h2 class="runbooks__card-title">Keyword discovery</h2>
+          @if (discoveryRun(); as run) {
+            <dl class="runbooks__meta">
+              <div>
+                <dt>Status</dt>
+                <dd><span class="runbooks__status" [class]="'is-' + statusClass(run.status)">{{ run.status }}</span></dd>
+              </div>
+              <div>
+                <dt>Step</dt>
+                <dd>{{ run.currentStep }}</dd>
+              </div>
+              <div>
+                <dt>Updated</dt>
+                <dd>{{ formatWhen(run.updatedAt) }}</dd>
+              </div>
+              @if (run.costSummary?.totalUsd != null) {
+                <div>
+                  <dt>Cost</dt>
+                  <dd>${{ run.costSummary!.totalUsd.toFixed(2) }}</dd>
+                </div>
+              }
+            </dl>
+            <button type="button" class="runbooks__open" (click)="openDiscovery()">Open runbook</button>
+          } @else {
+            <p class="runbooks__empty">No discovery run yet. Complete onboarding to start keyword research.</p>
+          }
+        </article>
+
+        <article class="runbooks__card">
+          <h2 class="runbooks__card-title">Content plan</h2>
+          @if (latestContentPlan(); as run) {
+            <dl class="runbooks__meta">
+              <div>
+                <dt>Status</dt>
+                <dd><span class="runbooks__status" [class]="'is-' + statusClass(run.status)">{{ run.status }}</span></dd>
+              </div>
+              <div>
+                <dt>Version</dt>
+                <dd>v{{ run.version }}</dd>
+              </div>
+              <div>
+                <dt>Step</dt>
+                <dd>{{ run.currentStep ?? '—' }}</dd>
+              </div>
+              <div>
+                <dt>Updated</dt>
+                <dd>{{ formatWhen(run.updatedAt) }}</dd>
+              </div>
+            </dl>
+            <button type="button" class="runbooks__open" (click)="openContentPlan(run)">Open runbook</button>
+
+            @if (contentPlanRuns().length > 1) {
+              <div class="runbooks__versions">
+                <p class="runbooks__versions-label">Previous versions</p>
+                <ul>
+                  @for (prev of contentPlanRuns().slice(1); track prev.id) {
+                    <li>
+                      <button type="button" class="runbooks__version-btn" (click)="openContentPlan(prev)">
+                        v{{ prev.version }} · {{ prev.status }} · {{ formatWhen(prev.updatedAt) }}
+                      </button>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+          } @else {
+            <p class="runbooks__empty">No content plan run yet. Confirm keywords to generate a plan.</p>
+          }
+        </article>
+
+        <article class="runbooks__card runbooks__card--wide">
+          <h2 class="runbooks__card-title">Article generation</h2>
+          @if (articleRuns().length) {
+            <ul class="runbooks__list">
+              @for (run of articleRuns(); track run.id) {
+                <li class="runbooks__list-item">
+                  <div class="runbooks__list-main">
+                    <span class="runbooks__list-title">{{ run.articleType.replace(/_/g, ' ') }}</span>
+                    <span class="runbooks__status" [class]="'is-' + statusClass(run.status)">{{ run.status }}</span>
+                  </div>
+                  <div class="runbooks__list-meta">
+                    <span>{{ run.currentStep }}</span>
+                    <span>{{ formatWhen(run.updatedAt) }}</span>
+                  </div>
+                  <button type="button" class="runbooks__open runbooks__open--inline" (click)="openArticle(run)">
+                    Open
+                  </button>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="runbooks__empty">No article runs yet. Generate content from the writer or strategy view.</p>
+          }
+        </article>
+      </div>
+    }
+  </section>
+}

@@ -1,0 +1,162 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  font-size: 12px;
+}
+
+.runbook-viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  gap: 0.5rem;
+}
+
+.runbook-viewer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-shrink: 0;
+  padding: 0.25rem 0.5rem 0;
+}
+
+.runbook-viewer__title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.runbook-viewer__back {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  color: var(--void-ocean, #0a9396);
+  cursor: pointer;
+  padding: 0;
+  font-size: 11px;
+}
+
+.runbook-viewer__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.runbook-viewer__controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.runbook-viewer__btn {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: #fff;
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.runbook-viewer__btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.runbook-viewer__btn--mode.is-on {
+  border-color: var(--void-ocean, #0a9396);
+  color: var(--void-ocean, #0a9396);
+}
+
+.runbook-viewer__status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.runbook-viewer__chip {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.runbook-viewer__step strong {
+  font-weight: 600;
+}
+
+.runbook-viewer__spacer {
+  flex: 1;
+}
+
+.runbook-viewer__conn.is-live {
+  color: #0a9396;
+}
+
+.runbook-viewer__conn.is-warn {
+  color: #b45309;
+}
+
+.runbook-viewer__conn.is-err {
+  color: #b91c1c;
+}
+
+.runbook-viewer__pulse {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-right: 0.35rem;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.runbook-viewer__notice {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.runbook-viewer__notice--error {
+  border-color: rgba(185, 28, 28, 0.25);
+  background: rgba(185, 28, 28, 0.05);
+}
+
+.runbook-viewer__notice--warn {
+  border-color: rgba(180, 83, 9, 0.25);
+  background: rgba(180, 83, 9, 0.05);
+}
+
+.runbook-viewer__stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.runbook-viewer__stage app-thinker {
+  flex: 1;
+  min-height: 0;
+}

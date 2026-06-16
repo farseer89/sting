@@ -18,8 +18,10 @@ import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import {
   buildRelevanceContext,
   isRelevantForPicker,
+  isRelevantForSeedExpansion,
   type KeywordRelevanceContext,
 } from './keyword-picker.relevance';
+import { buildSearchResultsFromResearch } from './keyword-picker.search-results';
 import {
   mergeKeywordOption,
   pickPreselectedKeys,
@@ -30,8 +32,9 @@ import type { KeywordPickerOption, KeywordPickerSource } from './keyword-picker.
 import { normalizePhraseKey } from './keyword-picker.types';
 
 const SEARCH_DEBOUNCE_MS = 350;
-const RELATED_LIMIT = 25;
-const SEED_PHRASE_COUNT = 2;
+const SEARCH_RELATED_LIMIT = 50;
+const IDLE_POOL_PREVIEW = 25;
+const SEED_PHRASE_COUNT = 3;
 const DISCOVERY_POLL_MS = 1500;
 const DISCOVERY_POLL_MAX = 120;
 const MAX_AVATARS = 3;
@@ -121,11 +124,17 @@ export class ProtopipeKeywordPickerStore {
     const q = this._searchQuery().trim().toLowerCase();
     const selected = this._selected();
     const pool = this._pool().filter((o) => !selected.has(o.phraseKey));
-    if (!q) return pool.slice(0, 6);
-    return pool.filter((o) => o.phrase.toLowerCase().includes(q)).slice(0, 8);
+    if (!q) return pool.slice(0, IDLE_POOL_PREVIEW);
+    return pool.filter((o) => o.phrase.toLowerCase().includes(q)).slice(0, IDLE_POOL_PREVIEW);
   });
 
   readonly hasSearchQuery = computed(() => this._searchQuery().trim().length > 0);
+
+  readonly searchResultCount = computed(() => {
+    let count = this._searchRelated().length;
+    if (this._searchPrimary()) count += 1;
+    return count;
+  });
 
   async load(force = false): Promise<void> {
     if (this.loadTask && !force) {
@@ -176,9 +185,11 @@ export class ProtopipeKeywordPickerStore {
           const run = await this.pollDiscoveryRun(siteId, existing.id);
           this.mergeDiscoveryRun(run, map);
           this.applySuggestedAvatars(run.artifacts.suggestedAvatars ?? []);
+          await this.seedRelatedKeywords(map);
         } else if (existing.status === 'ready' || existing.status === 'confirmed') {
           this.mergeDiscoveryRun(existing, map);
           this.applySuggestedAvatars(existing.artifacts.suggestedAvatars ?? []);
+          await this.seedRelatedKeywords(map);
         } else if (existing.status === 'failed') {
           this._discoveryNote.set(
             existing.error?.message ?? 'Keyword discovery failed. Your saved keywords are shown below.',
@@ -515,6 +526,20 @@ export class ProtopipeKeywordPickerStore {
     }
   }
 
+  private isStrategyOnlySite(): boolean {
+    const profile = this.strategy.onboardingProfile();
+    const hostname = (this.strategy.site()?.hostname ?? '').toLowerCase();
+    return profile?.onboardingMode === 'strategy_only' || hostname === 'pending.local';
+  }
+
+  private relevanceOptions(): { strategyOnly?: boolean } {
+    return this.isStrategyOnlySite() ? { strategyOnly: true } : {};
+  }
+
+  private scoringConfig(): { strategyOnly?: boolean } {
+    return this.relevanceOptions();
+  }
+
   private mergeDiscoveryCandidate(
     c: ProtopipeDiscoveryCandidate,
     map: Map<string, KeywordPickerOption>,
@@ -522,7 +547,7 @@ export class ProtopipeKeywordPickerStore {
     const phrase = (c.phrase ?? '').trim();
     if (!phrase) return;
     const pickerSource = mapDiscoverySourceToPicker(c.source);
-    if (!isRelevantForPicker(phrase, this.relevanceCtx, pickerSource)) return;
+    if (!isRelevantForPicker(phrase, this.relevanceCtx, pickerSource, this.relevanceOptions())) return;
     mergeKeywordOption(map, {
       phraseKey: normalizePhraseKey(phrase),
       phrase,
@@ -582,7 +607,7 @@ export class ProtopipeKeywordPickerStore {
   private mergeGsc(q: ProtopipeDiscoverGscQuery, map: Map<string, KeywordPickerOption>): void {
     const phrase = (q.query ?? '').trim();
     if (!phrase) return;
-    if (!isRelevantForPicker(phrase, this.relevanceCtx, 'gsc')) return;
+    if (!isRelevantForPicker(phrase, this.relevanceCtx, 'gsc', this.relevanceOptions())) return;
     mergeKeywordOption(map, {
       phraseKey: normalizePhraseKey(phrase),
       phrase,
@@ -594,7 +619,7 @@ export class ProtopipeKeywordPickerStore {
   private mergeRanked(k: ProtopipeDiscoverRankedKeyword, map: Map<string, KeywordPickerOption>): void {
     const phrase = (k.phrase ?? '').trim();
     if (!phrase) return;
-    if (!isRelevantForPicker(phrase, this.relevanceCtx, 'ranked')) return;
+    if (!isRelevantForPicker(phrase, this.relevanceCtx, 'ranked', this.relevanceOptions())) return;
     mergeKeywordOption(map, {
       phraseKey: normalizePhraseKey(phrase),
       phrase,
@@ -612,7 +637,7 @@ export class ProtopipeKeywordPickerStore {
   ): void {
     const phrase = (idea.phrase ?? '').trim();
     if (!phrase) return;
-    if (!isRelevantForPicker(phrase, this.relevanceCtx, source)) return;
+    if (!isRelevantForPicker(phrase, this.relevanceCtx, source, this.relevanceOptions())) return;
     mergeKeywordOption(map, {
       phraseKey: normalizePhraseKey(phrase),
       phrase,
@@ -623,23 +648,20 @@ export class ProtopipeKeywordPickerStore {
     });
   }
 
-  private async seedRelatedKeywords(
-    map: Map<string, KeywordPickerOption>,
-    discovery: ProtopipeKeywordDiscoveryResponse,
-  ): Promise<void> {
+  private async seedRelatedKeywords(map: Map<string, KeywordPickerOption>): Promise<void> {
     const siteId = this.siteId;
     if (!siteId) return;
 
-    const seeds = this.pickSeedPhrases(map, discovery);
+    const seeds = this.pickSeedPhrases(map);
     for (const phrase of seeds) {
       try {
         const res = await this.api.researchQuery(siteId, {
           phrase,
           includeRelated: true,
-          relatedLimit: RELATED_LIMIT,
+          relatedLimit: SEARCH_RELATED_LIMIT,
         });
         for (const related of res.ads.related ?? []) {
-          this.mergeRelated(related, map);
+          this.mergeRelated(related, map, true);
         }
       } catch {
         // Related enrichment is best-effort on load.
@@ -647,10 +669,7 @@ export class ProtopipeKeywordPickerStore {
     }
   }
 
-  private pickSeedPhrases(
-    map: Map<string, KeywordPickerOption>,
-    discovery: ProtopipeKeywordDiscoveryResponse,
-  ): string[] {
+  private pickSeedPhrases(map: Map<string, KeywordPickerOption>): string[] {
     const seeds: string[] = [];
     const seen = new Set<string>();
 
@@ -678,19 +697,19 @@ export class ProtopipeKeywordPickerStore {
       if (tradeMatch?.[1]) addSeed(tradeMatch[1]);
     }
 
-    const ranked = (discovery.ranked.keywords ?? [])
-      .filter((k) => {
-        const phrase = (k.phrase ?? '').trim();
-        return phrase && isRelevantForPicker(phrase, this.relevanceCtx, 'ranked');
-      })
+    const ranked = [...map.values()]
+      .filter((o) => o.source === 'ranked' || o.source === 'ads')
+      .filter((o) =>
+        isRelevantForPicker(o.phrase, this.relevanceCtx, o.source === 'ads' ? 'ads' : 'ranked', this.relevanceOptions()),
+      )
       .sort((a, b) => (b.searchVolume ?? 0) - (a.searchVolume ?? 0));
-    for (const k of ranked) {
+    for (const o of ranked) {
       if (seeds.length >= SEED_PHRASE_COUNT) break;
-      addSeed(k.phrase);
+      addSeed(o.phrase);
     }
 
     if (seeds.length < SEED_PHRASE_COUNT) {
-      const scored = scoreKeywordOptions([...map.values()], this.relevanceCtx);
+      const scored = scoreKeywordOptions([...map.values()], this.relevanceCtx, this.scoringConfig());
       for (const o of scored) {
         if (seeds.length >= SEED_PHRASE_COUNT) break;
         addSeed(o.phrase);
@@ -700,10 +719,22 @@ export class ProtopipeKeywordPickerStore {
     return seeds.slice(0, SEED_PHRASE_COUNT);
   }
 
-  private mergeRelated(related: ProtopipeResearchRelatedKeyword, map: Map<string, KeywordPickerOption>): void {
+  private mergeRelated(
+    related: ProtopipeResearchRelatedKeyword,
+    map: Map<string, KeywordPickerOption>,
+    seedExpansion = false,
+  ): void {
     const phrase = (related.phrase ?? '').trim();
     if (!phrase) return;
-    if (!isRelevantForPicker(phrase, this.relevanceCtx, 'ads_related')) return;
+    if (!seedExpansion) {
+      if (!isRelevantForPicker(phrase, this.relevanceCtx, 'ads_related', this.relevanceOptions())) {
+        return;
+      }
+    } else if (
+      !isRelevantForSeedExpansion(phrase, this.relevanceCtx, 'ads_related', this.relevanceOptions())
+    ) {
+      return;
+    }
     mergeKeywordOption(map, {
       phraseKey: normalizePhraseKey(phrase),
       phrase,
@@ -726,7 +757,7 @@ export class ProtopipeKeywordPickerStore {
   }
 
   private applyScoredPool(map: Map<string, KeywordPickerOption>): void {
-    const scored = scoreKeywordOptions([...map.values()], this.relevanceCtx);
+    const scored = scoreKeywordOptions([...map.values()], this.relevanceCtx, this.scoringConfig());
     this._pool.set(scored);
     this._suggested.set(pickSuggestedPanel(scored));
 
@@ -757,7 +788,7 @@ export class ProtopipeKeywordPickerStore {
   private mergeIntoPool(option: KeywordPickerOption): void {
     const map = new Map(this._pool().map((o) => [o.phraseKey, o]));
     mergeKeywordOption(map, option);
-    const scored = scoreKeywordOptions([...map.values()], this.relevanceCtx);
+    const scored = scoreKeywordOptions([...map.values()], this.relevanceCtx, this.scoringConfig());
     this._pool.set(scored);
   }
 
@@ -769,39 +800,16 @@ export class ProtopipeKeywordPickerStore {
       const res = await this.api.researchQuery(siteId, {
         phrase,
         includeRelated: true,
-        relatedLimit: 20,
+        relatedLimit: SEARCH_RELATED_LIMIT,
       });
-      const metrics = res.ads.metrics;
-      if (metrics) {
-        this._searchPrimary.set({
-          phraseKey: normalizePhraseKey(phrase),
-          phrase,
-          searchVolume: metrics.avgMonthlySearches,
-          competition: metrics.competition,
-          competitionIndex: metrics.competitionIndex,
-          source: 'research',
-        });
-      } else {
-        this._searchPrimary.set({
-          phraseKey: normalizePhraseKey(phrase),
-          phrase,
-          source: 'research',
-        });
-      }
-
-      const related: KeywordPickerOption[] = [];
-      for (const row of res.ads.related ?? []) {
-        const p = (row.phrase ?? '').trim();
-        if (!p) continue;
-        if (!isRelevantForPicker(p, this.relevanceCtx, 'ads_related')) continue;
-        related.push({
-          phraseKey: normalizePhraseKey(p),
-          phrase: p,
-          searchVolume: row.avgMonthlySearches,
-          competition: row.competition,
-          source: 'ads_related',
-        });
-      }
+      const { primary, related } = buildSearchResultsFromResearch({
+        phrase,
+        metrics: res.ads.metrics,
+        adsRelated: res.ads.related,
+        gscSimilar: res.gsc.similarQueries,
+        ctx: this.relevanceCtx,
+      });
+      this._searchPrimary.set(primary);
       this._searchRelated.set(related);
     } catch (err) {
       this._error.set(parseProtopipeApiError(err, 'Search failed'));

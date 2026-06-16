@@ -2,10 +2,12 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  ElementRef,
   inject,
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import {
@@ -16,7 +18,7 @@ import {
   type KeywordPlanSortColumn,
   type KeywordPlanSortDirection,
 } from './keyword-picker.table';
-import { sourceLabel, formatKeywordVolume } from './keyword-picker.types';
+import { sourceLabel, formatKeywordVolume, formatCompetitionLabel, MIN_KEYWORD_VOLUME } from './keyword-picker.types';
 import type { ProtopipeSuggestedAvatar } from '@hive/contracts';
 import type { KeywordPickerOption } from './keyword-picker.types';
 import { ProtopipeHomeSidePanelService } from '../protopipe-home-side-panel.service';
@@ -36,19 +38,25 @@ import {
   styleUrl: './protopipe-keyword-picker.component.scss',
 })
 export class ProtopipeKeywordPickerComponent {
+  private static readonly EXPLORER_HINT_KEY = 'protopipe.keywords.explorerHintSeen';
+
   readonly store = inject(ProtopipeKeywordPickerStore);
   readonly sidePanel = inject(ProtopipeHomeSidePanelService);
   private readonly router = inject(Router);
   private readonly strategy = inject(ProtopipeStrategyService);
+
+  readonly explorerAnchor = viewChild<ElementRef<HTMLElement>>('explorerAnchor');
 
   readonly siteLabel = input('');
   readonly confirmed = output<void>();
 
   readonly formatCompetitionCell = formatCompetitionCell;
   readonly formatVolume = formatKeywordVolume;
+  readonly formatCompetition = formatCompetitionLabel;
   readonly fitLabel = fitLabel;
   readonly sourceLabel = sourceLabel;
   readonly columnTooltips = COLUMN_TOOLTIPS;
+  readonly minKeywordVolume = MIN_KEYWORD_VOLUME;
 
   readonly sortColumn = signal<KeywordPlanSortColumn>('opportunity');
   readonly sortDirection = signal<KeywordPlanSortDirection>('desc');
@@ -111,9 +119,20 @@ export class ProtopipeKeywordPickerComponent {
       case 'build':
         return 'We will save your keywords and audiences, then generate your content plan in the background.';
       default:
-        return 'Suggestions are matched to your business profile from onboarding. Add or remove keywords, then continue when you are ready.';
+        return 'Suggestions are matched to your business profile. Search for a topic to explore related keywords, or pick from the list below.';
     }
   });
+
+  constructor() {
+    try {
+      if (!localStorage.getItem(ProtopipeKeywordPickerComponent.EXPLORER_HINT_KEY)) {
+        this.sidePanel.ensureOpen();
+        localStorage.setItem(ProtopipeKeywordPickerComponent.EXPLORER_HINT_KEY, '1');
+      }
+    } catch {
+      /* localStorage unavailable */
+    }
+  }
 
   formatOpportunity(option: KeywordPickerOption): string {
     if (option.opportunityScore == null) return '—';
@@ -147,8 +166,44 @@ export class ProtopipeKeywordPickerComponent {
 
   onSuggestedRowClick(event: Event, option: KeywordPickerOption): void {
     const target = event.target as HTMLElement;
-    if (target.closest('input[type="checkbox"]') || target.closest('.kwpick__th-sort')) return;
+    if (
+      target.closest('input[type="checkbox"]') ||
+      target.closest('.kwpick__th-sort') ||
+      target.closest('.kwpick__explore-btn')
+    ) {
+      return;
+    }
     this.toggle(option);
+  }
+
+  onSearchInput(value: string): void {
+    this.store.setSearchQuery(value);
+  }
+
+  clearSearch(): void {
+    this.store.clearSearch();
+  }
+
+  addFromSearch(option: KeywordPickerOption): void {
+    this.store.addFromOption(option);
+  }
+
+  addCustomFromSearch(): void {
+    const q = this.store.searchQuery().trim();
+    if (q) {
+      this.store.addCustom(q);
+    }
+  }
+
+  exploreRelated(option: KeywordPickerOption, event: Event): void {
+    event.stopPropagation();
+    this.store.setSearchQuery(option.phrase);
+    this.explorerAnchor()?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  isLowVolume(option: KeywordPickerOption): boolean {
+    const vol = option.searchVolume ?? 0;
+    return vol < MIN_KEYWORD_VOLUME && option.keywordDifficulty == null && option.source !== 'gsc';
   }
 
   toggle(option: KeywordPickerOption): void {

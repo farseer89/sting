@@ -177,16 +177,42 @@ export function computeRelevanceScore(phrase: string, ctx: KeywordRelevanceConte
   return Math.min(100, score);
 }
 
+export function relevanceScoreForDisplay(phrase: string, ctx: KeywordRelevanceContext): number {
+  return computeRelevanceScore(phrase, ctx);
+}
+
+export interface RelevancePickerOptions {
+  /** Relaxed thresholds for strategy-only / pre-launch sites. */
+  strategyOnly?: boolean;
+}
+
 export function isRelevantForPicker(
   phrase: string,
   ctx: KeywordRelevanceContext,
   source: 'ranked' | 'ads' | 'ads_related' | 'research' | 'custom' | 'gsc',
+  options?: RelevancePickerOptions,
 ): boolean {
   if (source === 'custom' || source === 'research') return true;
   const score = computeRelevanceScore(phrase, ctx);
+  if (options?.strategyOnly) {
+    return score >= 15;
+  }
   if (source === 'ranked' || source === 'gsc') return score >= 15;
   if (source === 'ads') return score >= 28;
   return score >= 38;
+}
+
+/** Load-time related-keyword expansion — softer than auto-discovery ads_related gate. */
+export function isRelevantForSeedExpansion(
+  phrase: string,
+  ctx: KeywordRelevanceContext,
+  source: 'ads' | 'ads_related',
+  options?: RelevancePickerOptions,
+): boolean {
+  if (options?.strategyOnly) return isRelevantForPicker(phrase, ctx, source, { strategyOnly: true });
+  const score = computeRelevanceScore(phrase, ctx);
+  if (source === 'ads') return score >= 28;
+  return score >= 15;
 }
 
 function tokenize(raw: string | undefined): string[] {

@@ -65,10 +65,17 @@ export function computeOpportunityScore(option: KeywordPickerOption): number {
   return score;
 }
 
+export interface ScoreKeywordOptionsConfig {
+  /** Include long-tail keywords (volume below MIN_KEYWORD_VOLUME) in the pool. */
+  strategyOnly?: boolean;
+}
+
 export function scoreKeywordOptions(
   options: KeywordPickerOption[],
   ctx?: KeywordRelevanceContext,
+  config?: ScoreKeywordOptionsConfig,
 ): KeywordPickerOption[] {
+  const minVolume = config?.strategyOnly ? 0 : MIN_KEYWORD_VOLUME;
   return options
     .map((o) => ({
       ...o,
@@ -76,7 +83,12 @@ export function scoreKeywordOptions(
     }))
     .filter((o) => {
       const vol = effectiveVolume(o);
-      return vol >= MIN_KEYWORD_VOLUME || o.keywordDifficulty != null || o.source === 'gsc';
+      return (
+        vol >= minVolume ||
+        o.keywordDifficulty != null ||
+        o.source === 'gsc' ||
+        o.source === 'custom'
+      );
     })
     .map((o) => ({ ...o, opportunityScore: computeOpportunityScore(o) }))
     .sort((a, b) => {

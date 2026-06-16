@@ -1,6 +1,6 @@
 <header class="kwsearch__head">
   <span class="kwsearch__label">Search &amp; add</span>
-  <span class="kwsearch__meta">Google Ads related keywords</span>
+  <span class="kwsearch__meta">Google Ads + Search Console</span>
 </header>
 
 <div class="kwsearch__search">
@@ -8,7 +8,7 @@
   <input
     type="search"
     class="kwsearch__search-input"
-    placeholder="Search keywords…"
+    placeholder="Explore related keywords…"
     [value]="store.searchQuery()"
     (input)="onSearchInput($any($event.target).value)"
     aria-label="Search keywords"
@@ -55,7 +55,7 @@
     }
   } @else {
     @if (store.filteredPool().length === 0) {
-      <p class="kwsearch__empty">Type to search related keywords, or pick from suggestions.</p>
+      <p class="kwsearch__empty">Type a topic to explore related keywords from Google Ads.</p>
     } @else {
       @for (kw of store.filteredPool(); track kw.phraseKey) {
         <button type="button" class="kwsearch__result" role="option" (click)="toggle(kw)">

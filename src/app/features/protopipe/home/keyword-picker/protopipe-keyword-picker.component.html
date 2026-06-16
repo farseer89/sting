@@ -213,7 +213,83 @@
       }
       @default {
         <div class="kwpick__body">
-          <article class="kwpick__panel kwpick__panel--suggested">
+          <section class="kwpick__explorer" #explorerAnchor aria-label="Keyword explorer">
+            <div class="kwpick__explorer-search">
+              <span class="kwpick__explorer-icon" aria-hidden="true">⌕</span>
+              <input
+                type="search"
+                class="kwpick__explorer-input"
+                placeholder="Enter a topic to explore related keywords…"
+                [value]="store.searchQuery()"
+                (input)="onSearchInput($any($event.target).value)"
+                aria-label="Explore related keywords"
+              />
+              @if (store.hasSearchQuery()) {
+                <button
+                  type="button"
+                  class="kwpick__explorer-clear"
+                  (click)="clearSearch()"
+                  aria-label="Clear search"
+                >
+                  ×
+                </button>
+              }
+            </div>
+
+            @if (store.searching()) {
+              <p class="kwpick__explorer-status">Finding related keywords…</p>
+            } @else if (store.hasSearchQuery()) {
+              <header class="kwpick__explorer-head">
+                <span class="kwpick__explorer-title">
+                  Related ideas for "{{ store.searchQuery().trim() }}"
+                </span>
+                @if (store.searchResultCount() > 0) {
+                  <span class="kwpick__explorer-count">{{ store.searchResultCount() }} ideas</span>
+                }
+              </header>
+
+              <div class="kwpick__explorer-results">
+                @if (store.searchPrimary(); as primary) {
+                  <button
+                    type="button"
+                    class="kwpick__explorer-row kwpick__explorer-row--primary"
+                    (click)="addFromSearch(primary)"
+                  >
+                    <span class="kwpick__explorer-phrase">{{ primary.phrase }}</span>
+                    <span class="kwpick__explorer-meta">
+                      <span class="kwpick__pill">Your search</span>
+                      <span>{{ formatVolume(primary.searchVolume) }}/mo</span>
+                      <span>{{ formatCompetition(primary) }}</span>
+                      <span class="kwpick__explorer-add">Add</span>
+                    </span>
+                  </button>
+                }
+                @for (kw of store.searchRelated(); track kw.phraseKey) {
+                  <button type="button" class="kwpick__explorer-row" (click)="addFromSearch(kw)">
+                    <span class="kwpick__explorer-phrase">{{ kw.phrase }}</span>
+                    <span class="kwpick__explorer-meta">
+                      <span class="kwpick__pill">{{ sourceLabel(kw.source) }}</span>
+                      <span>{{ formatVolume(kw.searchVolume) }}/mo</span>
+                      <span>{{ formatCompetition(kw) }}</span>
+                      <span class="kwpick__explorer-fit">{{ fitLabel(kw.relevanceScore) }}</span>
+                      <span class="kwpick__explorer-add">Add</span>
+                    </span>
+                  </button>
+                }
+                <button type="button" class="kwpick__explorer-row kwpick__explorer-row--custom" (click)="addCustomFromSearch()">
+                  <span class="kwpick__explorer-phrase">Add "{{ store.searchQuery().trim() }}" as custom keyword</span>
+                  <span class="kwpick__explorer-meta">
+                    <span class="kwpick__explorer-add">Add custom</span>
+                  </span>
+                </button>
+              </div>
+            }
+          </section>
+
+          <article
+            class="kwpick__panel kwpick__panel--suggested"
+            [class.kwpick__panel--dimmed]="store.hasSearchQuery()"
+          >
             <header class="kwpick__panel-head">
               <span class="kwpick__panel-label">Suggested for you</span>
               <span class="kwpick__panel-meta">
@@ -222,7 +298,7 @@
             </header>
             @if (sortedPlanRows().length === 0) {
               <p class="kwpick__empty kwpick__panel-body">
-                No suggestions yet — open Search on the right to add keywords.
+                No suggestions yet — search above to explore related keywords or add your own.
               </p>
             } @else {
               <div class="kwpick__panel-body">
@@ -295,6 +371,7 @@
                             Source <span class="kwpick__sort-ind">{{ sortIndicator('source') }}</span>
                           </button>
                         </th>
+                        <th scope="col" class="kwpick__th-actions"><span class="kwpick__sr">Explore</span></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -319,6 +396,9 @@
                           <td class="kwpick__td-phrase">{{ kw.phrase }}</td>
                           <td class="kwpick__td-num">
                             <span class="kwpick__td-main">{{ formatVolume(kw.searchVolume) }}</span>
+                            @if (isLowVolume(kw)) {
+                              <span class="kwpick__td-sub">Low volume</span>
+                            }
                           </td>
                           <td class="kwpick__td-comp">
                             @if (formatCompetitionCell(kw); as comp) {
@@ -343,6 +423,16 @@
                           </td>
                           <td>
                             <span class="kwpick__pill">{{ sourceLabel(kw.source, kw.discoverySource) }}</span>
+                          </td>
+                          <td class="kwpick__td-actions">
+                            <button
+                              type="button"
+                              class="kwpick__explore-btn"
+                              title="Explore related keywords"
+                              (click)="exploreRelated(kw, $event)"
+                            >
+                              Explore
+                            </button>
                           </td>
                         </tr>
                       }

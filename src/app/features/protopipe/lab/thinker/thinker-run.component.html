@@ -10,6 +10,16 @@
     </div>
 
     <div class="top__controls">
+      @if (thought()) {
+        <button
+          type="button"
+          class="top__export"
+          [disabled]="exportingRunbook()"
+          (click)="exportRunbook()"
+        >
+          {{ exportingRunbook() ? 'Exporting…' : 'Export runbook PDF' }}
+        </button>
+      }
       <button type="button" class="top__back" (click)="back()">← Writer</button>
       <button
         type="button"

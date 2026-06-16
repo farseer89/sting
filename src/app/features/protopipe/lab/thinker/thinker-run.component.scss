@@ -76,7 +76,8 @@
 
 .top__controls { display: flex; align-items: center; gap: 0.5rem; }
 .top__back,
-.top__mode {
+.top__mode,
+.top__export {
   background: var(--void-glass-bg);
   border: 0.5px solid var(--void-glass-border);
   border-radius: 7px;
@@ -86,6 +87,15 @@
   cursor: pointer;
 
   &:hover { color: var(--void-ink-body); }
+}
+.top__export {
+  color: var(--void-ink-body);
+  font-weight: 500;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: wait;
+  }
 }
 .top__mode.is-on {
   color: var(--void-ocean);

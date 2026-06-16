@@ -12,6 +12,7 @@ import type { ArticleGenerationRunDto, ArticleGenerationStep } from '@hive/contr
 import { ProtopipeApiService } from '../../protopipe-api.service';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 import { articleRunToThought } from './article-run-to-thought';
+import { exportThoughtRunbookPdf } from './thought-runbook-pdf';
 import { ThinkerComponent, type ThinkerMode } from './thinker.component';
 
 /** Matches the backend orphan-takeover window for stuck "running" runs. */
@@ -47,6 +48,7 @@ export class ThinkerRunComponent implements OnInit {
   readonly loadError = signal<string | null>(null);
   readonly actionError = signal<string | null>(null);
   readonly rerunning = signal(false);
+  readonly exportingRunbook = signal(false);
   /** Live link health for the polling loop, surfaced in the status strip. */
   readonly connection = signal<Connection>('idle');
 
@@ -135,6 +137,20 @@ export class ThinkerRunComponent implements OnInit {
 
   toggleMode(): void {
     this.mode.update((m) => (m === 'calm' ? 'debug' : 'calm'));
+  }
+
+  async exportRunbook(): Promise<void> {
+    const t = this.thought();
+    if (!t || this.exportingRunbook()) return;
+    this.exportingRunbook.set(true);
+    this.actionError.set(null);
+    try {
+      await exportThoughtRunbookPdf(t, { runId: this.runId, siteId: this.siteId });
+    } catch {
+      this.actionError.set('Could not export runbook PDF. Try again in a moment.');
+    } finally {
+      this.exportingRunbook.set(false);
+    }
   }
 
   back(): void {

@@ -67,6 +67,8 @@ export interface ThoughtStep {
   events: ThoughtEvent[];
   error?: ThoughtStepError;
   promptVersion?: string;
+  /** Estimated API + LLM cost for this step (USD). */
+  costUsd?: number;
 }
 
 /** A typed connection point carrying an artifact between Thoughts. */
@@ -88,4 +90,6 @@ export interface Thought {
   outputs: PortValue[];
   startedAt?: string;
   finishedAt?: string;
+  /** Sum of step costs when known (USD). */
+  totalCostUsd?: number;
 }

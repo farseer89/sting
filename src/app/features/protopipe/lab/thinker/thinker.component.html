@@ -13,7 +13,11 @@
       }
     </div>
 
-    <span class="thinker__status" [class]="'is-' + thought().status">{{ statusLabel() }}</span>
+      <span class="thinker__status" [class]="'is-' + thought().status">{{ statusLabel() }}</span>
+
+      @if (totalCostLabel(); as totalCost) {
+        <span class="thinker__cost" [attr.title]="'Estimated run cost'">{{ totalCost }}</span>
+      }
 
     <div class="thinker__progress" [attr.aria-label]="progress() + '% complete'">
       <span class="thinker__progress-fill" [style.width.%]="progress()"></span>
@@ -57,6 +61,7 @@
                   <span class="rail__meta">
                     @if (step.status === 'running') { <span class="rail__live">live</span> }
                     @else if (step.durationMs != null) { {{ formatDuration(step.durationMs) }} }
+                    @if (formatCost(step.costUsd); as cost) { <span class="rail__cost">{{ cost }}</span> }
                     @if (step.attempt > 1) { <span class="rail__attempt">×{{ step.attempt }}</span> }
                   </span>
                 } @else if (step.summary) {
@@ -77,6 +82,9 @@
           @if (!isCustomer()) {
             <span class="stage__chip" [class]="'is-' + step.status">{{ step.status }}</span>
             @if (step.promptVersion) { <span class="stage__ver">{{ step.promptVersion }}</span> }
+            @if (formatCost(step.costUsd); as cost) {
+              <span class="stage__cost" title="Estimated step cost">{{ cost }}</span>
+            }
           }
         </header>
 

@@ -12,6 +12,7 @@ import type {
   ThoughtStep,
   ThoughtStepStatus,
 } from './thought.model';
+import { formatThinkerCostUsd, sumCosts } from './thinker-cost';
 
 export type ThinkerAudience = 'operator' | 'customer';
 export type ThinkerMode = 'calm' | 'debug';
@@ -84,6 +85,15 @@ export class ThinkerComponent {
     return Math.round((done / steps.length) * 100);
   });
 
+  readonly totalCostLabel = computed(() => {
+    const explicit = this.thought().totalCostUsd;
+    if (explicit != null && explicit > 0) {
+      return formatThinkerCostUsd(explicit);
+    }
+    const fromSteps = sumCosts(this.steps().map((s) => s.costUsd));
+    return formatThinkerCostUsd(fromSteps);
+  });
+
   readonly hasDiff = computed(() => {
     const s = this.activeStep();
     return !!s?.previousOutput?.length && !!s?.output?.length;
@@ -124,6 +134,10 @@ export class ThinkerComponent {
     if (s < 60) return `${s.toFixed(s < 10 ? 1 : 0)}s`;
     const m = Math.floor(s / 60);
     return `${m}m ${Math.round(s % 60)}s`;
+  }
+
+  formatCost(costUsd?: number): string | null {
+    return formatThinkerCostUsd(costUsd);
   }
 
   formatTime(iso?: string): string {

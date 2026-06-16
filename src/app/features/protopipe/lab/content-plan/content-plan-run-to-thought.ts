@@ -11,6 +11,7 @@ import type {
   ThoughtStep,
   ThoughtStepStatus,
 } from '../thinker/thought.model';
+import { sumCosts } from '../thinker/thinker-cost';
 
 /**
  * Adapter: project a SiteContentPlan run onto the generic Thought model so the
@@ -238,11 +239,14 @@ export function contentPlanRunToThought(plan: ProtopipeSiteContentPlan): Thought
         ? { message: finished?.error ?? plan.error ?? 'Step failed.' }
         : undefined;
 
+    const stepCostUsd = sumCosts(evs.map((e) => e.costUsd));
+
     return {
       id: step,
       label: meta.label,
       summary: finished?.note ?? meta.summary,
       status,
+      costUsd: stepCostUsd,
       startedAt: started?.startedAt,
       finishedAt: finished?.finishedAt,
       durationMs: finished?.durationMs,
@@ -280,6 +284,7 @@ export function contentPlanRunToThought(plan: ProtopipeSiteContentPlan): Thought
     thinkerKind: 'content-plan',
     title: `Content plan · v${plan.version}`,
     summary: plan.narrative?.headline ?? 'Site content plan generation',
+    totalCostUsd: plan.costUsd ?? sumCosts(steps.map((s) => s.costUsd)),
     status: runStatus(plan),
     currentStepId,
     steps,

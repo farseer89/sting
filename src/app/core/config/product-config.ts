@@ -29,6 +29,8 @@ export interface ProductConfig {
   auth: ProductAuthConfig;
   billing: ProductBillingConfig;
   routes: ProductRoutesConfig;
+  /** Optional sales CTA (e.g. Calendly) for website-build upsell. */
+  scheduleCallUrl?: string;
 }
 
 export const PRODUCT_CONFIG = new InjectionToken<ProductConfig>('PRODUCT_CONFIG');

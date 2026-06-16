@@ -31,8 +31,8 @@
         <div class="ribbon" aria-hidden="true"></div>
         <div class="glow" aria-hidden="true"></div>
         <div class="reveal">
-          <p class="eyebrow">All set</p>
-          <h1 class="hero">Your SEO workspace is ready.</h1>
+          <p class="eyebrow">{{ copy().celebrationEyebrow }}</p>
+          <h1 class="hero">{{ copy().celebrationHeadline }}</h1>
           <p class="welcome-line">
             @if (form.controls.businessName.value) {
               We've set everything up for {{ form.controls.businessName.value }}.
@@ -60,34 +60,74 @@
               (onClick)="enterApp()"
             />
           </div>
+          @if (scheduleCallUrl()) {
+            <aside
+              class="celebration-upsell"
+              [class.celebration-upsell--prominent]="isStrategyOnly()"
+            >
+              <p class="celebration-upsell__title">
+                Need a website that publishes your content?
+              </p>
+              <p class="celebration-upsell__body">
+                We build SEO-ready sites that auto-publish your articles.
+              </p>
+              <button type="button" class="celebration-upsell__link" (click)="openScheduleCall()">
+                Schedule a call
+                <i class="pi pi-external-link" aria-hidden="true"></i>
+              </button>
+            </aside>
+          }
         </div>
       </section>
     } @else {
     @if (step() === 1) {
       <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
-        <p class="eyebrow">Your website</p>
-        <h1 class="question">What's your website?</h1>
-        <p class="helper">
-          This is how we find the keywords you already rank for and the ones
-          worth chasing.
-        </p>
+        <p class="eyebrow">{{ copy().step1Eyebrow }}</p>
+        <h1 class="question">{{ copy().step1Question }}</h1>
+        <p class="helper">{{ copy().step1Helper }}</p>
 
-        <div class="field">
-          <input
-            #urlInput
-            id="websiteUrl"
-            type="url"
-            formControlName="websiteUrl"
-            pInputText
-            autocomplete="url"
-            inputmode="url"
-            placeholder="mauielectric.com"
-          />
-          <small class="helper-inline">
-            We'll scan your site to understand what you do and tailor your
-            keyword suggestions.
-          </small>
+        <div class="scope-picker mode-picker" role="radiogroup" aria-label="Onboarding path">
+          @for (option of onboardingModeOptions; track option.id) {
+            <button
+              type="button"
+              class="scope-option"
+              role="radio"
+              [class.scope-option--active]="onboardingMode() === option.id"
+              [attr.aria-checked]="onboardingMode() === option.id"
+              (click)="selectMode(option.id)"
+            >
+              <i [class]="option.icon" aria-hidden="true"></i>
+              <span class="scope-option__title">{{ option.label }}</span>
+              <span class="scope-option__desc">{{ option.description }}</span>
+            </button>
+          }
         </div>
+
+        @if (onboardingMode() === 'existing_site') {
+          <div class="field mode-detail">
+            <input
+              #urlInput
+              id="websiteUrl"
+              type="url"
+              formControlName="websiteUrl"
+              pInputText
+              autocomplete="url"
+              inputmode="url"
+              placeholder="mauielectric.com"
+            />
+            <small class="helper-inline">
+              We'll scan your site to understand what you do and tailor your
+              keyword suggestions.
+            </small>
+          </div>
+        }
+
+        @if (onboardingMode() === 'strategy_only') {
+          <p class="mode-callout">
+            We'll research competitors and search demand from what you tell us in
+            the next steps — no website required.
+          </p>
+        }
 
         <div class="actions">
           <span class="enter-hint">press Enter ↵</span>
@@ -104,11 +144,8 @@
     @if (step() === 2) {
       <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
         <p class="eyebrow">Your offer</p>
-        <h1 class="question">What services are you trying to sell?</h1>
-        <p class="helper">
-          Add the things you want more customers for — one at a time. These
-          drive your keyword suggestions.
-        </p>
+        <h1 class="question">{{ copy().step2Question }}</h1>
+        <p class="helper">{{ copy().step2Helper }}</p>
 
         <div class="field">
           <div class="chip-input">
@@ -239,12 +276,8 @@
     @if (step() === 4) {
       <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
         <p class="eyebrow">Your competition</p>
-        <h1 class="question">Who are your competitors?</h1>
-        <p class="helper">
-          Add a few competitor sites (or ones you admire). We'll mine the
-          keywords they already rank for. Optional, but it makes your
-          suggestions much sharper.
-        </p>
+        <h1 class="question">{{ copy().step4Question }}</h1>
+        <p class="helper">{{ copy().step4Helper }}</p>
 
         <div class="field">
           <div class="chip-input">
@@ -289,7 +322,11 @@
             </ul>
           }
           <small class="helper-inline">
-            Add up to {{ maxCompetitors }}, or skip with Continue.
+            @if (isStrategyOnly()) {
+              {{ copy().step4Footer }}
+            } @else {
+              Add up to {{ maxCompetitors }}, or skip with Continue.
+            }
           </small>
         </div>
 
@@ -389,8 +426,8 @@
     @if (step() === 6 && !isComplete()) {
       <form [formGroup]="form" class="step" (ngSubmit)="submit()">
         <p class="eyebrow">Last thing</p>
-        <h1 class="question">What's the business called?</h1>
-        <p class="helper">We'll use this name across your dashboard.</p>
+        <h1 class="question">{{ copy().step6Question }}</h1>
+        <p class="helper">{{ copy().step6Helper }}</p>
 
         <div class="field">
           <input
@@ -400,7 +437,7 @@
             formControlName="businessName"
             pInputText
             autocomplete="organization"
-            placeholder="Maui Electric"
+            [placeholder]="copy().step6Placeholder"
           />
         </div>
 
@@ -408,7 +445,7 @@
           <span class="enter-hint">press Enter ↵</span>
           <p-button
             type="submit"
-            [label]="isSubmitting() ? 'Saving…' : 'Find my keywords'"
+            [label]="isSubmitting() ? 'Saving…' : copy().submitLabel"
             [disabled]="isSubmitting()"
             icon="pi pi-arrow-right"
             iconPos="right"

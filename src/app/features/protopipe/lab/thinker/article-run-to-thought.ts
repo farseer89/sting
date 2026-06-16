@@ -17,6 +17,7 @@ import type {
   ThoughtStep,
   ThoughtStepStatus,
 } from './thought.model';
+import { sumCosts } from './thinker-cost';
 
 /**
  * Adapter: project a live ArticleGenerationRun (the 10-step writer pipeline)
@@ -366,6 +367,7 @@ function expandCognitiveTrainSteps(
     label: train.label,
     summary: trainStepSummary(train),
     status: mapTrainStatus(train.status),
+    costUsd: train.costUsd,
     startedAt: parent.startedAt,
     finishedAt:
       train.status === 'complete' || train.status === 'failed' || train.status === 'skipped'
@@ -478,6 +480,7 @@ function mapEvents(events: ArticleGenerationEvent[]): ThoughtEvent[] {
     const parts: string[] = [e.status];
     if (e.note) parts.push(e.note);
     if (e.error) parts.push(e.error);
+    if (e.cost != null && e.cost > 0) parts.push(`$${e.cost.toFixed(4)}`);
     return {
       at: e.finishedAt ?? e.startedAt,
       level: e.status === 'failed' ? 'error' : e.status === 'retried' ? 'warn' : 'info',
@@ -558,6 +561,7 @@ export function articleRunToThought(run: ArticleGenerationRunDto): Thought {
       label: meta.label,
       summary,
       status: stepStatus,
+      costUsd: sumCosts(evs.map((e) => e.cost)),
       startedAt: started?.startedAt,
       finishedAt: finished?.finishedAt,
       durationMs: finished?.durationMs,
@@ -596,6 +600,7 @@ export function articleRunToThought(run: ArticleGenerationRunDto): Thought {
     thinkerKind: 'writer',
     title: keyword ? `Article · ${keyword}` : 'Article run',
     summary: `Writer pipeline · ${run.articleType.replace(/_/g, ' ')}`,
+    totalCostUsd: sumCosts(expandedSteps.map((s) => s.costUsd)),
     status: runStatus(run),
     currentStepId,
     steps: expandedSteps,

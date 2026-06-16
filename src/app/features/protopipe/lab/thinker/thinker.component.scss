@@ -78,6 +78,16 @@
   &.is-failed { color: #fca5a5; border-color: rgba(252, 165, 165, 0.4); }
 }
 
+.thinker__cost {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--void-ink-muted);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  background: var(--void-tile-bg);
+  border: 0.5px solid var(--void-glass-border);
+}
+
 .thinker__progress {
   width: 90px;
   height: 4px;
@@ -204,6 +214,10 @@
 .rail__meta--summary { color: var(--void-ink-faint); font-variant-numeric: normal; }
 .rail__live { color: var(--void-ocean); text-transform: uppercase; letter-spacing: 0.06em; }
 .rail__attempt { color: #f3d28a; }
+.rail__cost {
+  color: var(--void-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
 
 /* ---- Stage ---- */
 .stage {
@@ -239,6 +253,12 @@
   &.is-failed { color: #fca5a5; border-color: rgba(252, 165, 165, 0.4); }
 }
 .stage__ver { font-size: 9px; color: var(--void-ink-faint); margin-left: auto; }
+.stage__cost {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--void-ink-muted);
+  margin-left: 0.35rem;
+}
 .stage__summary {
   margin: 0 0 0.7rem;
   font-size: 13px;

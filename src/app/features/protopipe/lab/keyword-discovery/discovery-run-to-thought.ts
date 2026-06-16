@@ -6,6 +6,7 @@ import type {
   ThoughtStep,
   ThoughtStepStatus,
 } from '../thinker/thought.model';
+import { formatThinkerCostUsd, sumCosts } from '../thinker/thinker-cost';
 import type {
   DiscoveryCandidate,
   DiscoverySerpSignal,
@@ -141,8 +142,7 @@ function num(n: number | undefined, digits = 0): string {
 }
 
 function usd(n: number | undefined): string {
-  if (n == null || !Number.isFinite(n)) return '—';
-  return `$${n.toFixed(n < 1 ? 4 : 2)}`;
+  return formatThinkerCostUsd(n) ?? '—';
 }
 
 /** Short labels for raw DFS serp_item_types, for the compact SERP column. */
@@ -454,14 +454,14 @@ export function discoveryRunToThought(run: KeywordDiscoveryRunDto): Thought {
     }
 
     const meta = STEP_META[step];
-    const stepCost = evs.reduce((sum, e) => sum + (e.costUsd ?? 0), 0);
-    const summary = stepCost > 0 ? `${meta.summary} (${usd(stepCost)})` : meta.summary;
+    const stepCostUsd = sumCosts(evs.map((e) => e.costUsd));
 
     return {
       id: step,
       label: meta.label,
-      summary,
+      summary: meta.summary,
       status,
+      costUsd: stepCostUsd,
       startedAt: started?.startedAt,
       finishedAt: finished?.finishedAt,
       durationMs: finished?.durationMs,
@@ -488,6 +488,7 @@ export function discoveryRunToThought(run: KeywordDiscoveryRunDto): Thought {
 
   const total = run.costSummary?.totalUsd;
   const candidateCount = run.artifacts.scoredCandidates?.length ?? 0;
+  const stepCosts = sumCosts(steps.map((s) => s.costUsd));
 
   return {
     id: run.id,
@@ -498,7 +499,8 @@ export function discoveryRunToThought(run: KeywordDiscoveryRunDto): Thought {
     summary:
       total != null
         ? `Discovery pipeline · ${candidateCount} candidates · ${usd(total)}`
-        : 'Discovery pipeline',
+        : `Discovery pipeline · ${candidateCount} candidates`,
+    totalCostUsd: total ?? stepCosts,
     status: runStatus(run),
     currentStepId,
     steps,

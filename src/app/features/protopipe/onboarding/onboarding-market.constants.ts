@@ -1,6 +1,31 @@
 /** Where the business's customers are — drives step 5 of onboarding. */
 export type CustomerMarketScope = 'local' | 'national' | 'worldwide';
 
+/** How the user started onboarding — step 1 fork. */
+export type OnboardingModeId = 'existing_site' | 'strategy_only';
+
+export interface OnboardingModeOption {
+  id: OnboardingModeId;
+  label: string;
+  description: string;
+  icon: string;
+}
+
+export const ONBOARDING_MODE_OPTIONS: readonly OnboardingModeOption[] = [
+  {
+    id: 'existing_site',
+    label: 'I have a website',
+    description: 'Scan my site for keywords I rank for and gaps to fill',
+    icon: 'pi pi-globe',
+  },
+  {
+    id: 'strategy_only',
+    label: 'Planning or testing an idea',
+    description: 'Research demand before you launch — no site needed',
+    icon: 'pi pi-lightbulb',
+  },
+];
+
 export interface MarketScopeOption {
   id: CustomerMarketScope;
   label: string;

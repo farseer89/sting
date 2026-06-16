@@ -11,7 +11,7 @@ import {
   type WritableSignal,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   AutoComplete,
@@ -22,7 +22,11 @@ import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
 import { MessageService } from 'primeng/api';
 import { Toast } from 'primeng/toast';
-import type { ProtopipeOnboardingProfile, ProtopipeSerpLocationOption } from '@hive/contracts';
+import type {
+  ProtopipeOnboardingMode,
+  ProtopipeOnboardingProfile,
+  ProtopipeSerpLocationOption,
+} from '@hive/contracts';
 import { ProtopipeApiService } from '../protopipe-api.service';
 import { ProtopipeOnboardingStateService } from './protopipe-onboarding-state.service';
 import { parseProtopipeApiError } from '../protopipe-http.util';
@@ -30,8 +34,10 @@ import { PRODUCT_CONFIG } from '../../../core/config/product-config';
 import {
   MARKET_COUNTRIES,
   MARKET_SCOPE_OPTIONS,
+  ONBOARDING_MODE_OPTIONS,
   type CustomerMarketScope,
   type MarketCountryOption,
+  type OnboardingModeId,
 } from './onboarding-market.constants';
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
@@ -55,8 +61,13 @@ export class ProtopipeOnboardingComponent implements OnInit {
   private readonly api = inject(ProtopipeApiService);
   private readonly state = inject(ProtopipeOnboardingStateService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly messages = inject(MessageService);
   readonly product = inject(PRODUCT_CONFIG);
+
+  readonly onboardingModeOptions = ONBOARDING_MODE_OPTIONS;
+  readonly onboardingMode = signal<OnboardingModeId | null>(null);
+  readonly isStrategyOnly = computed(() => this.onboardingMode() === 'strategy_only');
 
   readonly totalSteps = TOTAL_STEPS;
   readonly maxServices = MAX_SERVICES;
@@ -90,7 +101,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
   );
 
   readonly form = this.fb.nonNullable.group({
-    websiteUrl: ['', [Validators.required, Validators.maxLength(300)]],
+    websiteUrl: ['', [Validators.maxLength(300)]],
     city: ['', [Validators.maxLength(80)]],
     state: ['', [Validators.maxLength(80)]],
     businessName: [
@@ -106,6 +117,42 @@ export class ProtopipeOnboardingComponent implements OnInit {
   readonly progressPercent = computed(() =>
     this.isComplete() ? 100 : Math.round((this.step() / this.totalSteps) * 100),
   );
+
+  readonly copy = computed(() => {
+    const strategy = this.isStrategyOnly();
+    return {
+      celebrationEyebrow: 'All set',
+      celebrationHeadline: strategy
+        ? 'Your market strategy is ready.'
+        : 'Your SEO workspace is ready.',
+      step1Eyebrow: 'Getting started',
+      step1Question: 'How are you starting?',
+      step1Helper: "We'll tailor keyword research to your situation.",
+      step2Question: strategy
+        ? 'What would you sell?'
+        : 'What services are you trying to sell?',
+      step2Helper: strategy
+        ? 'Add the services you want to test — these drive your market research.'
+        : 'Add the things you want more customers for — one at a time. These drive your keyword suggestions.',
+      step4Question: strategy ? 'Who would you compete with?' : 'Who are your competitors?',
+      step4Helper: strategy
+        ? "Add at least one competitor site. We'll learn from the keywords they rank for."
+        : "Add a few competitor sites (or ones you admire). We'll mine the keywords they already rank for. Optional, but it makes your suggestions much sharper.",
+      step4Footer: strategy
+        ? 'Add at least 1 to continue.'
+        : 'Add up to {{max}}, or skip with Continue.',
+      step6Question: strategy
+        ? 'What should we call this project?'
+        : "What's the business called?",
+      step6Helper: strategy
+        ? "We'll use this name across your workspace."
+        : "We'll use this name across your dashboard.",
+      step6Placeholder: strategy ? 'Maui EV idea' : 'Maui Electric',
+      submitLabel: strategy ? 'Build my strategy' : 'Find my keywords',
+    };
+  });
+
+  readonly scheduleCallUrl = computed(() => this.product.scheduleCallUrl?.trim() || '');
 
   readonly summaryChips = computed<readonly { label: string; value: string }[]>(() => {
     const v = this.formValue();
@@ -140,7 +187,9 @@ export class ProtopipeOnboardingComponent implements OnInit {
     if (marketLabel) chips.push({ label: 'Market', value: marketLabel });
 
     const url = (v.websiteUrl ?? '').trim();
-    if (url) chips.push({ label: 'Site', value: url.replace(/^https?:\/\//i, '') });
+    if (url && !this.isStrategyOnly()) {
+      chips.push({ label: 'Site', value: url.replace(/^https?:\/\//i, '') });
+    }
 
     return chips;
   });
@@ -160,6 +209,11 @@ export class ProtopipeOnboardingComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
+    const startParam = this.route.snapshot.queryParamMap.get('start');
+    if (startParam === 'strategy') {
+      this.selectMode('strategy_only');
+    }
+
     try {
       const boot = await this.state.load();
       const id = boot.primarySiteId || boot.sites[0]?.id || null;
@@ -167,6 +221,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
 
       const site = boot.sites.find((s) => s.id === id);
       if (site && site.hostname && !site.hostname.endsWith('pending.local')) {
+        this.selectMode('existing_site');
         this.form.controls.websiteUrl.setValue(site.url);
       }
     } catch (err) {
@@ -199,6 +254,19 @@ export class ProtopipeOnboardingComponent implements OnInit {
     if (current > 1) {
       this.step.set((current - 1) as Step);
     }
+  }
+
+  selectMode(mode: OnboardingModeId): void {
+    this.onboardingMode.set(mode);
+    const urlControl = this.form.controls.websiteUrl;
+    if (mode === 'existing_site') {
+      urlControl.setValidators([Validators.required, Validators.maxLength(300)]);
+    } else {
+      urlControl.clearValidators();
+      urlControl.setValue('');
+      urlControl.setValidators([Validators.maxLength(300)]);
+    }
+    urlControl.updateValueAndValidity();
   }
 
   // --- Services chip input ---
@@ -383,7 +451,12 @@ export class ProtopipeOnboardingComponent implements OnInit {
     // Flush any unconfirmed chip drafts before validating.
     this.addService();
     this.addCompetitor();
-    if (!this.form.valid || this.services().length === 0 || !this.isMarketStepValid()) {
+    if (
+      !this.form.valid ||
+      this.services().length === 0 ||
+      !this.isCompetitorsStepValid() ||
+      !this.isMarketStepValid()
+    ) {
       this.form.markAllAsTouched();
       this.step.set(this.firstInvalidStep());
       return;
@@ -391,7 +464,9 @@ export class ProtopipeOnboardingComponent implements OnInit {
 
     this.isSubmitting.set(true);
     const v = this.form.getRawValue();
-    const websiteUrl = this.normalizeUrl(v.websiteUrl);
+    const mode = this.onboardingMode() ?? 'existing_site';
+    const websiteUrl =
+      mode === 'strategy_only' ? '' : this.normalizeUrl(v.websiteUrl);
     const scope = this.customerScope();
     const localLocation = this.selectedLocation();
     const country = this.selectedCountry();
@@ -419,6 +494,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
         .filter(Boolean);
 
       const profile: ProtopipeOnboardingProfile = {
+        onboardingMode: mode as ProtopipeOnboardingMode,
         services,
         customerAvatars: avatars,
         competitors: this.competitors(),
@@ -457,9 +533,16 @@ export class ProtopipeOnboardingComponent implements OnInit {
     await this.router.navigateByUrl('/home');
   }
 
+  openScheduleCall(): void {
+    const url = this.scheduleCallUrl();
+    if (!url) return;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
   private focusForStep(s: Step): void {
-    if (s === 1) this.urlInput()?.nativeElement?.focus();
-    else if (s === 2) this.serviceInput()?.nativeElement?.focus();
+    if (s === 1 && this.onboardingMode() === 'existing_site') {
+      this.urlInput()?.nativeElement?.focus();
+    } else if (s === 2) this.serviceInput()?.nativeElement?.focus();
     else if (s === 3) this.avatarInput0()?.nativeElement?.focus();
     else if (s === 4) this.competitorInput()?.nativeElement?.focus();
     else if (s === 6) this.nameInput()?.nativeElement?.focus();
@@ -469,13 +552,15 @@ export class ProtopipeOnboardingComponent implements OnInit {
     const c = this.form.controls;
     switch (step) {
       case 1:
+        if (!this.onboardingMode()) return false;
+        if (this.onboardingMode() === 'strategy_only') return true;
         return c.websiteUrl.valid;
       case 2:
         return this.services().length > 0 || this.serviceDraft().trim().length > 0;
       case 3:
         return this.isAvatarsStepValid();
       case 4:
-        return true; // competitors optional
+        return this.isCompetitorsStepValid();
       case 5:
         return this.isMarketStepValid();
       case 6:
@@ -483,10 +568,18 @@ export class ProtopipeOnboardingComponent implements OnInit {
     }
   }
 
+  private isCompetitorsStepValid(): boolean {
+    if (!this.isStrategyOnly()) return true;
+    return (
+      this.competitors().length > 0 || this.competitorDraft().trim().length > 0
+    );
+  }
+
   private markStepTouched(step: Step): void {
     const c = this.form.controls;
-    if (step === 1) c.websiteUrl.markAsTouched();
-    else if (step === 6) c.businessName.markAsTouched();
+    if (step === 1 && this.onboardingMode() === 'existing_site') {
+      c.websiteUrl.markAsTouched();
+    } else if (step === 6) c.businessName.markAsTouched();
   }
 
   private isAvatarsStepValid(): boolean {
@@ -503,9 +596,20 @@ export class ProtopipeOnboardingComponent implements OnInit {
   }
 
   private stepHint(step: Step): string {
-    if (step === 1) return 'Add your website to continue.';
-    if (step === 2) return 'Add at least one service you want to sell.';
+    if (step === 1) {
+      if (!this.onboardingMode()) return 'Choose how you are starting to continue.';
+      if (this.onboardingMode() === 'existing_site') return 'Add your website to continue.';
+      return 'One of the fields above is invalid.';
+    }
+    if (step === 2) {
+      return this.isStrategyOnly()
+        ? 'Add at least one service you want to test.'
+        : 'Add at least one service you want to sell.';
+    }
     if (step === 3) return 'Describe what at least one customer wants (5+ characters).';
+    if (step === 4 && this.isStrategyOnly()) {
+      return 'Add at least one competitor to continue.';
+    }
     if (step === 5) {
       const scope = this.customerScope();
       if (!scope) return 'Choose local, national, or worldwide.';
@@ -513,14 +617,22 @@ export class ProtopipeOnboardingComponent implements OnInit {
       if (scope === 'national') return 'Pick a country to continue.';
       return 'One of the fields above is invalid.';
     }
-    if (step === 6) return 'Add your business name to continue.';
+    if (step === 6) {
+      return this.isStrategyOnly()
+        ? 'Add a project name to continue.'
+        : 'Add your business name to continue.';
+    }
     return 'One of the fields above is invalid.';
   }
 
   private firstInvalidStep(): Step {
-    if (!this.form.controls.websiteUrl.valid) return 1;
+    if (!this.onboardingMode()) return 1;
+    if (this.onboardingMode() === 'existing_site' && !this.form.controls.websiteUrl.valid) {
+      return 1;
+    }
     if (this.services().length === 0) return 2;
     if (!this.isAvatarsStepValid()) return 3;
+    if (!this.isCompetitorsStepValid()) return 4;
     if (!this.isMarketStepValid()) return 5;
     if (!this.form.controls.businessName.valid) return 6;
     return 6;

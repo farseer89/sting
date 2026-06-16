@@ -154,6 +154,7 @@ const STEP_TO_ARTIFACT_KEY: Record<ArticleGenerationStep, keyof ArticleGeneratio
   cognitive_pass: 'cognitiveRun',
   outline: 'outline',
   draft: 'sections',
+  draft_faq: 'faqItems',
   review: 'review',
   metadata: 'metadata',
   assemble: 'template',

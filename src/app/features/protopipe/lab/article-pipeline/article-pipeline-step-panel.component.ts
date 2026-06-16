@@ -74,6 +74,7 @@ const STEP_TITLES: Record<ArticleGenerationStep, string> = {
   cognitive_pass: 'Cognitive pass',
   outline: 'Outline',
   draft: 'Drafts',
+  draft_faq: 'FAQ items',
   review: 'Review',
   metadata: 'Metadata',
   assemble: 'Assembled post preview',

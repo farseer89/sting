@@ -883,6 +883,16 @@
                 <p class="pw__run-error">{{ r.error.step }}: {{ r.error.message }}</p>
               }
 
+              @if (generationSelfHealNote(); as healNote) {
+                <p class="pw__meta-count">{{ healNote }}</p>
+              }
+
+              @if (!generationReviewFailed() && generationHumanReviewCount() > 0) {
+                <p class="pw__meta-count is-warn">
+                  {{ generationHumanReviewCount() }} claim(s) need your confirmation — open fact check.
+                </p>
+              }
+
               @if (generationReviewFailed()) {
                 <div class="pw__panel pw__panel--review">
                   <h4 class="pw__panel-title">Draft review did not pass</h4>

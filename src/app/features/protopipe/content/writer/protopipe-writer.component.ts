@@ -658,6 +658,20 @@ export class ProtopipeWriterComponent implements OnDestroy {
     return lines;
   });
 
+  readonly generationHumanReviewCount = computed(() => {
+    const review = this.generationReview();
+    return review?.humanReviewFactCount ?? 0;
+  });
+
+  readonly generationSelfHealNote = computed(() => {
+    const run = this.run();
+    if (!run?.events?.length) return null;
+    const reviewEvent = run.events.find(
+      (e) => e.step === 'review' && e.note?.includes('self-heal'),
+    );
+    return reviewEvent?.note ?? null;
+  });
+
   readonly generationReviewScoreLabel = computed(() => {
     const review = this.generationReview();
     return review && Number.isFinite(review.overallScore)

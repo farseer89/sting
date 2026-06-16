@@ -288,17 +288,35 @@
 
           <article
             class="kwpick__panel kwpick__panel--suggested"
-            [class.kwpick__panel--dimmed]="store.hasSearchQuery()"
+            [class.kwpick__panel--dimmed]="false"
           >
             <header class="kwpick__panel-head">
-              <span class="kwpick__panel-label">Suggested for you</span>
+              <span class="kwpick__panel-label">{{ tableLabel() }}</span>
               <span class="kwpick__panel-meta">
-                {{ sortedPlanRows().length }} keywords · click headers to sort
+                @if (store.hasSearchQuery()) {
+                  {{ store.searchResultCount() }} ideas from Google Ads
+                  @if (store.searching()) {
+                    · searching…
+                  }
+                } @else {
+                  {{ sortedPlanRows().length }} keywords · click headers to sort
+                }
               </span>
             </header>
-            @if (sortedPlanRows().length === 0) {
+            @if (store.hasSearchQuery() && !store.searching() && store.searchResultCount() <= 1) {
+              <p class="kwpick__note kwpick__panel-body">
+                No related keywords returned for this term. Try a more specific phrase (e.g. “construction dispatch software”) or add your own below.
+              </p>
+            }
+            @if (!store.hasSearchQuery() && sortedPlanRows().length === 0) {
               <p class="kwpick__empty kwpick__panel-body">
                 No suggestions yet — search above to explore related keywords or add your own.
+              </p>
+            } @else if (store.hasSearchQuery() && store.searching()) {
+              <p class="kwpick__empty kwpick__panel-body">Finding related keywords…</p>
+            } @else if (tableRows().length === 0) {
+              <p class="kwpick__empty kwpick__panel-body">
+                No results — try another phrase or add a custom keyword above.
               </p>
             } @else {
               <div class="kwpick__panel-body">
@@ -375,7 +393,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      @for (kw of sortedPlanRows(); track kw.phraseKey) {
+                      @for (kw of tableRows(); track kw.phraseKey) {
                         <tr
                           class="kwpick__plan-row"
                           [class.kwpick__plan-row--selected]="store.isSelected(kw.phraseKey)"

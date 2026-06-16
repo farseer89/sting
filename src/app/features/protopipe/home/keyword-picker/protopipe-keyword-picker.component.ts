@@ -65,6 +65,24 @@ export class ProtopipeKeywordPickerComponent {
     sortPlanRows(this.store.pool(), this.sortColumn(), this.sortDirection()),
   );
 
+  /** When searching, the main table shows API related ideas — not the static discovery pool. */
+  readonly tableRows = computed(() => {
+    if (!this.store.hasSearchQuery()) {
+      return this.sortedPlanRows();
+    }
+    const rows: KeywordPickerOption[] = [];
+    const primary = this.store.searchPrimary();
+    if (primary) rows.push(primary);
+    rows.push(...this.store.searchRelated());
+    return rows;
+  });
+
+  readonly tableLabel = computed(() =>
+    this.store.hasSearchQuery()
+      ? `Related ideas for “${this.store.searchQuery().trim()}”`
+      : 'Suggested for you',
+  );
+
   readonly planSections = computed((): {
     id: string;
     avatar: ProtopipeSuggestedAvatar | null;

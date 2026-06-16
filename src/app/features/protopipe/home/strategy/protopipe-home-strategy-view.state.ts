@@ -167,6 +167,9 @@ export class ProtopipeHomeStrategyViewState {
       }
 
       if (!postId) {
+        if (!article.proposedPublishAt) {
+          return;
+        }
         const res = await this.contentPlan.confirmCalendarItem({
           proposedPublishAt: article.proposedPublishAt,
           workingTitle: article.workingTitle,

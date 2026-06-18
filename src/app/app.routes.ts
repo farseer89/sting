@@ -147,6 +147,22 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'home/pitch-prep/:prospectId/wizard',
+    canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],
+    loadComponent: () =>
+      import('./features/protopipe/home/protopipe-user-home.component').then(
+        (m) => m.ProtopipeUserHomeComponent,
+      ),
+  },
+  {
+    path: 'home/pitch-prep',
+    canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],
+    loadComponent: () =>
+      import('./features/protopipe/home/protopipe-user-home.component').then(
+        (m) => m.ProtopipeUserHomeComponent,
+      ),
+  },
+  {
     path: 'home/brand-setup',
     canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],
     loadComponent: () =>
@@ -300,18 +316,14 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'protopipe/pitch-prep',
-        loadComponent: () =>
-          import('./features/protopipe/pitch-prep/protopipe-pitch-prospect-board.component').then(
-            (m) => m.ProtopipePitchProspectBoardComponent,
-          ),
+        path: 'protopipe/pitch-prep/:prospectId/wizard',
+        redirectTo: '/home/pitch-prep/:prospectId/wizard',
+        pathMatch: 'full',
       },
       {
-        path: 'protopipe/pitch-prep/:prospectId/wizard',
-        loadComponent: () =>
-          import('./features/protopipe/pitch-prep/protopipe-pitch-prep-wizard.component').then(
-            (m) => m.ProtopipePitchPrepWizardComponent,
-          ),
+        path: 'protopipe/pitch-prep',
+        redirectTo: '/home/pitch-prep',
+        pathMatch: 'full',
       },
       {
         path: 'protopipe/site-builder/components',

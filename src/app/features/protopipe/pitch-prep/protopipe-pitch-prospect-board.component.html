@@ -1,7 +1,6 @@
 <div class="pitch-board">
   <header class="pitch-board__header">
     <div>
-      <a routerLink="/protopipe">← Protopipe</a>
       <h1>Pitch prep</h1>
       <p class="pitch-board__lead">
         Load prospects for cold calls — scrape their site, generate a media pack, pick styles.
@@ -33,7 +32,7 @@
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-row>
-        <tr class="row-click" (click)="openProspect(row.id)">
+        <tr class="row-click" (click)="openProspectRow(row.id)">
           <td><strong>{{ row.name }}</strong></td>
           <td><a [href]="row.sourceUrl" target="_blank" rel="noopener" (click)="$event.stopPropagation()">{{ row.sourceUrl }}</a></td>
           <td><p-tag [value]="row.status" [severity]="statusSeverity(row.status)" /></td>

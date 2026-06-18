@@ -1,5 +1,14 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  booleanAttribute,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
+import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
@@ -14,13 +23,16 @@ import { ProtopipePitchProspectService } from './protopipe-pitch-prospect.servic
   selector: 'app-protopipe-pitch-prospect-board',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, FormsModule, Button, Dialog, InputText, ProgressSpinner, TableModule, Tag],
+  imports: [FormsModule, Button, Dialog, InputText, ProgressSpinner, TableModule, Tag],
   templateUrl: './protopipe-pitch-prospect-board.component.html',
   styleUrl: './protopipe-pitch-prospect-board.component.scss',
 })
 export class ProtopipePitchProspectBoardComponent implements OnInit {
   private readonly router = inject(Router);
   readonly prospectsSvc = inject(ProtopipePitchProspectService);
+
+  readonly embedded = input(false, { transform: booleanAttribute });
+  readonly openProspect = output<string>();
 
   readonly showAdd = signal(false);
   readonly newName = signal('');
@@ -71,11 +83,19 @@ export class ProtopipePitchProspectBoardComponent implements OnInit {
 
     if (prospect) {
       this.showAdd.set(false);
-      void this.router.navigate(['/protopipe/pitch-prep', prospect.id, 'wizard']);
+      this.navigateToProspect(prospect.id);
     }
   }
 
-  openProspect(prospectId: string): void {
-    void this.router.navigate(['/protopipe/pitch-prep', prospectId, 'wizard']);
+  openProspectRow(prospectId: string): void {
+    this.navigateToProspect(prospectId);
+  }
+
+  private navigateToProspect(prospectId: string): void {
+    if (this.embedded()) {
+      this.openProspect.emit(prospectId);
+      return;
+    }
+    void this.router.navigate(['/home/pitch-prep', prospectId, 'wizard']);
   }
 }

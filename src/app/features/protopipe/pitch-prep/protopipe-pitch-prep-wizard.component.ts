@@ -2,11 +2,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   OnInit,
+  booleanAttribute,
   computed,
   inject,
+  input,
+  output,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
@@ -54,16 +57,7 @@ const SLOT_LABELS: Record<PitchMediaSlot, string> = {
   selector: 'app-protopipe-pitch-prep-wizard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    RouterLink,
-    FormsModule,
-    Button,
-    InputText,
-    Textarea,
-    Message,
-    ProgressSpinner,
-    Select,
-  ],
+  imports: [FormsModule, Button, InputText, Textarea, Message, ProgressSpinner, Select],
   templateUrl: './protopipe-pitch-prep-wizard.component.html',
   styleUrl: './protopipe-pitch-prep-wizard.component.scss',
 })
@@ -75,6 +69,11 @@ export class ProtopipePitchPrepWizardComponent implements OnInit {
   readonly pitchPrep = inject(ProtopipePitchPrepService);
   readonly brandBookSvc = inject(ProtopipeBrandBookService);
   readonly siteBuilder = inject(ProtopipeSiteBuilderService);
+
+  readonly prospectId = input<string | null>(null);
+  readonly embedded = input(false, { transform: booleanAttribute });
+  readonly backToBoard = output<void>();
+  readonly finished = output<void>();
 
   readonly step = signal<WizardStep>(1);
   readonly totalSteps = 6;
@@ -108,15 +107,25 @@ export class ProtopipePitchPrepWizardComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    void this.init();
+    void this.initFromRouteOrInput();
   }
 
-  private async init(): Promise<void> {
-    const prospectId = this.route.snapshot.paramMap.get('prospectId');
+  private resolveProspectId(): string | null {
+    return this.prospectId() ?? this.route.snapshot.paramMap.get('prospectId');
+  }
+
+  private async initFromRouteOrInput(): Promise<void> {
+    const prospectId = this.resolveProspectId();
     if (!prospectId) {
       this.initError.set('Missing prospect');
       return;
     }
+    await this.init(prospectId);
+  }
+
+  private async init(prospectId: string): Promise<void> {
+    this.initError.set(null);
+    this.step.set(1);
 
     const prospect = await this.prospectSvc.loadOne(prospectId);
     if (!prospect) {
@@ -138,6 +147,14 @@ export class ProtopipePitchPrepWizardComponent implements OnInit {
     if (prospect.status === 'ready') {
       this.step.set(6);
     }
+  }
+
+  goBackToBoard(): void {
+    if (this.embedded()) {
+      this.backToBoard.emit();
+      return;
+    }
+    void this.router.navigate(['/home/pitch-prep']);
   }
 
   next(): void {
@@ -228,7 +245,11 @@ export class ProtopipePitchPrepWizardComponent implements OnInit {
     if (!prospect) return;
     try {
       await this.prospectSvc.markReady(prospect.id);
-      void this.router.navigate(['/protopipe/pitch-prep']);
+      if (this.embedded()) {
+        this.finished.emit();
+        return;
+      }
+      void this.router.navigate(['/home/pitch-prep']);
     } catch (err) {
       this.initError.set(parseProtopipeApiError(err, 'Could not finish'));
     }

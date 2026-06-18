@@ -225,6 +225,23 @@
                     <app-protopipe-media-studio />
                   </section>
                 }
+                @case ('pitch-prep') {
+                  <section class="glass glass--full glass--premiere glass--pitch-prep" aria-label="Pitch prep">
+                    @if (pitchPrepProspectId(); as prospectId) {
+                      <app-protopipe-pitch-prep-wizard
+                        [prospectId]="prospectId"
+                        [embedded]="true"
+                        (backToBoard)="closePitchPrepWizard()"
+                        (finished)="closePitchPrepWizard()"
+                      />
+                    } @else {
+                      <app-protopipe-pitch-prospect-board
+                        [embedded]="true"
+                        (openProspect)="openPitchPrepWizard($event)"
+                      />
+                    }
+                  </section>
+                }
                 @case ('brand-book') {
                   <section class="glass glass--full glass--premiere" aria-label="Brand book">
                     <app-protopipe-home-brand-book (runWizard)="openBrandSetupWizard()" />

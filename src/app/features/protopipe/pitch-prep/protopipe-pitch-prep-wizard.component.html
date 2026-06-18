@@ -1,7 +1,7 @@
-<div class="pitch-wizard bb-magazine">
+<div class="pitch-wizard">
   <header class="pitch-wizard__header">
-    <a routerLink="/protopipe/pitch-prep">← Prospects</a>
-    <p class="bb-chapter">Step {{ step() }} of {{ totalSteps }}</p>
+    <button type="button" class="pitch-wizard__back" (click)="goBackToBoard()">← Prospects</button>
+    <p class="pitch-wizard__step">Step {{ step() }} of {{ totalSteps }}</p>
     @if (prospectSvc.current(); as prospect) {
       <h1>{{ prospect.name }}</h1>
       <p class="pitch-wizard__url">{{ prospect.sourceUrl }}</p>
@@ -18,222 +18,197 @@
 
   @switch (step()) {
     @case (1) {
-      <article class="bb-spread">
-        <div class="bb-spread__inner">
-          <span class="bb-chapter">Chapter 01 · Context</span>
-          <h2 class="bb-spread__title">Scrape their website</h2>
-          <p class="bb-spread__deck">
-            We'll fetch their homepage and extract business context for image prompts.
-          </p>
-          @if (pitchPrep.loading()) {
-            <p-progressSpinner ariaLabel="Ingesting" />
-          } @else {
-            <div class="pitch-wizard__actions">
-              <p-button label="Ingest website" icon="pi pi-globe" (onClick)="runIngest()" />
-            </div>
-          }
-        </div>
-      </article>
+      <section class="pitch-wizard__panel">
+        <h2>Scrape their website</h2>
+        <p class="pitch-wizard__lead">
+          We'll fetch their homepage and extract business context for image prompts.
+        </p>
+        @if (pitchPrep.loading()) {
+          <p-progressSpinner ariaLabel="Ingesting" />
+        } @else {
+          <div class="pitch-wizard__actions">
+            <p-button label="Ingest website" icon="pi pi-globe" (onClick)="runIngest()" />
+          </div>
+        }
+      </section>
     }
     @case (2) {
-      <article class="bb-spread">
-        <div class="bb-spread__inner">
-          <span class="bb-chapter">Chapter 01 · Context</span>
-          <h2 class="bb-spread__title">Review context</h2>
-          @if (pitchPrep.context(); as ctx) {
-            <label class="bb-field">
-              <span>Business name</span>
-              <input pInputText class="w-full" [ngModel]="ctx.businessName ?? ''" (ngModelChange)="patchContextField('businessName', $event)" />
-            </label>
-            <label class="bb-field">
-              <span>Services</span>
-              <textarea pTextarea class="w-full" rows="2" [ngModel]="ctx.services ?? ''" (ngModelChange)="patchContextField('services', $event)"></textarea>
-            </label>
-            <label class="bb-field">
-              <span>Summary</span>
-              <textarea pTextarea class="w-full" rows="4" [ngModel]="ctx.summary ?? ''" (ngModelChange)="patchContextField('summary', $event)"></textarea>
-            </label>
-            <label class="bb-field">
-              <span>Tone signals</span>
-              <input pInputText class="w-full" [ngModel]="ctx.toneSignals ?? ''" (ngModelChange)="patchContextField('toneSignals', $event)" />
-            </label>
-          }
-          <div class="pitch-wizard__actions">
-            <p-button label="Back" severity="secondary" (onClick)="back()" />
-            <p-button label="Continue" (onClick)="next()" />
-          </div>
+      <section class="pitch-wizard__panel">
+        <h2>Review context</h2>
+        @if (pitchPrep.context(); as ctx) {
+          <label class="field">
+            <span>Business name</span>
+            <input pInputText class="w-full" [ngModel]="ctx.businessName ?? ''" (ngModelChange)="patchContextField('businessName', $event)" />
+          </label>
+          <label class="field">
+            <span>Services</span>
+            <textarea pTextarea class="w-full" rows="2" [ngModel]="ctx.services ?? ''" (ngModelChange)="patchContextField('services', $event)"></textarea>
+          </label>
+          <label class="field">
+            <span>Summary</span>
+            <textarea pTextarea class="w-full" rows="4" [ngModel]="ctx.summary ?? ''" (ngModelChange)="patchContextField('summary', $event)"></textarea>
+          </label>
+          <label class="field">
+            <span>Tone signals</span>
+            <input pInputText class="w-full" [ngModel]="ctx.toneSignals ?? ''" (ngModelChange)="patchContextField('toneSignals', $event)" />
+          </label>
+        }
+        <div class="pitch-wizard__actions">
+          <p-button label="Back" severity="secondary" (onClick)="back()" />
+          <p-button label="Continue" (onClick)="next()" />
         </div>
-      </article>
+      </section>
     }
     @case (3) {
-      <article class="bb-spread">
-        <div class="bb-spread__inner">
-          <span class="bb-chapter">Chapter 02 · Visual style</span>
-          <h2 class="bb-spread__title">Photo &amp; infographic look</h2>
-          @if (brandBookSvc.draft(); as book) {
-            <div class="bb-gallery bb-gallery--photos">
-              @for (preset of imagePresets; track preset.id) {
-                <button
-                  type="button"
-                  class="bb-option"
-                  [class.bb-option--active]="book.imageStyle.presetId === preset.id"
-                  (click)="onPresetChange(preset.id)"
-                >
-                  <div class="bb-option__media">
-                    @if (preset.previewImage) {
-                      <img class="bb-option__image" [src]="preset.previewImage" [alt]="preset.label" loading="lazy" />
-                    } @else {
-                      <div class="bb-option__placeholder">Custom</div>
-                    }
-                  </div>
-                  <div class="bb-option__caption">
-                    <span class="bb-option__label">{{ preset.label }}</span>
-                  </div>
-                </button>
-              }
-            </div>
-            <h3 class="bb-spread__subtitle">Infographic style</h3>
-            <div class="bb-gallery bb-gallery--infographs">
-              @for (variant of infographVariants; track variant.id) {
-                <button
-                  type="button"
-                  class="bb-option"
-                  [class.bb-option--active]="book.infographStyle.variant === variant.id"
-                  (click)="onInfographChange(variant.id)"
-                >
-                  <div class="bb-option__media">
-                    <img class="bb-option__image" [src]="variant.previewImage" [alt]="variant.label" loading="lazy" />
-                  </div>
-                  <div class="bb-option__caption">
-                    <span class="bb-option__label">{{ variant.label }}</span>
-                  </div>
-                </button>
-              }
-            </div>
-          }
-          <div class="pitch-wizard__actions">
-            <p-button label="Back" severity="secondary" (onClick)="back()" />
-            <p-button label="Save & continue" (onClick)="saveStyles()" />
+      <section class="pitch-wizard__panel">
+        <h2>Photo &amp; infographic look</h2>
+        @if (brandBookSvc.draft(); as book) {
+          <h3 class="pitch-wizard__subtitle">Photo style</h3>
+          <div class="pitch-wizard__style-grid">
+            @for (preset of imagePresets; track preset.id) {
+              <button
+                type="button"
+                class="pitch-wizard__style-option"
+                [class.is-selected]="book.imageStyle.presetId === preset.id"
+                (click)="onPresetChange(preset.id)"
+              >
+                @if (preset.previewImage) {
+                  <img [src]="preset.previewImage" [alt]="preset.label" loading="lazy" />
+                } @else {
+                  <div class="pitch-wizard__style-placeholder">Custom</div>
+                }
+                <span>{{ preset.label }}</span>
+              </button>
+            }
           </div>
+          <h3 class="pitch-wizard__subtitle">Infographic style</h3>
+          <div class="pitch-wizard__style-grid">
+            @for (variant of infographVariants; track variant.id) {
+              <button
+                type="button"
+                class="pitch-wizard__style-option"
+                [class.is-selected]="book.infographStyle.variant === variant.id"
+                (click)="onInfographChange(variant.id)"
+              >
+                <img [src]="variant.previewImage" [alt]="variant.label" loading="lazy" />
+                <span>{{ variant.label }}</span>
+              </button>
+            }
+          </div>
+        }
+        <div class="pitch-wizard__actions">
+          <p-button label="Back" severity="secondary" (onClick)="back()" />
+          <p-button label="Save & continue" (onClick)="saveStyles()" />
         </div>
-      </article>
+      </section>
     }
     @case (4) {
-      <article class="bb-spread">
-        <div class="bb-spread__inner">
-          <span class="bb-chapter">Chapter 03 · Generate</span>
-          <h2 class="bb-spread__title">Pitch media pack</h2>
-          <p class="bb-spread__deck">Generate ~8 images: heroes, sections, infographics, background.</p>
-          @if (pitchPrep.generating()) {
-            <p-progressSpinner ariaLabel="Generating" />
-            <p class="hint">Generating — this may take a minute…</p>
-          } @else if (pitchPrep.assets().length) {
-            <div class="pitch-wizard__grid">
-              @for (asset of pitchPrep.assets(); track asset.id) {
-                <figure class="pitch-wizard__thumb">
-                  <img [src]="asset.url" [alt]="asset.slot" loading="lazy" />
-                  <figcaption>{{ slotLabels[asset.slot] }}</figcaption>
-                </figure>
-              }
-            </div>
-            <div class="pitch-wizard__actions">
-              <p-button label="Back" severity="secondary" (onClick)="back()" />
-              <p-button label="Continue" (onClick)="next()" />
-              <p-button label="Regenerate pack" severity="secondary" (onClick)="runGeneratePack()" />
-            </div>
-          } @else {
-            <div class="pitch-wizard__actions">
-              <p-button label="Back" severity="secondary" (onClick)="back()" />
-              <p-button label="Generate pitch pack" icon="pi pi-sparkles" (onClick)="runGeneratePack()" />
-            </div>
-          }
-        </div>
-      </article>
-    }
-    @case (5) {
-      <article class="bb-spread">
-        <div class="bb-spread__inner">
-          <span class="bb-chapter">Chapter 04 · Refine</span>
-          <h2 class="bb-spread__title">Regenerate with notes</h2>
-          @for (slot of refineSlots; track slot) {
-            @if (assetsBySlot().get(slot); as slotAssets) {
-              <div class="pitch-wizard__slot">
-                <h3>{{ slotLabel(slot) }}</h3>
-                <div class="pitch-wizard__grid pitch-wizard__grid--compact">
-                  @for (asset of slotAssets; track asset.id) {
-                    <button type="button" class="pitch-wizard__thumb pitch-wizard__thumb--selectable" [class.is-selected]="asset.selected" (click)="selectAsset(asset)">
-                      <img [src]="asset.url" [alt]="asset.slot" loading="lazy" />
-                    </button>
-                  }
-                </div>
-                @if (slotAssets[0]; as first) {
-                  <label class="bb-field">
-                    <span>Notes for new version</span>
-                    <textarea pTextarea class="w-full" rows="2" placeholder="e.g. more industrial, show drill rigs…" [ngModel]="getNote(first.slot, first.kind)" (ngModelChange)="setNote(first.slot, first.kind, $event)"></textarea>
-                  </label>
-                  <p-button
-                    label="Regenerate"
-                    size="small"
-                    [loading]="refiningSlot() === noteKey(first.slot, first.kind)"
-                    [disabled]="!getNote(first.slot, first.kind).trim()"
-                    (onClick)="regenerate(first.slot, first.kind)"
-                  />
-                }
-              </div>
+      <section class="pitch-wizard__panel">
+        <h2>Pitch media pack</h2>
+        <p class="pitch-wizard__lead">Generate ~8 images: heroes, sections, infographics, background.</p>
+        @if (pitchPrep.generating()) {
+          <p-progressSpinner ariaLabel="Generating" />
+          <p class="hint">Generating — this may take a minute…</p>
+        } @else if (pitchPrep.assets().length) {
+          <div class="pitch-wizard__grid">
+            @for (asset of pitchPrep.assets(); track asset.id) {
+              <figure class="pitch-wizard__thumb">
+                <img [src]="asset.url" [alt]="asset.slot" loading="lazy" />
+                <figcaption>{{ slotLabels[asset.slot] }}</figcaption>
+              </figure>
             }
-          }
+          </div>
           <div class="pitch-wizard__actions">
             <p-button label="Back" severity="secondary" (onClick)="back()" />
             <p-button label="Continue" (onClick)="next()" />
+            <p-button label="Regenerate pack" severity="secondary" (onClick)="runGeneratePack()" />
           </div>
-        </div>
-      </article>
-    }
-    @case (6) {
-      <article class="bb-spread">
-        <div class="bb-spread__inner">
-          <span class="bb-chapter">Chapter 05 · Site style</span>
-          <h2 class="bb-spread__title">Template &amp; theme</h2>
-          <label class="bb-field">
-            <span>Template</span>
-            <p-select
-              [options]="siteBuilder.templates()"
-              [ngModel]="selectedTemplateId()"
-              (ngModelChange)="selectedTemplateId.set($event)"
-              optionLabel="label"
-              optionValue="id"
-              styleClass="w-full"
-            />
-          </label>
-          <label class="bb-field">
-            <span>Theme</span>
-            <p-select
-              [options]="themeOptions"
-              [ngModel]="selectedTheme()"
-              (ngModelChange)="selectedTheme.set($event)"
-              optionLabel="label"
-              optionValue="value"
-              styleClass="w-full"
-            />
-          </label>
-          <h3 class="bb-spread__subtitle">Media library</h3>
-          <div class="pitch-wizard__grid">
-            @for (asset of pitchPrep.assets(); track asset.id) {
-              @if (asset.selected) {
-                <figure class="pitch-wizard__thumb">
-                  <img [src]="asset.url" [alt]="asset.slot" loading="lazy" />
-                  <figcaption>{{ slotLabels[asset.slot] }} ✓</figcaption>
-                </figure>
-              }
-            }
-          </div>
+        } @else {
           <div class="pitch-wizard__actions">
             <p-button label="Back" severity="secondary" (onClick)="back()" />
-            <p-button label="Save style" (onClick)="saveSiteStyle()" />
-            <p-button label="Mark ready" icon="pi pi-check" (onClick)="finish()" />
+            <p-button label="Generate pitch pack" icon="pi pi-sparkles" (onClick)="runGeneratePack()" />
           </div>
+        }
+      </section>
+    }
+    @case (5) {
+      <section class="pitch-wizard__panel">
+        <h2>Regenerate with notes</h2>
+        @for (slot of refineSlots; track slot) {
+          @if (assetsBySlot().get(slot); as slotAssets) {
+            <div class="pitch-wizard__slot">
+              <h3>{{ slotLabel(slot) }}</h3>
+              <div class="pitch-wizard__grid pitch-wizard__grid--compact">
+                @for (asset of slotAssets; track asset.id) {
+                  <button type="button" class="pitch-wizard__thumb pitch-wizard__thumb--selectable" [class.is-selected]="asset.selected" (click)="selectAsset(asset)">
+                    <img [src]="asset.url" [alt]="asset.slot" loading="lazy" />
+                  </button>
+                }
+              </div>
+              @if (slotAssets[0]; as first) {
+                <label class="field">
+                  <span>Notes for new version</span>
+                  <textarea pTextarea class="w-full" rows="2" placeholder="e.g. more industrial, show drill rigs…" [ngModel]="getNote(first.slot, first.kind)" (ngModelChange)="setNote(first.slot, first.kind, $event)"></textarea>
+                </label>
+                <p-button
+                  label="Regenerate"
+                  size="small"
+                  [loading]="refiningSlot() === noteKey(first.slot, first.kind)"
+                  [disabled]="!getNote(first.slot, first.kind).trim()"
+                  (onClick)="regenerate(first.slot, first.kind)"
+                />
+              }
+            </div>
+          }
+        }
+        <div class="pitch-wizard__actions">
+          <p-button label="Back" severity="secondary" (onClick)="back()" />
+          <p-button label="Continue" (onClick)="next()" />
         </div>
-      </article>
+      </section>
+    }
+    @case (6) {
+      <section class="pitch-wizard__panel">
+        <h2>Template &amp; theme</h2>
+        <label class="field">
+          <span>Template</span>
+          <p-select
+            [options]="siteBuilder.templates()"
+            [ngModel]="selectedTemplateId()"
+            (ngModelChange)="selectedTemplateId.set($event)"
+            optionLabel="label"
+            optionValue="id"
+            styleClass="w-full"
+          />
+        </label>
+        <label class="field">
+          <span>Theme</span>
+          <p-select
+            [options]="themeOptions"
+            [ngModel]="selectedTheme()"
+            (ngModelChange)="selectedTheme.set($event)"
+            optionLabel="label"
+            optionValue="value"
+            styleClass="w-full"
+          />
+        </label>
+        <h3 class="pitch-wizard__subtitle">Media library</h3>
+        <div class="pitch-wizard__grid">
+          @for (asset of pitchPrep.assets(); track asset.id) {
+            @if (asset.selected) {
+              <figure class="pitch-wizard__thumb">
+                <img [src]="asset.url" [alt]="asset.slot" loading="lazy" />
+                <figcaption>{{ slotLabels[asset.slot] }} ✓</figcaption>
+              </figure>
+            }
+          }
+        </div>
+        <div class="pitch-wizard__actions">
+          <p-button label="Back" severity="secondary" (onClick)="back()" />
+          <p-button label="Save style" (onClick)="saveSiteStyle()" />
+          <p-button label="Mark ready" icon="pi pi-check" (onClick)="finish()" />
+        </div>
+      </section>
     }
   }
 </div>

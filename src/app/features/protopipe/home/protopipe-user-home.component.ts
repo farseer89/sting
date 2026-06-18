@@ -40,6 +40,8 @@ import { ProtopipeMediaStudioComponent } from '../admin/media-studio/protopipe-m
 import { ProtopipeHomeBrandBookComponent } from './books/protopipe-home-brand-book.component';
 import { ProtopipeHomeBusinessDetailsComponent } from './books/protopipe-home-business-details.component';
 import { ProtopipeHomeGoalsComponent } from './books/protopipe-home-goals.component';
+import { ProtopipePitchProspectBoardComponent } from '../pitch-prep/protopipe-pitch-prospect-board.component';
+import { ProtopipePitchPrepWizardComponent } from '../pitch-prep/protopipe-pitch-prep-wizard.component';
 import { ProtopipeWriterInspectorBridge } from '../content/writer/protopipe-writer-inspector.bridge';
 import { ProtopipeHomeSidePanelService } from './protopipe-home-side-panel.service';
 import {
@@ -57,6 +59,7 @@ export type ProtopipeHomeView =
   | 'packs'
   | 'runbooks'
   | 'media-studio'
+  | 'pitch-prep'
   | 'brand-book'
   | 'business-details'
   | 'goals';
@@ -94,6 +97,8 @@ function initialsFromName(name: string): string {
     ProtopipeHomeBrandBookComponent,
     ProtopipeHomeBusinessDetailsComponent,
     ProtopipeHomeGoalsComponent,
+    ProtopipePitchProspectBoardComponent,
+    ProtopipePitchPrepWizardComponent,
   ],
   templateUrl: './protopipe-user-home.component.html',
   styleUrl: './protopipe-user-home.component.scss',
@@ -166,6 +171,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   readonly activeView = signal<ProtopipeHomeView>('keywords');
   readonly activeNavId = signal('start-keywords');
   readonly packDetailId = signal<string | null>(null);
+  readonly pitchPrepProspectId = signal<string | null>(null);
   readonly thoughtPacksCatalog = this.thoughtPacks.catalog;
   readonly thoughtPacksLoading = this.thoughtPacks.loading;
   readonly thoughtPacksError = this.thoughtPacks.error;
@@ -193,11 +199,13 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.writerViewState.setExitHandler(() => this.leaveWriterFocus());
     this.strategyViewState.setEnterWriterHandler(() => this.enterWriterFocus());
     this.syncPacksFromRoute();
+    this.syncPitchPrepFromRoute();
     this.syncViewFromQuery();
     this.router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
       .subscribe(() => {
         this.syncPacksFromRoute();
+        this.syncPitchPrepFromRoute();
         this.syncViewFromQuery();
       });
     void this.loadBootstrap();
@@ -252,6 +260,9 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.sidePanel.setOpen(false);
       this.activeNavId.set(item.id);
       this.activeView.set('media-studio');
+    } else if (item.id === 'content-pitch-prep') {
+      this.showPitchPrepBoard();
+      void this.router.navigate(['/home/pitch-prep']);
     } else if (item.id === 'dev-runbooks') {
       this.leaveWriterFocus();
       this.sidePanel.setOpen(false);
@@ -330,6 +341,16 @@ export class ProtopipeUserHomeComponent implements OnInit {
     void this.router.navigate(['/home/packs']);
   }
 
+  closePitchPrepWizard(): void {
+    this.showPitchPrepBoard();
+    void this.router.navigate(['/home/pitch-prep']);
+  }
+
+  openPitchPrepWizard(prospectId: string): void {
+    this.showPitchPrepWizard(prospectId);
+    void this.router.navigate(['/home/pitch-prep', prospectId, 'wizard']);
+  }
+
   onPackStartWriting(pack: CognitivePackCatalogItem): void {
     if (!isPackSelectable(pack)) return;
     this.writerViewState.setPendingCognitivePackId(pack.id);
@@ -374,6 +395,39 @@ export class ProtopipeUserHomeComponent implements OnInit {
     if (view === 'brand-book') {
       this.openBrandBookView();
     }
+  }
+
+  private syncPitchPrepFromRoute(): void {
+    const path = this.router.url.split('?')[0] ?? '';
+    const wizardPrefix = '/home/pitch-prep/';
+    if (path.startsWith(wizardPrefix) && path.endsWith('/wizard')) {
+      const prospectId = decodeURIComponent(
+        path.slice(wizardPrefix.length, path.length - '/wizard'.length),
+      );
+      if (prospectId) {
+        this.showPitchPrepWizard(prospectId);
+        return;
+      }
+    }
+    if (path === '/home/pitch-prep' || path.startsWith('/home/pitch-prep')) {
+      this.showPitchPrepBoard();
+    }
+  }
+
+  private showPitchPrepBoard(): void {
+    this.leaveWriterFocus();
+    this.sidePanel.setOpen(false);
+    this.activeView.set('pitch-prep');
+    this.activeNavId.set('content-pitch-prep');
+    this.pitchPrepProspectId.set(null);
+  }
+
+  private showPitchPrepWizard(prospectId: string): void {
+    this.leaveWriterFocus();
+    this.sidePanel.setOpen(false);
+    this.activeView.set('pitch-prep');
+    this.activeNavId.set('content-pitch-prep');
+    this.pitchPrepProspectId.set(prospectId);
   }
 
   private syncPacksFromRoute(): void {
@@ -431,8 +485,12 @@ export class ProtopipeUserHomeComponent implements OnInit {
         void this.keywordStore.load();
         const planStatus = this.contentPlan.status();
         const onPacksRoute = (this.router.url.split('?')[0] ?? '').startsWith('/home/packs');
+        const onPitchPrepRoute = (this.router.url.split('?')[0] ?? '').startsWith(
+          '/home/pitch-prep',
+        );
         if (
           !onPacksRoute &&
+          !onPitchPrepRoute &&
           (planStatus === 'running' || planStatus === 'pending' || planStatus === 'complete')
         ) {
           this.activeView.set('strategy');

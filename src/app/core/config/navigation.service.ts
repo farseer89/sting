@@ -108,7 +108,7 @@ export class NavigationService {
             id: 'pitch-prep',
             label: 'Pitch prep',
             icon: 'pi pi-bolt',
-            routerLink: '/protopipe/pitch-prep',
+            routerLink: '/home/pitch-prep',
             visible: true,
           },
           {

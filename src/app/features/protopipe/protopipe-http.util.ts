@@ -36,6 +36,10 @@ export function parseProtopipeApiError(err: unknown, fallback: string): string {
     if (typeof body?.message === 'string' && body.message.length > 0) {
       return PROTOPIPE_API_ERROR_MESSAGES[body.message] ?? body.message;
     }
+    const errorText = (body as { error?: string } | null)?.error;
+    if (typeof errorText === 'string' && errorText.length > 0) {
+      return errorText;
+    }
     if (err.status === 401) {
       return 'Session expired. Sign in again.';
     }

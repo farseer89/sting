@@ -1,0 +1,79 @@
+<div class="pitch-board">
+  <header class="pitch-board__header">
+    <div>
+      <a routerLink="/protopipe">← Protopipe</a>
+      <h1>Pitch prep</h1>
+      <p class="pitch-board__lead">
+        Load prospects for cold calls — scrape their site, generate a media pack, pick styles.
+      </p>
+    </div>
+    <p-button label="Add prospect" icon="pi pi-plus" (onClick)="openAdd()" />
+  </header>
+
+  @if (prospectsSvc.error(); as err) {
+    <p class="error">{{ err }}</p>
+  }
+
+  @if (prospectsSvc.loading()) {
+    <p-progressSpinner ariaLabel="Loading" />
+  } @else {
+    <p-table
+      [value]="prospectsSvc.prospects()"
+      [rows]="20"
+      [paginator]="prospectsSvc.prospects().length > 20"
+      styleClass="pitch-board__table"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Name</th>
+          <th>Website</th>
+          <th>Status</th>
+          <th>Assets</th>
+          <th>Updated</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr class="row-click" (click)="openProspect(row.id)">
+          <td><strong>{{ row.name }}</strong></td>
+          <td><a [href]="row.sourceUrl" target="_blank" rel="noopener" (click)="$event.stopPropagation()">{{ row.sourceUrl }}</a></td>
+          <td><p-tag [value]="row.status" [severity]="statusSeverity(row.status)" /></td>
+          <td>{{ row.assetCount ?? 0 }}</td>
+          <td>{{ formatDate(row.updatedAt) }}</td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5">No prospects yet — add one to start a pitch pack.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  }
+
+  <p-dialog
+    header="Add prospect"
+    [visible]="showAdd()"
+    (visibleChange)="showAdd.set($event)"
+    [modal]="true"
+    [style]="{ width: 'min(100%, 28rem)' }"
+  >
+    <label class="field">
+      <span>Business name</span>
+      <input pInputText class="w-full" [ngModel]="newName()" (ngModelChange)="newName.set($event)" />
+    </label>
+    <label class="field">
+      <span>Current website URL</span>
+      <input pInputText class="w-full" placeholder="https://…" [ngModel]="newUrl()" (ngModelChange)="newUrl.set($event)" />
+    </label>
+    <div class="dialog-actions">
+      <p-button label="Cancel" severity="secondary" (onClick)="showAdd.set(false)" />
+      <p-button
+        label="Create & start wizard"
+        icon="pi pi-arrow-right"
+        iconPos="right"
+        [loading]="creating()"
+        [disabled]="!newName().trim() || !newUrl().trim()"
+        (onClick)="createProspect()"
+      />
+    </div>
+  </p-dialog>
+</div>

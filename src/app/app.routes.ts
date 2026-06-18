@@ -300,6 +300,20 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'protopipe/pitch-prep',
+        loadComponent: () =>
+          import('./features/protopipe/pitch-prep/protopipe-pitch-prospect-board.component').then(
+            (m) => m.ProtopipePitchProspectBoardComponent,
+          ),
+      },
+      {
+        path: 'protopipe/pitch-prep/:prospectId/wizard',
+        loadComponent: () =>
+          import('./features/protopipe/pitch-prep/protopipe-pitch-prep-wizard.component').then(
+            (m) => m.ProtopipePitchPrepWizardComponent,
+          ),
+      },
+      {
         path: 'protopipe/site-builder/components',
         loadComponent: () =>
           import('./features/protopipe/site-builder/site-builder-components.component').then(

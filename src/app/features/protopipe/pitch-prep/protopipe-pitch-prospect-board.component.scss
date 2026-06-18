@@ -1,0 +1,47 @@
+.pitch-board {
+  padding: 1.5rem 2rem 2.5rem;
+  max-width: 56rem;
+}
+
+.pitch-board__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.pitch-board__header h1 {
+  margin: 0.35rem 0;
+}
+
+.pitch-board__lead {
+  margin: 0;
+  color: var(--text-color-secondary, #64748b);
+}
+
+.row-click {
+  cursor: pointer;
+}
+
+.row-click:hover td {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.error {
+  color: #b91c1c;
+}

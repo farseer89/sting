@@ -124,6 +124,26 @@ import type {
   PublishSiteCompleteRequest,
   PublishSiteCompleteResponse,
   ProtopipeSite,
+  CreatePitchProspectRequest,
+  CreatePitchProspectResponse,
+  ListPitchProspectsResponse,
+  GetPitchProspectResponse,
+  PatchPitchProspectRequest,
+  PatchPitchProspectResponse,
+  PitchPrepIngestRequest,
+  PitchPrepIngestResponse,
+  PitchPrepContextResponse,
+  PitchPrepGeneratePackRequest,
+  PitchPrepGeneratePackResponse,
+  PitchPrepDistillPromptRequest,
+  PitchPrepDistillPromptResponse,
+  PitchPrepRegenerateRequest,
+  PitchPrepRegenerateResponse,
+  PitchPrepMediaListResponse,
+  PitchPrepStyleRequest,
+  PitchPrepStyleResponse,
+  PatchPitchMediaAssetRequest,
+  PatchPitchMediaAssetResponse,
 } from '@hive/contracts';
 import { Observable, firstValueFrom } from 'rxjs';
 import { protopipeApiUrl } from './protopipe-http.util';
@@ -1159,6 +1179,129 @@ export class ProtopipeApiService {
     return this.http.post<CreateProjectCaptureResponse>(
       protopipeApiUrl(ProtopipeEndpoints.projectShareCapture.path, { token }),
       body,
+    );
+  }
+
+  listPitchProspects(): Promise<ListPitchProspectsResponse> {
+    return firstValueFrom(
+      this.http.get<ListPitchProspectsResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.pitchProspectsList.path),
+      ),
+    );
+  }
+
+  createPitchProspect(body: CreatePitchProspectRequest): Promise<CreatePitchProspectResponse> {
+    return firstValueFrom(
+      this.http.post<CreatePitchProspectResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.pitchProspectCreate.path),
+        body,
+      ),
+    );
+  }
+
+  getPitchProspect(prospectId: string): Promise<GetPitchProspectResponse> {
+    return firstValueFrom(
+      this.http.get<GetPitchProspectResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.pitchProspectDetail.path, { prospectId }),
+      ),
+    );
+  }
+
+  patchPitchProspect(
+    prospectId: string,
+    body: PatchPitchProspectRequest,
+  ): Promise<PatchPitchProspectResponse> {
+    return firstValueFrom(
+      this.http.patch<PatchPitchProspectResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.pitchProspectPatch.path, { prospectId }),
+        body,
+      ),
+    );
+  }
+
+  ingestPitchPrep(siteId: string, body: PitchPrepIngestRequest = {}): Promise<PitchPrepIngestResponse> {
+    return firstValueFrom(
+      this.http.post<PitchPrepIngestResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.pitchPrepIngest.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  getPitchPrepContext(siteId: string): Promise<PitchPrepContextResponse> {
+    return firstValueFrom(
+      this.http.get<PitchPrepContextResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.pitchPrepContext.path, { siteId }),
+      ),
+    );
+  }
+
+  generatePitchPack(
+    siteId: string,
+    body: PitchPrepGeneratePackRequest = {},
+  ): Promise<PitchPrepGeneratePackResponse> {
+    return firstValueFrom(
+      this.http.post<PitchPrepGeneratePackResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.pitchPrepGeneratePack.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  distillPitchPrompt(
+    siteId: string,
+    body: PitchPrepDistillPromptRequest,
+  ): Promise<PitchPrepDistillPromptResponse> {
+    return firstValueFrom(
+      this.http.post<PitchPrepDistillPromptResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.pitchPrepDistillPrompt.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  regeneratePitchAsset(
+    siteId: string,
+    body: PitchPrepRegenerateRequest,
+  ): Promise<PitchPrepRegenerateResponse> {
+    return firstValueFrom(
+      this.http.post<PitchPrepRegenerateResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.pitchPrepRegenerate.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  listPitchMedia(siteId: string): Promise<PitchPrepMediaListResponse> {
+    return firstValueFrom(
+      this.http.get<PitchPrepMediaListResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.pitchPrepMediaList.path, { siteId }),
+      ),
+    );
+  }
+
+  patchPitchMediaAsset(
+    siteId: string,
+    assetId: string,
+    body: PatchPitchMediaAssetRequest,
+  ): Promise<PatchPitchMediaAssetResponse> {
+    return firstValueFrom(
+      this.http.patch<PatchPitchMediaAssetResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.pitchPrepMediaPatch.path, { siteId, assetId }),
+        body,
+      ),
+    );
+  }
+
+  patchPitchPrepStyle(
+    siteId: string,
+    body: PitchPrepStyleRequest,
+  ): Promise<PitchPrepStyleResponse> {
+    return firstValueFrom(
+      this.http.patch<PitchPrepStyleResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.pitchPrepStyle.path, { siteId }),
+        body,
+      ),
     );
   }
 }

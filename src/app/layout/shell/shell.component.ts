@@ -224,6 +224,17 @@ export class ShellComponent implements OnInit, OnDestroy {
       this.breadcrumbs = [{ label: 'Admin' }, { label: 'Media Studio' }];
       return;
     }
+    if (path === '/protopipe/pitch-prep') {
+      this.breadcrumbs = [{ label: 'Pitch prep' }];
+      return;
+    }
+    if (path.startsWith('/protopipe/pitch-prep/') && path.endsWith('/wizard')) {
+      this.breadcrumbs = [
+        { label: 'Pitch prep', routerLink: '/protopipe/pitch-prep' },
+        { label: 'Wizard' },
+      ];
+      return;
+    }
     if (path === '/' || path === '') {
       this.breadcrumbs = [{ label: 'My Plan', routerLink: '/protopipe' }];
       return;

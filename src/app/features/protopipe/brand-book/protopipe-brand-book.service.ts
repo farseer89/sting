@@ -31,7 +31,18 @@ export class ProtopipeBrandBookService {
   readonly setupComplete = () => Boolean(this._brandBook()?.setupCompletedAt);
 
   private siteId(): string | null {
-    return this.strategy.siteId();
+    return this._siteIdOverride() ?? this.strategy.siteId();
+  }
+
+  private readonly _siteIdOverride = signal<string | null>(null);
+
+  setSiteIdOverride(siteId: string | null): void {
+    this._siteIdOverride.set(siteId);
+  }
+
+  async loadForSite(siteId: string): Promise<void> {
+    this.setSiteIdOverride(siteId);
+    await this.load();
   }
 
   async load(): Promise<void> {

@@ -105,6 +105,13 @@ export class NavigationService {
             visible: true,
           },
           {
+            id: 'pitch-prep',
+            label: 'Pitch prep',
+            icon: 'pi pi-bolt',
+            routerLink: '/protopipe/pitch-prep',
+            visible: true,
+          },
+          {
             id: 'integrations',
             label: 'Integrations',
             icon: 'pi pi-link',

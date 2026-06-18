@@ -15,8 +15,15 @@ import {
   fitLabel,
   sortPlanRows,
   COLUMN_TOOLTIPS,
+  competitionHint,
+  competitionTier,
+  fitTier,
+  opportunityTier,
+  volumeHint,
+  volumeTier,
   type KeywordPlanSortColumn,
   type KeywordPlanSortDirection,
+  type MetricTier,
 } from './keyword-picker.table';
 import { sourceLabel, formatKeywordVolume, formatCompetitionLabel, MIN_KEYWORD_VOLUME } from './keyword-picker.types';
 import type { ProtopipeSuggestedAvatar } from '@hive/contracts';
@@ -57,6 +64,14 @@ export class ProtopipeKeywordPickerComponent {
   readonly sourceLabel = sourceLabel;
   readonly columnTooltips = COLUMN_TOOLTIPS;
   readonly minKeywordVolume = MIN_KEYWORD_VOLUME;
+  readonly volumeTier = volumeTier;
+  readonly competitionTier = competitionTier;
+  readonly fitTier = fitTier;
+  readonly opportunityTier = opportunityTier;
+  readonly volumeHint = volumeHint;
+  readonly competitionHint = competitionHint;
+  readonly metricClasses = (tier: MetricTier): string =>
+    tier === 'unknown' ? 'kwpick__metric' : `kwpick__metric kwpick__metric--${tier}`;
 
   readonly sortColumn = signal<KeywordPlanSortColumn>('opportunity');
   readonly sortDirection = signal<KeywordPlanSortDirection>('desc');

@@ -282,10 +282,10 @@
                             Keyword <span class="kwpick__sort-ind">{{ sortIndicator('phrase') }}</span>
                           </button>
                         </th>
-                        <th scope="col" class="kwpick__th-num">
+                        <th scope="col" class="kwpick__th-metric">
                           <button
                             type="button"
-                            class="kwpick__th-sort"
+                            class="kwpick__th-sort kwpick__th-sort--center"
                             [title]="columnTooltips.volume"
                             (click)="toggleSort('volume')"
                           >
@@ -293,10 +293,10 @@
                             <span class="kwpick__sort-ind">{{ sortIndicator('volume') }}</span>
                           </button>
                         </th>
-                        <th scope="col">
+                        <th scope="col" class="kwpick__th-metric">
                           <button
                             type="button"
-                            class="kwpick__th-sort"
+                            class="kwpick__th-sort kwpick__th-sort--center"
                             [title]="columnTooltips.competition"
                             (click)="toggleSort('competition')"
                           >
@@ -304,10 +304,10 @@
                             <span class="kwpick__sort-ind">{{ sortIndicator('competition') }}</span>
                           </button>
                         </th>
-                        <th scope="col" class="kwpick__th-num">
+                        <th scope="col" class="kwpick__th-metric">
                           <button
                             type="button"
-                            class="kwpick__th-sort"
+                            class="kwpick__th-sort kwpick__th-sort--center"
                             [title]="columnTooltips.fit"
                             (click)="toggleSort('fit')"
                           >
@@ -315,10 +315,10 @@
                             <span class="kwpick__sort-ind">{{ sortIndicator('fit') }}</span>
                           </button>
                         </th>
-                        <th scope="col" class="kwpick__th-num">
+                        <th scope="col" class="kwpick__th-metric">
                           <button
                             type="button"
-                            class="kwpick__th-sort"
+                            class="kwpick__th-sort kwpick__th-sort--center"
                             [title]="columnTooltips.opportunity"
                             (click)="toggleSort('opportunity')"
                           >
@@ -359,32 +359,39 @@
                             />
                           </td>
                           <td class="kwpick__td-phrase">{{ kw.phrase }}</td>
-                          <td class="kwpick__td-num">
-                            <span class="kwpick__td-main">{{ formatVolume(kw.searchVolume) }}</span>
-                            @if (isLowVolume(kw)) {
-                              <span class="kwpick__td-sub">Low volume</span>
-                            }
+                          <td class="kwpick__td-metric">
+                            <div [class]="metricClasses(volumeTier(kw.searchVolume))">
+                              <span class="kwpick__metric-val">{{ formatVolume(kw.searchVolume) }}</span>
+                              <span class="kwpick__metric-lbl">{{
+                                volumeHint(kw.searchVolume, isLowVolume(kw))
+                              }}</span>
+                            </div>
                           </td>
-                          <td class="kwpick__td-comp">
+                          <td class="kwpick__td-metric">
                             @if (formatCompetitionCell(kw); as comp) {
-                              <span class="kwpick__td-main">
-                                @if (comp.score != null) {
-                                  <span class="kwpick__score-num">{{ comp.score }}</span>
-                                  <span class="kwpick__score-sep">·</span>
-                                }
-                                {{ comp.label }}
-                              </span>
-                              <span class="kwpick__td-sub">{{ comp.band }}</span>
+                              <div [class]="metricClasses(competitionTier(kw))">
+                                <span class="kwpick__metric-val">{{
+                                  comp.score != null ? comp.score : '—'
+                                }}</span>
+                                <span class="kwpick__metric-lbl">{{
+                                  comp.score != null ? comp.label + ' · ' + competitionHint(kw) : 'No data'
+                                }}</span>
+                              </div>
                             }
                           </td>
-                          <td class="kwpick__td-num">
-                            <span class="kwpick__td-main">{{ fitLabel(kw.relevanceScore) }}</span>
-                            @if (kw.relevanceScore != null) {
-                              <span class="kwpick__td-sub">{{ kw.relevanceScore }}%</span>
-                            }
+                          <td class="kwpick__td-metric">
+                            <div [class]="metricClasses(fitTier(kw.relevanceScore))">
+                              <span class="kwpick__metric-val">{{ fitLabel(kw.relevanceScore) }}</span>
+                              <span class="kwpick__metric-lbl">{{
+                                kw.relevanceScore != null ? kw.relevanceScore + '% match' : 'No data'
+                              }}</span>
+                            </div>
                           </td>
-                          <td class="kwpick__td-num kwpick__td-opp">
-                            <span class="kwpick__td-main">{{ formatOpportunity(kw) }}</span>
+                          <td class="kwpick__td-metric">
+                            <div [class]="metricClasses(opportunityTier(kw.opportunityScore))">
+                              <span class="kwpick__metric-val">{{ formatOpportunity(kw) }}</span>
+                              <span class="kwpick__metric-lbl">opportunity</span>
+                            </div>
                           </td>
                           <td>
                             <span class="kwpick__pill">{{ sourceLabel(kw.source, kw.discoverySource) }}</span>

@@ -9,6 +9,66 @@
     <p class="sharpen-audiences__status sharpen-audiences__status--error">{{ error() }}</p>
   }
 
+  <section class="sharpen-audiences__target-customers" aria-label="Example target customer businesses">
+    <h2 class="sharpen-audiences__section-title">Example businesses you want to reach</h2>
+    <p class="sharpen-audiences__section-lede">
+      Add companies like your ideal customers. We'll scan their sites during keyword discovery to sharpen fit scoring.
+    </p>
+
+    <div class="sharpen-audiences__chip-row">
+      <input
+        class="sharpen-field-input sharpen-audiences__chip-input"
+        type="text"
+        [value]="targetCustomerDraft()"
+        (input)="onTargetCustomerDraftInput($any($event.target).value)"
+        (keydown.enter)="addTargetCustomer($event)"
+        [disabled]="targetCustomerSites().length >= maxTargetCustomers || savingTargetCustomers()"
+        inputmode="url"
+        placeholder="e.g. acme-engineering.com"
+      />
+      <button
+        type="button"
+        class="sharpen-btn sharpen-btn--ghost"
+        (click)="addTargetCustomer($event)"
+        [disabled]="!targetCustomerDraft().trim() || targetCustomerSites().length >= maxTargetCustomers"
+      >
+        Add
+      </button>
+    </div>
+
+    @if (targetCustomerSites().length > 0) {
+      <ul class="sharpen-audiences__chips">
+        @for (site of targetCustomerSites(); track site; let i = $index) {
+          <li class="sharpen-audiences__chip">
+            <span>{{ site }}</span>
+            <button
+              type="button"
+              class="sharpen-audiences__chip-remove"
+              (click)="removeTargetCustomer(i)"
+              [attr.aria-label]="'Remove ' + site"
+            >
+              ×
+            </button>
+          </li>
+        }
+      </ul>
+    }
+
+    <div class="sharpen-actions sharpen-audiences__target-actions">
+      <button
+        type="button"
+        class="sharpen-btn sharpen-btn--primary"
+        (click)="saveTargetCustomers()"
+        [disabled]="savingTargetCustomers() || !targetCustomersDirty()"
+      >
+        {{ savingTargetCustomers() ? 'Saving…' : 'Save examples' }}
+      </button>
+      @if (targetCustomerStatus()) {
+        <p class="sharpen-audiences__status">{{ targetCustomerStatus() }}</p>
+      }
+    </div>
+  </section>
+
   <div class="sharpen-audiences__toolbar">
     <button type="button" class="sharpen-btn sharpen-btn--primary" (click)="startAdd()" [disabled]="saving()">
       Add audience

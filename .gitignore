@@ -49,6 +49,7 @@ src/environments/environment.prod.ts
 
 # Design (large Figma — keep local)
 design/*.fig
+design/generated/
 
 # System files
 .DS_Store

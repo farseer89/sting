@@ -112,3 +112,66 @@
   padding: 1rem;
   color: var(--void-ink-muted, rgba(10, 10, 10, 0.55));
 }
+
+.sharpen-audiences__section-title {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.sharpen-audiences__section-lede {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: var(--void-ink-secondary);
+}
+
+.sharpen-audiences__target-customers {
+  padding: 1rem;
+  border: 1px solid var(--void-tile-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.sharpen-audiences__chip-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.sharpen-audiences__chip-input {
+  flex: 1;
+}
+
+.sharpen-audiences__chips {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sharpen-audiences__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(10, 10, 10, 0.06);
+  font-size: 0.85rem;
+}
+
+.sharpen-audiences__chip-remove {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.15rem;
+  color: var(--void-ink-muted, rgba(10, 10, 10, 0.55));
+}
+
+.sharpen-audiences__target-actions {
+  margin-top: 0.75rem;
+  align-items: center;
+}

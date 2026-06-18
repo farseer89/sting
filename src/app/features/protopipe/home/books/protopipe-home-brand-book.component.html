@@ -1,0 +1,209 @@
+<div class="brand-book">
+  <header class="brand-book__header">
+    <div>
+      <h1>Brand book</h1>
+      <p class="brand-book__lead">
+        Visual identity, voice, and inspiration that feed article and image generation.
+      </p>
+    </div>
+    <div class="brand-book__header-actions">
+      @if (!brandBookSvc.setupComplete()) {
+        <p-button label="Run setup wizard" icon="pi pi-sparkles" severity="secondary" (onClick)="runWizard.emit()" />
+      } @else {
+        <span class="brand-book__badge">Setup complete</span>
+      }
+      <p-button
+        [label]="brandBookSvc.saving() ? 'Saving…' : brandBookSvc.dirty() ? 'Save' : 'Saved'"
+        [disabled]="!brandBookSvc.dirty() || brandBookSvc.saving()"
+        (onClick)="save()"
+      />
+    </div>
+  </header>
+
+  @if (brandBookSvc.error(); as err) {
+    <p-message severity="error" [text]="err" styleClass="w-full mb-3" />
+  }
+
+  @if (brandBookSvc.loading()) {
+    <div class="brand-book__loading">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Loading brand book" />
+    </div>
+  } @else if (brandBookSvc.draft(); as book) {
+    <section class="brand-book__section">
+      <h2>Visual identity</h2>
+      <p class="hint">Image style applied to auto-generated blog photos.</p>
+      <div class="preset-grid">
+        @for (preset of imagePresets; track preset.id) {
+          <button
+            type="button"
+            class="preset-card"
+            [class.preset-card--active]="book.imageStyle.presetId === preset.id"
+            (click)="onPresetChange(preset.id)"
+          >
+            <strong>{{ preset.label }}</strong>
+            <span>{{ preset.description }}</span>
+          </button>
+        }
+      </div>
+      @if (book.imageStyle.presetId === 'custom') {
+        <label class="field">
+          <span>Custom image prompt suffix</span>
+          <textarea
+            pTextarea
+            class="w-full"
+            rows="3"
+            [ngModel]="book.imageStyle.promptSuffix ?? ''"
+            (ngModelChange)="onCustomSuffixChange($event)"
+          ></textarea>
+        </label>
+      }
+
+      <h3 class="subsection">Infographic style</h3>
+      <div class="preset-grid preset-grid--compact">
+        @for (variant of infographVariants; track variant.id) {
+          <button
+            type="button"
+            class="preset-card"
+            [class.preset-card--active]="book.infographStyle.variant === variant.id"
+            (click)="onInfographChange(variant.id)"
+          >
+            <strong>{{ variant.label }}</strong>
+            <span>{{ variant.description }}</span>
+          </button>
+        }
+      </div>
+      <div class="palette-row">
+        <label class="field">
+          <span>Primary</span>
+          <input
+            pInputText
+            [ngModel]="book.infographStyle.palette?.primary ?? '#0a2240'"
+            (ngModelChange)="onPaletteChange('primary', $event)"
+          />
+        </label>
+        <label class="field">
+          <span>Accent</span>
+          <input
+            pInputText
+            [ngModel]="book.infographStyle.palette?.accent ?? '#006e99'"
+            (ngModelChange)="onPaletteChange('accent', $event)"
+          />
+        </label>
+        <label class="field">
+          <span>Background</span>
+          <input
+            pInputText
+            [ngModel]="book.infographStyle.palette?.background ?? '#f5f5f0'"
+            (ngModelChange)="onPaletteChange('background', $event)"
+          />
+        </label>
+      </div>
+    </section>
+
+    <section class="brand-book__section">
+      <h2>Brand voice</h2>
+      <label class="field">
+        <span>Tone</span>
+        <input
+          pInputText
+          class="w-full"
+          [ngModel]="book.voice.tone ?? ''"
+          (ngModelChange)="brandBookSvc.patchVoiceField('tone', $event)"
+        />
+      </label>
+      <label class="field">
+        <span>Point of view</span>
+        <input
+          pInputText
+          class="w-full"
+          placeholder="e.g. first person plural, we"
+          [ngModel]="book.voice.pointOfView ?? ''"
+          (ngModelChange)="brandBookSvc.patchVoiceField('pointOfView', $event)"
+        />
+      </label>
+      <label class="field">
+        <span>Phrases to avoid</span>
+        <input
+          pInputText
+          class="w-full"
+          placeholder="Comma-separated"
+          [ngModel]="(book.voice.avoidPhrases ?? []).join(', ')"
+          (ngModelChange)="brandBookSvc.patchAvoidPhrases($event)"
+        />
+      </label>
+      <h3 class="subsection">Style examples</h3>
+      @for (i of [0, 1, 2, 3, 4]; track i) {
+        <textarea
+          pTextarea
+          class="w-full mb-2"
+          rows="3"
+          placeholder="Gold paragraph the agent should emulate"
+          [ngModel]="book.styleExamples[i] ?? ''"
+          (ngModelChange)="brandBookSvc.patchStyleExample(i, $event)"
+        ></textarea>
+      }
+    </section>
+
+    <section class="brand-book__section">
+      <h2>Inspiration articles</h2>
+      <p class="hint">Articles the client admires — style signals for generation.</p>
+      @if (book.inspirationArticles.length) {
+        <ul class="inspiration-list">
+          @for (article of book.inspirationArticles; track article.id) {
+            <li>
+              <a [href]="article.url" target="_blank" rel="noopener">{{ article.url }}</a>
+              <span class="status status--{{ article.status }}">{{ article.status }}</span>
+              @if (article.notes) {
+                <p>{{ article.notes }}</p>
+              }
+            </li>
+          }
+        </ul>
+      }
+      <label class="field">
+        <span>Article URL</span>
+        <input
+          pInputText
+          class="w-full"
+          [ngModel]="inspirationUrl()"
+          (ngModelChange)="inspirationUrl.set($event)"
+        />
+      </label>
+      <label class="field">
+        <span>What they like about it</span>
+        <input
+          pInputText
+          class="w-full"
+          [ngModel]="inspirationNotes()"
+          (ngModelChange)="inspirationNotes.set($event)"
+        />
+      </label>
+      <p-button label="Add inspiration" icon="pi pi-plus" (onClick)="addInspiration()" />
+    </section>
+
+    <section class="brand-book__section">
+      <h2>Corrections history</h2>
+      <p class="hint">
+        Voice and style corrections from the writer and brand book. Factual corrections live in
+        <a routerLink="/home" fragment="sharpen">Sharpen</a>.
+      </p>
+      @if (book.corrections.length) {
+        <ul class="corrections-list">
+          @for (c of book.corrections; track c.id) {
+            <li>
+              <span class="correction-kind">{{ c.kind }}</span>
+              @if (c.original) {
+                <p><s>{{ c.original }}</s> → {{ c.corrected }}</p>
+              } @else {
+                <p>{{ c.corrected }}</p>
+              }
+              <small>{{ c.source }} · {{ c.createdAt | date: 'mediumDate' }}</small>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="empty">No corrections yet — edits in the writer will appear here.</p>
+      }
+    </section>
+  }
+</div>

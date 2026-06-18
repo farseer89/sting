@@ -193,7 +193,7 @@ export class AddSiteWizardComponent implements OnInit {
         theme: this.theme,
         basics,
       });
-      await this.router.navigate(['/protopipe/site-builder/sites', siteId, 'edit']);
+      await this.router.navigate(['/home/brand-setup'], { queryParams: { siteId } });
     } catch (err) {
       this.submitError.set(parseProtopipeApiError(err, 'Could not create site.'));
     } finally {

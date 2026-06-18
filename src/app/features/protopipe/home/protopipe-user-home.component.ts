@@ -13,7 +13,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { NavigationEnd, Router } from '@angular/router';
+import { NavigationEnd, Router, ActivatedRoute } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import type { CognitivePackCatalogItem } from '../thought-packs/cognitive-pack.model';
 import { isPackSelectable } from '../thought-packs/cognitive-pack-catalog';
@@ -37,6 +37,9 @@ import { ProtopipeWriterContextPanelComponent } from './strategy/protopipe-write
 import { ProtopipeKeywordPickerComponent } from './keyword-picker/protopipe-keyword-picker.component';
 import { ProtopipeHomeRunbooksComponent } from './runbooks/protopipe-home-runbooks.component';
 import { ProtopipeMediaStudioComponent } from '../admin/media-studio/protopipe-media-studio.component';
+import { ProtopipeHomeBrandBookComponent } from './books/protopipe-home-brand-book.component';
+import { ProtopipeHomeBusinessDetailsComponent } from './books/protopipe-home-business-details.component';
+import { ProtopipeHomeGoalsComponent } from './books/protopipe-home-goals.component';
 import { ProtopipeWriterInspectorBridge } from '../content/writer/protopipe-writer-inspector.bridge';
 import { ProtopipeHomeSidePanelService } from './protopipe-home-side-panel.service';
 import {
@@ -46,7 +49,17 @@ import {
 } from './protopipe-home-nav';
 import { resolveBootstrapSiteId } from '../resolve-bootstrap-site-id';
 
-export type ProtopipeHomeView = 'keywords' | 'strategy' | 'sharpen' | 'writer' | 'packs' | 'runbooks' | 'media-studio';
+export type ProtopipeHomeView =
+  | 'keywords'
+  | 'strategy'
+  | 'sharpen'
+  | 'writer'
+  | 'packs'
+  | 'runbooks'
+  | 'media-studio'
+  | 'brand-book'
+  | 'business-details'
+  | 'goals';
 
 function initialsFromName(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -78,6 +91,9 @@ function initialsFromName(name: string): string {
     ThoughtPackDetailComponent,
     ProtopipeHomeRunbooksComponent,
     ProtopipeMediaStudioComponent,
+    ProtopipeHomeBrandBookComponent,
+    ProtopipeHomeBusinessDetailsComponent,
+    ProtopipeHomeGoalsComponent,
   ],
   templateUrl: './protopipe-user-home.component.html',
   styleUrl: './protopipe-user-home.component.scss',
@@ -85,6 +101,7 @@ function initialsFromName(name: string): string {
 export class ProtopipeUserHomeComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly auth = inject(AuthService);
   private readonly onboarding = inject(ProtopipeOnboardingStateService);
   private readonly strategy = inject(ProtopipeStrategyService);
@@ -176,9 +193,13 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.writerViewState.setExitHandler(() => this.leaveWriterFocus());
     this.strategyViewState.setEnterWriterHandler(() => this.enterWriterFocus());
     this.syncPacksFromRoute();
+    this.syncViewFromQuery();
     this.router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
-      .subscribe(() => this.syncPacksFromRoute());
+      .subscribe(() => {
+        this.syncPacksFromRoute();
+        this.syncViewFromQuery();
+      });
     void this.loadBootstrap();
   }
 
@@ -236,6 +257,12 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.sidePanel.setOpen(false);
       this.activeNavId.set(item.id);
       this.activeView.set('runbooks');
+    } else if (item.id === 'books-brand') {
+      this.openBrandBookView();
+    } else if (item.id === 'books-business') {
+      this.openBusinessDetailsView();
+    } else if (item.id === 'books-goals') {
+      this.openGoalsView();
     } else if (item.id === 'int-wordpress' || item.id === 'int-google') {
       void this.router.navigate(['/protopipe/settings/integrations']);
     }
@@ -312,6 +339,41 @@ export class ProtopipeUserHomeComponent implements OnInit {
 
   onPackSetSiteDefault(pack: CognitivePackCatalogItem): void {
     void this.thoughtPacks.setSiteDefault(pack);
+  }
+
+  openBrandBookView(): void {
+    this.leaveWriterFocus();
+    this.sidePanel.setOpen(false);
+    this.activeNavId.set('books-brand');
+    this.activeView.set('brand-book');
+  }
+
+  openBusinessDetailsView(): void {
+    this.leaveWriterFocus();
+    this.sidePanel.setOpen(false);
+    this.activeNavId.set('books-business');
+    this.activeView.set('business-details');
+  }
+
+  openGoalsView(): void {
+    this.leaveWriterFocus();
+    this.sidePanel.setOpen(false);
+    this.activeNavId.set('books-goals');
+    this.activeView.set('goals');
+  }
+
+  openBrandSetupWizard(): void {
+    const siteId = this.siteId();
+    void this.router.navigate(['/home/brand-setup'], {
+      queryParams: siteId ? { siteId } : {},
+    });
+  }
+
+  private syncViewFromQuery(): void {
+    const view = this.route.snapshot.queryParamMap.get('view');
+    if (view === 'brand-book') {
+      this.openBrandBookView();
+    }
   }
 
   private syncPacksFromRoute(): void {

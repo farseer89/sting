@@ -1,0 +1,56 @@
+<div class="book-aggregator">
+  <header>
+    <h1>Business details</h1>
+    <p class="lead">Verified facts and onboarding context — edit in Sharpen.</p>
+    <p-button label="Open Sharpen" icon="pi pi-pencil" severity="secondary" (onClick)="goSharpen.emit()" />
+  </header>
+
+  @if (loading()) {
+    <div class="loading"><p-progressSpinner strokeWidth="4" /></div>
+  } @else {
+    @if (error(); as err) {
+      <p class="error">{{ err }}</p>
+    }
+
+    @if (profile(); as p) {
+      <section>
+        <h2>Onboarding profile</h2>
+        @if (p.services.length) {
+          <p><strong>Services:</strong> {{ p.services.join(', ') }}</p>
+        }
+        @if (p.competitors.length) {
+          <p><strong>Competitors:</strong> {{ p.competitors.join(', ') }}</p>
+        }
+        @if (p.customerAvatars.length) {
+          <p><strong>Customer avatars:</strong></p>
+          <ul>
+            @for (a of p.customerAvatars; track $index) {
+              <li>{{ a }}</li>
+            }
+          </ul>
+        }
+        @if (p.targetCustomerSites?.length) {
+          <p><strong>Target customers:</strong> {{ p.targetCustomerSites!.join(', ') }}</p>
+        }
+        <p><strong>Market:</strong> {{ p.marketScope }}</p>
+      </section>
+    }
+
+    <section>
+      <h2>Answered context cards</h2>
+      @if (answeredCards().length) {
+        <ul class="card-list">
+          @for (card of answeredCards(); track card.id) {
+            <li>
+              <strong>{{ card.cardText }}</strong>
+              <p>{{ card.answer?.value }}</p>
+              <small>{{ card.updatedAt | date: 'mediumDate' }}</small>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="empty">No answered cards yet.</p>
+      }
+    </section>
+  }
+</div>

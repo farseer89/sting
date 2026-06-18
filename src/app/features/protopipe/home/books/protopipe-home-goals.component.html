@@ -1,0 +1,29 @@
+<div class="book-aggregator">
+  <header>
+    <h1>Goals</h1>
+    <p class="lead">Strategy summary and target customers — refine in Your strategy.</p>
+    <p-button label="Open strategy" icon="pi pi-sitemap" severity="secondary" (onClick)="goStrategy.emit()" />
+  </header>
+
+  <section>
+    <h2>Strategy summary</h2>
+    @if (summary()) {
+      <p class="summary">{{ summary() }}</p>
+    } @else {
+      <p class="empty">No strategy summary yet — confirm keywords and strategy first.</p>
+    }
+  </section>
+
+  @if (profile(); as p) {
+    <section>
+      <h2>Target market</h2>
+      <p><strong>Scope:</strong> {{ p.marketScope }}</p>
+      @if (p.serpLocationName) {
+        <p><strong>Local focus:</strong> {{ p.serpLocationName }}</p>
+      }
+      @if (p.targetCustomerSites?.length) {
+        <p><strong>ICP examples:</strong> {{ p.targetCustomerSites!.join(', ') }}</p>
+      }
+    </section>
+  }
+</div>

@@ -24,6 +24,16 @@ export interface ProtopipeHomeNavItem {
 /** Premiere-style nav for the user home — structure visible, features wired later. */
 export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
   {
+    id: 'books',
+    label: 'Books',
+    icon: 'sparkles',
+    children: [
+      { id: 'books-brand', label: 'Brand book', icon: 'sparkles' },
+      { id: 'books-business', label: 'Business details', icon: 'users' },
+      { id: 'books-goals', label: 'Goals', icon: 'sitemap' },
+    ],
+  },
+  {
     id: 'start',
     label: 'Get started',
     icon: 'sparkles',
@@ -73,4 +83,4 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
   },
 ];
 
-export const PROTOPIPE_HOME_NAV_DEFAULT_OPEN = ['start', 'content'] as const;
+export const PROTOPIPE_HOME_NAV_DEFAULT_OPEN = ['books', 'start', 'content'] as const;

@@ -1,0 +1,153 @@
+<div class="brand-setup">
+  <header class="brand-setup__header">
+    <a routerLink="/home" class="brand-setup__skip">Set up later</a>
+    <p class="brand-setup__progress">Step {{ step() }} of {{ totalSteps }}</p>
+    <h1>Brand book setup</h1>
+  </header>
+
+  @if (submitError(); as err) {
+    <p-message severity="error" [text]="err" styleClass="w-full mb-3" />
+  }
+
+  @switch (step()) {
+    @case (1) {
+      <section class="brand-setup__step">
+        <h2>Welcome</h2>
+        <p>
+          We'll capture <strong>{{ siteLabel() }}</strong>'s visual identity and voice so articles
+          and images stay on-brand from the first draft.
+        </p>
+        <p>This takes about five minutes. You can revisit the brand book anytime from home.</p>
+        <div class="brand-setup__actions">
+          <p-button label="Continue" icon="pi pi-arrow-right" iconPos="right" (onClick)="next()" />
+        </div>
+      </section>
+    }
+    @case (2) {
+      <section class="brand-setup__step">
+        <h2>Visual identity</h2>
+        <p>Choose how blog photos and infographics should look.</p>
+        @if (brandBookSvc.draft(); as book) {
+          <div class="preset-grid">
+            @for (preset of imagePresets; track preset.id) {
+              <button
+                type="button"
+                class="preset-card"
+                [class.preset-card--active]="book.imageStyle.presetId === preset.id"
+                (click)="onPresetChange(preset.id)"
+              >
+                <strong>{{ preset.label }}</strong>
+                <span>{{ preset.description }}</span>
+              </button>
+            }
+          </div>
+          <h3>Infographic style</h3>
+          <div class="preset-grid preset-grid--compact">
+            @for (variant of infographVariants; track variant.id) {
+              <button
+                type="button"
+                class="preset-card"
+                [class.preset-card--active]="book.infographStyle.variant === variant.id"
+                (click)="onInfographChange(variant.id)"
+              >
+                <strong>{{ variant.label }}</strong>
+              </button>
+            }
+          </div>
+        }
+        <div class="brand-setup__actions">
+          <p-button label="Back" severity="secondary" (onClick)="back()" />
+          <p-button label="Continue" (onClick)="next()" />
+        </div>
+      </section>
+    }
+    @case (3) {
+      <section class="brand-setup__step">
+        <h2>Brand voice</h2>
+        @if (brandBookSvc.draft(); as book) {
+          <label class="field">
+            <span>Tone</span>
+            <input
+              pInputText
+              class="w-full"
+              placeholder="e.g. confident, plain-spoken, expert but approachable"
+              [ngModel]="book.voice.tone ?? ''"
+              (ngModelChange)="brandBookSvc.patchVoiceField('tone', $event)"
+            />
+          </label>
+          <label class="field">
+            <span>Point of view</span>
+            <input
+              pInputText
+              class="w-full"
+              placeholder="e.g. we, first person plural"
+              [ngModel]="book.voice.pointOfView ?? ''"
+              (ngModelChange)="brandBookSvc.patchVoiceField('pointOfView', $event)"
+            />
+          </label>
+          <label class="field">
+            <span>Phrases to avoid</span>
+            <input
+              pInputText
+              class="w-full"
+              placeholder="Comma-separated"
+              [ngModel]="(book.voice.avoidPhrases ?? []).join(', ')"
+              (ngModelChange)="brandBookSvc.patchAvoidPhrases($event)"
+            />
+          </label>
+          <h3>Style examples</h3>
+          @for (i of [0, 1]; track i) {
+            <textarea
+              pTextarea
+              class="w-full mb-2"
+              rows="4"
+              placeholder="Paste a paragraph that sounds like this client"
+              [ngModel]="book.styleExamples[i] ?? ''"
+              (ngModelChange)="brandBookSvc.patchStyleExample(i, $event)"
+            ></textarea>
+          }
+        }
+        <div class="brand-setup__actions">
+          <p-button label="Back" severity="secondary" (onClick)="back()" />
+          <p-button label="Continue" (onClick)="next()" />
+        </div>
+      </section>
+    }
+    @case (4) {
+      <section class="brand-setup__step">
+        <h2>Inspiration</h2>
+        <p>Add up to three articles the client admires (optional).</p>
+        @for (i of [0, 1, 2]; track i) {
+          <label class="field">
+            <span>Article URL {{ i + 1 }}</span>
+            <input
+              pInputText
+              class="w-full"
+              [ngModel]="inspirationUrls()[i]"
+              (ngModelChange)="setInspirationUrl(i, $event)"
+            />
+          </label>
+        }
+        @if (brandBookSvc.draft(); as book) {
+          <div class="review">
+            <h3>Review</h3>
+            <p><strong>Image style:</strong> {{ book.imageStyle.presetId }}</p>
+            <p><strong>Infographics:</strong> {{ book.infographStyle.variant }}</p>
+            @if (book.voice.tone) {
+              <p><strong>Tone:</strong> {{ book.voice.tone }}</p>
+            }
+          </div>
+        }
+        <div class="brand-setup__actions">
+          <p-button label="Back" severity="secondary" (onClick)="back()" />
+          <p-button
+            label="Save brand book"
+            icon="pi pi-check"
+            [loading]="isSubmitting()"
+            (onClick)="finish()"
+          />
+        </div>
+      </section>
+    }
+  }
+</div>

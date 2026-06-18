@@ -225,6 +225,21 @@
                     <app-protopipe-media-studio />
                   </section>
                 }
+                @case ('brand-book') {
+                  <section class="glass glass--full glass--premiere" aria-label="Brand book">
+                    <app-protopipe-home-brand-book (runWizard)="openBrandSetupWizard()" />
+                  </section>
+                }
+                @case ('business-details') {
+                  <section class="glass glass--full glass--premiere" aria-label="Business details">
+                    <app-protopipe-home-business-details (goSharpen)="selectNavItem({ id: 'start-sharpen', label: 'Sharpen' })" />
+                  </section>
+                }
+                @case ('goals') {
+                  <section class="glass glass--full glass--premiere" aria-label="Goals">
+                    <app-protopipe-home-goals (goStrategy)="selectNavItem({ id: 'start-strategy', label: 'Your strategy' })" />
+                  </section>
+                }
               }
             }
           </div>

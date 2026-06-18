@@ -1,18 +1,23 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   input,
   OnInit,
   output,
   signal,
+  type WritableSignal,
 } from '@angular/core';
 import type { ProtopipeAudienceProfile, ProtopipeContextCard } from '@hive/contracts';
 import { forkJoin } from 'rxjs';
 import { ProtopipeApiService } from '../../protopipe-api.service';
+import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 
 type AudienceDraft = ProtopipeAudienceProfile;
+
+const MAX_TARGET_CUSTOMERS = 5;
 
 function emptyDraft(id: string): AudienceDraft {
   return {
@@ -34,6 +39,7 @@ function emptyDraft(id: string): AudienceDraft {
 })
 export class SharpenAudiencesComponent implements OnInit {
   private readonly api = inject(ProtopipeApiService);
+  private readonly strategy = inject(ProtopipeStrategyService);
 
   readonly siteId = input.required<string>();
   readonly changed = output<void>();
@@ -41,6 +47,8 @@ export class SharpenAudiencesComponent implements OnInit {
 
   readonly loading = signal(true);
   readonly saving = signal(false);
+  readonly savingTargetCustomers = signal(false);
+  readonly targetCustomerStatus = signal<string | null>(null);
   readonly error = signal<string | null>(null);
   readonly audiences = signal<ProtopipeAudienceProfile[]>([]);
   readonly pendingCards = signal<ProtopipeContextCard[]>([]);
@@ -48,8 +56,30 @@ export class SharpenAudiencesComponent implements OnInit {
   readonly editingId = signal<string | null>(null);
   readonly draft = signal<AudienceDraft | null>(null);
 
+  readonly targetCustomerSites = signal<string[]>([]);
+  readonly savedTargetCustomerSites = signal<string[]>([]);
+  readonly targetCustomerDraft = signal('');
+  readonly maxTargetCustomers = MAX_TARGET_CUSTOMERS;
+
+  readonly targetCustomersDirty = computed(() => {
+    const current = this.targetCustomerSites();
+    const saved = this.savedTargetCustomerSites();
+    if (current.length !== saved.length) return true;
+    const a = [...current].sort();
+    const b = [...saved].sort();
+    return a.some((v, i) => v !== b[i]);
+  });
+
   ngOnInit(): void {
+    this.syncTargetCustomersFromProfile();
     this.reload();
+  }
+
+  private syncTargetCustomersFromProfile(): void {
+    const saved = this.strategy.onboardingProfile()?.targetCustomerSites ?? [];
+    const copy = [...saved];
+    this.targetCustomerSites.set(copy);
+    this.savedTargetCustomerSites.set(copy);
   }
 
   reload(): void {
@@ -72,6 +102,7 @@ export class SharpenAudiencesComponent implements OnInit {
             (c) => c.topic === 'customer_fit' && c.source.avatarId,
           ),
         );
+        this.syncTargetCustomersFromProfile();
         this.loading.set(false);
       },
       error: (err) => {
@@ -141,6 +172,56 @@ export class SharpenAudiencesComponent implements OnInit {
     return (this.draft()?.exampleQueries ?? []).join('\n');
   }
 
+  addTargetCustomer(event?: Event): void {
+    event?.preventDefault();
+    this.commitDraft(
+      this.targetCustomerDraft,
+      this.targetCustomerSites,
+      MAX_TARGET_CUSTOMERS,
+      (v) => v.replace(/^https?:\/\//i, '').replace(/\/.*$/, '').toLowerCase(),
+    );
+  }
+
+  removeTargetCustomer(index: number): void {
+    this.targetCustomerSites.update((list) => list.filter((_, i) => i !== index));
+  }
+
+  onTargetCustomerDraftInput(value: string): void {
+    this.targetCustomerDraft.set(value);
+  }
+
+  saveTargetCustomers(): void {
+    const siteId = this.siteId();
+    if (!siteId || this.savingTargetCustomers()) return;
+
+    this.savingTargetCustomers.set(true);
+    this.error.set(null);
+    this.targetCustomerStatus.set(null);
+
+    this.api
+      .updateTargetCustomers$(siteId, {
+        targetCustomerSites: this.targetCustomerSites(),
+      })
+      .subscribe({
+        next: (res) => {
+          const saved = res.targetCustomerSites ?? [];
+          this.targetCustomerSites.set(saved);
+          this.savedTargetCustomerSites.set([...saved]);
+          this.savingTargetCustomers.set(false);
+          if (res.discoveryRunId) {
+            this.targetCustomerStatus.set('Rescanning example sites for keyword fit…');
+          } else {
+            this.targetCustomerStatus.set('Saved.');
+          }
+          this.changed.emit();
+        },
+        error: (err) => {
+          this.error.set(parseProtopipeApiError(err, 'Could not save target customer sites.'));
+          this.savingTargetCustomers.set(false);
+        },
+      });
+  }
+
   saveDraft(): void {
     const siteId = this.siteId();
     const draft = this.draft();
@@ -201,5 +282,30 @@ export class SharpenAudiencesComponent implements OnInit {
           this.saving.set(false);
         },
       });
+  }
+
+  private commitDraft(
+    draft: WritableSignal<string>,
+    list: WritableSignal<string[]>,
+    max: number,
+    normalize?: (value: string) => string,
+  ): void {
+    const raw = draft();
+    const parts = raw
+      .split(',')
+      .map((p) => (normalize ? normalize(p.trim()) : p.trim()))
+      .filter(Boolean);
+    if (parts.length === 0) return;
+    list.update((current) => {
+      const next = [...current];
+      for (const part of parts) {
+        if (next.length >= max) break;
+        if (!next.some((e) => e.toLowerCase() === part.toLowerCase())) {
+          next.push(part);
+        }
+      }
+      return next;
+    });
+    draft.set('');
   }
 }

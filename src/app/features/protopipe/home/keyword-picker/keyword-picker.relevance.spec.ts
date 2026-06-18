@@ -49,4 +49,18 @@ describe('keyword-picker.relevance', () => {
     expect(computeRelevanceScore(phrase, evCtx)).toBeGreaterThanOrEqual(15);
     expect(isRelevantForSeedExpansion(phrase, evCtx, 'ads_related')).toBe(true);
   });
+
+  it('tokenizes target customer example domains into relevance context', () => {
+    const ctx = buildRelevanceContext({
+      onboardingProfile: {
+        services: ['consulting'],
+        customerAvatars: ['engineering firms'],
+        competitors: [],
+        targetCustomerSites: ['acme-engineering.com'],
+        marketScope: 'national',
+      },
+    });
+    expect(ctx.distinctiveTokens).toContain('engineering');
+    expect(ctx.distinctiveTokens).toContain('acme');
+  });
 });

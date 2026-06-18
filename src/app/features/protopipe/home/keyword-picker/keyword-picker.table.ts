@@ -83,6 +83,60 @@ export function fitLabel(score: number | undefined): string {
   return 'Fair';
 }
 
+export type MetricTier = 'strong' | 'moderate' | 'weak' | 'unknown';
+
+export function volumeTier(volume: number | undefined): MetricTier {
+  if (volume == null || volume <= 0) return 'unknown';
+  if (volume >= 1000) return 'strong';
+  if (volume >= 100) return 'moderate';
+  return 'weak';
+}
+
+/** Lower competition score = easier to rank = strong. */
+export function competitionTier(option: KeywordPickerOption): MetricTier {
+  const score = competitionNumericScore(option);
+  if (score == null) return 'unknown';
+  if (score <= 30) return 'strong';
+  if (score <= 55) return 'moderate';
+  return 'weak';
+}
+
+export function fitTier(score: number | undefined): MetricTier {
+  if (score == null) return 'unknown';
+  if (score >= 70) return 'strong';
+  if (score >= 40) return 'moderate';
+  return 'weak';
+}
+
+export function opportunityTier(score: number | undefined): MetricTier {
+  if (score == null || score <= 0) return 'unknown';
+  if (score >= 200) return 'strong';
+  if (score >= 75) return 'moderate';
+  return 'weak';
+}
+
+export function competitionHint(option: KeywordPickerOption): string {
+  if (option.keywordDifficulty != null) {
+    const kd = option.keywordDifficulty;
+    if (kd <= 30) return 'Easier win';
+    if (kd <= 55) return 'Moderate';
+    return 'Competitive';
+  }
+  if (option.competition) {
+    const c = option.competition.toUpperCase();
+    if (c === 'LOW') return 'Light';
+    if (c === 'MEDIUM') return 'Moderate';
+    return 'Heavy';
+  }
+  return '—';
+}
+
+export function volumeHint(volume: number | undefined, lowVolume: boolean): string {
+  if (volume == null || volume <= 0) return 'No data';
+  if (lowVolume) return 'Low volume';
+  return 'searches/mo';
+}
+
 function volumeValue(option: KeywordPickerOption): number {
   return option.searchVolume ?? 0;
 }

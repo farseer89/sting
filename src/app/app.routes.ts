@@ -147,6 +147,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'home/brand-setup',
+    canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],
+    loadComponent: () =>
+      import('./features/protopipe/brand-book/protopipe-brand-setup-wizard.component').then(
+        (m) => m.ProtopipeBrandSetupWizardComponent,
+      ),
+  },
+  {
     // User-facing home — void white dashboard, outside the PrimeNG admin shell.
     path: 'home',
     canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],

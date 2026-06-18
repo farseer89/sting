@@ -275,9 +275,74 @@
 
     @if (step() === 4) {
       <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
-        <p class="eyebrow">Your competition</p>
+        <p class="eyebrow">Your ideal customers</p>
         <h1 class="question">{{ copy().step4Question }}</h1>
         <p class="helper">{{ copy().step4Helper }}</p>
+
+        <div class="field">
+          <div class="chip-input">
+            <input
+              #targetCustomerInput
+              id="targetCustomerDraft"
+              type="text"
+              pInputText
+              [value]="targetCustomerDraft()"
+              (input)="onTargetCustomerDraftInput($any($event.target).value)"
+              (keydown.enter)="addTargetCustomer($event)"
+              [disabled]="targetCustomerSites().length >= maxTargetCustomers"
+              inputmode="url"
+              placeholder="e.g. acme-engineering.com"
+            />
+            <button
+              type="button"
+              class="chip-add"
+              (click)="addTargetCustomer($event)"
+              [disabled]="!targetCustomerDraft().trim() || targetCustomerSites().length >= maxTargetCustomers"
+            >
+              <i class="pi pi-plus" aria-hidden="true"></i>
+              Add
+            </button>
+          </div>
+
+          @if (targetCustomerSites().length > 0) {
+            <ul class="chip-list" aria-label="Target customer examples added">
+              @for (site of targetCustomerSites(); track site; let i = $index) {
+                <li class="chip">
+                  <span>{{ site }}</span>
+                  <button
+                    type="button"
+                    class="chip-remove"
+                    (click)="removeTargetCustomer(i)"
+                    [attr.aria-label]="'Remove ' + site"
+                  >
+                    <i class="pi pi-times" aria-hidden="true"></i>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+          <small class="helper-inline">
+            Add up to {{ maxTargetCustomers }}, or skip with Continue.
+          </small>
+        </div>
+
+        <div class="actions">
+          <span class="enter-hint">press Enter ↵</span>
+          <p-button
+            type="submit"
+            label="Continue"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+          />
+        </div>
+      </form>
+    }
+
+    @if (step() === 5) {
+      <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
+        <p class="eyebrow">Your competition</p>
+        <h1 class="question">{{ copy().step5Question }}</h1>
+        <p class="helper">{{ copy().step5Helper }}</p>
 
         <div class="field">
           <div class="chip-input">
@@ -323,7 +388,7 @@
           }
           <small class="helper-inline">
             @if (isStrategyOnly()) {
-              {{ copy().step4Footer }}
+              {{ copy().step5Footer }}
             } @else {
               Add up to {{ maxCompetitors }}, or skip with Continue.
             }
@@ -342,7 +407,7 @@
       </form>
     }
 
-    @if (step() === 5) {
+    @if (step() === 6) {
       <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
         <p class="eyebrow">Your market</p>
         <h1 class="question">Where are your customers?</h1>
@@ -423,11 +488,11 @@
       </form>
     }
 
-    @if (step() === 6 && !isComplete()) {
+    @if (step() === 7 && !isComplete()) {
       <form [formGroup]="form" class="step" (ngSubmit)="submit()">
         <p class="eyebrow">Last thing</p>
-        <h1 class="question">{{ copy().step6Question }}</h1>
-        <p class="helper">{{ copy().step6Helper }}</p>
+        <h1 class="question">{{ copy().step7Question }}</h1>
+        <p class="helper">{{ copy().step7Helper }}</p>
 
         <div class="field">
           <input
@@ -437,7 +502,7 @@
             formControlName="businessName"
             pInputText
             autocomplete="organization"
-            [placeholder]="copy().step6Placeholder"
+            [placeholder]="copy().step7Placeholder"
           />
         </div>
 

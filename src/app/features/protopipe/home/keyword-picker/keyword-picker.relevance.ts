@@ -114,6 +114,9 @@ export function buildRelevanceContext(input: {
     for (const avatar of profile.customerAvatars ?? []) {
       addText(avatar);
     }
+    for (const site of profile.targetCustomerSites ?? []) {
+      addText(decomposeHostname(site));
+    }
   } else {
     const summary = (input.strategySummary ?? '').trim();
     if (summary) {

@@ -7,6 +7,15 @@
     </p>
   </header>
 
+  <p-message
+    severity="info"
+    styleClass="w-full mb-3"
+    text="Voice and style settings now live in the Brand book on home. Changes here still sync to the brand book."
+  />
+  <p class="content-helper__migrate">
+    <a routerLink="/home" [queryParams]="{ view: 'brand-book' }">Open Brand book →</a>
+  </p>
+
   @if (helperError(); as err) {
     <p-message severity="error" [text]="err" styleClass="w-full mb-3" />
   }

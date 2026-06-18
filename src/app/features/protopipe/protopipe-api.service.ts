@@ -72,6 +72,10 @@ import type {
   SiteKnowledgeListResponse,
   UpdateContentPostRequest,
   UserContentHelperResponse,
+  ProtopipeBrandBookResponse,
+  PutProtopipeBrandBookRequest,
+  BrandBookInspirationIngestRequest,
+  BrandBookInspirationIngestResponse,
   ProtopipeLeadsListResponse,
   ProtopipeLeadDetailResponse,
   ConvertLeadResponse,
@@ -731,6 +735,38 @@ export class ProtopipeApiService {
     return firstValueFrom(
       this.http.post<ContentHelperIngestResponse>(
         protopipeApiUrl(ProtopipeEndpoints.ingestContentHelper.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  getBrandBook(siteId: string): Promise<ProtopipeBrandBookResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeBrandBookResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.getBrandBook.path, { siteId }),
+      ),
+    );
+  }
+
+  putBrandBook(
+    siteId: string,
+    body: PutProtopipeBrandBookRequest,
+  ): Promise<ProtopipeBrandBookResponse> {
+    return firstValueFrom(
+      this.http.put<ProtopipeBrandBookResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.putBrandBook.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  ingestBrandBookInspiration(
+    siteId: string,
+    body: BrandBookInspirationIngestRequest,
+  ): Promise<BrandBookInspirationIngestResponse> {
+    return firstValueFrom(
+      this.http.post<BrandBookInspirationIngestResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.ingestBrandBookInspiration.path, { siteId }),
         body,
       ),
     );

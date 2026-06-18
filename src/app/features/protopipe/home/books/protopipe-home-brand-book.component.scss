@@ -1,0 +1,155 @@
+.brand-book {
+  padding: 1.5rem 2rem 2.5rem;
+  max-width: 52rem;
+}
+
+.brand-book__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.brand-book__header h1 {
+  margin: 0 0 0.35rem;
+  font-size: 1.5rem;
+}
+
+.brand-book__lead {
+  margin: 0;
+  color: var(--text-color-secondary, #64748b);
+}
+
+.brand-book__header-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.brand-book__badge {
+  font-size: 0.85rem;
+  color: #15803d;
+  background: #dcfce7;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+}
+
+.brand-book__loading {
+  display: flex;
+  justify-content: center;
+  padding: 3rem;
+}
+
+.brand-book__section {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.brand-book__section h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.subsection {
+  margin: 1.25rem 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.hint {
+  margin: 0 0 1rem;
+  color: var(--text-color-secondary, #64748b);
+  font-size: 0.9rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.preset-grid--compact {
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+}
+
+.preset-card {
+  text-align: left;
+  padding: 0.75rem;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 0.5rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.preset-card strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.preset-card span {
+  font-size: 0.8rem;
+  color: var(--text-color-secondary, #64748b);
+}
+
+.preset-card--active {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px #2563eb;
+}
+
+.palette-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.inspiration-list,
+.corrections-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+}
+
+.inspiration-list li,
+.corrections-list li {
+  padding: 0.65rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.status {
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.status--ready {
+  color: #15803d;
+}
+
+.status--pending {
+  color: #b45309;
+}
+
+.status--failed {
+  color: #b91c1c;
+}
+
+.correction-kind {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.empty {
+  color: var(--text-color-secondary, #64748b);
+  font-style: italic;
+}

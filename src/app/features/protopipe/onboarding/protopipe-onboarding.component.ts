@@ -40,11 +40,12 @@ import {
   type OnboardingModeId,
 } from './onboarding-market.constants';
 
-type Step = 1 | 2 | 3 | 4 | 5 | 6;
-const TOTAL_STEPS = 6 as const;
+type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+const TOTAL_STEPS = 7 as const;
 
 const MAX_SERVICES = 8;
 const MAX_COMPETITORS = 3;
+const MAX_TARGET_CUSTOMERS = 5;
 const MAX_CUSTOMER_AVATARS = 12;
 
 @Component({
@@ -72,6 +73,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
   readonly totalSteps = TOTAL_STEPS;
   readonly maxServices = MAX_SERVICES;
   readonly maxCompetitors = MAX_COMPETITORS;
+  readonly maxTargetCustomers = MAX_TARGET_CUSTOMERS;
   readonly step = signal<Step>(1);
   readonly isSubmitting = signal(false);
   readonly isComplete = signal(false);
@@ -91,6 +93,8 @@ export class ProtopipeOnboardingComponent implements OnInit {
   readonly serviceDraft = signal('');
   readonly competitors = signal<string[]>([]);
   readonly competitorDraft = signal('');
+  readonly targetCustomerSites = signal<string[]>([]);
+  readonly targetCustomerDraft = signal('');
 
   /** Customer avatars — what each person wants (simple text per slot). */
   readonly maxCustomerAvatars = MAX_CUSTOMER_AVATARS;
@@ -134,20 +138,23 @@ export class ProtopipeOnboardingComponent implements OnInit {
       step2Helper: strategy
         ? 'Add the services you want to test — these drive your market research.'
         : 'Add the things you want more customers for — one at a time. These drive your keyword suggestions.',
-      step4Question: strategy ? 'Who would you compete with?' : 'Who are your competitors?',
-      step4Helper: strategy
+      step4Question: 'Businesses you want to reach',
+      step4Helper:
+        "Add a few companies like the customers you want — e.g. acme-engineering.com. We'll scan their sites to learn what they do.",
+      step5Question: strategy ? 'Who would you compete with?' : 'Who are your competitors?',
+      step5Helper: strategy
         ? "Add at least one competitor site. We'll learn from the keywords they rank for."
         : "Add a few competitor sites (or ones you admire). We'll mine the keywords they already rank for. Optional, but it makes your suggestions much sharper.",
-      step4Footer: strategy
+      step5Footer: strategy
         ? 'Add at least 1 to continue.'
         : 'Add up to {{max}}, or skip with Continue.',
-      step6Question: strategy
+      step7Question: strategy
         ? 'What should we call this project?'
         : "What's the business called?",
-      step6Helper: strategy
+      step7Helper: strategy
         ? "We'll use this name across your workspace."
         : "We'll use this name across your dashboard.",
-      step6Placeholder: strategy ? 'Maui EV idea' : 'Maui Electric',
+      step7Placeholder: strategy ? 'Maui EV idea' : 'Maui Electric',
       submitLabel: strategy ? 'Build my strategy' : 'Find my keywords',
     };
   });
@@ -178,6 +185,11 @@ export class ProtopipeOnboardingComponent implements OnInit {
       });
     }
 
+    const targetCustomers = this.targetCustomerSites();
+    if (targetCustomers.length > 0) {
+      chips.push({ label: 'Target examples', value: targetCustomers.join(', ') });
+    }
+
     const competitors = this.competitors();
     if (competitors.length > 0) {
       chips.push({ label: 'Competitors', value: competitors.join(', ') });
@@ -197,6 +209,8 @@ export class ProtopipeOnboardingComponent implements OnInit {
   private readonly urlInput = viewChild<ElementRef<HTMLInputElement>>('urlInput');
   private readonly serviceInput = viewChild<ElementRef<HTMLInputElement>>('serviceInput');
   private readonly avatarInput0 = viewChild<ElementRef<HTMLInputElement>>('avatarInput0');
+  private readonly targetCustomerInput =
+    viewChild<ElementRef<HTMLInputElement>>('targetCustomerInput');
   private readonly competitorInput =
     viewChild<ElementRef<HTMLInputElement>>('competitorInput');
   private readonly nameInput = viewChild<ElementRef<HTMLInputElement>>('nameInput');
@@ -282,6 +296,26 @@ export class ProtopipeOnboardingComponent implements OnInit {
 
   onServiceDraftInput(value: string): void {
     this.serviceDraft.set(value);
+  }
+
+  // --- Target customer chip input ---
+
+  addTargetCustomer(event?: Event): void {
+    event?.preventDefault();
+    this.commitDraft(
+      this.targetCustomerDraft,
+      this.targetCustomerSites,
+      MAX_TARGET_CUSTOMERS,
+      (v) => v.replace(/^https?:\/\//i, '').replace(/\/.*$/, '').toLowerCase(),
+    );
+  }
+
+  removeTargetCustomer(index: number): void {
+    this.targetCustomerSites.update((list) => list.filter((_, i) => i !== index));
+  }
+
+  onTargetCustomerDraftInput(value: string): void {
+    this.targetCustomerDraft.set(value);
   }
 
   // --- Competitor chip input ---
@@ -450,6 +484,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
     }
     // Flush any unconfirmed chip drafts before validating.
     this.addService();
+    this.addTargetCustomer();
     this.addCompetitor();
     if (
       !this.form.valid ||
@@ -497,6 +532,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
         onboardingMode: mode as ProtopipeOnboardingMode,
         services,
         customerAvatars: avatars,
+        targetCustomerSites: this.targetCustomerSites(),
         competitors: this.competitors(),
         marketScope: scope!,
         serpLocationCode: defaultSerpLocationCode,
@@ -544,8 +580,9 @@ export class ProtopipeOnboardingComponent implements OnInit {
       this.urlInput()?.nativeElement?.focus();
     } else if (s === 2) this.serviceInput()?.nativeElement?.focus();
     else if (s === 3) this.avatarInput0()?.nativeElement?.focus();
-    else if (s === 4) this.competitorInput()?.nativeElement?.focus();
-    else if (s === 6) this.nameInput()?.nativeElement?.focus();
+    else if (s === 4) this.targetCustomerInput()?.nativeElement?.focus();
+    else if (s === 5) this.competitorInput()?.nativeElement?.focus();
+    else if (s === 7) this.nameInput()?.nativeElement?.focus();
   }
 
   private isStepValid(step: Step): boolean {
@@ -560,10 +597,12 @@ export class ProtopipeOnboardingComponent implements OnInit {
       case 3:
         return this.isAvatarsStepValid();
       case 4:
-        return this.isCompetitorsStepValid();
+        return true;
       case 5:
-        return this.isMarketStepValid();
+        return this.isCompetitorsStepValid();
       case 6:
+        return this.isMarketStepValid();
+      case 7:
         return c.businessName.valid;
     }
   }
@@ -579,7 +618,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
     const c = this.form.controls;
     if (step === 1 && this.onboardingMode() === 'existing_site') {
       c.websiteUrl.markAsTouched();
-    } else if (step === 6) c.businessName.markAsTouched();
+    } else if (step === 7) c.businessName.markAsTouched();
   }
 
   private isAvatarsStepValid(): boolean {
@@ -607,17 +646,17 @@ export class ProtopipeOnboardingComponent implements OnInit {
         : 'Add at least one service you want to sell.';
     }
     if (step === 3) return 'Describe what at least one customer wants (5+ characters).';
-    if (step === 4 && this.isStrategyOnly()) {
+    if (step === 5 && this.isStrategyOnly()) {
       return 'Add at least one competitor to continue.';
     }
-    if (step === 5) {
+    if (step === 6) {
       const scope = this.customerScope();
       if (!scope) return 'Choose local, national, or worldwide.';
       if (scope === 'local') return 'Pick your town or city to continue.';
       if (scope === 'national') return 'Pick a country to continue.';
       return 'One of the fields above is invalid.';
     }
-    if (step === 6) {
+    if (step === 7) {
       return this.isStrategyOnly()
         ? 'Add a project name to continue.'
         : 'Add your business name to continue.';
@@ -632,10 +671,10 @@ export class ProtopipeOnboardingComponent implements OnInit {
     }
     if (this.services().length === 0) return 2;
     if (!this.isAvatarsStepValid()) return 3;
-    if (!this.isCompetitorsStepValid()) return 4;
-    if (!this.isMarketStepValid()) return 5;
-    if (!this.form.controls.businessName.valid) return 6;
-    return 6;
+    if (!this.isCompetitorsStepValid()) return 5;
+    if (!this.isMarketStepValid()) return 6;
+    if (!this.form.controls.businessName.valid) return 7;
+    return 7;
   }
 
   private normalizeUrl(raw: string): string {

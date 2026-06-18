@@ -278,6 +278,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'protopipe/admin/media-studio',
+        loadComponent: () =>
+          import('./features/protopipe/admin/media-studio/protopipe-media-studio.component').then(
+            (m) => m.ProtopipeMediaStudioComponent,
+          ),
+      },
+      {
         path: 'protopipe/leads',
         loadComponent: () =>
           import('./features/protopipe/leads/protopipe-leads-list.component').then(

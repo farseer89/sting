@@ -103,7 +103,6 @@ export class ShellComponent implements OnInit, OnDestroy {
     for (const id of this.nav.getDefaultOpenMenuIds()) {
       this.openMenus.add(id);
     }
-
     this.loadUserData();
     this.updateBreadcrumbs(this.router.url);
 
@@ -219,6 +218,10 @@ export class ShellComponent implements OnInit, OnDestroy {
     }
     if (path === '/home') {
       this.breadcrumbs = [{ label: 'Alpha Home' }];
+      return;
+    }
+    if (path === '/protopipe/admin/media-studio') {
+      this.breadcrumbs = [{ label: 'Admin' }, { label: 'Media Studio' }];
       return;
     }
     if (path === '/' || path === '') {

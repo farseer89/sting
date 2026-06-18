@@ -163,6 +163,13 @@ export class NavigationService {
             visible: true,
           },
           {
+            id: 'admin-media-studio',
+            label: 'Media Studio',
+            icon: 'pi pi-images',
+            routerLink: '/protopipe/admin/media-studio',
+            visible: true,
+          },
+          {
             id: 'admin-integrations',
             label: 'Integrations',
             icon: 'pi pi-link',

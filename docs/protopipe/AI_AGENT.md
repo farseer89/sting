@@ -33,6 +33,8 @@ LLM: **Claude** via `ANTHROPIC_API_KEY` in bagend only. Fallback keyword templat
 - `GET|PATCH /api/v2/protopipe/admin/global-knowledge`
 - `GET /api/v2/protopipe/admin/sites`
 - `GET|PATCH /api/v2/protopipe/admin/sites/:siteId/knowledge`
+- `GET /api/v2/protopipe/admin/media-studio/config`
+- `POST /api/v2/protopipe/admin/media-studio/generate`
 
 ## Sting surfaces
 
@@ -40,6 +42,7 @@ LLM: **Claude** via `ANTHROPIC_API_KEY` in bagend only. Fallback keyword templat
 |-------|-----------|--------|
 | `/protopipe/settings` | Content Helper | `ProtopipeAgentService` |
 | `/protopipe/admin/agent` | Agent Control | `ProtopipeAdminAgentService` |
+| `/protopipe/admin/media-studio` | Media Studio | `ProtopipeMediaStudioService` |
 | Writing tools (editor) | Article ideas | `ProtopipeAgentService` + `ProtopipeContentService` |
 
 Components do **not** call `ProtopipeApiService` directly.

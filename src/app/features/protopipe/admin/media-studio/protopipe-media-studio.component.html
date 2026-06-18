@@ -1,0 +1,90 @@
+<div class="media-studio page">
+  <header class="media-studio__header">
+    <h1>Media Studio</h1>
+    <p class="media-studio__lead">
+      Generate logos, photos, and infographics via fal.ai — platform admin only.
+    </p>
+  </header>
+
+  @if (error(); as err) {
+    <p-message severity="error" [text]="err" styleClass="w-full mb-3" />
+  }
+
+  @if (loadingConfig()) {
+    <div class="media-studio__loading">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Loading" />
+    </div>
+  } @else if (config(); as cfg) {
+    @if (!cfg.falConfigured) {
+      <p-message
+        severity="warn"
+        text="FAL_KEY is not configured on bagend. Add it to the server .env to enable generation."
+        styleClass="w-full mb-3"
+      />
+    }
+
+    <section class="media-studio__block">
+      <h2>Type</h2>
+      <p-selectButton
+        [options]="kindChoices()"
+        [ngModel]="kind()"
+        (ngModelChange)="onKindChange($event)"
+        optionLabel="label"
+        optionValue="value"
+      />
+      @if (selectedKindMeta(); as meta) {
+        <p class="hint">{{ meta.description }} Model: {{ meta.defaultModel }}</p>
+      }
+    </section>
+
+    <section class="media-studio__block">
+      <h2>Prompt</h2>
+      <p class="hint">Describe the concept — the server adds kind-specific style guidance.</p>
+      <textarea
+        pTextarea
+        class="w-full"
+        rows="6"
+        [ngModel]="prompt()"
+        (ngModelChange)="prompt.set($event)"
+        placeholder="e.g. Sparky Electric Hawaii — circuit-board lightning bolt, green gradient emblem…"
+      ></textarea>
+    </section>
+
+    <section class="media-studio__block media-studio__actions">
+      <div class="media-studio__variants">
+        <label for="variants">Variants</label>
+        <p-inputNumber
+          inputId="variants"
+          [ngModel]="numImages()"
+          (ngModelChange)="numImages.set($event ?? 1)"
+          [min]="1"
+          [max]="selectedKindMeta()?.maxVariants ?? 4"
+          [showButtons]="true"
+        />
+      </div>
+      <p-button
+        label="{{ generating() ? 'Generating…' : 'Generate' }}"
+        icon="pi pi-sparkles"
+        [disabled]="!falReady() || !prompt().trim() || generating()"
+        (onClick)="generate()"
+      />
+    </section>
+
+    @if (lastResult(); as result) {
+      <section class="media-studio__block">
+        <h2>Results</h2>
+        <p class="hint">Model: {{ result.model }}</p>
+        <div class="media-studio__grid">
+          @for (img of result.images; track img.url) {
+            <figure class="media-studio__card">
+              <img [src]="img.url" alt="Generated {{ result.kind }}" loading="lazy" />
+              <figcaption>
+                <a [href]="img.url" target="_blank" rel="noopener noreferrer">Open full size</a>
+              </figcaption>
+            </figure>
+          }
+        </div>
+      </section>
+    }
+  }
+</div>

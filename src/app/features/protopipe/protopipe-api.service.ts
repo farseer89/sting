@@ -11,6 +11,9 @@ import type {
   ProtopipeAnalyticsSetPropertyResponse,
   ProtopipeKeywordSerpResponse,
   AdminSitesListResponse,
+  AdminMediaStudioGenerateRequest,
+  AdminMediaStudioGenerateResponse,
+  MediaStudioConfigResponse,
   AgentRunResponse,
   ArticleIdeasResponse,
   ContentHelperIngestRequest,
@@ -751,7 +754,28 @@ export class ProtopipeApiService {
     );
   }
 
+
+  getMediaStudioConfig(): Promise<MediaStudioConfigResponse> {
+    return firstValueFrom(
+      this.http.get<MediaStudioConfigResponse>(
+        protopipeApiUrl(ProtopipeAdminEndpoints.mediaStudioConfig.path),
+      ),
+    );
+  }
+
+  generateMediaStudio(
+    body: AdminMediaStudioGenerateRequest,
+  ): Promise<AdminMediaStudioGenerateResponse> {
+    return firstValueFrom(
+      this.http.post<AdminMediaStudioGenerateResponse>(
+        protopipeApiUrl(ProtopipeAdminEndpoints.mediaStudioGenerate.path),
+        body,
+      ),
+    );
+  }
+
   getSiteBuilderComponents(): Promise<SiteBuilderComponentsResponse> {
+
     return firstValueFrom(
       this.http.get<SiteBuilderComponentsResponse>(
         protopipeApiUrl(ProtopipeEndpoints.siteBuilderComponents.path),

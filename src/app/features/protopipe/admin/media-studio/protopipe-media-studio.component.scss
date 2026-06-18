@@ -1,7 +1,23 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
 .media-studio {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
   max-width: 56rem;
+  width: 100%;
   margin: 0 auto;
   padding: 1.5rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 
   &__header h1 {
     margin: 0;
@@ -11,6 +27,76 @@
   &__lead {
     margin: 0.5rem 0 0;
     color: var(--p-text-muted-color);
+  }
+
+  &__tabs {
+    margin-bottom: 1.5rem;
+  }
+
+  &__summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: 1rem;
+  }
+
+  &__summary-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--p-content-border-color);
+    border-radius: var(--p-content-border-radius);
+    background: var(--p-content-background);
+  }
+
+  &__summary-label {
+    font-size: 0.8125rem;
+    color: var(--p-text-muted-color);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  &__summary-value {
+    font-size: 1.25rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__history {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  &__history-item {
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--p-content-border-color);
+  }
+
+  &__history-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    margin-bottom: 0.5rem;
+
+    time {
+      font-size: 0.8125rem;
+      color: var(--p-text-muted-color);
+      white-space: nowrap;
+    }
+  }
+
+  &__history-model {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.875rem;
+    color: var(--p-text-muted-color);
+    font-weight: normal;
+  }
+
+  &__history-prompt {
+    margin: 0 0 0.5rem;
+    line-height: 1.5;
   }
 
   &__block {

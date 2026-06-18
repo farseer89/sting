@@ -6,116 +6,185 @@
     </p>
   </header>
 
+  <section class="media-studio__block media-studio__tabs">
+    <p-selectButton
+      [options]="tabChoices"
+      [ngModel]="tab()"
+      (ngModelChange)="onTabChange($event)"
+      optionLabel="label"
+      optionValue="value"
+    />
+  </section>
+
   @if (error(); as err) {
     <p-message severity="error" [text]="err" styleClass="w-full mb-3" />
   }
 
-  @if (loadingConfig()) {
-    <div class="media-studio__loading">
-      <p-progressSpinner strokeWidth="4" ariaLabel="Loading" />
-    </div>
-  } @else if (configReady()) {
-    @if (!config()?.falConfigured) {
+  @if (tab() === 'generate') {
+    @if (loadingConfig()) {
+      <div class="media-studio__loading">
+        <p-progressSpinner strokeWidth="4" ariaLabel="Loading" />
+      </div>
+    } @else if (configReady()) {
+      @if (!config()?.falConfigured) {
+        <p-message
+          severity="warn"
+          text="FAL_KEY is not configured on bagend. Add it to the server .env to enable generation."
+          styleClass="w-full mb-3"
+        />
+      }
+
+      <section class="media-studio__block">
+        <h2>Type</h2>
+        <p-selectButton
+          [options]="kindChoices()"
+          [ngModel]="kind()"
+          (ngModelChange)="onKindChange($event)"
+          optionLabel="label"
+          optionValue="value"
+        />
+        @if (selectedKindMeta(); as meta) {
+          <p class="hint">{{ meta.description }}</p>
+        }
+      </section>
+
+      <section class="media-studio__block">
+        <h2>Model</h2>
+        <p-select
+          [options]="modelChoices()"
+          [ngModel]="model()"
+          (ngModelChange)="model.set($event)"
+          optionLabel="displayLabel"
+          optionValue="id"
+          placeholder="Choose a model"
+          styleClass="w-full"
+        />
+        @if (selectedModelMeta(); as modelMeta) {
+          <p class="hint">
+            {{ modelMeta.description }}
+            <span class="media-studio__price">{{ modelMeta.priceLabel }}</span>
+          </p>
+        }
+      </section>
+
+      <section class="media-studio__block">
+        <h2>Prompt</h2>
+        <p class="hint">Describe the concept — the server adds kind-specific style guidance.</p>
+        <textarea
+          pTextarea
+          class="w-full"
+          rows="6"
+          [ngModel]="prompt()"
+          (ngModelChange)="prompt.set($event)"
+          placeholder="e.g. Sparky Electric Hawaii — circuit-board lightning bolt, green gradient emblem…"
+        ></textarea>
+      </section>
+
+      <section class="media-studio__block media-studio__actions">
+        <div class="media-studio__variants">
+          <label for="variants">Variants</label>
+          <p-inputNumber
+            inputId="variants"
+            [ngModel]="numImages()"
+            (ngModelChange)="numImages.set($event ?? 1)"
+            [min]="1"
+            [max]="selectedKindMeta()?.maxVariants ?? 4"
+            [showButtons]="true"
+          />
+        </div>
+        <p-button
+          label="{{ generating() ? 'Generating…' : 'Generate' }}"
+          icon="pi pi-sparkles"
+          [disabled]="!falReady() || !prompt().trim() || !model() || generating()"
+          (onClick)="generate()"
+        />
+      </section>
+
+      @if (lastResult(); as result) {
+        <section class="media-studio__block">
+          <h2>Results</h2>
+          <p class="hint">
+            Model: {{ result.model }}
+            · Cost: {{ formatCost() }}
+            @if (result.cost?.estimated) {
+              <span class="media-studio__estimated">(estimated — fal did not return billable units)</span>
+            }
+          </p>
+          <div class="media-studio__grid">
+            @for (img of result.images; track img.url) {
+              <figure class="media-studio__card">
+                <img [src]="img.url" alt="Generated {{ result.kind }}" loading="lazy" />
+                <figcaption>
+                  <a [href]="img.url" target="_blank" rel="noopener noreferrer">Open full size</a>
+                </figcaption>
+              </figure>
+            }
+          </div>
+        </section>
+      }
+    } @else if (!loadingConfig() && error()) {
       <p-message
         severity="warn"
-        text="FAL_KEY is not configured on bagend. Add it to the server .env to enable generation."
+        text="Media Studio could not load. Try refreshing the page."
         styleClass="w-full mb-3"
       />
     }
-
-    <section class="media-studio__block">
-      <h2>Type</h2>
-      <p-selectButton
-        [options]="kindChoices()"
-        [ngModel]="kind()"
-        (ngModelChange)="onKindChange($event)"
-        optionLabel="label"
-        optionValue="value"
-      />
-      @if (selectedKindMeta(); as meta) {
-        <p class="hint">{{ meta.description }}</p>
-      }
-    </section>
-
-    <section class="media-studio__block">
-      <h2>Model</h2>
-      <p-select
-        [options]="modelChoices()"
-        [ngModel]="model()"
-        (ngModelChange)="model.set($event)"
-        optionLabel="displayLabel"
-        optionValue="id"
-        placeholder="Choose a model"
-        styleClass="w-full"
-      />
-      @if (selectedModelMeta(); as modelMeta) {
-        <p class="hint">
-          {{ modelMeta.description }}
-          <span class="media-studio__price">{{ modelMeta.priceLabel }}</span>
-        </p>
-      }
-    </section>
-
-    <section class="media-studio__block">
-      <h2>Prompt</h2>
-      <p class="hint">Describe the concept — the server adds kind-specific style guidance.</p>
-      <textarea
-        pTextarea
-        class="w-full"
-        rows="6"
-        [ngModel]="prompt()"
-        (ngModelChange)="prompt.set($event)"
-        placeholder="e.g. Sparky Electric Hawaii — circuit-board lightning bolt, green gradient emblem…"
-      ></textarea>
-    </section>
-
-    <section class="media-studio__block media-studio__actions">
-      <div class="media-studio__variants">
-        <label for="variants">Variants</label>
-        <p-inputNumber
-          inputId="variants"
-          [ngModel]="numImages()"
-          (ngModelChange)="numImages.set($event ?? 1)"
-          [min]="1"
-          [max]="selectedKindMeta()?.maxVariants ?? 4"
-          [showButtons]="true"
-        />
+  } @else {
+    @if (loadingHistory()) {
+      <div class="media-studio__loading">
+        <p-progressSpinner strokeWidth="4" ariaLabel="Loading history" />
       </div>
-      <p-button
-        label="{{ generating() ? 'Generating…' : 'Generate' }}"
-        icon="pi pi-sparkles"
-        [disabled]="!falReady() || !prompt().trim() || !model() || generating()"
-        (onClick)="generate()"
-      />
-    </section>
-
-    @if (lastResult(); as result) {
-      <section class="media-studio__block">
-        <h2>Results</h2>
-        <p class="hint">
-          Model: {{ result.model }}
-          · Cost: {{ formatCost() }}
-          @if (result.cost?.estimated) {
-            <span class="media-studio__estimated">(estimated — fal did not return billable units)</span>
-          }
-        </p>
-        <div class="media-studio__grid">
-          @for (img of result.images; track img.url) {
-            <figure class="media-studio__card">
-              <img [src]="img.url" alt="Generated {{ result.kind }}" loading="lazy" />
-              <figcaption>
-                <a [href]="img.url" target="_blank" rel="noopener noreferrer">Open full size</a>
-              </figcaption>
-            </figure>
-          }
+    } @else {
+      <section class="media-studio__block media-studio__summary">
+        <div class="media-studio__summary-card">
+          <span class="media-studio__summary-label">Total spend</span>
+          <strong class="media-studio__summary-value">{{ formatTotalCost() }}</strong>
+        </div>
+        <div class="media-studio__summary-card">
+          <span class="media-studio__summary-label">Generations</span>
+          <strong class="media-studio__summary-value">{{ totalGenerations() }}</strong>
         </div>
       </section>
+
+      @if (!historyItems().length) {
+        <p-message
+          severity="info"
+          text="No generations yet. Switch to Generate to create your first image."
+          styleClass="w-full mb-3"
+        />
+      } @else {
+        <section class="media-studio__history">
+          @for (entry of historyItems(); track entry.id) {
+            <article class="media-studio__history-item">
+              <header class="media-studio__history-meta">
+                <div>
+                  <strong>{{ kindLabel(entry.kind) }}</strong>
+                  <span class="media-studio__history-model">{{ entry.model }}</span>
+                </div>
+                <time [attr.datetime]="entry.createdAt">
+                  {{ entry.createdAt | date: 'medium' }}
+                </time>
+              </header>
+              <p class="media-studio__history-prompt">{{ entry.prompt }}</p>
+              <p class="hint">
+                {{ entry.numImages }} variant{{ entry.numImages === 1 ? '' : 's' }}
+                · {{ entry.imageSize }}
+                · {{ formatCostForEntry(entry) }}
+              </p>
+              <div class="media-studio__grid">
+                @for (img of entry.images; track img.url) {
+                  <figure class="media-studio__card">
+                    <img [src]="img.url" alt="Generated {{ entry.kind }}" loading="lazy" />
+                    <figcaption>
+                      <a [href]="img.url" target="_blank" rel="noopener noreferrer">Open full size</a>
+                    </figcaption>
+                  </figure>
+                }
+              </div>
+            </article>
+          }
+        </section>
+      }
     }
-  } @else if (!loadingConfig() && error()) {
-    <p-message
-      severity="warn"
-      text="Media Studio could not load. Try refreshing the page."
-      styleClass="w-full mb-3"
-    />
   }
 </div>

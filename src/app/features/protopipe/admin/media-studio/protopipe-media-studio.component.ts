@@ -1,6 +1,12 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import type { MediaStudioImageSize, MediaStudioKind, MediaStudioModelOption } from '@hive/contracts';
+import type {
+  MediaStudioHistoryEntry,
+  MediaStudioImageSize,
+  MediaStudioKind,
+  MediaStudioModelOption,
+} from '@hive/contracts';
 import { Button } from 'primeng/button';
 import { InputNumber } from 'primeng/inputnumber';
 import { Message } from 'primeng/message';
@@ -9,6 +15,13 @@ import { Select } from 'primeng/select';
 import { SelectButton } from 'primeng/selectbutton';
 import { Textarea } from 'primeng/textarea';
 import { ProtopipeMediaStudioService } from '../../protopipe-media-studio.service';
+
+type MediaStudioTab = 'generate' | 'history';
+
+interface TabChoice {
+  label: string;
+  value: MediaStudioTab;
+}
 
 interface KindChoice {
   label: string;
@@ -24,7 +37,17 @@ interface ModelChoice extends MediaStudioModelOption {
   selector: 'app-protopipe-media-studio',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, Button, Textarea, SelectButton, Select, InputNumber, ProgressSpinner, Message],
+  imports: [
+    DatePipe,
+    FormsModule,
+    Button,
+    Textarea,
+    SelectButton,
+    Select,
+    InputNumber,
+    ProgressSpinner,
+    Message,
+  ],
   templateUrl: './protopipe-media-studio.component.html',
   styleUrl: './protopipe-media-studio.component.scss',
 })
@@ -32,15 +55,26 @@ export class ProtopipeMediaStudioComponent implements OnInit {
   private readonly studio = inject(ProtopipeMediaStudioService);
 
   readonly loadingConfig = this.studio.loadingConfig;
+  readonly loadingHistory = this.studio.loadingHistory;
   readonly generating = this.studio.generating;
   readonly error = this.studio.error;
   readonly config = this.studio.config;
   readonly lastResult = this.studio.lastResult;
+  readonly historyItems = this.studio.historyItems;
+  readonly totalCostUsd = this.studio.totalCostUsd;
+  readonly totalGenerations = this.studio.totalGenerations;
+  readonly historyCurrency = this.studio.historyCurrency;
 
+  readonly tab = signal<MediaStudioTab>('generate');
   readonly kind = signal<MediaStudioKind>('logo');
   readonly model = signal('');
   readonly prompt = signal('');
   readonly numImages = signal(2);
+
+  readonly tabChoices: TabChoice[] = [
+    { label: 'Generate', value: 'generate' },
+    { label: 'History', value: 'history' },
+  ];
 
   readonly kindChoices = computed<KindChoice[]>(() =>
     (this.config()?.kinds ?? []).map((k) => ({ label: k.label, value: k.kind })),
@@ -66,6 +100,11 @@ export class ProtopipeMediaStudioComponent implements OnInit {
 
   readonly falReady = computed(() => this.config()?.falConfigured === true);
 
+  readonly configReady = computed(() => {
+    const cfg = this.config();
+    return Boolean(cfg?.kinds?.length && cfg?.models?.length);
+  });
+
   constructor() {
     effect(() => {
       const meta = this.selectedKindMeta();
@@ -83,25 +122,34 @@ export class ProtopipeMediaStudioComponent implements OnInit {
     await this.studio.loadConfig();
   }
 
+  async onTabChange(value: MediaStudioTab): Promise<void> {
+    this.tab.set(value);
+    if (value === 'history' && !this.studio.history()) {
+      await this.studio.loadHistory();
+    }
+  }
+
   onKindChange(value: MediaStudioKind): void {
     this.kind.set(value);
+  }
+
+  formatCostForEntry(entry: Pick<MediaStudioHistoryEntry, 'cost'>): string {
+    return formatCost(entry.cost);
   }
 
   formatCost(): string {
     const cost = this.lastResult()?.cost;
     if (!cost) return '';
-    const prefix = cost.estimated ? '~' : '';
-    const units =
-      cost.billableUnits !== null
-        ? `${cost.billableUnits} ${cost.unit}${cost.billableUnits === 1 ? '' : 's'}`
-        : `estimated ${cost.unit}s`;
-    return `${prefix}$${cost.totalUsd.toFixed(4)} ${cost.currency} (${units} × $${cost.unitPrice}/${cost.unit})`;
+    return formatCost(cost);
   }
 
-  configReady = computed(() => {
-    const cfg = this.config();
-    return Boolean(cfg?.kinds?.length && cfg?.models?.length);
-  });
+  formatTotalCost(): string {
+    return `$${this.totalCostUsd().toFixed(4)} ${this.historyCurrency()}`;
+  }
+
+  kindLabel(kind: MediaStudioKind): string {
+    return this.studio.kindOption(kind)?.label ?? kind;
+  }
 
   async generate(): Promise<void> {
     const meta = this.selectedKindMeta();
@@ -121,4 +169,13 @@ export class ProtopipeMediaStudioComponent implements OnInit {
 function formatUnitPrice(unitPrice: number, unit: string, currency: string): string {
   const formatted = unitPrice < 0.01 ? unitPrice.toFixed(4) : unitPrice.toFixed(3);
   return `$${formatted}/${unit} ${currency}`;
+}
+
+function formatCost(cost: MediaStudioHistoryEntry['cost']): string {
+  const prefix = cost.estimated ? '~' : '';
+  const units =
+    cost.billableUnits !== null
+      ? `${cost.billableUnits} ${cost.unit}${cost.billableUnits === 1 ? '' : 's'}`
+      : `estimated ${cost.unit}s`;
+  return `${prefix}$${cost.totalUsd.toFixed(4)} ${cost.currency} (${units} × $${cost.unitPrice}/${cost.unit})`;
 }

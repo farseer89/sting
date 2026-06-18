@@ -14,6 +14,7 @@ import type {
   AdminMediaStudioGenerateRequest,
   AdminMediaStudioGenerateResponse,
   MediaStudioConfigResponse,
+  MediaStudioHistoryResponse,
   AgentRunResponse,
   ArticleIdeasResponse,
   ContentHelperIngestRequest,
@@ -793,6 +794,16 @@ export class ProtopipeApiService {
       this.http.post<AdminMediaStudioGenerateResponse>(
         protopipeApiUrl(ProtopipeEndpoints.mediaStudioGenerate.path),
         body,
+      ),
+    );
+  }
+
+  getMediaStudioHistory(limit = 50): Promise<MediaStudioHistoryResponse> {
+    const params = new HttpParams().set('limit', String(limit));
+    return firstValueFrom(
+      this.http.get<MediaStudioHistoryResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.mediaStudioHistory.path),
+        { params },
       ),
     );
   }

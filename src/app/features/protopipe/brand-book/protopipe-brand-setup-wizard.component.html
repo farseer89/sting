@@ -1,8 +1,8 @@
-<div class="brand-setup">
+<div class="brand-setup bb-magazine">
   <header class="brand-setup__header">
     <a routerLink="/home" class="brand-setup__skip">Set up later</a>
-    <p class="brand-setup__progress">Step {{ step() }} of {{ totalSteps }}</p>
-    <h1>Brand book setup</h1>
+    <p class="bb-chapter">Step {{ step() }} of {{ totalSteps }}</p>
+    <h1 class="brand-setup__title">Brand book setup</h1>
   </header>
 
   @if (submitError(); as err) {
@@ -11,143 +11,219 @@
 
   @switch (step()) {
     @case (1) {
-      <section class="brand-setup__step">
-        <h2>Welcome</h2>
-        <p>
-          We'll capture <strong>{{ siteLabel() }}</strong>'s visual identity and voice so articles
-          and images stay on-brand from the first draft.
-        </p>
-        <p>This takes about five minutes. You can revisit the brand book anytime from home.</p>
-        <div class="brand-setup__actions">
-          <p-button label="Continue" icon="pi pi-arrow-right" iconPos="right" (onClick)="next()" />
+      <article class="bb-spread">
+        <div class="bb-spread__inner">
+          <span class="bb-chapter">Introduction</span>
+          <h2 class="bb-spread__title">Welcome</h2>
+          <p class="bb-spread__deck">
+            We'll capture <strong>{{ siteLabel() }}</strong>'s visual identity and voice so
+            articles and images stay on-brand from the first draft.
+          </p>
+          <p class="brand-setup__note">This takes about five minutes. You can revisit the brand book anytime from home.</p>
+          <div class="brand-setup__actions">
+            <p-button label="Continue" icon="pi pi-arrow-right" iconPos="right" (onClick)="next()" />
+          </div>
         </div>
-      </section>
+      </article>
     }
     @case (2) {
-      <section class="brand-setup__step">
-        <h2>Visual identity</h2>
-        <p>Choose how blog photos and infographics should look.</p>
-        @if (brandBookSvc.draft(); as book) {
-          <div class="preset-grid">
-            @for (preset of imagePresets; track preset.id) {
-              <button
-                type="button"
-                class="preset-card"
-                [class.preset-card--active]="book.imageStyle.presetId === preset.id"
-                (click)="onPresetChange(preset.id)"
-              >
-                <strong>{{ preset.label }}</strong>
-                <span>{{ preset.description }}</span>
-              </button>
-            }
+      <article class="bb-spread">
+        <div class="bb-spread__inner">
+          <span class="bb-chapter">Chapter 01 · Photography</span>
+          <h2 class="bb-spread__title">Visual identity</h2>
+          <p class="bb-spread__deck">Choose how blog photos and infographics should look.</p>
+
+          @if (brandBookSvc.draft(); as book) {
+            <div class="bb-gallery bb-gallery--photos">
+              @for (preset of imagePresets; track preset.id) {
+                <button
+                  type="button"
+                  class="bb-option"
+                  [class.bb-option--active]="book.imageStyle.presetId === preset.id"
+                  (click)="onPresetChange(preset.id)"
+                >
+                  <div class="bb-option__media">
+                    @if (preset.previewImage) {
+                      <img class="bb-option__image" [src]="preset.previewImage" [alt]="preset.label" loading="lazy" />
+                    } @else {
+                      <div class="bb-option__placeholder">Your custom prompt</div>
+                    }
+                    @if (book.imageStyle.presetId === preset.id) {
+                      <span class="bb-option__mark">Selected</span>
+                    }
+                  </div>
+                  <div class="bb-option__caption">
+                    <span class="bb-option__label">{{ preset.label }}</span>
+                    <span class="bb-option__desc">{{ preset.description }}</span>
+                  </div>
+                </button>
+              }
+            </div>
+
+            <h3 class="bb-spread__subtitle">Infographic style</h3>
+            <div class="bb-gallery bb-gallery--infographs">
+              @for (variant of infographVariants; track variant.id) {
+                <button
+                  type="button"
+                  class="bb-option"
+                  [class.bb-option--active]="book.infographStyle.variant === variant.id"
+                  (click)="onInfographChange(variant.id)"
+                >
+                  <div class="bb-option__media">
+                    <img
+                      class="bb-option__image"
+                      [src]="variant.previewImage"
+                      [alt]="variant.label"
+                      loading="lazy"
+                    />
+                    @if (book.infographStyle.variant === variant.id) {
+                      <span class="bb-option__mark">Selected</span>
+                    }
+                  </div>
+                  <div class="bb-option__caption">
+                    <span class="bb-option__label">{{ variant.label }}</span>
+                    <span class="bb-option__desc">{{ variant.description }}</span>
+                  </div>
+                </button>
+              }
+            </div>
+          }
+
+          <div class="brand-setup__actions">
+            <p-button label="Back" severity="secondary" (onClick)="back()" />
+            <p-button label="Continue" (onClick)="next()" />
           </div>
-          <h3>Infographic style</h3>
-          <div class="preset-grid preset-grid--compact">
-            @for (variant of infographVariants; track variant.id) {
-              <button
-                type="button"
-                class="preset-card"
-                [class.preset-card--active]="book.infographStyle.variant === variant.id"
-                (click)="onInfographChange(variant.id)"
-              >
-                <strong>{{ variant.label }}</strong>
-              </button>
-            }
-          </div>
-        }
-        <div class="brand-setup__actions">
-          <p-button label="Back" severity="secondary" (onClick)="back()" />
-          <p-button label="Continue" (onClick)="next()" />
         </div>
-      </section>
+      </article>
     }
     @case (3) {
-      <section class="brand-setup__step">
-        <h2>Brand voice</h2>
-        @if (brandBookSvc.draft(); as book) {
-          <label class="field">
-            <span>Tone</span>
-            <input
-              pInputText
-              class="w-full"
-              placeholder="e.g. confident, plain-spoken, expert but approachable"
-              [ngModel]="book.voice.tone ?? ''"
-              (ngModelChange)="brandBookSvc.patchVoiceField('tone', $event)"
-            />
-          </label>
-          <label class="field">
-            <span>Point of view</span>
-            <input
-              pInputText
-              class="w-full"
-              placeholder="e.g. we, first person plural"
-              [ngModel]="book.voice.pointOfView ?? ''"
-              (ngModelChange)="brandBookSvc.patchVoiceField('pointOfView', $event)"
-            />
-          </label>
-          <label class="field">
-            <span>Phrases to avoid</span>
-            <input
-              pInputText
-              class="w-full"
-              placeholder="Comma-separated"
-              [ngModel]="(book.voice.avoidPhrases ?? []).join(', ')"
-              (ngModelChange)="brandBookSvc.patchAvoidPhrases($event)"
-            />
-          </label>
-          <h3>Style examples</h3>
-          @for (i of [0, 1]; track i) {
-            <textarea
-              pTextarea
-              class="w-full mb-2"
-              rows="4"
-              placeholder="Paste a paragraph that sounds like this client"
-              [ngModel]="book.styleExamples[i] ?? ''"
-              (ngModelChange)="brandBookSvc.patchStyleExample(i, $event)"
-            ></textarea>
+      <article class="bb-spread">
+        <div class="bb-spread__inner">
+          <span class="bb-chapter">Chapter 02 · Voice</span>
+          <h2 class="bb-spread__title">Brand voice</h2>
+          @if (brandBookSvc.draft(); as book) {
+            <div class="bb-voice-grid">
+              <div>
+                <label class="bb-field">
+                  <span>Tone</span>
+                  <input
+                    pInputText
+                    class="w-full"
+                    placeholder="e.g. confident, plain-spoken, expert but approachable"
+                    [ngModel]="book.voice.tone ?? ''"
+                    (ngModelChange)="brandBookSvc.patchVoiceField('tone', $event)"
+                  />
+                </label>
+                <label class="bb-field">
+                  <span>Point of view</span>
+                  <input
+                    pInputText
+                    class="w-full"
+                    placeholder="e.g. we, first person plural"
+                    [ngModel]="book.voice.pointOfView ?? ''"
+                    (ngModelChange)="brandBookSvc.patchVoiceField('pointOfView', $event)"
+                  />
+                </label>
+                <label class="bb-field">
+                  <span>Phrases to avoid</span>
+                  <input
+                    pInputText
+                    class="w-full"
+                    placeholder="Comma-separated"
+                    [ngModel]="(book.voice.avoidPhrases ?? []).join(', ')"
+                    (ngModelChange)="brandBookSvc.patchAvoidPhrases($event)"
+                  />
+                </label>
+              </div>
+              <div class="bb-examples">
+                <span class="bb-example__label">Style examples</span>
+                @for (i of [0, 1]; track i) {
+                  <div class="bb-example">
+                    <textarea
+                      pTextarea
+                      class="w-full"
+                      rows="4"
+                      placeholder="Paste a paragraph that sounds like this client"
+                      [ngModel]="book.styleExamples[i] ?? ''"
+                      (ngModelChange)="brandBookSvc.patchStyleExample(i, $event)"
+                    ></textarea>
+                  </div>
+                }
+              </div>
+            </div>
           }
-        }
-        <div class="brand-setup__actions">
-          <p-button label="Back" severity="secondary" (onClick)="back()" />
-          <p-button label="Continue" (onClick)="next()" />
+          <div class="brand-setup__actions">
+            <p-button label="Back" severity="secondary" (onClick)="back()" />
+            <p-button label="Continue" (onClick)="next()" />
+          </div>
         </div>
-      </section>
+      </article>
     }
     @case (4) {
-      <section class="brand-setup__step">
-        <h2>Inspiration</h2>
-        <p>Add up to three articles the client admires (optional).</p>
-        @for (i of [0, 1, 2]; track i) {
-          <label class="field">
-            <span>Article URL {{ i + 1 }}</span>
-            <input
-              pInputText
-              class="w-full"
-              [ngModel]="inspirationUrls()[i]"
-              (ngModelChange)="setInspirationUrl(i, $event)"
+      <article class="bb-spread">
+        <div class="bb-spread__inner">
+          <span class="bb-chapter">Chapter 03 · Inspiration</span>
+          <h2 class="bb-spread__title">Inspiration</h2>
+          <p class="bb-spread__deck">Add up to three articles the client admires (optional).</p>
+
+          @for (i of [0, 1, 2]; track i) {
+            <label class="bb-field">
+              <span>Article URL {{ i + 1 }}</span>
+              <input
+                pInputText
+                class="w-full"
+                [ngModel]="inspirationUrls()[i]"
+                (ngModelChange)="setInspirationUrl(i, $event)"
+              />
+            </label>
+          }
+
+          @if (brandBookSvc.draft(); as book) {
+            <div class="brand-setup__review">
+              <span class="bb-chapter">Review</span>
+              <div class="bb-gallery bb-gallery--photos brand-setup__review-gallery">
+                @for (preset of imagePresets; track preset.id) {
+                  @if (preset.previewImage && book.imageStyle.presetId === preset.id) {
+                    <div class="bb-option bb-option--static">
+                      <div class="bb-option__media">
+                        <img class="bb-option__image" [src]="preset.previewImage" [alt]="preset.label" />
+                      </div>
+                      <div class="bb-option__caption">
+                        <span class="bb-option__label">{{ preset.label }}</span>
+                      </div>
+                    </div>
+                  }
+                }
+                @for (variant of infographVariants; track variant.id) {
+                  @if (book.infographStyle.variant === variant.id) {
+                    <div class="bb-option bb-option--static">
+                      <div class="bb-option__media">
+                        <img class="bb-option__image" [src]="variant.previewImage" [alt]="variant.label" />
+                      </div>
+                      <div class="bb-option__caption">
+                        <span class="bb-option__label">{{ variant.label }}</span>
+                      </div>
+                    </div>
+                  }
+                }
+              </div>
+              @if (book.voice.tone) {
+                <p class="brand-setup__review-voice"><strong>Tone:</strong> {{ book.voice.tone }}</p>
+              }
+            </div>
+          }
+
+          <div class="brand-setup__actions">
+            <p-button label="Back" severity="secondary" (onClick)="back()" />
+            <p-button
+              label="Save brand book"
+              icon="pi pi-check"
+              [loading]="isSubmitting()"
+              (onClick)="finish()"
             />
-          </label>
-        }
-        @if (brandBookSvc.draft(); as book) {
-          <div class="review">
-            <h3>Review</h3>
-            <p><strong>Image style:</strong> {{ book.imageStyle.presetId }}</p>
-            <p><strong>Infographics:</strong> {{ book.infographStyle.variant }}</p>
-            @if (book.voice.tone) {
-              <p><strong>Tone:</strong> {{ book.voice.tone }}</p>
-            }
           </div>
-        }
-        <div class="brand-setup__actions">
-          <p-button label="Back" severity="secondary" (onClick)="back()" />
-          <p-button
-            label="Save brand book"
-            icon="pi pi-check"
-            [loading]="isSubmitting()"
-            (onClick)="finish()"
-          />
         </div>
-      </section>
+      </article>
     }
   }
 </div>

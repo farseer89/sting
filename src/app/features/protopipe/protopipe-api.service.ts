@@ -46,6 +46,8 @@ import type {
   ProtopipeMarketEnrichResponse,
   ProtopipeOnboardingRequest,
   ProtopipeOnboardingResponse,
+  ProtopipeUpdateTargetCustomersRequest,
+  ProtopipeUpdateTargetCustomersResponse,
   ProtopipePlan,
   ProtopipePublishContentRequest,
   ProtopipePublishContentResponse,
@@ -163,6 +165,28 @@ export class ProtopipeApiService {
         protopipeApiUrl(ProtopipeEndpoints.siteOnboarding.path, { siteId }),
         body,
       ),
+    );
+  }
+
+  updateTargetCustomers(
+    siteId: string,
+    body: ProtopipeUpdateTargetCustomersRequest,
+  ): Promise<ProtopipeUpdateTargetCustomersResponse> {
+    return firstValueFrom(
+      this.http.patch<ProtopipeUpdateTargetCustomersResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.updateTargetCustomers.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  updateTargetCustomers$(
+    siteId: string,
+    body: ProtopipeUpdateTargetCustomersRequest,
+  ): Observable<ProtopipeUpdateTargetCustomersResponse> {
+    return this.http.patch<ProtopipeUpdateTargetCustomersResponse>(
+      protopipeApiUrl(ProtopipeEndpoints.updateTargetCustomers.path, { siteId }),
+      body,
     );
   }
 
@@ -754,11 +778,10 @@ export class ProtopipeApiService {
     );
   }
 
-
   getMediaStudioConfig(): Promise<MediaStudioConfigResponse> {
     return firstValueFrom(
       this.http.get<MediaStudioConfigResponse>(
-        protopipeApiUrl(ProtopipeAdminEndpoints.mediaStudioConfig.path),
+        protopipeApiUrl(ProtopipeEndpoints.mediaStudioConfig.path),
       ),
     );
   }
@@ -768,14 +791,13 @@ export class ProtopipeApiService {
   ): Promise<AdminMediaStudioGenerateResponse> {
     return firstValueFrom(
       this.http.post<AdminMediaStudioGenerateResponse>(
-        protopipeApiUrl(ProtopipeAdminEndpoints.mediaStudioGenerate.path),
+        protopipeApiUrl(ProtopipeEndpoints.mediaStudioGenerate.path),
         body,
       ),
     );
   }
 
   getSiteBuilderComponents(): Promise<SiteBuilderComponentsResponse> {
-
     return firstValueFrom(
       this.http.get<SiteBuilderComponentsResponse>(
         protopipeApiUrl(ProtopipeEndpoints.siteBuilderComponents.path),

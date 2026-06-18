@@ -51,7 +51,7 @@ export class ProtopipeMediaStudioComponent implements OnInit {
   readonly modelChoices = computed<ModelChoice[]>(() => {
     const cfg = this.config();
     if (!cfg) return [];
-    return cfg.models
+    return (cfg.models ?? [])
       .filter((m) => m.kinds.includes(this.kind()))
       .map((m) => ({
         ...m,
@@ -97,6 +97,11 @@ export class ProtopipeMediaStudioComponent implements OnInit {
         : `estimated ${cost.unit}s`;
     return `${prefix}$${cost.totalUsd.toFixed(4)} ${cost.currency} (${units} × $${cost.unitPrice}/${cost.unit})`;
   }
+
+  configReady = computed(() => {
+    const cfg = this.config();
+    return Boolean(cfg?.kinds?.length && cfg?.models?.length);
+  });
 
   async generate(): Promise<void> {
     const meta = this.selectedKindMeta();

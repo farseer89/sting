@@ -14,8 +14,8 @@
     <div class="media-studio__loading">
       <p-progressSpinner strokeWidth="4" ariaLabel="Loading" />
     </div>
-  } @else if (config(); as cfg) {
-    @if (!cfg.falConfigured) {
+  } @else if (configReady()) {
+    @if (!config()?.falConfigured) {
       <p-message
         severity="warn"
         text="FAL_KEY is not configured on bagend. Add it to the server .env to enable generation."
@@ -95,7 +95,7 @@
         <p class="hint">
           Model: {{ result.model }}
           · Cost: {{ formatCost() }}
-          @if (result.cost.estimated) {
+          @if (result.cost?.estimated) {
             <span class="media-studio__estimated">(estimated — fal did not return billable units)</span>
           }
         </p>
@@ -111,5 +111,11 @@
         </div>
       </section>
     }
+  } @else if (!loadingConfig() && error()) {
+    <p-message
+      severity="warn"
+      text="Media Studio could not load. Try refreshing the page."
+      styleClass="w-full mb-3"
+    />
   }
 </div>

@@ -26,7 +26,7 @@ export class ProtopipeMediaStudioService {
   readonly lastResult = this._lastResult.asReadonly();
 
   kindOption(kind: MediaStudioKind): MediaStudioKindOption | undefined {
-    return this._config()?.kinds.find((k) => k.kind === kind);
+    return this._config()?.kinds?.find((k) => k.kind === kind);
   }
 
   async loadConfig(): Promise<void> {

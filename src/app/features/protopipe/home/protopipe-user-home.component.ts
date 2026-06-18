@@ -36,6 +36,7 @@ import { ProtopipeHomeWriterViewState } from './protopipe-home-writer-view.state
 import { ProtopipeWriterContextPanelComponent } from './strategy/protopipe-writer-context-panel.component';
 import { ProtopipeKeywordPickerComponent } from './keyword-picker/protopipe-keyword-picker.component';
 import { ProtopipeHomeRunbooksComponent } from './runbooks/protopipe-home-runbooks.component';
+import { ProtopipeMediaStudioComponent } from '../admin/media-studio/protopipe-media-studio.component';
 import { ProtopipeWriterInspectorBridge } from '../content/writer/protopipe-writer-inspector.bridge';
 import { ProtopipeHomeSidePanelService } from './protopipe-home-side-panel.service';
 import {
@@ -45,7 +46,7 @@ import {
 } from './protopipe-home-nav';
 import { resolveBootstrapSiteId } from '../resolve-bootstrap-site-id';
 
-export type ProtopipeHomeView = 'keywords' | 'strategy' | 'sharpen' | 'writer' | 'packs' | 'runbooks';
+export type ProtopipeHomeView = 'keywords' | 'strategy' | 'sharpen' | 'writer' | 'packs' | 'runbooks' | 'media-studio';
 
 function initialsFromName(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -76,6 +77,7 @@ function initialsFromName(name: string): string {
     ThoughtPackStoreComponent,
     ThoughtPackDetailComponent,
     ProtopipeHomeRunbooksComponent,
+    ProtopipeMediaStudioComponent,
   ],
   templateUrl: './protopipe-user-home.component.html',
   styleUrl: './protopipe-user-home.component.scss',
@@ -224,6 +226,11 @@ export class ProtopipeUserHomeComponent implements OnInit {
     } else if (item.id === 'content-packs') {
       this.showPacksStore();
       void this.router.navigate(['/home/packs']);
+    } else if (item.id === 'content-media-studio') {
+      this.leaveWriterFocus();
+      this.sidePanel.setOpen(false);
+      this.activeNavId.set(item.id);
+      this.activeView.set('media-studio');
     } else if (item.id === 'dev-runbooks') {
       this.leaveWriterFocus();
       this.sidePanel.setOpen(false);

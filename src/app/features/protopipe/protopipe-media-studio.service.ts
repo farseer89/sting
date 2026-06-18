@@ -45,6 +45,7 @@ export class ProtopipeMediaStudioService {
   async generate(input: {
     kind: MediaStudioKind;
     prompt: string;
+    model?: string;
     imageSize?: MediaStudioImageSize;
     numImages?: number;
   }): Promise<AdminMediaStudioGenerateResponse | null> {

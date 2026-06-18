@@ -41,6 +41,7 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
       { id: 'content-calendar', label: 'Content calendar', icon: 'grid', disabled: true },
       { id: 'content-articles', label: 'Articles', icon: 'list', disabled: true },
       { id: 'content-writer', label: 'Writer', icon: 'write' },
+      { id: 'content-media-studio', label: 'Media Studio', icon: 'sparkles' },
       { id: 'content-packs', label: 'Thought packs', icon: 'sitemap' },
     ],
   },

@@ -81,3 +81,15 @@
   color: var(--p-text-muted-color);
   margin: 0.75rem 0 0;
 }
+
+.media-studio__price {
+  display: inline-block;
+  margin-left: 0.35rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--p-text-color);
+}
+
+.media-studio__estimated {
+  color: var(--p-text-muted-color);
+  font-style: italic;
+}

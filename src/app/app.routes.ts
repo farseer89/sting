@@ -147,6 +147,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'home/leads',
+    canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],
+    loadComponent: () =>
+      import('./features/protopipe/home/protopipe-user-home.component').then(
+        (m) => m.ProtopipeUserHomeComponent,
+      ),
+  },
+  {
     path: 'home/pitch-prep/:prospectId/wizard',
     canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],
     loadComponent: () =>
@@ -310,10 +318,8 @@ export const routes: Routes = [
       },
       {
         path: 'protopipe/leads',
-        loadComponent: () =>
-          import('./features/protopipe/leads/protopipe-leads-list.component').then(
-            (m) => m.ProtopipeLeadsListComponent,
-          ),
+        redirectTo: '/home/leads',
+        pathMatch: 'full',
       },
       {
         path: 'protopipe/pitch-prep/:prospectId/wizard',

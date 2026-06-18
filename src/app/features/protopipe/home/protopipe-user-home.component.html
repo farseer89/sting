@@ -242,6 +242,11 @@
                     }
                   </section>
                 }
+                @case ('leads') {
+                  <section class="glass glass--full glass--premiere glass--leads" aria-label="Leads">
+                    <app-protopipe-leads-list />
+                  </section>
+                }
                 @case ('brand-book') {
                   <section class="glass glass--full glass--premiere" aria-label="Brand book">
                     <app-protopipe-home-brand-book (runWizard)="openBrandSetupWizard()" />

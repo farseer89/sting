@@ -101,7 +101,7 @@ export class NavigationService {
             id: 'leads',
             label: 'Leads',
             icon: 'pi pi-inbox',
-            routerLink: '/protopipe/leads',
+            routerLink: '/home/leads',
             visible: true,
           },
           {

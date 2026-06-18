@@ -42,6 +42,7 @@ import { ProtopipeHomeBusinessDetailsComponent } from './books/protopipe-home-bu
 import { ProtopipeHomeGoalsComponent } from './books/protopipe-home-goals.component';
 import { ProtopipePitchProspectBoardComponent } from '../pitch-prep/protopipe-pitch-prospect-board.component';
 import { ProtopipePitchPrepWizardComponent } from '../pitch-prep/protopipe-pitch-prep-wizard.component';
+import { ProtopipeLeadsListComponent } from '../leads/protopipe-leads-list.component';
 import { ProtopipeWriterInspectorBridge } from '../content/writer/protopipe-writer-inspector.bridge';
 import { ProtopipeHomeSidePanelService } from './protopipe-home-side-panel.service';
 import {
@@ -60,6 +61,7 @@ export type ProtopipeHomeView =
   | 'runbooks'
   | 'media-studio'
   | 'pitch-prep'
+  | 'leads'
   | 'brand-book'
   | 'business-details'
   | 'goals';
@@ -99,6 +101,7 @@ function initialsFromName(name: string): string {
     ProtopipeHomeGoalsComponent,
     ProtopipePitchProspectBoardComponent,
     ProtopipePitchPrepWizardComponent,
+    ProtopipeLeadsListComponent,
   ],
   templateUrl: './protopipe-user-home.component.html',
   styleUrl: './protopipe-user-home.component.scss',
@@ -200,12 +203,14 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.strategyViewState.setEnterWriterHandler(() => this.enterWriterFocus());
     this.syncPacksFromRoute();
     this.syncPitchPrepFromRoute();
+    this.syncLeadsFromRoute();
     this.syncViewFromQuery();
     this.router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
       .subscribe(() => {
         this.syncPacksFromRoute();
         this.syncPitchPrepFromRoute();
+        this.syncLeadsFromRoute();
         this.syncViewFromQuery();
       });
     void this.loadBootstrap();
@@ -263,6 +268,9 @@ export class ProtopipeUserHomeComponent implements OnInit {
     } else if (item.id === 'content-pitch-prep') {
       this.showPitchPrepBoard();
       void this.router.navigate(['/home/pitch-prep']);
+    } else if (item.id === 'analytics-leads') {
+      this.showLeadsView();
+      void this.router.navigate(['/home/leads']);
     } else if (item.id === 'dev-runbooks') {
       this.leaveWriterFocus();
       this.sidePanel.setOpen(false);
@@ -397,6 +405,20 @@ export class ProtopipeUserHomeComponent implements OnInit {
     }
   }
 
+  private syncLeadsFromRoute(): void {
+    const path = this.router.url.split('?')[0] ?? '';
+    if (path === '/home/leads' || path.startsWith('/home/leads')) {
+      this.showLeadsView();
+    }
+  }
+
+  private showLeadsView(): void {
+    this.leaveWriterFocus();
+    this.sidePanel.setOpen(false);
+    this.activeView.set('leads');
+    this.activeNavId.set('analytics-leads');
+  }
+
   private syncPitchPrepFromRoute(): void {
     const path = this.router.url.split('?')[0] ?? '';
     const wizardPrefix = '/home/pitch-prep/';
@@ -488,9 +510,11 @@ export class ProtopipeUserHomeComponent implements OnInit {
         const onPitchPrepRoute = (this.router.url.split('?')[0] ?? '').startsWith(
           '/home/pitch-prep',
         );
+        const onLeadsRoute = (this.router.url.split('?')[0] ?? '').startsWith('/home/leads');
         if (
           !onPacksRoute &&
           !onPitchPrepRoute &&
+          !onLeadsRoute &&
           (planStatus === 'running' || planStatus === 'pending' || planStatus === 'complete')
         ) {
           this.activeView.set('strategy');

@@ -1,0 +1,132 @@
+<section class="strat-leads" aria-label="Leads">
+  <header class="strat__intro">
+    <div class="strat__intro-copy">
+      <span class="strat__eyebrow">Inbound</span>
+      <h1 class="strat__title">Leads</h1>
+      <p class="strat__lede">
+        Inquiries from landing page lead capture forms across your sites.
+      </p>
+    </div>
+    @if (!leads.loading() && !leads.error()) {
+      <span class="strat-leads__meta">
+        {{ leads.leads().length }} lead{{ leads.leads().length === 1 ? '' : 's' }}
+      </span>
+    }
+  </header>
+
+  @if (leads.loading()) {
+    <div class="strat-leads__loading" aria-busy="true">
+      <div class="strat__shimmer" style="height: 2.5rem"></div>
+      <div class="strat__shimmer" style="height: 2.5rem"></div>
+      <div class="strat__shimmer" style="height: 2.5rem"></div>
+    </div>
+  } @else if (leads.error(); as err) {
+    <p class="strat-leads__error">{{ err }}</p>
+  } @else if (!leads.leads().length) {
+    <p class="strat-leads__empty">No leads yet — they appear here when visitors submit your landing page forms.</p>
+  } @else {
+    <div class="strat-leads__body" [class.has-detail]="!!leads.selected()">
+      <div class="strat-leads__list-wrap">
+        <div class="strat-leads__list-head" aria-hidden="true">
+          <span>Received</span>
+          <span>Contact</span>
+          <span>Status</span>
+        </div>
+        <ul class="strat-leads__list">
+          @for (lead of leads.leads(); track lead.id) {
+            <li>
+              <button
+                type="button"
+                class="strat-leads__row"
+                [class.is-selected]="leads.selected()?.id === lead.id"
+                (click)="selectLead(lead)"
+              >
+                <span class="strat-leads__date">{{ formatDateShort(lead.createdAt) }}</span>
+                <span class="strat-leads__contact">
+                  <span class="strat-leads__email">{{ lead.email ?? 'No email' }}</span>
+                  @if (lead.name) {
+                    <span class="strat-leads__name">{{ lead.name }}</span>
+                  }
+                </span>
+                <span class="strat-leads__status" [class]="statusClass(lead.status)">
+                  {{ statusLabel(lead.status) }}
+                </span>
+              </button>
+            </li>
+          }
+        </ul>
+      </div>
+
+      @if (leads.selected(); as lead) {
+        <aside class="strat-leads__detail" aria-label="Lead detail">
+          <header class="strat-leads__detail-head">
+            <span class="strat__section-label">Lead detail</span>
+            <button type="button" class="strat-leads__close" (click)="closeDetail()">Close</button>
+          </header>
+
+          <dl class="strat-leads__detail-dl">
+            <div>
+              <dt>Email</dt>
+              <dd>{{ lead.email ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>Name</dt>
+              <dd>{{ lead.name ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>Message</dt>
+              <dd class="strat-leads__message">{{ lead.message ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd>
+                <span class="strat-leads__status" [class]="statusClass(lead.status)">
+                  {{ statusLabel(lead.status) }}
+                </span>
+              </dd>
+            </div>
+            <div>
+              <dt>Received</dt>
+              <dd>{{ formatDateLong(lead.createdAt) }}</dd>
+            </div>
+          </dl>
+
+          @if (lead.status !== 'converted') {
+            <button
+              type="button"
+              class="strat-leads__convert"
+              [disabled]="leads.converting()"
+              (click)="convert()"
+            >
+              @if (leads.converting()) {
+                Converting…
+              } @else {
+                Convert to client
+              }
+            </button>
+          }
+
+          @if (leads.convertLink(); as link) {
+            <div class="strat-leads__convert-msg">
+              @if (leads.convertEmailSent()) {
+                <p class="strat-leads__convert-note strat-leads__convert-note--success">
+                  Magic link emailed to {{ lead.email }}.
+                </p>
+              } @else {
+                <p class="strat-leads__convert-note">
+                  Email could not be sent@if (leads.convertEmailError(); as emailErr) {
+                    : {{ emailErr }}
+                  }
+                  — use this link:
+                </p>
+                <a class="strat-leads__convert-link" [href]="link" target="_blank" rel="noopener noreferrer">
+                  {{ link }}
+                </a>
+              }
+            </div>
+          }
+        </aside>
+      }
+    </div>
+  }
+</section>

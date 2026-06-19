@@ -1,128 +1,250 @@
-@if (selection(); as sel) {
-  <app-protopipe-runbook-viewer
-    [siteId]="siteId()"
-    [kind]="sel.kind"
-    [runId]="sel.runId"
-    (back)="closeViewer()"
-  />
-} @else {
-  <section class="runbooks" aria-label="Runbooks">
-    <header class="runbooks__header">
-      <div>
-        <h1 class="runbooks__title">Runbooks</h1>
-        <p class="runbooks__subtitle">
-          Inspect what happened on each major Thinker run for this site.
-        </p>
-      </div>
-      <button type="button" class="runbooks__refresh" [disabled]="loading()" (click)="reload()">
-        {{ loading() ? 'Loading…' : 'Refresh' }}
+<div class="rb-shell">
+
+  <!-- Masthead -->
+  <header class="rb-masthead">
+    <div class="rb-masthead__left">
+      @if (selection(); as sel) {
+        <button type="button" class="rb-masthead__back" (click)="closeViewer()">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Back
+        </button>
+        <h1 class="rb-masthead__title">{{ sel.label }}</h1>
+      } @else {
+        <h1 class="rb-masthead__title">Runbooks</h1>
+        <p class="rb-masthead__deck">Inspect what happened on each major Thinker run for this site.</p>
+      }
+    </div>
+    <div class="rb-masthead__actions">
+      @if (!selection()) {
+        <button type="button" class="rb-btn rb-btn--ghost" [disabled]="loading()" (click)="reload()">
+          {{ loading() ? 'Loading…' : 'Refresh' }}
+        </button>
+      }
+    </div>
+  </header>
+
+  @if (loadError(); as err) {
+    <div class="rb-error-bar">{{ err }}</div>
+  }
+
+  <!-- 2-pane binder -->
+  <div class="rb-binder">
+
+    <!-- Left nav -->
+    <nav class="rb-binder-nav" aria-label="Runbook sections">
+      <div class="rb-binder-nav__label">Thinker runs</div>
+
+      <button
+        type="button"
+        class="rb-binder-nav__item"
+        [class.is-active]="binderSection() === 'discovery'"
+        (click)="binderSection.set('discovery')"
+      >
+        <svg class="rb-binder-nav__icon" viewBox="0 0 16 16" fill="none">
+          <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.1"/>
+          <path d="M10.5 10.5L13.5 13.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        Discovery
+        @if (discoveryRun(); as run) {
+          <span class="rb-binder-nav__status rb-binder-nav__status--{{ statusClass(run.status) }}"></span>
+        }
       </button>
-    </header>
 
-    @if (loadError(); as err) {
-      <div class="runbooks__notice runbooks__notice--error">{{ err }}</div>
-    }
+      <button
+        type="button"
+        class="rb-binder-nav__item"
+        [class.is-active]="binderSection() === 'content-plan'"
+        (click)="binderSection.set('content-plan')"
+      >
+        <svg class="rb-binder-nav__icon" viewBox="0 0 16 16" fill="none">
+          <rect x="2.5" y="2" width="11" height="12" rx="1.5" stroke="currentColor" stroke-width="1.1"/>
+          <path d="M5 5.5h6M5 8h6M5 10.5h4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+        </svg>
+        Content plan
+        @if (latestContentPlan(); as run) {
+          <span class="rb-binder-nav__badge">v{{ run.version }}</span>
+        }
+      </button>
 
-    @if (loading()) {
-      <p class="runbooks__loading">Loading runs…</p>
-    } @else {
-      <div class="runbooks__grid">
-        <article class="runbooks__card">
-          <h2 class="runbooks__card-title">Keyword discovery</h2>
-          @if (discoveryRun(); as run) {
-            <dl class="runbooks__meta">
-              <div>
-                <dt>Status</dt>
-                <dd><span class="runbooks__status" [class]="'is-' + statusClass(run.status)">{{ run.status }}</span></dd>
-              </div>
-              <div>
-                <dt>Step</dt>
-                <dd>{{ run.currentStep }}</dd>
-              </div>
-              <div>
-                <dt>Updated</dt>
-                <dd>{{ formatWhen(run.updatedAt) }}</dd>
-              </div>
-              @if (run.costSummary?.totalUsd != null) {
-                <div>
-                  <dt>Cost</dt>
-                  <dd>${{ run.costSummary!.totalUsd.toFixed(2) }}</dd>
+      <button
+        type="button"
+        class="rb-binder-nav__item"
+        [class.is-active]="binderSection() === 'articles'"
+        (click)="binderSection.set('articles')"
+      >
+        <svg class="rb-binder-nav__icon" viewBox="0 0 16 16" fill="none">
+          <path d="M3 3h10M3 6h10M3 9h7M3 12h5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        </svg>
+        Articles
+        @if (articleRuns().length) {
+          <span class="rb-binder-nav__badge">{{ articleRuns().length }}</span>
+        }
+      </button>
+    </nav>
+
+    <!-- Right content panel -->
+    <div class="rb-binder-panel">
+
+      @if (selection(); as sel) {
+
+        <!-- Viewer fills the panel when a run is open -->
+        <app-protopipe-runbook-viewer
+          [siteId]="siteId()"
+          [kind]="sel.kind"
+          [runId]="sel.runId"
+          (back)="closeViewer()"
+        />
+
+      } @else if (loading()) {
+
+        <div class="rb-loading">
+          <div class="rb-loading__spinner"></div>
+          <span>Loading runs…</span>
+        </div>
+
+      } @else {
+
+        @switch (binderSection()) {
+
+          <!-- ── KEYWORD DISCOVERY ── -->
+          @case ('discovery') {
+            <div class="rb-panel-head">
+              <div class="rb-panel-kicker">Thinker · Keyword research</div>
+              <h2 class="rb-panel-title">Keyword discovery</h2>
+              <p class="rb-panel-deck">Analyzes your domain, competitors, and search intent to build the keyword foundation for your content strategy.</p>
+            </div>
+
+            @if (discoveryRun(); as run) {
+              <div class="rb-run-card">
+                <div class="rb-run-card__head">
+                  <span class="rb-run-status rb-run-status--{{ statusClass(run.status) }}">
+                    <span class="rb-run-status__dot"></span>{{ run.status }}
+                  </span>
+                  <span class="rb-run-meta">Updated {{ formatWhen(run.updatedAt) }}</span>
                 </div>
-              }
-            </dl>
-            <button type="button" class="runbooks__open" (click)="openDiscovery()">Open runbook</button>
-          } @else {
-            <p class="runbooks__empty">No discovery run yet. Complete onboarding to start keyword research.</p>
-          }
-        </article>
-
-        <article class="runbooks__card">
-          <h2 class="runbooks__card-title">Content plan</h2>
-          @if (latestContentPlan(); as run) {
-            <dl class="runbooks__meta">
-              <div>
-                <dt>Status</dt>
-                <dd><span class="runbooks__status" [class]="'is-' + statusClass(run.status)">{{ run.status }}</span></dd>
-              </div>
-              <div>
-                <dt>Version</dt>
-                <dd>v{{ run.version }}</dd>
-              </div>
-              <div>
-                <dt>Step</dt>
-                <dd>{{ run.currentStep ?? '—' }}</dd>
-              </div>
-              <div>
-                <dt>Updated</dt>
-                <dd>{{ formatWhen(run.updatedAt) }}</dd>
-              </div>
-            </dl>
-            <button type="button" class="runbooks__open" (click)="openContentPlan(run)">Open runbook</button>
-
-            @if (contentPlanRuns().length > 1) {
-              <div class="runbooks__versions">
-                <p class="runbooks__versions-label">Previous versions</p>
-                <ul>
-                  @for (prev of contentPlanRuns().slice(1); track prev.id) {
-                    <li>
-                      <button type="button" class="runbooks__version-btn" (click)="openContentPlan(prev)">
-                        v{{ prev.version }} · {{ prev.status }} · {{ formatWhen(prev.updatedAt) }}
-                      </button>
-                    </li>
+                <dl class="rb-run-dl">
+                  <div class="rb-run-dl__item">
+                    <dt>Current step</dt>
+                    <dd>{{ run.currentStep }}</dd>
+                  </div>
+                  @if (run.costSummary?.totalUsd != null) {
+                    <div class="rb-run-dl__item">
+                      <dt>Cost</dt>
+                      <dd>${{ run.costSummary!.totalUsd.toFixed(2) }}</dd>
+                    </div>
                   }
-                </ul>
+                </dl>
+                <button type="button" class="rb-btn rb-btn--primary" (click)="openDiscovery()">
+                  Open runbook
+                  <svg viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+            } @else {
+              <div class="rb-empty">
+                <svg class="rb-empty__icon" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                <p>No discovery run yet.</p>
+                <span>Complete onboarding to start keyword research.</span>
               </div>
             }
-          } @else {
-            <p class="runbooks__empty">No content plan run yet. Confirm keywords to generate a plan.</p>
           }
-        </article>
 
-        <article class="runbooks__card runbooks__card--wide">
-          <h2 class="runbooks__card-title">Article generation</h2>
-          @if (articleRuns().length) {
-            <ul class="runbooks__list">
-              @for (run of articleRuns(); track run.id) {
-                <li class="runbooks__list-item">
-                  <div class="runbooks__list-main">
-                    <span class="runbooks__list-title">{{ run.articleType.replace(/_/g, ' ') }}</span>
-                    <span class="runbooks__status" [class]="'is-' + statusClass(run.status)">{{ run.status }}</span>
+          <!-- ── CONTENT PLAN ── -->
+          @case ('content-plan') {
+            <div class="rb-panel-head">
+              <div class="rb-panel-kicker">Thinker · Planning</div>
+              <h2 class="rb-panel-title">Content plan</h2>
+              <p class="rb-panel-deck">Maps keywords to content types, clusters, and a publishing schedule based on your strategy.</p>
+            </div>
+
+            @if (latestContentPlan(); as run) {
+              <div class="rb-run-card">
+                <div class="rb-run-card__head">
+                  <span class="rb-run-status rb-run-status--{{ statusClass(run.status) }}">
+                    <span class="rb-run-status__dot"></span>{{ run.status }}
+                  </span>
+                  <span class="rb-run-badge">v{{ run.version }}</span>
+                  <span class="rb-run-meta">Updated {{ formatWhen(run.updatedAt) }}</span>
+                </div>
+                <dl class="rb-run-dl">
+                  <div class="rb-run-dl__item">
+                    <dt>Current step</dt>
+                    <dd>{{ run.currentStep ?? '—' }}</dd>
                   </div>
-                  <div class="runbooks__list-meta">
-                    <span>{{ run.currentStep }}</span>
-                    <span>{{ formatWhen(run.updatedAt) }}</span>
-                  </div>
-                  <button type="button" class="runbooks__open runbooks__open--inline" (click)="openArticle(run)">
-                    Open
-                  </button>
-                </li>
+                </dl>
+                <button type="button" class="rb-btn rb-btn--primary" (click)="openContentPlan(run)">
+                  Open runbook
+                  <svg viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+
+              @if (contentPlanRuns().length > 1) {
+                <div class="rb-prev-versions">
+                  <div class="rb-prev-versions__label">Previous versions</div>
+                  <ul class="rb-prev-versions__list">
+                    @for (prev of contentPlanRuns().slice(1); track prev.id) {
+                      <li>
+                        <button type="button" class="rb-prev-btn" (click)="openContentPlan(prev)">
+                          <span class="rb-run-badge">v{{ prev.version }}</span>
+                          <span class="rb-run-status rb-run-status--{{ statusClass(prev.status) }}">
+                            <span class="rb-run-status__dot"></span>{{ prev.status }}
+                          </span>
+                          <span class="rb-run-meta">{{ formatWhen(prev.updatedAt) }}</span>
+                          <svg viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                </div>
               }
-            </ul>
-          } @else {
-            <p class="runbooks__empty">No article runs yet. Generate content from the writer or strategy view.</p>
+            } @else {
+              <div class="rb-empty">
+                <svg class="rb-empty__icon" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+                <p>No content plan run yet.</p>
+                <span>Confirm keywords to generate a plan.</span>
+              </div>
+            }
           }
-        </article>
-      </div>
-    }
-  </section>
-}
+
+          <!-- ── ARTICLE GENERATION ── -->
+          @case ('articles') {
+            <div class="rb-panel-head">
+              <div class="rb-panel-kicker">Thinker · Content</div>
+              <h2 class="rb-panel-title">Article generation</h2>
+              <p class="rb-panel-deck">Each article generation run — track progress, inspect steps, and review outputs.</p>
+            </div>
+
+            @if (articleRuns().length) {
+              <ul class="rb-article-list">
+                @for (run of articleRuns(); track run.id) {
+                  <li class="rb-article-row">
+                    <div class="rb-article-row__info">
+                      <span class="rb-article-row__type">{{ run.articleType.replace('_', ' ') }}</span>
+                      <span class="rb-run-status rb-run-status--{{ statusClass(run.status) }}">
+                        <span class="rb-run-status__dot"></span>{{ run.status }}
+                      </span>
+                    </div>
+                    <div class="rb-article-row__meta">
+                      <span>{{ run.currentStep }}</span>
+                      <span>{{ formatWhen(run.updatedAt) }}</span>
+                    </div>
+                    <button type="button" class="rb-article-row__open" (click)="openArticle(run)">
+                      Open
+                      <svg viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <div class="rb-empty">
+                <svg class="rb-empty__icon" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 10h12M4 14h9M4 18h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                <p>No article runs yet.</p>
+                <span>Generate content from the writer or strategy view.</span>
+              </div>
+            }
+          }
+
+        }<!-- /switch -->
+      }<!-- /not loading -->
+    </div><!-- /rb-binder-panel -->
+  </div><!-- /rb-binder -->
+</div><!-- /rb-shell -->

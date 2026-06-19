@@ -24,6 +24,8 @@ export interface RunbookSelection {
   label: string;
 }
 
+type RunbookSection = 'discovery' | 'content-plan' | 'articles';
+
 function formatWhen(iso?: string): string {
   if (!iso) return '—';
   const d = new Date(iso);
@@ -60,6 +62,7 @@ export class ProtopipeHomeRunbooksComponent implements OnInit {
   readonly loading = signal(true);
   readonly loadError = signal<string | null>(null);
   readonly selection = signal<RunbookSelection | null>(null);
+  readonly binderSection = signal<RunbookSection>('discovery');
 
   readonly latestContentPlan = computed(() => this.contentPlanRuns()[0] ?? null);
 

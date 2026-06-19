@@ -80,6 +80,7 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
   { id: 'dev-thinker', label: 'Thinker', icon: 'sparkles' },
   { id: 'dev-writer', label: 'Writer', icon: 'write' },
   { id: 'dev-strategy', label: 'Strategy', icon: 'sitemap' },
+  { id: 'dev-analytics', label: 'Analytics', icon: 'chart' },
   {
     id: 'inbox',
     label: 'Inbox',

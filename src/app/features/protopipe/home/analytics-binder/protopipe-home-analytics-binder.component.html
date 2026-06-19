@@ -1,0 +1,435 @@
+<div class="ab-shell">
+
+  <!-- Masthead -->
+  <header class="ab-masthead">
+    <div class="ab-masthead__left">
+      <span class="ab-masthead__kicker">Analytics · sparkyelectricphoenix.com</span>
+      <div class="ab-masthead__range">
+        <button type="button" class="ab-range-btn">‹</button>
+        <span class="ab-range-label">Last 7 days</span>
+        <button type="button" class="ab-range-btn">›</button>
+      </div>
+    </div>
+    <div class="ab-kpis">
+      <div class="ab-kpi">
+        <span class="ab-kpi__num">1,247</span>
+        <span class="ab-kpi__label">organic sessions</span>
+        <span class="ab-kpi__trend ab-kpi__trend--up">↑ 18%</span>
+      </div>
+      <div class="ab-kpi ab-kpi--sep">
+        <span class="ab-kpi__num">14</span>
+        <span class="ab-kpi__label">content leads</span>
+        <span class="ab-kpi__trend ab-kpi__trend--up">↑ 27%</span>
+      </div>
+      <div class="ab-kpi ab-kpi--sep">
+        <span class="ab-kpi__num">1.12%</span>
+        <span class="ab-kpi__label">content CVR</span>
+        <span class="ab-kpi__trend ab-kpi__trend--up">↑ 0.31pp</span>
+      </div>
+    </div>
+    <div class="ab-masthead__right">
+      <span class="ab-posthog-badge">
+        <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="#f54e00" opacity="0.9"/><path d="M5 8a3 3 0 116 0" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>
+        PostHog
+      </span>
+    </div>
+  </header>
+
+  <!-- 2-pane binder -->
+  <div class="ab-binder">
+
+    <!-- Left nav -->
+    <nav class="ab-binder-nav" aria-label="Analytics sections">
+
+      <button type="button" class="ab-binder-nav__item" [class.is-active]="activeSection() === 'pulse'" (click)="activeSection.set('pulse')">
+        <svg class="ab-icon" viewBox="0 0 16 16" fill="none"><path d="M2 8h2l2-4 3 8 2-5 2 3h1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Pulse
+      </button>
+
+      <button type="button" class="ab-binder-nav__item" [class.is-active]="activeSection() === 'content'" (click)="activeSection.set('content')">
+        <svg class="ab-icon" viewBox="0 0 16 16" fill="none"><path d="M3 5h10M3 8h10M3 11h7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+        Content
+      </button>
+
+      <button type="button" class="ab-binder-nav__item" [class.is-active]="activeSection() === 'funnels'" (click)="activeSection.set('funnels')">
+        <svg class="ab-icon" viewBox="0 0 16 16" fill="none"><path d="M3 3h10l-4 5v5l-2-1V8L3 3z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>
+        Funnels
+      </button>
+
+      <button type="button" class="ab-binder-nav__item" [class.is-active]="activeSection() === 'sessions'" (click)="activeSection.set('sessions')">
+        <svg class="ab-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.1"/><circle cx="8" cy="7.5" r="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M5 7.5a3 3 0 016 0" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+        Sessions
+      </button>
+
+      <button type="button" class="ab-binder-nav__item" [class.is-active]="activeSection() === 'heatmaps'" (click)="activeSection.set('heatmaps')">
+        <svg class="ab-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" fill="currentColor" opacity="0.3"/><rect x="9" y="2" width="5" height="5" rx="1" fill="currentColor" opacity="0.6"/><rect x="2" y="9" width="5" height="5" rx="1" fill="currentColor" opacity="0.8"/><rect x="9" y="9" width="5" height="5" rx="1" fill="currentColor" opacity="0.15"/></svg>
+        Heatmaps
+      </button>
+
+      <button type="button" class="ab-binder-nav__item" [class.is-active]="activeSection() === 'experiments'" (click)="activeSection.set('experiments')">
+        <svg class="ab-icon" viewBox="0 0 16 16" fill="none"><path d="M6 2v5L3 13h10L10 7V2M6 2h4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Experiments
+      </button>
+
+      <div class="ab-binder-nav__sep"></div>
+
+      <button type="button" class="ab-binder-nav__item ab-binder-nav__item--signals" [class.is-active]="activeSection() === 'signals'" (click)="activeSection.set('signals')">
+        <svg class="ab-icon" viewBox="0 0 16 16" fill="none"><path d="M8 3v2M8 11v2M3 8h2M11 8h2M4.5 4.5l1.5 1.5M10 10l1.5 1.5M4.5 11.5L6 10M10 6l1.5-1.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.1"/></svg>
+        AI signals
+        <span class="ab-binder-nav__badge">6</span>
+      </button>
+
+    </nav>
+
+    <!-- Right panel -->
+    <div class="ab-panel">
+
+      @switch (activeSection()) {
+
+        <!-- ── PULSE ── -->
+        @case ('pulse') {
+          <div class="ab-panel-head">
+            <div class="ab-panel-kicker">Analytics · Live pulse</div>
+            <h2 class="ab-panel-title">This week's performance</h2>
+            <p class="ab-panel-deck">PostHog <code>TrendsQuery</code> + <code>FunnelsQuery</code> — last 7 days, organic traffic only.</p>
+          </div>
+
+          <!-- KPI grid -->
+          <div class="ab-kpi-grid">
+            <div class="ab-metric-card">
+              <span class="ab-metric-card__num">1,247</span>
+              <span class="ab-metric-card__label">Organic sessions</span>
+              <span class="ab-metric-card__trend ab-trend--up">↑ 18% vs prior week</span>
+            </div>
+            <div class="ab-metric-card">
+              <span class="ab-metric-card__num">14</span>
+              <span class="ab-metric-card__label">Content-assisted leads</span>
+              <span class="ab-metric-card__trend ab-trend--up">↑ 27% vs prior week</span>
+            </div>
+            <div class="ab-metric-card">
+              <span class="ab-metric-card__num">1.12%</span>
+              <span class="ab-metric-card__label">Overall content CVR</span>
+              <span class="ab-metric-card__trend ab-trend--up">↑ 0.31pp vs prior week</span>
+            </div>
+            <div class="ab-metric-card">
+              <span class="ab-metric-card__num">3:47</span>
+              <span class="ab-metric-card__label">Avg time on page</span>
+              <span class="ab-metric-card__trend ab-trend--up">↑ 0:42 vs prior week</span>
+            </div>
+            <div class="ab-metric-card">
+              <span class="ab-metric-card__num">68%</span>
+              <span class="ab-metric-card__label">Avg scroll depth</span>
+              <span class="ab-metric-card__trend ab-trend--up">↑ 6pp vs prior week</span>
+            </div>
+            <div class="ab-metric-card">
+              <span class="ab-metric-card__num">3.2%</span>
+              <span class="ab-metric-card__label">CTA click rate</span>
+              <span class="ab-metric-card__trend ab-trend--flat">→ no change</span>
+            </div>
+          </div>
+
+          <!-- Top converters -->
+          <div class="ab-sub-head">Top converting articles this week</div>
+          <div class="ab-top-list">
+            @for (row of contentRows.slice(0, 3); track row.slug) {
+              <div class="ab-top-row">
+                <div class="ab-top-row__body">
+                  <span class="ab-top-row__title">{{ row.title }}</span>
+                  <span class="ab-top-row__kw">{{ row.slug }}</span>
+                </div>
+                <div class="ab-top-row__stats">
+                  <div class="ab-mini-stat">
+                    <span class="ab-mini-stat__val">{{ row.sessions }}</span>
+                    <span class="ab-mini-stat__label">sessions</span>
+                  </div>
+                  <div class="ab-mini-stat">
+                    <span class="ab-mini-stat__val ab-mini-stat__val--accent">{{ row.cvr }}%</span>
+                    <span class="ab-mini-stat__label">CVR</span>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Trend sparkline placeholder -->
+          <div class="ab-sub-head">Session trend (last 7 days)</div>
+          <div class="ab-sparkline">
+            @for (h of [88, 112, 97, 143, 178, 201, 196, 224, 189, 211, 247, 189, 198, 228]; track $index) {
+              <div class="ab-sparkline__bar" [style.height.%]="(h / 247) * 100" [class.ab-sparkline__bar--today]="$index === 13"></div>
+            }
+          </div>
+          <div class="ab-sparkline-labels">
+            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+          </div>
+        }
+
+        <!-- ── CONTENT ── -->
+        @case ('content') {
+          <div class="ab-panel-head">
+            <div class="ab-panel-kicker">Analytics · Content performance</div>
+            <h2 class="ab-panel-title">Article-level metrics</h2>
+            <p class="ab-panel-deck"><code>HogQLQuery</code> — pageviews, scroll depth, CTA clicks, and conversion rates grouped by <code>$current_url</code>.</p>
+          </div>
+
+          <div class="ab-content-table">
+            <div class="ab-content-table__head">
+              <span>Article</span>
+              <span class="ab-th--right">Sessions</span>
+              <span class="ab-th--right">Avg time</span>
+              <span>Scroll depth</span>
+              <span class="ab-th--right">CTA clicks</span>
+              <span class="ab-th--right">CVR</span>
+            </div>
+            @for (row of contentRows; track row.slug) {
+              <div class="ab-content-row">
+                <div class="ab-content-row__title-col">
+                  <span class="ab-content-row__title">{{ row.title }}</span>
+                  <span class="ab-content-row__slug">/blog/{{ row.slug }}</span>
+                </div>
+                <span class="ab-content-row__num">
+                  {{ row.sessions }}
+                  <span class="ab-trend-arrow ab-trend-arrow--{{ row.trend }}">
+                    @if (row.trend === 'up') { ↑{{ row.trendPct }}% }
+                    @else if (row.trend === 'down') { ↓{{ row.trendPct }}% }
+                    @else { — }
+                  </span>
+                </span>
+                <span class="ab-content-row__num">{{ row.avgTime }}</span>
+                <div class="ab-scroll-bar-wrap">
+                  <div class="ab-scroll-bar">
+                    <div class="ab-scroll-bar__fill" [style.width.%]="row.scrollDepth" [class.ab-scroll-bar__fill--high]="row.scrollDepth >= 65" [class.ab-scroll-bar__fill--mid]="row.scrollDepth >= 50 && row.scrollDepth < 65" [class.ab-scroll-bar__fill--low]="row.scrollDepth < 50"></div>
+                  </div>
+                  <span class="ab-scroll-pct">{{ row.scrollDepth }}%</span>
+                </div>
+                <span class="ab-content-row__num">{{ row.ctaClicks }}</span>
+                <span class="ab-content-row__cvr" [class.ab-content-row__cvr--high]="row.cvr >= 3.5">{{ row.cvr }}%</span>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- ── FUNNELS ── -->
+        @case ('funnels') {
+          <div class="ab-panel-head">
+            <div class="ab-panel-kicker">Analytics · Funnels</div>
+            <h2 class="ab-panel-title">Conversion funnels</h2>
+            <p class="ab-panel-deck"><code>FunnelsQuery</code> via PostHog API. Each step is a tracked event with property filters.</p>
+          </div>
+
+          <!-- Funnel selector -->
+          <div class="ab-funnel-tabs">
+            <button type="button" class="ab-funnel-tab" [class.is-active]="activeFunnel() === 'content-to-lead'" (click)="activeFunnel.set('content-to-lead')">Content → Lead</button>
+            <button type="button" class="ab-funnel-tab" [class.is-active]="activeFunnel() === 'phone-cta'" (click)="activeFunnel.set('phone-cta')">Phone CTA</button>
+            <button type="button" class="ab-funnel-tab" [class.is-active]="activeFunnel() === 'multi-article'" (click)="activeFunnel.set('multi-article')">Multi-article</button>
+          </div>
+
+          @if (activeFunnelData; as funnel) {
+            <div class="ab-funnel-meta">
+              <span class="ab-funnel-desc">{{ funnel.desc }}</span>
+              <span class="ab-funnel-cvr-badge">{{ funnel.totalCvr }} overall CVR</span>
+            </div>
+
+            <div class="ab-funnel-chart">
+              @for (step of funnel.steps; track step.label; let i = $index) {
+                <div class="ab-funnel-step">
+                  <div class="ab-funnel-step__left">
+                    <span class="ab-funnel-step__num">{{ (i + 1).toString() }}</span>
+                    <div class="ab-funnel-step__info">
+                      <span class="ab-funnel-step__label">{{ step.label }}</span>
+                      <code class="ab-funnel-step__api">{{ step.api }}</code>
+                    </div>
+                  </div>
+                  <div class="ab-funnel-step__right">
+                    <div class="ab-funnel-bar-wrap">
+                      <div class="ab-funnel-bar" [style.width.%]="barWidth(step.count, funnel.steps[0].count)"></div>
+                    </div>
+                    <span class="ab-funnel-step__count">{{ step.count | number:'1.0-0' }}</span>
+                    @if (step.dropPct > 0) {
+                      <span class="ab-funnel-step__drop" [class.ab-funnel-step__drop--bad]="step.dropPct > 60">
+                        −{{ step.dropPct | number:'1.0-1' }}%
+                      </span>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        }
+
+        <!-- ── SESSIONS ── -->
+        @case ('sessions') {
+          <div class="ab-panel-head">
+            <div class="ab-panel-kicker">Analytics · Session recordings</div>
+            <h2 class="ab-panel-title">Session replay</h2>
+            <p class="ab-panel-deck"><code>GET /api/projects/:id/session_recordings/</code> + AI summaries via <code>create_session_summaries_individually</code>.</p>
+          </div>
+
+          <!-- Playlists -->
+          <div class="ab-sub-head">Saved playlists</div>
+          <div class="ab-playlist-row">
+            @for (p of playlists; track p.name) {
+              <div class="ab-playlist-chip">
+                <span>{{ p.icon }}</span>
+                <span class="ab-playlist-chip__name">{{ p.name }}</span>
+                <span class="ab-playlist-chip__count">{{ p.count }}</span>
+              </div>
+            }
+          </div>
+
+          <!-- Session list -->
+          <div class="ab-sub-head" style="margin-top:1.25rem;">Recent sessions</div>
+          <div class="ab-sessions-list">
+            @for (session of sessions; track session.id) {
+              <div class="ab-session-row ab-session-row--{{ session.value }}">
+                <div class="ab-session-row__head">
+                  <div class="ab-session-row__meta">
+                    <span class="ab-session-row__loc">{{ session.location }}</span>
+                    <span class="ab-session-dot">·</span>
+                    <span class="ab-session-row__dur">{{ session.duration }}</span>
+                    <span class="ab-session-dot">·</span>
+                    <span class="ab-session-row__pages">{{ session.pages }} pages</span>
+                  </div>
+                  <div class="ab-session-row__right">
+                    @for (sig of session.signals; track sig) {
+                      <span class="ab-signal-chip ab-signal-chip--{{ sig === 'rage click' || sig === 'form error' ? 'red' : sig === 'form dropout' || sig === 'cta hover' ? 'amber' : 'blue' }}">{{ sig }}</span>
+                    }
+                    <span class="ab-value-dot ab-value-dot--{{ session.value }}">{{ session.value }}</span>
+                    <button type="button" class="ab-watch-btn">▶ Watch</button>
+                  </div>
+                </div>
+                <p class="ab-session-row__summary">{{ session.aiSummary }}</p>
+                <span class="ab-session-row__id">{{ session.id }}</span>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- ── HEATMAPS ── -->
+        @case ('heatmaps') {
+          <div class="ab-panel-head">
+            <div class="ab-panel-kicker">Analytics · Heatmaps</div>
+            <h2 class="ab-panel-title">Scroll depth &amp; click maps</h2>
+            <p class="ab-panel-deck"><code>GET /api/projects/:id/heatmaps/</code> — scroll depth percentages per page section with CTA click density.</p>
+          </div>
+
+          <!-- Article selector -->
+          <div class="ab-heatmap-selector">
+            @for (a of heatmapArticles; track a.id) {
+              <button type="button" class="ab-heatmap-tab" [class.is-active]="activeHeatmapArticle() === a.id" (click)="activeHeatmapArticle.set(a.id)">
+                {{ a.label }}
+              </button>
+            }
+          </div>
+
+          <!-- Scroll depth chart -->
+          <div class="ab-sub-head">Scroll depth by section — {{ activeHeatmapArticleLabel }}</div>
+          <div class="ab-heatmap-chart">
+            @for (section of activeHeatmapData; track section.label) {
+              <div class="ab-heatmap-row">
+                <span class="ab-heatmap-row__label">{{ section.label }}</span>
+                <div class="ab-heatmap-bar-wrap">
+                  <div class="ab-heatmap-bar" [style.width.%]="section.reachPct" [style.opacity]="0.3 + (section.reachPct / 100) * 0.7"></div>
+                  @if (section.hasCta) {
+                    <span class="ab-cta-marker" [title]="section.ctaClicks + ' CTA clicks'">
+                      CTA · {{ section.ctaClicks }}
+                    </span>
+                  }
+                </div>
+                <span class="ab-heatmap-row__pct">{{ section.reachPct }}%</span>
+              </div>
+            }
+          </div>
+
+          <!-- Click insight -->
+          <div class="ab-heatmap-insight">
+            <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.1"/><path d="M8 7v3M8 5.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            <p>The mid-article CTA (in the cost/pricing section) generates <strong>3–5× more clicks</strong> than the bottom CTA, simply because it's placed where 60–75% of readers still are. Moving bottom-only CTAs to the high-reach section is the single highest-leverage layout change.</p>
+          </div>
+        }
+
+        <!-- ── EXPERIMENTS ── -->
+        @case ('experiments') {
+          <div class="ab-panel-head">
+            <div class="ab-panel-kicker">Analytics · A/B experiments</div>
+            <h2 class="ab-panel-title">Running experiments</h2>
+            <p class="ab-panel-deck">PostHog feature flags + <code>FunnelsQuery</code> segmented by experiment variant. Statistical confidence via Bayesian engine.</p>
+          </div>
+
+          <div class="ab-exp-list">
+            @for (exp of experiments; track exp.id) {
+              <div class="ab-exp-card" [class.ab-exp-card--complete]="exp.status === 'complete'" [class.ab-exp-card--draft]="exp.status === 'draft'">
+                <div class="ab-exp-card__head">
+                  <div class="ab-exp-card__meta">
+                    <span class="ab-exp-status ab-exp-status--{{ exp.status }}">{{ exp.status }}</span>
+                    <h3 class="ab-exp-card__name">{{ exp.name }}</h3>
+                  </div>
+                  @if (exp.status === 'running') {
+                    <div class="ab-confidence-ring" [style.--conf]="exp.confidence">
+                      <span class="ab-confidence-ring__num">{{ exp.confidence }}%</span>
+                      <span class="ab-confidence-ring__label">confidence</span>
+                    </div>
+                  }
+                </div>
+                <p class="ab-exp-card__metric">Measuring: {{ exp.metric }}</p>
+
+                <div class="ab-exp-variants">
+                  @for (v of exp.variants; track v.name) {
+                    <div class="ab-exp-variant" [class.ab-exp-variant--winner]="v.winner">
+                      <div class="ab-exp-variant__head">
+                        <span class="ab-exp-variant__name">{{ v.name }}</span>
+                        @if (v.winner) { <span class="ab-winner-tag">🏆 leader</span> }
+                      </div>
+                      @if (exp.status !== 'draft') {
+                        <div class="ab-exp-variant__bar-wrap">
+                          <div class="ab-exp-variant__bar" [style.width.%]="(v.cvr / 5) * 100" [class.ab-exp-variant__bar--winner]="v.winner"></div>
+                          <span class="ab-exp-variant__cvr">{{ v.cvr }}% CVR</span>
+                        </div>
+                        <span class="ab-exp-variant__sessions">{{ v.sessions | number:'1.0-0' }} sessions</span>
+                      } @else {
+                        <span class="ab-exp-variant__pending">Not started</span>
+                      }
+                    </div>
+                  }
+                </div>
+
+                <div class="ab-exp-card__insight">
+                  <svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1"/><path d="M6 5.5v3M6 4v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+                  {{ exp.insight }}
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- ── SIGNALS ── -->
+        @case ('signals') {
+          <div class="ab-panel-head">
+            <div class="ab-panel-kicker">Analytics · AI signals</div>
+            <h2 class="ab-panel-title">What PostHog is telling you</h2>
+            <p class="ab-panel-deck">Synthesized insights from HogQL queries, funnel analysis, and session recording patterns. Each signal includes the exact API query powering it.</p>
+          </div>
+
+          <div class="ab-signals-list">
+            @for (signal of signals; track signal.id) {
+              <div class="ab-signal-card ab-signal-card--{{ signal.severity }}">
+                <div class="ab-signal-card__head">
+                  <span class="ab-signal-icon">{{ signal.icon }}</span>
+                  <div class="ab-signal-card__meta">
+                    <span class="ab-signal-severity ab-signal-severity--{{ signal.severity }}">{{ signal.severity }}</span>
+                    <h3 class="ab-signal-card__title">{{ signal.title }}</h3>
+                  </div>
+                </div>
+                <p class="ab-signal-card__body">{{ signal.body }}</p>
+                <code class="ab-signal-card__api">{{ signal.api }}</code>
+                @if (signal.action) {
+                  <button type="button" class="ab-signal-card__action">{{ signal.action }} →</button>
+                }
+              </div>
+            }
+          </div>
+        }
+
+      }<!-- /switch -->
+    </div><!-- /ab-panel -->
+  </div><!-- /ab-binder -->
+</div><!-- /ab-shell -->

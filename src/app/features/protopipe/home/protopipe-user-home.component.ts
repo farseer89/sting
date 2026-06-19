@@ -39,6 +39,7 @@ import { ProtopipeHomeRunbooksComponent } from './runbooks/protopipe-home-runboo
 import { ProtopipeHomeIntakeDemoComponent } from './intake-demo/protopipe-home-intake-demo.component';
 import { ProtopipeMediaStudioComponent } from '../admin/media-studio/protopipe-media-studio.component';
 import { ProtopipeHomeBrandBookComponent } from './books/protopipe-home-brand-book.component';
+import { ProtopipeHomeBuildBookComponent } from './books/protopipe-home-build-book.component';
 import { ProtopipeHomeBusinessDetailsComponent } from './books/protopipe-home-business-details.component';
 import { ProtopipeHomeGoalsComponent } from './books/protopipe-home-goals.component';
 import { ProtopipePitchProspectBoardComponent } from '../pitch-prep/protopipe-pitch-prospect-board.component';
@@ -68,6 +69,7 @@ export type ProtopipeHomeView =
   | 'pitch-prep'
   | 'leads'
   | 'brand-book'
+  | 'build-book'
   | 'business-details'
   | 'goals'
   | 'intake'
@@ -108,6 +110,7 @@ function initialsFromName(name: string): string {
     ProtopipeHomeIntakeDemoComponent,
     ProtopipeMediaStudioComponent,
     ProtopipeHomeBrandBookComponent,
+    ProtopipeHomeBuildBookComponent,
     ProtopipeHomeBusinessDetailsComponent,
     ProtopipeHomeGoalsComponent,
     ProtopipePitchProspectBoardComponent,
@@ -293,6 +296,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.activeView.set('runbooks');
     } else if (item.id === 'books-brand') {
       this.openBrandBookView();
+    } else if (item.id === 'books-build') {
+      this.openBuildBookView();
     } else if (item.id === 'books-business') {
       this.openBusinessDetailsView();
     } else if (item.id === 'books-goals') {
@@ -419,6 +424,13 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.sidePanel.setOpen(false);
     this.activeNavId.set('books-brand');
     this.activeView.set('brand-book');
+  }
+
+  openBuildBookView(): void {
+    this.leaveWriterFocus();
+    this.sidePanel.setOpen(false);
+    this.activeNavId.set('books-build');
+    this.activeView.set('build-book');
   }
 
   openBusinessDetailsView(): void {

@@ -30,6 +30,7 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
     icon: 'sparkles',
     children: [
       { id: 'books-brand', label: 'Brand book', icon: 'sparkles' },
+      { id: 'books-build', label: 'Build book', icon: 'globe' },
       { id: 'books-business', label: 'Business details', icon: 'users' },
       { id: 'books-goals', label: 'Goals', icon: 'sitemap' },
     ],

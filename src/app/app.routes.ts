@@ -39,6 +39,16 @@ export const routes: Routes = [
       ),
   },
   {
+    // Intake Studio — admin observability prototype for the SMS/conversation
+    // intake system. Dev-only lab mockup (no backend), hardcoded fixtures.
+    path: 'protopipe/lab/intake-studio',
+    canMatch: [devRoutesGuard],
+    loadComponent: () =>
+      import('./features/protopipe/lab/intake-studio/intake-studio.component').then(
+        (m) => m.IntakeStudioComponent,
+      ),
+  },
+  {
     // Train of Thought — generic agentic-process visualizer (Thinkers/Thoughts).
     // Dev-only lab mockup (no backend), matches the void lab access pattern.
     path: 'protopipe/lab/thinker',

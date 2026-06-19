@@ -1,0 +1,264 @@
+<div class="studio">
+  <header class="studio__head">
+    <div class="studio__title">
+      <h1>Intake Studio</h1>
+      <span class="studio__sub">Prototype · hardcoded data · no backend</span>
+    </div>
+    <div class="studio__health">
+      <span class="pill pill--error" [class.pill--muted]="blockingCount() === 0">
+        {{ blockingCount() }} blocking
+      </span>
+      <span class="pill pill--warn" [class.pill--muted]="expiringSoonCount() === 0">
+        {{ expiringSoonCount() }} expiring &lt;24h
+      </span>
+      <span class="pill pill--info">{{ openConversations().length }} open</span>
+    </div>
+  </header>
+
+  <nav class="studio__tabs">
+    <button type="button" [class.active]="tab() === 'dashboard'" (click)="setTab('dashboard')">
+      Conversations
+    </button>
+    <button type="button" [class.active]="tab() === 'inbound'" (click)="setTab('inbound')">
+      Inbound log
+    </button>
+    <button type="button" [class.active]="tab() === 'claims'" (click)="setTab('claims')">
+      Claims ledger
+    </button>
+    <button type="button" [class.active]="tab() === 'channels'" (click)="setTab('channels')">
+      Channel preview
+    </button>
+  </nav>
+
+  <!-- ── Conversations: dashboard + drill-down ───────────────────────── -->
+  @if (tab() === 'dashboard') {
+    <div class="grid">
+      <section class="panel">
+        <h2 class="panel__title">Open conversations</h2>
+        <p class="panel__hint">Sorted by priority — blocking fact-checks first, then oldest.</p>
+        <ul class="conv-list">
+          @for (c of openConversations(); track c.id) {
+            <li
+              class="conv-row"
+              [class.conv-row--active]="c.id === selectedConversationId()"
+              [class.conv-row--blocking]="c.blocking"
+              (click)="selectConversation(c.id)"
+            >
+              <div class="conv-row__top">
+                <span class="tag tag--{{ c.triggerType }}">{{ triggerLabels[c.triggerType] }}</span>
+                @if (c.blocking) {
+                  <span class="tag tag--block">blocking</span>
+                }
+                <span class="conv-row__age">{{ ageLabel(c.createdAt) }}</span>
+              </div>
+              <div class="conv-row__contact">{{ c.contactLabel }}</div>
+              <div class="conv-row__q">{{ currentQuestionText(c) }}</div>
+              <div class="conv-row__expiry">{{ currentExpiry(c) }}</div>
+            </li>
+          } @empty {
+            <li class="conv-empty">No open conversations.</li>
+          }
+        </ul>
+
+        <h2 class="panel__title panel__title--spaced">Completed</h2>
+        <ul class="conv-list conv-list--muted">
+          @for (c of completedConversations(); track c.id) {
+            <li class="conv-row conv-row--done" (click)="selectConversation(c.id)">
+              <div class="conv-row__top">
+                <span class="tag tag--{{ c.triggerType }}">{{ triggerLabels[c.triggerType] }}</span>
+                <span class="conv-row__age">{{ c.status }}</span>
+              </div>
+              <div class="conv-row__contact">{{ c.contactLabel }}</div>
+              @if (c.resumeResult) {
+                <div class="conv-row__result">→ {{ c.resumeResult }}</div>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+
+      <section class="panel">
+        @if (selectedConversation(); as conv) {
+          <div class="detail__head">
+            <h2 class="panel__title">{{ conv.contactLabel }}</h2>
+            <span class="tag tag--{{ conv.triggerType }}">{{ triggerLabels[conv.triggerType] }}</span>
+          </div>
+          <div class="detail__link">
+            Resumes: <strong>{{ conv.resumeTarget.label }}</strong>
+            <span class="muted">({{ conv.resumeTarget.type }})</span>
+          </div>
+
+          <h3 class="detail__sub">Questions</h3>
+          <ol class="q-list">
+            @for (q of conv.questions; track q.index) {
+              <li class="q-card q-card--{{ q.status }}">
+                <div class="q-card__top">
+                  <span class="q-card__num">Q{{ q.index + 1 }}</span>
+                  <span class="chip">{{ q.channel }}</span>
+                  <span class="chip chip--shape">{{ q.answerShape }}</span>
+                  <span class="q-card__status">{{ q.status }}</span>
+                </div>
+                <div class="q-card__text">{{ q.text }}</div>
+                @if (q.choices?.length) {
+                  <div class="q-card__choices">
+                    @for (choice of q.choices; track choice) {
+                      <span class="opt">{{ choice }}</span>
+                    }
+                  </div>
+                }
+                @if (q.answer) {
+                  <div class="q-card__answer">“{{ q.answer }}”</div>
+                }
+                <div class="q-card__meta">
+                  <span>sent {{ ageLabel(q.sentAt) }}</span>
+                  <span>· {{ expiryLabel(q.expiresAt) }}</span>
+                </div>
+              </li>
+            }
+          </ol>
+
+          <h3 class="detail__sub">Event timeline</h3>
+          <ul class="timeline">
+            @for (e of conv.events; track $index) {
+              <li class="timeline__item timeline__item--{{ e.type }}">
+                <span class="timeline__type">{{ e.type }}</span>
+                <span class="timeline__detail">{{ e.detail }}</span>
+                <span class="timeline__at">{{ ageLabel(e.at) }}</span>
+              </li>
+            }
+          </ul>
+
+          @if (conv.resumeError) {
+            <div class="banner banner--error">Resume failed: {{ conv.resumeError }}</div>
+          }
+        } @else {
+          <p class="panel__hint">Select a conversation to inspect.</p>
+        }
+      </section>
+    </div>
+  }
+
+  <!-- ── Inbound message log ─────────────────────────────────────────── -->
+  @if (tab() === 'inbound') {
+    <section class="panel">
+      <h2 class="panel__title">Inbound messages</h2>
+      <p class="panel__hint">Every inbound message and how the router handled it.</p>
+      <ul class="msg-list">
+        @for (m of inboundMessages(); track m.id) {
+          <li class="msg-row">
+            <div class="msg-row__line">
+              <span class="msg-row__from">{{ m.contactLabel }}</span>
+              <span class="badge badge--{{ routingBadgeFor(m.routingOutcome).tone }}">
+                {{ routingBadgeFor(m.routingOutcome).label }}
+              </span>
+              <span class="msg-row__at">{{ ageLabel(m.receivedAt) }}</span>
+            </div>
+            <div class="msg-row__body">{{ m.body }}</div>
+            @if (m.mediaUrls?.length) {
+              <div class="msg-row__media">{{ m.mediaUrls?.length }} attachment(s)</div>
+            }
+            @if (m.matchedConversationId) {
+              <div class="msg-row__route">
+                → matched conversation <code>{{ m.matchedConversationId }}</code>
+                @if (m.matchedQuestionIndex !== undefined) {
+                  · Q{{ m.matchedQuestionIndex + 1 }}
+                }
+              </div>
+            }
+            @if (m.extractedEntities) {
+              <div class="msg-row__entities">
+                <span class="muted">extracted:</span>
+                {{ m.extractedEntities.updateType }}
+                @if (m.extractedEntities.confidence !== undefined) {
+                  · conf {{ m.extractedEntities.confidence }}
+                }
+                @if (m.projectMatchResult) {
+                  · {{ m.projectMatchResult }}
+                }
+              </div>
+            }
+            @if (m.recordsCreated?.length) {
+              <div class="msg-row__records">
+                @for (r of m.recordsCreated; track r.id) {
+                  <span class="opt opt--rec">{{ r.type }}: {{ r.label }}</span>
+                }
+              </div>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  <!-- ── Claims ledger ───────────────────────────────────────────────── -->
+  @if (tab() === 'claims') {
+    <section class="panel">
+      <div class="detail__head">
+        <h2 class="panel__title">{{ articleClaims().articleTitle }}</h2>
+      </div>
+      @if (unconfirmedClaims() > 0) {
+        <div class="banner banner--error">
+          {{ unconfirmedClaims() }} unconfirmed AI claim(s) block publish.
+        </div>
+      } @else {
+        <div class="banner banner--good">All AI claims confirmed — ready to publish.</div>
+      }
+      <ul class="claim-list">
+        @for (claim of articleClaims().claims; track claim.id) {
+          <li class="claim-row claim-row--{{ claim.status }}">
+            <div class="claim-row__top">
+              <span class="badge badge--{{ claim.provenance === 'ai' ? 'warn' : 'good' }}">
+                {{ claim.provenance === 'ai' ? 'AI-inferred' : 'Client-sourced' }}
+              </span>
+              <span class="claim-row__status">{{ claim.status }}</span>
+            </div>
+            <div class="claim-row__text">{{ claim.claimText }}</div>
+            @if (claim.correctedFrom && claim.answerValue) {
+              <div class="claim-row__correction">corrected → “{{ claim.answerValue }}”</div>
+            }
+            @if (claim.conversationId) {
+              <div class="claim-row__conv">
+                verified via <code>{{ claim.conversationId }}</code>
+              </div>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  <!-- ── Channel render preview ──────────────────────────────────────── -->
+  @if (tab() === 'channels') {
+    <section class="panel">
+      <h2 class="panel__title">Channel-agnostic rendering</h2>
+      <p class="panel__hint">
+        The same question object rendered for each channel by the adapter.
+        Pick a conversation on the Conversations tab to change the source question.
+      </p>
+      @if (channelRenders(); as r) {
+        <div class="channel-source">Source question: <strong>{{ r.questionText }}</strong></div>
+        <div class="channel-grid">
+          <div class="phone phone--sms">
+            <div class="phone__label">SMS</div>
+            <div class="bubble bubble--in">{{ r.sms.prompt }}</div>
+            <div class="phone__hint">{{ r.sms.replyHint }}</div>
+          </div>
+          <div class="phone phone--app">
+            <div class="phone__label">In-app</div>
+            <div class="bubble bubble--in">{{ r.inApp.prompt }}</div>
+            @if (r.inApp.options.length) {
+              <div class="phone__options">
+                @for (opt of r.inApp.options; track opt) {
+                  <button type="button" class="tap-opt">{{ opt }}</button>
+                }
+              </div>
+            }
+            <div class="phone__hint">{{ r.inApp.replyHint }}</div>
+          </div>
+        </div>
+      } @else {
+        <p class="panel__hint">No question to preview.</p>
+      }
+    </section>
+  }
+</div>

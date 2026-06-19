@@ -46,6 +46,7 @@ import { ProtopipePitchPrepWizardComponent } from '../pitch-prep/protopipe-pitch
 import { ProtopipeLeadsListComponent } from '../leads/protopipe-leads-list.component';
 import { ProtopipeHomeThinkerBinderComponent } from './thinker/protopipe-home-thinker-binder.component';
 import { ProtopipeHomeWriterBinderComponent } from './writer-binder/protopipe-home-writer-binder.component';
+import { ProtopipeHomeStrategyBinderComponent } from './strategy-binder/protopipe-home-strategy-binder.component';
 import { ProtopipeWriterInspectorBridge } from '../content/writer/protopipe-writer-inspector.bridge';
 import { ProtopipeHomeSidePanelService } from './protopipe-home-side-panel.service';
 import {
@@ -70,7 +71,8 @@ export type ProtopipeHomeView =
   | 'goals'
   | 'intake'
   | 'thinker'
-  | 'writer-binder';
+  | 'writer-binder'
+  | 'strategy-binder';
 
 function initialsFromName(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -111,6 +113,7 @@ function initialsFromName(name: string): string {
     ProtopipeLeadsListComponent,
     ProtopipeHomeThinkerBinderComponent,
     ProtopipeHomeWriterBinderComponent,
+    ProtopipeHomeStrategyBinderComponent,
   ],
   templateUrl: './protopipe-user-home.component.html',
   styleUrl: './protopipe-user-home.component.scss',
@@ -295,6 +298,11 @@ export class ProtopipeUserHomeComponent implements OnInit {
       void this.router.navigate(['/protopipe/settings/integrations']);
     } else if (item.id === 'intake-demo') {
       this.openIntakeDemoView();
+    } else if (item.id === 'dev-strategy') {
+      this.leaveWriterFocus();
+      this.sidePanel.setOpen(false);
+      this.activeNavId.set(item.id);
+      this.activeView.set('strategy-binder');
     } else if (item.id === 'dev-thinker') {
       this.leaveWriterFocus();
       this.sidePanel.setOpen(false);

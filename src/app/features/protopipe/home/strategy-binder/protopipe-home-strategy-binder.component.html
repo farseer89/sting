@@ -1,0 +1,428 @@
+<div class="sb-shell">
+
+  <!-- Masthead -->
+  <header class="sb-masthead">
+    <div class="sb-masthead__left">
+      <span class="sb-masthead__kicker">Content strategy</span>
+      <h1 class="sb-masthead__title">Sparky Electric</h1>
+      <p class="sb-masthead__deck">Phoenix, AZ · Electrical contractor · 62 keywords tracked</p>
+    </div>
+    <div class="sb-masthead__stats">
+      <div class="sb-stat">
+        <span class="sb-stat__num">{{ stats.pillars }}</span>
+        <span class="sb-stat__label">pillars</span>
+      </div>
+      <div class="sb-stat">
+        <span class="sb-stat__num">{{ stats.scheduled }}</span>
+        <span class="sb-stat__label">scheduled</span>
+      </div>
+      <div class="sb-stat">
+        <span class="sb-stat__num">{{ stats.backlog }}</span>
+        <span class="sb-stat__label">in backlog</span>
+      </div>
+      <div class="sb-stat">
+        <span class="sb-stat__num">{{ stats.existingWins }}</span>
+        <span class="sb-stat__label">ranking now</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 2-pane binder -->
+  <div class="sb-binder">
+
+    <!-- Left nav -->
+    <nav class="sb-binder-nav" aria-label="Strategy sections">
+
+      <button
+        type="button"
+        class="sb-binder-nav__item"
+        [class.is-active]="activeSection() === 'overview'"
+        (click)="activeSection.set('overview')"
+      >
+        <svg class="sb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.1"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.1"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.1"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.1"/></svg>
+        Overview
+      </button>
+
+      <button
+        type="button"
+        class="sb-binder-nav__item"
+        [class.is-active]="activeSection() === 'pillars'"
+        (click)="activeSection.set('pillars')"
+      >
+        <svg class="sb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><path d="M3 13V7M6 13V4M9 13V6M12 13V3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Pillars
+        <span class="sb-binder-nav__count">{{ stats.pillars }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="sb-binder-nav__item"
+        [class.is-active]="activeSection() === 'calendar'"
+        (click)="activeSection.set('calendar')"
+      >
+        <svg class="sb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M2 7h12M5 3V1M11 3V1" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+        Calendar
+        <span class="sb-binder-nav__count">{{ stats.scheduled }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="sb-binder-nav__item"
+        [class.is-active]="activeSection() === 'backlog'"
+        (click)="activeSection.set('backlog')"
+      >
+        <svg class="sb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><path d="M3 5h10M3 8h10M3 11h7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+        Backlog
+        <span class="sb-binder-nav__count">{{ stats.backlog }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="sb-binder-nav__item"
+        [class.is-active]="activeSection() === 'keywords'"
+        (click)="activeSection.set('keywords')"
+      >
+        <svg class="sb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.1"/><path d="M10.5 10.5L13.5 13.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Keywords
+        <span class="sb-binder-nav__count">{{ stats.keywords }}</span>
+      </button>
+
+      <div class="sb-binder-nav__sep"></div>
+
+      <button
+        type="button"
+        class="sb-binder-nav__item"
+        [class.is-active]="activeSection() === 'tune'"
+        (click)="activeSection.set('tune')"
+      >
+        <svg class="sb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><path d="M3 5h2M7 5h6M3 11h6M11 11h2M6 3v4M10 9v4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><circle cx="6" cy="5" r="1.2" stroke="currentColor" stroke-width="1.1"/><circle cx="10" cy="11" r="1.2" stroke="currentColor" stroke-width="1.1"/></svg>
+        Tune
+      </button>
+
+    </nav>
+
+    <!-- Right panel -->
+    <div class="sb-panel">
+
+      @switch (activeSection()) {
+
+        <!-- ── OVERVIEW ── -->
+        @case ('overview') {
+          <div class="sb-panel-head">
+            <div class="sb-panel-kicker">Strategy · Overview</div>
+            <h2 class="sb-panel-title">{{ narrative.headline }}</h2>
+            <p class="sb-panel-deck">{{ narrative.why }}</p>
+          </div>
+
+          <!-- Pillar overview cards -->
+          <div class="sb-pillar-grid">
+            @for (pillar of pillars; track pillar.id) {
+              <div class="sb-pillar-card" (click)="activeSection.set('pillars')">
+                <div class="sb-pillar-card__head">
+                  <span class="sb-pillar-card__name">{{ pillar.name }}</span>
+                  <span class="sb-pillar-card__count">{{ pillar.supportingCount }} articles</span>
+                </div>
+                <p class="sb-pillar-card__keyword">{{ pillar.keyword }}</p>
+                <p class="sb-pillar-card__intent">{{ pillar.intent }}</p>
+              </div>
+            }
+          </div>
+
+          <!-- Next up -->
+          <div class="sb-section-head">Next up</div>
+          <div class="sb-next-list">
+            @for (item of calendar.slice(0, 3); track item.title) {
+              <div class="sb-next-item">
+                <div class="sb-next-item__left">
+                  <span class="sb-type-chip sb-type-chip--{{ item.type }}">{{ item.type }}</span>
+                  <span class="sb-next-item__title">{{ item.title }}</span>
+                </div>
+                <div class="sb-next-item__right">
+                  <span class="sb-next-item__date">{{ item.publishAt }}</span>
+                  <span class="sb-funnel-dot sb-funnel-dot--{{ item.funnelStage }}" [title]="item.funnelStage"></span>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Existing wins -->
+          <div class="sb-section-head">Already ranking</div>
+          <div class="sb-wins">
+            <div class="sb-win-row">
+              <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>"How much does an electrician cost in Phoenix?" — Position #4</span>
+            </div>
+            <div class="sb-win-row">
+              <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>"Emergency electrician Phoenix AZ" — Position #7</span>
+            </div>
+            <div class="sb-win-row">
+              <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>"Licensed electrician Scottsdale" — Position #11</span>
+            </div>
+          </div>
+        }
+
+        <!-- ── PILLARS ── -->
+        @case ('pillars') {
+          <div class="sb-panel-head">
+            <div class="sb-panel-kicker">Strategy · Content pillars</div>
+            <h2 class="sb-panel-title">Topic pillars</h2>
+            <p class="sb-panel-deck">Your strategy is built around {{ pillars.length }} content pillars. Each pillar owns a keyword cluster and a distinct positioning angle.</p>
+          </div>
+
+          <div class="sb-pillar-list">
+            @for (pillar of pillars; track pillar.id) {
+              <div class="sb-pillar-block">
+                <div class="sb-pillar-block__head">
+                  <div class="sb-pillar-block__meta">
+                    <h3 class="sb-pillar-block__name">{{ pillar.name }}</h3>
+                    <span class="sb-pillar-block__intent">{{ pillar.intent }}</span>
+                  </div>
+                  <span class="sb-pillar-block__count">{{ pillar.supportingCount }} articles</span>
+                </div>
+                <div class="sb-pillar-block__keyword">
+                  <span class="sb-kw-badge">{{ pillar.keyword }}</span>
+                </div>
+                <p class="sb-pillar-block__angle">{{ pillar.angle }}</p>
+                <div class="sb-pillar-block__articles">
+                  @for (article of pillar.articles; track article; let i = $index) {
+                    <div class="sb-pillar-article">
+                      <span class="sb-pillar-article__num">{{ (i + 1).toString().padStart(2, '0') }}</span>
+                      <span class="sb-pillar-article__title">{{ article }}</span>
+                      @if (i === 0) { <span class="sb-pillar-article__tag">pillar</span> }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- ── CALENDAR ── -->
+        @case ('calendar') {
+          <div class="sb-panel-head">
+            <div class="sb-panel-kicker">Strategy · Schedule</div>
+            <h2 class="sb-panel-title">Content calendar</h2>
+            <p class="sb-panel-deck">{{ calendar.length }} articles scheduled over the next 8 weeks. Publishing cadence: 1 article per week.</p>
+          </div>
+
+          <div class="sb-cal-list">
+            @for (item of calendar; track item.title; let i = $index) {
+              <div class="sb-cal-row" [class.sb-cal-row--high]="item.priority === 'high'">
+                <div class="sb-cal-row__date">
+                  <span class="sb-cal-row__week">Wk {{ i + 1 }}</span>
+                  <span class="sb-cal-row__day">{{ item.publishAt }}</span>
+                </div>
+                <div class="sb-cal-row__body">
+                  <div class="sb-cal-row__head">
+                    <span class="sb-type-chip sb-type-chip--{{ item.type }}">{{ item.type }}</span>
+                    <span class="sb-cal-row__cluster">{{ item.cluster }}</span>
+                  </div>
+                  <p class="sb-cal-row__title">{{ item.title }}</p>
+                  <div class="sb-cal-row__meta">
+                    <span class="sb-kw-inline">{{ item.keyword }}</span>
+                    <span class="sb-cal-row__intent">{{ item.intent }}</span>
+                    <span class="sb-funnel-chip sb-funnel-chip--{{ item.funnelStage }}">{{ item.funnelStage }}</span>
+                  </div>
+                </div>
+                <div class="sb-cal-row__actions">
+                  <button type="button" class="sb-btn sb-btn--ghost sb-btn--xs">Write</button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- ── BACKLOG ── -->
+        @case ('backlog') {
+          <div class="sb-panel-head">
+            <div class="sb-panel-kicker">Strategy · Backlog</div>
+            <h2 class="sb-panel-title">Idea backlog</h2>
+            <p class="sb-panel-deck">{{ backlog.length }} unscheduled ideas. Add any of these to the calendar when you're ready to write.</p>
+          </div>
+
+          <div class="sb-backlog-list">
+            @for (item of backlog; track item.title) {
+              <div class="sb-backlog-row">
+                <div class="sb-backlog-row__body">
+                  <p class="sb-backlog-row__title">{{ item.title }}</p>
+                  <div class="sb-backlog-row__meta">
+                    <span class="sb-kw-inline">{{ item.keyword }}</span>
+                    <span class="sb-backlog-row__cluster">{{ item.cluster }}</span>
+                  </div>
+                </div>
+                <div class="sb-backlog-row__stats">
+                  <div class="sb-kw-stat">
+                    <span class="sb-kw-stat__val">{{ formatVolume(item.volume) }}</span>
+                    <span class="sb-kw-stat__label">vol</span>
+                  </div>
+                  <div class="sb-kw-stat">
+                    <span class="sb-kw-stat__val sb-kw-stat__val--diff sb-kw-stat__val--{{ difficultyClass(item.difficulty) }}">{{ item.difficulty }}</span>
+                    <span class="sb-kw-stat__label">KD</span>
+                  </div>
+                  <button type="button" class="sb-btn sb-btn--ghost sb-btn--xs">Schedule</button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- ── KEYWORDS ── -->
+        @case ('keywords') {
+          <div class="sb-panel-head">
+            <div class="sb-panel-kicker">Strategy · Keywords</div>
+            <h2 class="sb-panel-title">Keyword plan</h2>
+            <p class="sb-panel-deck">{{ keywords.length }} keywords organized into three action tiers.</p>
+          </div>
+
+          <!-- Tier: Immediate focus -->
+          <div class="sb-kw-tier">
+            <div class="sb-kw-tier__head">
+              <span class="sb-tier-badge sb-tier-badge--immediate">Immediate focus</span>
+              <span class="sb-kw-tier__desc">Highest priority — pursue these first</span>
+            </div>
+            <div class="sb-kw-table">
+              @for (kw of immediateFocus; track kw.phrase) {
+                <div class="sb-kw-row" [class.sb-kw-row--gap]="kw.gap">
+                  <span class="sb-kw-row__phrase">{{ kw.phrase }}</span>
+                  <span class="sb-kw-row__intent">{{ kw.intent }}</span>
+                  <span class="sb-kw-row__vol">{{ formatVolume(kw.volume) }}</span>
+                  <div class="sb-kd-bar">
+                    <div class="sb-kd-bar__fill sb-kd-bar__fill--{{ difficultyClass(kw.difficulty) }}" [style.width.%]="kw.difficulty"></div>
+                  </div>
+                  <span class="sb-kw-row__kd sb-kw-row__kd--{{ difficultyClass(kw.difficulty) }}">{{ kw.difficulty }}</span>
+                  @if (kw.gap) { <span class="sb-gap-flag">gap</span> }
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Tier: Long-term -->
+          <div class="sb-kw-tier">
+            <div class="sb-kw-tier__head">
+              <span class="sb-tier-badge sb-tier-badge--long-term">Long-term</span>
+              <span class="sb-kw-tier__desc">Build authority over 3–6 months</span>
+            </div>
+            <div class="sb-kw-table">
+              @for (kw of longTerm; track kw.phrase) {
+                <div class="sb-kw-row" [class.sb-kw-row--gap]="kw.gap">
+                  <span class="sb-kw-row__phrase">{{ kw.phrase }}</span>
+                  <span class="sb-kw-row__intent">{{ kw.intent }}</span>
+                  <span class="sb-kw-row__vol">{{ formatVolume(kw.volume) }}</span>
+                  <div class="sb-kd-bar">
+                    <div class="sb-kd-bar__fill sb-kd-bar__fill--{{ difficultyClass(kw.difficulty) }}" [style.width.%]="kw.difficulty"></div>
+                  </div>
+                  <span class="sb-kw-row__kd sb-kw-row__kd--{{ difficultyClass(kw.difficulty) }}">{{ kw.difficulty }}</span>
+                  @if (kw.gap) { <span class="sb-gap-flag">gap</span> }
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Tier: Long-tail -->
+          <div class="sb-kw-tier">
+            <div class="sb-kw-tier__head">
+              <span class="sb-tier-badge sb-tier-badge--long-tail">Long-tail</span>
+              <span class="sb-kw-tier__desc">Low competition, high conversion intent</span>
+            </div>
+            <div class="sb-kw-table">
+              @for (kw of longTail; track kw.phrase) {
+                <div class="sb-kw-row" [class.sb-kw-row--gap]="kw.gap">
+                  <span class="sb-kw-row__phrase">{{ kw.phrase }}</span>
+                  <span class="sb-kw-row__intent">{{ kw.intent }}</span>
+                  <span class="sb-kw-row__vol">{{ formatVolume(kw.volume) }}</span>
+                  <div class="sb-kd-bar">
+                    <div class="sb-kd-bar__fill sb-kd-bar__fill--{{ difficultyClass(kw.difficulty) }}" [style.width.%]="kw.difficulty"></div>
+                  </div>
+                  <span class="sb-kw-row__kd sb-kw-row__kd--{{ difficultyClass(kw.difficulty) }}">{{ kw.difficulty }}</span>
+                  @if (kw.gap) { <span class="sb-gap-flag">gap</span> }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- ── TUNE ── -->
+        @case ('tune') {
+          <div class="sb-panel-head">
+            <div class="sb-panel-kicker">Strategy · Configuration</div>
+            <h2 class="sb-panel-title">Strategy tune</h2>
+            <p class="sb-panel-deck">Adjust your content cadence, target audience, and priorities. Changes regenerate recommendations on next refresh.</p>
+          </div>
+
+          <div class="sb-tune-form">
+
+            <div class="sb-tune-section">
+              <h3 class="sb-tune-section__title">Publishing cadence</h3>
+              <div class="sb-tune-options">
+                <label class="sb-tune-option sb-tune-option--active">
+                  <input type="radio" name="cadence" checked />
+                  <span class="sb-tune-option__label">1× per week</span>
+                  <span class="sb-tune-option__desc">Recommended for growing sites</span>
+                </label>
+                <label class="sb-tune-option">
+                  <input type="radio" name="cadence" />
+                  <span class="sb-tune-option__label">2× per week</span>
+                  <span class="sb-tune-option__desc">Aggressive growth mode</span>
+                </label>
+                <label class="sb-tune-option">
+                  <input type="radio" name="cadence" />
+                  <span class="sb-tune-option__label">1× per 2 weeks</span>
+                  <span class="sb-tune-option__desc">Sustainable for solo operators</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="sb-tune-section">
+              <h3 class="sb-tune-section__title">Audience focus</h3>
+              <div class="sb-tune-options">
+                <label class="sb-tune-option sb-tune-option--active">
+                  <input type="checkbox" checked />
+                  <span class="sb-tune-option__label">Homeowners (residential)</span>
+                </label>
+                <label class="sb-tune-option sb-tune-option--active">
+                  <input type="checkbox" checked />
+                  <span class="sb-tune-option__label">Renovation buyers</span>
+                </label>
+                <label class="sb-tune-option">
+                  <input type="checkbox" />
+                  <span class="sb-tune-option__label">Commercial property managers</span>
+                </label>
+                <label class="sb-tune-option">
+                  <input type="checkbox" />
+                  <span class="sb-tune-option__label">New construction</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="sb-tune-section">
+              <h3 class="sb-tune-section__title">Content focus</h3>
+              <div class="sb-tune-options">
+                <label class="sb-tune-option sb-tune-option--active">
+                  <input type="checkbox" checked />
+                  <span class="sb-tune-option__label">Target competitor gaps</span>
+                  <span class="sb-tune-option__desc">Write what competitors are missing</span>
+                </label>
+                <label class="sb-tune-option sb-tune-option--active">
+                  <input type="checkbox" checked />
+                  <span class="sb-tune-option__label">Prioritize decision-stage content</span>
+                  <span class="sb-tune-option__desc">Bottom of funnel, closer to leads</span>
+                </label>
+                <label class="sb-tune-option">
+                  <input type="checkbox" />
+                  <span class="sb-tune-option__label">Expand awareness layer</span>
+                  <span class="sb-tune-option__desc">More top-of-funnel, long game</span>
+                </label>
+              </div>
+            </div>
+
+            <button type="button" class="sb-btn sb-btn--primary">Regenerate recommendations</button>
+
+          </div>
+        }
+
+      }<!-- /switch -->
+    </div><!-- /sb-panel -->
+  </div><!-- /sb-binder -->
+</div><!-- /sb-shell -->

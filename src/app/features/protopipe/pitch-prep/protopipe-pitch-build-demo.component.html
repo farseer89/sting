@@ -1,0 +1,356 @@
+<div class="bd-shell">
+
+  <!-- Masthead -->
+  <header class="bd-masthead">
+    <button type="button" class="bd-back" (click)="back.emit()">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Leads
+    </button>
+    <div class="bd-masthead__center">
+      @if (lead(); as l) {
+        <span class="bd-masthead__name">{{ l.name }}</span>
+        <span class="bd-masthead__area">{{ l.area }}</span>
+      }
+    </div>
+    <div class="bd-progress">
+      @for (step of stepOrder; track step) {
+        <span class="bd-progress__dot"
+          [class.is-done]="isComplete(step)"
+          [class.is-active]="isCurrent(step)">
+        </span>
+      }
+      <span class="bd-progress__label">Step {{ stepIndex() + 1 }} / {{ stepOrder.length }}</span>
+    </div>
+  </header>
+
+  <!-- Inner 2-pane: step rail + content stage -->
+  <div class="bd-body">
+
+    <!-- Step rail -->
+    <nav class="bd-rail" aria-label="Build demo steps">
+      @for (step of stepOrder; track step) {
+        <button
+          type="button"
+          class="bd-rail__item"
+          [class.is-active]="isCurrent(step)"
+          [class.is-done]="isComplete(step)"
+          [class.is-pending]="isPending(step)"
+          [disabled]="isPending(step)"
+          (click)="goToStep(step)"
+        >
+          <span class="bd-rail__num">{{ stepNum(step) }}</span>
+          <span class="bd-rail__label">{{ stepLabel(step) }}</span>
+          <span class="bd-rail__status">
+            @if (isComplete(step)) {
+              <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            } @else if (isCurrent(step)) {
+              <span class="bd-rail__dot bd-rail__dot--active"></span>
+            } @else {
+              <span class="bd-rail__dot"></span>
+            }
+          </span>
+        </button>
+      }
+    </nav>
+
+    <!-- Content stage -->
+    <div class="bd-stage">
+
+      @switch (activeStep()) {
+
+        <!-- ── STEP 1: URL ── -->
+        @case ('url') {
+          <div class="bd-step-head">
+            <div class="bd-step-kicker">Step 01</div>
+            <h2 class="bd-step-title">What's their website?</h2>
+            <p class="bd-step-deck">We'll scrape the homepage to pull business context, services, and tone signals for image generation.</p>
+          </div>
+
+          @if (lead(); as l) {
+            <div class="bd-lead-context">
+              <div class="bd-lead-context__avatar" [style.background]="l.avatarBg" [style.color]="l.avatarColor">{{ l.initials }}</div>
+              <div class="bd-lead-context__info">
+                <span class="bd-lead-context__name">{{ l.name }}</span>
+                <span class="bd-lead-context__area">{{ l.area }} · {{ l.category }}</span>
+              </div>
+              <div class="bd-lead-context__score">
+                <span class="bd-score-badge bd-score-badge--{{ l.priority }}">{{ l.score }}</span>
+              </div>
+            </div>
+          }
+
+          <div class="bd-field">
+            <label class="bd-field__label">Website URL</label>
+            <input
+              class="bd-field__input"
+              type="url"
+              placeholder="https://www.example.com"
+              [ngModel]="siteUrl()" (ngModelChange)="siteUrl.set($event)"
+            />
+          </div>
+
+          @if (ingestError()) {
+            <div class="bd-error">{{ ingestError() }}</div>
+          }
+
+          <div class="bd-step-actions">
+            @if (ingesting()) {
+              <div class="bd-loading">
+                <span class="bd-loading__spinner"></span>
+                <span>Scraping homepage…</span>
+              </div>
+            } @else {
+              <button
+                type="button"
+                class="bd-btn bd-btn--primary"
+                [disabled]="!siteUrl().trim()"
+                (click)="runIngest()"
+              >
+                Scrape &amp; continue
+                <svg viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <button type="button" class="bd-btn bd-btn--ghost" (click)="skipIngest()">Skip for now</button>
+            }
+          </div>
+        }
+
+        <!-- ── STEP 2: IMAGES ── -->
+        @case ('images') {
+          <div class="bd-step-head">
+            <div class="bd-step-kicker">Step 02</div>
+            <h2 class="bd-step-title">Select hero images</h2>
+            <p class="bd-step-deck">These site-wide images define the visual tone of the demo. Pick the hero shot and section photos that fit the brand best.</p>
+          </div>
+
+          @if (!hasImages()) {
+            <div class="bd-generate-prompt">
+              <div class="bd-generate-prompt__icon">
+                <svg viewBox="0 0 32 32" fill="none"><path d="M16 4v4M16 24v4M4 16h4M24 16h4M7.5 7.5l2.8 2.8M21.7 21.7l2.8 2.8M7.5 24.5l2.8-2.8M21.7 10.3l2.8-2.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="16" cy="16" r="5" stroke="currentColor" stroke-width="1.5"/></svg>
+              </div>
+              <p>No images generated yet. Generate the pitch media pack to get hero images, section photos, and infographics.</p>
+              @if (generatingImages()) {
+                <div class="bd-loading">
+                  <span class="bd-loading__spinner"></span>
+                  <span>Generating images… this may take a minute</span>
+                </div>
+              } @else {
+                <button type="button" class="bd-btn bd-btn--primary" (click)="generateImages()">
+                  <svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  Generate images
+                </button>
+              }
+            </div>
+          } @else {
+
+            <div class="bd-sub-head">Hero images <span class="bd-count">{{ heroAssets().length }}</span></div>
+            <div class="bd-image-grid">
+              @for (asset of heroAssets(); track asset.id) {
+                <button
+                  type="button"
+                  class="bd-image-card"
+                  [class.is-selected]="selectedHeroId() === asset.id"
+                  (click)="selectHero(asset.id)"
+                >
+                  <img [src]="asset.url" [alt]="asset.slot" loading="lazy" />
+                  @if (selectedHeroId() === asset.id) {
+                    <span class="bd-image-card__check">
+                      <svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                  }
+                </button>
+              }
+            </div>
+
+            @if (sectionAssets().length) {
+              <div class="bd-sub-head" style="margin-top:1.25rem;">Section photos <span class="bd-count">{{ sectionAssets().length }}</span></div>
+              <div class="bd-image-grid bd-image-grid--small">
+                @for (asset of sectionAssets(); track asset.id) {
+                  <div class="bd-image-thumb">
+                    <img [src]="asset.url" [alt]="asset.slot" loading="lazy" />
+                  </div>
+                }
+              </div>
+            }
+
+          }
+
+          <div class="bd-step-actions">
+            <button type="button" class="bd-btn bd-btn--ghost" (click)="activeStep.set('url')">← Back</button>
+            <button type="button" class="bd-btn bd-btn--primary" (click)="continueFromImages()">
+              Continue
+              <svg viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        }
+
+        <!-- ── STEP 3: THEME ── -->
+        @case ('theme') {
+          <div class="bd-step-head">
+            <div class="bd-step-kicker">Step 03</div>
+            <h2 class="bd-step-title">Choose a site theme</h2>
+            <p class="bd-step-deck">Pick the visual foundation — layout template and color palette — that will define the look of the demo site.</p>
+          </div>
+
+          @if (siteBuilder.templates().length) {
+            <div class="bd-sub-head">Template</div>
+            <div class="bd-template-grid">
+              @for (tmpl of siteBuilder.templates(); track tmpl.id) {
+                <button
+                  type="button"
+                  class="bd-template-card"
+                  [class.is-selected]="selectedTemplate() === tmpl.id"
+                  (click)="selectedTemplate.set(tmpl.id)"
+                >
+                  <div class="bd-template-card__preview"></div>
+                  <span class="bd-template-card__label">{{ tmpl.label }}</span>
+                </button>
+              }
+            </div>
+          }
+
+          <div class="bd-sub-head" style="margin-top:1.5rem;">Color theme</div>
+          <div class="bd-theme-grid">
+            @for (theme of themeOptions; track theme.value) {
+              <button
+                type="button"
+                class="bd-theme-card"
+                [class.is-selected]="selectedTheme() === theme.value"
+                [style.--theme-swatch]="theme.swatch"
+                [style.--theme-bg]="theme.bg"
+                (click)="selectedTheme.set(theme.value)"
+              >
+                <div class="bd-theme-card__swatch"></div>
+                <span class="bd-theme-card__label">{{ theme.label }}</span>
+                @if (selectedTheme() === theme.value) {
+                  <span class="bd-theme-card__check">✓</span>
+                }
+              </button>
+            }
+          </div>
+
+          <div class="bd-step-actions">
+            <button type="button" class="bd-btn bd-btn--ghost" (click)="activeStep.set('images')">← Back</button>
+            <button type="button" class="bd-btn bd-btn--primary" (click)="continueFromTheme()">
+              Continue
+              <svg viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        }
+
+        <!-- ── STEP 4: LOGO ── -->
+        @case ('logo') {
+          <div class="bd-step-head">
+            <div class="bd-step-kicker">Step 04</div>
+            <h2 class="bd-step-title">Logo</h2>
+            <p class="bd-step-deck">Upload the company logo. This gets placed in the site header and favicon of the demo.</p>
+          </div>
+
+          @if (logoUrl()) {
+            <div class="bd-logo-preview">
+              <img [src]="logoUrl()!" alt="Company logo" />
+              <div class="bd-logo-preview__actions">
+                <label class="bd-btn bd-btn--ghost bd-btn--sm">
+                  Replace
+                  <input type="file" accept="image/*" style="display:none" (change)="onLogoFile($event)" />
+                </label>
+                <button type="button" class="bd-btn bd-btn--ghost bd-btn--sm" (click)="logoUrl.set(null)">Remove</button>
+              </div>
+            </div>
+          } @else {
+            <label class="bd-upload-zone">
+              @if (logoUploading()) {
+                <div class="bd-loading">
+                  <span class="bd-loading__spinner"></span>
+                  <span>Processing…</span>
+                </div>
+              } @else {
+                <svg viewBox="0 0 40 40" fill="none"><rect x="6" y="6" width="28" height="28" rx="4" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/><path d="M20 14v12M14 20h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                <span class="bd-upload-zone__label">Upload logo</span>
+                <span class="bd-upload-zone__hint">PNG, SVG, or JPG · Transparent background recommended</span>
+              }
+              <input type="file" accept="image/*" style="display:none" (change)="onLogoFile($event)" />
+            </label>
+
+            <div class="bd-logo-skip">
+              <p>Don't have the logo yet?</p>
+              <button type="button" class="bd-link" (click)="continueFromLogo()">Skip and use placeholder →</button>
+            </div>
+          }
+
+          <div class="bd-step-actions">
+            <button type="button" class="bd-btn bd-btn--ghost" (click)="activeStep.set('theme')">← Back</button>
+            <button type="button" class="bd-btn bd-btn--primary" (click)="continueFromLogo()">
+              Continue
+              <svg viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        }
+
+        <!-- ── STEP 5: PHOTO STYLE ── -->
+        @case ('style') {
+          <div class="bd-step-head">
+            <div class="bd-step-kicker">Step 05</div>
+            <h2 class="bd-step-title">Photo style</h2>
+            <p class="bd-step-deck">Select the image style that defines how all future content photos will look. This sets the visual personality of the brand.</p>
+          </div>
+
+          <div class="bd-preset-list">
+            @for (preset of imagePresets; track preset.id) {
+              @if (preset.id !== 'custom') {
+                <div
+                  class="bd-pick-row"
+                  [class.is-selected]="selectedPresetId() === preset.id"
+                  (click)="selectPreset(preset.id)"
+                >
+                  <!-- 1 large + 3 thumbnails -->
+                  @if (preset.previewImages) {
+                    <div class="bd-photo-hero">
+                      <img class="bd-photo-hero__main" [src]="preset.previewImages[0]" [alt]="preset.label" loading="lazy" />
+                      <div class="bd-photo-hero__col">
+                        <img class="bd-photo-hero__thumb" [src]="preset.previewImages[1]" [alt]="preset.label" loading="lazy" />
+                        <img class="bd-photo-hero__thumb" [src]="preset.previewImages[2]" [alt]="preset.label" loading="lazy" />
+                        <img class="bd-photo-hero__thumb" [src]="preset.previewImages[3]" [alt]="preset.label" loading="lazy" />
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="bd-photo-placeholder">
+                      <svg viewBox="0 0 48 48" fill="none"><rect x="6" y="10" width="36" height="28" rx="3" stroke="currentColor" stroke-width="1.5"/><circle cx="18" cy="20" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M6 30l10-10 8 8 5-5 13 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                  }
+
+                  <!-- Meta -->
+                  <div class="bd-pick-row__meta">
+                    @if (preset.tag) {
+                      <span class="bd-pick-row__tag">{{ preset.tag }}</span>
+                    }
+                    <h3 class="bd-pick-row__name">{{ preset.label }}</h3>
+                    <p class="bd-pick-row__desc">{{ preset.description }}</p>
+                    <div class="bd-pick-row__select">
+                      @if (selectedPresetId() === preset.id) {
+                        <span class="bd-pick-row__selected">
+                          <svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                          Selected
+                        </span>
+                      } @else {
+                        <span class="bd-pick-row__choose">Choose style →</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+
+          <div class="bd-step-actions bd-step-actions--finish">
+            <button type="button" class="bd-btn bd-btn--ghost" (click)="activeStep.set('logo')">← Back</button>
+            <button type="button" class="bd-btn bd-btn--primary bd-btn--lg" (click)="finish()">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Build demo site
+            </button>
+          </div>
+        }
+
+      }<!-- /switch -->
+    </div><!-- /bd-stage -->
+  </div><!-- /bd-body -->
+</div><!-- /bd-shell -->

@@ -899,6 +899,15 @@ $accent: #2563eb;
   &:hover { border-color: $ink; }
 }
 
+.vsh-btn--build {
+  background: $accent;
+  color: #fff;
+  border-color: $accent;
+  font-weight: 600;
+
+  &:hover { background: #1d4ed8; border-color: #1d4ed8; }
+}
+
 // ════════════════════════════════════════════════════════════════
 // vsh-* LEAD DRAWER (ported from lab-void-shell.css)
 // ════════════════════════════════════════════════════════════════
@@ -1120,6 +1129,37 @@ $accent: #2563eb;
 .vsh-drawer-actions {
   display: flex;
   gap: 0.5rem;
+}
+
+.vsh-drawer-build-cta {
+  padding-top: 0.25rem;
+  border-top: 1px solid $border;
+}
+
+// Build nav item accent
+.pb-binder-nav__item--build.is-active {
+  color: $accent;
+  background: #eff6ff;
+
+  .pb-binder-nav__icon { color: $accent; opacity: 1; }
+}
+
+// Lead action build button
+.vsh-lead-action--build {
+  color: $accent;
+  border-color: rgb(37 99 235 / 0.3);
+  background: #eff6ff;
+
+  &:hover { background: $accent; color: #fff; border-color: $accent; }
+}
+
+// Build demo panel — host fills the panel
+app-protopipe-pitch-build-demo {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 // Overlay

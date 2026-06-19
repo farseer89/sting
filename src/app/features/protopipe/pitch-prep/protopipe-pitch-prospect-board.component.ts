@@ -17,10 +17,11 @@ import { InputText } from 'primeng/inputtext';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import type { PitchProspectStatus } from '@hive/contracts';
 import { ProtopipePitchProspectService } from './protopipe-pitch-prospect.service';
+import { ProtopipePitchBuildDemoComponent } from './protopipe-pitch-build-demo.component';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type PitchSection = 'leads' | 'prospects' | 'scripts' | 'objections' | 'offer';
+export type PitchSection = 'leads' | 'prospects' | 'scripts' | 'objections' | 'offer' | 'build-demo';
 export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'won';
 export type LeadTemp = 'cold' | 'reached-out' | 'warm' | 'hot';
 export type LeadFilter = 'all' | LeadStatus;
@@ -320,7 +321,7 @@ const MOCK_PITCH_LEADS: PitchLead[] = [
   selector: 'app-protopipe-pitch-prospect-board',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, Button, Dialog, InputText, ProgressSpinner],
+  imports: [FormsModule, Button, Dialog, InputText, ProgressSpinner, ProtopipePitchBuildDemoComponent],
   templateUrl: './protopipe-pitch-prospect-board.component.html',
   styleUrl: './protopipe-pitch-prospect-board.component.scss',
 })
@@ -339,6 +340,7 @@ export class ProtopipePitchProspectBoardComponent implements OnInit {
 
   // ── Binder nav
   readonly pitchSection = signal<PitchSection>('leads');
+  readonly activeBuildLead = signal<PitchLead | null>(null);
 
   // ── Leads table state
   readonly leads = MOCK_PITCH_LEADS;
@@ -418,6 +420,12 @@ export class ProtopipePitchProspectBoardComponent implements OnInit {
 
   websiteLabel(w: PitchLead['website']): string {
     return { none: 'None', poor: 'Poor', fair: 'Fair', good: 'Good' }[w];
+  }
+
+  openBuildDemo(lead: PitchLead): void {
+    this.activeBuildLead.set(lead);
+    this.pitchSection.set('build-demo');
+    this.closeDrawer();
   }
 
   openDrawer(lead: PitchLead, event: MouseEvent): void {

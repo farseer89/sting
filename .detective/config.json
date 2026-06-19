@@ -1,0 +1,26 @@
+{
+  "scopes": [
+    "src/app/layout/shell"
+  ],
+  "groups": [
+    "src/app/layout",
+    "src/app",
+    "src"
+  ],
+  "entries": [],
+  "filter": {
+    "files": [],
+    "logs": []
+  },
+  "aliases": {},
+  "teams": {
+    "example-team-a": [
+      "John Doe",
+      "Jane Doe"
+    ],
+    "example-team-b": [
+      "Max Muster",
+      "Susi Sorglos"
+    ]
+  }
+}

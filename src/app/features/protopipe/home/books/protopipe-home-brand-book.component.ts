@@ -46,6 +46,50 @@ export class ProtopipeHomeBrandBookComponent implements OnInit {
 
   readonly binderSection = signal<BinderSection>('images');
 
+  readonly selectedChalkVariant = signal<string>('chalk-amber');
+
+  readonly chalkVariants: {
+    id: string;
+    label: string;
+    desc: string;
+    texture: string;
+    accentColor: string;
+    accentFill: string;
+  }[] = [
+    {
+      id: 'chalk-amber',
+      label: 'Slate + Amber',
+      desc: 'Dark slate, warm amber. Trades standard.',
+      texture: '/assets/brand-book/chalk-amber.jpg',
+      accentColor: '#f59e0b',
+      accentFill: 'rgba(245,158,11,0.14)',
+    },
+    {
+      id: 'chalk-blue',
+      label: 'Navy + Blue',
+      desc: 'Deep navy, electric blue. Clean authority.',
+      texture: '/assets/brand-book/chalk-blue.jpg',
+      accentColor: '#60a5fa',
+      accentFill: 'rgba(96,165,250,0.12)',
+    },
+    {
+      id: 'chalk-cream',
+      label: 'Charcoal + Cream',
+      desc: 'Neutral warmth. Versatile, timeless.',
+      texture: '/assets/brand-book/chalk-cream.jpg',
+      accentColor: 'rgba(254,249,239,0.5)',
+      accentFill: 'rgba(254,249,239,0.07)',
+    },
+    {
+      id: 'chalk-forest',
+      label: 'Forest + Gold',
+      desc: 'Dark green, gold accent. Earthy, confident.',
+      texture: '/assets/brand-book/chalk-forest.jpg',
+      accentColor: '#eab308',
+      accentFill: 'rgba(234,179,8,0.12)',
+    },
+  ];
+
   ngOnInit(): void {
     void this.init();
   }
@@ -67,6 +111,11 @@ export class ProtopipeHomeBrandBookComponent implements OnInit {
 
   onInfographChange(variant: BrandBookInfographVariant): void {
     this.brandBookSvc.patchInfographVariant(variant);
+  }
+
+  selectChalkVariant(id: string): void {
+    this.selectedChalkVariant.set(id);
+    this.onInfographChange('chalkboard-svg');
   }
 
   onPaletteChange(field: 'primary' | 'accent' | 'background', value: string): void {

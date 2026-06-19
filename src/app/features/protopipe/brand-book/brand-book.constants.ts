@@ -7,25 +7,43 @@ export const BRAND_BOOK_IMAGE_PRESETS: {
   id: BrandBookImageStylePresetId;
   label: string;
   description: string;
+  tag?: string;
   previewImage?: string;
+  previewImages?: [string, string, string, string];
 }[] = [
   {
-    id: 'protopipe-editorial-v1',
-    label: 'Editorial photography',
-    description: 'Warm, natural editorial photos — default Protopipe look.',
-    previewImage: '/brand-book/photo-editorial.jpg',
+    id: 'industrial-clean',
+    label: 'Industrial Clean',
+    description: 'Sharp, neutral light. Confident expertise, no clutter.',
+    tag: 'Best for trades',
+    previewImages: [
+      '/assets/brand-book/photo-ic-1.jpg',
+      '/assets/brand-book/photo-ic-2.jpg',
+      '/assets/brand-book/photo-ic-3.jpg',
+      '/assets/brand-book/photo-ic-4.jpg',
+    ],
   },
   {
     id: 'warm-documentary',
-    label: 'Warm documentary',
-    description: 'Golden-hour, candid documentary feel.',
-    previewImage: '/brand-book/photo-warm-documentary.jpg',
+    label: 'Warm Documentary',
+    description: 'Golden-hour candid. Human and approachable.',
+    previewImages: [
+      '/assets/brand-book/photo-wd-1.jpg',
+      '/assets/brand-book/photo-wd-2.jpg',
+      '/assets/brand-book/photo-wd-3.jpg',
+      '/assets/brand-book/photo-wd-4.jpg',
+    ],
   },
   {
-    id: 'industrial-clean',
-    label: 'Industrial clean',
-    description: 'Sharp, neutral lighting for trades and technical brands.',
-    previewImage: '/brand-book/photo-industrial-clean.jpg',
+    id: 'protopipe-editorial-v1',
+    label: 'Editorial',
+    description: 'Clean neutral. Works for hero, blog, and social.',
+    previewImages: [
+      '/assets/brand-book/photo-ed-1.jpg',
+      '/assets/brand-book/photo-ed-2.jpg',
+      '/assets/brand-book/photo-ed-3.jpg',
+      '/assets/brand-book/photo-ed-4.jpg',
+    ],
   },
   {
     id: 'custom',

@@ -191,25 +191,32 @@
           @case ('images') {
             <div class="bb-panel-head">
               <div class="bb-panel-kicker">Content · Images</div>
-              <h2 class="bb-panel-title">Blog photo style</h2>
-              <p class="bb-panel-deck">Pick the look for auto-generated hero and inline photos. This applies to every article published for this site.</p>
+              <h2 class="bb-panel-title">Photo style</h2>
+              <p class="bb-panel-deck">Pick the look for auto-generated hero and inline photos. 4 generated examples per style — fal.ai Flux Pro.</p>
             </div>
             <div class="bb-rows">
               @for (preset of imagePresets; track preset.id) {
                 <button
                   type="button"
                   class="bb-pick-row"
+                  [class.bb-pick-row--photos]="!!preset.previewImages"
                   [class.is-selected]="book.imageStyle.presetId === preset.id"
                   (click)="onPresetChange(preset.id)"
                 >
                   <div class="bb-pick-row__preview">
-                    @if (preset.previewImage) {
-                      <img class="bb-pick-row__img" [src]="preset.previewImage" [alt]="preset.label" loading="lazy" />
+                    @if (preset.previewImages) {
+                      <div class="bb-photo-hero">
+                        <div class="bb-photo-hero__main">
+                          <img [src]="preset.previewImages[0]" [alt]="preset.label" loading="lazy" />
+                        </div>
+                        <div class="bb-photo-hero__col">
+                          <div class="bb-photo-hero__thumb"><img [src]="preset.previewImages[1]" [alt]="preset.label" loading="lazy" /></div>
+                          <div class="bb-photo-hero__thumb"><img [src]="preset.previewImages[2]" [alt]="preset.label" loading="lazy" /></div>
+                          <div class="bb-photo-hero__thumb"><img [src]="preset.previewImages[3]" [alt]="preset.label" loading="lazy" /></div>
+                        </div>
+                      </div>
                     } @else {
                       <div class="bb-pick-row__placeholder">Custom prompt</div>
-                    }
-                    @if (book.imageStyle.presetId === preset.id) {
-                      <span class="bb-pick-row__selected-mark">✓ Selected</span>
                     }
                   </div>
                   <div class="bb-pick-row__meta">
@@ -220,6 +227,9 @@
                       }
                     </div>
                     <div class="bb-pick-row__desc">{{ preset.description }}</div>
+                    @if (preset.tag) {
+                      <div class="bb-pick-row__tag">{{ preset.tag }}</div>
+                    }
                   </div>
                 </button>
               }
@@ -245,56 +255,87 @@
           @case ('infographics') {
             <div class="bb-panel-head">
               <div class="bb-panel-kicker">Content · Infographics</div>
-              <h2 class="bb-panel-title">Stats &amp; process graphics</h2>
-              <p class="bb-panel-deck">How stat cards and process diagrams render in articles. The selected style applies automatically with your brand palette.</p>
+              <h2 class="bb-panel-title">Chalkboard style</h2>
+              <p class="bb-panel-deck">Pick your infographic background tone. Dynamic HTML stat text is layered on top — this is what your articles will look like.</p>
             </div>
             <div class="bb-rows">
-              @for (variant of infographVariants; track variant.id) {
+              @for (chalk of chalkVariants; track chalk.id) {
                 <button
                   type="button"
                   class="bb-pick-row bb-pick-row--infograph"
-                  [class.is-selected]="book.infographStyle.variant === variant.id"
-                  (click)="onInfographChange(variant.id)"
+                  [class.is-selected]="selectedChalkVariant() === chalk.id"
+                  (click)="selectChalkVariant(chalk.id)"
                 >
                   <div class="bb-pick-row__preview">
-                    @if (variant.id === 'chalkboard-svg') {
-                      <!-- Two-layer chalk: texture img + SVG overlay -->
-                      <figure class="bb-chalk-infograph">
-                        <img class="bb-chalk-infograph__texture" [src]="variant.previewImage" alt="" aria-hidden="true" loading="eager" />
-                        <svg class="bb-chalk-infograph__svg" viewBox="0 0 800 220" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Chalkboard infographic style preview">
-                          <defs><filter id="bb-ck" x="-2%" y="-2%" width="104%" height="104%"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" result="noise"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="0.5"/></filter></defs>
-                          <g stroke="#fff" stroke-opacity="0.07" fill="none" stroke-width="1"><path d="M0 55 Q200 45 400 58 T800 48"/><path d="M0 170 Q200 160 400 173 T800 162"/></g>
-                          <line x1="200" y1="25" x2="200" y2="195" stroke="#fff" stroke-opacity="0.1" stroke-width="1" stroke-dasharray="2 4"/>
-                          <line x1="400" y1="25" x2="400" y2="195" stroke="#fff" stroke-opacity="0.1" stroke-width="1" stroke-dasharray="2 4"/>
-                          <line x1="600" y1="25" x2="600" y2="195" stroke="#fff" stroke-opacity="0.1" stroke-width="1" stroke-dasharray="2 4"/>
-                          <g transform="translate(100,0)"><circle cx="0" cy="32" r="16" stroke="rgba(240,240,234,0.45)" stroke-width="1.5" fill="none"/><path d="M-8 32 L-3 39 L9 23" stroke="rgba(240,240,234,0.65)" stroke-width="2" fill="none" stroke-linecap="round"/><text x="0" y="108" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="300" font-size="40" fill="rgba(240,240,234,0.88)" filter="url(#bb-ck)">98%</text><text x="0" y="128" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8" fill="rgba(240,240,234,0.45)" letter-spacing="2.5">ON-TIME</text></g>
-                          <g transform="translate(300,0)"><polygon points="0,18 -10,42 -4,42 -12,64 12,38 6,38" stroke="rgba(240,240,234,0.55)" stroke-width="1.5" fill="rgba(240,240,234,0.06)" stroke-linejoin="round"/><text x="0" y="108" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="300" font-size="40" fill="rgba(240,240,234,0.88)" filter="url(#bb-ck)">24/7</text><text x="0" y="128" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8" fill="rgba(240,240,234,0.45)" letter-spacing="2.5">EMERGENCY</text></g>
-                          <g transform="translate(500,0)"><rect x="-15" y="16" width="30" height="40" rx="2" stroke="rgba(240,240,234,0.45)" stroke-width="1.5" fill="none"/><line x1="-15" y1="27" x2="15" y2="27" stroke="rgba(240,240,234,0.35)" stroke-width="1"/><text x="0" y="108" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="300" font-size="40" fill="rgba(240,240,234,0.88)" filter="url(#bb-ck)">500+</text><text x="0" y="128" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8" fill="rgba(240,240,234,0.45)" letter-spacing="2.5">PANELS</text></g>
-                          <g transform="translate(700,0)"><circle cx="0" cy="28" r="15" stroke="rgba(240,240,234,0.45)" stroke-width="1.5" fill="none"/><circle cx="0" cy="28" r="5" stroke="rgba(240,240,234,0.35)" stroke-width="1.5" fill="none"/><line x1="0" y1="43" x2="0" y2="58" stroke="rgba(240,240,234,0.4)" stroke-width="1.5"/><text x="0" y="108" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="300" font-size="40" fill="rgba(240,240,234,0.88)" filter="url(#bb-ck)">15+</text><text x="0" y="128" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8" fill="rgba(240,240,234,0.45)" letter-spacing="2.5">YRS LOCAL</text></g>
-                        </svg>
-                      </figure>
-                    } @else {
-                      <img class="bb-pick-row__img" [src]="variant.previewImage" [alt]="variant.label" loading="lazy" />
-                    }
-                    @if (book.infographStyle.variant === variant.id) {
-                      <span class="bb-pick-row__selected-mark">✓ Selected</span>
-                    }
+                    <figure class="bb-chalk-infograph">
+                      <img class="bb-chalk-infograph__texture" [src]="chalk.texture" alt="" aria-hidden="true" loading="eager" />
+                      <svg class="bb-chalk-infograph__svg" viewBox="0 0 800 250" preserveAspectRatio="xMidYMid slice" role="img" [attr.aria-label]="'Chalkboard tone: ' + chalk.label">
+                        <defs>
+                          <filter [id]="'bb-ck-' + chalk.id" x="-2%" y="-2%" width="104%" height="104%">
+                            <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" result="noise"/>
+                            <feDisplacementMap in="SourceGraphic" in2="noise" scale="0.5"/>
+                          </filter>
+                        </defs>
+                        <g stroke="#fff" stroke-opacity="0.05" fill="none" stroke-width="1">
+                          <path d="M0 62 Q200 50 400 66 T800 56"/>
+                          <path d="M0 190 Q200 178 400 194 T800 182"/>
+                        </g>
+                        <line x1="200" y1="28" x2="200" y2="222" stroke="#fff" stroke-opacity="0.1" stroke-width="1" stroke-dasharray="2 4"/>
+                        <line x1="400" y1="28" x2="400" y2="222" stroke="#fff" stroke-opacity="0.1" stroke-width="1" stroke-dasharray="2 4"/>
+                        <line x1="600" y1="28" x2="600" y2="222" stroke="#fff" stroke-opacity="0.1" stroke-width="1" stroke-dasharray="2 4"/>
+                        <!-- 98% ON-TIME -->
+                        <g transform="translate(100,0)">
+                          <circle cx="0" cy="36" r="17" stroke="rgba(240,240,234,0.45)" stroke-width="1.5" fill="none"/>
+                          <path d="M-9 36 L-3 43 L10 27" stroke="rgba(240,240,234,0.65)" stroke-width="2" fill="none" stroke-linecap="round"/>
+                          <text x="0" y="118" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="300" font-size="42" fill="rgba(240,240,234,0.88)" [attr.filter]="'url(#bb-ck-' + chalk.id + ')'">98%</text>
+                          <text x="0" y="140" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8.5" fill="rgba(240,240,234,0.45)" letter-spacing="2.5">ON-TIME</text>
+                        </g>
+                        <!-- 24/7 EMERGENCY -->
+                        <g transform="translate(300,0)">
+                          <polygon points="0,20 -11,46 -4,46 -13,70 13,42 6,42" stroke="rgba(240,240,234,0.55)" stroke-width="1.5" fill="rgba(240,240,234,0.06)" stroke-linejoin="round"/>
+                          <text x="0" y="118" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="300" font-size="42" fill="rgba(240,240,234,0.88)" [attr.filter]="'url(#bb-ck-' + chalk.id + ')'">24/7</text>
+                          <text x="0" y="140" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8.5" fill="rgba(240,240,234,0.45)" letter-spacing="2.5">EMERGENCY</text>
+                        </g>
+                        <!-- 500+ PANELS -->
+                        <g transform="translate(500,0)">
+                          <rect x="-16" y="18" width="32" height="44" rx="2" stroke="rgba(240,240,234,0.45)" stroke-width="1.5" fill="none"/>
+                          <line x1="-16" y1="30" x2="16" y2="30" stroke="rgba(240,240,234,0.35)" stroke-width="1"/>
+                          <line x1="-7" y1="36" x2="-7" y2="54" stroke="rgba(240,240,234,0.3)" stroke-width="1"/>
+                          <line x1="0" y1="36" x2="0" y2="54" stroke="rgba(240,240,234,0.3)" stroke-width="1"/>
+                          <line x1="7" y1="36" x2="7" y2="54" stroke="rgba(240,240,234,0.3)" stroke-width="1"/>
+                          <text x="0" y="118" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="300" font-size="42" fill="rgba(240,240,234,0.88)" [attr.filter]="'url(#bb-ck-' + chalk.id + ')'">500+</text>
+                          <text x="0" y="140" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8.5" fill="rgba(240,240,234,0.45)" letter-spacing="2.5">PANELS</text>
+                        </g>
+                        <!-- 15+ YRS LOCAL -->
+                        <g transform="translate(700,0)">
+                          <circle cx="0" cy="30" r="16" stroke="rgba(240,240,234,0.45)" stroke-width="1.5" fill="none"/>
+                          <circle cx="0" cy="30" r="5" stroke="rgba(240,240,234,0.35)" stroke-width="1.5" fill="none"/>
+                          <line x1="0" y1="46" x2="0" y2="62" stroke="rgba(240,240,234,0.4)" stroke-width="1.5"/>
+                          <path d="M-10 58 Q0 67 10 58" stroke="rgba(240,240,234,0.3)" stroke-width="1" fill="none" stroke-dasharray="2 2"/>
+                          <text x="0" y="118" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="300" font-size="42" fill="rgba(240,240,234,0.88)" [attr.filter]="'url(#bb-ck-' + chalk.id + ')'">15+</text>
+                          <text x="0" y="140" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8.5" fill="rgba(240,240,234,0.45)" letter-spacing="2.5">YRS LOCAL</text>
+                        </g>
+                        <!-- Accent footer strip -->
+                        <rect x="0" y="228" width="800" height="22" [attr.fill]="chalk.accentFill"/>
+                        <line x1="0" y1="228" x2="800" y2="228" [attr.stroke]="chalk.accentColor" stroke-width="1" stroke-dasharray="8 4" opacity="0.5"/>
+                      </svg>
+                    </figure>
                   </div>
                   <div class="bb-pick-row__meta">
                     <div class="bb-pick-row__name">
-                      {{ variant.label }}
-                      @if (book.infographStyle.variant === variant.id) {
+                      {{ chalk.label }}
+                      @if (selectedChalkVariant() === chalk.id) {
                         <span class="bb-pick-row__check">✓</span>
                       }
                     </div>
-                    <div class="bb-pick-row__desc">{{ variant.description }}</div>
+                    <div class="bb-pick-row__desc">{{ chalk.desc }}</div>
                   </div>
                 </button>
               }
             </div>
 
-            <!-- Palette pickers (shown when any variant is selected) -->
-            @if (book.infographStyle.variant) {
+            <!-- Palette pickers -->
+            @if (book.infographStyle.variant === 'chalkboard-svg') {
               <div class="bb-palette-section">
                 <div class="bb-palette-label">Brand palette</div>
                 <div class="bb-palette-row">

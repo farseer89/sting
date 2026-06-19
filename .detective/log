@@ -1,0 +1,1017 @@
+"Mike D <miked@Mikes-MacBook-Air.local>,Wed Jun 3 14:17:22 2026 -1000	1d3a225d76e24ace1cdcce8d6f38a1fe0793d22a,Complete fact review workflow with staleness, offsets, and publish gate."
+81	0	src/app/features/protopipe/content/writer/fact-review.util.ts
+31	1	src/app/features/protopipe/content/writer/prose-editor/fact-highlight.extension.ts
+31	0	src/app/features/protopipe/content/writer/prose-editor/fact-highlight.spec.ts
+17	4	src/app/features/protopipe/content/writer/protopipe-writer.component.html
+5	0	src/app/features/protopipe/content/writer/protopipe-writer.component.scss
+147	22	src/app/features/protopipe/content/writer/protopipe-writer.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Wed Jun 3 14:08:11 2026 -1000	98dbe2970f467e2e505c5e3f3318a305e8181754,Fix writer paper background to span the full scrollable article."
+0	2	src/app/features/protopipe/content/writer/prose-editor/prose-editor.component.scss
+11	4	src/app/features/protopipe/content/writer/protopipe-writer.component.scss
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon Jun 1 18:06:51 2026 -1000	d0ca32a450308ef5d0c60a791b0182b95a8daa7e,Restore pull-draft control and brighten writer canvas to void-white."
+2	0	src/app/features/protopipe/content/writer/prose-editor/prose-editor.component.scss
+18	1	src/app/features/protopipe/content/writer/protopipe-writer.component.html
+57	16	src/app/features/protopipe/content/writer/protopipe-writer.component.scss
+7	1	src/app/features/protopipe/content/writer/protopipe-writer.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon Jun 1 17:48:05 2026 -1000	701f5f25346b019480bf41cd018d77fae7169830,Route fact highlights by pipeline target and persist resolutions on posts."
+148	41	src/app/features/protopipe/content/writer/protopipe-writer.component.ts
+1	1	src/app/features/protopipe/lab/article-pipeline/article-pipeline-run.store.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon Jun 1 17:25:47 2026 -1000	ac5371515865be312f23f2fa55be4af488ba08c6,Fix inline fact highlights not appearing in TipTap editors."
+21	0	src/app/features/protopipe/content/writer/prose-editor/claim-match.spec.ts
+23	0	src/app/features/protopipe/content/writer/prose-editor/claim-match.ts
+78	25	src/app/features/protopipe/content/writer/prose-editor/fact-highlight.extension.ts
+50	0	src/app/features/protopipe/content/writer/prose-editor/fact-highlight.spec.ts
+31	30	src/app/features/protopipe/content/writer/prose-editor/keyword-highlight.extension.ts
+10	2	src/app/features/protopipe/content/writer/prose-editor/prose-editor.component.ts
+36	0	src/app/features/protopipe/content/writer/prose-editor/text-block-index.ts
+3	0	src/app/features/protopipe/content/writer/protopipe-writer.component.html
+102	32	src/app/features/protopipe/content/writer/protopipe-writer.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon Jun 1 17:19:54 2026 -1000	8f37063a58fecfe40621b132595f9e096d98e380,Move fact and keyword review into the draft editors."
+6	0	src/app/features/protopipe/content/writer/prose-editor/fact-highlight.extension.ts
+7	2	src/app/features/protopipe/content/writer/prose-editor/keyword-highlight.extension.ts
+9	8	src/app/features/protopipe/content/writer/prose-editor/prose-editor.component.scss
+23	40	src/app/features/protopipe/content/writer/protopipe-writer.component.html
+62	0	src/app/features/protopipe/content/writer/protopipe-writer.component.scss
+12	6	src/app/features/protopipe/content/writer/protopipe-writer.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon Jun 1 17:14:47 2026 -1000	64f145ce9a065d01b94eb626fdebaf048c68b026,Add inline fact locate and keyword highlighter in the writer."
+18	0	src/app/features/protopipe/content/writer/prose-editor/fact-highlight.extension.ts
+110	0	src/app/features/protopipe/content/writer/prose-editor/keyword-highlight.extension.ts
+8	0	src/app/features/protopipe/content/writer/prose-editor/prose-editor.component.scss
+11	1	src/app/features/protopipe/content/writer/prose-editor/prose-editor.component.ts
+28	3	src/app/features/protopipe/content/writer/protopipe-writer.component.html
+19	0	src/app/features/protopipe/content/writer/protopipe-writer.component.scss
+51	1	src/app/features/protopipe/content/writer/protopipe-writer.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon Jun 1 16:47:30 2026 -1000	a04e678231abe5b6b173d699fe11e25d505dfc01,Wrap section headings and add selected fact highlight."
+9	5	src/app/features/protopipe/content/writer/prose-editor/fact-highlight.extension.ts
+15	0	src/app/features/protopipe/content/writer/prose-editor/prose-editor.component.scss
+4	3	src/app/features/protopipe/content/writer/protopipe-writer.component.html
+3	0	src/app/features/protopipe/content/writer/protopipe-writer.component.scss
+2	0	src/app/features/protopipe/content/writer/protopipe-writer.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon Jun 1 16:30:58 2026 -1000	7b0b727333bd92bac5855bfc6085d7665b4e661b,Fix writer popover backgrounds and widen the canvas."
+4	3	src/app/features/protopipe/content/writer/protopipe-writer.component.html
+21	13	src/app/features/protopipe/content/writer/protopipe-writer.component.scss
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon Jun 1 16:12:57 2026 -1000	3aed678bd8615420a9f18ca2af7aac467ca861c0,Migrate writer to TipTap editor with inline AI affordances."
+737	2	package-lock.json
+6	0	package.json
+108	0	src/app/features/protopipe/content/writer/prose-editor/editor-menus.extension.ts
+156	0	src/app/features/protopipe/content/writer/prose-editor/fact-highlight.extension.ts
+56	0	src/app/features/protopipe/content/writer/prose-editor/prose-editor-extensions.ts
+106	0	src/app/features/protopipe/content/writer/prose-editor/prose-editor.component.scss
+147	0	src/app/features/protopipe/content/writer/prose-editor/prose-editor.component.ts
+75	0	src/app/features/protopipe/content/writer/prose-editor/prose-editor.roundtrip.spec.ts
+157	13	src/app/features/protopipe/content/writer/protopipe-writer.component.html
+317	0	src/app/features/protopipe/content/writer/protopipe-writer.component.scss
+520	1	src/app/features/protopipe/content/writer/protopipe-writer.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon Jun 1 15:18:15 2026 -1000	911353be0b8dcbc530a350b49ae14084aeadbcad,Add Fact Check panel to the writer."
+118	2	src/app/features/protopipe/content/writer/protopipe-writer.component.html
+165	0	src/app/features/protopipe/content/writer/protopipe-writer.component.scss
+154	1	src/app/features/protopipe/content/writer/protopipe-writer.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon Jun 1 12:22:07 2026 -1000	273b57b3895c7724122b6900d29efa21b2ccc4d6,Surface generation review failures and harden session refresh."
+9	1	src/app/core/auth/auth.service.ts
+9	1	src/app/core/guards/auth.guard.ts
+8	0	src/app/core/http/auth.interceptor.ts
+17	1	src/app/features/protopipe/content/writer/protopipe-writer.component.html
+32	0	src/app/features/protopipe/content/writer/protopipe-writer.component.ts
+59	14	src/app/features/protopipe/lab/thinker/article-run-to-thought.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon Jun 1 11:48:45 2026 -1000	7a2e23851e5628c5b23899f1c23f2368c4cfd5e9,Improve Thinker live-run feedback and polling resilience."
+38	0	src/app/features/protopipe/lab/thinker/thinker-run.component.html
+86	0	src/app/features/protopipe/lab/thinker/thinker-run.component.scss
+102	3	src/app/features/protopipe/lab/thinker/thinker-run.component.ts
+14	2	src/app/features/protopipe/lab/thinker/thinker.component.html
+6	0	src/app/features/protopipe/lab/thinker/thinker.component.scss
+2	0	src/app/features/protopipe/lab/thinker/thinker.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon Jun 1 11:24:01 2026 -1000	7d3adb4994f6acf701eb25d352f126f6c146a080,feat(protopipe): rerun pipeline steps from the Thinker run view"
+13	2	src/app/features/protopipe/lab/thinker/thinker-run.component.html
+10	0	src/app/features/protopipe/lab/thinker/thinker-run.component.scss
+22	1	src/app/features/protopipe/lab/thinker/thinker-run.component.ts
+18	0	src/app/features/protopipe/protopipe-api.service.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon Jun 1 10:47:30 2026 -1000	90d74b6ff8e44ff4f3d65c8ff882f14f081701a9,feat(protopipe): render live article runs in the Thinker view"
+20	0	src/app/app.routes.ts
+8	0	src/app/features/protopipe/content/writer/protopipe-writer.component.html
+11	0	src/app/features/protopipe/content/writer/protopipe-writer.component.ts
+311	0	src/app/features/protopipe/lab/thinker/article-run-to-thought.ts
+39	0	src/app/features/protopipe/lab/thinker/thinker-run.component.html
+118	0	src/app/features/protopipe/lab/thinker/thinker-run.component.scss
+114	0	src/app/features/protopipe/lab/thinker/thinker-run.component.ts
+196	0	src/app/features/protopipe/lab/thinker/thinker.component.html
+392	0	src/app/features/protopipe/lab/thinker/thinker.component.scss
+135	0	src/app/features/protopipe/lab/thinker/thinker.component.ts
+31	0	src/app/features/protopipe/lab/thinker/thinker.model.ts
+190	0	src/app/features/protopipe/lab/thinker/thought-artifact-card.component.ts
+91	0	src/app/features/protopipe/lab/thinker/thought.model.ts
+109	0	src/app/features/protopipe/lab/thinker/train-of-thought.component.html
+325	0	src/app/features/protopipe/lab/thinker/train-of-thought.component.scss
+174	0	src/app/features/protopipe/lab/thinker/train-of-thought.component.ts
+249	0	src/app/features/protopipe/lab/thinker/train.mock.ts
+32	0	src/app/features/protopipe/lab/thinker/train.model.ts
+31	0	src/app/features/protopipe/lab/void-dashboard/void-scrollbar.scss
+95	0	src/app/features/protopipe/lab/void-dashboard/void-theme.scss
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon Jun 1 10:29:49 2026 -1000	bca44b7ae4edea78ebd61c4e35a13f0a33d9f467,feat(protopipe): keyword picker in writer + surface generate errors"
+19	0	src/app/features/protopipe/content/writer/protopipe-writer.component.html
+17	3	src/app/features/protopipe/content/writer/protopipe-writer.component.ts
+18	0	src/app/features/protopipe/protopipe-content.service.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon Jun 1 10:18:46 2026 -1000	fbd89448953fd1a8940792268244c654e23dc2e7,fix(protopipe): prompt for required fields before saving a draft"
+39	0	src/app/features/protopipe/content/writer/protopipe-writer.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Fri May 29 23:22:34 2026 -1000	71dcf922ba8b8d54088be892c94a3c7ce1b5c3cd,feat(protopipe): immersive pipeline content writer"
+4	4	src/app/app.routes.ts
+444	0	src/app/features/protopipe/content/writer/protopipe-writer.component.html
+864	0	src/app/features/protopipe/content/writer/protopipe-writer.component.scss
+624	0	src/app/features/protopipe/content/writer/protopipe-writer.component.ts
+24	5	src/app/features/protopipe/protopipe-api.service.ts
+7	0	src/app/features/protopipe/protopipe-content.service.ts
+2	0	src/app/layout/shell/shell.component.html
+1	0	src/app/layout/shell/shell.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Fri May 29 22:15:32 2026 -1000	26d3a57529dfb539de1436c68727b6199ca44f20,feat(protopipe): confirm plan + research brief in the writer"
+10	0	src/app/features/protopipe/content-plan/content-plan.service.ts
+24	0	src/app/features/protopipe/content-plan/content-plan.store.ts
+37	4	src/app/features/protopipe/content-plan/protopipe-content-plan.component.html
+20	0	src/app/features/protopipe/content-plan/protopipe-content-plan.component.scss
+35	1	src/app/features/protopipe/content-plan/protopipe-content-plan.component.ts
+2	0	src/app/features/protopipe/content/protopipe-content-editor.component.ts
+7	1	src/app/features/protopipe/content/protopipe-writing-session.ts
+63	0	src/app/features/protopipe/content/protopipe-writing-tools.component.html
+83	0	src/app/features/protopipe/content/protopipe-writing-tools.component.scss
+16	0	src/app/features/protopipe/content/protopipe-writing-tools.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Fri May 29 21:31:28 2026 -1000	4d913d0cc5c7b74c042e09eb1855f1745bc55638,feat(protopipe): content-plan Process tab (site-wide stepper)"
+18	0	src/app/features/protopipe/content-plan/content-plan.service.ts
+61	2	src/app/features/protopipe/content-plan/content-plan.store.ts
+243	0	src/app/features/protopipe/content-plan/protopipe-content-plan.component.html
+283	0	src/app/features/protopipe/content-plan/protopipe-content-plan.component.scss
+141	1	src/app/features/protopipe/content-plan/protopipe-content-plan.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Fri May 29 20:36:41 2026 -1000	78b50e731ced227e60f7bff619fc0cad7d6305c9,feat(protopipe): UI scale control + strict-palette content helper"
+52	0	src/app/core/theme/theme.service.ts
+7	9	src/app/features/protopipe/content-plan/protopipe-content-plan.component.html
+1	12	src/app/features/protopipe/content-plan/protopipe-content-plan.component.ts
+47	47	src/app/features/protopipe/content/protopipe-content-editor.component.scss
+35	1	src/app/layout/shell/shell.component.html
+55	0	src/app/layout/shell/shell.component.scss
+25	1	src/app/layout/shell/shell.component.ts
+8	1	src/styles.scss
+16	0	src/styles/patterns/_tokens.scss
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Fri May 29 20:10:07 2026 -1000	d478daf578c4edff520af7e2d0fe6606a99a6a9b,refactor(protopipe): theme-native content plan; keep void variant in lab"
+9	0	src/app/app.routes.ts
+252	251	src/app/features/protopipe/content-plan/protopipe-content-plan.component.html
+63	357	src/app/features/protopipe/content-plan/protopipe-content-plan.component.scss
+58	19	src/app/features/protopipe/content-plan/protopipe-content-plan.component.ts
+316	0	src/app/features/protopipe/lab/content-plan/void-content-plan.component.html
+407	0	src/app/features/protopipe/lab/content-plan/void-content-plan.component.scss
+129	0	src/app/features/protopipe/lab/content-plan/void-content-plan.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Fri May 29 19:53:31 2026 -1000	133cf486c99e665a6e91cb29c1b0f7ec88126437,feat(protopipe): surface content plan in nav + dashboard, sectioned plan view"
+7	0	src/app/core/config/navigation.service.ts
+245	196	src/app/features/protopipe/content-plan/protopipe-content-plan.component.html
+76	0	src/app/features/protopipe/content-plan/protopipe-content-plan.component.scss
+35	0	src/app/features/protopipe/content-plan/protopipe-content-plan.component.ts
+15	0	src/app/features/protopipe/dashboard/protopipe-dashboard.component.html
+31	0	src/app/features/protopipe/dashboard/protopipe-dashboard.component.scss
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Fri May 29 19:14:42 2026 -1000	2a1915fca028a1011fe0cffa3f62756fba976e79,feat(protopipe): site content plan operator view"
+2	2	angular.json
+186	0	docs/protopipe/COMPETITION_ANALYSIS_DATA.md
+7	0	src/app/app.routes.ts
+31	0	src/app/features/protopipe/content-plan/content-plan.service.ts
+104	0	src/app/features/protopipe/content-plan/content-plan.store.ts
+267	0	src/app/features/protopipe/content-plan/protopipe-content-plan.component.html
+331	0	src/app/features/protopipe/content-plan/protopipe-content-plan.component.scss
+94	0	src/app/features/protopipe/content-plan/protopipe-content-plan.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Fri May 29 17:57:47 2026 -1000	627665fa7787663bd57ca62c26d2a9affc14e24c,feat(protopipe): content_plan step UI + top-10 comparison"
+12	4	src/app/features/protopipe/lab/article-pipeline/article-pipeline-behind.component.html
+45	2	src/app/features/protopipe/lab/article-pipeline/article-pipeline-behind.component.ts
+1	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-chat.component.ts
+2	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-outline.component.ts
+1	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-run.store.ts
+150	3	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.html
+116	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.scss
+15	1	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Fri May 29 16:16:10 2026 -1000	ecb95b91c8e167f3e0df5186570fcd9042bdbbb6,feat(protopipe): render keyword/entity coverage + article ideas on scan card"
+13	3	src/app/features/protopipe/lab/article-pipeline/article-pipeline-behind.component.ts
+98	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.html
+205	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.scss
+4	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Fri May 29 15:25:48 2026 -1000	8ed044e1935f97aca08719c529a74bac1233f2d2,feat(protopipe): analyse competition step UI"
+24	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-behind.component.html
+68	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-behind.component.scss
+88	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-behind.component.ts
+1	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-chat.component.ts
+2	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-outline.component.ts
+1	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-run.store.ts
+173	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.html
+350	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.scss
+44	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Fri May 29 14:11:31 2026 -1000	7532f70995e835da5aa92c3bbe263eb4587a1fbb,style(protopipe): condense research dossier into one dense block"
+51	108	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.html
+137	224	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.scss
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Fri May 29 14:06:21 2026 -1000	2a7709d31587d5225995d83aebc5d6eeb5841460,fix(protopipe): keep studio panel dark below the fold"
+2	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.scss
+2	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline.component.scss
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Fri May 29 14:00:29 2026 -1000	1be7d04b447d8e49bba125f076d9ae16e6d8deb7,style(protopipe): restyle research dossier to void lab aesthetic"
+12	15	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.html
+268	279	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.scss
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Fri May 29 13:36:09 2026 -1000	ba339cd2449c72144681ef4fbcae6f7d0f6cf124,feat(protopipe): executive research report for the article pipeline"
+269	238	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.html
+387	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.scss
+137	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.ts
+2	2	src/app/features/protopipe/lab/void-dashboard/void-content-writer.component.html
+15	6	src/app/features/protopipe/lab/void-dashboard/void-content-writer.component.scss
+13	2	src/app/features/protopipe/lab/void-dashboard/void-dashboard.component.scss
+36	60	src/app/features/protopipe/lab/void-dashboard/void-lab-global.scss
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Fri May 29 12:14:48 2026 -1000	a578069da240dbd506321ab89b1da5c130356447,feat(protopipe/article-pipeline): add Research step + visual context panel."
+2	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-behind.component.ts
+8	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-chat.component.ts
+2	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-outline.component.ts
+1	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-run.store.ts
+276	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.html
+368	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.scss
+58	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Fri May 29 11:57:21 2026 -1000	796486a7ec3c79016f7d119ba4c82cd236dbd1b5,feat(protopipe/article-pipeline): inspector pane + step previews."
+2	2	angular.json
+53	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-behind.component.html
+157	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-behind.component.scss
+111	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-behind.component.ts
+60	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-chat.component.html
+201	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-chat.component.scss
+104	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-chat.component.ts
+343	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.html
+681	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.scss
+179	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-step-panel.component.ts
+76	17	src/app/features/protopipe/lab/article-pipeline/article-pipeline.component.html
+110	22	src/app/features/protopipe/lab/article-pipeline/article-pipeline.component.scss
+129	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Fri May 29 11:25:47 2026 -1000	f313e9cfa631051b0669ca506b9e68dc505d64c0,feat(protopipe lab): add void dashboard and article-pipeline studio."
+-	-	public/assets/images/lab/void-sky.jpg
+18	0	src/app/app.routes.ts
+67	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-api.service.ts
+33	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-outline.component.html
+131	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-outline.component.scss
+91	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-outline.component.ts
+149	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline-run.store.ts
+87	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline.component.html
+170	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline.component.scss
+137	0	src/app/features/protopipe/lab/article-pipeline/article-pipeline.component.ts
+287	0	src/app/features/protopipe/lab/void-dashboard/void-content-writer.component.html
+740	0	src/app/features/protopipe/lab/void-dashboard/void-content-writer.component.scss
+331	0	src/app/features/protopipe/lab/void-dashboard/void-content-writer.component.ts
+444	0	src/app/features/protopipe/lab/void-dashboard/void-dashboard.component.html
+947	0	src/app/features/protopipe/lab/void-dashboard/void-dashboard.component.scss
+251	0	src/app/features/protopipe/lab/void-dashboard/void-dashboard.component.ts
+305	0	src/app/features/protopipe/lab/void-dashboard/void-dashboard.mock.ts
+108	0	src/app/features/protopipe/lab/void-dashboard/void-lab-global.scss
+30	0	src/app/features/protopipe/lab/void-dashboard/void-scrollbar.scss
+117	0	src/app/features/protopipe/lab/void-dashboard/void-writer-suggestions.ts
+2	0	src/styles.scss
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Thu May 28 19:47:32 2026 -1000	18cea6d86f4c00ff1c676c1dfb62ce12392eab87,theme: rebrand FieldwavePreset bootstrap palette to Protopipe Ocean."
+23	13	src/app/core/theme/fieldwave-preset.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Thu May 28 19:43:21 2026 -1000	4685a4bae4f4837d3828d3689f6e05ed930a500f,theme: bump STORAGE_KEY to v3 so Protopipe Ocean lands as the default."
+6	3	src/app/core/theme/theme.types.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Thu May 28 19:27:46 2026 -1000	876e665e67cd4da157cc703e2bb812d3785183a5,theme: add Protopipe Ocean (#0a9396) palette and make it the default."
+11	1	src/app/core/theme/theme.service.ts
+41	4	src/app/core/theme/theme.types.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Thu May 28 19:22:53 2026 -1000	314dee932062d41bb2df077b770018c8201a59c0,protopipe(onboarding): chromeless layout + reveal celebration on completion."
+8	8	src/app/app.routes.ts
+48	4	src/app/features/protopipe/onboarding/protopipe-onboarding.component.html
+268	0	src/app/features/protopipe/onboarding/protopipe-onboarding.component.scss
+29	2	src/app/features/protopipe/onboarding/protopipe-onboarding.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Thu May 28 19:08:29 2026 -1000	ed715f70b95680852f85a1e93f77be960c917dad,protopipe(onboarding): ask for URL first; pass websiteUrl through to fix pending.local hostname."
+41	4	src/app/features/protopipe/onboarding/protopipe-onboarding.component.html
+7	0	src/app/features/protopipe/onboarding/protopipe-onboarding.component.scss
+37	18	src/app/features/protopipe/onboarding/protopipe-onboarding.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Thu May 28 18:57:17 2026 -1000	a9d9b163f4fbf9981add5a962436ba4c2ae569fd,protopipe(onboarding): redesign as 5-step minimalist single-question flow."
+116	76	src/app/features/protopipe/onboarding/protopipe-onboarding.component.html
+262	119	src/app/features/protopipe/onboarding/protopipe-onboarding.component.scss
+126	64	src/app/features/protopipe/onboarding/protopipe-onboarding.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Thu May 28 17:37:22 2026 -1000	81057c4cd0ed5bae05c4c952b02ece4f0c28d5ee,Stop gating Continue button on a non-reactive computed."
+1	5	src/app/features/protopipe/onboarding/protopipe-onboarding.component.html
+17	4	src/app/features/protopipe/onboarding/protopipe-onboarding.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Thu May 28 17:12:34 2026 -1000	0d724d6cedefee7f17f47b0c7dee6662995668f0,Add US-O2 business setup wizard with onboarding guard."
+10	2	src/app/app.routes.ts
+36	0	src/app/features/protopipe/onboarding/protopipe-onboarding-state.service.ts
+165	0	src/app/features/protopipe/onboarding/protopipe-onboarding.component.html
+173	0	src/app/features/protopipe/onboarding/protopipe-onboarding.component.scss
+197	0	src/app/features/protopipe/onboarding/protopipe-onboarding.component.ts
+47	0	src/app/features/protopipe/onboarding/protopipe-onboarding.guard.ts
+25	0	src/app/features/protopipe/protopipe-api.service.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Thu May 28 12:07:25 2026 -1000	4b01cafd49d28b43c73ccf1f1ed50b5c6fd2bc34,Fix signup name fields layout conflicting with PrimeFlex col-6."
+3	3	src/app/features/signup/signup.component.html
+3	3	src/app/features/signup/signup.component.scss
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Thu May 28 11:54:46 2026 -1000	92398bc560a3b7ab1ff42c10e0b37b1b8cae9ce9,feat(protopipe): add trial signup flow and platform billing UI."
+3	0	src/app/app.config.ts
+16	0	src/app/app.routes.ts
+36	0	src/app/core/billing/billing-api.service.ts
+25	0	src/app/core/billing/billing-http.util.ts
+60	0	src/app/core/config/product-config.ts
+79	69	src/app/features/login/login.component.html
+49	41	src/app/features/login/login.component.ts
+26	0	src/app/features/protopipe/config/protopipe-product.config.ts
+14	0	src/app/features/signup/signup-success.component.html
+13	0	src/app/features/signup/signup-success.component.scss
+63	0	src/app/features/signup/signup-success.component.ts
+80	0	src/app/features/signup/signup.component.html
+17	0	src/app/features/signup/signup.component.scss
+110	0	src/app/features/signup/signup.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Wed May 27 18:00:30 2026 -1000	024622f2cd865053912988ef40def30f567309de,Add domain override input on Competitors page."
+50	2	src/app/features/protopipe/competitors/protopipe-competitors.component.html
+32	0	src/app/features/protopipe/competitors/protopipe-competitors.component.scss
+35	3	src/app/features/protopipe/competitors/protopipe-competitors.component.ts
+4	2	src/app/features/protopipe/protopipe-api.service.ts
+1	1	src/environments/environment.prod.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Wed May 27 17:27:36 2026 -1000	59ea3f3abc95af7056a248e1f5f320e75dc7292f,Fix competitors page loading before strategy bootstrap."
+11	11	src/app/features/protopipe/competitors/protopipe-competitors.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Wed May 27 14:11:47 2026 -1000	affa00e88e514482dcf9ee4b997ee22747e72fac,Add Protopipe competitors UI and SpyFu integrations status."
+7	0	src/app/app.routes.ts
+7	0	src/app/core/config/navigation.service.ts
+183	0	src/app/features/protopipe/competitors/protopipe-competitors.component.html
+96	0	src/app/features/protopipe/competitors/protopipe-competitors.component.scss
+223	0	src/app/features/protopipe/competitors/protopipe-competitors.component.ts
+43	0	src/app/features/protopipe/protopipe-api.service.ts
+88	0	src/app/features/protopipe/settings/protopipe-integrations.component.html
+4	0	src/app/features/protopipe/settings/protopipe-integrations.component.scss
+35	3	src/app/features/protopipe/settings/protopipe-integrations.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Wed May 27 12:27:13 2026 -1000	d31c85e10ea798da36d9f1adc4e4f3aba5e06c71,protopipe(serp): remove photo enrichment, use geocoded map markers"
+0	26	src/app/features/protopipe/protopipe-api.service.ts
+0	13	src/app/features/protopipe/protopipe-http.util.ts
+10	67	src/app/features/protopipe/serp/protopipe-serp-drawer.component.html
+0	40	src/app/features/protopipe/serp/protopipe-serp-drawer.component.scss
+7	136	src/app/features/protopipe/serp/protopipe-serp-drawer.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 26 20:28:58 2026 -1000	4dc4a74506ec79d6c4b960b53594bd757e1c385f,protopipe(serp): show SERP title primary, matched name secondary"
+6	3	src/app/features/protopipe/serp/protopipe-serp-drawer.component.html
+12	0	src/app/features/protopipe/serp/protopipe-serp-drawer.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 26 20:11:41 2026 -1000	9c2b06cbe9a54ac8993dbe218402d87917f8a1cf,protopipe(serp): surface real place enrichment error in drawer"
+9	2	src/app/features/protopipe/serp/protopipe-serp-drawer.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 26 19:57:51 2026 -1000	d872be3b68b8298998e6a5dcd6b5b39c378c97ed,protopipe(serp): consume server-side place enrichment"
+4	0	src/app/features/protopipe/serp/protopipe-serp-drawer.component.html
+30	41	src/app/features/protopipe/serp/protopipe-serp-drawer.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 26 19:23:33 2026 -1000	f701c6e46d76183d469357809ef4b61d4fab8e99,SERP drawer: kill enrichment 404 retry loop, send row data directly"
+8	12	src/app/features/protopipe/protopipe-api.service.ts
+31	7	src/app/features/protopipe/serp/protopipe-serp-drawer.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 26 19:14:17 2026 -1000	007cf69156aefc4ef4a9a01ffb6c25b0ef29ee9c,SERP drawer: use signed photo URLs so <img> tags can load cross-origin"
+1	1	src/app/features/protopipe/serp/protopipe-serp-drawer.component.html
+10	2	src/app/features/protopipe/serp/protopipe-serp-drawer.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 26 18:55:24 2026 -1000	1d58a6d2d99a856dc81c555e1c73819c72e5b630,Hide broken place photo images and skip referrer to upstream"
+2	0	src/app/features/protopipe/serp/protopipe-serp-drawer.component.html
+5	0	src/app/features/protopipe/serp/protopipe-serp-drawer.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 26 18:44:43 2026 -1000	7109290b50c3d6d083d40c8ddec10db2e4bfb777,SERP drawer: unified Results list, satellite map, row-based enrichment"
+20	0	src/app/features/protopipe/protopipe-api.service.ts
+27	22	src/app/features/protopipe/serp/protopipe-serp-drawer.component.html
+4	0	src/app/features/protopipe/serp/protopipe-serp-drawer.component.scss
+88	29	src/app/features/protopipe/serp/protopipe-serp-drawer.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 26 18:22:54 2026 -1000	c8450e849c27be82d697b68c9fd6e8ea5ce7b6fd,feat(protopipe): SERP drawer geo picker + Google Places enrichment + Leaflet map"
+1	1	angular.json
+23	0	package-lock.json
+2	0	package.json
+1	0	src/app/features/protopipe/keywords/protopipe-keywords.component.html
+1	0	src/app/features/protopipe/keywords/protopipe-keywords.component.ts
+34	5	src/app/features/protopipe/protopipe-api.service.ts
+13	0	src/app/features/protopipe/protopipe-http.util.ts
+1	0	src/app/features/protopipe/protopipe-strategy.service.ts
+87	28	src/app/features/protopipe/serp/protopipe-serp-drawer.component.html
+76	2	src/app/features/protopipe/serp/protopipe-serp-drawer.component.scss
+222	9	src/app/features/protopipe/serp/protopipe-serp-drawer.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 26 17:51:38 2026 -1000	5b70c844cf8fd8fcdcee2147c92af2c40024f482,feat(protopipe): SERP drawer on keywords table (organic + local pack + features)"
+29	1	src/app/features/protopipe/keywords/protopipe-keywords.component.html
+12	0	src/app/features/protopipe/keywords/protopipe-keywords.component.ts
+25	0	src/app/features/protopipe/protopipe-api.service.ts
+291	0	src/app/features/protopipe/serp/protopipe-serp-drawer.component.html
+273	0	src/app/features/protopipe/serp/protopipe-serp-drawer.component.scss
+172	0	src/app/features/protopipe/serp/protopipe-serp-drawer.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 26 15:11:58 2026 -1000	7457d3be48234beaff3b34f27e9c80f43b9085bd,feat(protopipe): analytics 'Top search queries' table (GSC)"
+52	0	src/app/features/protopipe/analytics/protopipe-analytics.component.html
+15	0	src/app/features/protopipe/analytics/protopipe-analytics.component.scss
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 26 15:03:53 2026 -1000	2136721da01644e71cb60e94ca906cc9caea18a1,fix(protopipe): always-visible Change GA4 property control"
+27	4	src/app/features/protopipe/analytics/protopipe-analytics.component.html
+7	0	src/app/features/protopipe/analytics/protopipe-analytics.component.scss
+2	0	src/app/features/protopipe/analytics/protopipe-analytics.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 26 14:53:31 2026 -1000	cce4e87108c7ff73bda514a41f983f4421304884,feat(protopipe): Analytics page v1 (GA4)"
+7	0	src/app/app.routes.ts
+7	0	src/app/core/config/navigation.service.ts
+295	0	src/app/features/protopipe/analytics/protopipe-analytics.component.html
+353	0	src/app/features/protopipe/analytics/protopipe-analytics.component.scss
+302	0	src/app/features/protopipe/analytics/protopipe-analytics.component.ts
+39	0	src/app/features/protopipe/protopipe-api.service.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 26 14:23:29 2026 -1000	245c9abb63c8d867e55e0401bc044d775e82a990,feat(protopipe): per-account Google integrations settings + connect banner"
+7	0	src/app/app.routes.ts
+7	0	src/app/core/config/navigation.service.ts
+24	6	src/app/features/protopipe/discovery/protopipe-discovery-diy.component.html
+40	0	src/app/features/protopipe/discovery/protopipe-discovery-diy.component.scss
+32	1	src/app/features/protopipe/protopipe-api.service.ts
+145	0	src/app/features/protopipe/settings/protopipe-integrations.component.html
+183	0	src/app/features/protopipe/settings/protopipe-integrations.component.scss
+157	0	src/app/features/protopipe/settings/protopipe-integrations.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 26 14:01:39 2026 -1000	fb6139cfd20b85e745d768ed88d87ff2710d8ca4,feat(protopipe): right-side plan drawer on discovery DIY screen"
+89	3	src/app/features/protopipe/discovery/protopipe-discovery-diy.component.html
+164	0	src/app/features/protopipe/discovery/protopipe-discovery-diy.component.scss
+41	0	src/app/features/protopipe/discovery/protopipe-discovery-diy.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 26 13:48:57 2026 -1000	41abe069bfa6df4d2b90f74c27645f312d8379fa,feat(protopipe): keyword discovery hub + Pathway A DIY screen (PKD-01/02/03)"
+14	0	src/app/app.routes.ts
+7	0	src/app/core/config/navigation.service.ts
+282	0	src/app/features/protopipe/discovery/protopipe-discovery-diy.component.html
+109	0	src/app/features/protopipe/discovery/protopipe-discovery-diy.component.scss
+300	0	src/app/features/protopipe/discovery/protopipe-discovery-diy.component.ts
+53	0	src/app/features/protopipe/discovery/protopipe-discovery-hub.component.html
+113	0	src/app/features/protopipe/discovery/protopipe-discovery-hub.component.scss
+63	0	src/app/features/protopipe/discovery/protopipe-discovery-hub.component.ts
+16	1	src/app/features/protopipe/keywords/protopipe-keywords.component.html
+8	0	src/app/features/protopipe/keywords/protopipe-keywords.component.scss
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 26 13:29:30 2026 -1000	8a17710382c81e3e68914b8b66239372c8ecf673,feat(protopipe): keyword discovery client + prod appName fix"
+22	0	src/app/features/protopipe/protopipe-api.service.ts
+1	1	src/environments/environment.prod.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 26 13:29:03 2026 -1000	9b6e4d5a2f8eedd540bdda2d79cda360c07a830a,feat(theme): runtime theme picker in shell toolbar"
+13	1	src/app/app.config.ts
+98	0	src/app/core/theme/theme.service.ts
+123	0	src/app/core/theme/theme.types.ts
+8	1	src/app/layout/shell/shell.component.html
+28	7	src/app/layout/shell/shell.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 26 13:28:49 2026 -1000	498715b8d94f61b676de05a12dac46f0c4956f58,feat(calendar): reusable calendar component + Protopipe pipeline view"
+122	0	docs/protopipe/HISTORY_2026-05-21.md
+7	0	src/app/app.routes.ts
+23	0	src/app/features/dev-ui/calendar-pipeline-demo.component.html
+51	0	src/app/features/dev-ui/calendar-pipeline-demo.component.scss
+249	0	src/app/features/dev-ui/calendar-pipeline-demo.component.ts
+33	0	src/app/features/dev-ui/dev-ui-catalog.ts
+3	0	src/app/features/dev-ui/dev-ui-preview.component.html
+2	0	src/app/features/dev-ui/dev-ui-preview.component.ts
+3	0	src/app/features/protopipe/content/protopipe-content-list.component.html
+70	0	src/app/features/protopipe/content/protopipe-content-pipeline-calendar.component.html
+107	0	src/app/features/protopipe/content/protopipe-content-pipeline-calendar.component.scss
+120	0	src/app/features/protopipe/content/protopipe-content-pipeline-calendar.component.ts
+31	0	src/app/shared/ui/calendar/calendar-event-chip.component.html
+156	0	src/app/shared/ui/calendar/calendar-event-chip.component.scss
+85	0	src/app/shared/ui/calendar/calendar-event-chip.component.ts
+332	0	src/app/shared/ui/calendar/calendar-grid.util.spec.ts
+252	0	src/app/shared/ui/calendar/calendar-grid.util.ts
+139	0	src/app/shared/ui/calendar/calendar.component.html
+96	0	src/app/shared/ui/calendar/calendar.component.scss
+180	0	src/app/shared/ui/calendar/calendar.component.ts
+102	0	src/app/shared/ui/calendar/calendar.types.ts
+37	0	src/app/shared/ui/calendar/views/calendar-agenda-view.component.html
+83	0	src/app/shared/ui/calendar/views/calendar-agenda-view.component.scss
+91	0	src/app/shared/ui/calendar/views/calendar-agenda-view.component.ts
+64	0	src/app/shared/ui/calendar/views/calendar-month-view.component.html
+157	0	src/app/shared/ui/calendar/views/calendar-month-view.component.scss
+93	0	src/app/shared/ui/calendar/views/calendar-month-view.component.ts
+69	0	src/app/shared/ui/calendar/views/calendar-week-view.component.html
+222	0	src/app/shared/ui/calendar/views/calendar-week-view.component.scss
+122	0	src/app/shared/ui/calendar/views/calendar-week-view.component.ts
+19	0	src/app/shared/ui/index.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon May 25 20:35:47 2026 -1000	6125e575341b06cced0c479052d6d979c248326c,feat(protopipe): keyword research page template and styles."
+224	0	src/app/features/protopipe/research/protopipe-research.component.html
+30	2	src/app/features/protopipe/research/protopipe-research.component.scss
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon May 25 20:30:36 2026 -1000	de0b0b7509e010d06406236da204866cb6b2baf0,feat(protopipe): add Research link to side nav under My Sites."
+7	0	src/app/core/config/navigation.service.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon May 25 20:21:48 2026 -1000	2627bfbe6b92dfff375f504f08a9e74280bec850,fix(protopipe): show Google OAuth callback URL in Agent Control."
+8	1	src/app/features/protopipe/admin/protopipe-agent-control.component.html
+18	2	src/app/features/protopipe/admin/protopipe-agent-control.component.ts
+12	2	src/app/features/protopipe/protopipe-api.service.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon May 25 20:07:33 2026 -1000	9cfdc47955d29e24373dbdc7f0c84222ad863d75,feat(protopipe): Google keyword research page and Connect Google admin."
+5	0	docs/protopipe/GOOGLE_RESEARCH.md
+7	0	src/app/app.routes.ts
+3	1	src/app/features/protopipe/admin/protopipe-agent-control.component.html
+7	0	src/app/features/protopipe/admin/protopipe-agent-control.component.ts
+1	0	src/app/features/protopipe/dashboard/protopipe-dashboard.component.html
+29	1	src/app/features/protopipe/protopipe-api.service.ts
+0	0	src/app/features/protopipe/research/protopipe-research.component.html
+4	0	src/app/features/protopipe/research/protopipe-research.component.scss
+58	0	src/app/features/protopipe/research/protopipe-research.component.ts
+93	0	src/app/features/protopipe/research/protopipe-research.service.ts
+38	3	src/app/features/protopipe/site-builder/site-builder-components.component.ts
+4	20	src/app/features/protopipe/site-builder/site-builder-templates.component.ts
+96	0	src/app/features/protopipe/site-builder/template-preview-frame.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon May 25 14:34:41 2026 -1000	4a147d8f396dc3e4b2b2a2b678cb701d02689510,fix(protopipe): show Cloudflare demo URL as hyperlink on template cards"
+23	7	src/app/features/protopipe/site-builder/site-builder-templates.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon May 25 14:03:01 2026 -1000	36f3ac22e0eca82106ac491acd337e92f0992c02,fix(protopipe): Live preview on Tech Agency template card"
+9	1	src/app/features/protopipe/site-builder/site-builder-template-detail.component.ts
+17	9	src/app/features/protopipe/site-builder/site-builder-templates.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Mon May 25 13:49:07 2026 -1000	60168c6ac4abe112723c175251170c96e807cd4d,feat(protopipe): visual template gallery with Live Demo links"
+1	0	src/app/features/protopipe/site-builder/add-site-wizard.component.ts
+63	15	src/app/features/protopipe/site-builder/site-builder-template-detail.component.ts
+73	7	src/app/features/protopipe/site-builder/site-builder-templates.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Fri May 22 12:05:36 2026 -1000	c48fc144ede82a7f10d634978af764fd43808db3,feat(protopipe): ThemeForest-style template live preview"
+7	0	src/app/app.routes.ts
+1	0	src/app/features/protopipe/site-builder/add-site-wizard.component.ts
+4	2	src/app/features/protopipe/site-builder/my-sites-list.component.ts
+37	8	src/app/features/protopipe/site-builder/site-builder-template-detail.component.ts
+219	0	src/app/features/protopipe/site-builder/site-builder-template-preview.component.ts
+30	8	src/app/features/protopipe/site-builder/site-builder-templates.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Fri May 22 11:18:46 2026 -1000	1b427483d5a0c7a918563c96acc424cd7c1a62b7,feat(protopipe): toast Cloudflare cleanup result on site delete"
+5	2	src/app/features/protopipe/protopipe-api.service.ts
+15	7	src/app/features/protopipe/site-builder/my-sites-list.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Fri May 22 10:52:50 2026 -1000	0fffd2a297554f1c2311475cd1762c780b9b537c,feat(protopipe): site delete on My Sites, drop nav Add site"
+0	7	src/app/core/config/navigation.service.ts
+6	0	src/app/features/protopipe/protopipe-api.service.ts
+63	2	src/app/features/protopipe/site-builder/my-sites-list.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Thu May 21 23:11:02 2026 -1000	320524df533d4a6aeb90331a7b04399241a443be,fix(protopipe): clarify slug is repo-only, URL shown after publish"
+2	2	src/app/features/protopipe/site-builder/add-site-wizard.component.ts
+1	1	src/app/features/protopipe/site-builder/my-sites-list.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Thu May 21 22:18:56 2026 -1000	6f911df25a5fd17296363be254e97cedcaf60fad,feat(protopipe): add landing sites list and publish polling"
+7	0	src/app/app.routes.ts
+11	4	src/app/core/config/navigation.service.ts
+153	0	src/app/features/protopipe/site-builder/my-sites-list.component.ts
+50	1	src/app/features/protopipe/site-builder/site-page-editor.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Thu May 21 20:45:39 2026 -1000	a5b7d97d15972d95efe47bb084a2e6a40c7a4e56,Add Protopipe Site Builder: templates gallery, add site wizard, and page editor."
+28	0	src/app/app.routes.ts
+8	1	src/app/core/config/navigation.service.ts
+80	0	src/app/features/protopipe/protopipe-api.service.ts
+201	0	src/app/features/protopipe/site-builder/add-site-wizard.component.ts
+44	1	src/app/features/protopipe/site-builder/protopipe-site-builder.service.ts
+116	0	src/app/features/protopipe/site-builder/site-builder-template-detail.component.ts
+109	0	src/app/features/protopipe/site-builder/site-builder-templates.component.ts
+301	0	src/app/features/protopipe/site-builder/site-page-editor.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Thu May 21 14:44:40 2026 -1000	b7f4651240a3734929200a7dff3362be98b07b44,fix(protopipe): show SendGrid emailError and full magic link on convert."
+9	8	src/app/features/protopipe/leads/protopipe-leads-list.component.ts
+12	8	src/app/features/protopipe/leads/protopipe-leads.service.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Thu May 21 14:37:11 2026 -1000	2511d9d7c9922d54473ebbc0d1278dd05526846b,feat(protopipe): show email sent vs fallback link after convert."
+1	1	docs/protopipe/CLIENT_PORTAL.md
+20	7	src/app/features/protopipe/leads/protopipe-leads-list.component.ts
+5	1	src/app/features/protopipe/leads/protopipe-leads.service.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Thu May 21 14:29:54 2026 -1000	d5fb1ef33468a53a7e99212cb1ba7a4dfcadaa3b,fix(protopipe): clarify convert shows magic link URL, email not sent yet."
+15	2	src/app/features/protopipe/leads/protopipe-leads-list.component.ts
+1	3	src/app/features/protopipe/leads/protopipe-leads.service.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Thu May 21 14:22:24 2026 -1000	375bc0c8580db04f26ea110ff8c1267af5d47b84,fix(protopipe): load leads via account-level API."
+1	6	src/app/features/protopipe/leads/protopipe-leads-list.component.ts
+1	14	src/app/features/protopipe/leads/protopipe-leads.service.ts
+8	0	src/app/features/protopipe/protopipe-api.service.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Thu May 21 14:19:16 2026 -1000	e607f14735c60c3ff70c0bbd30b2be8528f7d45e,fix(protopipe): load leads for landing v2 site, not primary v1 site."
+6	1	src/app/features/protopipe/leads/protopipe-leads-list.component.ts
+16	10	src/app/features/protopipe/leads/protopipe-leads.service.ts
+3	0	src/app/features/protopipe/protopipe.constants.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Thu May 21 13:55:32 2026 -1000	e7d1f83b5e25e2b56ec86f3e4d276b527f9bc1a3,feat(protopipe): leads inbox, site builder, and client portal in sting."
+14	0	.firebaserc
+56	0	docs/protopipe/CLIENT_PORTAL.md
+42	23	firebase.json
+45	1	src/app/app.routes.ts
+44	1	src/app/core/config/navigation.service.ts
+12	1	src/app/core/http/auth.interceptor.ts
+87	0	src/app/features/client-portal/client-auth.service.ts
+30	0	src/app/features/client-portal/dashboard/client-portal-dashboard.component.html
+68	0	src/app/features/client-portal/dashboard/client-portal-dashboard.component.scss
+32	0	src/app/features/client-portal/dashboard/client-portal-dashboard.component.ts
+21	0	src/app/features/client-portal/guards/client-auth.guard.ts
+17	0	src/app/features/client-portal/guards/operator-only.guard.ts
+15	0	src/app/features/client-portal/welcome/client-portal-welcome.component.html
+34	0	src/app/features/client-portal/welcome/client-portal-welcome.component.scss
+41	0	src/app/features/client-portal/welcome/client-portal-welcome.component.ts
+179	0	src/app/features/protopipe/leads/protopipe-leads-list.component.ts
+69	0	src/app/features/protopipe/leads/protopipe-leads.service.ts
+37	0	src/app/features/protopipe/protopipe-api.service.ts
+40	0	src/app/features/protopipe/site-builder/protopipe-site-builder.service.ts
+72	0	src/app/features/protopipe/site-builder/site-builder-component-detail.component.ts
+98	0	src/app/features/protopipe/site-builder/site-builder-components.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Wed May 20 19:08:27 2026 -1000	059f6d1053ea919b53db62766405019177796f08,fix(sting/protopipe): poll article ideas up to 2 minutes; read ideas from run output."
+23	6	src/app/features/protopipe/protopipe-agent.service.ts
+4	0	src/app/features/protopipe/protopipe.constants.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Wed May 20 18:10:28 2026 -1000	e9340149d9e16141987f8d993178009f146ea1bc,feat(sting/protopipe): Phase A agent UI — Content Helper, Agent Control, AI ideas."
+63	0	docs/protopipe/AI_AGENT.md
+10	6	docs/protopipe/FEATURE_STANDARD.md
+14	0	src/app/app.routes.ts
+11	4	src/app/core/config/navigation.service.ts
+73	0	src/app/features/protopipe/admin/protopipe-agent-control.component.html
+59	0	src/app/features/protopipe/admin/protopipe-agent-control.component.scss
+53	0	src/app/features/protopipe/admin/protopipe-agent-control.component.ts
+23	5	src/app/features/protopipe/content/protopipe-writing-tools.component.html
+40	11	src/app/features/protopipe/content/protopipe-writing-tools.component.ts
+98	0	src/app/features/protopipe/protopipe-admin-agent.service.ts
+173	0	src/app/features/protopipe/protopipe-agent.service.ts
+115	1	src/app/features/protopipe/protopipe-api.service.ts
+36	0	src/app/features/protopipe/protopipe-content.service.ts
+3	0	src/app/features/protopipe/protopipe.constants.ts
+96	0	src/app/features/protopipe/settings/protopipe-content-helper.component.html
+87	0	src/app/features/protopipe/settings/protopipe-content-helper.component.scss
+81	0	src/app/features/protopipe/settings/protopipe-content-helper.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Wed May 20 15:21:09 2026 -1000	6354101fb9aab63ea48ff5b79446a50b818777f6,fix(sting/protopipe): apply full template when an article idea is selected."
+32	1	src/app/features/protopipe/content/content-template-suggestions.ts
+2	9	src/app/features/protopipe/content/protopipe-content-editor.component.ts
+3	1	src/app/features/protopipe/content/protopipe-writing-tools.component.ts
+24	1	src/app/features/protopipe/protopipe-content.service.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Wed May 20 15:15:17 2026 -1000	88421132d016782d66d1d4f4840f05eb9453412d,feat(sting/protopipe): writing tools sidebar and rxResource content state."
+7	0	src/app/features/protopipe/content/content-catalog.model.ts
+22	0	src/app/features/protopipe/content/content-template-suggestions.ts
+189	212	src/app/features/protopipe/content/protopipe-content-editor.component.html
+30	2	src/app/features/protopipe/content/protopipe-content-editor.component.scss
+155	137	src/app/features/protopipe/content/protopipe-content-editor.component.ts
+5	5	src/app/features/protopipe/content/protopipe-content-list.component.ts
+31	0	src/app/features/protopipe/content/protopipe-writing-session.ts
+104	0	src/app/features/protopipe/content/protopipe-writing-tools.component.html
+227	0	src/app/features/protopipe/content/protopipe-writing-tools.component.scss
+123	0	src/app/features/protopipe/content/protopipe-writing-tools.component.ts
+50	31	src/app/features/protopipe/protopipe-api.service.ts
+247	84	src/app/features/protopipe/protopipe-content.service.ts
+6	2	src/app/layout/shell/shell.component.html
+12	0	src/app/layout/shell/shell.component.scss
+20	0	src/app/layout/shell/shell.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Wed May 20 15:05:01 2026 -1000	4534d85278c611e59058d9fc11910aa94c905610,fix(sting/protopipe): open new article editor instead of bouncing to list."
+1	0	src/app/app.routes.ts
+25	17	src/app/features/protopipe/content/protopipe-content-editor.component.html
+11	0	src/app/features/protopipe/content/protopipe-content-editor.component.scss
+11	3	src/app/features/protopipe/content/protopipe-content-editor.component.ts
+1	1	src/app/features/protopipe/protopipe-content.service.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Wed May 20 14:59:48 2026 -1000	38e5aeb4a905dd53d001a36a1f858da4a70c4c19,feat(sting/protopipe): full-page content editor with inline keyword suggestions."
+19	2	src/app/app.routes.ts
+119	0	src/app/features/protopipe/content/content-template-suggestions.ts
+230	0	src/app/features/protopipe/content/protopipe-content-editor.component.html
+467	0	src/app/features/protopipe/content/protopipe-content-editor.component.scss
+268	0	src/app/features/protopipe/content/protopipe-content-editor.component.ts
+64	0	src/app/features/protopipe/content/protopipe-content-list.component.html
+118	0	src/app/features/protopipe/content/protopipe-content-list.component.scss
+64	0	src/app/features/protopipe/content/protopipe-content-list.component.ts
+0	279	src/app/features/protopipe/content/protopipe-content.component.html
+0	32	src/app/features/protopipe/content/protopipe-content.component.scss
+0	248	src/app/features/protopipe/content/protopipe-content.component.ts
+11	0	src/app/features/protopipe/guards/protopipe-content-unsaved.guard.ts
+21	8	src/app/features/protopipe/protopipe-content.service.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Wed May 20 14:46:18 2026 -1000	d521e53fc50988b6c78c6e87ded8e1e781702f73,feat(sting/protopipe): structured content editor and SEO checklist."
+1	0	docs/protopipe/FEATURE_STANDARD.md
+50	0	docs/protopipe/SEO_ARTICLE_TEMPLATE.md
+118	26	src/app/features/protopipe/content/protopipe-content.component.html
+96	16	src/app/features/protopipe/content/protopipe-content.component.ts
+58	19	src/app/features/protopipe/protopipe-content.service.ts
+12	1	src/app/features/protopipe/protopipe-http.util.ts
+5	0	src/app/features/protopipe/protopipe.constants.ts
+3	0	src/app/features/protopipe/protopipe.models.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Wed May 20 13:52:27 2026 -1000	50cbf0a7f03885eeb0b438016af73d97967a19fc,feat(sting/protopipe): Content hub to create, schedule, and publish posts."
+30	0	docs/protopipe/CONTENT_PUBLISH.md
+7	0	src/app/app.routes.ts
+7	0	src/app/core/config/navigation.service.ts
+187	0	src/app/features/protopipe/content/protopipe-content.component.html
+32	0	src/app/features/protopipe/content/protopipe-content.component.scss
+168	0	src/app/features/protopipe/content/protopipe-content.component.ts
+55	0	src/app/features/protopipe/protopipe-api.service.ts
+176	0	src/app/features/protopipe/protopipe-content.service.ts
+2	0	src/app/features/protopipe/protopipe.models.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Wed May 20 13:28:46 2026 -1000	566b6a0b433fe8b80a6d9336d558fbef7d7e7d3a,feat(sting/protopipe): separate local pack table for Maui and Hawaii."
+5	4	docs/protopipe/DATAFORSEO.md
+91	0	src/app/features/protopipe/keywords/protopipe-keywords.component.html
+32	1	src/app/features/protopipe/keywords/protopipe-keywords.component.scss
+35	9	src/app/features/protopipe/keywords/protopipe-keywords.component.ts
+18	1	src/app/features/protopipe/protopipe-market-display.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Wed May 20 12:37:27 2026 -1000	097ed99c75b706e93424a5c835ed50438c55678b,feat(protopipe): Keywords market refresh, metrics columns, and history."
+26	7	docs/protopipe/DATAFORSEO.md
+81	3	src/app/features/protopipe/keywords/protopipe-keywords.component.html
+7	1	src/app/features/protopipe/keywords/protopipe-keywords.component.scss
+82	6	src/app/features/protopipe/keywords/protopipe-keywords.component.ts
+24	0	src/app/features/protopipe/protopipe-api.service.ts
+28	0	src/app/features/protopipe/protopipe-market-display.ts
+46	4	src/app/features/protopipe/protopipe-strategy.service.ts
+3	1	src/app/features/protopipe/protopipe.models.ts
+1	1	src/environments/environment.prod.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Wed May 20 12:11:28 2026 -1000	4ed21f42f54e251d581282877bd10305e37b725f,feat(protopipe): dashboard DataForSEO test button and v2 status API."
+2	1	.firebaserc
+39	0	docs/protopipe/DATAFORSEO.md
+44	0	src/app/features/protopipe/dashboard/protopipe-dashboard.component.html
+6	0	src/app/features/protopipe/dashboard/protopipe-dashboard.component.scss
+21	0	src/app/features/protopipe/dashboard/protopipe-dashboard.component.ts
+10	0	src/app/features/protopipe/protopipe-api.service.ts
+22	0	src/app/features/protopipe/protopipe-strategy.service.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Wed May 20 11:19:25 2026 -1000	3891a1f6cf81e2b33d9bfd2df6cf081efb12ac9d,docs(protopipe): single bagend deploy model; Firebase project sting-protopipe."
+1	1	.firebaserc.example
+1	1	.github/pull_request_template.md
+4	2	AGENTS.md
+10	4	ai_context/active/PROTOPYPE.md
+7	7	docs/SESSION_DEV_FLOW.md
+36	27	docs/protopipe/DEPLOY.md
+2	0	docs/protopipe/FEATURE_STANDARD.md
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Wed May 20 11:11:05 2026 -1000	c87574c1e9706d20ad38a014137cbd6490ab8c2d,feat(protopipe): Phase A UI, API wiring, standards, and deploy docs."
+25	0	.cursor/rules/protopipe-standard.mdc
+2	1	.firebaserc.example
+47	0	.github/pull_request_template.md
+19	0	AGENTS.md
+3	0	ai_context/README.md
+26	0	ai_context/active/PROTOPYPE.md
+38	0	ai_context/active/SESSION_DEV_FLOW.md
+105	0	docs/DEV_DOCS_SESSION_FLOW_PATCH.md
+88	0	docs/SESSION_DEV_FLOW.md
+99	0	docs/protopipe/DEPLOY.md
+222	0	docs/protopipe/FEATURE_STANDARD.md
+14	1	scripts/setup-firebase.sh
+19	2	src/app/app.routes.ts
+50	84	src/app/core/config/navigation.service.ts
+59	0	src/app/features/dev-docs/dev-docs-catalog.ts
+45	7	src/app/features/dev-docs/dev-docs.component.html
+2	0	src/app/features/dev-docs/dev-docs.component.ts
+103	0	src/app/features/protopipe/dashboard/protopipe-dashboard.component.html
+56	0	src/app/features/protopipe/dashboard/protopipe-dashboard.component.scss
+40	0	src/app/features/protopipe/dashboard/protopipe-dashboard.component.ts
+14	0	src/app/features/protopipe/guards/protopipe-unsaved.guard.ts
+162	0	src/app/features/protopipe/keywords/protopipe-keywords.component.html
+128	0	src/app/features/protopipe/keywords/protopipe-keywords.component.scss
+122	0	src/app/features/protopipe/keywords/protopipe-keywords.component.ts
+41	0	src/app/features/protopipe/protopipe-api.service.ts
+42	0	src/app/features/protopipe/protopipe-http.util.ts
+35	0	src/app/features/protopipe/protopipe-keyword-display.ts
+177	0	src/app/features/protopipe/protopipe-strategy.service.ts
+4	0	src/app/features/protopipe/protopipe.constants.ts
+12	0	src/app/features/protopipe/protopipe.models.ts
+21	2	src/app/layout/shell/shell.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 19 13:44:29 2026 -1000	110c628867ff5b894385c72da8f5e1ae7f7176a8,Add ai_context security roadmap and improvement registry."
+2	0	README.md
+25	0	ai_context/README.md
+123	0	ai_context/active/SECURITY_TODO.md
+98	0	ai_context/improvements/IMP-001-app-initializer-factory.md
+18	0	ai_context/improvements/INDEX.md
+44	0	ai_context/improvements/TEMPLATE.md
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 19 13:39:18 2026 -1000	c3ae952e20abb956f5564595b547cb316297376e,Fix APP_INITIALIZER crash blocking app bootstrap."
+1	1	firebase.json
+3	2	src/app/core/auth/auth.initializer.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 19 13:36:10 2026 -1000	cc368c460aa6fcfd1893a02b5b91d2d74ca592dd,CI: allow lint to fail until shell a11y fixes land."
+1	0	.github/workflows/ci.yml
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 19 13:35:29 2026 -1000	1a108d7ed0511d38b0e37a46ffb599bb8f3c894f,CI: use legacy-peer-deps for eslint/sheriff resolution."
+1	1	.github/workflows/ci.yml
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 19 13:34:54 2026 -1000	404e5fde97a2b16790f07075c81e8561ca05bd2f,Fix CI npm cache path for private hive-contracts checkout."
+1	3	.github/workflows/ci.yml
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 19 13:34:21 2026 -1000	0efca9b3647cc2bc55a3880a2cf04bdd7a2d90a4,Fix CI for private hive-contracts via GH_PAT secret."
+10	4	.github/workflows/ci.yml
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 19 13:32:18 2026 -1000	9af8a6191d3f4d7ee00ffeca130784ed518ded0c,Fix CI: vendor checkout hive-contracts and enable cross-repo access."
+16	6	.github/workflows/ci.yml
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 19 13:30:05 2026 -1000	41f922539d35057e49d4fcd1b60365823dda8059,Fix CI hive-contracts checkout via git clone."
+7	6	.github/workflows/ci.yml
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 19 13:29:32 2026 -1000	80bdea428e6eb3df514c6ef2039eacbfa176bb60,Fix CI by checking out hive-contracts as a sibling repo."
+14	6	.github/workflows/ci.yml
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 19 13:23:18 2026 -1000	01dc3b2c86a64fbe3d67c222a276e1c7d7fc8c1b,Add auth v2 client, security hardening, and dev launch-pad tooling."
+7	0	.github/dependabot.yml
+46	0	.github/workflows/ci.yml
+5	0	.gitignore
+6	2	README.md
+64	0	docs/BUILDING_UI_WITH_HIVE.md
+12	2	docs/LAUNCH_NEW_MVP.md
+42	0	docs/SECURITY.md
+61	0	docs/UI_PATTERNS.md
+4	0	docs/primeng/README.md
+19	1	firebase.json
+3	1	src/app/app.config.ts
+8	0	src/app/app.routes.ts
+6	0	src/app/core/auth/auth.initializer.ts
+118	74	src/app/core/auth/auth.service.ts
+19	0	src/app/core/auth/jwt.util.ts
+27	2	src/app/core/config/navigation.service.ts
+9	1	src/app/core/guards/auth.guard.ts
+13	0	src/app/core/guards/guest.guard.ts
+7	7	src/app/core/http/auth.interceptor.ts
+243	0	src/app/features/dev-docs/dev-docs-catalog.ts
+202	0	src/app/features/dev-docs/dev-docs.component.html
+148	0	src/app/features/dev-docs/dev-docs.component.scss
+155	0	src/app/features/dev-docs/dev-docs.component.ts
+306	0	src/app/features/dev-shared/_blocks-studio.scss
+744	0	src/app/features/dev-ui/dev-ui-catalog.ts
+178	0	src/app/features/dev-ui/dev-ui-pattern-preview.component.html
+20	0	src/app/features/dev-ui/dev-ui-pattern-preview.component.scss
+90	0	src/app/features/dev-ui/dev-ui-pattern-preview.component.ts
+149	0	src/app/features/dev-ui/dev-ui-patterns-catalog.ts
+266	0	src/app/features/dev-ui/dev-ui-preview.component.html
+8	0	src/app/features/dev-ui/dev-ui-preview.component.scss
+203	0	src/app/features/dev-ui/dev-ui-preview.component.ts
+305	19	src/app/features/dev-ui/dev-ui.component.html
+118	3	src/app/features/dev-ui/dev-ui.component.scss
+246	28	src/app/features/dev-ui/dev-ui.component.ts
+1	0	src/app/layout/shell/shell.component.html
+16	15	src/app/layout/shell/shell.component.ts
+86	0	src/app/shared/session-expired-dialog/session-expired-dialog.component.html
+40	0	src/app/shared/session-expired-dialog/session-expired-dialog.component.scss
+74	0	src/app/shared/session-expired-dialog/session-expired-dialog.component.ts
+2	1	src/app/shared/ui/index.ts
+1	1	src/environments/environment.prod.ts
+1	1	src/environments/environment.template.ts
+1	1	src/environments/environment.ts
+1	0	src/styles.scss
+32	0	src/styles/patterns/_dashboard-card.scss
+57	0	src/styles/patterns/_datatable-equipment.scss
+158	0	src/styles/patterns/_equipment-toolbar.scss
+207	0	src/styles/patterns/_excel-equipment-table.scss
+14	0	src/styles/patterns/_tokens.scss
+5	0	src/styles/patterns/index.scss
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 19 12:04:33 2026 -1000	f1f97f4c1216fa919d35c50154aec0fb6300ce30,Add Hive contracts, launch-pad tooling, and dev UI playground."
+7	1	README.md
+9	4	angular.json
+22	0	docs/ARCHITECTURE.md
+13	0	docs/LAUNCH_NEW_MVP.md
+44	0	eslint.config.js
+2737	149	package-lock.json
+11	1	package.json
+27	0	sheriff.config.ts
+7	0	src/app/app.routes.ts
+69	65	src/app/core/auth/auth.service.ts
+5	0	src/app/core/guards/dev-routes.guard.ts
+1	1	src/app/core/http/auth.interceptor.ts
+120	0	src/app/features/_templates/dashboard-kpi/dashboard-kpi.component.html
+124	0	src/app/features/_templates/dashboard-kpi/dashboard-kpi.component.scss
+90	0	src/app/features/_templates/dashboard-kpi/dashboard-kpi.component.ts
+21	0	src/app/features/dev-ui/dev-ui.component.html
+4	0	src/app/features/dev-ui/dev-ui.component.scss
+45	0	src/app/features/dev-ui/dev-ui.component.ts
+1	1	src/app/features/login/login.component.ts
+1	0	src/app/shared/ui/index.ts
+1	0	src/environments/environment.prod.ts
+1	0	src/environments/environment.template.ts
+1	0	src/environments/environment.ts
+7	2	tsconfig.app.json
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 19 11:30:28 2026 -1000	853c6e0aabede742f518cdf11c5cfd6623d1f398,Port probe alpha-layout shell and simplify home to alpha-home."
+2	2	angular.json
+-	-	public/assets/images/blocks/avatars/circle/avatar-f-1.png
+100	7	src/app/core/config/navigation.service.ts
+3	119	src/app/features/home/home.component.html
+1	133	src/app/features/home/home.component.scss
+2	83	src/app/features/home/home.component.ts
+249	40	src/app/layout/shell/shell.component.html
+709	36	src/app/layout/shell/shell.component.scss
+115	19	src/app/layout/shell/shell.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 19 11:23:36 2026 -1000	8f39403fb71babea94ffb1bc351ee6045a6e7eaf,Align Sting UI with probe: Lara theme, Inter fonts, alpha shell layout."
+3	0	.gitignore
+36	0	design/README.md
+8	0	docs/primeng/README.md
+-	-	public/assets/images/blocks/logos/fieldwave-white.png
+-	-	public/assets/images/blocks/logos/fieldwave.png
+19	0	scripts/setup-design-assets.sh
+5	2	src/app/app.config.ts
+24	0	src/app/core/theme/fieldwave-preset.ts
+33	24	src/app/features/home/home.component.scss
+0	23	src/app/features/login/login.component.ts
+20	13	src/app/layout/shell/shell.component.html
+59	12	src/app/layout/shell/shell.component.scss
+10	3	src/app/layout/shell/shell.component.ts
+5	2	src/index.html
+53	1	src/styles.scss
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 19 11:18:46 2026 -1000	b0388d72aa06f758c0165a651ff0c471bba5a8d3,Add PrimeNG docs, dashboard starter, and rename AuthService."
+7	1	README.md
+2	0	docs/ADDING_A_FEATURE.md
+1	1	docs/COPY_FROM_PROBE.md
+21	0	docs/primeng/README.md
+47982	0	docs/primeng/llms-full.txt
+121	0	docs/primeng/llms.txt
+1	1	src/app/core/auth/{auth-micro.service.ts => auth.service.ts}
+2	2	src/app/core/guards/auth.guard.ts
+2	2	src/app/core/http/auth.interceptor.ts
+120	9	src/app/features/home/home.component.html
+123	2	src/app/features/home/home.component.scss
+83	4	src/app/features/home/home.component.ts
+2	2	src/app/features/login/login.component.ts
+4	1	src/app/layout/shell/shell.component.html
+9	1	src/app/layout/shell/shell.component.scss
+2	2	src/app/layout/shell/shell.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 19 11:11:08 2026 -1000	9fa3511edd40ad3b88a59ab0d63cc124d9c64449,Match Sting login UI to probe universal-login."
+-	-	public/assets/images/surfing.jpeg
+9	0	src/app/core/validation/validation-messages.ts
+183	28	src/app/features/login/login.component.html
+101	4	src/app/features/login/login.component.scss
+143	16	src/app/features/login/login.component.ts
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 19 11:04:28 2026 -1000	00b16bc99d3069cd1cb659b59ac099705d0a3bde,Add Firebase setup script and deploy stingbase hosting."
+5	0	.firebaserc
+3	0	.gitignore
+18	4	README.md
+2	1	angular.json
+1	0	package.json
+65	0	scripts/setup-firebase.sh
+
+"Mike D <miked@Mikes-MacBook-Air.local>,Tue May 19 10:51:23 2026 -1000	953dfc57223e899dbf6efc28a79781cd11ef6e6d,Initial Sting MVP: Angular 21, AuthMicro, PrimeNG, Firebase hosting."
+17	0	.editorconfig
+5	0	.firebaserc.example
+44	0	.gitignore
+1	0	.nvmrc
+12	0	.prettierrc
+4	0	.vscode/extensions.json
+20	0	.vscode/launch.json
+9	0	.vscode/mcp.json
+42	0	.vscode/tasks.json
+43	0	README.md
+84	0	angular.json
+23	0	docs/ADDING_A_FEATURE.md
+22	0	docs/COPY_FROM_PROBE.md
+7	0	firebase.json
+8737	0	package-lock.json
+41	0	package.json
+-	-	public/favicon.ico
+15	0	scripts/replace-env.js
+27	0	src/app/app.config.ts
+22	0	src/app/app.routes.ts
+4	0	src/app/app.scss
+18	0	src/app/app.spec.ts
+10	0	src/app/app.ts
+192	0	src/app/core/auth/auth-micro.service.ts
+19	0	src/app/core/config/navigation.service.ts
+12	0	src/app/core/guards/auth.guard.ts
+58	0	src/app/core/http/auth.interceptor.ts
+9	0	src/app/features/home/home.component.html
+3	0	src/app/features/home/home.component.scss
+11	0	src/app/features/home/home.component.ts
+34	0	src/app/features/login/login.component.html
+7	0	src/app/features/login/login.component.scss
+59	0	src/app/features/login/login.component.ts
+37	0	src/app/layout/shell/shell.component.html
+20	0	src/app/layout/shell/shell.component.scss
+63	0	src/app/layout/shell/shell.component.ts
+9	0	src/environments/environment.prod.ts
+9	0	src/environments/environment.template.ts
+9	0	src/environments/environment.ts
+13	0	src/index.html
+6	0	src/main.ts
+12	0	src/styles.scss
+15	0	tsconfig.app.json
+33	0	tsconfig.json
+15	0	tsconfig.spec.json

@@ -168,47 +168,94 @@
 
         <!-- ── PROSPECTS ── -->
         @case ('prospects') {
-          <div class="pb-panel-head">
-            <div class="pb-panel-kicker">Intelligence · Prospects</div>
-            <h2 class="pb-panel-title">Active pitch packs</h2>
-            <p class="pb-panel-deck">Scraped site profiles with generated media packs and style presets. Click a row to open the prep wizard.</p>
+          <!-- Stats row -->
+          <div class="vsh-leads-stats">
+            <div class="vsh-leads-stat">
+              <div class="vsh-leads-stat__value">{{ prospectsSvc.prospects().length }}</div>
+              <div class="vsh-leads-stat__label">Pitch packs</div>
+              <div class="vsh-leads-stat__delta">Active prospects</div>
+            </div>
+            <div class="vsh-leads-stat">
+              <div class="vsh-leads-stat__value" style="color:#15803d;">{{ prospectStatusCount('ready') }}</div>
+              <div class="vsh-leads-stat__label">Ready</div>
+              <div class="vsh-leads-stat__delta" style="color:#15803d;">Fully generated</div>
+            </div>
+            <div class="vsh-leads-stat">
+              <div class="vsh-leads-stat__value" style="color:#d97706;">{{ prospectStatusCount('generating') + prospectStatusCount('ingesting') }}</div>
+              <div class="vsh-leads-stat__label">In progress</div>
+              <div class="vsh-leads-stat__delta">Generating assets</div>
+            </div>
+            <div class="vsh-leads-stat">
+              <div class="vsh-leads-stat__value" style="color:#b91c1c;">{{ prospectStatusCount('failed') }}</div>
+              <div class="vsh-leads-stat__label">Failed</div>
+              <div class="vsh-leads-stat__delta">Needs attention</div>
+            </div>
           </div>
 
           @if (prospectsSvc.error(); as err) {
-            <p class="pb-error">{{ err }}</p>
+            <div class="pb-error-bar">{{ err }}</div>
           }
 
           @if (prospectsSvc.loading()) {
-            <p-progressSpinner ariaLabel="Loading" />
+            <div class="pb-loading"><p-progressSpinner ariaLabel="Loading" /></div>
           } @else {
-            <p-table
-              [value]="prospectsSvc.prospects()"
-              [rows]="20"
-              [paginator]="prospectsSvc.prospects().length > 20"
-              styleClass="pb-prospects-table"
-            >
-              <ng-template pTemplate="header">
-                <tr>
-                  <th>Name</th>
-                  <th>Website</th>
-                  <th>Status</th>
-                  <th>Assets</th>
-                  <th>Updated</th>
-                </tr>
-              </ng-template>
-              <ng-template pTemplate="body" let-row>
-                <tr class="pb-row-click" (click)="openProspectRow(row.id)">
-                  <td><strong>{{ row.name }}</strong></td>
-                  <td><a [href]="row.sourceUrl" target="_blank" rel="noopener" (click)="$event.stopPropagation()">{{ row.sourceUrl }}</a></td>
-                  <td><p-tag [value]="row.status" [severity]="statusSeverity(row.status)" /></td>
-                  <td>{{ row.assetCount ?? 0 }}</td>
-                  <td>{{ formatDate(row.updatedAt) }}</td>
-                </tr>
-              </ng-template>
-              <ng-template pTemplate="emptymessage">
-                <tr><td colspan="5">No prospects yet — add one to start a pitch pack.</td></tr>
-              </ng-template>
-            </p-table>
+            <div class="vsh-leads-table-wrap">
+              <table class="vsh-leads-table">
+                <thead>
+                  <tr>
+                    <th>Business</th>
+                    <th>Website</th>
+                    <th>Status</th>
+                    <th class="vsh-leads-table__sortable">Assets</th>
+                    <th class="vsh-leads-table__sortable">Updated</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of prospectsSvc.prospects(); track row.id) {
+                    <tr class="vsh-leads-row" (click)="openProspectRow(row.id)">
+                      <td>
+                        <div class="vsh-lead-contact">
+                          <div class="vsh-lead-avatar" [style.--av-bg]="prospectAvatarBg(row.name)" [style.--av-color]="prospectAvatarColor(row.name)">{{ prospectInitials(row.name) }}</div>
+                          <div class="vsh-lead-contact__info">
+                            <div class="vsh-lead-contact__name">{{ row.name }}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <a class="pb-prospect-url" [href]="row.sourceUrl" target="_blank" rel="noopener" (click)="$event.stopPropagation()">{{ row.sourceUrl }}</a>
+                      </td>
+                      <td>
+                        <span class="pb-prospect-status pb-prospect-status--{{ row.status }}">{{ prospectStatusLabel(row.status) }}</span>
+                      </td>
+                      <td>
+                        <span class="pb-asset-count">{{ row.assetCount ?? 0 }} assets</span>
+                      </td>
+                      <td>
+                        <span class="pb-date">{{ formatDate(row.updatedAt) }}</span>
+                      </td>
+                      <td class="vsh-lead-actions-col">
+                        <div class="vsh-lead-actions" (click)="$event.stopPropagation()">
+                          <button type="button" class="vsh-lead-action" title="Open wizard">
+                            <svg viewBox="0 0 16 16" width="13" height="13" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr class="pb-empty-row">
+                      <td colspan="6">
+                        <div class="pb-empty-state">
+                          <svg viewBox="0 0 40 40" width="32" height="32" fill="none"><rect x="6" y="6" width="28" height="28" rx="4" stroke="currentColor" stroke-width="1.5"/><path d="M13 20h14M20 13v14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                          <p>No prospects yet</p>
+                          <span>Use "New search" to generate a lead list and start a pitch pack.</span>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           }
         }
 

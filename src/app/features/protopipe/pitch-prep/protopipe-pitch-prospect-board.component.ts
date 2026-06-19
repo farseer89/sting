@@ -432,6 +432,41 @@ export class ProtopipePitchProspectBoardComponent implements OnInit {
     this.drawerLead.set(null);
   }
 
+  // ── Prospect table helpers
+
+  prospectStatusCount(status: PitchProspectStatus): number {
+    return this.prospectsSvc.prospects().filter(p => p.status === status).length;
+  }
+
+  prospectStatusLabel(status: PitchProspectStatus): string {
+    return {
+      new: 'New', ingesting: 'Ingesting', generating: 'Generating',
+      ready: 'Ready', failed: 'Failed',
+    }[status as string] ?? status;
+  }
+
+  prospectInitials(name: string): string {
+    return name.split(' ').slice(0, 2).map(w => w[0] ?? '').join('').toUpperCase();
+  }
+
+  private static readonly AVATAR_PAIRS = [
+    ['#f4f4f5', '#3f3f46'],
+    ['#f2f1f0', '#44403c'],
+    ['#e8eeff', '#3554c1'],
+    ['#fef9ee', '#92400e'],
+    ['#f0fdf4', '#15803d'],
+  ];
+
+  prospectAvatarBg(name: string): string {
+    const idx = name.charCodeAt(0) % ProtopipePitchProspectBoardComponent.AVATAR_PAIRS.length;
+    return ProtopipePitchProspectBoardComponent.AVATAR_PAIRS[idx][0];
+  }
+
+  prospectAvatarColor(name: string): string {
+    const idx = name.charCodeAt(0) % ProtopipePitchProspectBoardComponent.AVATAR_PAIRS.length;
+    return ProtopipePitchProspectBoardComponent.AVATAR_PAIRS[idx][1];
+  }
+
   // ── Existing prospect methods
 
   statusSeverity(status: PitchProspectStatus): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {

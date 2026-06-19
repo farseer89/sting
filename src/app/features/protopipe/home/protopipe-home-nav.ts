@@ -77,6 +77,14 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
   { id: 'premiere-separator', label: '', separator: true },
   { id: 'dev-runbooks', label: 'Runbooks', icon: 'list' },
   {
+    id: 'inbox',
+    label: 'Inbox',
+    icon: 'inbox',
+    children: [
+      { id: 'intake-studio', label: 'Intake Studio', icon: 'inbox' },
+    ],
+  },
+  {
     id: 'integrations',
     label: 'Integrations',
     icon: 'link',
@@ -87,4 +95,4 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
   },
 ];
 
-export const PROTOPIPE_HOME_NAV_DEFAULT_OPEN = ['books', 'start', 'content', 'analytics'] as const;
+export const PROTOPIPE_HOME_NAV_DEFAULT_OPEN = ['books', 'start', 'content', 'analytics', 'inbox'] as const;

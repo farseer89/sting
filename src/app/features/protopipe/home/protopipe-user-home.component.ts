@@ -64,7 +64,8 @@ export type ProtopipeHomeView =
   | 'leads'
   | 'brand-book'
   | 'business-details'
-  | 'goals';
+  | 'goals'
+  | 'intake';
 
 function initialsFromName(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -284,6 +285,11 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.openGoalsView();
     } else if (item.id === 'int-wordpress' || item.id === 'int-google') {
       void this.router.navigate(['/protopipe/settings/integrations']);
+    } else if (item.id === 'intake-studio') {
+      const siteId = this.siteId();
+      void this.router.navigate(['/protopipe/lab/intake-studio'], {
+        queryParams: siteId ? { siteId } : {},
+      });
     }
   }
 

@@ -15,8 +15,6 @@ import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { InputText } from 'primeng/inputtext';
 import { ProgressSpinner } from 'primeng/progressspinner';
-import { TableModule } from 'primeng/table';
-import { Tag } from 'primeng/tag';
 import type { PitchProspectStatus } from '@hive/contracts';
 import { ProtopipePitchProspectService } from './protopipe-pitch-prospect.service';
 
@@ -322,7 +320,7 @@ const MOCK_PITCH_LEADS: PitchLead[] = [
   selector: 'app-protopipe-pitch-prospect-board',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, Button, Dialog, InputText, ProgressSpinner, TableModule, Tag],
+  imports: [FormsModule, Button, Dialog, InputText, ProgressSpinner],
   templateUrl: './protopipe-pitch-prospect-board.component.html',
   styleUrl: './protopipe-pitch-prospect-board.component.scss',
 })

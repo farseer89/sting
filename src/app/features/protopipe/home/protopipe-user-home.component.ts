@@ -44,6 +44,8 @@ import { ProtopipeHomeGoalsComponent } from './books/protopipe-home-goals.compon
 import { ProtopipePitchProspectBoardComponent } from '../pitch-prep/protopipe-pitch-prospect-board.component';
 import { ProtopipePitchPrepWizardComponent } from '../pitch-prep/protopipe-pitch-prep-wizard.component';
 import { ProtopipeLeadsListComponent } from '../leads/protopipe-leads-list.component';
+import { ProtopipeHomeThinkerBinderComponent } from './thinker/protopipe-home-thinker-binder.component';
+import { ProtopipeHomeWriterBinderComponent } from './writer-binder/protopipe-home-writer-binder.component';
 import { ProtopipeWriterInspectorBridge } from '../content/writer/protopipe-writer-inspector.bridge';
 import { ProtopipeHomeSidePanelService } from './protopipe-home-side-panel.service';
 import {
@@ -66,7 +68,9 @@ export type ProtopipeHomeView =
   | 'brand-book'
   | 'business-details'
   | 'goals'
-  | 'intake';
+  | 'intake'
+  | 'thinker'
+  | 'writer-binder';
 
 function initialsFromName(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -105,6 +109,8 @@ function initialsFromName(name: string): string {
     ProtopipePitchProspectBoardComponent,
     ProtopipePitchPrepWizardComponent,
     ProtopipeLeadsListComponent,
+    ProtopipeHomeThinkerBinderComponent,
+    ProtopipeHomeWriterBinderComponent,
   ],
   templateUrl: './protopipe-user-home.component.html',
   styleUrl: './protopipe-user-home.component.scss',
@@ -289,6 +295,16 @@ export class ProtopipeUserHomeComponent implements OnInit {
       void this.router.navigate(['/protopipe/settings/integrations']);
     } else if (item.id === 'intake-demo') {
       this.openIntakeDemoView();
+    } else if (item.id === 'dev-thinker') {
+      this.leaveWriterFocus();
+      this.sidePanel.setOpen(false);
+      this.activeNavId.set(item.id);
+      this.activeView.set('thinker');
+    } else if (item.id === 'dev-writer') {
+      this.leaveWriterFocus();
+      this.sidePanel.setOpen(false);
+      this.activeNavId.set(item.id);
+      this.activeView.set('writer-binder');
     } else if (item.id === 'intake-studio') {
       const siteId = this.siteId();
       void this.router.navigate(['/protopipe/lab/intake-studio'], {

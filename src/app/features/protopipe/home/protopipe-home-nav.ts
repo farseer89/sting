@@ -77,6 +77,8 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
   },
   { id: 'premiere-separator', label: '', separator: true },
   { id: 'dev-runbooks', label: 'Runbooks', icon: 'list' },
+  { id: 'dev-thinker', label: 'Thinker', icon: 'sparkles' },
+  { id: 'dev-writer', label: 'Writer', icon: 'write' },
   {
     id: 'inbox',
     label: 'Inbox',

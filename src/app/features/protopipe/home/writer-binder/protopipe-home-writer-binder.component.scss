@@ -1,0 +1,877 @@
+// Writer Binder — article writer mockup in the binder shell
+// Uses wb-* token system
+
+$wb-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+$wb-border: #e4e4e7;
+$wb-border-soft: rgb(9 9 11 / 0.06);
+$wb-bg: #ffffff;
+$wb-bg-subtle: #fafafa;
+$wb-bg-panel: #f4f4f5;
+$wb-ink: #09090b;
+$wb-text: #18181b;
+$wb-muted: #71717a;
+$wb-dim: #a1a1aa;
+$wb-accent: #2563eb;
+$wb-green: #16a34a;
+$wb-amber: #d97706;
+$wb-red: #dc2626;
+
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
+}
+
+// ── Shell
+
+.wb-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-family: $wb-sans;
+  color: $wb-text;
+  -webkit-font-smoothing: antialiased;
+}
+
+// ── Masthead
+
+.wb-masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 0.875rem 1.5rem;
+  border-bottom: 1px solid $wb-border;
+  flex-shrink: 0;
+}
+
+.wb-masthead__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wb-masthead__kicker {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: $wb-accent;
+}
+
+.wb-masthead__sep {
+  color: $wb-dim;
+  font-size: 0.75rem;
+}
+
+.wb-masthead__words {
+  font-size: 0.6875rem;
+  color: $wb-muted;
+}
+
+.wb-masthead__word-bar {
+  width: 4rem;
+  height: 3px;
+  background: $wb-border;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.wb-masthead__word-fill {
+  height: 100%;
+  background: $wb-accent;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.wb-masthead__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+// ── Buttons
+
+.wb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-family: $wb-sans;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.1s;
+
+  svg { width: 0.875rem; height: 0.875rem; }
+
+  &--primary {
+    background: $wb-ink;
+    color: #fff;
+    &:hover { background: #27272a; }
+  }
+
+  &--ghost {
+    background: $wb-bg;
+    color: $wb-text;
+    border: 1.5px solid $wb-border;
+    &:hover { background: $wb-bg-subtle; }
+  }
+
+  &--sm { font-size: 0.8125rem; padding: 0.4rem 0.75rem; }
+  &--xs { font-size: 0.6875rem; padding: 0.25rem 0.5rem; }
+}
+
+// ── 2-pane binder
+
+.wb-binder {
+  display: grid;
+  grid-template-columns: 11rem 1fr;
+  grid-template-rows: 1fr;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+// ── Left nav
+
+.wb-binder-nav {
+  border-right: 1px solid $wb-border;
+  padding: 0.75rem 0.625rem;
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  background: $wb-bg-subtle;
+}
+
+.wb-binder-nav__label {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: $wb-dim;
+  padding: 0.25rem 0.5rem 0.2rem;
+  margin-top: 0.25rem;
+}
+
+.wb-binder-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.425rem 0.625rem;
+  border-radius: 0.375rem;
+  border: none;
+  background: transparent;
+  font-family: $wb-sans;
+  font-size: 0.8125rem;
+  color: $wb-muted;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s, color 0.1s;
+
+  &:hover { background: $wb-border; color: $wb-ink; }
+
+  &.is-active {
+    background: $wb-bg;
+    color: $wb-ink;
+    font-weight: 600;
+    box-shadow: 0 1px 3px $wb-border-soft;
+  }
+}
+
+.wb-binder-nav__icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  opacity: 0.6;
+
+  .is-active & { opacity: 1; color: $wb-accent; }
+}
+
+.wb-binder-nav__flag {
+  margin-left: auto;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  background: #fef2f2;
+  color: $wb-red;
+  border-radius: 100px;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid #fecaca;
+}
+
+// ── Right panel
+
+.wb-panel {
+  overflow-y: auto;
+  min-height: 0;
+  padding: 1.5rem 2rem;
+}
+
+// ── Panel head
+
+.wb-panel-head { margin-bottom: 1.5rem; }
+
+.wb-panel-kicker {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: $wb-accent;
+  margin-bottom: 0.35rem;
+}
+
+.wb-panel-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: $wb-ink;
+  letter-spacing: -0.025em;
+  margin: 0 0 0.35rem;
+}
+
+.wb-panel-deck {
+  font-size: 0.8125rem;
+  color: $wb-muted;
+  margin: 0;
+  line-height: 1.55;
+}
+
+// ── Canvas
+
+.wb-canvas {
+  max-width: 48rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.wb-keyword-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.75rem;
+  background: $wb-bg-subtle;
+  border: 1px solid $wb-border;
+  border-radius: 0.5rem;
+}
+
+.wb-keyword {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  padding: 0.2rem 0.5rem;
+  border-radius: 100px;
+  background: $wb-bg-panel;
+  color: $wb-muted;
+  border: 1px solid $wb-border;
+
+  &--primary {
+    background: rgba(37, 99, 235, 0.08);
+    color: $wb-accent;
+    border-color: rgba(37, 99, 235, 0.2);
+    font-weight: 700;
+  }
+}
+
+.wb-keyword-toggle {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  color: $wb-dim;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.1rem 0.25rem;
+  &:hover { color: $wb-ink; }
+}
+
+.wb-headline-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.wb-headline {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: $wb-ink;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+  flex: 1;
+  outline: none;
+  border-bottom: 2px solid transparent;
+
+  &:focus { border-bottom-color: $wb-accent; }
+}
+
+.wb-headline-meta {
+  font-size: 0.625rem;
+  color: $wb-dim;
+  white-space: nowrap;
+}
+
+.wb-hero-img {
+  border: 1.5px dashed $wb-border;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: $wb-bg-subtle;
+  aspect-ratio: 16 / 7;
+}
+
+.wb-hero-img__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 100%;
+  color: $wb-dim;
+  font-size: 0.75rem;
+
+  svg { width: 2.5rem; height: 2.5rem; opacity: 0.4; }
+}
+
+.wb-hero-img__upload {
+  padding: 0.3rem 0.75rem;
+  border: 1.5px solid $wb-border;
+  border-radius: 0.375rem;
+  background: $wb-bg;
+  font-family: $wb-sans;
+  font-size: 0.75rem;
+  color: $wb-muted;
+  cursor: pointer;
+  &:hover { border-color: $wb-ink; color: $wb-ink; }
+}
+
+.wb-section {
+  border-left: 3px solid $wb-border;
+  padding-left: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: border-color 0.15s;
+
+  &:hover { border-color: $wb-dim; }
+  &--flagged { border-color: #fde68a; }
+}
+
+.wb-h2 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: $wb-ink;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.wb-prose {
+  font-size: 0.875rem;
+  color: $wb-text;
+  line-height: 1.7;
+  margin: 0;
+
+  &--intro {
+    font-size: 0.9375rem;
+    line-height: 1.75;
+  }
+}
+
+.wb-section-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.wb-section-wc {
+  font-size: 0.625rem;
+  color: $wb-dim;
+}
+
+.wb-section-actions {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.wb-section-btn {
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: $wb-dim;
+  background: none;
+  border: 1px solid $wb-border;
+  border-radius: 3px;
+  padding: 0.15rem 0.4rem;
+  cursor: pointer;
+  &:hover { color: $wb-ink; border-color: $wb-dim; }
+}
+
+.wb-add-section {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1.5px dashed $wb-border;
+  border-radius: 0.375rem;
+  background: none;
+  font-family: $wb-sans;
+  font-size: 0.8125rem;
+  color: $wb-dim;
+  padding: 0.625rem 1rem;
+  cursor: pointer;
+  transition: border-color 0.1s, color 0.1s;
+  width: 100%;
+
+  svg { width: 0.875rem; height: 0.875rem; }
+
+  &:hover { border-color: $wb-ink; color: $wb-ink; }
+}
+
+// ── Brief
+
+.wb-brief {
+  border: 1.5px solid $wb-border;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: $wb-bg;
+  max-width: 38rem;
+}
+
+.wb-brief-row {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: 0.5rem;
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid $wb-border-soft;
+
+  &:last-child { border-bottom: none; }
+
+  dt {
+    font-size: 0.5875rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: $wb-dim;
+    padding-top: 0.1rem;
+  }
+
+  dd {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: $wb-text;
+    line-height: 1.55;
+  }
+}
+
+.wb-brief-list {
+  margin: 0;
+  padding: 0 0 0 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.8125rem;
+  color: $wb-text;
+  line-height: 1.55;
+
+  &--gaps li {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    list-style: none;
+    padding: 0;
+  }
+}
+
+.wb-gap-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: $wb-amber;
+  flex-shrink: 0;
+}
+
+// ── SERP preview
+
+.wb-serp-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 40rem;
+}
+
+.wb-serp {
+  border: 1.5px solid $wb-border;
+  border-radius: 0.625rem;
+  padding: 1.25rem 1.5rem;
+  background: $wb-bg;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.wb-serp__source {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.wb-serp__favicon {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 2px;
+  background: $wb-amber;
+}
+
+.wb-serp__domain {
+  font-size: 0.75rem;
+  color: $wb-text;
+}
+
+.wb-serp__breadcrumb {
+  font-size: 0.6875rem;
+  color: $wb-dim;
+}
+
+.wb-serp__title {
+  font-size: 1.0625rem;
+  color: #1558d6;
+  font-weight: 400;
+  line-height: 1.3;
+
+  &:hover { text-decoration: underline; cursor: pointer; }
+}
+
+.wb-serp__desc {
+  font-size: 0.8125rem;
+  color: #3c4043;
+  line-height: 1.55;
+}
+
+.wb-serp-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.wb-serp-meta__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+}
+
+.wb-serp-meta__label {
+  color: $wb-dim;
+  min-width: 8rem;
+}
+
+.wb-serp-meta__val {
+  color: $wb-text;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wb-pill {
+  font-size: 0.5875rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 100px;
+
+  &--ok { background: #f0fdf4; color: $wb-green; }
+  &--warn { background: #fffbeb; color: $wb-amber; }
+  &--error { background: #fef2f2; color: $wb-red; }
+}
+
+// ── Blog preview
+
+.wb-blog-preview {
+  border: 1.5px solid $wb-border;
+  border-radius: 0.625rem;
+  overflow: hidden;
+  max-width: 38rem;
+  background: $wb-bg;
+}
+
+.wb-blog-preview__hero {
+  height: 10rem;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+}
+
+.wb-blog-preview__body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.wb-blog-preview__kicker {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: $wb-amber;
+  margin: 0;
+}
+
+.wb-blog-preview__h1 {
+  font-size: 1.375rem;
+  font-weight: 800;
+  color: $wb-ink;
+  letter-spacing: -0.03em;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.wb-blog-preview__intro {
+  font-size: 0.875rem;
+  color: $wb-text;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.wb-blog-preview__h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: $wb-ink;
+  letter-spacing: -0.02em;
+  margin: 0.5rem 0 0;
+}
+
+.wb-blog-preview__body-text {
+  font-size: 0.875rem;
+  color: $wb-text;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.wb-blog-preview__continue {
+  font-size: 0.75rem;
+  color: $wb-dim;
+  margin: 0;
+}
+
+// ── SEO form
+
+.wb-seo-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-width: 36rem;
+  border: 1.5px solid $wb-border;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.wb-field {
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid $wb-border-soft;
+
+  &:last-child { border-bottom: none; }
+}
+
+.wb-field__label {
+  font-size: 0.5875rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: $wb-dim;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.wb-field__count {
+  font-weight: 500;
+  &--ok { color: $wb-green; }
+  &--warn { color: $wb-amber; }
+}
+
+.wb-field__input {
+  font-size: 0.8125rem;
+  color: $wb-text;
+  line-height: 1.5;
+
+  &--filled { color: $wb-ink; }
+  &--tall { line-height: 1.6; }
+}
+
+.wb-field__slug {
+  font-size: 0.8125rem;
+  display: flex;
+  gap: 0;
+}
+
+.wb-field__slug-base {
+  color: $wb-dim;
+}
+
+.wb-field__slug-val {
+  color: $wb-accent;
+  font-weight: 600;
+}
+
+.wb-target-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.wb-target {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: $wb-muted;
+  padding: 0.35rem 0.75rem;
+  border: 1.5px solid $wb-border;
+  border-radius: 0.375rem;
+
+  svg { width: 1rem; height: 1rem; }
+
+  &--active {
+    border-color: rgba(37, 99, 235, 0.3);
+    color: $wb-accent;
+    background: rgba(37, 99, 235, 0.04);
+  }
+}
+
+// ── Fact check
+
+.wb-facts {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 40rem;
+}
+
+.wb-fact {
+  border: 1.5px solid $wb-border;
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: $wb-bg;
+
+  &--critical { border-color: #fca5a5; background: #fff7f7; }
+  &--warning { border-color: #fde68a; background: #fffdf0; }
+}
+
+.wb-fact__head { display: flex; align-items: center; gap: 0.5rem; }
+
+.wb-fact__severity {
+  font-size: 0.5875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border-radius: 100px;
+
+  &--critical { background: #fee2e2; color: $wb-red; }
+  &--warning { background: #fef3c7; color: $wb-amber; }
+}
+
+.wb-fact__claim {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: $wb-ink;
+  margin: 0;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.wb-fact__context {
+  font-size: 0.8125rem;
+  color: $wb-muted;
+  margin: 0;
+  line-height: 1.55;
+}
+
+.wb-fact__actions {
+  display: flex;
+  gap: 0.375rem;
+}
+
+// ── Pipeline card
+
+.wb-pipeline-card {
+  border: 1.5px solid $wb-border;
+  border-radius: 0.625rem;
+  padding: 1.25rem 1.5rem;
+  background: $wb-bg;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 30rem;
+}
+
+.wb-pipeline-card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.wb-pipeline-card__meta {
+  font-size: 0.6875rem;
+  color: $wb-dim;
+}
+
+.wb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 100px;
+
+  &--done {
+    background: #f0fdf4;
+    color: $wb-green;
+    border: 1px solid #bbf7d0;
+    svg { width: 0.625rem; height: 0.625rem; }
+  }
+}
+
+.wb-pipeline-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid $wb-border;
+  border-radius: 0.4rem;
+  overflow: hidden;
+}
+
+.wb-pipeline-step {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid $wb-border-soft;
+  font-size: 0.8125rem;
+  color: $wb-text;
+
+  &:last-child { border-bottom: none; }
+}
+
+.wb-pipeline-step__check {
+  width: 0.75rem;
+  height: 0.75rem;
+  color: $wb-green;
+  flex-shrink: 0;
+}
+
+.wb-pipeline-step__label { flex: 1; }
+
+.wb-pipeline-step__dur,
+.wb-pipeline-step__cost {
+  font-size: 0.6875rem;
+  color: $wb-dim;
+  font-variant-numeric: tabular-nums;
+  min-width: 3rem;
+  text-align: right;
+}

@@ -1,0 +1,646 @@
+// Thinker Binder — pipeline run visualizer in the binder shell
+// Uses tb-* token system
+
+$tb-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+$tb-mono: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+$tb-border: #e4e4e7;
+$tb-border-soft: rgb(9 9 11 / 0.06);
+$tb-bg: #ffffff;
+$tb-bg-subtle: #fafafa;
+$tb-bg-panel: #f4f4f5;
+$tb-ink: #09090b;
+$tb-text: #18181b;
+$tb-muted: #71717a;
+$tb-dim: #a1a1aa;
+$tb-accent: #2563eb;
+$tb-green: #16a34a;
+$tb-amber: #d97706;
+$tb-red: #dc2626;
+
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
+}
+
+// ── Shell
+
+.tb-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-family: $tb-sans;
+  color: $tb-text;
+  -webkit-font-smoothing: antialiased;
+}
+
+// ── Masthead
+
+.tb-masthead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.25rem 1.5rem 1rem;
+  border-bottom: 1px solid $tb-border;
+  flex-shrink: 0;
+}
+
+.tb-masthead__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.3rem;
+}
+
+.tb-masthead__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: $tb-ink;
+  letter-spacing: -0.02em;
+  margin: 0;
+  max-width: 40rem;
+}
+
+.tb-masthead__deck {
+  font-size: 0.6875rem;
+  color: $tb-dim;
+  margin: 0;
+}
+
+.tb-masthead__right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.tb-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tb-progress-bar {
+  width: 6rem;
+  height: 4px;
+  background: $tb-border;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.tb-progress-bar__fill {
+  height: 100%;
+  background: $tb-accent;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.tb-progress-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: $tb-muted;
+  min-width: 2.5rem;
+}
+
+.tb-cost-badge {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  background: $tb-bg-panel;
+  border: 1px solid $tb-border;
+  border-radius: 100px;
+  color: $tb-muted;
+}
+
+// ── Run status pill
+
+.tb-run-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem 0.2rem 0.45rem;
+  border-radius: 100px;
+
+  &--running {
+    background: #fffbeb;
+    color: $tb-amber;
+  }
+
+  &--done {
+    background: #f0fdf4;
+    color: $tb-green;
+  }
+
+  &--failed {
+    background: #fef2f2;
+    color: $tb-red;
+  }
+}
+
+.tb-run-status__dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: currentColor;
+
+  &--pulse {
+    animation: tb-pulse 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes tb-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.75); }
+}
+
+// ── 2-pane binder
+
+.tb-binder {
+  display: grid;
+  grid-template-columns: 12rem 1fr;
+  grid-template-rows: 1fr;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+// ── Left step rail
+
+.tb-rail {
+  border-right: 1px solid $tb-border;
+  padding: 0.75rem 0.5rem;
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  background: $tb-bg-subtle;
+}
+
+.tb-rail__label {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: $tb-dim;
+  padding: 0.25rem 0.625rem 0.35rem;
+}
+
+.tb-rail__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border-radius: 0.375rem;
+  border: none;
+  background: transparent;
+  font-family: $tb-sans;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+
+  &:hover {
+    background: $tb-border;
+  }
+
+  &.is-active {
+    background: $tb-bg;
+    box-shadow: 0 1px 3px $tb-border-soft;
+  }
+}
+
+.tb-rail__num {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: $tb-dim;
+  flex-shrink: 0;
+  min-width: 1rem;
+}
+
+.tb-rail__step-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.tb-rail__step-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: $tb-text;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  .is-active & { font-weight: 600; color: $tb-ink; }
+  .tb-rail__item--pending & { color: $tb-dim; }
+}
+
+.tb-rail__meta {
+  font-size: 0.5875rem;
+  color: $tb-dim;
+  display: flex;
+  gap: 0.3rem;
+}
+
+.tb-rail__cost {
+  color: $tb-muted;
+}
+
+.tb-rail__live {
+  font-size: 0.5875rem;
+  font-weight: 700;
+  color: $tb-amber;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  animation: tb-pulse 1.4s ease-in-out infinite;
+}
+
+.tb-rail__dot-wrap {
+  flex-shrink: 0;
+}
+
+.tb-rail__check {
+  width: 0.75rem;
+  height: 0.75rem;
+  color: $tb-green;
+}
+
+.tb-rail__pulse {
+  display: block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: $tb-amber;
+  animation: tb-pulse 1.4s ease-in-out infinite;
+}
+
+.tb-rail__circle {
+  display: block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  border: 1.5px solid $tb-border;
+}
+
+// ── Right stage
+
+.tb-stage {
+  overflow-y: auto;
+  min-height: 0;
+  padding: 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+// ── Stage head
+
+.tb-stage-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.tb-stage-head__right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.tb-panel-kicker {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: $tb-accent;
+  margin-bottom: 0.3rem;
+}
+
+.tb-panel-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: $tb-ink;
+  letter-spacing: -0.025em;
+  margin: 0 0 0.35rem;
+}
+
+.tb-panel-deck {
+  font-size: 0.8125rem;
+  color: $tb-muted;
+  margin: 0;
+  max-width: 48rem;
+  line-height: 1.6;
+}
+
+// ── Status chips
+
+.tb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 100px;
+  border: 1px solid transparent;
+
+  &--done {
+    background: #f0fdf4;
+    color: $tb-green;
+    border-color: #bbf7d0;
+    svg { width: 0.625rem; height: 0.625rem; }
+  }
+
+  &--running {
+    background: #fffbeb;
+    color: $tb-amber;
+    border-color: #fde68a;
+  }
+
+  &--pending {
+    background: $tb-bg-panel;
+    color: $tb-dim;
+  }
+
+  &--meta {
+    background: $tb-bg-panel;
+    color: $tb-muted;
+    font-family: $tb-mono;
+    font-size: 0.625rem;
+  }
+
+  &--cost {
+    background: rgba(37, 99, 235, 0.06);
+    color: $tb-accent;
+    font-family: $tb-mono;
+    font-size: 0.625rem;
+  }
+}
+
+.tb-chip__pulse {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: $tb-amber;
+  animation: tb-pulse 1.4s ease-in-out infinite;
+}
+
+// ── Inspector tabs
+
+.tb-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid $tb-border;
+  flex-shrink: 0;
+}
+
+.tb-tab {
+  padding: 0.5rem 0.875rem;
+  border: none;
+  background: none;
+  font-family: $tb-sans;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: $tb-muted;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.1s, border-color 0.1s;
+  text-transform: lowercase;
+
+  &:hover { color: $tb-ink; }
+
+  &.is-active {
+    color: $tb-accent;
+    border-bottom-color: $tb-accent;
+    font-weight: 600;
+  }
+}
+
+// ── Artifact flow
+
+.tb-flow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 1rem;
+  align-items: flex-start;
+  min-height: 0;
+
+  @media (max-width: 700px) {
+    grid-template-columns: 1fr;
+    .tb-flow__arrow { display: none; }
+  }
+}
+
+.tb-artifact-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tb-artifact-col--out { }
+
+.tb-artifact-col__label {
+  font-size: 0.5875rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: $tb-dim;
+}
+
+.tb-flow__arrow {
+  display: flex;
+  align-items: flex-start;
+  padding-top: 2.2rem;
+  color: $tb-dim;
+
+  svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+// ── Artifact cards
+
+.tb-artifact-card {
+  border: 1.5px solid $tb-border;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: $tb-bg;
+
+  &--output {
+    border-color: rgba(37, 99, 235, 0.2);
+    background: #fafbff;
+  }
+}
+
+.tb-artifact-card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid $tb-border;
+  background: $tb-bg-subtle;
+}
+
+.tb-artifact-card__kind {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.35rem;
+  background: $tb-border;
+  color: $tb-muted;
+  border-radius: 3px;
+  font-family: $tb-mono;
+}
+
+.tb-artifact-card__name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: $tb-ink;
+}
+
+.tb-artifact-card__body {
+  margin: 0;
+  padding: 0.75rem;
+  font-size: 0.6875rem;
+  font-family: $tb-mono;
+  line-height: 1.65;
+  color: $tb-text;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+// ── Working / pending states
+
+.tb-working {
+  border: 1.5px dashed $tb-border;
+  border-radius: 0.5rem;
+  padding: 1.5rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  p {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: $tb-muted;
+    font-weight: 500;
+  }
+}
+
+.tb-working__sub {
+  font-size: 0.6875rem;
+  color: $tb-dim;
+}
+
+.tb-working__dots {
+  display: flex;
+  gap: 0.3rem;
+  margin-bottom: 0.25rem;
+
+  span {
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 50%;
+    background: $tb-amber;
+    animation: tb-bounce 1.2s ease-in-out infinite;
+
+    &:nth-child(2) { animation-delay: 0.2s; }
+    &:nth-child(3) { animation-delay: 0.4s; }
+  }
+}
+
+@keyframes tb-bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.6; }
+  40% { transform: translateY(-4px); opacity: 1; }
+}
+
+.tb-pending {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 2rem 0;
+
+  .tb-pending__icon {
+    font-size: 1.25rem;
+    color: $tb-dim;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: $tb-muted;
+    max-width: 32rem;
+    line-height: 1.55;
+  }
+}
+
+// ── Event log
+
+.tb-log {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid $tb-border;
+  border-radius: 0.4rem;
+  overflow: hidden;
+  font-family: $tb-mono;
+  font-size: 0.6875rem;
+  background: #0f172a;
+}
+
+.tb-log__row {
+  display: grid;
+  grid-template-columns: 5.5rem 3rem 1fr;
+  gap: 0.75rem;
+  padding: 0.35rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: #94a3b8;
+
+  &--info { color: #94a3b8; }
+  &--warn { color: #fbbf24; }
+  &--error { color: #f87171; }
+}
+
+.tb-log__time { color: #475569; }
+.tb-log__level { color: #60a5fa; font-weight: 600; }
+.tb-log__msg { color: #e2e8f0; }
+
+.tb-log__empty {
+  padding: 1.5rem;
+  color: #475569;
+  font-style: italic;
+}
+
+// ── Raw JSON view
+
+.tb-raw {
+  margin: 0;
+  padding: 1rem;
+  background: #0f172a;
+  border-radius: 0.5rem;
+  font-family: $tb-mono;
+  font-size: 0.6875rem;
+  color: #94a3b8;
+  line-height: 1.65;
+  overflow: auto;
+  max-height: 24rem;
+  white-space: pre-wrap;
+}

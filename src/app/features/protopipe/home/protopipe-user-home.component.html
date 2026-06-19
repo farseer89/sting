@@ -258,6 +258,16 @@
                     <app-protopipe-leads-list />
                   </section>
                 }
+                @case ('thinker') {
+                  <section class="glass glass--full glass--premiere" aria-label="Thinker">
+                    <app-protopipe-home-thinker-binder />
+                  </section>
+                }
+                @case ('writer-binder') {
+                  <section class="glass glass--full glass--premiere" aria-label="Writer">
+                    <app-protopipe-home-writer-binder />
+                  </section>
+                }
                 @case ('brand-book') {
                   <section class="glass glass--full glass--premiere" aria-label="Brand book">
                     <app-protopipe-home-brand-book (runWizard)="openBrandSetupWizard()" />

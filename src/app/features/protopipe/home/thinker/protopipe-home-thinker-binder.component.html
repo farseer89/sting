@@ -1,0 +1,195 @@
+<div class="tb-shell">
+
+  <!-- Masthead -->
+  <header class="tb-masthead">
+    <div class="tb-masthead__left">
+      <div class="tb-masthead__title-row">
+        <h1 class="tb-masthead__title">When should you upgrade your electrical panel?</h1>
+        <span class="tb-run-status tb-run-status--running">
+          <span class="tb-run-status__dot tb-run-status__dot--pulse"></span>Running
+        </span>
+      </div>
+      <p class="tb-masthead__deck">Article generation · Sparky Electric · started 12:04 PM</p>
+    </div>
+    <div class="tb-masthead__right">
+      <div class="tb-progress-wrap">
+        <div class="tb-progress-bar">
+          <div class="tb-progress-bar__fill" [style.width.%]="progress"></div>
+        </div>
+        <span class="tb-progress-label">{{ progress }}%</span>
+      </div>
+      <span class="tb-cost-badge">{{ totalCost() }} total</span>
+    </div>
+  </header>
+
+  <!-- 2-pane binder -->
+  <div class="tb-binder">
+
+    <!-- Left rail: pipeline steps -->
+    <nav class="tb-rail" aria-label="Pipeline steps">
+      <div class="tb-rail__label">Pipeline steps</div>
+
+      @for (step of steps; track step.id) {
+        <button
+          type="button"
+          class="tb-rail__item"
+          [class.is-active]="activeStepId() === step.id"
+          [class.tb-rail__item--done]="step.status === 'done'"
+          [class.tb-rail__item--running]="step.status === 'running'"
+          [class.tb-rail__item--pending]="step.status === 'pending'"
+          [class.tb-rail__item--failed]="step.status === 'failed'"
+          (click)="activeStepId.set(step.id)"
+        >
+          <span class="tb-rail__num">{{ step.num }}</span>
+          <span class="tb-rail__step-body">
+            <span class="tb-rail__step-label">{{ step.label }}</span>
+            @if (step.status === 'done') {
+              <span class="tb-rail__meta">
+                {{ formatDuration(step.durationMs!) }}
+                @if (step.costUsd) {<span class="tb-rail__cost">{{ formatCost(step.costUsd) }}</span>}
+              </span>
+            } @else if (step.status === 'running') {
+              <span class="tb-rail__live">live</span>
+            }
+          </span>
+          <span class="tb-rail__dot-wrap">
+            @if (step.status === 'done') {
+              <svg class="tb-rail__check" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            } @else if (step.status === 'running') {
+              <span class="tb-rail__pulse"></span>
+            } @else {
+              <span class="tb-rail__circle"></span>
+            }
+          </span>
+        </button>
+      }
+    </nav>
+
+    <!-- Right stage -->
+    <div class="tb-stage">
+
+      @if (activeStep; as step) {
+
+        <!-- Step header -->
+        <div class="tb-stage-head">
+          <div class="tb-stage-head__left">
+            <div class="tb-panel-kicker">Step {{ step.num }}</div>
+            <h2 class="tb-panel-title">{{ step.label }}</h2>
+            @if (step.summary) {
+              <p class="tb-panel-deck">{{ step.summary }}</p>
+            }
+          </div>
+          <div class="tb-stage-head__right">
+            @if (step.status === 'done') {
+              <span class="tb-chip tb-chip--done">
+                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Complete
+              </span>
+              @if (step.durationMs) { <span class="tb-chip tb-chip--meta">{{ formatDuration(step.durationMs) }}</span> }
+              @if (step.costUsd) { <span class="tb-chip tb-chip--cost">{{ formatCost(step.costUsd) }}</span> }
+            } @else if (step.status === 'running') {
+              <span class="tb-chip tb-chip--running">
+                <span class="tb-chip__pulse"></span>
+                Running
+              </span>
+            } @else {
+              <span class="tb-chip tb-chip--pending">Pending</span>
+            }
+          </div>
+        </div>
+
+        <!-- Inspector tabs -->
+        <div class="tb-tabs">
+          <button type="button" class="tb-tab" [class.is-active]="activeTab() === 'output'" (click)="activeTab.set('output')">output</button>
+          <button type="button" class="tb-tab" [class.is-active]="activeTab() === 'events'" (click)="activeTab.set('events')">events</button>
+          <button type="button" class="tb-tab" [class.is-active]="activeTab() === 'raw'" (click)="activeTab.set('raw')">raw</button>
+        </div>
+
+        <!-- Tab content -->
+        @switch (activeTab()) {
+
+          @case ('output') {
+            @if (step.status === 'pending') {
+              <div class="tb-pending">
+                <span class="tb-pending__icon">○</span>
+                <p>This step hasn't run yet. It will start automatically when the previous step completes.</p>
+              </div>
+            } @else {
+              <!-- Artifact flow -->
+              <div class="tb-flow">
+                @if (step.inputArtifact) {
+                  <div class="tb-artifact-col">
+                    <div class="tb-artifact-col__label">Input</div>
+                    <div class="tb-artifact-card tb-artifact-card--input">
+                      <div class="tb-artifact-card__head">
+                        <span class="tb-artifact-card__kind">{{ step.inputArtifact.kind }}</span>
+                        <span class="tb-artifact-card__name">{{ step.inputArtifact.label }}</span>
+                      </div>
+                      <pre class="tb-artifact-card__body">{{ step.inputArtifact.preview }}</pre>
+                    </div>
+                  </div>
+                  <div class="tb-flow__arrow">
+                    <svg viewBox="0 0 20 20" fill="none"><path d="M4 10h12M12 6l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                }
+                <div class="tb-artifact-col tb-artifact-col--out">
+                  <div class="tb-artifact-col__label">Output</div>
+                  @if (step.outputArtifact) {
+                    <div class="tb-artifact-card tb-artifact-card--output">
+                      <div class="tb-artifact-card__head">
+                        <span class="tb-artifact-card__kind">{{ step.outputArtifact.kind }}</span>
+                        <span class="tb-artifact-card__name">{{ step.outputArtifact.label }}</span>
+                      </div>
+                      <pre class="tb-artifact-card__body">{{ step.outputArtifact.preview }}</pre>
+                    </div>
+                  } @else if (step.status === 'running') {
+                    <div class="tb-working">
+                      <div class="tb-working__dots">
+                        <span></span><span></span><span></span>
+                      </div>
+                      <p>Working on it…</p>
+                      <span class="tb-working__sub">Section 3 of 6 — The Cost of a Panel Upgrade</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          }
+
+          @case ('events') {
+            <ul class="tb-log">
+              @if (step.status === 'running') {
+                @for (e of mockEvents; track $index) {
+                  <li class="tb-log__row tb-log__row--{{ e.level }}">
+                    <span class="tb-log__time">{{ e.at }}</span>
+                    <span class="tb-log__level">{{ e.level }}</span>
+                    <span class="tb-log__msg">{{ e.msg }}</span>
+                  </li>
+                }
+              } @else if (step.status === 'done') {
+                <li class="tb-log__row tb-log__row--info">
+                  <span class="tb-log__time">12:04:31</span>
+                  <span class="tb-log__level">info</span>
+                  <span class="tb-log__msg">Step started</span>
+                </li>
+                <li class="tb-log__row tb-log__row--info">
+                  <span class="tb-log__time">12:04:{{ step.num }}</span>
+                  <span class="tb-log__level">info</span>
+                  <span class="tb-log__msg">Step completed in {{ formatDuration(step.durationMs!) }}</span>
+                </li>
+              } @else {
+                <li class="tb-log__empty">No events — step has not started.</li>
+              }
+            </ul>
+          }
+
+          @case ('raw') {
+            <pre class="tb-raw">{{ '{ "stepId": "' + step.id + '", "status": "' + step.status + '", "durationMs": ' + (step.durationMs ?? 'null') + ', "costUsd": ' + (step.costUsd ?? 'null') + ' }' }}</pre>
+          }
+
+        }
+      }
+
+    </div><!-- /tb-stage -->
+  </div><!-- /tb-binder -->
+</div><!-- /tb-shell -->

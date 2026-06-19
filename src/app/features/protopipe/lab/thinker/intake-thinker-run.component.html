@@ -1,0 +1,71 @@
+<div class="void" data-bg="white">
+  <div class="void__backdrop" aria-hidden="true"></div>
+  <div class="void__veil" aria-hidden="true"></div>
+
+  <header class="top">
+    <div class="top__brand">
+      <span class="top__mark" aria-hidden="true"></span>
+      <span class="top__name">Thinker</span>
+      <span class="top__train">{{ thought()?.title ?? 'Intake conversation' }}</span>
+    </div>
+
+    <div class="top__controls">
+      <button type="button" class="top__back" (click)="back()">← Intake Demo</button>
+      <button
+        type="button"
+        class="top__mode"
+        [class.is-on]="mode() === 'debug'"
+        (click)="toggleMode()"
+      >
+        {{ mode() === 'debug' ? 'Debug' : 'Calm' }}
+      </button>
+    </div>
+  </header>
+
+  @if (statusLabel(); as status) {
+    <div class="statusbar" [class]="'is-' + (conversation()?.status ?? 'idle')">
+      <span class="statusbar__chip">{{ status }}</span>
+
+      @if (currentStepLabel(); as stepLabel) {
+        <span class="statusbar__step">
+          {{ isActive() ? 'On step:' : 'Last step:' }} <strong>{{ stepLabel }}</strong>
+        </span>
+      }
+
+      <span class="statusbar__spacer"></span>
+
+      @switch (connection()) {
+        @case ('live') {
+          <span class="statusbar__conn is-live"><span class="statusbar__pulse"></span> Live</span>
+        }
+        @case ('reconnecting') {
+          <span class="statusbar__conn is-warn"><span class="statusbar__pulse"></span> Reconnecting…</span>
+        }
+        @case ('lost') {
+          <span class="statusbar__conn is-err">Connection lost</span>
+          <button type="button" class="statusbar__retry" (click)="retry()">Retry</button>
+        }
+      }
+    </div>
+  }
+
+  <div class="stagewrap">
+    @if (loadError(); as err) {
+      <div class="trun__notice">
+        <p>{{ err }}</p>
+        <button type="button" class="top__back" (click)="back()">← Back to Intake Demo</button>
+      </div>
+    } @else if (thought(); as t) {
+      <app-thinker
+        [thought]="t"
+        [mode]="mode()"
+        [canRerun]="false"
+        (back)="back()"
+      />
+    } @else {
+      <div class="trun__notice">
+        <p>Loading conversation…</p>
+      </div>
+    }
+  </div>
+</div>

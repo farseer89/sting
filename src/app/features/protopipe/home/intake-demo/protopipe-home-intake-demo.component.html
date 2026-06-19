@@ -1,0 +1,85 @@
+<section class="intake-demo" aria-label="SMS Intake Demo">
+  <header class="intake-demo__header">
+    <div>
+      <h1 class="intake-demo__title">SMS Intake Demo</h1>
+      <p class="intake-demo__subtitle">
+        Fire each intake trigger at your registered contact. Replies flow through the conversation engine.
+      </p>
+    </div>
+    <button type="button" class="intake-demo__refresh" [disabled]="loading()" (click)="reload()">
+      {{ loading() ? 'Loading…' : 'Refresh' }}
+    </button>
+  </header>
+
+  @if (loadError(); as err) {
+    <div class="intake-demo__notice intake-demo__notice--error">{{ err }}</div>
+  }
+
+  <div class="intake-demo__contact-banner">
+    @if (targetContact(); as contact) {
+      <div>
+        <span class="intake-demo__contact-label">Target contact</span>
+        <strong>{{ contact.label || contact.role }}</strong>
+        <span class="intake-demo__contact-phone">{{ contact.phone }}</span>
+      </div>
+    } @else {
+      <div>
+        <span class="intake-demo__contact-label">No contact registered</span>
+        <p class="intake-demo__contact-hint">
+          Add an owner phone in
+          <a routerLink="/protopipe/settings/contacts">SMS Contacts</a>
+          before sending.
+        </p>
+      </div>
+    }
+  </div>
+
+  @if (actionError(); as err) {
+    <div class="intake-demo__notice intake-demo__notice--error">{{ err }}</div>
+  }
+
+  @if (activeConversation(); as conversation) {
+    <aside class="intake-demo__status" aria-live="polite">
+      <div class="intake-demo__status-head">
+        <h2 class="intake-demo__status-title">{{ conversation.triggerType }} · {{ conversation.status }}</h2>
+        <button type="button" class="intake-demo__thinker-link" (click)="openInThinker()">
+          Open in Thinker
+        </button>
+      </div>
+      <p class="intake-demo__status-progress">{{ progressLabel(conversation) }}</p>
+      @if (currentQuestionText(conversation); as question) {
+        <p class="intake-demo__status-question">{{ question }}</p>
+      }
+      @if (conversation.resumeResult) {
+        <p class="intake-demo__status-result">Result: {{ conversation.resumeResult }}</p>
+      }
+    </aside>
+  }
+
+  <div class="intake-demo__grid">
+    @for (card of triggerCards; track card.triggerType) {
+      <article class="intake-demo__card" [class.is-inbound]="card.inboundOnly">
+        <h2 class="intake-demo__card-title">{{ card.title }}</h2>
+        <p class="intake-demo__card-desc">{{ card.description }}</p>
+        @if (card.inboundOnly) {
+          <p class="intake-demo__inbound-hint">
+            Text a project update from your registered phone — the pipeline will match or disambiguate.
+          </p>
+        } @else {
+          <button
+            type="button"
+            class="intake-demo__send"
+            [disabled]="!targetContact() || !!sending()"
+            (click)="sendTrigger(card)"
+          >
+            @if (sending() === card.triggerType) {
+              Sending…
+            } @else {
+              {{ card.actionLabel }}
+            }
+          </button>
+        }
+      </article>
+    }
+  </div>
+</section>

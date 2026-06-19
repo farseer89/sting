@@ -82,6 +82,7 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
     label: 'Inbox',
     icon: 'inbox',
     children: [
+      { id: 'intake-demo', label: 'Intake Demo', icon: 'inbox' },
       { id: 'intake-studio', label: 'Intake Studio', icon: 'inbox' },
       { id: 'sms-contacts', label: 'SMS Contacts', icon: 'phone' },
     ],

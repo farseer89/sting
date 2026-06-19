@@ -78,6 +78,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'protopipe/lab/thinker/intake/:siteId/:conversationId',
+    canActivate: [authGuard, operatorOnlyGuard],
+    loadComponent: () =>
+      import('./features/protopipe/lab/thinker/intake-thinker-run.component').then(
+        (m) => m.IntakeThinkerRunComponent,
+      ),
+  },
+  {
     path: 'protopipe/lab/article-poc',
     canActivate: [authGuard, operatorOnlyGuard],
     loadComponent: () =>

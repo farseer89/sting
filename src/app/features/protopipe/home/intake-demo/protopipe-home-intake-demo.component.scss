@@ -1,0 +1,190 @@
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
+}
+
+.intake-demo {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 1.25rem 1.5rem;
+  box-sizing: border-box;
+  gap: 1rem;
+  overflow: auto;
+}
+
+.intake-demo__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.intake-demo__title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.intake-demo__subtitle {
+  margin: 0.35rem 0 0;
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 0.9rem;
+}
+
+.intake-demo__refresh {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: #fff;
+  border-radius: 8px;
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.intake-demo__refresh:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.intake-demo__contact-banner {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 0.85rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.intake-demo__contact-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(0, 0, 0, 0.45);
+  margin-bottom: 0.2rem;
+}
+
+.intake-demo__contact-phone {
+  margin-left: 0.5rem;
+  color: rgba(0, 0, 0, 0.55);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+}
+
+.intake-demo__contact-hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.88rem;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.intake-demo__notice {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(185, 28, 28, 0.25);
+  background: rgba(185, 28, 28, 0.05);
+}
+
+.intake-demo__status {
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  border-radius: 10px;
+  background: rgba(37, 99, 235, 0.04);
+  padding: 0.85rem 1rem;
+}
+
+.intake-demo__status-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.intake-demo__status-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.intake-demo__thinker-link {
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 0.85rem;
+  text-decoration: underline;
+}
+
+.intake-demo__status-progress,
+.intake-demo__status-question,
+.intake-demo__status-result {
+  margin: 0.35rem 0 0;
+  font-size: 0.88rem;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.intake-demo__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.intake-demo__card {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.intake-demo__card.is-inbound {
+  grid-column: 1 / -1;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.intake-demo__card-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.intake-demo__card-desc {
+  margin: 0;
+  font-size: 0.88rem;
+  color: rgba(0, 0, 0, 0.58);
+  flex: 1;
+}
+
+.intake-demo__inbound-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(0, 0, 0, 0.5);
+  font-style: italic;
+}
+
+.intake-demo__send {
+  align-self: flex-start;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  background: #111;
+  color: #fff;
+  border-radius: 8px;
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.intake-demo__send:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+@media (max-width: 900px) {
+  .intake-demo__grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -220,6 +220,17 @@
                     </section>
                   }
                 }
+                @case ('intake') {
+                  @if (siteId(); as activeSiteId) {
+                    <section class="glass glass--full glass--premiere" aria-label="Intake Demo">
+                      <app-protopipe-home-intake-demo [siteId]="activeSiteId" />
+                    </section>
+                  } @else {
+                    <section class="glass glass--full glass--premiere home-welcome" aria-label="Intake Demo">
+                      <p class="home-welcome__loading">No site selected.</p>
+                    </section>
+                  }
+                }
                 @case ('media-studio') {
                   <section class="glass glass--full glass--premiere glass--media-studio" aria-label="Media Studio">
                     <app-protopipe-media-studio />

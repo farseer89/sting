@@ -1,7 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import type { Observable } from 'rxjs';
+import { firstValueFrom, type Observable } from 'rxjs';
 import type {
+  OpenProtopipeIntakeConversationRequest,
+  OpenProtopipeIntakeConversationResponse,
   ProtopipeInboundMessagesResponse,
   ProtopipeIntakeConversationResponse,
   ProtopipeIntakeConversationsResponse,
@@ -27,6 +29,23 @@ const ENDPOINTS = {
 export class IntakeStudioApiService {
   private readonly http = inject(HttpClient);
 
+  openConversation$(
+    siteId: string,
+    body: OpenProtopipeIntakeConversationRequest,
+  ) {
+    return this.http.post<OpenProtopipeIntakeConversationResponse>(
+      protopipeApiUrl(ENDPOINTS.conversations, { siteId }),
+      body,
+    );
+  }
+
+  openConversation(
+    siteId: string,
+    body: OpenProtopipeIntakeConversationRequest,
+  ): Promise<OpenProtopipeIntakeConversationResponse> {
+    return firstValueFrom(this.openConversation$(siteId, body));
+  }
+
   listConversations$(siteId: string): Observable<ProtopipeIntakeConversationsResponse> {
     return this.http.get<ProtopipeIntakeConversationsResponse>(
       protopipeApiUrl(ENDPOINTS.conversations, { siteId }),
@@ -40,6 +59,13 @@ export class IntakeStudioApiService {
     return this.http.get<ProtopipeIntakeConversationResponse>(
       protopipeApiUrl(ENDPOINTS.conversation, { siteId, conversationId }),
     );
+  }
+
+  getConversation(
+    siteId: string,
+    conversationId: string,
+  ): Promise<ProtopipeIntakeConversationResponse> {
+    return firstValueFrom(this.getConversation$(siteId, conversationId));
   }
 
   listInboundMessages$(siteId: string): Observable<ProtopipeInboundMessagesResponse> {

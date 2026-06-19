@@ -36,6 +36,7 @@ import { ProtopipeHomeWriterViewState } from './protopipe-home-writer-view.state
 import { ProtopipeWriterContextPanelComponent } from './strategy/protopipe-writer-context-panel.component';
 import { ProtopipeKeywordPickerComponent } from './keyword-picker/protopipe-keyword-picker.component';
 import { ProtopipeHomeRunbooksComponent } from './runbooks/protopipe-home-runbooks.component';
+import { ProtopipeHomeIntakeDemoComponent } from './intake-demo/protopipe-home-intake-demo.component';
 import { ProtopipeMediaStudioComponent } from '../admin/media-studio/protopipe-media-studio.component';
 import { ProtopipeHomeBrandBookComponent } from './books/protopipe-home-brand-book.component';
 import { ProtopipeHomeBusinessDetailsComponent } from './books/protopipe-home-business-details.component';
@@ -96,6 +97,7 @@ function initialsFromName(name: string): string {
     ThoughtPackStoreComponent,
     ThoughtPackDetailComponent,
     ProtopipeHomeRunbooksComponent,
+    ProtopipeHomeIntakeDemoComponent,
     ProtopipeMediaStudioComponent,
     ProtopipeHomeBrandBookComponent,
     ProtopipeHomeBusinessDetailsComponent,
@@ -285,6 +287,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.openGoalsView();
     } else if (item.id === 'int-wordpress' || item.id === 'int-google') {
       void this.router.navigate(['/protopipe/settings/integrations']);
+    } else if (item.id === 'intake-demo') {
+      this.openIntakeDemoView();
     } else if (item.id === 'intake-studio') {
       const siteId = this.siteId();
       void this.router.navigate(['/protopipe/lab/intake-studio'], {
@@ -399,6 +403,13 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.activeView.set('goals');
   }
 
+  openIntakeDemoView(): void {
+    this.leaveWriterFocus();
+    this.sidePanel.setOpen(false);
+    this.activeNavId.set('intake-demo');
+    this.activeView.set('intake');
+  }
+
   openBrandSetupWizard(): void {
     const siteId = this.siteId();
     void this.router.navigate(['/home/brand-setup'], {
@@ -410,6 +421,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
     const view = this.route.snapshot.queryParamMap.get('view');
     if (view === 'brand-book') {
       this.openBrandBookView();
+    } else if (view === 'intake') {
+      this.openIntakeDemoView();
     }
   }
 

@@ -183,6 +183,35 @@
   cursor: default;
 }
 
+.intake-demo__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.intake-demo__restart {
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  background: #fff;
+  color: rgba(0, 0, 0, 0.72);
+  border-radius: 8px;
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.intake-demo__restart:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.intake-demo__status-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: rgba(0, 0, 0, 0.5);
+  font-style: italic;
+}
+
 @media (max-width: 900px) {
   .intake-demo__grid {
     grid-template-columns: 1fr;

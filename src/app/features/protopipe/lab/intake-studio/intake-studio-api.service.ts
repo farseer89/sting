@@ -52,6 +52,10 @@ export class IntakeStudioApiService {
     );
   }
 
+  listConversations(siteId: string): Promise<ProtopipeIntakeConversationsResponse> {
+    return firstValueFrom(this.listConversations$(siteId));
+  }
+
   getConversation$(
     siteId: string,
     conversationId: string,

@@ -97,6 +97,9 @@ export class ProtopipeHomeIntakeDemoComponent implements OnInit {
   readonly sending = signal<ProtopipeIntakeTriggerType | null>(null);
   readonly actionError = signal<string | null>(null);
   readonly activeConversation = signal<ProtopipePendingConversation | null>(null);
+  readonly openByTrigger = signal<Partial<Record<ProtopipeIntakeTriggerType, ProtopipePendingConversation>>>(
+    {},
+  );
 
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -115,8 +118,12 @@ export class ProtopipeHomeIntakeDemoComponent implements OnInit {
     this.loading.set(true);
     this.loadError.set(null);
     try {
-      const { contacts } = await this.contactsApi.list(siteId);
+      const [{ contacts }, { open }] = await Promise.all([
+        this.contactsApi.list(siteId),
+        this.intakeApi.listConversations(siteId),
+      ]);
       this.contacts.set(contacts);
+      this.syncOpenConversations(open, resolveTargetContact(contacts));
     } catch (err) {
       this.loadError.set(parseProtopipeApiError(err, 'Could not load SMS contacts.'));
     } finally {
@@ -124,7 +131,19 @@ export class ProtopipeHomeIntakeDemoComponent implements OnInit {
     }
   }
 
-  async sendTrigger(card: TriggerCard): Promise<void> {
+  hasOpenTrigger(triggerType: ProtopipeIntakeTriggerType): boolean {
+    return !!this.openByTrigger()[triggerType];
+  }
+
+  selectOpen(triggerType: ProtopipeIntakeTriggerType): void {
+    const conversation = this.openByTrigger()[triggerType];
+    if (!conversation) return;
+    this.actionError.set(null);
+    this.activeConversation.set(conversation);
+    this.maybePoll(conversation);
+  }
+
+  async sendTrigger(card: TriggerCard, restart = false): Promise<void> {
     if (card.inboundOnly || this.sending()) return;
 
     const siteId = this.siteId();
@@ -133,10 +152,18 @@ export class ProtopipeHomeIntakeDemoComponent implements OnInit {
       return;
     }
 
+    if (!restart && this.hasOpenTrigger(card.triggerType)) {
+      this.selectOpen(card.triggerType);
+      return;
+    }
+
     this.sending.set(card.triggerType);
     this.actionError.set(null);
 
-    const body: OpenProtopipeIntakeConversationRequest = { triggerType: card.triggerType };
+    const body: OpenProtopipeIntakeConversationRequest = {
+      triggerType: card.triggerType,
+      restart,
+    };
     if (card.triggerType === 'journalist') {
       body.questionText = "What's been your most interesting project lately?";
     }
@@ -144,6 +171,7 @@ export class ProtopipeHomeIntakeDemoComponent implements OnInit {
     try {
       const { conversation } = await this.intakeApi.openConversation(siteId, body);
       this.activeConversation.set(conversation);
+      this.openByTrigger.update((map) => ({ ...map, [card.triggerType]: conversation }));
       this.maybePoll(conversation);
     } catch (err) {
       const msg = parseProtopipeApiError(err, 'Could not start conversation.');
@@ -156,6 +184,35 @@ export class ProtopipeHomeIntakeDemoComponent implements OnInit {
       }
     } finally {
       this.sending.set(null);
+    }
+  }
+
+  startOver(card: TriggerCard): void {
+    void this.sendTrigger(card, true);
+  }
+
+  private syncOpenConversations(
+    open: ProtopipePendingConversation[],
+    contact: ProtopipeContact | null,
+  ): void {
+    if (!contact) {
+      this.openByTrigger.set({});
+      return;
+    }
+    const forContact = open.filter((c) => c.contactId === contact.phone);
+    const map: Partial<Record<ProtopipeIntakeTriggerType, ProtopipePendingConversation>> = {};
+    for (const conversation of forContact) {
+      map[conversation.triggerType] = conversation;
+    }
+    this.openByTrigger.set(map);
+    const preferred =
+      map.onboarding ??
+      forContact.sort(
+        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+      )[0];
+    if (preferred) {
+      this.activeConversation.set(preferred);
+      this.maybePoll(preferred);
     }
   }
 
@@ -206,6 +263,15 @@ export class ProtopipeHomeIntakeDemoComponent implements OnInit {
     try {
       const { conversation: fresh } = await this.intakeApi.getConversation(siteId, conversation.id);
       this.activeConversation.set(fresh);
+      if (isOpen(fresh.status)) {
+        this.openByTrigger.update((map) => ({ ...map, [fresh.triggerType]: fresh }));
+      } else {
+        this.openByTrigger.update((map) => {
+          const next = { ...map };
+          delete next[fresh.triggerType];
+          return next;
+        });
+      }
       this.maybePoll(fresh);
     } catch {
       this.schedulePoll(POLL_MS * 2);

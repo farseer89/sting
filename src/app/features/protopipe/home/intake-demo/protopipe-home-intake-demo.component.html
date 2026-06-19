@@ -53,6 +53,9 @@
       @if (conversation.resumeResult) {
         <p class="intake-demo__status-result">Result: {{ conversation.resumeResult }}</p>
       }
+      @if (conversation.status === 'pending' || conversation.status === 'in_progress') {
+        <p class="intake-demo__status-hint">Reply on your phone to advance the script.</p>
+      }
     </aside>
   }
 
@@ -66,18 +69,32 @@
             Text a project update from your registered phone — the pipeline will match or disambiguate.
           </p>
         } @else {
-          <button
-            type="button"
-            class="intake-demo__send"
-            [disabled]="!targetContact() || !!sending()"
-            (click)="sendTrigger(card)"
-          >
-            @if (sending() === card.triggerType) {
-              Sending…
-            } @else {
-              {{ card.actionLabel }}
+          <div class="intake-demo__actions">
+            <button
+              type="button"
+              class="intake-demo__send"
+              [disabled]="!targetContact() || !!sending()"
+              (click)="sendTrigger(card)"
+            >
+              @if (sending() === card.triggerType) {
+                Sending…
+              } @else if (hasOpenTrigger(card.triggerType)) {
+                View in-progress
+              } @else {
+                {{ card.actionLabel }}
+              }
+            </button>
+            @if (hasOpenTrigger(card.triggerType)) {
+              <button
+                type="button"
+                class="intake-demo__restart"
+                [disabled]="!!sending()"
+                (click)="startOver(card)"
+              >
+                Start over
+              </button>
             }
-          </button>
+          </div>
         }
       </article>
     }

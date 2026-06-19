@@ -402,94 +402,337 @@
 
       <header class="bd-preview-modal__header">
         <div class="bd-preview-modal__title">
-          <svg viewBox="0 0 16 16" fill="none"><path d="M1 8s3-5 7-5 7 5 7 5-3 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3"/></svg>
-          Hero preview — three demo sites
+          <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 12v2M11 12v2M3 14h10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          Hero preview · 13 templates
         </div>
         <button type="button" class="bd-preview-modal__close" (click)="closePreview()">
           <svg viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         </button>
       </header>
 
-      <div class="bd-preview-modal__deck">
-        Click outside or press × to close. Click the image in the gallery to select it for this slot.
+      <!-- Brand tabs -->
+      <div class="bd-brand-tabs">
+        <button type="button" class="bd-brand-tab" [class.is-active]="previewBrand() === 'sparky'" (click)="selectBrand('sparky')">
+          <span class="bd-brand-dot" style="background:#f59e0b"></span>
+          Sparky Electric
+          <span class="bd-brand-count">6</span>
+        </button>
+        <button type="button" class="bd-brand-tab" [class.is-active]="previewBrand() === 'wri'" (click)="selectBrand('wri')">
+          <span class="bd-brand-dot" style="background:#0ea5e9"></span>
+          Water Resources Int'l
+          <span class="bd-brand-count">5</span>
+        </button>
+        <button type="button" class="bd-brand-tab" [class.is-active]="previewBrand() === 'consult'" (click)="selectBrand('consult')">
+          <span class="bd-brand-dot" style="background:#64748b"></span>
+          Wilco Consulting
+          <span class="bd-brand-count">2</span>
+        </button>
       </div>
 
-      <div class="bd-preview-sites">
+      <!-- Hero name + position -->
+      <div class="bd-hero-label-bar">
+        <span class="bd-hero-label-bar__name">{{ currentHero().layout | uppercase }} &mdash; {{ currentHero().label }}</span>
+        <span class="bd-hero-label-bar__pos">{{ previewHeroIdx() + 1 }} / {{ currentBrandHeroes().length }}</span>
+      </div>
 
-        <!-- Sparky Electric — fullbleed dark overlay centered -->
-        <div class="bd-preview-site">
-          <div class="bd-preview-site__label">
-            <span class="bd-preview-site__dot" style="background:#f59e0b"></span>
-            Sparky Electric
+      <!-- Browser chrome + viewport -->
+      <div class="bd-browser">
+        <div class="bd-browser__chrome">
+          <div class="bd-browser__dots">
+            <span class="bd-browser__dot bd-browser__dot--red"></span>
+            <span class="bd-browser__dot bd-browser__dot--yellow"></span>
+            <span class="bd-browser__dot bd-browser__dot--green"></span>
           </div>
-          <div class="bd-hero bd-hero--sparky" [style.background-image]="'url(' + previewUrl + ')'">
-            <div class="bd-hero__scrim"></div>
-            <div class="bd-hero__stage">
-              <div class="bd-hero__center">
-                <div class="bd-hero__mark">
-                  <svg viewBox="0 0 24 24" fill="none"><polygon points="13,2 3,14 12,14 11,22 21,10 12,10" fill="#f59e0b"/></svg>
+          <div class="bd-browser__address">{{ currentHero().url }}</div>
+          <div class="bd-browser__spacer"></div>
+        </div>
+        <div class="bd-browser__viewport">
+
+          <!-- ══ SPARKY CALLOUT: fullbleed photo, dark overlay, centered content ══ -->
+          @if (currentHero().layout === 'sp-callout') {
+            <div class="bdh bdh--sp-callout" [style.background-image]="'url('+previewUrl+')'">
+              <div class="bdh__scrim"></div>
+              <div class="bdh__sp-inner">
+                <svg class="bdh__sp-bolt" viewBox="0 0 24 24"><polygon points="13,2 3,14 12,14 11,22 21,10 12,10" fill="#f59e0b"/></svg>
+                <p class="bdh__sp-eye">Makawao · Maui, Hawaii</p>
+                <h2 class="bdh__sp-h">Quality electrical<br>for Maui homes.</h2>
+                <p class="bdh__sp-sub">Licensed · residential · solar · EV ready</p>
+                <div class="bdh__acts">
+                  <span class="bdh__btn bdh__btn--y">Call now</span>
+                  <span class="bdh__btn bdh__btn--ghost">View services</span>
                 </div>
-                <p class="bd-hero__eyebrow">Makawao · Maui, Hawaii</p>
-                <h2 class="bd-hero__title">Quality electrical services for Maui homes and businesses.</h2>
-                <p class="bd-hero__sub">Local family-owned electricians — residential, commercial, solar off-grid &amp; grid-tied.</p>
-                <div class="bd-hero__actions">
-                  <span class="bd-hero__btn bd-hero__btn--primary">Call now</span>
-                  <span class="bd-hero__btn bd-hero__btn--ghost">View services</span>
+              </div>
+              <div class="bdh__sp-proof">
+                <div class="bdh__sp-stat"><strong>15+</strong><span>Years local</span></div>
+                <div class="bdh__sp-stat"><strong>4.9★</strong><span>Google</span></div>
+                <div class="bdh__sp-stat"><strong>100%</strong><span>Licensed</span></div>
+              </div>
+            </div>
+          }
+
+          <!-- ══ SPARKY BENTO: left copy + right photo, stat row bottom ══ -->
+          @if (currentHero().layout === 'sp-bento') {
+            <div class="bdh bdh--sp-bento">
+              <div class="bdh__sp-bento-copy">
+                <svg class="bdh__sp-bolt bdh__sp-bolt--sm" viewBox="0 0 24 24"><polygon points="13,2 3,14 12,14 11,22 21,10 12,10" fill="#f59e0b"/></svg>
+                <p class="bdh__sp-eye">Maui's trusted electricians</p>
+                <h2 class="bdh__sp-bento-h">Residential &amp; commercial electrical in Hawaii.</h2>
+                <p class="bdh__sp-sub">Licensed · insured · family-owned since 2008</p>
+                <div class="bdh__acts">
+                  <span class="bdh__btn bdh__btn--y">Call now</span>
+                  <span class="bdh__btn bdh__btn--ghost">Services</span>
+                </div>
+              </div>
+              <div class="bdh__sp-bento-photo">
+                <img [src]="previewUrl" alt="Sparky Electric" />
+              </div>
+              <div class="bdh__sp-bento-stats">
+                <div class="bdh__sp-bento-stat"><span>15+</span>Years</div>
+                <div class="bdh__sp-bento-stat"><span>4.9★</span>Rating</div>
+                <div class="bdh__sp-bento-stat"><span>24/7</span>Emergency</div>
+              </div>
+            </div>
+          }
+
+          <!-- ══ SPARKY ASYMMETRIC: large left copy + right framed photo ══ -->
+          @if (currentHero().layout === 'sp-asymmetric') {
+            <div class="bdh bdh--sp-asym">
+              <div class="bdh__sp-asym-copy">
+                <p class="bdh__sp-eye bdh__sp-eye--amber">Licensed Electricians · Maui</p>
+                <h2 class="bdh__sp-asym-h">Powering<br><span>Maui homes</span><br>since 2008.</h2>
+                <div class="bdh__sp-asym-rule"></div>
+                <p class="bdh__sp-sub bdh__sp-sub--dark">Solar · EV chargers · panel upgrades · 24/7 emergency</p>
+                <div class="bdh__acts">
+                  <span class="bdh__btn bdh__btn--y">Call now</span>
+                  <span class="bdh__btn bdh__btn--ghost-dark">View services</span>
+                </div>
+              </div>
+              <div class="bdh__sp-asym-frame">
+                <img [src]="previewUrl" alt="Sparky Electric" />
+              </div>
+            </div>
+          }
+
+          <!-- ══ SPARKY HORIZON: copy + stats row top, full-width photo band bottom ══ -->
+          @if (currentHero().layout === 'sp-horizon') {
+            <div class="bdh bdh--sp-horizon">
+              <div class="bdh__sp-hz-top">
+                <div class="bdh__sp-hz-copy">
+                  <p class="bdh__sp-eye bdh__sp-eye--gray">Maui · Hawaii</p>
+                  <h2 class="bdh__sp-hz-h">Electrical work you can trust.</h2>
+                  <div class="bdh__acts">
+                    <span class="bdh__btn bdh__btn--y">Call now</span>
+                    <span class="bdh__btn bdh__btn--ghost-dark">Services</span>
+                  </div>
+                </div>
+                <div class="bdh__sp-hz-stats">
+                  <div class="bdh__sp-hz-stat"><strong>4.9★</strong><span>Google</span></div>
+                  <div class="bdh__sp-hz-stat"><strong>24/7</strong><span>Emergency</span></div>
+                  <div class="bdh__sp-hz-stat"><strong>100%</strong><span>Licensed</span></div>
+                </div>
+              </div>
+              <div class="bdh__sp-hz-band">
+                <img [src]="previewUrl" alt="Sparky Electric" />
+              </div>
+            </div>
+          }
+
+          <!-- ══ SPARKY TEAL: solid teal brand, no photo, centered ══ -->
+          @if (currentHero().layout === 'sp-teal') {
+            <div class="bdh bdh--sp-teal">
+              <div class="bdh__sp-teal-bg-grid"></div>
+              <svg class="bdh__sp-teal-bolt" viewBox="0 0 24 24"><polygon points="13,2 3,14 12,14 11,22 21,10 12,10"/></svg>
+              <div class="bdh__sp-teal-inner">
+                <p class="bdh__sp-eye">Licensed Electricians · Oʻahu · Maui</p>
+                <h2 class="bdh__sp-teal-h">Your island's<br>electrical experts.</h2>
+                <p class="bdh__sp-sub">Residential · commercial · solar · EV charging infrastructure</p>
+                <div class="bdh__acts">
+                  <span class="bdh__btn bdh__btn--invert">Call now</span>
+                  <span class="bdh__btn bdh__btn--ghost">Services</span>
+                </div>
+                <div class="bdh__sp-teal-stats">
+                  <div class="bdh__sp-teal-stat"><strong>4.9★</strong><span>Google</span></div>
+                  <div class="bdh__sp-teal-stat"><strong>15+</strong><span>Years</span></div>
+                  <div class="bdh__sp-teal-stat"><strong>24/7</strong><span>Emergency</span></div>
                 </div>
               </div>
             </div>
-            <div class="bd-hero__proof">
-              <div class="bd-hero__callout">"Great work" <span>— M. Santos</span></div>
-              <div class="bd-hero__callout"><strong>Since 2015</strong> <span>Family owned</span></div>
-              <div class="bd-hero__callout"><strong>100%</strong> <span>Satisfaction</span></div>
-            </div>
-          </div>
-        </div>
+          }
 
-        <!-- WRI — fullbleed dark overlay left-aligned -->
-        <div class="bd-preview-site">
-          <div class="bd-preview-site__label">
-            <span class="bd-preview-site__dot" style="background:#0ea5e9"></span>
-            Water Resources International
-          </div>
-          <div class="bd-hero bd-hero--wri" [style.background-image]="'url(' + previewUrl + ')'">
-            <div class="bd-hero__scrim bd-hero__scrim--wri"></div>
-            <div class="bd-hero__wri-layout">
-              <div class="bd-hero__wri-panel">
-                <p class="bd-hero__wri-eyebrow">Honolulu · Pacific Basin</p>
-                <h2 class="bd-hero__wri-title">Groundwater exploration and deep well drilling for Hawaii.</h2>
-                <p class="bd-hero__wri-sub">Industry-leading drillers and water resource specialists — government, commercial, and private clients across the islands for over 35 years.</p>
-                <div class="bd-hero__actions">
-                  <span class="bd-hero__btn bd-hero__btn--earth">Request a quote</span>
-                  <span class="bd-hero__btn bd-hero__btn--ghost">Call us</span>
+          <!-- ══ SPARKY DISPATCH: dark, dual CTA path cards ══ -->
+          @if (currentHero().layout === 'sp-dispatch') {
+            <div class="bdh bdh--sp-dispatch">
+              <div class="bdh__sp-disp-copy">
+                <p class="bdh__sp-eye">Sparky Electric · Oʻahu</p>
+                <h2 class="bdh__sp-disp-h">Tripped main? Old panel blocking solar or EV?</h2>
+                <p class="bdh__sp-sub">We answer live · typical dispatch under 2 hours on Oʻahu</p>
+              </div>
+              <div class="bdh__sp-disp-paths">
+                <div class="bdh__sp-disp-path bdh__sp-disp-path--urgent">
+                  <span class="bdh__sp-disp-tag">24/7 emergency</span>
+                  <span class="bdh__sp-disp-title">Call dispatch now</span>
+                  <span class="bdh__sp-disp-note">Storm damage · no power · tripped mains</span>
+                </div>
+                <div class="bdh__sp-disp-path bdh__sp-disp-path--plan">
+                  <span class="bdh__sp-disp-tag">Planned work</span>
+                  <span class="bdh__sp-disp-title">Schedule a site visit</span>
+                  <span class="bdh__sp-disp-note">Panel upgrades · EV · solar prep</span>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          }
 
-        <!-- Consult Demo — split hero -->
-        <div class="bd-preview-site">
-          <div class="bd-preview-site__label">
-            <span class="bd-preview-site__dot" style="background:#64748b"></span>
-            Wilco Consulting
-          </div>
-          <div class="bd-hero bd-hero--consult">
-            <div class="bd-hero__consult-image">
-              <img [src]="previewUrl" alt="Hero preview" loading="lazy" />
-            </div>
-            <div class="bd-hero__consult-content">
-              <h2 class="bd-hero__consult-heading">Civil Infrastructure Consulting For Rural Alaska</h2>
-              <p class="bd-hero__consult-sub">From Engineering to Project Execution &amp; Logistics — we get it done.</p>
-              <div class="bd-hero__actions bd-hero__actions--consult">
-                <span class="bd-hero__btn bd-hero__btn--slate">Get started</span>
-                <span class="bd-hero__btn bd-hero__btn--ghost-dark">Learn more</span>
+          <!-- ══ WRI FULLBLEED: bg photo + left dark gradient panel ══ -->
+          @if (currentHero().layout === 'wri-fullbleed') {
+            <div class="bdh bdh--wri-fullbleed" [style.background-image]="'url('+previewUrl+')'">
+              <div class="bdh__wri-scrim"></div>
+              <div class="bdh__wri-panel">
+                <p class="bdh__wri-eye">Honolulu · Pacific Basin</p>
+                <h2 class="bdh__wri-h">Groundwater exploration &amp; deep well drilling for Hawaii.</h2>
+                <p class="bdh__wri-sub">Industry-leading drillers — government, commercial &amp; private clients for over 35 years.</p>
+                <div class="bdh__acts">
+                  <span class="bdh__btn bdh__btn--earth">Request a quote</span>
+                  <span class="bdh__btn bdh__btn--ghost">Call us</span>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          }
 
-      </div><!-- /bd-preview-sites -->
+          <!-- ══ WRI SPLIT FIELD: left photo + right copy ══ -->
+          @if (currentHero().layout === 'wri-split') {
+            <div class="bdh bdh--wri-split">
+              <div class="bdh__wri-split-photo">
+                <img [src]="previewUrl" alt="WRI field site" />
+                <span class="bdh__wri-split-tag">Rural field site · well prep</span>
+              </div>
+              <div class="bdh__wri-split-copy">
+                <p class="bdh__wri-eye">Hawaii Water Specialists</p>
+                <h2 class="bdh__wri-split-h">Clean water infrastructure for the Pacific.</h2>
+                <div class="bdh__acts">
+                  <span class="bdh__btn bdh__btn--earth">Free site quote</span>
+                  <span class="bdh__btn bdh__btn--ghost-dark">Call now</span>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- ══ WRI PHOTO BENTO: left copy + right 2×2 photo grid ══ -->
+          @if (currentHero().layout === 'wri-bento') {
+            <div class="bdh bdh--wri-bento">
+              <div class="bdh__wri-bento-copy">
+                <p class="bdh__wri-eye">Water Resources International</p>
+                <h2 class="bdh__wri-bento-h">Drilling &amp; hydrogeology across the Pacific.</h2>
+                <p class="bdh__wri-sub bdh__wri-sub--dark">Serving government agencies, developers, and landowners.</p>
+                <div class="bdh__acts">
+                  <span class="bdh__btn bdh__btn--earth">Request a quote</span>
+                  <span class="bdh__btn bdh__btn--ghost-dark">Call now</span>
+                </div>
+              </div>
+              <div class="bdh__wri-bento-photos">
+                <div class="bdh__wri-bento-tile"><img [src]="previewUrl" alt="WRI" /></div>
+                <div class="bdh__wri-bento-tile bdh__wri-bento-tile--accent"></div>
+                <div class="bdh__wri-bento-tile bdh__wri-bento-tile--accent"></div>
+                <div class="bdh__wri-bento-tile"><img [src]="previewUrl" alt="WRI" /></div>
+              </div>
+            </div>
+          }
+
+          <!-- ══ WRI METRICS: left copy + right 3 metric tiles ══ -->
+          @if (currentHero().layout === 'wri-metrics') {
+            <div class="bdh bdh--wri-metrics">
+              <div class="bdh__wri-mx-copy">
+                <p class="bdh__wri-eye">Water Resources International</p>
+                <h2 class="bdh__wri-mx-h">Trusted for decades of Pacific hydrogeology.</h2>
+                <p class="bdh__wri-sub bdh__wri-sub--dark">From exploration to delivery — complete well systems for Hawaii and the Pacific.</p>
+                <div class="bdh__acts">
+                  <span class="bdh__btn bdh__btn--earth">Request a quote</span>
+                </div>
+              </div>
+              <div class="bdh__wri-mx-tiles">
+                <div class="bdh__wri-mx-tile">
+                  <span class="bdh__wri-mx-val">35+</span>
+                  <span class="bdh__wri-mx-label">Years operating</span>
+                </div>
+                <div class="bdh__wri-mx-tile bdh__wri-mx-tile--accent">
+                  <span class="bdh__wri-mx-val">800+</span>
+                  <span class="bdh__wri-mx-label">Wells drilled</span>
+                </div>
+                <div class="bdh__wri-mx-tile">
+                  <span class="bdh__wri-mx-val">4</span>
+                  <span class="bdh__wri-mx-label">Pacific islands served</span>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- ══ WRI COASTAL: copy top + wide photo band bottom ══ -->
+          @if (currentHero().layout === 'wri-coastal') {
+            <div class="bdh bdh--wri-coastal">
+              <div class="bdh__wri-coast-copy">
+                <p class="bdh__wri-eye">Water Resources International · Hawaii</p>
+                <h2 class="bdh__wri-coast-h">Deep well drilling &amp; water solutions for coastal Hawaii.</h2>
+                <div class="bdh__acts">
+                  <span class="bdh__btn bdh__btn--earth">Request a quote</span>
+                  <span class="bdh__btn bdh__btn--ghost-dark">Capabilities</span>
+                </div>
+              </div>
+              <div class="bdh__wri-coast-band">
+                <img [src]="previewUrl" alt="WRI coastal site" />
+                <span class="bdh__wri-coast-caption">Coastal aquifer assessment · Oʻahu north shore</span>
+              </div>
+            </div>
+          }
+
+          <!-- ══ CONSULT SPLIT: left photo + right content ══ -->
+          @if (currentHero().layout === 'co-split') {
+            <div class="bdh bdh--co-split">
+              <div class="bdh__co-photo">
+                <img [src]="previewUrl" alt="Wilco Consulting" />
+              </div>
+              <div class="bdh__co-content">
+                <p class="bdh__co-eye">Wilco Consulting Group</p>
+                <h2 class="bdh__co-h">Civil Infrastructure Consulting For Rural Alaska</h2>
+                <p class="bdh__co-sub">From Engineering to Project Execution &amp; Logistics — we get it done.</p>
+                <div class="bdh__acts">
+                  <span class="bdh__btn bdh__btn--slate">Get started</span>
+                  <span class="bdh__btn bdh__btn--ghost-dark">Learn more</span>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- ══ CONSULT FULLBLEED: fullscreen bg + heading top + CTAs bottom ══ -->
+          @if (currentHero().layout === 'co-fullbleed') {
+            <div class="bdh bdh--co-fullbleed" [style.background-image]="'url('+previewUrl+')'">
+              <div class="bdh__co-scrim"></div>
+              <div class="bdh__co-top">
+                <h2 class="bdh__co-fb-h">Civil Infrastructure Consulting For Rural Alaska</h2>
+                <p class="bdh__co-fb-org">Wilco Consulting Group</p>
+              </div>
+              <div class="bdh__co-bottom">
+                <span class="bdh__btn bdh__btn--slate">Get started</span>
+                <span class="bdh__btn bdh__btn--ghost">Learn more</span>
+              </div>
+            </div>
+          }
+
+        </div><!-- /bd-browser__viewport -->
+      </div><!-- /bd-browser -->
+
+      <!-- Carousel navigation -->
+      <div class="bd-carousel-nav">
+        <button type="button" class="bd-carousel-nav__arrow" (click)="prevHero()">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="bd-carousel-dots">
+          @for (hero of currentBrandHeroes(); track hero.id; let i = $index) {
+            <button type="button" class="bd-carousel-dot" [class.is-active]="previewHeroIdx() === i" (click)="previewHeroIdx.set(i)"></button>
+          }
+        </div>
+        <button type="button" class="bd-carousel-nav__arrow" (click)="nextHero()">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
 
       <div class="bd-preview-modal__footer">
         <button type="button" class="bd-btn bd-btn--primary" (click)="toggleImage(previewUrl); closePreview()">

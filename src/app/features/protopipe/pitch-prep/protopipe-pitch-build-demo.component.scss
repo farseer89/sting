@@ -744,14 +744,14 @@ $accent-light: #eff6ff;
 }
 
 // ══════════════════════════════════════════════════════
-// Hero Preview Modal
+// Hero Preview Modal — browser chrome carousel
 // ══════════════════════════════════════════════════════
 
 .bd-preview-modal {
   position: fixed;
   inset: 0;
   z-index: 500;
-  background: rgb(9 9 11 / 0.7);
+  background: rgb(9 9 11 / 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -760,17 +760,17 @@ $accent-light: #eff6ff;
 }
 
 @keyframes bd-modal-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from { opacity: 0; transform: scale(0.98); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 .bd-preview-modal__inner {
   background: $bg;
-  border-radius: 12px;
-  box-shadow: 0 24px 80px rgb(0 0 0 / 0.35);
+  border-radius: 14px;
+  box-shadow: 0 32px 96px rgb(0 0 0 / 0.45);
   width: 100%;
   max-width: 1100px;
-  max-height: 90vh;
+  max-height: 94vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -780,7 +780,7 @@ $accent-light: #eff6ff;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.25rem;
+  padding: 0.875rem 1.25rem;
   border-bottom: 1px solid $border;
   flex-shrink: 0;
 }
@@ -789,7 +789,7 @@ $accent-light: #eff6ff;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: $ink;
 
@@ -813,283 +813,1025 @@ $accent-light: #eff6ff;
   &:hover { background: $border; color: $ink; }
 }
 
-.bd-preview-modal__deck {
-  font-size: 0.75rem;
-  color: $muted;
-  padding: 0.5rem 1.25rem;
+// ── Brand tabs
+
+.bd-brand-tabs {
+  display: flex;
+  gap: 0;
   border-bottom: 1px solid $border;
   flex-shrink: 0;
+  padding: 0 1rem;
 }
 
-.bd-preview-modal__footer {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  padding: 0.875rem 1.25rem;
-  border-top: 1px solid $border;
-  flex-shrink: 0;
-}
-
-// ── Three demo hero cards
-
-.bd-preview-sites {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  padding: 1.25rem;
-  overflow-y: auto;
-  flex: 1;
-  min-height: 0;
-}
-
-.bd-preview-site {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.bd-preview-site__label {
+.bd-brand-tab {
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  font-size: 0.6875rem;
-  font-weight: 700;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.75rem;
+  font-weight: 600;
   color: $muted;
-  letter-spacing: 0.04em;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+  margin-bottom: -1px;
+
+  &:hover { color: $ink; }
+
+  &.is-active {
+    color: $ink;
+    border-bottom-color: $accent;
+  }
 }
 
-.bd-preview-site__dot {
+.bd-brand-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
-// ── Generic hero block
+.bd-brand-count {
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: $muted;
+  background: $bg-panel;
+  border-radius: 10px;
+  padding: 0.1em 0.4em;
+}
 
-.bd-hero {
-  border-radius: 8px;
+// ── Hero label bar
+
+.bd-hero-label-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1.25rem;
+  border-bottom: 1px solid $border;
+  flex-shrink: 0;
+}
+
+.bd-hero-label-bar__name {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: $muted;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bd-hero-label-bar__pos {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: $dim;
+}
+
+// ── Browser chrome
+
+.bd-browser {
+  margin: 1rem 1.25rem 0;
+  border-radius: 10px;
   overflow: hidden;
-  height: 260px;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.25);
+  border: 1px solid #2a2a2a;
+  flex-shrink: 0;
+}
+
+.bd-browser__chrome {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.875rem;
+  background: #242424;
+  border-bottom: 1px solid rgba(255 255 255 / 0.06);
+}
+
+.bd-browser__dots {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.bd-browser__dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+
+  &--red    { background: #ff5f57; }
+  &--yellow { background: #febc2e; }
+  &--green  { background: #28c840; }
+}
+
+.bd-browser__address {
+  flex: 1;
+  max-width: 320px;
+  margin: 0 auto;
+  background: rgba(255 255 255 / 0.09);
+  border-radius: 5px;
+  font-size: 0.625rem;
+  font-family: $sans;
+  color: rgba(255 255 255 / 0.55);
+  padding: 0.2rem 0.75rem;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bd-browser__spacer { flex: 1; }
+
+.bd-browser__viewport {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
   position: relative;
-  background-size: cover;
-  background-position: center;
+  background: #0a0a0a;
 }
 
-// ── Sparky hero
+// ── Carousel navigation
 
-.bd-hero--sparky {
-  background-color: #1c1917;
-}
-
-.bd-hero__scrim {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgb(0 0 0 / 0.55) 0%, rgb(0 0 0 / 0.65) 100%);
-}
-
-.bd-hero__scrim--wri {
-  background: linear-gradient(90deg, rgb(0 0 0 / 0.72) 0%, rgb(0 0 0 / 0.3) 100%);
-}
-
-.bd-hero__stage {
-  position: absolute;
-  inset: 0;
+.bd-carousel-nav {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.25rem;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  flex-shrink: 0;
 }
 
-.bd-hero__center {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 0.375rem;
-  max-width: 280px;
-}
-
-.bd-hero__mark {
+.bd-carousel-nav__arrow {
   width: 32px;
   height: 32px;
-  background: rgb(255 255 255 / 0.1);
-  border-radius: 8px;
+  border-radius: 50%;
+  border: 1px solid $border;
+  background: $bg;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 0.125rem;
+  color: $muted;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  flex-shrink: 0;
 
-  svg { width: 20px; height: 20px; }
+  svg { width: 14px; height: 14px; }
+  &:hover { background: $ink; color: #fff; border-color: $ink; }
 }
 
-.bd-hero__eyebrow {
-  font-size: 0.5625rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgb(255 255 255 / 0.7);
-  margin: 0;
-}
-
-.bd-hero__title {
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: #fff;
-  margin: 0;
-  line-height: 1.35;
-  letter-spacing: -0.02em;
-}
-
-.bd-hero__sub {
-  font-size: 0.625rem;
-  color: rgb(255 255 255 / 0.7);
-  margin: 0;
-  line-height: 1.5;
-}
-
-.bd-hero__actions {
+.bd-carousel-dots {
   display: flex;
-  gap: 0.375rem;
-  margin-top: 0.375rem;
-}
-
-.bd-hero__btn {
-  display: inline-flex;
   align-items: center;
-  font-size: 0.5625rem;
-  font-weight: 700;
-  padding: 0.25rem 0.625rem;
-  border-radius: 4px;
-  letter-spacing: 0.03em;
-
-  &--primary { background: #f59e0b; color: #1c1917; }
-  &--earth    { background: #15803d; color: #fff; }
-  &--slate    { background: #475569; color: #fff; }
-  &--ghost    { background: rgb(255 255 255 / 0.15); color: #fff; border: 1px solid rgb(255 255 255 / 0.3); }
-  &--ghost-dark { background: transparent; color: $ink; border: 1px solid $border; }
+  gap: 0.375rem;
 }
 
-.bd-hero__proof {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+.bd-carousel-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: $border;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, transform 0.15s;
+
+  &.is-active {
+    background: $accent;
+    transform: scale(1.4);
+  }
+
+  &:hover:not(.is-active) { background: $muted; }
+}
+
+.bd-preview-modal__footer {
   display: flex;
-  gap: 0;
-  background: rgb(0 0 0 / 0.4);
-  backdrop-filter: blur(4px);
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid $border;
+  flex-shrink: 0;
 }
 
-.bd-hero__callout {
-  flex: 1;
-  padding: 0.375rem 0.5rem;
-  font-size: 0.5rem;
-  color: rgb(255 255 255 / 0.85);
-  border-right: 1px solid rgb(255 255 255 / 0.1);
-  line-height: 1.4;
+// ══════════════════════════════════════════════════════
+// bdh — Hero layout templates (13 variants)
+// All fill 100% × 100% of .bd-browser__viewport
+// ══════════════════════════════════════════════════════
 
-  &:last-child { border-right: none; }
-
-  strong { display: block; font-size: 0.5625rem; color: #fff; font-weight: 700; }
-  span   { color: rgb(255 255 255 / 0.65); }
+.bdh {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: $sans;
+  -webkit-font-smoothing: antialiased;
 }
 
-// ── WRI hero
-
-.bd-hero--wri {
-  background-color: #0c1a2e;
-}
-
-.bd-hero__wri-layout {
+// Shared scrim overlay
+.bdh__scrim {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  padding: 1.25rem;
 }
 
-.bd-hero__wri-panel {
+// Shared action button row
+.bdh__acts {
   display: flex;
-  flex-direction: column;
   gap: 0.375rem;
-  max-width: 220px;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
 }
 
-.bd-hero__wri-eyebrow {
+// Shared button tokens
+.bdh__btn {
+  display: inline-flex;
+  align-items: center;
   font-size: 0.5rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  padding: 0.275rem 0.7rem;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+
+  &--y        { background: #f59e0b; color: #1c1917; }
+  &--earth    { background: #15803d; color: #fff; }
+  &--slate    { background: #475569; color: #fff; }
+  &--invert   { background: #fff; color: #0d9488; font-weight: 800; }
+  &--ghost    { background: rgba(255 255 255 / 0.14); color: #fff; border: 1px solid rgba(255 255 255 / 0.25); }
+  &--ghost-dark { background: transparent; color: #1e293b; border: 1px solid #cbd5e1; }
+}
+
+// Shared eyebrow
+.bdh__sp-eye {
+  font-size: 0.4375rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(255 255 255 / 0.65);
+  margin: 0;
+
+  &--amber { color: #d97706; }
+  &--gray  { color: #6b7280; }
+}
+
+.bdh__wri-eye {
+  font-size: 0.4375rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   color: #38bdf8;
   margin: 0;
 }
 
-.bd-hero__wri-title {
-  font-size: 0.8125rem;
+.bdh__co-eye {
+  font-size: 0.4375rem;
   font-weight: 700;
-  color: #fff;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #94a3b8;
   margin: 0;
-  line-height: 1.35;
-  letter-spacing: -0.02em;
 }
 
-.bd-hero__wri-sub {
-  font-size: 0.5625rem;
-  color: rgb(255 255 255 / 0.65);
+// Shared sub text variants
+.bdh__sp-sub {
+  font-size: 0.5rem;
+  color: rgba(255 255 255 / 0.65);
   margin: 0;
   line-height: 1.5;
+
+  &--dark { color: #64748b; }
 }
 
-// ── Consult hero (split)
+.bdh__wri-sub--dark { font-size: 0.5rem; color: #64748b; margin: 0; line-height: 1.5; }
+.bdh__co-sub { font-size: 0.5rem; color: #64748b; margin: 0; line-height: 1.5; }
 
-.bd-hero--consult {
-  background: #f8fafc;
-  display: flex;
-  border: 1px solid $border;
-}
-
-.bd-hero__consult-image {
-  width: 45%;
+// Shared bolt icon
+.bdh__sp-bolt {
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
-  overflow: hidden;
+  margin-bottom: 0.25rem;
 
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  &--sm { width: 20px; height: 20px; margin-bottom: 0.125rem; }
+}
+
+// ─────────────────────────────────────────
+// 1. SPARKY CALLOUT — fullbleed centered
+// ─────────────────────────────────────────
+
+.bdh--sp-callout {
+  background-size: cover;
+  background-position: center;
+  background-color: #1c1917;
+
+  .bdh__scrim { background: linear-gradient(180deg, rgba(0 0 0 / 0.5) 0%, rgba(0 0 0 / 0.7) 100%); }
+}
+
+.bdh__sp-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.375rem;
+  padding: 1.25rem;
+  padding-bottom: 3.5rem;
+}
+
+.bdh__sp-h {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+
+.bdh__sp-proof {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  background: rgba(0 0 0 / 0.42);
+  backdrop-filter: blur(6px);
+}
+
+.bdh__sp-stat {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.4375rem;
+  color: rgba(255 255 255 / 0.7);
+  border-right: 1px solid rgba(255 255 255 / 0.1);
+  text-align: center;
+  line-height: 1.4;
+
+  &:last-child { border-right: none; }
+
+  strong {
     display: block;
+    font-size: 0.5625rem;
+    color: #fff;
+    font-weight: 700;
   }
 }
 
-.bd-hero__consult-content {
+// ─────────────────────────────────────────
+// 2. SPARKY BENTO — left copy + right photo + stats row
+// ─────────────────────────────────────────
+
+.bdh--sp-bento {
+  background: #111827;
+  display: grid;
+  grid-template-columns: 1fr 42%;
+  grid-template-rows: 1fr auto;
+  grid-template-areas: "copy photo" "stats stats";
+}
+
+.bdh__sp-bento-copy {
+  grid-area: copy;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 1.5rem 1rem 1.5rem 1.5rem;
+}
+
+.bdh__sp-bento-h {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+  line-height: 1.3;
+  letter-spacing: -0.025em;
+}
+
+.bdh__sp-bento-photo {
+  grid-area: photo;
+  overflow: hidden;
+
+  img { width: 100%; height: 100%; object-fit: cover; display: block; }
+}
+
+.bdh__sp-bento-stats {
+  grid-area: stats;
+  display: flex;
+  background: #1f2937;
+  border-top: 1px solid rgba(255 255 255 / 0.07);
+}
+
+.bdh__sp-bento-stat {
   flex: 1;
-  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.4rem;
+  font-size: 0.375rem;
+  color: rgba(255 255 255 / 0.55);
+  border-right: 1px solid rgba(255 255 255 / 0.06);
+
+  &:last-child { border-right: none; }
+
+  span {
+    font-size: 0.5625rem;
+    font-weight: 700;
+    color: #f59e0b;
+  }
+}
+
+// ─────────────────────────────────────────
+// 3. SPARKY ASYMMETRIC — large left copy + right framed photo
+// ─────────────────────────────────────────
+
+.bdh--sp-asym {
+  background: #fafaf9;
+  display: flex;
+}
+
+.bdh__sp-asym-copy {
+  flex: 0 0 52%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 0.5rem;
+  padding: 1.75rem 1.25rem 1.75rem 1.75rem;
+}
+
+.bdh__sp-asym-h {
+  font-size: 1.125rem;
+  font-weight: 900;
+  color: #0c0a09;
+  margin: 0;
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+
+  span { color: #f59e0b; }
+}
+
+.bdh__sp-asym-rule {
+  width: 2.5rem;
+  height: 2px;
+  background: #f59e0b;
+  border-radius: 1px;
+}
+
+.bdh__sp-asym-frame {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, #fafaf9 0%, transparent 30%);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  img { width: 100%; height: 100%; object-fit: cover; display: block; }
+}
+
+// ─────────────────────────────────────────
+// 4. SPARKY HORIZON — content row top + photo band bottom
+// ─────────────────────────────────────────
+
+.bdh--sp-horizon {
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.bdh__sp-hz-top {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 1.5rem;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.bdh__sp-hz-copy {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.bdh__sp-hz-h {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+  letter-spacing: -0.025em;
+}
+
+.bdh__sp-hz-stats {
+  display: flex;
+  gap: 1.25rem;
+  flex-shrink: 0;
+}
+
+.bdh__sp-hz-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.375rem;
+  color: #6b7280;
+
+  strong {
+    font-size: 0.6875rem;
+    font-weight: 800;
+    color: #111827;
+  }
+}
+
+.bdh__sp-hz-band {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+
+  img { width: 100%; height: 100%; object-fit: cover; display: block; }
+}
+
+// ─────────────────────────────────────────
+// 5. SPARKY TEAL — solid teal brand, no photo
+// ─────────────────────────────────────────
+
+.bdh--sp-teal {
+  background: #0d9488;
+  position: relative;
+  overflow: hidden;
+}
+
+.bdh__sp-teal-bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255 255 255 / 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255 255 255 / 0.04) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.bdh__sp-teal-bolt {
+  position: absolute;
+  right: 3rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 100px;
+  height: 100px;
+  fill: rgba(255 255 255 / 0.05);
+}
+
+.bdh__sp-teal-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  height: 100%;
+  max-width: 70%;
+}
+
+.bdh__sp-teal-h {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+.bdh__sp-teal-stats {
+  display: flex;
+  gap: 1.75rem;
+  margin-top: 0.5rem;
+}
+
+.bdh__sp-teal-stat {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.375rem;
+  color: rgba(255 255 255 / 0.6);
+
+  strong {
+    font-size: 0.625rem;
+    font-weight: 700;
+    color: #fff;
+  }
+}
+
+// ─────────────────────────────────────────
+// 6. SPARKY DISPATCH — dark, two CTA path cards
+// ─────────────────────────────────────────
+
+.bdh--sp-dispatch {
+  background: #0c1a2e;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  gap: 1rem;
+}
+
+.bdh__sp-disp-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.bdh__sp-disp-h {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin: 0;
+  line-height: 1.35;
+  max-width: 380px;
+}
+
+.bdh__sp-disp-paths {
+  display: flex;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.bdh__sp-disp-path {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 1rem;
+  border-radius: 10px;
+  cursor: default;
+
+  &--urgent { background: rgba(239 68 68 / 0.14); border: 1px solid rgba(239 68 68 / 0.3); }
+  &--plan   { background: rgba(255 255 255 / 0.05); border: 1px solid rgba(255 255 255 / 0.1); }
+}
+
+.bdh__sp-disp-tag {
+  font-size: 0.375rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+
+  .bdh__sp-disp-path--urgent & { color: #fca5a5; }
+  .bdh__sp-disp-path--plan &   { color: #93c5fd; }
+}
+
+.bdh__sp-disp-title {
+  font-size: 0.6875rem;
+  font-weight: 700;
+
+  .bdh__sp-disp-path--urgent & { color: #fff; }
+  .bdh__sp-disp-path--plan &   { color: #e2e8f0; }
+}
+
+.bdh__sp-disp-note {
+  font-size: 0.4375rem;
+  line-height: 1.5;
+
+  .bdh__sp-disp-path--urgent & { color: rgba(255 255 255 / 0.55); }
+  .bdh__sp-disp-path--plan &   { color: rgba(255 255 255 / 0.45); }
+}
+
+// ─────────────────────────────────────────
+// 7. WRI FULLBLEED — bg photo + left dark gradient
+// ─────────────────────────────────────────
+
+.bdh--wri-fullbleed {
+  background-size: cover;
+  background-position: center;
+  background-color: #0c1a2e;
+
+  .bdh__scrim {
+    background: linear-gradient(90deg, rgba(0 0 0 / 0.8) 0%, rgba(0 0 0 / 0.35) 60%, transparent 100%);
+  }
+}
+
+.bdh__wri-panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 1.75rem;
+  max-width: 52%;
+}
+
+.bdh__wri-h {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+  line-height: 1.3;
+  letter-spacing: -0.025em;
+}
+
+.bdh__wri-sub {
+  font-size: 0.5rem;
+  color: rgba(255 255 255 / 0.6);
+  margin: 0;
+  line-height: 1.55;
+}
+
+// ─────────────────────────────────────────
+// 8. WRI SPLIT FIELD — left photo + right copy
+// ─────────────────────────────────────────
+
+.bdh--wri-split {
+  display: flex;
+  background: #fff;
+}
+
+.bdh__wri-split-photo {
+  flex: 0 0 55%;
+  position: relative;
+  overflow: hidden;
+
+  img { width: 100%; height: 100%; object-fit: cover; display: block; }
+}
+
+.bdh__wri-split-tag {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 0.75rem;
+  background: rgba(0 0 0 / 0.6);
+  color: rgba(255 255 255 / 0.85);
+  font-size: 0.375rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+}
+
+.bdh__wri-split-copy {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.75rem 1.5rem;
+}
+
+.bdh__wri-split-h {
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: #0c1a2e;
+  margin: 0;
+  line-height: 1.35;
+  letter-spacing: -0.025em;
+}
+
+// ─────────────────────────────────────────
+// 9. WRI PHOTO BENTO — left copy + right 2×2 photo grid
+// ─────────────────────────────────────────
+
+.bdh--wri-bento {
+  background: #f8f9fa;
+  display: flex;
+}
+
+.bdh__wri-bento-copy {
+  flex: 0 0 44%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 1.5rem;
+}
+
+.bdh__wri-bento-h {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #0c1a2e;
+  margin: 0;
+  line-height: 1.35;
+  letter-spacing: -0.025em;
+}
+
+.bdh__wri-bento-photos {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 3px;
+  overflow: hidden;
+}
+
+.bdh__wri-bento-tile {
+  overflow: hidden;
+  background: #c4cdd5;
+
+  &--accent { background: #1e3a5f; }
+
+  img { width: 100%; height: 100%; object-fit: cover; display: block; }
+}
+
+// ─────────────────────────────────────────
+// 10. WRI METRICS — left copy + right 3 metric tiles
+// ─────────────────────────────────────────
+
+.bdh--wri-metrics {
+  background: #fff;
+  display: flex;
+}
+
+.bdh__wri-mx-copy {
+  flex: 0 0 55%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 1.75rem 1.25rem 1.75rem 1.75rem;
+}
+
+.bdh__wri-mx-h {
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: #0c1a2e;
+  margin: 0;
+  line-height: 1.35;
+  letter-spacing: -0.025em;
+}
+
+.bdh__wri-mx-tiles {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem 1.5rem 1.5rem 0.75rem;
+}
+
+.bdh__wri-mx-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: 8px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+
+  &--accent { background: #1e3a5f; border-color: transparent; }
+}
+
+.bdh__wri-mx-val {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #0c1a2e;
+  line-height: 1;
+
+  .bdh__wri-mx-tile--accent & { color: #7dd3fc; }
+}
+
+.bdh__wri-mx-label {
+  font-size: 0.4375rem;
+  color: #6b7280;
+
+  .bdh__wri-mx-tile--accent & { color: rgba(255 255 255 / 0.6); }
+}
+
+// ─────────────────────────────────────────
+// 11. WRI COASTAL — copy top + wide photo band bottom
+// ─────────────────────────────────────────
+
+.bdh--wri-coastal {
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.bdh__wri-coast-copy {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.25rem 1.75rem;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.bdh__wri-coast-h {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #0c1a2e;
+  margin: 0;
+  line-height: 1.35;
+  letter-spacing: -0.025em;
+}
+
+.bdh__wri-coast-band {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  min-height: 0;
+
+  img { width: 100%; height: 100%; object-fit: cover; display: block; }
+}
+
+.bdh__wri-coast-caption {
+  position: absolute;
+  bottom: 0.625rem;
+  right: 0.875rem;
+  background: rgba(0 0 0 / 0.55);
+  color: rgba(255 255 255 / 0.8);
+  font-size: 0.375rem;
+  font-weight: 500;
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  backdrop-filter: blur(4px);
+}
+
+// ─────────────────────────────────────────
+// 12. CONSULT SPLIT — left photo + right content
+// ─────────────────────────────────────────
+
+.bdh--co-split {
+  background: #f8fafc;
+  display: flex;
+}
+
+.bdh__co-photo {
+  flex: 0 0 46%;
+  overflow: hidden;
+
+  img { width: 100%; height: 100%; object-fit: cover; display: block; }
+}
+
+.bdh__co-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.75rem 1.5rem;
   background: #f8fafc;
 }
 
-.bd-hero__consult-heading {
+.bdh__co-h {
   font-size: 0.75rem;
   font-weight: 800;
   color: #0f172a;
   margin: 0;
-  line-height: 1.35;
+  line-height: 1.3;
   letter-spacing: -0.02em;
 }
 
-.bd-hero__consult-sub {
-  font-size: 0.5625rem;
-  color: #64748b;
-  margin: 0;
-  line-height: 1.5;
+// ─────────────────────────────────────────
+// 13. CONSULT FULLBLEED — bg photo + top heading + bottom CTAs
+// ─────────────────────────────────────────
+
+.bdh--co-fullbleed {
+  background-size: cover;
+  background-position: center;
+  background-color: #334155;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.75rem;
+
+  .bdh__scrim {
+    background: linear-gradient(
+      180deg,
+      rgba(0 0 0 / 0.65) 0%,
+      rgba(0 0 0 / 0.2) 50%,
+      rgba(0 0 0 / 0.75) 100%
+    );
+  }
 }
 
-.bd-hero__actions--consult {
-  margin-top: 0.25rem;
+.bdh__co-top,
+.bdh__co-bottom {
+  position: relative;
+  z-index: 1;
+}
+
+.bdh__co-bottom {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.bdh__co-fb-h {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+  line-height: 1.3;
+  letter-spacing: -0.025em;
+  max-width: 500px;
+}
+
+.bdh__co-fb-org {
+  font-size: 0.4375rem;
+  color: rgba(255 255 255 / 0.6);
+  margin: 0.375rem 0 0;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
 }
 
 // ── Template grid (step 3)

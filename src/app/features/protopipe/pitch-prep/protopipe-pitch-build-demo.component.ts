@@ -9,6 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { UpperCasePipe } from '@angular/common';
 import type {
   BrandBookImageStylePresetId,
   MediaStudioGeneratedImage,
@@ -31,6 +32,30 @@ export type BuildDemoStep = 'url' | 'images' | 'theme' | 'logo' | 'style';
 
 const STEP_ORDER: BuildDemoStep[] = ['url', 'images', 'theme', 'logo', 'style'];
 
+export interface HeroVariant {
+  id: string;
+  label: string;
+  brand: 'sparky' | 'wri' | 'consult';
+  layout: string;
+  url: string;
+}
+
+const HERO_VARIANTS: HeroVariant[] = [
+  { id: 'sp-callout',    label: 'Fullbleed Callout', brand: 'sparky',  layout: 'sp-callout',    url: 'sparkyelectrichawaii.com' },
+  { id: 'sp-bento',      label: 'Bento Grid',        brand: 'sparky',  layout: 'sp-bento',      url: 'sparkyelectrichawaii.com' },
+  { id: 'sp-asymmetric', label: 'Asymmetric',         brand: 'sparky',  layout: 'sp-asymmetric', url: 'sparkyelectrichawaii.com' },
+  { id: 'sp-horizon',    label: 'Horizon Band',       brand: 'sparky',  layout: 'sp-horizon',    url: 'sparkyelectrichawaii.com' },
+  { id: 'sp-teal',       label: 'Teal Brand',         brand: 'sparky',  layout: 'sp-teal',       url: 'sparkyelectrichawaii.com' },
+  { id: 'sp-dispatch',   label: 'Dispatch CTA',       brand: 'sparky',  layout: 'sp-dispatch',   url: 'sparkyelectrichawaii.com' },
+  { id: 'wri-fullbleed', label: 'Fullbleed Rig',      brand: 'wri',     layout: 'wri-fullbleed', url: 'waterresourcesinternational.com' },
+  { id: 'wri-split',     label: 'Split Field',        brand: 'wri',     layout: 'wri-split',     url: 'waterresourcesinternational.com' },
+  { id: 'wri-bento',     label: 'Photo Bento',        brand: 'wri',     layout: 'wri-bento',     url: 'waterresourcesinternational.com' },
+  { id: 'wri-metrics',   label: 'Metrics',            brand: 'wri',     layout: 'wri-metrics',   url: 'waterresourcesinternational.com' },
+  { id: 'wri-coastal',   label: 'Coastal Band',       brand: 'wri',     layout: 'wri-coastal',   url: 'waterresourcesinternational.com' },
+  { id: 'co-split',      label: 'Split Layout',       brand: 'consult', layout: 'co-split',      url: 'wilcoconsulting.com' },
+  { id: 'co-fullbleed',  label: 'Fullbleed',          brand: 'consult', layout: 'co-fullbleed',  url: 'wilcoconsulting.com' },
+];
+
 const THEME_OPTIONS: { label: string; value: string; swatch: string; bg: string }[] = [
   { label: 'Ocean', value: 'ocean', swatch: '#0369a1', bg: '#e0f2fe' },
   { label: 'Classic gold', value: 'classic-gold', swatch: '#92400e', bg: '#fef3c7' },
@@ -43,7 +68,7 @@ const THEME_OPTIONS: { label: string; value: string; swatch: string; bg: string 
 @Component({
   selector: 'app-protopipe-pitch-build-demo',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, UpperCasePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './protopipe-pitch-build-demo.component.html',
   styleUrl: './protopipe-pitch-build-demo.component.scss',
@@ -82,6 +107,20 @@ export class ProtopipePitchBuildDemoComponent implements OnInit {
   readonly galleryImages = signal<MediaStudioGeneratedImage[]>([]);
   readonly selectedUrls = signal<string[]>([]);
   readonly previewImageUrl = signal<string | null>(null);
+
+  // ── Hero carousel
+  readonly previewBrand = signal<'sparky' | 'wri' | 'consult'>('sparky');
+  readonly previewHeroIdx = signal(0);
+
+  readonly currentBrandHeroes = computed(() =>
+    HERO_VARIANTS.filter((h) => h.brand === this.previewBrand())
+  );
+
+  readonly currentHero = computed(() => {
+    const heroes = this.currentBrandHeroes();
+    const idx = Math.min(this.previewHeroIdx(), heroes.length - 1);
+    return heroes[Math.max(idx, 0)] ?? heroes[0];
+  });
 
   readonly photoModelChoices = computed(() => {
     const cfg = this.studio.config();
@@ -221,10 +260,27 @@ export class ProtopipePitchBuildDemoComponent implements OnInit {
   openPreview(url: string, event: Event): void {
     event.stopPropagation();
     this.previewImageUrl.set(url);
+    this.previewBrand.set('sparky');
+    this.previewHeroIdx.set(0);
   }
 
   closePreview(): void {
     this.previewImageUrl.set(null);
+  }
+
+  selectBrand(brand: 'sparky' | 'wri' | 'consult'): void {
+    this.previewBrand.set(brand);
+    this.previewHeroIdx.set(0);
+  }
+
+  nextHero(): void {
+    const len = this.currentBrandHeroes().length;
+    this.previewHeroIdx.update((i) => (i + 1) % len);
+  }
+
+  prevHero(): void {
+    const len = this.currentBrandHeroes().length;
+    this.previewHeroIdx.update((i) => (i - 1 + len) % len);
   }
 
   toggleImage(url: string): void {

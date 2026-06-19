@@ -15,6 +15,7 @@ import type {
   ProtopipeIntakeTriggerType,
   ProtopipePendingConversation,
 } from '@hive/contracts';
+import { HttpErrorResponse } from '@angular/common/http';
 import { IntakeStudioApiService } from '../../lab/intake-studio/intake-studio-api.service';
 import { ProtopipeContactsApiService } from '../../settings/protopipe-contacts-api.service';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
@@ -145,7 +146,14 @@ export class ProtopipeHomeIntakeDemoComponent implements OnInit {
       this.activeConversation.set(conversation);
       this.maybePoll(conversation);
     } catch (err) {
-      this.actionError.set(parseProtopipeApiError(err, 'Could not start conversation.'));
+      const msg = parseProtopipeApiError(err, 'Could not start conversation.');
+      if (err instanceof HttpErrorResponse && err.status === 0) {
+        this.actionError.set(
+          'Could not reach the API (network/CORS). If you just deployed, wait a minute for the server to restart and try again.',
+        );
+      } else {
+        this.actionError.set(msg);
+      }
     } finally {
       this.sending.set(null);
     }

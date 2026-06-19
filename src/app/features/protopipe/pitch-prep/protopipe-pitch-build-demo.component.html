@@ -189,20 +189,19 @@
             </div>
             <div class="bd-gallery">
               @for (img of galleryImages(); track img.url) {
-                <button
-                  type="button"
-                  class="bd-gallery__item"
-                  [class.is-selected]="isSelected(img.url)"
-                  (click)="toggleImage(img.url)"
-                >
-                  <img [src]="img.url" alt="Generated site image" loading="lazy" />
+                <div class="bd-gallery__item" [class.is-selected]="isSelected(img.url)">
+                  <img [src]="img.url" alt="Generated site image" loading="lazy" (click)="toggleImage(img.url)" />
                   @if (isSelected(img.url)) {
                     <span class="bd-gallery__badge">{{ imageSlotLabel(img.url) }}</span>
                   }
-                  <span class="bd-gallery__overlay">
+                  <span class="bd-gallery__check" (click)="toggleImage(img.url)">
                     <svg viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                   </span>
-                </button>
+                  <button type="button" class="bd-gallery__preview-btn" (click)="openPreview(img.url, $event)" title="Preview as hero">
+                    <svg viewBox="0 0 16 16" fill="none"><path d="M1 8s3-5 7-5 7 5 7 5-3 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3"/></svg>
+                    Preview
+                  </button>
+                </div>
               }
             </div>
           } @else if (!studio.generating()) {
@@ -396,4 +395,117 @@
       }<!-- /switch -->
     </div><!-- /bd-stage -->
   </div><!-- /bd-body -->
+<!-- ── Hero Preview Modal ── -->
+@if (previewImageUrl(); as previewUrl) {
+  <div class="bd-preview-modal" (click)="closePreview()">
+    <div class="bd-preview-modal__inner" (click)="$event.stopPropagation()">
+
+      <header class="bd-preview-modal__header">
+        <div class="bd-preview-modal__title">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M1 8s3-5 7-5 7 5 7 5-3 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3"/></svg>
+          Hero preview — three demo sites
+        </div>
+        <button type="button" class="bd-preview-modal__close" (click)="closePreview()">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+      </header>
+
+      <div class="bd-preview-modal__deck">
+        Click outside or press × to close. Click the image in the gallery to select it for this slot.
+      </div>
+
+      <div class="bd-preview-sites">
+
+        <!-- Sparky Electric — fullbleed dark overlay centered -->
+        <div class="bd-preview-site">
+          <div class="bd-preview-site__label">
+            <span class="bd-preview-site__dot" style="background:#f59e0b"></span>
+            Sparky Electric
+          </div>
+          <div class="bd-hero bd-hero--sparky" [style.background-image]="'url(' + previewUrl + ')'">
+            <div class="bd-hero__scrim"></div>
+            <div class="bd-hero__stage">
+              <div class="bd-hero__center">
+                <div class="bd-hero__mark">
+                  <svg viewBox="0 0 24 24" fill="none"><polygon points="13,2 3,14 12,14 11,22 21,10 12,10" fill="#f59e0b"/></svg>
+                </div>
+                <p class="bd-hero__eyebrow">Makawao · Maui, Hawaii</p>
+                <h2 class="bd-hero__title">Quality electrical services for Maui homes and businesses.</h2>
+                <p class="bd-hero__sub">Local family-owned electricians — residential, commercial, solar off-grid &amp; grid-tied.</p>
+                <div class="bd-hero__actions">
+                  <span class="bd-hero__btn bd-hero__btn--primary">Call now</span>
+                  <span class="bd-hero__btn bd-hero__btn--ghost">View services</span>
+                </div>
+              </div>
+            </div>
+            <div class="bd-hero__proof">
+              <div class="bd-hero__callout">"Great work" <span>— M. Santos</span></div>
+              <div class="bd-hero__callout"><strong>Since 2015</strong> <span>Family owned</span></div>
+              <div class="bd-hero__callout"><strong>100%</strong> <span>Satisfaction</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- WRI — fullbleed dark overlay left-aligned -->
+        <div class="bd-preview-site">
+          <div class="bd-preview-site__label">
+            <span class="bd-preview-site__dot" style="background:#0ea5e9"></span>
+            Water Resources International
+          </div>
+          <div class="bd-hero bd-hero--wri" [style.background-image]="'url(' + previewUrl + ')'">
+            <div class="bd-hero__scrim bd-hero__scrim--wri"></div>
+            <div class="bd-hero__wri-layout">
+              <div class="bd-hero__wri-panel">
+                <p class="bd-hero__wri-eyebrow">Honolulu · Pacific Basin</p>
+                <h2 class="bd-hero__wri-title">Groundwater exploration and deep well drilling for Hawaii.</h2>
+                <p class="bd-hero__wri-sub">Industry-leading drillers and water resource specialists — government, commercial, and private clients across the islands for over 35 years.</p>
+                <div class="bd-hero__actions">
+                  <span class="bd-hero__btn bd-hero__btn--earth">Request a quote</span>
+                  <span class="bd-hero__btn bd-hero__btn--ghost">Call us</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Consult Demo — split hero -->
+        <div class="bd-preview-site">
+          <div class="bd-preview-site__label">
+            <span class="bd-preview-site__dot" style="background:#64748b"></span>
+            Wilco Consulting
+          </div>
+          <div class="bd-hero bd-hero--consult">
+            <div class="bd-hero__consult-image">
+              <img [src]="previewUrl" alt="Hero preview" loading="lazy" />
+            </div>
+            <div class="bd-hero__consult-content">
+              <h2 class="bd-hero__consult-heading">Civil Infrastructure Consulting For Rural Alaska</h2>
+              <p class="bd-hero__consult-sub">From Engineering to Project Execution &amp; Logistics — we get it done.</p>
+              <div class="bd-hero__actions bd-hero__actions--consult">
+                <span class="bd-hero__btn bd-hero__btn--slate">Get started</span>
+                <span class="bd-hero__btn bd-hero__btn--ghost-dark">Learn more</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /bd-preview-sites -->
+
+      <div class="bd-preview-modal__footer">
+        <button type="button" class="bd-btn bd-btn--primary" (click)="toggleImage(previewUrl); closePreview()">
+          @if (isSelected(previewUrl)) {
+            <svg viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Deselect image
+          } @else {
+            <svg viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Select as {{ selectedUrls().length === 0 ? 'Hero' : selectedUrls().length === 1 ? 'Alternate' : 'Section' }}
+          }
+        </button>
+        <button type="button" class="bd-btn bd-btn--ghost" (click)="closePreview()">Close</button>
+      </div>
+
+    </div>
+  </div>
+}
+
 </div><!-- /bd-shell -->

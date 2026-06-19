@@ -81,6 +81,7 @@ export class ProtopipePitchBuildDemoComponent implements OnInit {
   readonly imgNumImages = signal(2);
   readonly galleryImages = signal<MediaStudioGeneratedImage[]>([]);
   readonly selectedUrls = signal<string[]>([]);
+  readonly previewImageUrl = signal<string | null>(null);
 
   readonly photoModelChoices = computed(() => {
     const cfg = this.studio.config();
@@ -215,6 +216,15 @@ export class ProtopipePitchBuildDemoComponent implements OnInit {
     if (result?.images?.length) {
       this.galleryImages.update((prev) => [...result.images, ...prev]);
     }
+  }
+
+  openPreview(url: string, event: Event): void {
+    event.stopPropagation();
+    this.previewImageUrl.set(url);
+  }
+
+  closePreview(): void {
+    this.previewImageUrl.set(null);
   }
 
   toggleImage(url: string): void {

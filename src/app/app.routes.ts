@@ -39,10 +39,9 @@ export const routes: Routes = [
       ),
   },
   {
-    // Intake Studio — admin observability prototype for the SMS/conversation
-    // intake system. Dev-only lab mockup (no backend), hardcoded fixtures.
+    // Intake Studio — admin observability for the SMS/conversation intake system.
     path: 'protopipe/lab/intake-studio',
-    canMatch: [devRoutesGuard],
+    canActivate: [authGuard, operatorOnlyGuard],
     loadComponent: () =>
       import('./features/protopipe/lab/intake-studio/intake-studio.component').then(
         (m) => m.IntakeStudioComponent,

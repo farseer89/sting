@@ -9,13 +9,20 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import type { BrandBookImageStylePresetId, PitchMediaSlot } from '@hive/contracts';
+import type {
+  BrandBookImageStylePresetId,
+  MediaStudioGeneratedImage,
+  MediaStudioKind,
+  MediaStudioImageSize,
+  PitchMediaSlot,
+} from '@hive/contracts';
 import {
   BRAND_BOOK_IMAGE_PRESETS,
   BRAND_BOOK_INFOGRAPH_VARIANTS,
 } from '../brand-book/brand-book.constants';
 import { ProtopipeBrandBookService } from '../brand-book/protopipe-brand-book.service';
 import { ProtopipeSiteBuilderService } from '../site-builder/protopipe-site-builder.service';
+import { ProtopipeMediaStudioService } from '../protopipe-media-studio.service';
 import { ProtopipePitchPrepService } from './protopipe-pitch-prep.service';
 import { ProtopipePitchProspectService } from './protopipe-pitch-prospect.service';
 import type { PitchLead } from './protopipe-pitch-prospect-board.component';
@@ -47,6 +54,7 @@ export class ProtopipePitchBuildDemoComponent implements OnInit {
 
   readonly pitchPrep = inject(ProtopipePitchPrepService);
   readonly siteBuilder = inject(ProtopipeSiteBuilderService);
+  readonly studio = inject(ProtopipeMediaStudioService);
 
   readonly lead = input<PitchLead | null>(null);
   readonly back = output<void>();
@@ -67,9 +75,28 @@ export class ProtopipePitchBuildDemoComponent implements OnInit {
   readonly ingestError = signal<string | null>(null);
   readonly siteId = signal<string | null>(null);
 
-  // ── Step 2: Images
-  readonly selectedHeroId = signal<string | null>(null);
-  readonly generatingImages = signal(false);
+  // ── Step 2: Images — media studio style
+  readonly imgPrompt = signal('');
+  readonly imgModel = signal('');
+  readonly imgNumImages = signal(2);
+  readonly galleryImages = signal<MediaStudioGeneratedImage[]>([]);
+  readonly selectedUrls = signal<string[]>([]);
+
+  readonly photoModelChoices = computed(() => {
+    const cfg = this.studio.config();
+    if (!cfg) return [];
+    return cfg.models.filter((m) => m.kinds.includes('photo' as MediaStudioKind));
+  });
+
+  readonly photoKindMeta = computed(() =>
+    this.studio.config()?.kinds.find((k) => k.kind === 'photo')
+  );
+
+  readonly canGenerate = computed(() =>
+    this.imgPrompt().trim().length > 0 &&
+    this.imgModel().length > 0 &&
+    !this.studio.generating()
+  );
 
   // ── Step 3: Theme
   readonly selectedTemplate = signal('starter-minimal-v1');
@@ -85,16 +112,6 @@ export class ProtopipePitchBuildDemoComponent implements OnInit {
   // ── Derived
 
   readonly stepIndex = computed(() => STEP_ORDER.indexOf(this.activeStep()));
-
-  readonly heroAssets = computed(() =>
-    this.pitchPrep.assets().filter((a) => a.slot === ('hero' as PitchMediaSlot))
-  );
-
-  readonly sectionAssets = computed(() =>
-    this.pitchPrep.assets().filter((a) => a.slot === ('section' as PitchMediaSlot))
-  );
-
-  readonly hasImages = computed(() => this.pitchPrep.assets().length > 0);
 
   stepLabel(step: BuildDemoStep): string {
     return {
@@ -131,11 +148,19 @@ export class ProtopipePitchBuildDemoComponent implements OnInit {
   ngOnInit(): void {
     const lead = this.lead();
     if (lead) {
-      // Pre-populate URL if the lead has a good/fair website — leave empty for none/poor
       const hasUrl = lead.website === 'good' || lead.website === 'fair';
       this.siteUrl.set(hasUrl ? `https://www.${lead.name.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '')}.com` : '');
+      this.imgPrompt.set(`Professional ${lead.category.toLowerCase()} business in ${lead.area}. Clean, trustworthy, local service hero photography.`);
     }
     void this.siteBuilder.ensureTemplatesLoaded();
+    void this.studio.loadConfig().then(() => {
+      const meta = this.photoKindMeta();
+      const choices = this.photoModelChoices();
+      if (meta && choices.length) {
+        const preferred = choices.find((c) => c.id === meta.defaultModel) ?? choices[0];
+        this.imgModel.set(preferred.id);
+      }
+    });
   }
 
   // ── Step 1: URL
@@ -177,20 +202,44 @@ export class ProtopipePitchBuildDemoComponent implements OnInit {
 
   // ── Step 2: Images
 
-  async generateImages(): Promise<void> {
-    const siteId = this.siteId();
-    if (!siteId) return;
-    this.generatingImages.set(true);
-    try {
-      await this.brandBookSvc.save();
-      await this.pitchPrep.generatePack(siteId);
-    } finally {
-      this.generatingImages.set(false);
+  async generateSiteImages(): Promise<void> {
+    const meta = this.photoKindMeta();
+    if (!meta || !this.imgPrompt().trim() || !this.imgModel()) return;
+    const result = await this.studio.generate({
+      kind: 'photo' as MediaStudioKind,
+      model: this.imgModel(),
+      prompt: this.imgPrompt().trim(),
+      imageSize: meta.defaultImageSize as MediaStudioImageSize,
+      numImages: Math.min(Math.max(this.imgNumImages(), 1), meta.maxVariants),
+    });
+    if (result?.images?.length) {
+      this.galleryImages.update((prev) => [...result.images, ...prev]);
     }
   }
 
-  selectHero(id: string): void {
-    this.selectedHeroId.set(id);
+  toggleImage(url: string): void {
+    this.selectedUrls.update((prev) => {
+      if (prev.includes(url)) return prev.filter((u) => u !== url);
+      return [...prev, url];
+    });
+  }
+
+  isSelected(url: string): boolean {
+    return this.selectedUrls().includes(url);
+  }
+
+  imageSlotLabel(url: string): string {
+    const idx = this.selectedUrls().indexOf(url);
+    if (idx === 0) return 'Hero';
+    if (idx === 1) return 'Alternate';
+    if (idx === 2) return 'Section';
+    return `+${idx + 1}`;
+  }
+
+  adjustNumImages(delta: number): void {
+    const meta = this.photoKindMeta();
+    const max = meta?.maxVariants ?? 4;
+    this.imgNumImages.update((n) => Math.min(Math.max(n + delta, 1), max));
   }
 
   continueFromImages(): void {

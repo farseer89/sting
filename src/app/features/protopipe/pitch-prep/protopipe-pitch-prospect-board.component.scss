@@ -75,6 +75,7 @@ $accent: #2563eb;
 .pb-binder {
   display: grid;
   grid-template-columns: 11rem 1fr;
+  grid-template-rows: 1fr;
   flex: 1;
   min-height: 0;
   overflow: hidden;
@@ -86,6 +87,7 @@ $accent: #2563eb;
   border-right: 1px solid $border;
   padding: 0.75rem 0.625rem;
   overflow-y: auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
@@ -165,6 +167,7 @@ $accent: #2563eb;
 .pb-binder-panel {
   overflow-y: auto;
   overflow-x: hidden;
+  min-height: 0;
   padding: 1.25rem 1.5rem;
   position: relative;
 }

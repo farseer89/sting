@@ -15,6 +15,14 @@
     <div class="intake-demo__notice intake-demo__notice--error">{{ err }}</div>
   }
 
+  @if (smsOutboundConfigured() === false) {
+    <div class="intake-demo__notice intake-demo__notice--error">
+      Outbound SMS is not configured on the server. No text will be sent until
+      TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER are set in the bagend
+      environment and redeployed.
+    </div>
+  }
+
   <div class="intake-demo__contact-banner">
     @if (targetContact(); as contact) {
       <div>

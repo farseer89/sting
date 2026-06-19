@@ -121,6 +121,7 @@ export class ProtopipeHomeIntakeDemoComponent implements OnInit {
   readonly openByTrigger = signal<Partial<Record<ProtopipeIntakeTriggerType, ProtopipePendingConversation>>>(
     {},
   );
+  readonly smsOutboundConfigured = signal<boolean | null>(null);
 
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -142,6 +143,12 @@ export class ProtopipeHomeIntakeDemoComponent implements OnInit {
       const { contacts } = await withApiRetry(() => this.contactsApi.list(siteId));
       this.contacts.set(contacts);
       const contact = resolveTargetContact(contacts);
+      try {
+        const health = await withApiRetry(() => this.intakeApi.getHealth(siteId));
+        this.smsOutboundConfigured.set(health.smsOutboundConfigured);
+      } catch {
+        this.smsOutboundConfigured.set(null);
+      }
       try {
         const { open } = await withApiRetry(() => this.intakeApi.listConversations(siteId));
         this.syncOpenConversations(open, contact);

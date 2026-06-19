@@ -83,4 +83,8 @@ export class IntakeStudioApiService {
       protopipeApiUrl(ENDPOINTS.health, { siteId }),
     );
   }
+
+  getHealth(siteId: string): Promise<ProtopipeIntakeHealthResponse> {
+    return firstValueFrom(this.getHealth$(siteId));
+  }
 }

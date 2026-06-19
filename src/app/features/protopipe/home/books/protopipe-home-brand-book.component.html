@@ -1,297 +1,457 @@
-<div class="brand-book bb-magazine">
-  <header class="brand-book__masthead">
-    <div class="brand-book__masthead-copy">
-      <p class="bb-chapter">Brand book</p>
-      <h1 class="brand-book__title">Your visual &amp; voice guide</h1>
-      <p class="brand-book__deck">
-        A living style reference for article photos, infographics, and tone — the same cues
-        generation uses on every draft.
-      </p>
+<div class="bb-shell">
+
+  <!-- Masthead -->
+  <header class="bb-masthead">
+    <div class="bb-masthead__left">
+      <h1 class="bb-masthead__title">Brand book</h1>
+      <p class="bb-masthead__deck">Visual and voice guide — the same cues generation uses on every draft.</p>
     </div>
-    <div class="brand-book__masthead-actions">
+    <div class="bb-masthead__actions">
       @if (!brandBookSvc.setupComplete()) {
-        <p-button label="Run setup wizard" icon="pi pi-sparkles" severity="secondary" (onClick)="runWizard.emit()" />
+        <p-button label="Run setup wizard" icon="pi pi-sparkles" severity="secondary" size="small" (onClick)="runWizard.emit()" />
       } @else {
-        <span class="brand-book__badge">Setup complete</span>
+        <span class="bb-badge bb-badge--complete">Setup complete</span>
       }
       <p-button
         [label]="brandBookSvc.saving() ? 'Saving…' : brandBookSvc.dirty() ? 'Save' : 'Saved'"
         [disabled]="!brandBookSvc.dirty() || brandBookSvc.saving()"
+        size="small"
         (onClick)="save()"
       />
     </div>
   </header>
 
   @if (brandBookSvc.error(); as err) {
-    <p-message severity="error" [text]="err" styleClass="w-full mb-3" />
+    <p-message severity="error" [text]="err" styleClass="w-full" />
   }
 
   @if (brandBookSvc.loading()) {
-    <div class="brand-book__loading">
+    <div class="bb-loading">
       <p-progressSpinner strokeWidth="4" ariaLabel="Loading brand book" />
     </div>
   } @else if (brandBookSvc.draft(); as book) {
-    <article class="bb-spread">
-      <div class="bb-spread__inner">
-        <span class="bb-chapter">Chapter 01 · Photography</span>
-        <h2 class="bb-spread__title">Blog photo style</h2>
-        <p class="bb-spread__deck">
-          Pick the look for auto-generated hero and inline photos. Each option shows a sample
-          output in that style.
-        </p>
 
-        <div class="bb-gallery bb-gallery--photos">
-          @for (preset of imagePresets; track preset.id) {
-            <button
-              type="button"
-              class="bb-option"
-              [class.bb-option--active]="book.imageStyle.presetId === preset.id"
-              (click)="onPresetChange(preset.id)"
-            >
-              <div class="bb-option__media">
-                @if (preset.previewImage) {
-                  <img class="bb-option__image" [src]="preset.previewImage" [alt]="preset.label" loading="lazy" />
-                } @else {
-                  <div class="bb-option__placeholder">Your custom prompt</div>
-                }
-                @if (book.imageStyle.presetId === preset.id) {
-                  <span class="bb-option__mark">Selected</span>
-                }
-              </div>
-              <div class="bb-option__caption">
-                <span class="bb-option__label">{{ preset.label }}</span>
-                <span class="bb-option__desc">{{ preset.description }}</span>
-              </div>
-            </button>
+    <!-- 2-pane binder -->
+    <div class="bb-binder">
+
+      <!-- Left binder nav -->
+      <nav class="bb-binder-nav" aria-label="Brand book sections">
+        <div class="bb-binder-nav__label">Brand</div>
+        <button
+          type="button"
+          class="bb-binder-nav__item"
+          [class.is-active]="binderSection() === 'typography'"
+          (click)="binderSection.set('typography')"
+        >
+          <svg class="bb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M8 4v8M5 12h6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+          Typography
+        </button>
+        <button
+          type="button"
+          class="bb-binder-nav__item"
+          [class.is-active]="binderSection() === 'logo'"
+          (click)="binderSection.set('logo')"
+        >
+          <svg class="bb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.1"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.1"/></svg>
+          Logo
+        </button>
+
+        <div class="bb-binder-nav__label" style="margin-top:0.75rem;">Content</div>
+        <button
+          type="button"
+          class="bb-binder-nav__item"
+          [class.is-active]="binderSection() === 'images'"
+          (click)="binderSection.set('images')"
+        >
+          <svg class="bb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="3.5" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.1"/><circle cx="5.5" cy="7" r="1.2" stroke="currentColor" stroke-width="1"/><path d="M2 10.5l3-3 2.5 2.5 2-2 4 4" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Images
+          @if (book.imageStyle.presetId) {
+            <span class="bb-binder-nav__check">✓</span>
           }
-        </div>
-
-        @if (book.imageStyle.presetId === 'custom') {
-          <label class="bb-field">
-            <span>Custom image prompt suffix</span>
-            <textarea
-              pTextarea
-              class="w-full"
-              rows="3"
-              [ngModel]="book.imageStyle.promptSuffix ?? ''"
-              (ngModelChange)="onCustomSuffixChange($event)"
-            ></textarea>
-          </label>
-        }
-      </div>
-    </article>
-
-    <article class="bb-spread">
-      <div class="bb-spread__inner">
-        <span class="bb-chapter">Chapter 02 · Infographics</span>
-        <h2 class="bb-spread__title">Stats &amp; process graphics</h2>
-        <p class="bb-spread__deck">
-          How stat cards and process diagrams render in articles. Brand palette applies to all
-          variants.
-        </p>
-
-        <div class="bb-gallery bb-gallery--infographs">
-          @for (variant of infographVariants; track variant.id) {
-            <button
-              type="button"
-              class="bb-option"
-              [class.bb-option--active]="book.infographStyle.variant === variant.id"
-              (click)="onInfographChange(variant.id)"
-            >
-              <div class="bb-option__media">
-                <img
-                  class="bb-option__image"
-                  [src]="variant.previewImage"
-                  [alt]="variant.label"
-                  loading="lazy"
-                />
-                @if (book.infographStyle.variant === variant.id) {
-                  <span class="bb-option__mark">Selected</span>
-                }
-              </div>
-              <div class="bb-option__caption">
-                <span class="bb-option__label">{{ variant.label }}</span>
-                <span class="bb-option__desc">{{ variant.description }}</span>
-              </div>
-            </button>
+        </button>
+        <button
+          type="button"
+          class="bb-binder-nav__item"
+          [class.is-active]="binderSection() === 'infographics'"
+          (click)="binderSection.set('infographics')"
+        >
+          <svg class="bb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M5 11V8M8 11V5M11 11V7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Infographics
+          @if (book.infographStyle.variant) {
+            <span class="bb-binder-nav__check">✓</span>
           }
-        </div>
+        </button>
+        <button
+          type="button"
+          class="bb-binder-nav__item"
+          [class.is-active]="binderSection() === 'copy-style'"
+          (click)="binderSection.set('copy-style')"
+        >
+          <svg class="bb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><path d="M3 4.5h10M3 7.5h10M3 10.5h7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+          Copy style
+          @if (book.voice.tone) {
+            <span class="bb-binder-nav__check">✓</span>
+          }
+        </button>
 
-        <div class="bb-palette">
-          <label class="bb-palette__field">
-            <span>Primary</span>
-            <div class="bb-palette__swatch-row">
-              <span
-                class="bb-palette__swatch"
-                [style.background]="book.infographStyle.palette?.primary ?? '#0a2240'"
-              ></span>
-              <input
-                pInputText
-                [ngModel]="book.infographStyle.palette?.primary ?? '#0a2240'"
-                (ngModelChange)="onPaletteChange('primary', $event)"
-              />
-            </div>
-          </label>
-          <label class="bb-palette__field">
-            <span>Accent</span>
-            <div class="bb-palette__swatch-row">
-              <span
-                class="bb-palette__swatch"
-                [style.background]="book.infographStyle.palette?.accent ?? '#006e99'"
-              ></span>
-              <input
-                pInputText
-                [ngModel]="book.infographStyle.palette?.accent ?? '#006e99'"
-                (ngModelChange)="onPaletteChange('accent', $event)"
-              />
-            </div>
-          </label>
-          <label class="bb-palette__field">
-            <span>Background</span>
-            <div class="bb-palette__swatch-row">
-              <span
-                class="bb-palette__swatch"
-                [style.background]="book.infographStyle.palette?.background ?? '#f5f5f0'"
-              ></span>
-              <input
-                pInputText
-                [ngModel]="book.infographStyle.palette?.background ?? '#f5f5f0'"
-                (ngModelChange)="onPaletteChange('background', $event)"
-              />
-            </div>
-          </label>
-        </div>
-      </div>
-    </article>
+        <div class="bb-binder-nav__label" style="margin-top:0.75rem;">References</div>
+        <button
+          type="button"
+          class="bb-binder-nav__item"
+          [class.is-active]="binderSection() === 'inspiration'"
+          (click)="binderSection.set('inspiration')"
+        >
+          <svg class="bb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><path d="M8 2.5l1 2.5 2.5.4-1.8 1.8.4 2.5L8 8.4l-2.1 1.3.4-2.5L4.5 5.4 7 5l1-2.5z" stroke="currentColor" stroke-width="1"/><path d="M5 12h6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+          Inspiration
+        </button>
+        <button
+          type="button"
+          class="bb-binder-nav__item"
+          [class.is-active]="binderSection() === 'corrections'"
+          (click)="binderSection.set('corrections')"
+        >
+          <svg class="bb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><path d="M4 11.5l7-7 2.5 2.5-7 7H4v-2.5z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg>
+          Corrections
+        </button>
+      </nav>
 
-    <article class="bb-spread">
-      <div class="bb-spread__inner">
-        <span class="bb-chapter">Chapter 03 · Voice</span>
-        <h2 class="bb-spread__title">How you sound</h2>
-        <p class="bb-spread__deck">
-          Tone, point of view, and gold paragraphs the writer should emulate.
-        </p>
+      <!-- Right content panel -->
+      <div class="bb-binder-panel">
 
-        <div class="bb-voice-grid">
-          <div>
-            <label class="bb-field">
-              <span>Tone</span>
-              <input
-                pInputText
-                class="w-full"
-                [ngModel]="book.voice.tone ?? ''"
-                (ngModelChange)="brandBookSvc.patchVoiceField('tone', $event)"
-              />
-            </label>
-            <label class="bb-field">
-              <span>Point of view</span>
-              <input
-                pInputText
-                class="w-full"
-                placeholder="e.g. first person plural, we"
-                [ngModel]="book.voice.pointOfView ?? ''"
-                (ngModelChange)="brandBookSvc.patchVoiceField('pointOfView', $event)"
-              />
-            </label>
-            <label class="bb-field">
-              <span>Phrases to avoid</span>
-              <input
-                pInputText
-                class="w-full"
-                placeholder="Comma-separated"
-                [ngModel]="(book.voice.avoidPhrases ?? []).join(', ')"
-                (ngModelChange)="brandBookSvc.patchAvoidPhrases($event)"
-              />
-            </label>
-          </div>
-          <div class="bb-examples">
-            <span class="bb-example__label">Style examples</span>
-            @for (i of [0, 1, 2, 3, 4]; track i) {
-              <div class="bb-example">
-                <textarea
-                  pTextarea
-                  class="w-full"
-                  rows="3"
-                  placeholder="Gold paragraph the agent should emulate"
-                  [ngModel]="book.styleExamples[i] ?? ''"
-                  (ngModelChange)="brandBookSvc.patchStyleExample(i, $event)"
-                ></textarea>
+        @switch (binderSection()) {
+
+          <!-- ── TYPOGRAPHY ── -->
+          @case ('typography') {
+            <div class="bb-panel-head">
+              <div class="bb-panel-kicker">Brand · Typography</div>
+              <h2 class="bb-panel-title">Type specimen</h2>
+              <p class="bb-panel-deck">The typefaces and scale used across all generated content for this site.</p>
+            </div>
+            <div class="bb-type-specimen">
+              <div class="bb-type-row">
+                <span class="bb-type-label">Display</span>
+                <span class="bb-type-sample bb-type-sample--display">The quick brown fox</span>
+              </div>
+              <div class="bb-type-row">
+                <span class="bb-type-label">Heading 1</span>
+                <span class="bb-type-sample bb-type-sample--h1">How to choose an electrician</span>
+              </div>
+              <div class="bb-type-row">
+                <span class="bb-type-label">Heading 2</span>
+                <span class="bb-type-sample bb-type-sample--h2">What to look for in a contractor</span>
+              </div>
+              <div class="bb-type-row">
+                <span class="bb-type-label">Body</span>
+                <span class="bb-type-sample bb-type-sample--body">Proper panel upgrades protect your home and meet code. A licensed electrician inspects the existing load before sizing a new panel.</span>
+              </div>
+              <div class="bb-type-row">
+                <span class="bb-type-label">Caption</span>
+                <span class="bb-type-sample bb-type-sample--caption">Photo: residential panel installation, Phoenix AZ · 2024</span>
+              </div>
+            </div>
+          }
+
+          <!-- ── LOGO ── -->
+          @case ('logo') {
+            <div class="bb-panel-head">
+              <div class="bb-panel-kicker">Brand · Logo</div>
+              <h2 class="bb-panel-title">Logo</h2>
+              <p class="bb-panel-deck">Logo variants used in content headers and bylines. Connect your brand assets to enable.</p>
+            </div>
+            <div class="bb-logo-grid">
+              <div class="bb-logo-swatch bb-logo-swatch--light">
+                <div class="bb-logo-placeholder">
+                  <svg viewBox="0 0 80 32" width="80" height="32"><rect x="0" y="0" width="80" height="32" rx="2" fill="none"/><text x="40" y="21" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="700" font-size="14" fill="#09090b">LOGO</text></svg>
+                </div>
+                <span class="bb-logo-swatch__label">On light</span>
+              </div>
+              <div class="bb-logo-swatch bb-logo-swatch--dark">
+                <div class="bb-logo-placeholder">
+                  <svg viewBox="0 0 80 32" width="80" height="32"><rect x="0" y="0" width="80" height="32" rx="2" fill="none"/><text x="40" y="21" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="700" font-size="14" fill="#fff">LOGO</text></svg>
+                </div>
+                <span class="bb-logo-swatch__label">On dark</span>
+              </div>
+              <div class="bb-logo-swatch bb-logo-swatch--light">
+                <div class="bb-logo-placeholder">
+                  <svg viewBox="0 0 32 32" width="32" height="32"><rect x="0" y="0" width="32" height="32" rx="6" fill="none"/><text x="16" y="22" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="800" font-size="16" fill="#09090b">M</text></svg>
+                </div>
+                <span class="bb-logo-swatch__label">Mark · light</span>
+              </div>
+              <div class="bb-logo-swatch bb-logo-swatch--dark">
+                <div class="bb-logo-placeholder">
+                  <svg viewBox="0 0 32 32" width="32" height="32"><rect x="0" y="0" width="32" height="32" rx="6" fill="none"/><text x="16" y="22" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="800" font-size="16" fill="#fff">M</text></svg>
+                </div>
+                <span class="bb-logo-swatch__label">Mark · dark</span>
+              </div>
+            </div>
+            <p class="bb-coming-soon">Logo upload and variant management coming in a future update.</p>
+          }
+
+          <!-- ── IMAGES ── -->
+          @case ('images') {
+            <div class="bb-panel-head">
+              <div class="bb-panel-kicker">Content · Images</div>
+              <h2 class="bb-panel-title">Blog photo style</h2>
+              <p class="bb-panel-deck">Pick the look for auto-generated hero and inline photos. This applies to every article published for this site.</p>
+            </div>
+            <div class="bb-rows">
+              @for (preset of imagePresets; track preset.id) {
+                <button
+                  type="button"
+                  class="bb-pick-row"
+                  [class.is-selected]="book.imageStyle.presetId === preset.id"
+                  (click)="onPresetChange(preset.id)"
+                >
+                  <div class="bb-pick-row__preview">
+                    @if (preset.previewImage) {
+                      <img class="bb-pick-row__img" [src]="preset.previewImage" [alt]="preset.label" loading="lazy" />
+                    } @else {
+                      <div class="bb-pick-row__placeholder">Custom prompt</div>
+                    }
+                    @if (book.imageStyle.presetId === preset.id) {
+                      <span class="bb-pick-row__selected-mark">✓ Selected</span>
+                    }
+                  </div>
+                  <div class="bb-pick-row__meta">
+                    <div class="bb-pick-row__name">
+                      {{ preset.label }}
+                      @if (book.imageStyle.presetId === preset.id) {
+                        <span class="bb-pick-row__check">✓</span>
+                      }
+                    </div>
+                    <div class="bb-pick-row__desc">{{ preset.description }}</div>
+                  </div>
+                </button>
+              }
+            </div>
+
+            @if (book.imageStyle.presetId === 'custom') {
+              <div class="bb-custom-prompt">
+                <label class="bb-field-label">
+                  <span>Custom image prompt suffix</span>
+                  <textarea
+                    pTextarea
+                    class="w-full"
+                    rows="3"
+                    [ngModel]="book.imageStyle.promptSuffix ?? ''"
+                    (ngModelChange)="onCustomSuffixChange($event)"
+                  ></textarea>
+                </label>
               </div>
             }
-          </div>
-        </div>
-      </div>
-    </article>
+          }
 
-    <article class="bb-spread">
-      <div class="bb-spread__inner">
-        <span class="bb-chapter">Chapter 04 · Inspiration</span>
-        <h2 class="bb-spread__title">Articles you admire</h2>
-        <p class="bb-spread__deck">Style signals from content the client points to as a north star.</p>
+          <!-- ── INFOGRAPHICS ── -->
+          @case ('infographics') {
+            <div class="bb-panel-head">
+              <div class="bb-panel-kicker">Content · Infographics</div>
+              <h2 class="bb-panel-title">Stats &amp; process graphics</h2>
+              <p class="bb-panel-deck">How stat cards and process diagrams render in articles. The selected style applies automatically with your brand palette.</p>
+            </div>
+            <div class="bb-rows">
+              @for (variant of infographVariants; track variant.id) {
+                <button
+                  type="button"
+                  class="bb-pick-row bb-pick-row--infograph"
+                  [class.is-selected]="book.infographStyle.variant === variant.id"
+                  (click)="onInfographChange(variant.id)"
+                >
+                  <div class="bb-pick-row__preview">
+                    @if (variant.id === 'chalkboard-svg') {
+                      <!-- Two-layer chalk: texture img + SVG overlay -->
+                      <figure class="bb-chalk-infograph">
+                        <img class="bb-chalk-infograph__texture" [src]="variant.previewImage" alt="" aria-hidden="true" loading="eager" />
+                        <svg class="bb-chalk-infograph__svg" viewBox="0 0 800 220" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Chalkboard infographic style preview">
+                          <defs><filter id="bb-ck" x="-2%" y="-2%" width="104%" height="104%"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" result="noise"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="0.5"/></filter></defs>
+                          <g stroke="#fff" stroke-opacity="0.07" fill="none" stroke-width="1"><path d="M0 55 Q200 45 400 58 T800 48"/><path d="M0 170 Q200 160 400 173 T800 162"/></g>
+                          <line x1="200" y1="25" x2="200" y2="195" stroke="#fff" stroke-opacity="0.1" stroke-width="1" stroke-dasharray="2 4"/>
+                          <line x1="400" y1="25" x2="400" y2="195" stroke="#fff" stroke-opacity="0.1" stroke-width="1" stroke-dasharray="2 4"/>
+                          <line x1="600" y1="25" x2="600" y2="195" stroke="#fff" stroke-opacity="0.1" stroke-width="1" stroke-dasharray="2 4"/>
+                          <g transform="translate(100,0)"><circle cx="0" cy="32" r="16" stroke="rgba(240,240,234,0.45)" stroke-width="1.5" fill="none"/><path d="M-8 32 L-3 39 L9 23" stroke="rgba(240,240,234,0.65)" stroke-width="2" fill="none" stroke-linecap="round"/><text x="0" y="108" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="300" font-size="40" fill="rgba(240,240,234,0.88)" filter="url(#bb-ck)">98%</text><text x="0" y="128" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8" fill="rgba(240,240,234,0.45)" letter-spacing="2.5">ON-TIME</text></g>
+                          <g transform="translate(300,0)"><polygon points="0,18 -10,42 -4,42 -12,64 12,38 6,38" stroke="rgba(240,240,234,0.55)" stroke-width="1.5" fill="rgba(240,240,234,0.06)" stroke-linejoin="round"/><text x="0" y="108" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="300" font-size="40" fill="rgba(240,240,234,0.88)" filter="url(#bb-ck)">24/7</text><text x="0" y="128" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8" fill="rgba(240,240,234,0.45)" letter-spacing="2.5">EMERGENCY</text></g>
+                          <g transform="translate(500,0)"><rect x="-15" y="16" width="30" height="40" rx="2" stroke="rgba(240,240,234,0.45)" stroke-width="1.5" fill="none"/><line x1="-15" y1="27" x2="15" y2="27" stroke="rgba(240,240,234,0.35)" stroke-width="1"/><text x="0" y="108" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="300" font-size="40" fill="rgba(240,240,234,0.88)" filter="url(#bb-ck)">500+</text><text x="0" y="128" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8" fill="rgba(240,240,234,0.45)" letter-spacing="2.5">PANELS</text></g>
+                          <g transform="translate(700,0)"><circle cx="0" cy="28" r="15" stroke="rgba(240,240,234,0.45)" stroke-width="1.5" fill="none"/><circle cx="0" cy="28" r="5" stroke="rgba(240,240,234,0.35)" stroke-width="1.5" fill="none"/><line x1="0" y1="43" x2="0" y2="58" stroke="rgba(240,240,234,0.4)" stroke-width="1.5"/><text x="0" y="108" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="300" font-size="40" fill="rgba(240,240,234,0.88)" filter="url(#bb-ck)">15+</text><text x="0" y="128" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8" fill="rgba(240,240,234,0.45)" letter-spacing="2.5">YRS LOCAL</text></g>
+                        </svg>
+                      </figure>
+                    } @else {
+                      <img class="bb-pick-row__img" [src]="variant.previewImage" [alt]="variant.label" loading="lazy" />
+                    }
+                    @if (book.infographStyle.variant === variant.id) {
+                      <span class="bb-pick-row__selected-mark">✓ Selected</span>
+                    }
+                  </div>
+                  <div class="bb-pick-row__meta">
+                    <div class="bb-pick-row__name">
+                      {{ variant.label }}
+                      @if (book.infographStyle.variant === variant.id) {
+                        <span class="bb-pick-row__check">✓</span>
+                      }
+                    </div>
+                    <div class="bb-pick-row__desc">{{ variant.description }}</div>
+                  </div>
+                </button>
+              }
+            </div>
 
-        @if (book.inspirationArticles.length) {
-          <ul class="bb-clippings">
-            @for (article of book.inspirationArticles; track article.id) {
-              <li class="bb-clipping">
-                <a [href]="article.url" target="_blank" rel="noopener">{{ article.url }}</a>
-                <span class="status status--{{ article.status }}">{{ article.status }}</span>
-                @if (article.notes) {
-                  <p>{{ article.notes }}</p>
-                }
-              </li>
+            <!-- Palette pickers (shown when any variant is selected) -->
+            @if (book.infographStyle.variant) {
+              <div class="bb-palette-section">
+                <div class="bb-palette-label">Brand palette</div>
+                <div class="bb-palette-row">
+                  <label class="bb-palette-field">
+                    <span>Primary</span>
+                    <div class="bb-palette-swatch-row">
+                      <span class="bb-palette-swatch" [style.background]="book.infographStyle.palette?.primary ?? '#0a2240'"></span>
+                      <input pInputText [ngModel]="book.infographStyle.palette?.primary ?? '#0a2240'" (ngModelChange)="onPaletteChange('primary', $event)" />
+                    </div>
+                  </label>
+                  <label class="bb-palette-field">
+                    <span>Accent</span>
+                    <div class="bb-palette-swatch-row">
+                      <span class="bb-palette-swatch" [style.background]="book.infographStyle.palette?.accent ?? '#006e99'"></span>
+                      <input pInputText [ngModel]="book.infographStyle.palette?.accent ?? '#006e99'" (ngModelChange)="onPaletteChange('accent', $event)" />
+                    </div>
+                  </label>
+                  <label class="bb-palette-field">
+                    <span>Background</span>
+                    <div class="bb-palette-swatch-row">
+                      <span class="bb-palette-swatch" [style.background]="book.infographStyle.palette?.background ?? '#f5f5f0'"></span>
+                      <input pInputText [ngModel]="book.infographStyle.palette?.background ?? '#f5f5f0'" (ngModelChange)="onPaletteChange('background', $event)" />
+                    </div>
+                  </label>
+                </div>
+              </div>
             }
-          </ul>
-        }
+          }
 
-        <label class="bb-field">
-          <span>Article URL</span>
-          <input
-            pInputText
-            class="w-full"
-            [ngModel]="inspirationUrl()"
-            (ngModelChange)="inspirationUrl.set($event)"
-          />
-        </label>
-        <label class="bb-field">
-          <span>What they like about it</span>
-          <input
-            pInputText
-            class="w-full"
-            [ngModel]="inspirationNotes()"
-            (ngModelChange)="inspirationNotes.set($event)"
-          />
-        </label>
-        <p-button label="Add inspiration" icon="pi pi-plus" (onClick)="addInspiration()" />
-      </div>
-    </article>
+          <!-- ── COPY STYLE ── -->
+          @case ('copy-style') {
+            <div class="bb-panel-head">
+              <div class="bb-panel-kicker">Content · Copy style</div>
+              <h2 class="bb-panel-title">How you sound</h2>
+              <p class="bb-panel-deck">Tone, point of view, and gold paragraphs the writer should emulate. These feed directly into every draft.</p>
+            </div>
 
-    <article class="bb-spread">
-      <div class="bb-spread__inner">
-        <span class="bb-chapter">Appendix · Corrections</span>
-        <h2 class="bb-spread__title">Style corrections log</h2>
-        <p class="bb-spread__deck">
-          Voice and style corrections from the writer and brand book. Factual corrections live in
-          <a routerLink="/home" fragment="sharpen">Sharpen</a>.
-        </p>
+            <div class="bb-voice-layout">
+              <div class="bb-voice-fields">
+                <label class="bb-field-label">
+                  <span>Tone</span>
+                  <input
+                    pInputText
+                    class="w-full"
+                    placeholder="e.g. confident, approachable, expert"
+                    [ngModel]="book.voice.tone ?? ''"
+                    (ngModelChange)="brandBookSvc.patchVoiceField('tone', $event)"
+                  />
+                </label>
+                <label class="bb-field-label">
+                  <span>Point of view</span>
+                  <input
+                    pInputText
+                    class="w-full"
+                    placeholder="e.g. first person plural, we"
+                    [ngModel]="book.voice.pointOfView ?? ''"
+                    (ngModelChange)="brandBookSvc.patchVoiceField('pointOfView', $event)"
+                  />
+                </label>
+                <label class="bb-field-label">
+                  <span>Phrases to avoid</span>
+                  <input
+                    pInputText
+                    class="w-full"
+                    placeholder="Comma-separated"
+                    [ngModel]="(book.voice.avoidPhrases ?? []).join(', ')"
+                    (ngModelChange)="brandBookSvc.patchAvoidPhrases($event)"
+                  />
+                </label>
+              </div>
 
-        @if (book.corrections.length) {
-          <ul class="bb-corrections">
-            @for (c of book.corrections; track c.id) {
-              <li class="bb-correction">
-                <span class="correction-kind">{{ c.kind }}</span>
-                @if (c.original) {
-                  <p><s>{{ c.original }}</s> → {{ c.corrected }}</p>
-                } @else {
-                  <p>{{ c.corrected }}</p>
+              <div class="bb-voice-examples">
+                <div class="bb-voice-examples__label">Style examples — gold paragraphs to emulate</div>
+                @for (i of [0, 1, 2, 3, 4]; track i) {
+                  <div class="bb-voice-example">
+                    <textarea
+                      pTextarea
+                      class="w-full"
+                      rows="3"
+                      placeholder="Paste a paragraph from your best content…"
+                      [ngModel]="book.styleExamples[i] ?? ''"
+                      (ngModelChange)="brandBookSvc.patchStyleExample(i, $event)"
+                    ></textarea>
+                  </div>
                 }
-                <small>{{ c.source }} · {{ c.createdAt | date: 'mediumDate' }}</small>
-              </li>
+              </div>
+            </div>
+          }
+
+          <!-- ── INSPIRATION ── -->
+          @case ('inspiration') {
+            <div class="bb-panel-head">
+              <div class="bb-panel-kicker">References · Inspiration</div>
+              <h2 class="bb-panel-title">Articles you admire</h2>
+              <p class="bb-panel-deck">Style signals from content the client points to as a north star. The writer analyses structure, tone, and format.</p>
+            </div>
+
+            @if (book.inspirationArticles.length) {
+              <ul class="bb-clippings">
+                @for (article of book.inspirationArticles; track article.id) {
+                  <li class="bb-clipping">
+                    <a [href]="article.url" target="_blank" rel="noopener">{{ article.url }}</a>
+                    <span class="bb-clipping__status bb-clipping__status--{{ article.status }}">{{ article.status }}</span>
+                    @if (article.notes) {
+                      <p>{{ article.notes }}</p>
+                    }
+                  </li>
+                }
+              </ul>
             }
-          </ul>
-        } @else {
-          <p class="empty">No corrections yet — edits in the writer will appear here.</p>
-        }
-      </div>
-    </article>
-  }
-</div>
+
+            <div class="bb-add-form">
+              <label class="bb-field-label">
+                <span>Article URL</span>
+                <input pInputText class="w-full" [ngModel]="inspirationUrl()" (ngModelChange)="inspirationUrl.set($event)" />
+              </label>
+              <label class="bb-field-label">
+                <span>What you like about it</span>
+                <input pInputText class="w-full" [ngModel]="inspirationNotes()" (ngModelChange)="inspirationNotes.set($event)" />
+              </label>
+              <p-button label="Add inspiration" icon="pi pi-plus" size="small" (onClick)="addInspiration()" />
+            </div>
+          }
+
+          <!-- ── CORRECTIONS ── -->
+          @case ('corrections') {
+            <div class="bb-panel-head">
+              <div class="bb-panel-kicker">References · Corrections</div>
+              <h2 class="bb-panel-title">Style corrections log</h2>
+              <p class="bb-panel-deck">
+                Voice and style corrections from the writer and brand book. Factual corrections live in
+                <a routerLink="/home" fragment="sharpen">Sharpen</a>.
+              </p>
+            </div>
+
+            @if (book.corrections.length) {
+              <ul class="bb-corrections">
+                @for (c of book.corrections; track c.id) {
+                  <li class="bb-correction">
+                    <span class="bb-correction__kind">{{ c.kind }}</span>
+                    @if (c.original) {
+                      <p><s>{{ c.original }}</s> → {{ c.corrected }}</p>
+                    } @else {
+                      <p>{{ c.corrected }}</p>
+                    }
+                    <small>{{ c.source }} · {{ c.createdAt | date: 'mediumDate' }}</small>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="bb-empty">No corrections yet — edits in the writer will appear here.</p>
+            }
+          }
+
+        }<!-- /switch -->
+      </div><!-- /bb-binder-panel -->
+    </div><!-- /bb-binder -->
+
+  }<!-- /draft -->
+</div><!-- /bb-shell -->

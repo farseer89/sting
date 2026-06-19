@@ -22,6 +22,8 @@ import {
   BRAND_BOOK_INFOGRAPH_VARIANTS,
 } from '../../brand-book/brand-book.constants';
 
+type BinderSection = 'images' | 'infographics' | 'copy-style' | 'typography' | 'logo' | 'inspiration' | 'corrections';
+
 @Component({
   selector: 'app-protopipe-home-brand-book',
   standalone: true,
@@ -41,6 +43,8 @@ export class ProtopipeHomeBrandBookComponent implements OnInit {
 
   readonly inspirationUrl = signal('');
   readonly inspirationNotes = signal('');
+
+  readonly binderSection = signal<BinderSection>('images');
 
   ngOnInit(): void {
     void this.init();

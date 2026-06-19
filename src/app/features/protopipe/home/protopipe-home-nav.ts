@@ -10,7 +10,8 @@ export type ProtopipeHomeNavIcon =
   | 'inbox'
   | 'link'
   | 'grid'
-  | 'sharpen';
+  | 'sharpen'
+  | 'phone';
 
 export interface ProtopipeHomeNavItem {
   id: string;
@@ -82,6 +83,7 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
     icon: 'inbox',
     children: [
       { id: 'intake-studio', label: 'Intake Studio', icon: 'inbox' },
+      { id: 'sms-contacts', label: 'SMS Contacts', icon: 'phone' },
     ],
   },
   {

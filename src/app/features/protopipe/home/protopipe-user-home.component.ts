@@ -290,6 +290,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
       void this.router.navigate(['/protopipe/lab/intake-studio'], {
         queryParams: siteId ? { siteId } : {},
       });
+    } else if (item.id === 'sms-contacts') {
+      void this.router.navigate(['/protopipe/settings/contacts']);
     }
   }
 

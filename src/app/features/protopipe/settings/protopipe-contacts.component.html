@@ -1,0 +1,149 @@
+<p-toast position="top-right"></p-toast>
+
+<section class="contacts">
+  <header class="contacts__header">
+    <div>
+      <h1 class="contacts__title">SMS Contacts</h1>
+      <p class="contacts__subtitle">
+        People whose texts are routed through the intake system. Each contact is tied to this site
+        — their inbound messages will be matched to projects and captured as updates.
+      </p>
+    </div>
+  </header>
+
+  <!-- Add contact card -->
+  <article class="contact-card">
+    <header class="contact-card__header">
+      <div class="contact-card__brand">
+        <span class="contact-card__icon" aria-hidden="true">
+          <i class="pi pi-user-plus"></i>
+        </span>
+        <div>
+          <h2 class="contact-card__name">Add a contact</h2>
+          <p class="contact-card__tagline">
+            Enter an E.164 or US number — e.g. +18085551234 or (808) 555-1234.
+          </p>
+        </div>
+      </div>
+    </header>
+    <div class="contact-card__body">
+      <div class="contact-card__form">
+        <label>
+          <span>Phone number <span class="required">*</span></span>
+          <input
+            pInputText
+            type="tel"
+            placeholder="+1 (808) 555-1234"
+            [ngModel]="newPhone()"
+            (ngModelChange)="newPhone.set($event)"
+          />
+        </label>
+        <label>
+          <span>Name / label</span>
+          <input
+            pInputText
+            type="text"
+            placeholder="e.g. Mike, Crew Lead"
+            [ngModel]="newLabel()"
+            (ngModelChange)="newLabel.set($event)"
+          />
+        </label>
+        <label>
+          <span>Role</span>
+          <p-select
+            [options]="roleOptions"
+            [ngModel]="newRole()"
+            (ngModelChange)="newRole.set($event)"
+            optionLabel="label"
+            optionValue="value"
+          ></p-select>
+        </label>
+      </div>
+      <div class="contact-card__actions">
+        <p-button
+          label="Add contact"
+          icon="pi pi-plus"
+          [disabled]="!canAdd() || busy()"
+          [loading]="busy()"
+          (onClick)="addContact()"
+        ></p-button>
+      </div>
+    </div>
+  </article>
+
+  <!-- Existing contacts -->
+  <article class="contact-card">
+    <header class="contact-card__header">
+      <div class="contact-card__brand">
+        <span class="contact-card__icon contact-card__icon--list" aria-hidden="true">
+          <i class="pi pi-users"></i>
+        </span>
+        <div>
+          <h2 class="contact-card__name">Active contacts</h2>
+          <p class="contact-card__tagline">
+            Inbound texts from these numbers are matched to your projects.
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <div class="contact-card__body">
+      @if (loading()) {
+        <div class="contact-card__loading">
+          <p-progressSpinner styleClass="contact-card__spinner"></p-progressSpinner>
+          <span>Loading contacts…</span>
+        </div>
+      } @else if (loadError()) {
+        <p class="contact-card__message contact-card__message--danger">{{ loadError() }}</p>
+      } @else if (contacts().length === 0) {
+        <p class="contact-card__message">
+          No contacts yet. Add your phone number above so your texts get routed through intake.
+        </p>
+      } @else {
+        <ul class="contact-list">
+          @for (contact of contacts(); track contact.id) {
+            <li class="contact-row" [class.contact-row--opted-out]="isOptedOut(contact)">
+              <div class="contact-row__info">
+                <span class="contact-row__label">{{ contact.label || '—' }}</span>
+                <span class="contact-row__phone">{{ formatPhone(contact.phone) }}</span>
+              </div>
+              <div class="contact-row__meta">
+                <p-tag
+                  [value]="contact.role"
+                  [severity]="roleSeverity(contact.role)"
+                ></p-tag>
+                @if (isOptedOut(contact)) {
+                  <p-tag value="opted out" severity="danger"></p-tag>
+                }
+              </div>
+              <div class="contact-row__actions">
+                <p-button
+                  icon="pi pi-trash"
+                  severity="danger"
+                  [text]="true"
+                  [rounded]="true"
+                  [disabled]="busy()"
+                  (onClick)="removeContact(contact)"
+                  aria-label="Remove contact"
+                ></p-button>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </article>
+
+  <!-- How it works -->
+  <article class="contact-card contact-card--subtle">
+    <div class="contact-card__body">
+      <h3 class="contact-card__section-title">How SMS intake works</h3>
+      <ul class="contact-card__bullets">
+        <li><i class="pi pi-circle-fill"></i> Text your Protopipe number with a project update.</li>
+        <li><i class="pi pi-circle-fill"></i> The system matches your message to an active project.</li>
+        <li><i class="pi pi-circle-fill"></i> If two projects could match, you'll receive a numbered reply to pick the right one.</li>
+        <li><i class="pi pi-circle-fill"></i> All inbound messages appear in Intake Studio.</li>
+      </ul>
+    </div>
+  </article>
+</section>

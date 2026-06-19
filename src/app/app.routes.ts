@@ -305,6 +305,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'protopipe/settings/contacts',
+        loadComponent: () =>
+          import('./features/protopipe/settings/protopipe-contacts.component').then(
+            (m) => m.ProtopipeContactsComponent,
+          ),
+      },
+      {
         path: 'protopipe/analytics',
         loadComponent: () =>
           import('./features/protopipe/analytics/protopipe-analytics.component').then(

@@ -21,6 +21,27 @@ import { ProtopipeContactsApiService } from '../../settings/protopipe-contacts-a
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 
 const POLL_MS = 2500;
+const API_RETRY_MS = 2000;
+const API_RETRY_ATTEMPTS = 3;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function withApiRetry<T>(fn: () => Promise<T>): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < API_RETRY_ATTEMPTS; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      const retryable = err instanceof HttpErrorResponse && err.status === 0;
+      if (!retryable || attempt === API_RETRY_ATTEMPTS - 1) break;
+      await sleep(API_RETRY_MS);
+    }
+  }
+  throw lastErr;
+}
 
 interface TriggerCard {
   triggerType: ProtopipeIntakeTriggerType;
@@ -118,12 +139,15 @@ export class ProtopipeHomeIntakeDemoComponent implements OnInit {
     this.loading.set(true);
     this.loadError.set(null);
     try {
-      const [{ contacts }, { open }] = await Promise.all([
-        this.contactsApi.list(siteId),
-        this.intakeApi.listConversations(siteId),
-      ]);
+      const { contacts } = await withApiRetry(() => this.contactsApi.list(siteId));
       this.contacts.set(contacts);
-      this.syncOpenConversations(open, resolveTargetContact(contacts));
+      const contact = resolveTargetContact(contacts);
+      try {
+        const { open } = await withApiRetry(() => this.intakeApi.listConversations(siteId));
+        this.syncOpenConversations(open, contact);
+      } catch {
+        // Conversations list is optional — contacts are enough to send SMS.
+      }
     } catch (err) {
       this.loadError.set(parseProtopipeApiError(err, 'Could not load SMS contacts.'));
     } finally {
@@ -169,7 +193,9 @@ export class ProtopipeHomeIntakeDemoComponent implements OnInit {
     }
 
     try {
-      const { conversation } = await this.intakeApi.openConversation(siteId, body);
+      const { conversation } = await withApiRetry(() =>
+        this.intakeApi.openConversation(siteId, body),
+      );
       this.activeConversation.set(conversation);
       this.openByTrigger.update((map) => ({ ...map, [card.triggerType]: conversation }));
       this.maybePoll(conversation);
@@ -177,7 +203,7 @@ export class ProtopipeHomeIntakeDemoComponent implements OnInit {
       const msg = parseProtopipeApiError(err, 'Could not start conversation.');
       if (err instanceof HttpErrorResponse && err.status === 0) {
         this.actionError.set(
-          'Could not reach the API (network/CORS). If you just deployed, wait a minute for the server to restart and try again.',
+          'API temporarily unreachable (often during a deploy restart). Wait 30 seconds, click Refresh, then try again.',
         );
       } else {
         this.actionError.set(msg);

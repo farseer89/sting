@@ -1,72 +1,438 @@
-<div class="pitch-board">
-  <header class="pitch-board__header">
-    <div>
-      <h1>Pitch prep</h1>
-      <p class="pitch-board__lead">
-        Load prospects for cold calls — scrape their site, generate a media pack, pick styles.
-      </p>
+<div class="pb-shell" [class.drawer-open]="drawerLead()">
+
+  <!-- Masthead -->
+  <header class="pb-masthead">
+    <div class="pb-masthead__left">
+      <h1 class="pb-masthead__title">Pitch prep</h1>
+      <p class="pb-masthead__deck">Intelligence-scored prospects, cold-call briefs, and pitch scripts — ready before you dial.</p>
     </div>
-    <p-button label="Add prospect" icon="pi pi-plus" (onClick)="openAdd()" />
+    <div class="pb-masthead__actions">
+      <p-button label="New search" icon="pi pi-plus" size="small" (onClick)="openAdd()" />
+    </div>
   </header>
 
-  @if (prospectsSvc.error(); as err) {
-    <p class="error">{{ err }}</p>
+  <!-- 2-pane binder -->
+  <div class="pb-binder">
+
+    <!-- Left binder nav -->
+    <nav class="pb-binder-nav" aria-label="Pitch book sections">
+      <div class="pb-binder-nav__label">Intelligence</div>
+      <button type="button" class="pb-binder-nav__item" [class.is-active]="pitchSection() === 'leads'" (click)="pitchSection.set('leads')">
+        <svg class="pb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><path d="M8 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm-5 9.5c0-1.5 2.2-2.5 5-2.5s5 1 5 2.5V13H3v-1.5z" stroke="currentColor" stroke-width="1.1"/></svg>
+        Leads
+      </button>
+      <button type="button" class="pb-binder-nav__item" [class.is-active]="pitchSection() === 'prospects'" (click)="pitchSection.set('prospects')">
+        <svg class="pb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M2 5l6 5 6-5" stroke="currentColor" stroke-width="1.1"/></svg>
+        Prospects
+        @if (prospectsSvc.prospects().length) {
+          <span class="pb-binder-nav__badge">{{ prospectsSvc.prospects().length }}</span>
+        }
+      </button>
+
+      <div class="pb-binder-nav__label" style="margin-top:0.75rem;">Pitch</div>
+      <button type="button" class="pb-binder-nav__item" [class.is-active]="pitchSection() === 'scripts'" (click)="pitchSection.set('scripts')">
+        <svg class="pb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><path d="M3 4.5h10M3 7.5h10M3 10.5h7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+        Call scripts
+      </button>
+      <button type="button" class="pb-binder-nav__item" [class.is-active]="pitchSection() === 'objections'" (click)="pitchSection.set('objections')">
+        <svg class="pb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.1"/><path d="M8 5v3M8 10v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        Objections
+      </button>
+      <button type="button" class="pb-binder-nav__item" [class.is-active]="pitchSection() === 'offer'" (click)="pitchSection.set('offer')">
+        <svg class="pb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="1.1"/><path d="M5 9h6M5 11.5h4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+        Offer sheet
+      </button>
+    </nav>
+
+    <!-- Right content panel -->
+    <div class="pb-binder-panel">
+      @switch (pitchSection()) {
+
+        <!-- ── LEADS ── -->
+        @case ('leads') {
+          <!-- Stats row -->
+          <div class="vsh-leads-stats">
+            <div class="vsh-leads-stat">
+              <div class="vsh-leads-stat__value">47</div>
+              <div class="vsh-leads-stat__label">Businesses found</div>
+              <div class="vsh-leads-stat__delta">Phoenix, AZ · Electricians</div>
+            </div>
+            <div class="vsh-leads-stat">
+              <div class="vsh-leads-stat__value" style="color:#b91c1c;">4</div>
+              <div class="vsh-leads-stat__label">Critical priority</div>
+              <div class="vsh-leads-stat__delta" style="color:#b91c1c;">Score 80+</div>
+            </div>
+            <div class="vsh-leads-stat">
+              <div class="vsh-leads-stat__value">29</div>
+              <div class="vsh-leads-stat__label">Competitor ad exposure</div>
+              <div class="vsh-leads-stat__delta">61% of market targeted</div>
+            </div>
+            <div class="vsh-leads-stat">
+              <div class="vsh-leads-stat__value">34</div>
+              <div class="vsh-leads-stat__label">Review gap &gt; 0.5★</div>
+              <div class="vsh-leads-stat__delta">vs area best 4.9★</div>
+            </div>
+          </div>
+
+          <!-- Filter bar -->
+          <div class="vsh-leads-filter">
+            <div class="vsh-leads-search">
+              <svg class="vsh-leads-search__icon" viewBox="0 0 16 16" width="14" height="14"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M10 10l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              <input type="search" placeholder="Search businesses…" class="vsh-leads-search__input" />
+            </div>
+            <div class="vsh-leads-chips">
+              <button type="button" class="vsh-chip" [class.is-active]="activeFilter() === 'all'" (click)="activeFilter.set('all')">All <span class="vsh-chip__count">{{ leads.length }}</span></button>
+              <button type="button" class="vsh-chip" [class.is-active]="activeFilter() === 'new'" (click)="activeFilter.set('new')">Not contacted <span class="vsh-chip__count">{{ leadCount('new') }}</span></button>
+              <button type="button" class="vsh-chip" [class.is-active]="activeFilter() === 'contacted'" (click)="activeFilter.set('contacted')">Contacted <span class="vsh-chip__count">{{ leadCount('contacted') }}</span></button>
+              <button type="button" class="vsh-chip" [class.is-active]="activeFilter() === 'qualified'" (click)="activeFilter.set('qualified')">Qualified <span class="vsh-chip__count">{{ leadCount('qualified') }}</span></button>
+              <button type="button" class="vsh-chip" [class.is-active]="activeFilter() === 'won'" (click)="activeFilter.set('won')">Won <span class="vsh-chip__count">{{ leadCount('won') }}</span></button>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="vsh-leads-table-wrap">
+            <table class="vsh-leads-table">
+              <thead>
+                <tr>
+                  <th class="vsh-leads-table__check-col"><input type="checkbox" class="vsh-leads-check" aria-label="Select all" /></th>
+                  <th class="vsh-leads-table__sortable vsh-leads-table__score-col">Score <svg class="vsh-sort-icon vsh-sort-icon--active" viewBox="0 0 10 14" width="8" height="10"><path d="M5 1v12M2 10l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></th>
+                  <th class="vsh-leads-table__sortable">Business</th>
+                  <th>Temp</th>
+                  <th class="vsh-leads-table__sortable">G. Rank</th>
+                  <th class="vsh-leads-table__sortable">Reviews</th>
+                  <th>Comp. Ads</th>
+                  <th>Website</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (lead of filteredLeads(); track lead.id) {
+                  <tr class="vsh-leads-row" (click)="openDrawer(lead, $event)">
+                    <td class="vsh-leads-table__check-col"><input type="checkbox" class="vsh-leads-check" (click)="$event.stopPropagation()" /></td>
+                    <td>
+                      <div class="vsh-score">
+                        <span class="vsh-score__badge vsh-score__badge--{{ lead.priority }}">{{ priorityLabel(lead.priority) }}</span>
+                        <span class="vsh-score__num">{{ lead.score }}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="vsh-lead-contact">
+                        <div class="vsh-lead-avatar" [style.--av-bg]="lead.avatarBg" [style.--av-color]="lead.avatarColor">{{ lead.initials }}</div>
+                        <div class="vsh-lead-contact__info">
+                          <div class="vsh-lead-contact__name">{{ lead.name }}</div>
+                          <div class="vsh-lead-contact__company">{{ lead.area }}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="vsh-temp vsh-temp--{{ getTemp(lead.id) }}" (click)="cycleTemp(lead.id, $event)" title="Click to update temperature">
+                        {{ tempLabel(getTemp(lead.id)) }}
+                      </span>
+                    </td>
+                    <td><span class="vsh-rank {{ rankClass(lead.rank) }}">#{{ lead.rank }}</span></td>
+                    <td>
+                      <div class="vsh-review-cell">
+                        <span class="vsh-review-cell__stars">{{ lead.stars }}★</span>
+                        <span class="vsh-review-cell__count">{{ lead.reviewCount }} reviews</span>
+                        <span class="vsh-review-cell__gap {{ gapClass(lead.gap) }}">{{ gapText(lead) }}</span>
+                      </div>
+                    </td>
+                    <td><span class="vsh-ad-signal {{ adClass(lead) }}">{{ adText(lead) }}</span></td>
+                    <td><span class="vsh-site-quality vsh-site-quality--{{ lead.website }}">{{ websiteLabel(lead.website) }}</span></td>
+                    <td><span class="vsh-lead-status vsh-lead-status--{{ lead.status }}">{{ statusLabel(lead.status) }}</span></td>
+                    <td class="vsh-lead-actions-col">
+                      <div class="vsh-lead-actions" (click)="$event.stopPropagation()">
+                        <button type="button" class="vsh-lead-action" title="Call"><svg viewBox="0 0 16 16" width="13" height="13"><path d="M3.5 2.5c.5 1 1 2 1.5 3l-1.5 1c.5 1.5 2 3 3.5 3.5l1-1.5c1 .5 2 1 3 1.5v2c-5 .5-9.5-4-9.5-9.5h2z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linejoin="round"/></svg></button>
+                        <button type="button" class="vsh-lead-action vsh-lead-action--more">•••</button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <div class="vsh-leads-pagination">
+            <span class="vsh-leads-pagination__info">Showing {{ filteredLeads().length }} of {{ leads.length }} businesses · sorted by priority score</span>
+            <div class="vsh-leads-pagination__controls">
+              <button type="button" class="vsh-page-btn" disabled>← Prev</button>
+              <button type="button" class="vsh-page-btn vsh-page-btn--active">1</button>
+              <button type="button" class="vsh-page-btn">2</button>
+              <button type="button" class="vsh-page-btn">3</button>
+              <span class="vsh-leads-pagination__ellipsis">…</span>
+              <button type="button" class="vsh-page-btn">Next →</button>
+            </div>
+          </div>
+        }
+
+        <!-- ── PROSPECTS ── -->
+        @case ('prospects') {
+          <div class="pb-panel-head">
+            <div class="pb-panel-kicker">Intelligence · Prospects</div>
+            <h2 class="pb-panel-title">Active pitch packs</h2>
+            <p class="pb-panel-deck">Scraped site profiles with generated media packs and style presets. Click a row to open the prep wizard.</p>
+          </div>
+
+          @if (prospectsSvc.error(); as err) {
+            <p class="pb-error">{{ err }}</p>
+          }
+
+          @if (prospectsSvc.loading()) {
+            <p-progressSpinner ariaLabel="Loading" />
+          } @else {
+            <p-table
+              [value]="prospectsSvc.prospects()"
+              [rows]="20"
+              [paginator]="prospectsSvc.prospects().length > 20"
+              styleClass="pb-prospects-table"
+            >
+              <ng-template pTemplate="header">
+                <tr>
+                  <th>Name</th>
+                  <th>Website</th>
+                  <th>Status</th>
+                  <th>Assets</th>
+                  <th>Updated</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-row>
+                <tr class="pb-row-click" (click)="openProspectRow(row.id)">
+                  <td><strong>{{ row.name }}</strong></td>
+                  <td><a [href]="row.sourceUrl" target="_blank" rel="noopener" (click)="$event.stopPropagation()">{{ row.sourceUrl }}</a></td>
+                  <td><p-tag [value]="row.status" [severity]="statusSeverity(row.status)" /></td>
+                  <td>{{ row.assetCount ?? 0 }}</td>
+                  <td>{{ formatDate(row.updatedAt) }}</td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr><td colspan="5">No prospects yet — add one to start a pitch pack.</td></tr>
+              </ng-template>
+            </p-table>
+          }
+        }
+
+        <!-- ── CALL SCRIPTS ── -->
+        @case ('scripts') {
+          <div class="pb-panel-head">
+            <div class="pb-panel-kicker">Pitch · Call Scripts</div>
+            <h2 class="pb-panel-title">Opening lines</h2>
+            <p class="pb-panel-deck">Proven cold-call openers and follow-up scripts tuned for local service businesses.</p>
+          </div>
+          <div class="pb-script-card">
+            <div class="pb-script-card__label">Opener — competitor running ads</div>
+            <div class="pb-script-card__body">
+              "Hey [Name], my name's Mike — I work with local businesses on their Google presence. I was looking at your listing and noticed [Competitor] has been running paid ads targeting your exact customers for about [X] months. I thought you'd want to know — mind if I take two minutes to explain what I'm seeing?"
+            </div>
+          </div>
+          <div class="pb-script-card">
+            <div class="pb-script-card__label">Opener — review gap</div>
+            <div class="pb-script-card__body">
+              "Hey [Name], I help contractors win more calls from Google. I ran your profile against the top-ranked [category] in your area and there's a [X]★ review gap that's costing you traffic every day. The top competitor has a system that closes that gap automatically — I'd love to show you how it works."
+            </div>
+          </div>
+          <div class="pb-script-card">
+            <div class="pb-script-card__label">Opener — no website</div>
+            <div class="pb-script-card__body">
+              "Hey [Name], quick call — I found your business while researching [area] [category] businesses. You don't have a website right now, which means Google can only surface you in places where you already have a profile. You're missing a big slice of local search. Worth a quick chat?"
+            </div>
+          </div>
+          <p class="pb-coming-soon">Script library expands automatically as your prospect data grows.</p>
+        }
+
+        <!-- ── OBJECTIONS ── -->
+        @case ('objections') {
+          <div class="pb-panel-head">
+            <div class="pb-panel-kicker">Pitch · Objections</div>
+            <h2 class="pb-panel-title">Handling objections</h2>
+            <p class="pb-panel-deck">Common pushbacks and how to reframe them using the intelligence data you have.</p>
+          </div>
+          <div class="pb-objection">
+            <div class="pb-objection__q">"We're already busy, we don't need more leads."</div>
+            <div class="pb-objection__a">That's the best time to build the system — when you can afford to be selective. Right now your competitor is building a moat. When things slow down, you'll wish you'd moved when you were winning.</div>
+          </div>
+          <div class="pb-objection">
+            <div class="pb-objection__q">"We tried SEO before and it didn't work."</div>
+            <div class="pb-objection__a">Most SEO fails because it targets the wrong thing — generic content, no local signals. What I'm showing you is different: review velocity, profile optimization, and a landing page that feeds Google exactly what it needs for a local pack ranking.</div>
+          </div>
+          <div class="pb-objection">
+            <div class="pb-objection__q">"We get most of our work from referrals."</div>
+            <div class="pb-objection__a">Referrals are great, but the first thing a referred customer does is Google you. If they land on a 3.8★ profile with no website, you've already lost some of that warm traffic. We protect what referrals built.</div>
+          </div>
+          <div class="pb-objection">
+            <div class="pb-objection__q">"I need to think about it."</div>
+            <div class="pb-objection__a">[Competitor] doesn't wait. Every month they run ads is a month they're building a stronger history with Google — quality score, click data, conversion rate. The cost to catch up increases each month you delay.</div>
+          </div>
+        }
+
+        <!-- ── OFFER SHEET ── -->
+        @case ('offer') {
+          <div class="pb-panel-head">
+            <div class="pb-panel-kicker">Pitch · Offer</div>
+            <h2 class="pb-panel-title">What you're selling</h2>
+            <p class="pb-panel-deck">The core offer, price anchors, and package structure for the close.</p>
+          </div>
+          <div class="pb-offer-grid">
+            <div class="pb-offer-tier pb-offer-tier--starter">
+              <div class="pb-offer-tier__name">Foundation</div>
+              <div class="pb-offer-tier__price">$497<span>/mo</span></div>
+              <ul class="pb-offer-tier__items">
+                <li>Google Business profile optimization</li>
+                <li>Review request system (SMS + email)</li>
+                <li>Monthly performance report</li>
+                <li>Review response management</li>
+              </ul>
+            </div>
+            <div class="pb-offer-tier pb-offer-tier--growth">
+              <div class="pb-offer-tier__badge">Most popular</div>
+              <div class="pb-offer-tier__name">Growth</div>
+              <div class="pb-offer-tier__price">$997<span>/mo</span></div>
+              <ul class="pb-offer-tier__items">
+                <li>Everything in Foundation</li>
+                <li>Local SEO landing page</li>
+                <li>Google Ads management ($500 ad budget incl.)</li>
+                <li>Rank tracking + competitor monitoring</li>
+                <li>Monthly strategy call</li>
+              </ul>
+            </div>
+            <div class="pb-offer-tier pb-offer-tier--authority">
+              <div class="pb-offer-tier__name">Authority</div>
+              <div class="pb-offer-tier__price">$1,897<span>/mo</span></div>
+              <ul class="pb-offer-tier__items">
+                <li>Everything in Growth</li>
+                <li>Blog content (4 articles/mo)</li>
+                <li>Infographic creation</li>
+                <li>Social distribution</li>
+                <li>Dedicated account manager</li>
+              </ul>
+            </div>
+          </div>
+        }
+
+      }<!-- /switch -->
+    </div><!-- /pb-binder-panel -->
+  </div><!-- /pb-binder -->
+
+  <!-- ── Lead Drawer ── -->
+  @if (drawerLead(); as lead) {
+    <aside class="vsh-lead-drawer is-open">
+      <div class="vsh-drawer-inner">
+        <div class="vsh-drawer-header">
+          <div class="vsh-drawer-header__left">
+            <div class="vsh-drawer-biz-name">{{ lead.name }}</div>
+            <div class="vsh-drawer-biz-meta">{{ lead.category }} · {{ lead.area }} · {{ lead.phone }}</div>
+          </div>
+          <button type="button" class="vsh-drawer-close" (click)="closeDrawer()" aria-label="Close">
+            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+
+        <div class="vsh-drawer-score-card">
+          <div class="vsh-drawer-score-card__left">
+            <div class="vsh-drawer-score-card__num vsh-drawer-score-card__num--{{ lead.priority }}">{{ lead.score }}</div>
+            <div class="vsh-drawer-score-card__label">Priority score</div>
+          </div>
+          <div class="vsh-drawer-score-card__breakdown">
+            @for (b of lead.scoreBreakdown; track b.label) {
+              <div class="vsh-score-row">
+                <span class="vsh-score-row__label">{{ b.label }}</span>
+                <span class="vsh-score-row__pts">+{{ b.pts }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="vsh-drawer-section">
+          <div class="vsh-drawer-section__label">
+            <svg viewBox="0 0 14 14" width="11" height="11"><path d="M3 2c.5.8.9 1.8 1.3 2.7L3 5.6c.5 1.3 1.8 2.6 3.1 3.1l.9-1.3C8 7.8 9 8.3 9.9 8.7v1.8C7.4 11 2.6 6.5 3 2z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linejoin="round"/></svg>
+            Call brief
+          </div>
+          <ol class="vsh-drawer-pitch">
+            @for (p of lead.pitch; track $index) {
+              <li class="vsh-pitch-item">
+                <span class="vsh-pitch-item__num">{{ $index + 1 }}</span>
+                <p>{{ p }}</p>
+              </li>
+            }
+          </ol>
+        </div>
+
+        <div class="vsh-drawer-section">
+          <div class="vsh-drawer-section__label">
+            <svg viewBox="0 0 14 14" width="11" height="11"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M7 6v4M7 4.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            Intelligence
+          </div>
+          <div class="vsh-drawer-intel">
+            @if (lead.compAds.length) {
+              @for (ad of lead.compAds; track ad.name) {
+                <div class="vsh-intel-row">
+                  <span class="vsh-intel-row__key">Competitor</span>
+                  <span class="vsh-intel-row__val">{{ ad.name }} · {{ ad.duration }} · est. {{ ad.est }}</span>
+                </div>
+              }
+            } @else {
+              <div class="vsh-intel-row">
+                <span class="vsh-intel-row__key">Competitor ads</span>
+                <span class="vsh-intel-row__val vsh-intel-row__val--dim">None detected — first-mover opportunity</span>
+              </div>
+            }
+            <div class="vsh-intel-row">
+              <span class="vsh-intel-row__key">Reviews</span>
+              <span class="vsh-intel-row__val">{{ lead.stars }}★ · {{ lead.reviewCount }} reviews · {{ gapText(lead) }}</span>
+            </div>
+            <div class="vsh-intel-note">{{ lead.reviewNote }}</div>
+            <div class="vsh-intel-row" style="margin-top:0.5rem">
+              <span class="vsh-intel-row__key">Website</span>
+              <span class="vsh-intel-row__val">{{ websiteLabel(lead.website) }}</span>
+            </div>
+            <div class="vsh-intel-note">{{ lead.websiteNote }}</div>
+            <div class="vsh-intel-row" style="margin-top:0.5rem">
+              <span class="vsh-intel-row__key">Google rank</span>
+              <span class="vsh-intel-row__val">#{{ lead.rank }}</span>
+            </div>
+            <div class="vsh-intel-note">{{ lead.rankNote }}</div>
+          </div>
+        </div>
+
+        <div class="vsh-drawer-actions">
+          <button type="button" class="vsh-btn vsh-btn--primary" style="flex:1">
+            <svg viewBox="0 0 16 16" width="13" height="13"><path d="M3.5 2.5c.5 1 1 2 1.5 3l-1.5 1c.5 1.5 2 3 3.5 3.5l1-1.5c1 .5 2 1 3 1.5v2c-5 .5-9.5-4-9.5-9.5h2z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linejoin="round"/></svg>
+            Call now
+          </button>
+          <button type="button" class="vsh-btn vsh-btn--ghost" style="flex:1">
+            <svg viewBox="0 0 16 16" width="13" height="13"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M2 5l6 5 6-5" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+            Send email
+          </button>
+        </div>
+        <div class="vsh-drawer-actions" style="margin-top:0.5rem">
+          <button type="button" class="vsh-btn vsh-btn--ghost" style="flex:1;font-size:0.75rem">Mark contacted</button>
+          <button type="button" class="vsh-btn vsh-btn--ghost" style="flex:1;font-size:0.75rem;color:#a1a1aa">Skip lead</button>
+        </div>
+      </div>
+    </aside>
+    <div class="vsh-drawer-overlay" (click)="closeDrawer()"></div>
   }
 
-  @if (prospectsSvc.loading()) {
-    <p-progressSpinner ariaLabel="Loading" />
-  } @else {
-    <p-table
-      [value]="prospectsSvc.prospects()"
-      [rows]="20"
-      [paginator]="prospectsSvc.prospects().length > 20"
-      styleClass="pitch-board__table"
-    >
-      <ng-template pTemplate="header">
-        <tr>
-          <th>Name</th>
-          <th>Website</th>
-          <th>Status</th>
-          <th>Assets</th>
-          <th>Updated</th>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="body" let-row>
-        <tr class="row-click" (click)="openProspectRow(row.id)">
-          <td><strong>{{ row.name }}</strong></td>
-          <td><a [href]="row.sourceUrl" target="_blank" rel="noopener" (click)="$event.stopPropagation()">{{ row.sourceUrl }}</a></td>
-          <td><p-tag [value]="row.status" [severity]="statusSeverity(row.status)" /></td>
-          <td>{{ row.assetCount ?? 0 }}</td>
-          <td>{{ formatDate(row.updatedAt) }}</td>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="emptymessage">
-        <tr>
-          <td colspan="5">No prospects yet — add one to start a pitch pack.</td>
-        </tr>
-      </ng-template>
-    </p-table>
-  }
-
+  <!-- Add prospect dialog -->
   <p-dialog
-    header="Add prospect"
+    header="New lead search"
     [visible]="showAdd()"
     (visibleChange)="showAdd.set($event)"
     [modal]="true"
     [style]="{ width: 'min(100%, 28rem)' }"
   >
-    <label class="field">
-      <span>Business name</span>
-      <input pInputText class="w-full" [ngModel]="newName()" (ngModelChange)="newName.set($event)" />
+    <label class="pb-dialog-field">
+      <span>Business type</span>
+      <input pInputText class="w-full" placeholder="e.g. Electricians" [ngModel]="newName()" (ngModelChange)="newName.set($event)" />
     </label>
-    <label class="field">
-      <span>Current website URL</span>
-      <input pInputText class="w-full" placeholder="https://…" [ngModel]="newUrl()" (ngModelChange)="newUrl.set($event)" />
+    <label class="pb-dialog-field">
+      <span>Location</span>
+      <input pInputText class="w-full" placeholder="City, State or zip" [ngModel]="newUrl()" (ngModelChange)="newUrl.set($event)" />
     </label>
-    <div class="dialog-actions">
+    <div class="pb-dialog-actions">
       <p-button label="Cancel" severity="secondary" (onClick)="showAdd.set(false)" />
       <p-button
-        label="Create & start wizard"
+        label="Generate lead list"
         icon="pi pi-arrow-right"
         iconPos="right"
         [loading]="creating()"
@@ -75,4 +441,5 @@
       />
     </div>
   </p-dialog>
-</div>
+
+</div><!-- /pb-shell -->

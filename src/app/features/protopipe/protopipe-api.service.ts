@@ -43,6 +43,8 @@ import type {
   ProtopipeStrategyConfirmResponse,
   ProtopipeResearchQueryRequest,
   ProtopipeResearchResponse,
+  ProtopipeGeoTargetOption,
+  ProtopipeGeoTargetsSearchResponse,
   ProtopipeKeywordMetricHistoryResponse,
   ProtopipeMarketEnrichResponse,
   ProtopipeOnboardingRequest,
@@ -220,6 +222,23 @@ export class ProtopipeApiService {
     return firstValueFrom(
       this.http.get<ProtopipeSerpLocationsResponse>(
         protopipeApiUrl(ProtopipeEndpoints.serpLocationsSearch.path),
+        { params },
+      ),
+    );
+  }
+
+  searchGeoTargets(
+    query: string,
+    countryCode?: string,
+    limit = 12,
+  ): Promise<ProtopipeGeoTargetsSearchResponse> {
+    let params = new HttpParams().set('q', query).set('limit', String(limit));
+    if (countryCode?.trim()) {
+      params = params.set('countryCode', countryCode.trim());
+    }
+    return firstValueFrom(
+      this.http.get<ProtopipeGeoTargetsSearchResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.googleGeoTargetsSearch.path),
         { params },
       ),
     );

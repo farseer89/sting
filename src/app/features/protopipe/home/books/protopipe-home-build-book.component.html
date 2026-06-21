@@ -2,402 +2,280 @@
 
   <header class="bk-masthead">
     <div class="bk-masthead__left">
-      <h1 class="bk-masthead__title">Build book</h1>
-      <p class="bk-masthead__deck">Site section library — pick layouts per block, preview in context, ship the homepage stack.</p>
+      <button type="button" class="bk-masthead__back" (click)="exit.emit()" aria-label="Exit build book">
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Books</span>
+      </button>
+      <div class="bk-masthead__titles">
+        <h1 class="bk-masthead__title">Build book</h1>
+        <p class="bk-masthead__deck">Site section library — pick layouts per block, preview in context, ship the homepage stack.</p>
+      </div>
     </div>
     <div class="bk-masthead__actions">
-      <span class="bk-badge bk-badge--mock">Mockup</span>
-      <p-button label="Preview site" icon="pi pi-external-link" severity="secondary" size="small" [disabled]="true" />
+      @if (buildBook.dirty()) {
+        <span class="bk-badge bk-badge--dirty">Unsaved</span>
+      }
+      <p-button
+        [label]="buildBook.saving() ? 'Saving…' : buildBook.dirty() ? 'Save' : 'Saved'"
+        [disabled]="!buildBook.dirty() || buildBook.saving() || !buildBook.hasDraft()"
+        size="small"
+        (onClick)="save()"
+      />
+      <p-button
+        label="Preview site"
+        icon="pi pi-external-link"
+        severity="secondary"
+        size="small"
+        [disabled]="!buildBook.hasDraft()"
+        (onClick)="openPreviewInNewTab()"
+      />
     </div>
   </header>
 
-  <div class="bk-binder">
+  @if (buildBook.error(); as err) {
+    <p-message severity="error" [text]="err" styleClass="w-full bk-message" />
+  }
 
-    <!-- Section nav with skeleton thumbnails -->
-    <nav class="bk-section-nav" aria-label="Site sections">
-      <div class="bk-section-nav__label">Homepage stack</div>
-
-      <button
-        type="button"
-        class="bk-section-nav__item"
-        [class.is-active]="section() === 'hero'"
-        (click)="selectSection('hero')"
-      >
-        <div class="bk-sk bk-sk--hero" aria-hidden="true">
-          <span class="bk-sk__bar bk-sk__bar--nav"></span>
-          <span class="bk-sk__block bk-sk__block--hero-photo"></span>
-          <span class="bk-sk__line bk-sk__line--lg"></span>
-          <span class="bk-sk__line"></span>
-          <span class="bk-sk__cta-row">
-            <span class="bk-sk__cta"></span>
-            <span class="bk-sk__cta bk-sk__cta--ghost"></span>
-          </span>
-        </div>
-        <div class="bk-section-nav__meta">
-          <span class="bk-section-nav__num">01</span>
-          <span class="bk-section-nav__name">Hero</span>
-          @if (selectedHeroId()) {
-            <span class="bk-section-nav__check">✓</span>
-          }
-        </div>
-      </button>
-
-      <button
-        type="button"
-        class="bk-section-nav__item"
-        [class.is-active]="section() === 'fold'"
-        (click)="selectSection('fold')"
-      >
-        <div class="bk-sk bk-sk--fold" aria-hidden="true">
-          <span class="bk-sk__bar bk-sk__bar--thin"></span>
-          <span class="bk-sk__fold-icons">
-            <span></span><span></span><span></span><span></span>
-          </span>
-        </div>
-        <div class="bk-section-nav__meta">
-          <span class="bk-section-nav__num">02</span>
-          <span class="bk-section-nav__name">Fold</span>
-        </div>
-      </button>
-
-      <button
-        type="button"
-        class="bk-section-nav__item"
-        [class.is-active]="section() === 'services'"
-        (click)="selectSection('services')"
-      >
-        <div class="bk-sk bk-sk--services" aria-hidden="true">
-          <span class="bk-sk__line bk-sk__line--sm"></span>
-          <span class="bk-sk__grid">
-            <span></span><span></span><span></span>
-          </span>
-        </div>
-        <div class="bk-section-nav__meta">
-          <span class="bk-section-nav__num">03</span>
-          <span class="bk-section-nav__name">Services</span>
-        </div>
-      </button>
-
-      <button
-        type="button"
-        class="bk-section-nav__item"
-        [class.is-active]="section() === 'proof'"
-        (click)="selectSection('proof')"
-      >
-        <div class="bk-sk bk-sk--proof" aria-hidden="true">
-          <span class="bk-sk__quote"></span>
-          <span class="bk-sk__avatar-row">
-            <span></span><span></span><span></span>
-          </span>
-        </div>
-        <div class="bk-section-nav__meta">
-          <span class="bk-section-nav__num">04</span>
-          <span class="bk-section-nav__name">Proof</span>
-        </div>
-      </button>
-
-      <button
-        type="button"
-        class="bk-section-nav__item"
-        [class.is-active]="section() === 'areas'"
-        (click)="selectSection('areas')"
-      >
-        <div class="bk-sk bk-sk--areas" aria-hidden="true">
-          <span class="bk-sk__map"></span>
-          <span class="bk-sk__pill-row">
-            <span></span><span></span><span></span>
-          </span>
-        </div>
-        <div class="bk-section-nav__meta">
-          <span class="bk-section-nav__num">05</span>
-          <span class="bk-section-nav__name">Areas</span>
-        </div>
-      </button>
-
-      <button
-        type="button"
-        class="bk-section-nav__item"
-        [class.is-active]="section() === 'close'"
-        (click)="selectSection('close')"
-      >
-        <div class="bk-sk bk-sk--close" aria-hidden="true">
-          <span class="bk-sk__line bk-sk__line--md"></span>
-          <span class="bk-sk__cta bk-sk__cta--wide"></span>
-        </div>
-        <div class="bk-section-nav__meta">
-          <span class="bk-section-nav__num">06</span>
-          <span class="bk-section-nav__name">Close</span>
-        </div>
-      </button>
-
-      <div class="bk-section-nav__foot">
-        <div class="bk-section-nav__foot-label">Visual system</div>
-        <div class="bk-system-chip">
-          <span class="bk-system-chip__dot" style="background:#f59e0b"></span>
-          Sparky · Clear
-        </div>
+  @if (buildBook.loading()) {
+    <div class="bk-loading">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Loading build book" />
+    </div>
+  } @else if (!buildBook.hasDraft()) {
+    <div class="bk-empty">
+      <h2 class="bk-empty__title">No homepage draft yet</h2>
+      <p class="bk-empty__deck">Start from the trades landing template — hero, fold, services, proof, areas, and close — then swap layouts here.</p>
+      <div class="bk-empty__actions">
+        <p-button
+          label="Create homepage stack"
+          icon="pi pi-plus"
+          [loading]="buildBook.initializing()"
+          (onClick)="initializeDraft()"
+        />
+        <a class="bk-empty__link" routerLink="/protopipe/site-builder/templates">Or pick a full template →</a>
       </div>
-    </nav>
+    </div>
+  } @else {
 
-    <!-- Main stage -->
-    <div class="bk-stage">
+    <div
+      class="bk-binder"
+      [class.bk-binder--preview-open]="previewOpen()"
+      [style.--bk-preview-w.px]="previewWidth()"
+    >
 
-      <div class="bk-stage-head">
-        <div class="bk-stage-kicker">Section {{ sectionNum(section()) }}</div>
-        <h2 class="bk-stage-title">{{ sectionLabel(section()) }}</h2>
-        <p class="bk-stage-deck">
-          @switch (section()) {
-            @case ('hero') {
-              Choose the above-the-fold layout. Each option renders with your brand book tokens and selected hero image.
-            }
-            @case ('fold') {
-              First content block below the hero — trust, capabilities, or proof depending on trade.
-            }
-            @case ('services') {
-              How service lines are organized and scanned on the homepage.
-            }
-            @default {
-              Section options coming next — same pick-and-preview pattern as Hero.
-            }
-          }
-        </p>
-      </div>
+      <nav class="bk-section-nav" aria-label="Site sections">
+        <div class="bk-section-nav__label">Homepage stack</div>
 
-      @switch (section()) {
-
-        @case ('hero') {
-          <div class="bk-option-grid bk-option-grid--heroes">
-            @for (opt of heroOptions; track opt.id) {
-              <button
-                type="button"
-                class="bk-hero-card"
-                [class.is-selected]="selectedHeroId() === opt.id"
-                (click)="selectHero(opt.id)"
-              >
-                <div class="bk-hero-card__preview">
-                  @switch (opt.layout) {
-                    @case ('fullbleed') {
-                      <div class="bk-prev bkh bkh--fullbleed">
-                        <div class="bkh__scrim"></div>
-                        <div class="bkh__copy">
-                          <span class="bkh__eye"></span>
-                          <span class="bkh__h"></span>
-                          <span class="bkh__sub"></span>
-                          <span class="bkh__btns"><span></span><span></span></span>
-                        </div>
-                      </div>
-                    }
-                    @case ('split') {
-                      <div class="bk-prev bkh bkh--split">
-                        <div class="bkh__photo"></div>
-                        <div class="bkh__copy bkh__copy--right">
-                          <span class="bkh__eye"></span>
-                          <span class="bkh__h bkh__h--short"></span>
-                          <span class="bkh__btns"><span></span></span>
-                        </div>
-                      </div>
-                    }
-                    @case ('bento') {
-                      <div class="bk-prev bkh bkh--bento">
-                        <div class="bkh__copy bkh__copy--left">
-                          <span class="bkh__h bkh__h--short"></span>
-                          <span class="bkh__sub"></span>
-                        </div>
-                        <div class="bkh__mosaic">
-                          <span></span><span></span><span></span><span></span>
-                        </div>
-                      </div>
-                    }
-                    @case ('dual-path') {
-                      <div class="bk-prev bkh bkh--dual">
-                        <span class="bkh__h bkh__h--center"></span>
-                        <div class="bkh__paths">
-                          <span class="bkh__path bkh__path--urgent"></span>
-                          <span class="bkh__path"></span>
-                        </div>
-                      </div>
-                    }
-                    @case ('metrics') {
-                      <div class="bk-prev bkh bkh--metrics">
-                        <div class="bkh__copy bkh__copy--left">
-                          <span class="bkh__h"></span>
-                          <span class="bkh__sub"></span>
-                        </div>
-                        <div class="bkh__stats">
-                          <span></span><span></span><span></span>
-                        </div>
-                      </div>
-                    }
-                    @case ('band') {
-                      <div class="bk-prev bkh bkh--band">
-                        <div class="bkh__top">
-                          <span class="bkh__h bkh__h--short"></span>
-                          <span class="bkh__btns"><span></span></span>
-                        </div>
-                        <div class="bkh__band"></div>
-                      </div>
-                    }
-                  }
-                </div>
-                <div class="bk-hero-card__meta">
-                  @if (opt.tag) {
-                    <span class="bk-hero-card__tag">{{ opt.tag }}</span>
-                  }
-                  <span class="bk-hero-card__name">{{ opt.label }}</span>
-                  <span class="bk-hero-card__desc">{{ opt.desc }}</span>
-                  @if (selectedHeroId() === opt.id) {
-                    <span class="bk-hero-card__selected">
-                      <svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                      Selected for site
-                    </span>
-                  }
-                </div>
-              </button>
-            }
-          </div>
-
-          @if (selectedHeroId(); as heroId) {
-            @for (opt of heroOptions; track opt.id) {
-              @if (opt.id === heroId) {
-                <div class="bk-live-preview">
-                  <div class="bk-live-preview__chrome">
-                    <span class="bk-live-preview__dot"></span>
-                    <span class="bk-live-preview__dot"></span>
-                    <span class="bk-live-preview__dot"></span>
-                    <span class="bk-live-preview__url">sparkyelectric.example.com</span>
-                  </div>
-                  <div class="bk-live-preview__viewport">
-                    <div class="bk-live-preview__label">Live preview · {{ opt.label }}</div>
-                    <p class="bk-live-preview__note">Full render uses brand book + Media Studio assets — mockup shows layout skeleton only.</p>
-                  </div>
-                </div>
-              }
-            }
-          }
-        }
-
-        @case ('fold') {
-          <div class="bk-option-grid">
-            @for (opt of foldOptions; track opt.id) {
-              <button
-                type="button"
-                class="bk-fold-card"
-                [class.is-selected]="selectedFoldId() === opt.id"
-                (click)="selectFold(opt.id)"
-              >
-                <div class="bk-fold-card__preview">
-                  @switch (opt.layout) {
-                    @case ('contract-bar') {
-                      <div class="bkf bkf--bar">
-                        <span></span><span></span><span></span><span></span><span></span>
-                      </div>
-                    }
-                    @case ('capabilities') {
-                      <div class="bkf bkf--caps">
-                        <span><i></i><em></em></span>
-                        <span><i></i><em></em></span>
-                        <span><i></i><em></em></span>
-                      </div>
-                    }
-                    @case ('featured') {
-                      <div class="bkf bkf--featured">
-                        <span class="bkf__photo"></span>
-                        <span class="bkf__copy"><em></em><i></i></span>
-                      </div>
-                    }
-                    @case ('stats') {
-                      <div class="bkf bkf--stats">
-                        <span><strong></strong><i></i></span>
-                        <span><strong></strong><i></i></span>
-                        <span><strong></strong><i></i></span>
-                      </div>
-                    }
-                  }
-                </div>
-                <div class="bk-fold-card__meta">
-                  <span class="bk-fold-card__name">{{ opt.label }}</span>
-                  <span class="bk-fold-card__desc">{{ opt.desc }}</span>
-                </div>
-              </button>
-            }
-          </div>
-        }
-
-        @case ('services') {
-          <div class="bk-option-grid">
-            @for (opt of servicesOptions; track opt.id) {
-              <button
-                type="button"
-                class="bk-fold-card"
-                [class.is-selected]="selectedServicesId() === opt.id"
-                (click)="selectServices(opt.id)"
-              >
-                <div class="bk-fold-card__preview">
-                  @switch (opt.layout) {
-                    @case ('grid') {
-                      <div class="bks bks--grid">
-                        <span></span><span></span><span></span><span></span>
-                      </div>
-                    }
-                    @case ('list') {
-                      <div class="bks bks--list">
-                        <span></span><span></span><span></span><span></span>
-                      </div>
-                    }
-                    @case ('cards') {
-                      <div class="bks bks--cards">
-                        <span><i></i></span><span><i></i></span>
-                      </div>
-                    }
-                    @case ('tabs') {
-                      <div class="bks bks--tabs">
-                        <span class="bks__tabrow"><i class="is-on"></i><i></i><i></i></span>
-                        <span class="bks__panel"></span>
-                      </div>
-                    }
-                  }
-                </div>
-                <div class="bk-fold-card__meta">
-                  <span class="bk-fold-card__name">{{ opt.label }}</span>
-                  <span class="bk-fold-card__desc">{{ opt.desc }}</span>
-                </div>
-              </button>
-            }
-          </div>
-        }
-
-        @default {
-          <div class="bk-placeholder-panel">
-            <div class="bk-placeholder-panel__sk">
-              @switch (section()) {
+        @for (slot of navSlots; track slot) {
+          <button
+            type="button"
+            class="bk-section-nav__item"
+            [class.is-active]="section() === slot"
+            (click)="selectSection(slot)"
+          >
+            <div class="bk-sk" [class]="'bk-sk bk-sk--' + slot" aria-hidden="true">
+              @switch (slot) {
+                @case ('hero') {
+                  <span class="bk-sk__bar bk-sk__bar--nav"></span>
+                  <span class="bk-sk__block bk-sk__block--hero-photo"></span>
+                  <span class="bk-sk__line bk-sk__line--lg"></span>
+                  <span class="bk-sk__line"></span>
+                  <span class="bk-sk__cta-row"><span class="bk-sk__cta"></span><span class="bk-sk__cta bk-sk__cta--ghost"></span></span>
+                }
+                @case ('fold') {
+                  <span class="bk-sk__bar bk-sk__bar--thin"></span>
+                  <span class="bk-sk__fold-icons"><span></span><span></span><span></span><span></span></span>
+                }
+                @case ('services') {
+                  <span class="bk-sk__line bk-sk__line--sm"></span>
+                  <span class="bk-sk__grid"><span></span><span></span><span></span></span>
+                }
                 @case ('proof') {
-                  <div class="bkp bkp--reviews">
-                    <span class="bkp__stars"></span>
-                    <span class="bkp__card"></span>
-                    <span class="bkp__card"></span>
-                  </div>
+                  <span class="bk-sk__quote"></span>
+                  <span class="bk-sk__avatar-row"><span></span><span></span><span></span></span>
                 }
                 @case ('areas') {
-                  <div class="bkp bkp--map">
-                    <span class="bkp__map"></span>
-                    <span class="bkp__chips"><i></i><i></i><i></i></span>
-                  </div>
+                  <span class="bk-sk__map"></span>
+                  <span class="bk-sk__pill-row"><span></span><span></span><span></span></span>
                 }
                 @case ('close') {
-                  <div class="bkp bkp--close">
-                    <span class="bkp__h"></span>
-                    <span class="bkp__form"></span>
-                  </div>
+                  <span class="bk-sk__line bk-sk__line--md"></span>
+                  <span class="bk-sk__cta bk-sk__cta--wide"></span>
                 }
               }
             </div>
-            <p class="bk-placeholder-panel__text">
-              {{ sectionLabel(section()) }} layout picker — same card grid as Hero. Wire options from lab fold library next.
-            </p>
+            <div class="bk-section-nav__meta">
+              <span class="bk-section-nav__num">{{ sectionNum(slot) }}</span>
+              <span class="bk-section-nav__name">{{ sectionLabel(slot) }}</span>
+              @if (selectedId(slot)) {
+                <span class="bk-section-nav__check">✓</span>
+              }
+            </div>
+          </button>
+        }
+
+        <div class="bk-section-nav__foot">
+          <div class="bk-section-nav__foot-label">Visual system</div>
+          <div class="bk-system-chip">
+            <span class="bk-system-chip__dot" style="background:#2563eb"></span>
+            {{ siteLabel() }} · {{ themeLabel() }}
+          </div>
+        </div>
+      </nav>
+
+      <div class="bk-stage">
+
+        <div class="bk-stage-head">
+          <div class="bk-stage-kicker">Section {{ sectionNum(section()) }}</div>
+          <h2 class="bk-stage-title">{{ sectionLabel(section()) }}</h2>
+          <p class="bk-stage-deck">{{ sectionDeck(section()) }}</p>
+          @if (section() === 'hero') {
+            <div class="bk-stage-actions">
+              <button type="button" class="bk-hero-images-btn" (click)="openImageStudio()">
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2l1.4 4.2L14 8l-4.6 1.8L8 14l-1.4-4.2L2 8l4.6-1.8z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+                Hero images &amp; copy
+              </button>
+            </div>
+          }
+        </div>
+
+        @if (sectionUsesDemoCatalog(section())) {
+          <div class="bk-demo-tabs" role="tablist" [attr.aria-label]="sectionLabel(section()) + ' brands'">
+            @for (brand of demoBrandsForSection(section()); track brand) {
+              <button
+                type="button"
+                class="bk-demo-tabs__item"
+                role="tab"
+                [class.is-active]="demoBrand() === brand"
+                [attr.aria-selected]="demoBrand() === brand"
+                (click)="selectDemoBrand(brand)"
+              >
+                <span class="bk-demo-tabs__dot" [style.background]="demoBrandDot(brand)"></span>
+                {{ demoBrandLabel(brand) }}
+              </button>
+            }
           </div>
         }
-      }
 
+        <div class="bk-option-grid" [class.bk-option-grid--heroes]="section() === 'hero'">
+          @for (opt of optionsForSection(section()); track opt.id) {
+            <button
+              type="button"
+              [class]="section() === 'hero' ? 'bk-hero-card' : 'bk-fold-card'"
+              [class.is-selected]="selectedId(section()) === opt.id"
+              [disabled]="buildBook.saving()"
+              (click)="selectOption(section(), opt.id)"
+            >
+              <div [class]="section() === 'hero' ? 'bk-hero-card__preview' : 'bk-fold-card__preview'">
+                <div class="bk-layout-chip" [attr.data-layout]="opt.id">{{ opt.label }}</div>
+              </div>
+              <div [class]="section() === 'hero' ? 'bk-hero-card__meta' : 'bk-fold-card__meta'">
+                @if (opt.tag) {
+                  <span class="bk-hero-card__tag">{{ opt.tag }}</span>
+                }
+                @if (opt.demo) {
+                  <span class="bk-hero-card__tag bk-hero-card__tag--demo">Lab demo</span>
+                }
+                <span [class]="section() === 'hero' ? 'bk-hero-card__name' : 'bk-fold-card__name'">{{ opt.label }}</span>
+                <span [class]="section() === 'hero' ? 'bk-hero-card__desc' : 'bk-fold-card__desc'">{{ opt.desc }}</span>
+                @if (selectedId(section()) === opt.id) {
+                  <span class="bk-hero-card__selected">
+                    <svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    On site
+                  </span>
+                }
+              </div>
+            </button>
+          }
+        </div>
+
+      </div>
+
+      <div class="bk-preview-shell" [class.is-open]="previewOpen()" [style.width.px]="previewOpen() ? previewWidth() : 0">
+        <aside class="bk-stack-rail" aria-label="Live preview">
+          <div
+            class="bk-stack-rail__resize"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize preview panel"
+            (pointerdown)="startPreviewResize($event)"
+          ></div>
+
+          <header class="bk-stack-rail__head">
+            <div class="bk-stack-rail__head-top">
+              <span class="bk-stack-rail__title">Live preview</span>
+              <div class="bk-stack-rail__head-actions">
+                @if (section() === 'hero') {
+                  <button type="button" class="bk-stack-rail__studio-link" (click)="openImageStudio()">Images &amp; copy</button>
+                }
+                <button type="button" class="bk-stack-rail__close" (click)="closePreview()" aria-label="Close preview panel">
+                  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 4L6 8l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <div class="bk-stack-rail__body bk-stack-rail__body--hero">
+            @if (section() === 'hero') {
+              @if (heroImageUrl(); as url) {
+                <app-protopipe-build-hero-preview
+                  [imageUrl]="url"
+                  [layout]="heroLayoutId()"
+                  [copy]="heroCopy()"
+                  [brand]="heroPreviewBrand()"
+                  [heroLabel]="heroPreviewMeta().label"
+                  [siteUrl]="heroPreviewMeta().url"
+                  [heroIndex]="heroPreviewIndex()"
+                  (brandChange)="onHeroPreviewBrandChange($event)"
+                  (heroIndexChange)="onHeroPreviewIndexChange($event)"
+                />
+              } @else {
+                <div class="bk-hero-preview-empty">
+                  <p>Pick a layout, then open <strong>Hero images &amp; copy</strong> to generate a photo and set headline text.</p>
+                  <button type="button" class="bk-hero-images-btn bk-hero-images-btn--block" (click)="openImageStudio()">
+                    Hero images &amp; copy
+                  </button>
+                </div>
+              }
+            } @else {
+              <div class="bk-hero-preview-empty">
+                <p>Hero live preview is available on the Hero section. Switch sections in the left stack to keep building.</p>
+              </div>
+            }
+          </div>
+        </aside>
+      </div>
+
+      <nav class="bk-preview-rail" aria-label="Preview panel">
+        <button
+          type="button"
+          class="bk-preview-rail__toggle"
+          [class.is-active]="previewOpen()"
+          [attr.aria-pressed]="previewOpen()"
+          [attr.aria-expanded]="previewOpen()"
+          aria-label="Live preview"
+          title="Live preview"
+          (click)="togglePreview()"
+        >
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M1.5 8s2.5-4.5 6.5-4.5S14.5 8 14.5 8s-2.5 4.5-6.5 4.5S1.5 8 1.5 8z" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/></svg>
+          <span class="bk-preview-rail__label">Preview</span>
+        </button>
+      </nav>
     </div>
-  </div>
+  }
+
+  <app-protopipe-build-image-studio-dialog
+    [open]="imageStudioOpen()"
+    [heroLayout]="heroLayoutId()"
+    [heroBrand]="heroPreviewBrand()"
+    [heroLabel]="heroPreviewMeta().label"
+    [siteUrl]="heroPreviewMeta().url"
+    [copy]="heroCopy()"
+    [selectedImageUrl]="heroImageUrl()"
+    (closed)="closeImageStudio()"
+    (copyChange)="onHeroCopyChange($event)"
+    (imageSelected)="onHeroImageSelected($event)"
+    (previewLayoutChange)="onPreviewLayoutFromStudio($event)"
+    (previewBrandChange)="onPreviewBrandFromStudio($event)"
+  />
+
 </div>

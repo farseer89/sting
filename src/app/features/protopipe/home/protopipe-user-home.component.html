@@ -1,17 +1,19 @@
-<div class="void void--shell" [class.void--writer-focus]="isWriterFocus()" data-bg="white" (click)="closeUserMenu()">
+<div class="void void--shell" [class.void--writer-focus]="isRailHidden()" data-bg="white" (click)="closeUserMenu()">
   <div class="void__backdrop" aria-hidden="true"></div>
   <div class="void__veil" aria-hidden="true"></div>
 
   <header class="void-topnav">
     <span class="void-topnav__brand">futureproof<span class="void-topnav__brand-dot">.</span></span>
     <nav class="void-topnav__links" aria-label="Primary">
-      @if (!isWriterFocus()) {
+      @if (!isRailHidden()) {
         <span class="void-topnav__tab void-topnav__tab--active">Content</span>
         <span class="void-topnav__tab">SEO</span>
         <span class="void-topnav__tab">Analytics</span>
         <span class="void-topnav__tab">Settings</span>
-      } @else {
+      } @else if (isWriterFocus()) {
         <span class="void-topnav__focus-label">Writing</span>
+      } @else if (isBuildBookFocus()) {
+        <span class="void-topnav__focus-label">Build book</span>
       }
     </nav>
 
@@ -45,12 +47,13 @@
   </header>
 
   <div class="void__frame">
-    @if (!isWriterFocus()) {
-      <nav
-        class="void-rail"
-        [class.is-collapsed]="navCollapsed()"
-        aria-label="Workspace navigation"
-      >
+    <nav
+      class="void-rail"
+      [class.is-collapsed]="navCollapsed()"
+      [class.void-rail--focus-hidden]="isRailHidden()"
+      aria-label="Workspace navigation"
+      [attr.aria-hidden]="isRailHidden()"
+    >
       <div class="void-rail__scroll">
         @if (siteHostname()) {
           <div class="void-rail__site">
@@ -144,7 +147,6 @@
         <span aria-hidden="true">{{ navCollapsed() ? '›' : '‹' }}</span>
       </button>
     </nav>
-    }
 
     <div class="void__main">
       <div
@@ -284,8 +286,13 @@
                   </section>
                 }
                 @case ('build-book') {
-                  <section class="glass glass--full glass--premiere" aria-label="Build book">
-                    <app-protopipe-home-build-book />
+                  <section class="glass glass--full glass--premiere glass--writer" aria-label="Build book">
+                    <app-protopipe-home-build-book (exit)="leaveBuildBookFocus()" />
+                  </section>
+                }
+                @case ('ads-book') {
+                  <section class="glass glass--full glass--premiere" aria-label="Ads book">
+                    <app-protopipe-home-ads-book />
                   </section>
                 }
                 @case ('business-details') {

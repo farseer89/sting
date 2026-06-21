@@ -42,6 +42,7 @@ import { ProtopipeHomeBrandBookComponent } from './books/protopipe-home-brand-bo
 import { ProtopipeHomeBuildBookComponent } from './books/protopipe-home-build-book.component';
 import { ProtopipeHomeBusinessDetailsComponent } from './books/protopipe-home-business-details.component';
 import { ProtopipeHomeGoalsComponent } from './books/protopipe-home-goals.component';
+import { ProtopipeHomeAdsBookComponent } from './books/protopipe-home-ads-book.component';
 import { ProtopipePitchProspectBoardComponent } from '../pitch-prep/protopipe-pitch-prospect-board.component';
 import { ProtopipePitchPrepWizardComponent } from '../pitch-prep/protopipe-pitch-prep-wizard.component';
 import { ProtopipeLeadsListComponent } from '../leads/protopipe-leads-list.component';
@@ -70,6 +71,7 @@ export type ProtopipeHomeView =
   | 'leads'
   | 'brand-book'
   | 'build-book'
+  | 'ads-book'
   | 'business-details'
   | 'goals'
   | 'intake'
@@ -113,6 +115,7 @@ function initialsFromName(name: string): string {
     ProtopipeHomeBuildBookComponent,
     ProtopipeHomeBusinessDetailsComponent,
     ProtopipeHomeGoalsComponent,
+    ProtopipeHomeAdsBookComponent,
     ProtopipePitchProspectBoardComponent,
     ProtopipePitchPrepWizardComponent,
     ProtopipeLeadsListComponent,
@@ -214,6 +217,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
   });
 
   readonly isWriterFocus = computed(() => this.activeView() === 'writer');
+  readonly isBuildBookFocus = computed(() => this.activeView() === 'build-book');
+  readonly isRailHidden = computed(() => this.isWriterFocus() || this.isBuildBookFocus());
 
   ngOnInit(): void {
     this.destroyRef.onDestroy(() => this.sidePanel.detachResizeListeners());
@@ -298,6 +303,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.openBrandBookView();
     } else if (item.id === 'books-build') {
       this.openBuildBookView();
+    } else if (item.id === 'books-ads') {
+      this.openAdsBookView();
     } else if (item.id === 'books-business') {
       this.openBusinessDetailsView();
     } else if (item.id === 'books-goals') {
@@ -346,6 +353,21 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.activeView.set('writer');
   }
 
+  leaveBuildBookFocus(): void {
+    this.sidePanel.setOpen(false);
+    if (this.activeView() === 'build-book') {
+      this.activeView.set('brand-book');
+      this.activeNavId.set('books-brand');
+    }
+  }
+
+  enterBuildBookFocus(): void {
+    this.leaveWriterFocus();
+    this.sidePanel.setOpen(false);
+    this.activeNavId.set('books-build');
+    this.activeView.set('build-book');
+  }
+
   leaveWriterFocus(): void {
     this.writerViewState.clearPanel();
     this.writerViewState.clearSession();
@@ -381,6 +403,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.closeUserMenu();
     if (this.activeView() === 'writer') {
       this.leaveWriterFocus();
+    } else if (this.activeView() === 'build-book') {
+      this.leaveBuildBookFocus();
     }
   }
 
@@ -427,10 +451,14 @@ export class ProtopipeUserHomeComponent implements OnInit {
   }
 
   openBuildBookView(): void {
+    this.enterBuildBookFocus();
+  }
+
+  openAdsBookView(): void {
     this.leaveWriterFocus();
     this.sidePanel.setOpen(false);
-    this.activeNavId.set('books-build');
-    this.activeView.set('build-book');
+    this.activeNavId.set('books-ads');
+    this.activeView.set('ads-book');
   }
 
   openBusinessDetailsView(): void {

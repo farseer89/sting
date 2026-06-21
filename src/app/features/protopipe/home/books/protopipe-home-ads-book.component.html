@@ -1,0 +1,699 @@
+<div class="ab-shell">
+
+  <ng-template #marketPicker let-inputId="inputId">
+    <div class="ab-market-bar">
+      <span class="ab-market-bar__label">Local market</span>
+      <div class="ab-market-row">
+        <select
+          class="ab-market-row__country"
+          [ngModel]="store.countryCode()"
+          (ngModelChange)="store.setCountryCode($event)"
+          [attr.aria-label]="'Country — ' + countryLabel(store.countryCode())"
+        >
+          @for (c of store.geoCountries; track c.code) {
+            <option [value]="c.code" [attr.title]="c.label">{{ c.code }}</option>
+          }
+        </select>
+        <div class="ab-market-row__city">
+          <span class="ab-market-row__icon" aria-hidden="true">
+            <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+              <path d="M8 1.5a4 4 0 00-4 4c0 3 4 8.5 4 8.5s4-5.5 4-8.5a4 4 0 00-4-4z" stroke="currentColor" stroke-width="1.2"/>
+              <circle cx="8" cy="5.5" r="1.25" fill="currentColor"/>
+            </svg>
+          </span>
+          <p-autocomplete
+            [inputId]="inputId"
+            [ngModel]="store.cityInput()"
+            (ngModelChange)="onCityInputChange($event)"
+            [suggestions]="store.geoSuggestions()"
+            (completeMethod)="onGeoComplete($event)"
+            (onSelect)="onGeoSelect($event)"
+            optionLabel="name"
+            placeholder="City or zip code"
+            [forceSelection]="false"
+            [minLength]="2"
+            [delay]="250"
+            appendTo="body"
+            styleClass="ab-geo-autocomplete ab-geo-autocomplete--inline"
+            ariaLabel="City or zip code"
+          >
+            <ng-template let-option pTemplate="item">
+              <span class="ab-geo-suggest__name">{{ option.name }}</span>
+              @if (option.targetType) {
+                <span class="ab-geo__type">{{ option.targetType }}</span>
+              }
+            </ng-template>
+          </p-autocomplete>
+        </div>
+      </div>
+      @if (store.selectedGeo(); as geo) {
+        @if (geo.targetType && geo.targetType !== 'Country') {
+          <p class="ab-market-bar__current">
+            CPC for <strong>{{ geo.name }}</strong>
+            <span class="ab-geo__type">{{ geo.targetType }}</span>
+          </p>
+        } @else if (store.cityInput()) {
+          <p class="ab-market-bar__current ab-market-bar__current--warn">
+            Pick a city from the list — country-wide CPC is a rough estimate.
+          </p>
+        }
+      }
+    </div>
+  </ng-template>
+
+  <header class="ab-masthead">
+    <div class="ab-masthead__left">
+      <h1 class="ab-masthead__title">Ads book</h1>
+      <p class="ab-masthead__deck">
+        Model whether your fee plus ad spend pays for itself before you pitch — work through offer, leads, and economics top to bottom.
+      </p>
+    </div>
+    <div class="ab-masthead__actions">
+      <span class="ab-masthead__source">Google Ads Keyword Planner</span>
+    </div>
+  </header>
+
+  <div class="ab-binder">
+
+    <nav class="ab-binder-nav" aria-label="Ads book sections">
+      <div class="ab-binder-nav__label">Offer</div>
+      <button
+        type="button"
+        class="ab-binder-nav__item"
+        [class.is-active]="store.section() === 'products'"
+        (click)="selectSection('products')"
+      >
+        <svg class="ab-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M4 12V6M8 12V4M12 12V8" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        </svg>
+        Products
+        @if (store.productCount(); as count) {
+          <span class="ab-binder-nav__badge">{{ count }}</span>
+        }
+      </button>
+
+      <div class="ab-binder-nav__label" style="margin-top:0.75rem;">Research</div>
+      <button
+        type="button"
+        class="ab-binder-nav__item"
+        [class.is-active]="store.section() === 'strategy'"
+        (click)="selectSection('strategy')"
+      >
+        <svg class="ab-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M3 4.5h10M3 8h10M3 11.5h6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        </svg>
+        Your keywords
+        @if (store.strategyKeywordCount(); as count) {
+          <span class="ab-binder-nav__badge">{{ count }}</span>
+        }
+      </button>
+      <button
+        type="button"
+        class="ab-binder-nav__item"
+        [class.is-active]="store.section() === 'explore'"
+        (click)="selectSection('explore')"
+      >
+        <svg class="ab-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="4" stroke="currentColor" stroke-width="1.1"/>
+          <path d="M10.5 10.5L13 13" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        </svg>
+        Explore
+      </button>
+
+      <div class="ab-binder-nav__label" style="margin-top:0.75rem;">Economics</div>
+      <button
+        type="button"
+        class="ab-binder-nav__item"
+        [class.is-active]="store.section() === 'simulator'"
+        (click)="selectSection('simulator')"
+      >
+        <svg class="ab-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect x="2.5" y="8" width="2.5" height="5" rx="0.4" stroke="currentColor" stroke-width="1.1"/>
+          <rect x="6.75" y="5" width="2.5" height="8" rx="0.4" stroke="currentColor" stroke-width="1.1"/>
+          <rect x="11" y="3" width="2.5" height="10" rx="0.4" stroke="currentColor" stroke-width="1.1"/>
+        </svg>
+        Simulator
+      </button>
+
+      <div class="ab-binder-nav__label" style="margin-top:0.75rem;">Launch</div>
+      <button
+        type="button"
+        class="ab-binder-nav__item ab-binder-nav__item--disabled"
+        disabled
+        aria-disabled="true"
+        title="Coming soon"
+      >
+        <svg class="ab-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M3 8h10M8 3v10" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        </svg>
+        Landing pages
+        <span class="ab-binder-nav__badge ab-binder-nav__badge--soon">Soon</span>
+      </button>
+
+      <div class="ab-binder-nav__label" style="margin-top:0.75rem;">Setup</div>
+      <button
+        type="button"
+        class="ab-binder-nav__item"
+        [class.is-active]="store.section() === 'setup'"
+        (click)="selectSection('setup')"
+      >
+        <svg class="ab-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M6.2 9.8a2.5 2.5 0 003.6 0l2-2a2.5 2.5 0 00-3.6-3.6L7.6 5.4M9.8 6.2a2.5 2.5 0 00-3.6 0l-2 2a2.5 2.5 0 003.6 3.6l1.2-1.2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        </svg>
+        Google Ads
+        @if (store.adsConnected()) {
+          <span class="ab-binder-nav__badge ab-binder-nav__badge--ok">✓</span>
+        }
+      </button>
+    </nav>
+
+    <div class="ab-binder-panel">
+      @if (store.error(); as err) {
+        <div class="ab-error-bar" role="alert">{{ err }}</div>
+      }
+
+      @switch (store.section()) {
+
+        @case ('strategy') {
+          <div class="ab-panel-head">
+            <div class="ab-panel-kicker">Step 2 · Research</div>
+            <h2 class="ab-panel-title">How do we find leads?</h2>
+            <p class="ab-panel-deck">
+              CPC and volume from Google Ads for each keyword on your SEO plan — scoped to your local market.
+            </p>
+          </div>
+
+          <ng-container *ngTemplateOutlet="marketPicker; context: { inputId: 'adsGeoSearch' }" />
+
+          <div class="ab-filter ab-filter--actions">
+            <p-button
+              label="Refresh CPC"
+              icon="pi pi-refresh"
+              size="small"
+              severity="secondary"
+              [loading]="store.strategyLoading()"
+              [disabled]="store.strategyLoading() || store.strategyKeywordCount() === 0"
+              (onClick)="store.refreshStrategy()"
+            />
+            @if (store.strategyLoaded() && store.strategyKeywordCount() > 0) {
+              <span class="ab-filter__meta">
+                {{ store.strategyWithCpcCount() }} of {{ store.strategyKeywordCount() }} with CPC data
+              </span>
+            }
+          </div>
+
+          @if (store.strategyLoading() && store.strategyKeywordCount() === 0) {
+            <div class="ab-loading">
+              <p-progressSpinner strokeWidth="4" ariaLabel="Loading" />
+            </div>
+          } @else if (store.strategyKeywordCount() === 0) {
+            <div class="ab-empty">
+              <p class="ab-empty__text">No keywords on your strategy yet. Confirm keywords in Get started first.</p>
+            </div>
+          } @else {
+            @if (store.strategyLoading()) {
+              <p class="ab-panel-hint">Loading Google Ads CPC for {{ store.selectedGeo().name }}…</p>
+            }
+            <div class="ab-table-wrap">
+              <table class="ab-table" aria-label="Strategy keywords with CPC">
+                <thead>
+                  <tr>
+                    <th>Keyword</th>
+                    <th class="ab-table__num">Volume<span class="ab-table__sub">/mo</span></th>
+                    <th class="ab-table__num">CPC range</th>
+                    <th class="ab-table__num">Competition</th>
+                    <th>Priority</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of store.strategyRows(); track row.phraseKey) {
+                    <tr [class.ab-table__row--loading]="row.loading">
+                      <td class="ab-table__phrase">{{ row.phrase }}</td>
+                      <td class="ab-table__num">
+                        @if (row.loading) { … }
+                        @else { {{ formatVolume(row.avgMonthlySearches) }} }
+                      </td>
+                      <td class="ab-table__num ab-table__cpc">
+                        @if (row.loading) { … }
+                        @else if (row.error) {
+                          <span class="ab-table__err" [title]="row.error">—</span>
+                        } @else {
+                          {{ cpcRange(row.cpcLowMicros, row.cpcHighMicros) }}
+                        }
+                      </td>
+                      <td class="ab-table__num">
+                        @if (row.loading) { … }
+                        @else { {{ competitionLabel(row.competition, row.competitionIndex) }} }
+                      </td>
+                      <td>
+                        <span class="ab-pill ab-pill--{{ row.priority }}">{{ priorityLabel(row.priority) }}</span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+
+        @case ('explore') {
+          <div class="ab-panel-head">
+            <div class="ab-panel-kicker">Step 2 · Research</div>
+            <h2 class="ab-panel-title">Explore how people search</h2>
+            <p class="ab-panel-deck">
+              Search a topic to discover related keywords, volume, and CPC in your market — before you commit budget.
+            </p>
+          </div>
+
+          <ng-container *ngTemplateOutlet="marketPicker; context: { inputId: 'adsGeoExplore' }" />
+
+          <div class="ab-search-bar">
+            <span class="ab-search-bar__icon" aria-hidden="true">⌕</span>
+            <input
+              type="search"
+              class="ab-search-bar__input"
+              placeholder="Enter a topic to explore CPC and related keywords…"
+              [value]="store.searchQuery()"
+              (input)="onSearchInput($any($event.target).value)"
+              aria-label="Explore keywords"
+            />
+            @if (store.hasSearchQuery()) {
+              <button type="button" class="ab-search-bar__clear" (click)="clearSearch()" aria-label="Clear search">×</button>
+            }
+          </div>
+
+          <div class="ab-filter ab-filter--compact">
+            <span class="ab-filter__meta">
+              @if (store.hasSearchQuery()) {
+                @if (store.searching()) {
+                  Searching Google Ads…
+                } @else {
+                  {{ store.exploreResultCount() }} results · {{ store.selectedGeo().name }}
+                }
+              } @else {
+                Type above to search
+              }
+            </span>
+          </div>
+
+          @if (store.hasSearchQuery() && store.searching()) {
+            <div class="ab-loading">
+              <p-progressSpinner strokeWidth="4" ariaLabel="Searching" />
+            </div>
+          } @else if (store.hasSearchQuery() && store.exploreResultCount() === 0) {
+            <div class="ab-empty">
+              <p class="ab-empty__text">No results from Google Ads for this term. Try a more specific phrase.</p>
+            </div>
+          } @else if (!store.hasSearchQuery()) {
+            <div class="ab-empty">
+              <p class="ab-empty__text">Search above to explore keyword CPC before adding terms to a paid campaign.</p>
+            </div>
+          } @else {
+            <div class="ab-table-wrap">
+              <table class="ab-table" aria-label="Explore keyword results">
+                <thead>
+                  <tr>
+                    <th>Keyword</th>
+                    <th class="ab-table__num">Volume<span class="ab-table__sub">/mo</span></th>
+                    <th class="ab-table__num">CPC low</th>
+                    <th class="ab-table__num">CPC high</th>
+                    <th class="ab-table__num">Competition</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of store.exploreRows(); track row.phraseKey) {
+                    <tr [class.ab-table__row--primary]="row.isPrimary">
+                      <td class="ab-table__phrase">
+                        {{ row.phrase }}
+                        @if (row.isPrimary) {
+                          <span class="ab-pill ab-pill--primary">Search term</span>
+                        }
+                      </td>
+                      <td class="ab-table__num">{{ formatVolume(row.avgMonthlySearches) }}</td>
+                      <td class="ab-table__num">{{ microsToUsd(row.cpcLowMicros) }}</td>
+                      <td class="ab-table__num">{{ microsToUsd(row.cpcHighMicros) }}</td>
+                      <td class="ab-table__num">{{ competitionLabel(row.competition, row.competitionIndex) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+
+        @case ('products') {
+          <div class="ab-panel-head">
+            <div class="ab-panel-kicker">Step 1 · Offer</div>
+            <h2 class="ab-panel-title">What are we selling?</h2>
+            <p class="ab-panel-deck">
+              Add high-margin services with price and margin, then attach keywords to see if Google Ads CPC fits the economics.
+            </p>
+          </div>
+
+          <div class="ab-filter">
+            <p-button label="Add product" icon="pi pi-plus" size="small" (onClick)="store.addProduct()" />
+            <span class="ab-filter__meta">Market: {{ store.selectedGeo().name }}</span>
+          </div>
+
+          @if (store.productCount() === 0) {
+            <div class="ab-empty">
+              <p class="ab-empty__text">Add a service (e.g. EV charger install @ $1,500 / $600 margin) to start modeling economics.</p>
+            </div>
+          } @else {
+            @for (product of store.products(); track product.id) {
+              <article class="ab-product" [class.ab-product--expanded]="store.expandedProductId() === product.id">
+                <header class="ab-product__head">
+                  <button type="button" class="ab-product__toggle" (click)="store.toggleProductExpanded(product.id)">
+                    {{ store.expandedProductId() === product.id ? '▾' : '▸' }}
+                  </button>
+                  <input
+                    class="ab-product__name"
+                    [value]="product.name"
+                    (change)="onProductFieldChange(product, 'name', $any($event.target).value)"
+                    aria-label="Service name"
+                  />
+                  <label class="ab-product__field">
+                    <span>Price</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="50"
+                      [value]="product.priceUsd"
+                      (change)="onProductFieldChange(product, 'priceUsd', $any($event.target).value)"
+                    />
+                  </label>
+                  <label class="ab-product__field">
+                    <span>Margin</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="50"
+                      [value]="product.marginUsd"
+                      (change)="onProductFieldChange(product, 'marginUsd', $any($event.target).value)"
+                    />
+                  </label>
+                  <span class="ab-product__max">Max CPC {{ usdPrecise(maxCpcFor(product)) }}</span>
+                  <button type="button" class="ab-product__remove" (click)="store.removeProduct(product.id)" aria-label="Remove product">×</button>
+                </header>
+
+                @if (store.expandedProductId() === product.id) {
+                  <div class="ab-product__body">
+                    <div class="ab-filter ab-filter--compact">
+                      <input
+                        type="text"
+                        class="ab-filter__input ab-filter__input--wide"
+                        placeholder="Add keyword (e.g. ev charger installation)"
+                        [ngModel]="newKeyword()"
+                        (ngModelChange)="newKeyword.set($event)"
+                        (keydown.enter)="submitKeyword(product.id)"
+                      />
+                      <p-button label="Add keyword" size="small" severity="secondary" (onClick)="submitKeyword(product.id)" />
+                      <p-button
+                        label="Refresh CPC"
+                        icon="pi pi-refresh"
+                        size="small"
+                        severity="secondary"
+                        [disabled]="product.keywords.length === 0"
+                        (onClick)="store.refreshProductKeywords(product.id)"
+                      />
+                    </div>
+
+                    @if (product.keywords.length === 0) {
+                      <p class="ab-panel-hint">Add keywords to pull CPC for {{ store.selectedGeo().name }}.</p>
+                    } @else {
+                      <div class="ab-table-wrap">
+                        <table class="ab-table" [attr.aria-label]="'Keywords for ' + product.name">
+                          <thead>
+                            <tr>
+                              <th>Keyword</th>
+                              <th class="ab-table__num">Volume</th>
+                              <th class="ab-table__num">CPC range</th>
+                              <th class="ab-table__num">Max CPC</th>
+                              <th></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            @for (kw of product.keywords; track kw.phraseKey) {
+                              <tr [class.ab-table__row--over]="isOverBudget(product, kw.phraseKey)">
+                                <td class="ab-table__phrase">
+                                  {{ kw.phrase }}
+                                  @if (isOverBudget(product, kw.phraseKey)) {
+                                    <span class="ab-pill ab-pill--high">Over budget</span>
+                                  }
+                                </td>
+                                <td class="ab-table__num">
+                                  @if (kw.loading) { … }
+                                  @else { {{ formatVolume(kw.avgMonthlySearches) }} }
+                                </td>
+                                <td class="ab-table__num ab-table__cpc">
+                                  @if (kw.loading) { … }
+                                  @else if (kw.error) { — }
+                                  @else { {{ cpcRange(kw.cpcLowMicros, kw.cpcHighMicros) }} }
+                                </td>
+                                <td class="ab-table__num">{{ usdPrecise(maxCpcFor(product)) }}</td>
+                                <td>
+                                  <button type="button" class="ab-search-bar__clear" (click)="store.removeProductKeyword(product.id, kw.phraseKey)" aria-label="Remove keyword">×</button>
+                                </td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    }
+                  </div>
+                }
+              </article>
+            }
+          }
+        }
+
+        @case ('simulator') {
+          <div class="ab-panel-head">
+            <div class="ab-panel-kicker">Step 3 · Economics</div>
+            <h2 class="ab-panel-title">Does the math work?</h2>
+            <p class="ab-panel-deck">
+              Model your Protopipe fee, ad spend, and funnel — see how many jobs cover your service and what the owner keeps.
+            </p>
+          </div>
+
+          @if (store.productCount() === 0) {
+            <div class="ab-empty">
+              <p class="ab-empty__text">Add a product first, then run pitch scenarios here.</p>
+            </div>
+          } @else {
+            <div class="ab-sim-controls">
+              <label class="ab-sim-field">
+                <span>Product</span>
+                <select
+                  class="ab-filter__select"
+                  [ngModel]="store.selectedProductId()"
+                  (ngModelChange)="store.selectProduct($event)"
+                >
+                  @for (p of store.products(); track p.id) {
+                    <option [value]="p.id">{{ p.name }}</option>
+                  }
+                </select>
+              </label>
+              <label class="ab-sim-field">
+                <span>Avg CPC override</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  class="ab-filter__input"
+                  placeholder="Auto from keywords"
+                  [ngModel]="store.simulatorCpcUsd()"
+                  (ngModelChange)="onSimulatorCpcChange($event)"
+                />
+              </label>
+            </div>
+
+            <h3 class="ab-subhead">Your pitch</h3>
+            <div class="ab-pitch-setup">
+              <label class="ab-sim-field ab-sim-field--inline">
+                <input
+                  type="checkbox"
+                  [ngModel]="store.pitchConfig().allInMode"
+                  (ngModelChange)="store.toggleAllInMode($event)"
+                />
+                <span>All-in monthly (single client price)</span>
+              </label>
+
+              @if (store.pitchConfig().allInMode) {
+                <label class="ab-sim-field">
+                  <span>Client pays all-in</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="50"
+                    class="ab-filter__input"
+                    [ngModel]="store.pitchConfig().allInMonthlyUsd"
+                    (ngModelChange)="onPitchNumberChange('allInMonthlyUsd', $event)"
+                  />
+                </label>
+              } @else {
+                <div class="ab-pitch-fees">
+                  <label class="ab-sim-field">
+                    <span>Protopipe fee / mo</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="50"
+                      class="ab-filter__input"
+                      [ngModel]="store.pitchConfig().protopipeFeeUsd"
+                      (ngModelChange)="onPitchNumberChange('protopipeFeeUsd', $event)"
+                    />
+                  </label>
+                  <label class="ab-sim-field">
+                    <span>Ad spend / mo</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="50"
+                      class="ab-filter__input"
+                      [ngModel]="store.pitchConfig().adSpendUsd"
+                      (ngModelChange)="onPitchNumberChange('adSpendUsd', $event)"
+                    />
+                  </label>
+                </div>
+              }
+
+              @if (!store.pitchConfig().allInMode) {
+                <div class="ab-pitch-presets">
+                  @for (preset of budgetPresets; track preset) {
+                    <button
+                      type="button"
+                      class="ab-geo__chip"
+                      [class.is-active]="store.pitchConfig().adSpendUsd === preset"
+                      (click)="store.setAdSpendPreset(preset)"
+                    >
+                      {{ usd(preset) }} ads
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+
+            @if (store.primaryPitchResult(); as primary) {
+              <div class="ab-stats ab-stats--pitch">
+                <div class="ab-stat">
+                  <div class="ab-stat__value">{{ jobsLabel(primary.jobsToCoverFee) }}</div>
+                  <p class="ab-stat__label">Jobs to cover fee</p>
+                </div>
+                <div class="ab-stat ab-stat--accent">
+                  <div class="ab-stat__value">{{ jobsLabel(primary.jobsToCoverFeeAndAds) }}</div>
+                  <p class="ab-stat__label">Jobs to cover fee + ads</p>
+                </div>
+                <div class="ab-stat">
+                  <div class="ab-stat__value">{{ primary.jobs.toFixed(1) }}</div>
+                  <p class="ab-stat__label">Jobs projected</p>
+                </div>
+                <div class="ab-stat" [class.ab-stat--accent]="primary.netToOwner > 0" [class.ab-stat--warn]="primary.netToOwner < 0">
+                  <div class="ab-stat__value">{{ usd(primary.netToOwner) }}</div>
+                  <p class="ab-stat__label">Net to owner</p>
+                </div>
+              </div>
+
+              <div class="ab-pitch-narrative" [class]="'ab-pitch-narrative--' + primary.pitchVerdict">
+                <span class="ab-verdict ab-verdict--{{ primary.pitchVerdict }}">{{ verdictLabel(primary.pitchVerdict) }}</span>
+                <p>{{ primary.narrative }}</p>
+                @if (primary.breakEvenAdSpend != null && primary.breakEvenAdSpend > 0) {
+                  <p class="ab-panel-hint">Max ad spend at break-even: {{ usdPrecise(primary.breakEvenAdSpend) }}/mo at this CPC.</p>
+                } @else if (primary.breakEvenAdSpend != null) {
+                  <p class="ab-panel-hint">Break-even ad spend is not achievable at this CPC and conversion rate.</p>
+                }
+              </div>
+            }
+
+            <h3 class="ab-subhead">Funnel assumptions</h3>
+            <div class="ab-sim-controls ab-sim-controls--assumptions">
+              <label class="ab-sim-field">
+                <span>Click → lead {{ pct(store.assumptions().clickToLeadRate) }}</span>
+                <input
+                  type="range"
+                  min="1"
+                  max="20"
+                  [ngModel]="store.assumptions().clickToLeadRate * 100"
+                  (ngModelChange)="onAssumptionPctChange('clickToLeadRate', $event)"
+                />
+              </label>
+              <label class="ab-sim-field">
+                <span>Lead → job {{ pct(store.assumptions().leadToCloseRate) }}</span>
+                <input
+                  type="range"
+                  min="5"
+                  max="60"
+                  [ngModel]="store.assumptions().leadToCloseRate * 100"
+                  (ngModelChange)="onAssumptionPctChange('leadToCloseRate', $event)"
+                />
+              </label>
+            </div>
+
+            @if (store.selectedProduct(); as product) {
+              <p class="ab-panel-hint">
+                Max affordable CPC: {{ usdPrecise(store.maxAffordableCpcForProduct(product)) }}
+                · Price {{ usd(product.priceUsd) }} · Margin {{ usd(product.marginUsd) }}
+              </p>
+            }
+
+            <h3 class="ab-subhead">Ad spend scenarios</h3>
+            <div class="ab-sim-grid">
+              @for (result of store.simulatorResults(); track result.budgetUsd) {
+                <div class="ab-sim-card" [class]="'ab-sim-card--' + result.pitchVerdict">
+                  <div class="ab-sim-card__budget">{{ usd(result.adSpendUsd) }}<span> ads/mo</span></div>
+                  <span class="ab-verdict ab-verdict--{{ result.pitchVerdict }}">{{ verdictLabel(result.pitchVerdict) }}</span>
+                  <dl class="ab-sim-metrics">
+                    <div><dt>Jobs projected</dt><dd>{{ result.jobs.toFixed(1) }}</dd></div>
+                    <div><dt>Need for fee+ads</dt><dd>{{ jobsLabel(result.jobsToCoverFeeAndAds) }}</dd></div>
+                    <div><dt>Gross profit</dt><dd>{{ usd(result.grossProfit) }}</dd></div>
+                    <div><dt>Total client cost</dt><dd>{{ usd(result.totalMonthlyCost) }}</dd></div>
+                    <div><dt>Net to owner</dt><dd [class.ab-sim-negative]="result.netToOwner < 0">{{ usd(result.netToOwner) }}</dd></div>
+                  </dl>
+                </div>
+              }
+            </div>
+          }
+        }
+
+        @case ('setup') {
+          <div class="ab-panel-head">
+            <div class="ab-panel-kicker">Data source</div>
+            <h2 class="ab-panel-title">Google Ads connection</h2>
+            <p class="ab-panel-deck">
+              Ads book pulls volume, CPC, and competition exclusively from Google Ads Keyword Planner.
+            </p>
+          </div>
+
+          @if (store.googleStatus(); as status) {
+            <div class="ab-integration-card" [class.ab-integration-card--ok]="status.ads.connected">
+              <div class="ab-integration-card__head">
+                <span class="ab-integration-card__name">Google Ads</span>
+                <span
+                  class="ab-status-chip"
+                  [class.ab-status-chip--ok]="status.ads.connected"
+                  [class.ab-status-chip--warn]="!status.ads.connected && status.ads.configured"
+                >
+                  {{ status.ads.connected ? 'Connected' : status.ads.configured ? 'Configured' : 'Not configured' }}
+                </span>
+              </div>
+              @if (status.ads.error) {
+                <p class="ab-integration-card__error">{{ status.ads.error }}</p>
+              }
+            </div>
+            @if (!status.ads.connected) {
+              <p class="ab-panel-hint">
+                Connect Google Ads in
+                <a routerLink="/protopipe/settings/integrations">Integrations</a>
+                to load CPC data.
+              </p>
+            }
+          } @else {
+            <div class="ab-loading">
+              <p-progressSpinner strokeWidth="4" ariaLabel="Loading status" />
+            </div>
+          }
+        }
+      }
+    </div>
+  </div>
+</div>

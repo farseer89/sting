@@ -10,7 +10,7 @@ import type { StepVisualizerView, VisualizerBlock } from './article-run-visualiz
 
 export type DiscoveryVisualizerStep = DiscoveryNavPhaseId | typeof DISCOVERY_RESULT_STEP_ID;
 
-export type DiscoveryResultTabId = 'keywords' | 'audiences' | 'context' | 'sources';
+export type DiscoveryResultTabId = 'keywords' | 'audiences' | 'sources';
 
 function num(n: number | undefined): string {
   if (n == null || !Number.isFinite(n)) return '—';
@@ -119,15 +119,8 @@ function buildScoringPhaseBlocks(run: KeywordDiscoveryRunDto): VisualizerBlock[]
   return blocks;
 }
 
-function contextNotesFromRun(run: KeywordDiscoveryRunDto): string[] {
-  return run.events
-    .filter((e) => e.step === 'extract_context_questions' && e.status === 'completed' && e.note)
-    .map((e) => e.note as string);
-}
-
 function buildAudiencePhaseBlocks(run: KeywordDiscoveryRunDto): VisualizerBlock[] {
   const avatars = run.artifacts.suggestedAvatars ?? [];
-  const notes = contextNotesFromRun(run);
   const blocks: VisualizerBlock[] = [];
 
   for (const avatar of avatars) {
@@ -140,13 +133,6 @@ function buildAudiencePhaseBlocks(run: KeywordDiscoveryRunDto): VisualizerBlock[
     });
   }
 
-  if (notes.length) {
-    blocks.push({ kind: 'heading', level: 3, text: 'Strategy context questions' });
-    for (const note of notes) {
-      blocks.push({ kind: 'paragraph', text: note });
-    }
-  }
-
   return blocks;
 }
 
@@ -157,14 +143,12 @@ function buildKeywordsTabBlocks(run: KeywordDiscoveryRunDto): VisualizerBlock[] 
   return candidateBlocks('Keyword', scored, 15);
 }
 
-function buildAudiencesTabBlocks(run: KeywordDiscoveryRunDto): VisualizerBlock[] {
-  return buildAudiencePhaseBlocks(run);
+function buildKeywordsPhaseBlocks(run: KeywordDiscoveryRunDto): VisualizerBlock[] {
+  return [...buildExpansionPhaseBlocks(run), ...buildScoringPhaseBlocks(run)];
 }
 
-function buildContextTabBlocks(run: KeywordDiscoveryRunDto): VisualizerBlock[] {
-  const notes = contextNotesFromRun(run);
-  if (!notes.length) return [];
-  return notes.map((note) => ({ kind: 'paragraph' as const, text: note }));
+function buildAudiencesTabBlocks(run: KeywordDiscoveryRunDto): VisualizerBlock[] {
+  return buildAudiencePhaseBlocks(run);
 }
 
 function buildSourcesTabBlocks(run: KeywordDiscoveryRunDto): VisualizerBlock[] {
@@ -185,19 +169,13 @@ export function buildDiscoveryResultView(run: KeywordDiscoveryRunDto): StepVisua
     {
       id: 'audiences' as const,
       label: 'Audiences',
-      emptyMessage: 'Suggested avatars appear during audience inference.',
+      emptyMessage: 'Suggested avatars appear during audience matching.',
       blocks: buildAudiencesTabBlocks(run),
-    },
-    {
-      id: 'context' as const,
-      label: 'Context',
-      emptyMessage: 'Discovery context questions appear at the end of the pipeline.',
-      blocks: buildContextTabBlocks(run),
     },
     {
       id: 'sources' as const,
       label: 'Sources',
-      emptyMessage: 'Source inputs populate during the Sources phase.',
+      emptyMessage: 'Market signals populate during the Market phase.',
       blocks: buildSourcesTabBlocks(run),
     },
   ];
@@ -218,10 +196,9 @@ const PHASE_BUILDERS: Record<
   DiscoveryNavPhaseId,
   { title: string; build: (run: KeywordDiscoveryRunDto) => VisualizerBlock[] }
 > = {
-  'discovery:sources': { title: 'Sources', build: buildSourcesPhaseBlocks },
-  'discovery:expansion': { title: 'Expansion', build: buildExpansionPhaseBlocks },
-  'discovery:scoring': { title: 'Scoring', build: buildScoringPhaseBlocks },
-  'discovery:audience': { title: 'Audience', build: buildAudiencePhaseBlocks },
+  'discovery:market': { title: 'Market signals', build: buildSourcesPhaseBlocks },
+  'discovery:keywords': { title: 'Keywords', build: buildKeywordsPhaseBlocks },
+  'discovery:audience': { title: 'Match audiences', build: buildAudiencePhaseBlocks },
 };
 
 export function buildDiscoveryStepVisualizer(

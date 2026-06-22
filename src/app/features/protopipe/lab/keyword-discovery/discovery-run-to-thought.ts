@@ -26,43 +26,31 @@ import type {
 /** Pipeline steps shown in the grouped discovery runner side nav. */
 export const DISCOVERY_NAV_PHASES = [
   {
-    id: 'discovery:sources',
-    navLabel: 'Sources',
-    label: 'Data sources',
-    detail: 'Profile, Search Console, ranked keywords, and competitor gaps',
-    steps: [
-      'load_profile',
-      'fetch_gsc',
-      'fetch_site_snapshot',
-      'fetch_ranked',
-      'spyfu_gaps',
-    ] as DiscoveryStepId[],
+    id: 'discovery:market',
+    navLabel: 'Market',
+    label: 'Market signals',
+    detail: 'Onboarding profile, ranked keywords, and competitor gaps',
+    steps: ['load_profile', 'fetch_ranked', 'spyfu_gaps'] as DiscoveryStepId[],
   },
   {
-    id: 'discovery:expansion',
-    navLabel: 'Expansion',
-    label: 'Seed expansion',
-    detail: 'Resolve seeds, ad ideas, geo expansion, and related keywords',
+    id: 'discovery:keywords',
+    navLabel: 'Keywords',
+    label: 'Keyword pool',
+    detail: 'Resolve seeds, expand ideas, score, and enrich top candidates from SERP',
     steps: [
       'resolve_discovery_seeds',
-      'fetch_ads_ideas',
+      'expand_keyword_pool',
       'geo_expansion',
-      'seed_expansion',
+      'merge_score',
+      'serp_enrichment',
     ] as DiscoveryStepId[],
-  },
-  {
-    id: 'discovery:scoring',
-    navLabel: 'Scoring',
-    label: 'Merge & SERP enrich',
-    detail: 'Score the keyword pool and enrich top candidates from SERP',
-    steps: ['merge_score', 'serp_enrichment'] as DiscoveryStepId[],
   },
   {
     id: 'discovery:audience',
-    navLabel: 'Audience',
-    label: 'Avatars & context',
-    detail: 'Infer customer avatars and surface strategy context questions',
-    steps: ['infer_avatars', 'extract_context_questions'] as DiscoveryStepId[],
+    navLabel: 'Audiences',
+    label: 'Match audiences',
+    detail: 'Map discovered keywords to onboarding customer avatars',
+    steps: ['infer_avatars'] as DiscoveryStepId[],
   },
 ] as const;
 
@@ -79,15 +67,11 @@ export const DISCOVERY_STEP_ORDER: DiscoveryStepId[] = [
   'fetch_ranked',
   'spyfu_gaps',
   'resolve_discovery_seeds',
-  'fetch_ads_ideas',
+  'expand_keyword_pool',
   'geo_expansion',
-  'seed_expansion',
   'merge_score',
-  // SERP enrichment runs before avatar inference so captured PAA questions can
-  // seed the avatars (PAA → informational candidates → researcher avatar).
   'serp_enrichment',
   'infer_avatars',
-  'extract_context_questions',
   'confirm',
 ];
 
@@ -114,19 +98,15 @@ export const STEP_META: Record<DiscoveryStepId, { label: string; summary: string
   },
   resolve_discovery_seeds: {
     label: 'Resolve Seeds',
-    summary: 'Reconcile onboarding input with ranked, gap, and site signals.',
+    summary: 'Reconcile onboarding input with ranked and gap signals.',
   },
-  fetch_ads_ideas: {
-    label: 'Ad Ideas',
-    summary: 'Google Ads keyword ideas + volumes from resolved seeds.',
+  expand_keyword_pool: {
+    label: 'Expand Pool',
+    summary: 'Google Ads keyword ideas from resolved and pool seeds (single call).',
   },
   geo_expansion: {
     label: 'Geo Expansion',
     summary: 'Expand seeds across the target service area.',
-  },
-  seed_expansion: {
-    label: 'Seed Expansion',
-    summary: 'Related/long-tail keywords from the strongest seeds.',
   },
   merge_score: {
     label: 'Merge & Score',
@@ -137,12 +117,8 @@ export const STEP_META: Record<DiscoveryStepId, { label: string; summary: string
     summary: 'Pull SERP features + PAA Q&A for the top candidates (feeds avatars).',
   },
   infer_avatars: {
-    label: 'Avatars',
-    summary: 'Cluster intent (incl. PAA questions) and suggest customer avatars.',
-  },
-  extract_context_questions: {
-    label: 'Context Questions',
-    summary: 'Surface assumption questions as strategy context cards.',
+    label: 'Match Audiences',
+    summary: 'Map keywords to onboarding avatars (or cluster when profile is sparse).',
   },
   confirm: {
     label: 'Confirm',
@@ -173,9 +149,9 @@ export function resolveDiscoveryNavStepId(run: KeywordDiscoveryRunDto): Discover
   }
   if (run.status === 'pending' || run.status === 'discovering') {
     const idx = activeDiscoveryPhaseIndex(run);
-    return DISCOVERY_NAV_PHASES[idx]?.id ?? 'discovery:sources';
+    return DISCOVERY_NAV_PHASES[idx]?.id ?? 'discovery:market';
   }
-  return 'discovery:sources';
+  return 'discovery:market';
 }
 
 function runStatus(run: KeywordDiscoveryRunDto): ThoughtStatus {
@@ -368,10 +344,16 @@ function stepOutput(step: DiscoveryStepId, run: KeywordDiscoveryRunDto): Thought
             ),
           ]
         : [];
-    case 'fetch_ads_ideas':
-      return a.adsIdeas?.length
-        ? [candidateTable('ads', 'Ad keyword ideas', a.adsIdeas)]
-        : [];
+    case 'expand_keyword_pool': {
+      const out: ThoughtArtifact[] = [];
+      if (a.adsIdeas?.length) {
+        out.push(candidateTable('ads', 'Ad keyword ideas', a.adsIdeas));
+      }
+      if (a.relatedKeywords?.length) {
+        out.push(candidateTable('related', 'Related / long-tail', a.relatedKeywords));
+      }
+      return out;
+    }
     case 'spyfu_gaps':
       return a.spyfuGaps?.length
         ? [
@@ -386,10 +368,6 @@ function stepOutput(step: DiscoveryStepId, run: KeywordDiscoveryRunDto): Thought
     case 'geo_expansion':
       return a.geoCandidates?.length
         ? [candidateTable('geo', 'Geo-expanded', a.geoCandidates)]
-        : [];
-    case 'seed_expansion':
-      return a.relatedKeywords?.length
-        ? [candidateTable('related', 'Related / long-tail', a.relatedKeywords)]
         : [];
     case 'merge_score': {
       if (!a.scoredCandidates?.length) return [];

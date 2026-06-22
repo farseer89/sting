@@ -310,17 +310,14 @@ const FULL_EVENTS: DiscoveryStepEvent[] = [
   ...ev('resolve_discovery_seeds', 4200, 180, {
     note: '4 seed(s) · strong profile · resolved by deterministic',
   }),
-  ...ev('fetch_ads_ideas', 4500, 980, {
+  ...ev('expand_keyword_pool', 4500, 980, {
     costUsd: 0,
+    note: '64 keyword candidates from 6 seed(s)',
     apiCall: { provider: 'google_ads', endpoint: 'KeywordPlanIdeaService', costUsd: 0, rowCount: 64 },
   }),
   ...ev('geo_expansion', 5600, 760, {
     costUsd: 0.07,
     apiCall: { provider: 'dataforseo', endpoint: 'keywords_data/google_ads/search_volume', costUsd: 0.07, rowCount: 24 },
-  }),
-  ...ev('seed_expansion', 6500, 690, {
-    costUsd: 0.07,
-    apiCall: { provider: 'dataforseo', endpoint: 'dataforseo_labs/related_keywords', costUsd: 0.07, rowCount: 40 },
   }),
   ...ev('merge_score', 7300, 210, { note: `${SCORED.length} unique candidates scored` }),
   ...ev('serp_enrichment', 7600, 2400, {
@@ -334,29 +331,7 @@ const FULL_EVENTS: DiscoveryStepEvent[] = [
     },
   }),
   ...ev('infer_avatars', 10100, 2100, {
-    costUsd: 0.1227,
-    note: `3 intent clusters → 3 avatars · researcher avatar seeded from ${PAA_QUESTIONS.length} PAA questions`,
-    llm: {
-      model: 'claude-sonnet-4',
-      inputTokens: 3820,
-      outputTokens: 640,
-      costUsd: 0.1227,
-      promptVersion: 'avatar-infer@v1',
-      promptPreview:
-        'Cluster the following keyword pool (incl. People-Also-Ask questions) by searcher intent and propose customer avatars…',
-      responsePreview: '{ "avatars": [ { "description": "Couples planning a luxury destination wedding…" } ] }',
-    },
-  }),
-  ...ev('extract_context_questions', 12400, 900, {
-    costUsd: 0.0412,
-    note: '3 context question(s) from discovery',
-    llm: {
-      model: 'claude-sonnet-4',
-      inputTokens: 1200,
-      outputTokens: 280,
-      costUsd: 0.0412,
-      promptVersion: 'discovery-context-questions@v1',
-    },
+    note: '2 onboarding avatar(s) matched to keywords',
   }),
 ];
 
@@ -371,6 +346,7 @@ export const FIXTURE_READY: KeywordDiscoveryRunDto = {
     profile: CANONICAL_PROFILE,
     siteSnapshot: SITE_SNAPSHOT,
     discoveryContext: DISCOVERY_CONTEXT,
+    onboardingReadiness: 'ready',
     gscQueries: GSC,
     rankedKeywords: RANKED,
     adsIdeas: ADS,
@@ -398,13 +374,14 @@ export const FIXTURE_MID: KeywordDiscoveryRunDto = {
   currentStep: 'infer_avatars',
   events: [
     // Everything through serp_enrichment completed, plus infer_avatars started.
-    ...FULL_EVENTS.filter((e) => e.step !== 'infer_avatars' && e.step !== 'extract_context_questions'),
+    ...FULL_EVENTS.filter((e) => e.step !== 'infer_avatars'),
     { step: 'infer_avatars', status: 'started', startedAt: iso(10100) },
   ],
   artifacts: {
     profile: CANONICAL_PROFILE,
     siteSnapshot: SITE_SNAPSHOT,
     discoveryContext: DISCOVERY_CONTEXT,
+    onboardingReadiness: 'ready',
     gscQueries: GSC,
     rankedKeywords: RANKED,
     adsIdeas: ADS,

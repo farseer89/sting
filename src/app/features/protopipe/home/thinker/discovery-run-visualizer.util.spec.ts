@@ -9,7 +9,7 @@ import { FIXTURE_READY } from '../../lab/keyword-discovery/keyword-discovery.moc
 describe('discovery-run-visualizer.util', () => {
   it('buildDiscoveryResultView exposes result tabs from artifacts', () => {
     const view = buildDiscoveryResultView(FIXTURE_READY as never);
-    expect(view.tabs?.map((tab) => tab.id)).toEqual(['keywords', 'audiences', 'context', 'sources']);
+    expect(view.tabs?.map((tab) => tab.id)).toEqual(['keywords', 'audiences', 'sources']);
     expect(view.tabs?.find((tab) => tab.id === 'keywords')?.blocks.length).toBeGreaterThan(0);
     expect(view.tabs?.find((tab) => tab.id === 'audiences')?.blocks.length).toBeGreaterThan(0);
   });
@@ -20,7 +20,7 @@ describe('discovery-run-visualizer.util', () => {
       DISCOVERY_RESULT_STEP_ID,
       'done',
     );
-    expect(view.tabs?.length).toBe(4);
+    expect(view.tabs?.length).toBe(3);
     expect(view.defaultTabId).toBe('keywords');
   });
 });

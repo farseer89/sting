@@ -18,10 +18,10 @@ function mappedSteps(run: ProtopipeKeywordDiscoveryRunDto) {
 describe('discovery-binder.util', () => {
   it('maps grouped nav phases from fixture events', () => {
     const phases = mapDiscoveryNavPhases(FIXTURE_MID as never, mappedSteps(FIXTURE_MID as never));
-    expect(phases).toHaveLength(4);
-    expect(phases[0].id).toBe('discovery:sources');
+    expect(phases).toHaveLength(3);
+    expect(phases[0].id).toBe('discovery:market');
     expect(phases[0].status).toBe('done');
-    expect(phases[3].status).toBe('running');
+    expect(phases[2].status).toBe('running');
   });
 
   it('resolves discovery_result when the run is ready', () => {

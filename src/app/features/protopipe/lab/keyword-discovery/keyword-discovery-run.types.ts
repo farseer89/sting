@@ -15,13 +15,11 @@ export type DiscoveryStepId =
   | 'fetch_ranked'
   | 'spyfu_gaps'
   | 'resolve_discovery_seeds'
-  | 'fetch_ads_ideas'
+  | 'expand_keyword_pool'
   | 'geo_expansion'
-  | 'seed_expansion'
   | 'merge_score'
   | 'serp_enrichment'
   | 'infer_avatars'
-  | 'extract_context_questions'
   | 'confirm';
 
 export type DiscoveryRunStatus =
@@ -179,6 +177,7 @@ export interface DiscoveryArtifacts {
   profile?: DiscoveryProfileSnapshot;
   siteSnapshot?: DiscoverySiteSnapshot;
   discoveryContext?: DiscoveryContext;
+  onboardingReadiness?: 'ready' | 'sparse';
   gscQueries?: DiscoveryCandidate[];
   rankedKeywords?: DiscoveryCandidate[];
   adsIdeas?: DiscoveryCandidate[];

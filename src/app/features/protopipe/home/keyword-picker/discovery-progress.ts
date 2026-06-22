@@ -4,21 +4,17 @@ import type {
   ProtopipeKeywordDiscoveryRunDto,
 } from '@hive/contracts';
 
-/** Customer-facing pipeline order (excludes terminal `confirm`). */
+/** Customer-facing pipeline order (excludes terminal `confirm` and sparse-only skips). */
 export const DISCOVERY_PIPELINE_STEPS: ProtopipeDiscoveryStep[] = [
   'load_profile',
-  'fetch_gsc',
-  'fetch_site_snapshot',
   'fetch_ranked',
   'spyfu_gaps',
   'resolve_discovery_seeds',
-  'fetch_ads_ideas',
+  'expand_keyword_pool',
   'geo_expansion',
-  'seed_expansion',
   'merge_score',
   'serp_enrichment',
   'infer_avatars',
-  'extract_context_questions',
 ];
 
 export function discoveryStepLabel(step: ProtopipeDiscoveryCurrentStep): string {
@@ -35,20 +31,16 @@ export function discoveryStepLabel(step: ProtopipeDiscoveryCurrentStep): string 
       return 'Scanning competitor gaps…';
     case 'resolve_discovery_seeds':
       return 'Resolving keyword seeds…';
-    case 'fetch_ads_ideas':
-      return 'Finding ad keyword ideas…';
+    case 'expand_keyword_pool':
+      return 'Expanding keyword ideas…';
     case 'geo_expansion':
       return 'Expanding local terms…';
-    case 'seed_expansion':
-      return 'Growing your keyword pool…';
     case 'merge_score':
       return 'Scoring opportunities…';
     case 'serp_enrichment':
       return 'Analyzing search results…';
     case 'infer_avatars':
-      return 'Grouping audiences…';
-    case 'extract_context_questions':
-      return 'Surfacing strategy questions…';
+      return 'Matching your audiences…';
     case 'confirm':
       return 'Almost ready…';
     default:

@@ -31,14 +31,6 @@ const DISCOVERY_RESULT_TAB_META: {
     hasContent: (run) => (run.artifacts.suggestedAvatars?.length ?? 0) > 0,
   },
   {
-    id: 'context',
-    label: 'Context',
-    hasContent: (run) =>
-      run.events.some(
-        (e) => e.step === 'extract_context_questions' && e.status === 'completed',
-      ),
-  },
-  {
     id: 'sources',
     label: 'Sources',
     hasContent: (run) =>
@@ -141,7 +133,7 @@ export function mapDiscoveryNavPhases(
             : phase.detail,
       status,
       isLlmStep: phase.steps.some((id) =>
-        ['infer_avatars', 'extract_context_questions', 'resolve_discovery_seeds'].includes(id),
+        ['infer_avatars', 'resolve_discovery_seeds'].includes(id),
       ),
       subSteps: phaseSubSteps(phase.steps, mappedSteps),
       events: index === 0 ? mappedSteps.find((s) => s.id === phase.steps[0])?.events ?? [] : [],
@@ -191,7 +183,7 @@ export function mapDiscoveryResultNavStep(
     id: DISCOVERY_RESULT_STEP_ID,
     num: String(DISCOVERY_NAV_PHASES.length + 1).padStart(2, '0'),
     label: 'Discovery Result',
-    description: 'Scored keywords, suggested audiences, and strategy context from discovery.',
+    description: 'Scored keywords and matched onboarding audiences.',
     summary,
     status,
     isLlmStep: false,

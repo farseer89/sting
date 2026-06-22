@@ -148,6 +148,28 @@ export class ProtopipeHomeStrategyViewState {
     this._selectedArticle.set(null);
   }
 
+  /** Restore strategy panel state after leaving Thinker / Writer focus. */
+  restorePanelContext(options: {
+    sidePanelOpen: boolean;
+    articleKey?: string | null;
+    visualView?: StrategyVisualView;
+  }): void {
+    if (options.visualView) {
+      this._visualView.set(options.visualView);
+    }
+    if (!options.sidePanelOpen) {
+      this.sidePanel.setOpen(false);
+      this.clearArticle();
+      return;
+    }
+    const plan = this._plan() ?? this.contentPlan.plan();
+    if (options.articleKey && plan) {
+      this.selectFromCalendarKey(plan, options.articleKey);
+      return;
+    }
+    this.openBriefPanel();
+  }
+
   /** Open an existing article generation run in the Thinker view (even when complete). */
   async openInThinker(article: ProtopipeContentPlanCalendarItem): Promise<void> {
     if (this._openingWriter()) return;
@@ -162,7 +184,10 @@ export class ProtopipeHomeStrategyViewState {
 
       const { post } = await firstValueFrom(this.content.findPost$(postId, siteId));
       const runId = post.articleGenerationRunId;
-      if (!runId) return;
+      if (!runId) {
+        this._writerError.set('No generation run yet. Open the writer and start the pipeline, or use Run pipeline.');
+        return;
+      }
 
       this.thinkerView.openRun({
         siteId,
@@ -170,6 +195,33 @@ export class ProtopipeHomeStrategyViewState {
         runId,
         workingTitle: article.workingTitle || post.title || 'Article',
       });
+    } finally {
+      this._openingWriter.set(false);
+    }
+  }
+
+  /** Open the home writing book for an existing plan-backed draft (no pipeline side effects). */
+  async openArticleInWriter(article: ProtopipeContentPlanCalendarItem): Promise<void> {
+    if (this._openingWriter()) return;
+    this._openingWriter.set(true);
+    this._writerError.set(null);
+    try {
+      await this.strategy.ensureLoaded();
+      const siteId = this.strategy.siteId();
+      if (!siteId) return;
+      if (!this.hasLivePlan()) return;
+      if (!this.contentPlan.isComplete()) {
+        this._writerError.set('Finish building your strategy before writing articles.');
+        return;
+      }
+      this.contentPlan.setSiteId(siteId);
+      this.content.setEditingSiteId(siteId);
+
+      const postId = await this.resolvePostId(article);
+      if (!postId) return;
+
+      this.writerView.openPost(postId);
+      this.enterWriterFocus?.();
     } finally {
       this._openingWriter.set(false);
     }

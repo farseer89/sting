@@ -29,6 +29,10 @@ export class ProtopipeHomeThinkerViewState {
 
   private enterThinkerFocus: (() => void) | null = null;
   private enterWriterFocus: (() => void) | null = null;
+  private exitThinkerFocus: (() => void) | null = null;
+
+  private readonly _focusBackLabel = signal('Back');
+  readonly focusBackLabel = this._focusBackLabel.asReadonly();
 
   private readonly _runKind = signal<ThinkerRunKind>('article');
   private readonly _siteId = signal<string | null>(null);
@@ -72,6 +76,19 @@ export class ProtopipeHomeThinkerViewState {
 
   setEnterWriterHandler(handler: () => void): void {
     this.enterWriterFocus = handler;
+  }
+
+  setExitHandler(handler: () => void): void {
+    this.exitThinkerFocus = handler;
+  }
+
+  setFocusBackLabel(label: string): void {
+    this._focusBackLabel.set(label.trim() || 'Back');
+  }
+
+  /** Leave the runner and return to the view that opened it. */
+  requestExit(): void {
+    this.exitThinkerFocus?.();
   }
 
   /** Open the content-plan pipeline run that built the current strategy. */
@@ -171,7 +188,7 @@ export class ProtopipeHomeThinkerViewState {
   }
 
   exitFocus(): void {
-    this.clearSession();
+    this.requestExit();
   }
 
   retryPoll(): void {

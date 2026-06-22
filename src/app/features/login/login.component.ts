@@ -53,7 +53,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     if (this.auth.isLoggedIn()) {
-      void this.router.navigate([this.product.routes.home]);
+      void this.router.navigate([this.product.routes.home], { replaceUrl: true });
     }
     this.createForm();
   }
@@ -90,7 +90,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 
     try {
       await this.auth.loginUser(email, password, rememberMe);
-      await this.router.navigate([this.product.routes.home]);
+      await this.router.navigate([this.product.routes.home], { replaceUrl: true });
     } catch (err: unknown) {
       this.handleAuthError(err);
     } finally {

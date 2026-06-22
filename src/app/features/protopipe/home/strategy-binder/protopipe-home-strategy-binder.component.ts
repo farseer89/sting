@@ -65,6 +65,11 @@ export class ProtopipeHomeStrategyBinderComponent {
     void this.viewState.openInWriter(item);
   }
 
+  openArticleInWriter(item: ProtopipeContentPlanCalendarItem, event: Event): void {
+    event.stopPropagation();
+    void this.viewState.openArticleInWriter(item);
+  }
+
   viewArticleRun(item: ProtopipeContentPlanCalendarItem, event: Event): void {
     event.stopPropagation();
     void this.viewState.openInThinker(item);

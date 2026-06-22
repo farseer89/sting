@@ -1,11 +1,23 @@
 <div class="tb-shell">
 
   @if (!hasSession()) {
+    <header class="tb-masthead tb-masthead--compact">
+      <button type="button" class="tb-masthead__back" (click)="exitRunner()">
+        <span aria-hidden="true">←</span>
+        <span>{{ focusBackLabel() }}</span>
+      </button>
+    </header>
     <div class="tb-empty">
       <h2 class="tb-empty__title">No active generation</h2>
       <p class="tb-empty__deck">Write an article from your strategy calendar to watch the pipeline run here.</p>
     </div>
   } @else if (loadError(); as err) {
+    <header class="tb-masthead tb-masthead--compact">
+      <button type="button" class="tb-masthead__back" (click)="exitRunner()">
+        <span aria-hidden="true">←</span>
+        <span>{{ focusBackLabel() }}</span>
+      </button>
+    </header>
     <div class="tb-empty">
       <h2 class="tb-empty__title">Could not load run</h2>
       <p class="tb-empty__deck">{{ err }}</p>
@@ -16,6 +28,11 @@
   <!-- Masthead -->
   <header class="tb-masthead">
     <div class="tb-masthead__left">
+      <button type="button" class="tb-masthead__back" (click)="exitRunner()">
+        <span aria-hidden="true">←</span>
+        <span>{{ focusBackLabel() }}</span>
+      </button>
+      <div class="tb-masthead__identity">
       <div class="tb-masthead__title-row">
         <h1 class="tb-masthead__title">{{ workingTitle() || 'Article generation' }}</h1>
         <span class="tb-run-status tb-run-status--{{ statusClass() }}">
@@ -29,6 +46,7 @@
       @if (exportError(); as err) {
         <p class="tb-masthead__error">{{ err }}</p>
       }
+      </div>
     </div>
     <div class="tb-masthead__right">
       <div class="tb-progress-wrap">

@@ -136,6 +136,8 @@ export class ProtopipeHomeThinkerBinderComponent {
     return Boolean(this.thinkerView.runId()) || Boolean(this.run());
   });
 
+  readonly focusBackLabel = this.thinkerView.focusBackLabel;
+
   constructor() {
     effect(() => {
       const t = this.thought();
@@ -154,6 +156,10 @@ export class ProtopipeHomeThinkerBinderComponent {
   selectStep(id: string): void {
     this.activeStepId.set(id);
     this.activeTab.set('output');
+  }
+
+  exitRunner(): void {
+    this.thinkerView.requestExit();
   }
 
   retryConnection(): void {

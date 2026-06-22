@@ -56,6 +56,8 @@ import {
   type ProtopipeHomeNavItem,
 } from './protopipe-home-nav';
 import { resolveBootstrapSiteId } from '../resolve-bootstrap-site-id';
+import { calendarItemKey } from './strategy/strategy.helpers';
+import type { StrategyVisualView } from './strategy/strategy-visual-view';
 
 export type ProtopipeHomeView =
   | 'keywords'
@@ -83,6 +85,16 @@ function initialsFromName(name: string): string {
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
+
+interface HomeFocusReturnContext {
+  view: ProtopipeHomeView;
+  navId: string;
+  sidePanelOpen: boolean;
+  strategyArticleKey?: string | null;
+  strategyVisualView?: StrategyVisualView;
+}
+
+type HomeFocusHistoryKind = 'thinker' | 'writer';
 
 @Component({
   selector: 'app-protopipe-user-home',
@@ -140,6 +152,10 @@ export class ProtopipeUserHomeComponent implements OnInit {
   private readonly keywordStore = inject(ProtopipeKeywordPickerStore);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly homeWorkspaceEl = viewChild<ElementRef<HTMLElement>>('homeWorkspace');
+
+  private focusReturnContext: HomeFocusReturnContext | null = null;
+  private focusHistoryEntry: HomeFocusHistoryKind | null = null;
+  private suppressFocusPopState = false;
 
   readonly showSidePanel = computed(() => {
     if (!this.sidePanel.open()) {
@@ -217,9 +233,10 @@ export class ProtopipeUserHomeComponent implements OnInit {
 
   ngOnInit(): void {
     this.destroyRef.onDestroy(() => this.sidePanel.detachResizeListeners());
-    this.writerViewState.setExitHandler(() => this.leaveWriterFocus());
+    this.writerViewState.setExitHandler(() => this.leaveWriterFocus({ syncHistory: true }));
     this.thinkerViewState.setEnterThinkerHandler(() => this.enterThinkerFocus());
     this.thinkerViewState.setEnterWriterHandler(() => this.enterWriterFocus());
+    this.thinkerViewState.setExitHandler(() => this.leaveThinkerFocus({ syncHistory: true }));
     this.strategyViewState.setEnterWriterHandler(() => this.enterWriterFocus());
     this.syncPacksFromRoute();
     this.syncPitchPrepFromRoute();
@@ -322,10 +339,10 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.activeNavId.set(item.id);
       this.activeView.set('strategy-binder');
     } else if (item.id === 'dev-thinker') {
-      this.leaveWriterFocus();
+      this.leaveWriterFocus({ syncHistory: false });
       this.sidePanel.setOpen(false);
+      this.enterThinkerFocus();
       this.activeNavId.set(item.id);
-      this.activeView.set('thinker');
     } else if (item.id === 'intake-studio') {
       const siteId = this.siteId();
       void this.router.navigate(['/protopipe/lab/intake-studio'], {
@@ -337,6 +354,17 @@ export class ProtopipeUserHomeComponent implements OnInit {
   }
 
   enterWriterFocus(): void {
+    const fromView = this.activeView();
+    if (fromView !== 'writer') {
+      if (fromView !== 'thinker') {
+        this.focusReturnContext = this.captureFocusReturnContext();
+        this.pushFocusHistory('writer');
+      } else if (this.focusHistoryEntry) {
+        history.replaceState({ protopipeFocus: 'writer' }, '', window.location.href);
+        this.focusHistoryEntry = 'writer';
+      }
+    }
+
     if (!this.writerViewState.activePostId()) {
       const thinkerPostId = this.thinkerViewState.postId();
       if (thinkerPostId) {
@@ -353,18 +381,24 @@ export class ProtopipeUserHomeComponent implements OnInit {
   }
 
   enterThinkerFocus(): void {
+    if (this.activeView() !== 'thinker') {
+      this.focusReturnContext = this.captureFocusReturnContext();
+      this.thinkerViewState.setFocusBackLabel(this.focusBackLabelForView(this.activeView()));
+      this.pushFocusHistory('thinker');
+    }
     this.writerViewState.clearPanel();
     this.sidePanel.setOpen(false);
     this.activeView.set('thinker');
   }
 
-  leaveThinkerFocus(): void {
+  leaveThinkerFocus(options: { syncHistory?: boolean } = {}): void {
+    const syncHistory = options.syncHistory !== false;
+    const wasThinker = this.activeView() === 'thinker';
     this.thinkerViewState.clearSession();
-    this.sidePanel.setOpen(false);
-    if (this.activeView() === 'thinker') {
-      this.activeView.set('strategy');
-      this.activeNavId.set('start-strategy');
+    if (wasThinker) {
+      this.restoreFocusReturnContext();
     }
+    this.clearFocusHistory(syncHistory);
   }
 
   leaveBuildBookFocus(): void {
@@ -382,15 +416,18 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.activeView.set('build-book');
   }
 
-  leaveWriterFocus(): void {
+  leaveWriterFocus(options: { syncHistory?: boolean } = {}): void {
+    const syncHistory = options.syncHistory !== false;
+    const wasWriter = this.activeView() === 'writer';
     this.writerViewState.clearPanel();
     this.writerViewState.clearSession();
     this.content.setEditingSiteId(null);
-    this.sidePanel.setOpen(false);
-    if (this.activeView() === 'writer') {
-      this.activeView.set('strategy');
-      this.activeNavId.set('start-strategy');
+    if (wasWriter) {
+      this.restoreFocusReturnContext();
+    } else {
+      this.sidePanel.setOpen(false);
     }
+    this.clearFocusHistory(syncHistory);
   }
 
   onKeywordsConfirmed(): void {
@@ -416,11 +453,23 @@ export class ProtopipeUserHomeComponent implements OnInit {
   onEscape(): void {
     this.closeUserMenu();
     if (this.activeView() === 'writer') {
-      this.leaveWriterFocus();
+      this.leaveWriterFocus({ syncHistory: true });
     } else if (this.activeView() === 'thinker') {
-      this.leaveThinkerFocus();
+      this.leaveThinkerFocus({ syncHistory: true });
     } else if (this.activeView() === 'build-book') {
       this.leaveBuildBookFocus();
+    }
+  }
+
+  @HostListener('window:popstate')
+  onFocusPopState(): void {
+    if (this.suppressFocusPopState) return;
+
+    const view = this.activeView();
+    if (view === 'thinker') {
+      this.leaveThinkerFocus({ syncHistory: false });
+    } else if (view === 'writer') {
+      this.leaveWriterFocus({ syncHistory: false });
     }
   }
 
@@ -518,6 +567,86 @@ export class ProtopipeUserHomeComponent implements OnInit {
     const path = this.router.url.split('?')[0] ?? '';
     if (path === '/home/leads' || path.startsWith('/home/leads')) {
       this.showLeadsView();
+    }
+  }
+
+  private captureFocusReturnContext(): HomeFocusReturnContext {
+    const view = this.activeView();
+    const article = this.strategyViewState.selectedArticle();
+    return {
+      view,
+      navId: this.activeNavId(),
+      sidePanelOpen: this.sidePanel.open(),
+      strategyArticleKey: article ? calendarItemKey(article) : null,
+      strategyVisualView: view === 'strategy' ? this.strategyViewState.visualView() : undefined,
+    };
+  }
+
+  private focusBackLabelForView(view: ProtopipeHomeView): string {
+    switch (view) {
+      case 'strategy':
+        return 'Strategy';
+      case 'keywords':
+        return 'Keywords';
+      case 'writer':
+        return 'Writer';
+      default:
+        return 'Back';
+    }
+  }
+
+  private pushFocusHistory(kind: HomeFocusHistoryKind): void {
+    if (this.focusHistoryEntry) {
+      history.replaceState({ protopipeFocus: kind }, '', window.location.href);
+      this.focusHistoryEntry = kind;
+      return;
+    }
+    history.pushState({ protopipeFocus: kind }, '', window.location.href);
+    this.focusHistoryEntry = kind;
+  }
+
+  private clearFocusHistory(syncHistory: boolean): void {
+    if (!this.focusHistoryEntry) return;
+
+    this.focusHistoryEntry = null;
+
+    if (!syncHistory) return;
+
+    this.suppressFocusPopState = true;
+    history.back();
+    queueMicrotask(() => {
+      this.suppressFocusPopState = false;
+    });
+  }
+
+  private restoreFocusReturnContext(): void {
+    const ctx = this.focusReturnContext;
+    this.focusReturnContext = null;
+
+    if (!ctx) {
+      this.activeView.set('strategy');
+      this.activeNavId.set('start-strategy');
+      this.sidePanel.setOpen(false);
+      this.strategyViewState.clearArticle();
+      return;
+    }
+
+    this.activeView.set(ctx.view);
+    this.activeNavId.set(ctx.navId);
+
+    if (ctx.view === 'strategy') {
+      this.strategyViewState.restorePanelContext({
+        sidePanelOpen: ctx.sidePanelOpen,
+        articleKey: ctx.strategyArticleKey,
+        visualView: ctx.strategyVisualView,
+      });
+      return;
+    }
+
+    if (ctx.view === 'keywords' && ctx.sidePanelOpen) {
+      this.sidePanel.setOpen(true);
+    } else {
+      this.sidePanel.setOpen(false);
     }
   }
 

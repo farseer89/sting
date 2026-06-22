@@ -205,26 +205,51 @@
           @if (article.contentPostId) {
             <button
               type="button"
+              class="stratctx__writer-btn"
+              [disabled]="view.openingWriter() || !view.canWriteArticle()"
+              (click)="openArticleInWriter(article)"
+            >
+              @if (view.openingWriter()) {
+                Opening…
+              } @else {
+                Open in writer
+              }
+            </button>
+            <button
+              type="button"
               class="stratctx__writer-btn stratctx__writer-btn--secondary"
               [disabled]="view.openingWriter() || !view.canWriteArticle()"
               (click)="openInThinker(article)"
             >
               View run
             </button>
+          } @else {
+            <button
+              type="button"
+              class="stratctx__writer-btn"
+              [disabled]="view.openingWriter() || !view.canWriteArticle()"
+              (click)="openInWriter(article)"
+            >
+              @if (view.openingWriter()) {
+                Opening…
+              } @else {
+                Write article
+              }
+            </button>
           }
-          <button
-            type="button"
-            class="stratctx__writer-btn"
-            [disabled]="view.openingWriter() || !view.canWriteArticle()"
-            (click)="openInWriter(article)"
-          >
-            @if (view.openingWriter()) {
-              Opening…
-            } @else {
-              Write article
-            }
-          </button>
         </footer>
+        @if (article.contentPostId) {
+          <p class="stratctx__action-hint">
+            <button
+              type="button"
+              class="stratctx__link-btn"
+              [disabled]="view.openingWriter() || !view.canWriteArticle()"
+              (click)="openInWriter(article)"
+            >
+              Run generation pipeline
+            </button>
+          </p>
+        }
       </section>
     }
   } @else if (view.plan(); as plan) {

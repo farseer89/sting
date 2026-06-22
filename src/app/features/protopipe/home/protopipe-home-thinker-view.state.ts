@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import type { ArticleGenerationRunDto, ProtopipeSiteContentPlan } from '@hive/contracts';
+import type { ArticleGenerationRunDto, ArticleGenerationStep, ProtopipeSiteContentPlan } from '@hive/contracts';
 import { firstValueFrom } from 'rxjs';
 import {
   ARTICLE_RUN_POLL_MS,
@@ -197,6 +197,10 @@ export class ProtopipeHomeThinkerViewState {
       return;
     }
     this.session.retryPoll();
+  }
+
+  rerunArticleStep(step: ArticleGenerationStep) {
+    return this.session.rerunStep(step);
   }
 
   private clearArticleSession(): void {

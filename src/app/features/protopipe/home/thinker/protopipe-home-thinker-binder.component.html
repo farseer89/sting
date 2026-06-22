@@ -46,6 +46,9 @@
       @if (exportError(); as err) {
         <p class="tb-masthead__error">{{ err }}</p>
       }
+      @if (rerunError(); as err) {
+        <p class="tb-masthead__error">{{ err }}</p>
+      }
       </div>
     </div>
     <div class="tb-masthead__right">
@@ -56,6 +59,17 @@
         <span class="tb-progress-label">{{ progress() }}%</span>
       </div>
       <span class="tb-cost-badge">{{ totalCost() }} total</span>
+      @if (showRerunArticleStep()) {
+        <button
+          type="button"
+          class="tb-btn tb-btn--ghost tb-btn--xs"
+          [disabled]="!canRerunArticleStep() || rerunning()"
+          [title]="rerunBlockedHint() ?? 'Rerun this step and everything after it'"
+          (click)="rerunActiveStep()"
+        >
+          {{ rerunning() ? 'Rerunning…' : rerunStepLabel() }}
+        </button>
+      }
       @if (showRestartStrategyBuild()) {
         <button
           type="button"
@@ -169,6 +183,17 @@
               <span class="tb-chip tb-chip--failed">Failed</span>
             } @else {
               <span class="tb-chip tb-chip--pending">Pending</span>
+            }
+            @if (showRerunArticleStep() && (step.status === 'running' || step.status === 'failed')) {
+              <button
+                type="button"
+                class="tb-btn tb-btn--ghost tb-btn--xs"
+                [disabled]="!canRerunArticleStep() || rerunning()"
+                [title]="rerunBlockedHint() ?? 'Rerun this step and everything after it'"
+                (click)="rerunActiveStep()"
+              >
+                {{ rerunning() ? 'Rerunning…' : 'Rerun step' }}
+              </button>
             }
           </div>
         </div>

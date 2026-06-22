@@ -3,6 +3,7 @@ import type { ArticleGenerationRunDto } from '@hive/contracts';
 import { firstValueFrom } from 'rxjs';
 import { ProtopipeApiService } from '../protopipe-api.service';
 import { parseProtopipeApiError } from '../protopipe-http.util';
+import type { ArticleGenerationStep } from '@hive/contracts';
 
 /** Matches the backend orphan-takeover window for stuck "running" runs. */
 export const ARTICLE_RUN_STALE_MS = 4 * 60 * 1000;
@@ -91,6 +92,26 @@ export class ArticleGenerationRunSession {
     this.pollFailures = 0;
     this._connection.set('reconnecting');
     void this.loadRun(this.siteId, this.runId);
+  }
+
+  async rerunStep(step: ArticleGenerationStep): Promise<{ ok: true } | { ok: false; message: string }> {
+    if (!this.siteId || !this.runId) {
+      return { ok: false, message: 'No active run.' };
+    }
+    this.stopPolling();
+    this._loadError.set(null);
+    try {
+      const { run } = await firstValueFrom(
+        this.api.rerunArticleStep$(this.siteId, this.runId, step),
+      );
+      this._run.set(run);
+      this.maybePoll(run);
+      return { ok: true };
+    } catch (err) {
+      const current = this._run();
+      if (current) this.maybePoll(current);
+      return { ok: false, message: parseProtopipeApiError(err, 'Failed to rerun step.') };
+    }
   }
 
   stop(): void {

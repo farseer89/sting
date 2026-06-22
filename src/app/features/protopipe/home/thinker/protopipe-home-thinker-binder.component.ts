@@ -15,6 +15,10 @@ import { formatThinkerCostUsd, sumCosts } from '../../lab/thinker/thinker-cost';
 import { exportThoughtRunbookPdf } from '../../lab/thinker/thought-runbook-pdf';
 import { ProtopipeHomeThinkerViewState } from '../protopipe-home-thinker-view.state';
 import { ProtopipeHomeWriterViewState } from '../protopipe-home-writer-view.state';
+import {
+  canRerunArticleRun,
+  rerunBlockedReason,
+} from '../../article/article-run-rerun.util';
 import type { ArticleGenerationStep } from '@hive/contracts';
 import { buildArticleStepVisualizer } from './article-run-visualizer.util';
 import {
@@ -46,6 +50,8 @@ export class ProtopipeHomeThinkerBinderComponent {
   readonly activeTab = signal<ThinkerTab>('visualizer');
   readonly exportingRunbook = signal(false);
   readonly exportError = signal<string | null>(null);
+  readonly rerunning = signal(false);
+  readonly rerunError = signal<string | null>(null);
 
   readonly runKind = this.thinkerView.runKind;
   readonly run = this.thinkerView.run;
@@ -139,6 +145,19 @@ export class ProtopipeHomeThinkerBinderComponent {
     () => this.runKind() === 'article' && this.run()?.status === 'complete',
   );
 
+  readonly showRerunArticleStep = computed(() => this.runKind() === 'article' && Boolean(this.run()));
+
+  readonly canRerunArticleStep = computed(
+    () => !this.rerunning() && canRerunArticleRun(this.run()),
+  );
+
+  readonly rerunBlockedHint = computed(() => rerunBlockedReason(this.run()));
+
+  readonly rerunStepLabel = computed(() => {
+    const step = this.activeStep();
+    return step ? `Rerun from ${step.label}` : 'Rerun step';
+  });
+
   readonly canExportRunbook = computed(() => Boolean(this.thought()));
 
   readonly showRestartStrategyBuild = computed(
@@ -204,6 +223,24 @@ export class ProtopipeHomeThinkerBinderComponent {
     if (!postId) return;
     this.writerView.openPost(postId);
     this.thinkerView.openInWriter();
+  }
+
+  rerunActiveStep(): void {
+    if (this.runKind() !== 'article' || this.rerunning() || !this.canRerunArticleStep()) return;
+
+    const run = this.run();
+    const step = this.activeStep();
+    const stepId = (run?.error?.step ?? step?.id) as ArticleGenerationStep | undefined;
+    if (!stepId) return;
+
+    this.rerunning.set(true);
+    this.rerunError.set(null);
+    void this.thinkerView.rerunArticleStep(stepId).then((result) => {
+      this.rerunning.set(false);
+      if (!result.ok) {
+        this.rerunError.set(result.message);
+      }
+    });
   }
 
   async exportRunbook(): Promise<void> {

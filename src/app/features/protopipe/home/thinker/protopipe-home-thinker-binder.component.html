@@ -9,7 +9,7 @@
     <div class="tb-empty">
       <h2 class="tb-empty__title">Could not load run</h2>
       <p class="tb-empty__deck">{{ err }}</p>
-      <button type="button" class="sb-btn sb-btn--ghost" (click)="retryConnection()">Retry</button>
+      <button type="button" class="tb-btn tb-btn--ghost tb-btn--xs" (click)="retryConnection()">Retry</button>
     </div>
   } @else {
 
@@ -41,7 +41,7 @@
       @if (canExportRunbook()) {
         <button
           type="button"
-          class="sb-btn sb-btn--ghost sb-btn--xs"
+          class="tb-btn tb-btn--ghost tb-btn--xs"
           [disabled]="exportingRunbook()"
           (click)="exportRunbook()"
         >
@@ -49,7 +49,7 @@
         </button>
       }
       @if (showOpenWriter()) {
-        <button type="button" class="sb-btn sb-btn--primary sb-btn--xs" (click)="openInWriter()">Open in writer</button>
+        <button type="button" class="tb-btn tb-btn--primary tb-btn--xs" (click)="openInWriter()">Open in writer</button>
       }
     </div>
   </header>

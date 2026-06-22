@@ -20,7 +20,7 @@ import {
   type BinderStepView,
 } from './thinker-binder.mapper';
 
-type ThinkerTab = 'output' | 'events' | 'raw';
+type ThinkerTab = 'trace' | 'events' | 'raw';
 
 @Component({
   selector: 'app-protopipe-home-thinker-binder',
@@ -36,7 +36,7 @@ export class ProtopipeHomeThinkerBinderComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly activeStepId = signal<string | null>(null);
-  readonly activeTab = signal<ThinkerTab>('output');
+  readonly activeTab = signal<ThinkerTab>('trace');
 
   readonly runKind = this.thinkerView.runKind;
   readonly run = this.thinkerView.run;
@@ -64,6 +64,23 @@ export class ProtopipeHomeThinkerBinderComponent {
     const steps = this.steps();
     const id = this.activeStepId() ?? this.defaultStepId();
     return steps.find((s) => s.id === id) ?? steps[0];
+  });
+
+  /** Completed steps before the active one — the causal chain leading here. */
+  readonly priorSteps = computed((): BinderStepView[] => {
+    const steps = this.steps();
+    const active = this.activeStep();
+    if (!active) return [];
+    const idx = steps.findIndex((s) => s.id === active.id);
+    if (idx <= 0) return [];
+    return steps.slice(0, idx).filter((s) => s.status === 'done' && (s.conclusion || s.outputs.length > 0));
+  });
+
+  readonly activeStepIndex = computed(() => {
+    const steps = this.steps();
+    const active = this.activeStep();
+    if (!active) return 0;
+    return steps.findIndex((s) => s.id === active.id);
   });
 
   readonly progress = computed(() => {
@@ -143,6 +160,7 @@ export class ProtopipeHomeThinkerBinderComponent {
 
   selectStep(id: string): void {
     this.activeStepId.set(id);
+    this.activeTab.set('trace');
   }
 
   retryConnection(): void {

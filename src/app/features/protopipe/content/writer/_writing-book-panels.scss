@@ -35,9 +35,9 @@
 .pw__canvas {
   /* One continuous sheet for the full article (grows with content, fills viewport when short) */
   flex: 1 0 auto;
-  width: min(58rem, 100%);
+  width: min(680px, 100%);
   min-height: 100%;
-  margin: 0;
+  margin: 0 auto;
   padding: clamp(2rem, 7vh, 4rem) clamp(1.5rem, 4vw, 2.5rem) 4rem;
   background: var(--pw-paper);
   box-shadow: var(--pw-paper-shadow);

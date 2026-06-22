@@ -132,6 +132,111 @@ $wb-red: #dc2626;
   overflow: hidden;
 }
 
+.wb-shell--immersive {
+  .wb-binder {
+    grid-template-columns: 1fr;
+  }
+
+  .wb-masthead--minimal {
+    padding: 0.625rem 1.5rem;
+  }
+
+  .wb-masthead__meta--inline {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .wb-panel--canvas-stage {
+    display: flex;
+    justify-content: center;
+    padding: 0;
+    background: var(--pw-stage-bg, linear-gradient(180deg, #fcfcfd 0%, #f6f8fa 48%, #eef2f5 100%));
+  }
+
+  .wb-panel--canvas-stage .pw__canvas {
+    margin: auto;
+    min-height: calc(100% - 2rem);
+  }
+}
+
+// ── Immersive bottom tool bar
+
+.wb-immersive-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 1.25rem;
+  border-top: 1px solid $wb-border;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  flex-shrink: 0;
+}
+
+.wb-immersive-bar__pill {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.wb-immersive-bar__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 100px;
+  border: 1.5px solid $wb-border;
+  background: $wb-bg;
+  font-family: $wb-sans;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: $wb-muted;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+
+  &:hover {
+    color: $wb-ink;
+    border-color: $wb-dim;
+  }
+
+  &.is-active {
+    background: $wb-ink;
+    border-color: $wb-ink;
+    color: #fff;
+  }
+}
+
+.wb-immersive-bar__flag {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  background: #fef2f2;
+  color: $wb-red;
+  border-radius: 100px;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid #fecaca;
+
+  .is-active & {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.35);
+  }
+}
+
+.wb-immersive-bar__progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.wb-immersive-bar__words {
+  font-size: 0.6875rem;
+  color: $wb-muted;
+  white-space: nowrap;
+}
+
 // ── Left nav
 
 .wb-binder-nav {

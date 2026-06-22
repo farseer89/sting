@@ -227,9 +227,12 @@ export class ProtopipeUserHomeComponent implements OnInit {
   readonly isWriterFocus = computed(() => this.activeView() === 'writer');
   readonly isThinkerFocus = computed(() => this.activeView() === 'thinker');
   readonly isBuildBookFocus = computed(() => this.activeView() === 'build-book');
-  readonly isRailHidden = computed(
-    () => this.isBuildBookFocus() || this.isThinkerFocus(),
-  );
+  /** Temporarily reveal site nav while in immersive Writing book. */
+  readonly writerRailPeek = signal(false);
+  readonly isRailHidden = computed(() => {
+    if (this.isWriterFocus() && this.writerRailPeek()) return false;
+    return this.isWriterFocus() || this.isBuildBookFocus() || this.isThinkerFocus();
+  });
 
   ngOnInit(): void {
     this.destroyRef.onDestroy(() => this.sidePanel.detachResizeListeners());
@@ -353,7 +356,12 @@ export class ProtopipeUserHomeComponent implements OnInit {
     }
   }
 
+  toggleWriterRailPeek(): void {
+    this.writerRailPeek.update((open) => !open);
+  }
+
   enterWriterFocus(): void {
+    this.writerRailPeek.set(false);
     const fromView = this.activeView();
     if (fromView !== 'writer') {
       if (fromView !== 'thinker') {
@@ -419,6 +427,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   leaveWriterFocus(options: { syncHistory?: boolean } = {}): void {
     const syncHistory = options.syncHistory !== false;
     const wasWriter = this.activeView() === 'writer';
+    this.writerRailPeek.set(false);
     this.writerViewState.clearPanel();
     this.writerViewState.clearSession();
     this.content.setEditingSiteId(null);

@@ -1,4 +1,4 @@
-<div class="void void--shell" [class.void--writer-focus]="isRailHidden()" data-bg="white" (click)="closeUserMenu()">
+<div class="void void--shell" [class.void--writer-focus]="isWriterFocus()" data-bg="white" (click)="closeUserMenu()">
   <div class="void__backdrop" aria-hidden="true"></div>
   <div class="void__veil" aria-hidden="true"></div>
 
@@ -47,7 +47,19 @@
   </header>
 
   <div class="void__frame">
+    @if (isWriterFocus()) {
+      <button
+        type="button"
+        class="void-nav-peek"
+        (click)="toggleWriterRailPeek()"
+        [attr.aria-expanded]="writerRailPeek()"
+        aria-controls="void-site-rail"
+      >
+        {{ writerRailPeek() ? 'Hide nav' : 'Navigation' }}
+      </button>
+    }
     <nav
+      id="void-site-rail"
       class="void-rail"
       [class.is-collapsed]="navCollapsed()"
       [class.void-rail--focus-hidden]="isRailHidden()"

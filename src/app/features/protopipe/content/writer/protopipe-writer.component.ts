@@ -148,6 +148,12 @@ const SLASH_COMMANDS: SlashCommand[] = [
 
 type BookPanel = WritingBookPanelId;
 
+function countWordsInText(text: string | undefined | null): number {
+  const trimmed = text?.trim();
+  if (!trimmed) return 0;
+  return trimmed.split(/\s+/).filter(Boolean).length;
+}
+
 function detectEmbedKind(url: string): ProtopipeContentEmbedKind {
   const lower = url.trim().toLowerCase();
   if (lower.includes('youtube.com') || lower.includes('youtu.be')) return 'youtube';
@@ -350,6 +356,41 @@ export class ProtopipeWriterComponent implements OnDestroy {
   });
 
   readonly showFactsNav = computed(() => this.unresolvedCriticalFacts() > 0);
+
+  /** Immersive Writing book layout (home embed) — distraction-free canvas. */
+  readonly immersive = computed(() => this.embedded());
+
+  readonly isCanvasPanel = computed(() => this.activeBookPanel() === 'canvas');
+
+  /**
+   * Canvas rows — hide empty blueprint scaffold headings (h2 preset, no body).
+   * User-added blank sections (empty h2 + body) still show.
+   */
+  readonly canvasSectionRows = computed(() => {
+    const sections = this.session()?.template.sections ?? [];
+    return sections
+      .map((sec, index) => ({ sec, index }))
+      .filter(({ sec }) => Boolean(sec.body?.trim()) || !sec.h2?.trim());
+  });
+
+  readonly totalWords = computed(() => {
+    const template = this.session()?.template;
+    if (!template) return 0;
+    let count = countWordsInText(template.h1) + countWordsInText(template.intro);
+    for (const sec of template.sections ?? []) {
+      count += countWordsInText(sec.h2) + countWordsInText(sec.body);
+    }
+    return count;
+  });
+
+  readonly targetWords = computed(() => {
+    const target = this.brief()?.targetWordCount;
+    return target && target > 0 ? target : 1200;
+  });
+
+  readonly wordProgressPct = computed(() =>
+    Math.min(100, (this.totalWords() / this.targetWords()) * 100),
+  );
 
   readonly articleKicker = computed(() => {
     const type = this.articleTypeDisplay();

@@ -8,19 +8,45 @@
   (change)="onSectionImageFileSelected($event)"
 />
 
-<div class="wb-shell" [class.wb-shell--readonly]="isReadOnly()">
+<div
+  class="wb-shell"
+  [class.wb-shell--readonly]="isReadOnly()"
+  [class.wb-shell--immersive]="immersive()"
+  [class.wb-shell--canvas]="isCanvasPanel()"
+>
 
-  <header class="wb-masthead">
+  <header
+    class="wb-masthead"
+    [class.wb-masthead--minimal]="immersive()"
+  >
     <div class="wb-masthead__left">
       <button type="button" class="wb-masthead__back" (click)="backToLibrary()">
         <i class="pi pi-arrow-left"></i>
         <span>{{ backLabel() }}</span>
       </button>
-      <div class="wb-masthead__identity">
-        <h1 class="wb-masthead__title">Writing book</h1>
-        <p class="wb-masthead__deck">Draft, refine, and publish articles from your content plan.</p>
-        <div class="wb-masthead__meta">
-          <span class="wb-masthead__kicker">{{ articleKicker() }}</span>
+      @if (!immersive()) {
+        <div class="wb-masthead__identity">
+          <h1 class="wb-masthead__title">Writing book</h1>
+          <p class="wb-masthead__deck">Draft, refine, and publish articles from your content plan.</p>
+          <div class="wb-masthead__meta">
+            <span class="wb-masthead__kicker">{{ articleKicker() }}</span>
+            <span class="wb-masthead__sep">·</span>
+            @if (loading() || loadingPost()) {
+              <span class="wb-masthead__status">Loading…</span>
+            } @else if (isReadOnly()) {
+              <span class="wb-masthead__status wb-masthead__status--pub">Published</span>
+            } @else {
+              <span class="wb-masthead__status" [class.is-dirty]="content.dirty()">{{ saveLabel() }}</span>
+            }
+          </div>
+        </div>
+      } @else {
+        <div class="wb-masthead__meta wb-masthead__meta--inline">
+          @if (topicLabel(); as topic) {
+            <span class="wb-masthead__kicker">{{ topic }}</span>
+          } @else {
+            <span class="wb-masthead__kicker">{{ articleKicker() }}</span>
+          }
           <span class="wb-masthead__sep">·</span>
           @if (loading() || loadingPost()) {
             <span class="wb-masthead__status">Loading…</span>
@@ -30,14 +56,32 @@
             <span class="wb-masthead__status" [class.is-dirty]="content.dirty()">{{ saveLabel() }}</span>
           }
         </div>
-      </div>
+      }
     </div>
     <div class="wb-masthead__actions">
-      @if (showWriteArticle()) {
-        <button type="button" class="wb-btn wb-btn--accent wb-btn--sm" (click)="writeArticle()" [disabled]="generating()">
-          <i class="pi pi-bolt"></i>
-          {{ writeArticleLabel() }}
-        </button>
+      @if (!immersive() || !isCanvasPanel()) {
+        @if (showWriteArticle()) {
+          <button type="button" class="wb-btn wb-btn--accent wb-btn--sm" (click)="writeArticle()" [disabled]="generating()">
+            <i class="pi pi-bolt"></i>
+            {{ writeArticleLabel() }}
+          </button>
+        } @else if (runIsActive()) {
+          <span class="wb-masthead__running" title="Pipeline is running on the server">
+            <i class="pi pi-spin pi-spinner"></i>
+            @if (runActivityDetail(); as detail) {
+              {{ detail }}
+            } @else {
+              Writing…
+            }
+            · {{ runElapsedLabel() }}
+          </span>
+        }
+        @if (generatedReady() && !isReadOnly()) {
+          <button type="button" class="wb-btn wb-btn--ghost wb-btn--sm" (click)="applyGenerated()" [attr.title]="pullDraftHint()">
+            <i class="pi pi-download"></i>
+            Pull draft
+          </button>
+        }
       } @else if (runIsActive()) {
         <span class="wb-masthead__running" title="Pipeline is running on the server">
           <i class="pi pi-spin pi-spinner"></i>
@@ -48,12 +92,6 @@
           }
           · {{ runElapsedLabel() }}
         </span>
-      }
-      @if (generatedReady() && !isReadOnly()) {
-        <button type="button" class="wb-btn wb-btn--ghost wb-btn--sm" (click)="applyGenerated()" [attr.title]="pullDraftHint()">
-          <i class="pi pi-download"></i>
-          Pull draft
-        </button>
       }
       @if (!isReadOnly()) {
         <button type="button" class="wb-btn wb-btn--ghost wb-btn--sm" (click)="saveDraft()" [disabled]="saving() || !content.dirty()">
@@ -68,6 +106,7 @@
 
   <div class="wb-binder">
 
+    @if (!immersive()) {
     <nav class="wb-binder-nav" aria-label="Writing book sections">
       <div class="wb-binder-nav__label">Editing</div>
       <button
@@ -123,15 +162,18 @@
         </button>
       }
     </nav>
+    }
 
-    <div class="wb-panel">
+    <div class="wb-panel" [class.wb-panel--canvas-stage]="immersive() && isCanvasPanel()">
       @switch (activeBookPanel()) {
 
         @case ('canvas') {
           @if (session(); as s) {
             <article class="pw__canvas wb-canvas">
               @if (topicLabel(); as topic) {
-                <p class="pw__topic">Writing for <strong>{{ topic }}</strong></p>
+                @if (!immersive()) {
+                  <p class="pw__topic">Writing for <strong>{{ topic }}</strong></p>
+                }
               }
               @if (flaggedFactCount()) {
                 <p class="pw__editor-legend">
@@ -168,10 +210,10 @@
                 </div>
               </div>
 
-              @for (sec of s.template.sections; track $index) {
+              @for (row of canvasSectionRows(); track row.index) {
                 @if (!isReadOnly()) {
                   <div class="pw__insert">
-                    <button type="button" class="pw__insert-btn" (click)="insertSection($index)" title="Insert section here">
+                    <button type="button" class="pw__insert-btn" (click)="insertSection(row.index)" title="Insert section here">
                       <span class="pw__insert-icon"></span>
                     </button>
                   </div>
@@ -182,26 +224,26 @@
                     <textarea
                       class="pw__h2"
                       rows="1"
-                      [ngModel]="sec.h2"
-                      (ngModelChange)="patchSection($index, { h2: $event })"
+                      [ngModel]="row.sec.h2"
+                      (ngModelChange)="patchSection(row.index, { h2: $event })"
                       (keydown.enter)="$event.preventDefault()"
-                      (focus)="focusSection($index)"
+                      (focus)="focusSection(row.index)"
                       [disabled]="isReadOnly()"
                       placeholder="Section heading…"
                     ></textarea>
                     <app-prose-editor
                       class="pw__section-body pw__section-body--editor"
-                      [value]="sec.body"
-                      (valueChange)="patchSection($index, { body: $event })"
-                      (focused)="focusSection($index)"
-                      [flaggedFacts]="factsForSection($index)"
-                      (factClick)="onFactClick($index, $event)"
-                      (ready)="registerEditor($index, $event)"
+                      [value]="row.sec.body"
+                      (valueChange)="patchSection(row.index, { body: $event })"
+                      (focused)="focusSection(row.index)"
+                      [flaggedFacts]="factsForSection(row.index)"
+                      (factClick)="onFactClick(row.index, $event)"
+                      (ready)="registerEditor(row.index, $event)"
                       [disabled]="isReadOnly()"
                       placeholder="Write this section…"
                     ></app-prose-editor>
-                    @if (!isReadOnly() && s.template.sections.length > 1) {
-                      <button type="button" class="pw__remove" (click)="removeSection($index)">
+                    @if (!isReadOnly() && canvasSectionRows().length > 1) {
+                      <button type="button" class="pw__remove" (click)="removeSection(row.index)">
                         Remove section
                       </button>
                     }
@@ -239,6 +281,62 @@
       }
     </div>
   </div>
+
+  @if (immersive()) {
+    <footer class="wb-immersive-bar" role="toolbar" aria-label="Writing tools">
+      <div class="wb-immersive-bar__pill" role="tablist">
+        <button
+          type="button"
+          class="wb-immersive-bar__tab"
+          role="tab"
+          [class.is-active]="activeBookPanel() === 'canvas'"
+          [attr.aria-selected]="activeBookPanel() === 'canvas'"
+          (click)="selectBookPanel('canvas')"
+        >
+          Canvas
+        </button>
+        <button
+          type="button"
+          class="wb-immersive-bar__tab"
+          role="tab"
+          [class.is-active]="activeBookPanel() === 'behind'"
+          [attr.aria-selected]="activeBookPanel() === 'behind'"
+          (click)="selectBookPanel('behind')"
+        >
+          Generate
+        </button>
+        @if (showFactsNav()) {
+          <button
+            type="button"
+            class="wb-immersive-bar__tab"
+            role="tab"
+            [class.is-active]="activeBookPanel() === 'facts'"
+            [attr.aria-selected]="activeBookPanel() === 'facts'"
+            (click)="selectBookPanel('facts')"
+          >
+            Fact check
+            <span class="wb-immersive-bar__flag">{{ unresolvedCriticalFacts() }}</span>
+          </button>
+        }
+        <button
+          type="button"
+          class="wb-immersive-bar__tab"
+          role="tab"
+          [class.is-active]="activeBookPanel() === 'seo'"
+          [attr.aria-selected]="activeBookPanel() === 'seo'"
+          (click)="selectBookPanel('seo')"
+        >
+          Publish
+        </button>
+      </div>
+      <div class="wb-immersive-bar__progress" aria-label="Word count progress">
+        <span class="wb-immersive-bar__words">{{ totalWords() }} / {{ targetWords() }} words</span>
+        <span class="wb-masthead__word-bar" aria-hidden="true">
+          <span class="wb-masthead__word-fill" [style.width.%]="wordProgressPct()"></span>
+        </span>
+      </div>
+    </footer>
+  }
 </div>
 
 <ng-template #generationPanel>

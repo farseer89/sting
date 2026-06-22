@@ -124,45 +124,80 @@ function json(id: string, label: string, data: unknown, summary?: string): Thoug
   return { id, label, kind: 'json', data, summary };
 }
 
+function conductorArtifact(
+  plan: ProtopipeSiteContentPlan,
+  step: ProtopipeContentPlanStep,
+): ThoughtArtifact | null {
+  const assessment = plan.conductorAssessments?.find((row) => row.step === step);
+  if (!assessment) return null;
+  return json(
+    `conductor-${step}`,
+    'Conductor (shadow)',
+    assessment,
+    `${assessment.decision}: ${assessment.thought}`,
+  );
+}
+
+function withConductorOutput(
+  step: ProtopipeContentPlanStep,
+  plan: ProtopipeSiteContentPlan,
+  artifacts: ThoughtArtifact[],
+): ThoughtArtifact[] {
+  const conductor = conductorArtifact(plan, step);
+  return conductor ? [...artifacts, conductor] : artifacts;
+}
+
 function stepOutput(step: ProtopipeContentPlanStep, plan: ProtopipeSiteContentPlan): ThoughtArtifact[] {
   switch (step) {
     case 'audit':
-      return plan.existingContent
-        ? [
-            json(
-              'audit',
-              'Existing content audit',
-              plan.existingContent,
-              `${plan.existingContent.scannedCount} page(s) via ${plan.existingContent.source}`,
-            ),
-          ]
-        : [];
+      return withConductorOutput(
+        step,
+        plan,
+        plan.existingContent
+          ? [
+              json(
+                'audit',
+                'Existing content audit',
+                plan.existingContent,
+                `${plan.existingContent.scannedCount} page(s) via ${plan.existingContent.source}`,
+              ),
+            ]
+          : [],
+      );
     case 'score_tier': {
       const tiers = plan.keywordTiers;
       const total =
         tiers.immediateFocus.length + tiers.longTerm.length + tiers.longTail.length;
-      return total
-        ? [
-            json(
-              'tiers',
-              'Keyword tiers',
-              tiers,
-              `${tiers.immediateFocus.length} immediate · ${tiers.longTerm.length} long-term · ${tiers.longTail.length} long-tail`,
-            ),
-          ]
-        : [];
+      return withConductorOutput(
+        step,
+        plan,
+        total
+          ? [
+              json(
+                'tiers',
+                'Keyword tiers',
+                tiers,
+                `${tiers.immediateFocus.length} immediate · ${tiers.longTerm.length} long-term · ${tiers.longTail.length} long-tail`,
+              ),
+            ]
+          : [],
+      );
     }
     case 'cluster':
-      return plan.clusters.length
-        ? [
-            json(
-              'clusters',
-              'Keyword clusters',
-              plan.clusters,
-              `${plan.clusters.length} cluster(s)`,
-            ),
-          ]
-        : [];
+      return withConductorOutput(
+        step,
+        plan,
+        plan.clusters.length
+          ? [
+              json(
+                'clusters',
+                'Keyword clusters',
+                plan.clusters,
+                `${plan.clusters.length} cluster(s)`,
+              ),
+            ]
+          : [],
+      );
     case 'unify': {
       const outputs: ThoughtArtifact[] = [];
       if (plan.pillars.length) {
@@ -185,19 +220,23 @@ function stepOutput(step: ProtopipeContentPlanStep, plan: ProtopipeSiteContentPl
           json('narrative', 'Plan narrative', plan.narrative, plan.narrative.headline),
         );
       }
-      return outputs;
+      return withConductorOutput(step, plan, outputs);
     }
     case 'deep_scan':
-      return plan.focusStrategies.length
-        ? [
-            json(
-              'focus-strategies',
-              'Focus keyword strategies',
-              plan.focusStrategies,
-              `${plan.focusStrategies.length} deep-scan strategy(ies)`,
-            ),
-          ]
-        : [];
+      return withConductorOutput(
+        step,
+        plan,
+        plan.focusStrategies.length
+          ? [
+              json(
+                'focus-strategies',
+                'Focus keyword strategies',
+                plan.focusStrategies,
+                `${plan.focusStrategies.length} deep-scan strategy(ies)`,
+              ),
+            ]
+          : [],
+      );
     case 'strategy_intel': {
       const outputs: ThoughtArtifact[] = [];
       if (plan.strategyIntel) {
@@ -220,7 +259,7 @@ function stepOutput(step: ProtopipeContentPlanStep, plan: ProtopipeSiteContentPl
           ),
         );
       }
-      return outputs;
+      return withConductorOutput(step, plan, outputs);
     }
     default:
       return [];

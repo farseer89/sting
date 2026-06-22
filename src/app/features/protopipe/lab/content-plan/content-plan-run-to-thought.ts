@@ -326,7 +326,14 @@ const STRATEGY_INTEL_PHASES = [
 ] as const;
 
 function activeStrategyIntelPhaseIndex(stage: string | undefined): number {
-  if (!stage || STRATEGY_INTEL_PHASES[0].stages.includes(stage)) return 0;
+  if (
+    !stage ||
+    stage === 'strategy_intel' ||
+    stage === 'keyword_intel' ||
+    stage === 'keyword_uq'
+  ) {
+    return 0;
+  }
   if (stage === 'cluster_intel') return 1;
   if (stage === 'avatar_intel') return 2;
   if (stage === 'thesis_seeds') return 3;

@@ -524,7 +524,7 @@ function buildArticleSubSteps(
           detail: a.audienceReview
             ? `Score ${formatReviewScore(a.audienceReview.overallScore)}`
             : 'One LLM pass in reader voice',
-          status: stepStatus === 'completed' ? 'completed' : phaseStatus(0, 1, stepStatus),
+          status: phaseStatus(0, 1, stepStatus),
           isLlm: true,
         },
       ];

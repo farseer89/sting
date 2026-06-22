@@ -197,12 +197,16 @@
           </section>
         }
 
+        @if (view.writerError(); as writerErr) {
+          <p class="stratctx__error" role="alert">{{ writerErr }}</p>
+        }
+
         <footer class="stratctx__actions">
           @if (article.contentPostId) {
             <button
               type="button"
               class="stratctx__writer-btn stratctx__writer-btn--secondary"
-              [disabled]="view.openingWriter() || !view.hasLivePlan()"
+              [disabled]="view.openingWriter() || !view.canWriteArticle()"
               (click)="openInThinker(article)"
             >
               View run
@@ -211,7 +215,7 @@
           <button
             type="button"
             class="stratctx__writer-btn"
-            [disabled]="view.openingWriter() || !view.hasLivePlan()"
+            [disabled]="view.openingWriter() || !view.canWriteArticle()"
             (click)="openInWriter(article)"
           >
             @if (view.openingWriter()) {

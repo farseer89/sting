@@ -7,6 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import type { ProtopipeContentPlanCalendarItem, ProtopipeSiteContentPlan } from '@hive/contracts';
+import { ContentPlanStore } from '../../content-plan/content-plan.store';
 import { ProtopipeHomeStrategyViewState } from '../strategy/protopipe-home-strategy-view.state';
 import {
   mapStrategyBinderView,
@@ -24,6 +25,7 @@ export type StrategySection = 'overview' | 'pillars' | 'calendar' | 'backlog' | 
 })
 export class ProtopipeHomeStrategyBinderComponent {
   private readonly viewState = inject(ProtopipeHomeStrategyViewState);
+  private readonly contentPlan = inject(ContentPlanStore);
 
   readonly plan = input.required<ProtopipeSiteContentPlan>();
   readonly siteLabel = input('');
@@ -51,6 +53,9 @@ export class ProtopipeHomeStrategyBinderComponent {
   readonly longTerm = computed(() => this.keywords().filter((k) => k.tier === 'long-term'));
   readonly longTail = computed(() => this.keywords().filter((k) => k.tier === 'long-tail'));
 
+  readonly showRestartBuild = this.contentPlan.needsBuildRestart;
+  readonly restartingBuild = this.contentPlan.starting;
+
   openCalendarItem(item: ProtopipeContentPlanCalendarItem): void {
     this.viewState.selectArticle(item);
   }
@@ -71,6 +76,10 @@ export class ProtopipeHomeStrategyBinderComponent {
 
   viewStrategyBuildRun(): void {
     this.viewState.openStrategyBuildRun();
+  }
+
+  restartBuild(): void {
+    void this.contentPlan.restartBuild();
   }
 
   difficultyLabel(n: number): string {

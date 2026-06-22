@@ -36,6 +36,8 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
   readonly loading = this.store.loading;
   readonly isComplete = this.store.isComplete;
   readonly hasFailed = this.store.hasFailed;
+  readonly isStalled = this.store.isStalled;
+  readonly needsBuildRestart = this.store.needsBuildRestart;
   readonly error = this.store.error;
   readonly planError = this.store.planError;
   readonly progress = this.store.progress;
@@ -50,14 +52,17 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
   readonly showEmpty = computed(
     () =>
       !this.showLoading() &&
-      !this.hasFailed() &&
       !this.displayPlan() &&
       !this.loading() &&
       !this.starting(),
   );
 
+  readonly showBuildProblem = computed(
+    () => this.needsBuildRestart() && Boolean(this.displayPlan()),
+  );
+
   readonly showBuildingBanner = computed(
-    () => this.isRunning() && !!this.store.plan(),
+    () => this.isRunning() && !!this.store.plan() && !this.showBuildProblem(),
   );
 
   readonly buildingStageLabel = computed(() => {
@@ -79,9 +84,15 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
     return base;
   });
 
-  readonly showResults = computed(() => {
-    if (this.hasFailed()) return false;
-    return Boolean(this.displayPlan());
+  readonly showResults = computed(() => Boolean(this.displayPlan()));
+
+  readonly buildProblemMessage = computed(() => {
+    if (this.planError()) return this.planError()!;
+    if (this.isStalled()) {
+      return 'This build stopped making progress. Restart to try again.';
+    }
+    if (this.error()) return this.error()!;
+    return 'Something went wrong while building your strategy.';
   });
 
   constructor() {
@@ -97,11 +108,15 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
   }
 
   retry(): void {
-    void this.store.generate();
+    void this.restartBuild();
   }
 
   buildStrategy(): void {
-    void this.store.generate();
+    void this.restartBuild();
+  }
+
+  restartBuild(): void {
+    void this.store.restartBuild();
   }
 
   private async bootstrap(): Promise<void> {

@@ -167,6 +167,19 @@ export class ProtopipeContentService {
    * Fixes 404 when primarySiteId ≠ the site that holds the draft.
    */
   findPost$(postId: string, preferredSiteId?: string | null) {
+    if (preferredSiteId) {
+      return this.api.getContent$(preferredSiteId, postId).pipe(
+        map((response) => {
+          this._editingSiteId.set(response.post.siteId);
+          return response;
+        }),
+        catchError(() => this.findPostAcrossSites$(postId, preferredSiteId)),
+      );
+    }
+    return this.findPostAcrossSites$(postId);
+  }
+
+  private findPostAcrossSites$(postId: string, preferredSiteId?: string | null) {
     return this.api.bootstrap$().pipe(
       switchMap((boot) => {
         const siteIds = boot.sites.map((s) => s.id);

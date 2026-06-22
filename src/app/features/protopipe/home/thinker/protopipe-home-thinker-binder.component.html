@@ -38,6 +38,16 @@
         <span class="tb-progress-label">{{ progress() }}%</span>
       </div>
       <span class="tb-cost-badge">{{ totalCost() }} total</span>
+      @if (showRestartStrategyBuild()) {
+        <button
+          type="button"
+          class="tb-btn tb-btn--primary tb-btn--xs"
+          [disabled]="restartingStrategyBuild()"
+          (click)="restartStrategyBuild()"
+        >
+          {{ restartingStrategyBuild() ? 'Restarting…' : 'Restart build' }}
+        </button>
+      }
       @if (canExportRunbook()) {
         <button
           type="button"

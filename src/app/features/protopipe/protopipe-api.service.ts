@@ -147,17 +147,28 @@ import type {
   PatchPitchMediaAssetRequest,
   PatchPitchMediaAssetResponse,
 } from '@hive/contracts';
-import { Observable, firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom, shareReplay } from 'rxjs';
 import { protopipeApiUrl } from './protopipe-http.util';
 
 @Injectable({ providedIn: 'root' })
 export class ProtopipeApiService {
   private readonly http = inject(HttpClient);
 
+  /** Shared in-flight + cached bootstrap payload to avoid rate-limit bursts. */
+  private cachedBootstrap$: Observable<ProtopipeBootstrapResponse> | null = null;
+
   bootstrap$(): Observable<ProtopipeBootstrapResponse> {
-    return this.http.get<ProtopipeBootstrapResponse>(
-      protopipeApiUrl(ProtopipeEndpoints.bootstrap.path),
-    );
+    if (!this.cachedBootstrap$) {
+      this.cachedBootstrap$ = this.http
+        .get<ProtopipeBootstrapResponse>(protopipeApiUrl(ProtopipeEndpoints.bootstrap.path))
+        .pipe(shareReplay({ bufferSize: 1, refCount: false }));
+    }
+    return this.cachedBootstrap$;
+  }
+
+  /** Drop cached bootstrap after site create/delete or explicit refresh. */
+  invalidateBootstrapCache(): void {
+    this.cachedBootstrap$ = null;
   }
 
   bootstrap(): Promise<ProtopipeBootstrapResponse> {
@@ -913,7 +924,10 @@ export class ProtopipeApiService {
         protopipeApiUrl(ProtopipeEndpoints.createSite.path),
         body,
       ),
-    );
+    ).then((res) => {
+      this.invalidateBootstrapCache();
+      return res;
+    });
   }
 
   deleteSite(siteId: string): Promise<DeleteProtopipeSiteResponse> {
@@ -921,7 +935,10 @@ export class ProtopipeApiService {
       this.http.delete<DeleteProtopipeSiteResponse>(
         protopipeApiUrl(ProtopipeEndpoints.deleteSite.path, { siteId }),
       ),
-    );
+    ).then((res) => {
+      this.invalidateBootstrapCache();
+      return res;
+    });
   }
 
   getSitePage(siteId: string): Promise<SitePageResponse> {

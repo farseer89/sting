@@ -8,6 +8,16 @@
       <p class="sb-masthead__deck">{{ mastheadDeck() }}</p>
     </div>
     <div class="sb-masthead__right">
+      @if (showRestartBuild()) {
+        <button
+          type="button"
+          class="sb-btn sb-btn--primary sb-btn--sm"
+          [disabled]="restartingBuild()"
+          (click)="restartBuild()"
+        >
+          {{ restartingBuild() ? 'Restarting…' : 'Restart build' }}
+        </button>
+      }
       <button
         type="button"
         class="sb-btn sb-btn--ghost sb-btn--sm"

@@ -43,6 +43,29 @@
   font-size: 9px;
 }
 
+.strat-shell__problem {
+  flex-shrink: 0;
+  margin: 0.35rem 0.45rem 0;
+  padding: 0.5rem 0.6rem;
+  border: 0.5px solid rgba(139, 32, 32, 0.35);
+  border-radius: 8px;
+  background: rgba(139, 32, 32, 0.06);
+  font-size: 9px;
+  color: var(--void-ink-secondary);
+}
+
+.strat-shell__problem-title {
+  margin: 0;
+  font-weight: 600;
+  color: #8b2020;
+}
+
+.strat-shell__problem-detail {
+  margin: 0.25rem 0 0;
+  color: #8b2020;
+  font-size: 9px;
+}
+
 .strat-shell__building {
   display: flex;
   align-items: center;

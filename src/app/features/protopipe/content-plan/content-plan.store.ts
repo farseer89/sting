@@ -10,6 +10,24 @@ import { parseProtopipeApiError } from '../protopipe-http.util';
 import { ContentPlanService } from './content-plan.service';
 
 const POLL_INTERVAL_MS = 1200;
+/** Pending runs should start within a few minutes; running runs should heartbeat via updatedAt/events. */
+const PENDING_STALL_MS = 3 * 60 * 1000;
+const RUNNING_STALL_MS = 10 * 60 * 1000;
+
+function lastPlanActivityMs(plan: ProtopipeSiteContentPlan): number {
+  const events = plan.events ?? [];
+  for (let i = events.length - 1; i >= 0; i -= 1) {
+    const event = events[i];
+    const stamp = event.finishedAt ?? event.startedAt;
+    if (stamp) {
+      const ms = new Date(stamp).getTime();
+      if (!Number.isNaN(ms)) return ms;
+    }
+  }
+  const fallback = plan.updatedAt || plan.createdAt;
+  const ms = new Date(fallback).getTime();
+  return Number.isNaN(ms) ? Date.now() : ms;
+}
 
 @Injectable({ providedIn: 'root' })
 export class ContentPlanStore {
@@ -41,6 +59,17 @@ export class ContentPlanStore {
   );
   readonly isComplete = computed(() => this._plan()?.status === 'complete');
   readonly hasFailed = computed(() => this._plan()?.status === 'failed');
+  readonly isStalled = computed(() => {
+    const plan = this._plan();
+    if (!plan) return false;
+    if (plan.status !== 'pending' && plan.status !== 'running') return false;
+    const idleMs = Date.now() - lastPlanActivityMs(plan);
+    if (plan.status === 'pending') return idleMs > PENDING_STALL_MS;
+    return idleMs > RUNNING_STALL_MS;
+  });
+  readonly needsBuildRestart = computed(
+    () => this.hasFailed() || this.isStalled() || Boolean(this.planError() && !this.isComplete()),
+  );
 
   readonly currentStep = computed(() => this._plan()?.currentStep ?? null);
   readonly progress = computed<ProtopipeContentPlanProgress | null>(
@@ -84,6 +113,7 @@ export class ContentPlanStore {
     this._starting.set(true);
     this._error.set(null);
     this._selectedRunId.set(null);
+    this.stopPolling();
     try {
       const res = await this.api.generate(siteId);
       this._plan.set(res.plan);
@@ -94,6 +124,11 @@ export class ContentPlanStore {
     } finally {
       this._starting.set(false);
     }
+  }
+
+  /** Start a fresh content-plan run (supersedes any stuck pending/running build on the server). */
+  async restartBuild(): Promise<void> {
+    await this.generate();
   }
 
   /**

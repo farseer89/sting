@@ -41,6 +41,7 @@ export class ProtopipeHomeStrategyViewState {
 
   private readonly _plan = signal<ProtopipeSiteContentPlan | null>(null);
   private readonly _openingWriter = signal(false);
+  private readonly _writerError = signal<string | null>(null);
   private readonly _siteLabel = signal('');
   private readonly _strategySummary = signal('');
   private readonly _selectedArticle = signal<ProtopipeContentPlanCalendarItem | null>(null);
@@ -52,8 +53,12 @@ export class ProtopipeHomeStrategyViewState {
   readonly selectedArticle = this._selectedArticle.asReadonly();
   readonly visualView = this._visualView.asReadonly();
   readonly openingWriter = this._openingWriter.asReadonly();
+  readonly writerError = this._writerError.asReadonly();
   /** True when the content-plan store has a server-backed plan (not the UI mock fallback). */
   readonly hasLivePlan = () => this.contentPlan.plan() != null;
+  /** Write article requires a finished content-plan run (calendar rows are materializable). */
+  readonly canWriteArticle = () =>
+    this.contentPlan.plan() != null && this.contentPlan.isComplete();
 
   setEnterWriterHandler(handler: () => void): void {
     this.enterWriterFocus = handler;
@@ -147,6 +152,7 @@ export class ProtopipeHomeStrategyViewState {
   async openInThinker(article: ProtopipeContentPlanCalendarItem): Promise<void> {
     if (this._openingWriter()) return;
     this._openingWriter.set(true);
+    this._writerError.set(null);
     try {
       const postId = await this.resolvePostId(article);
       if (!postId) return;
@@ -173,11 +179,16 @@ export class ProtopipeHomeStrategyViewState {
   async openInWriter(article: ProtopipeContentPlanCalendarItem): Promise<void> {
     if (this._openingWriter()) return;
     this._openingWriter.set(true);
+    this._writerError.set(null);
     try {
       await this.strategy.ensureLoaded();
       const siteId = this.strategy.siteId();
       if (!siteId) return;
       if (!this.hasLivePlan()) return;
+      if (!this.contentPlan.isComplete()) {
+        this._writerError.set('Finish building your strategy before writing articles.');
+        return;
+      }
       this.contentPlan.setSiteId(siteId);
       this.content.setEditingSiteId(siteId);
 
@@ -231,41 +242,63 @@ export class ProtopipeHomeStrategyViewState {
     await this.strategy.ensureLoaded();
     const siteId = this.strategy.siteId();
     if (!siteId || !this.hasLivePlan()) return undefined;
+    if (!this.contentPlan.isComplete()) {
+      this._writerError.set('Finish building your strategy before writing articles.');
+      return undefined;
+    }
 
     this.contentPlan.setSiteId(siteId);
     this.content.setEditingSiteId(siteId);
 
-    let postId = article.contentPostId;
-    if (postId) {
+    const linkedPostId = article.contentPostId;
+    if (linkedPostId) {
       try {
-        const { post } = await firstValueFrom(this.content.findPost$(postId, siteId));
-        postId = post.id;
+        const { post } = await firstValueFrom(this.content.findPost$(linkedPostId, siteId));
         this.content.setEditingSiteId(post.siteId);
+        return post.id;
       } catch {
-        postId = undefined;
+        // Keep the plan-linked id when lookup fails (e.g. bootstrap rate limit).
+        return linkedPostId;
       }
     }
 
-    if (!postId) {
-      if (!article.proposedPublishAt) {
-        return undefined;
-      }
-      const res = await this.contentPlan.confirmCalendarItem({
-        proposedPublishAt: article.proposedPublishAt,
-        workingTitle: article.workingTitle,
-      });
-      if (!res) return undefined;
-      postId = res.contentPostId;
-      const plan = this.contentPlan.plan();
-      const key = calendarItemKey(article);
-      const updated = plan?.calendar.find((item) => calendarItemKey(item) === key) ?? {
-        ...article,
-        contentPostId: postId,
-      };
-      this._plan.set(plan);
-      this._selectedArticle.set(updated);
+    const confirmPayload = this.confirmPayloadForItem(article);
+    if (!confirmPayload) {
+      this._writerError.set(
+        article.proposedPublishAt
+          ? 'Could not match this article to your content plan.'
+          : 'Schedule this article on the calendar before writing it.',
+      );
+      return undefined;
     }
 
+    const res = await this.contentPlan.confirmCalendarItem(confirmPayload);
+    if (!res) {
+      this._writerError.set(
+        this.contentPlan.error() ?? 'Could not create a draft for this article.',
+      );
+      return undefined;
+    }
+
+    const postId = res.contentPostId;
+    const plan = this.contentPlan.plan();
+    const key = calendarItemKey(article);
+    const updated = plan?.calendar.find((item) => calendarItemKey(item) === key) ?? {
+      ...article,
+      contentPostId: postId,
+    };
+    this._plan.set(plan);
+    this._selectedArticle.set(updated);
     return postId;
+  }
+
+  /** Body for POST confirm-item; keys must match bagend calendarItemKey(). */
+  private confirmPayloadForItem(
+    article: ProtopipeContentPlanCalendarItem,
+  ): { proposedPublishAt: string; workingTitle: string } | null {
+    const workingTitle = article.workingTitle?.trim();
+    if (!workingTitle) return null;
+    if (!article.proposedPublishAt) return null;
+    return { proposedPublishAt: article.proposedPublishAt, workingTitle };
   }
 }

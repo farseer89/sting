@@ -224,6 +224,13 @@
   border-top: 0.5px solid var(--void-tile-border);
 }
 
+.stratctx__error {
+  margin: 0.5rem 0 0;
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--void-danger, #b42318);
+}
+
 .stratctx__writer-btn {
   flex: 1;
   min-width: 0;

@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
+import { ContentPlanStore } from '../../content-plan/content-plan.store';
 import { contentPlanRunToThought, formatContentPlanMastheadDeck } from '../../lab/content-plan/content-plan-run-to-thought';
 import { articleRunToThought } from '../../lab/thinker/article-run-to-thought';
 import { formatThinkerCostUsd, sumCosts } from '../../lab/thinker/thinker-cost';
@@ -34,6 +35,7 @@ export class ProtopipeHomeThinkerBinderComponent {
   private readonly thinkerView = inject(ProtopipeHomeThinkerViewState);
   private readonly writerView = inject(ProtopipeHomeWriterViewState);
   private readonly strategy = inject(ProtopipeStrategyService);
+  private readonly contentPlan = inject(ContentPlanStore);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly activeStepId = signal<string | null>(null);
@@ -119,6 +121,14 @@ export class ProtopipeHomeThinkerBinderComponent {
 
   readonly canExportRunbook = computed(() => Boolean(this.thought()));
 
+  readonly showRestartStrategyBuild = computed(
+    () =>
+      this.runKind() === 'content-plan' &&
+      (this.thinkerView.contentPlanRun()?.status === 'failed' || this.contentPlan.needsBuildRestart()),
+  );
+
+  readonly restartingStrategyBuild = this.contentPlan.starting;
+
   readonly hasSession = computed(() => {
     if (this.runKind() === 'content-plan') {
       return Boolean(this.thinkerView.contentPlanRun());
@@ -148,6 +158,19 @@ export class ProtopipeHomeThinkerBinderComponent {
 
   retryConnection(): void {
     this.thinkerView.retryPoll();
+  }
+
+  restartStrategyBuild(): void {
+    const siteId = this.thinkerView.siteId() ?? this.strategy.siteId();
+    if (siteId) {
+      this.contentPlan.setSiteId(siteId);
+    }
+    void this.contentPlan.restartBuild().then(() => {
+      const plan = this.contentPlan.plan();
+      if (plan && siteId) {
+        this.thinkerView.openContentPlanRun(siteId, plan);
+      }
+    });
   }
 
   openInWriter(): void {

@@ -11,16 +11,6 @@
       <div class="strat__shimmer" style="height: 3.5rem"></div>
       <div class="strat__shimmer" style="height: 12rem"></div>
     </div>
-  } @else if (hasFailed()) {
-    <div class="strat-shell__error">
-      <p>Something went wrong while building your strategy.</p>
-      @if (planError(); as pe) {
-        <p class="strat-shell__error-detail">{{ pe }}</p>
-      } @else if (error(); as e) {
-        <p class="strat-shell__error-detail">{{ e }}</p>
-      }
-      <button type="button" class="strat-shell__retry" (click)="retry()">Try again</button>
-    </div>
   } @else if (showEmpty()) {
     <div class="strat-shell__empty">
       <header class="strat__intro">
@@ -33,7 +23,24 @@
       <button type="button" class="strat-shell__retry" (click)="buildStrategy()">Build strategy</button>
     </div>
   } @else if (showResults() && displayPlan(); as plan) {
-    @if (showBuildingBanner()) {
+    @if (showBuildProblem()) {
+      <div class="strat-shell__problem" role="alert">
+        <p class="strat-shell__problem-title">Strategy build needs a restart</p>
+        <p class="strat-shell__problem-detail">{{ buildProblemMessage() }}</p>
+        <button
+          type="button"
+          class="strat-shell__retry"
+          [disabled]="starting()"
+          (click)="restartBuild()"
+        >
+          @if (starting()) {
+            Restarting…
+          } @else {
+            Restart build
+          }
+        </button>
+      </div>
+    } @else if (showBuildingBanner()) {
       <div class="strat-shell__building" role="status" aria-live="polite">
         <span class="strat-shell__building-dot" aria-hidden="true"></span>
         {{ buildingStageLabel() }}

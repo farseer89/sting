@@ -287,6 +287,11 @@
                     <app-protopipe-home-thinker-binder />
                   </section>
                 }
+                @case ('audience-book') {
+                  <section class="glass glass--full glass--premiere" aria-label="Audience book">
+                    <app-protopipe-home-audience-book />
+                  </section>
+                }
                 @case ('brand-book') {
                   <section class="glass glass--full glass--premiere" aria-label="Brand book">
                     <app-protopipe-home-brand-book (runWizard)="openBrandSetupWizard()" />

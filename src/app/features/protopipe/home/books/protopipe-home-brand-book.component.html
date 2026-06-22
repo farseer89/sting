@@ -4,7 +4,7 @@
   <header class="bb-masthead">
     <div class="bb-masthead__left">
       <h1 class="bb-masthead__title">Brand book</h1>
-      <p class="bb-masthead__deck">Visual and voice guide — the same cues generation uses on every draft.</p>
+      <p class="bb-masthead__deck">Visual guide for images and infographics — the same cues generation uses for visuals.</p>
     </div>
     <div class="bb-masthead__actions">
       @if (!brandBookSvc.setupComplete()) {
@@ -78,18 +78,6 @@
           <svg class="bb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M5 11V8M8 11V5M11 11V7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
           Infographics
           @if (book.infographStyle.variant) {
-            <span class="bb-binder-nav__check">✓</span>
-          }
-        </button>
-        <button
-          type="button"
-          class="bb-binder-nav__item"
-          [class.is-active]="binderSection() === 'copy-style'"
-          (click)="binderSection.set('copy-style')"
-        >
-          <svg class="bb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><path d="M3 4.5h10M3 7.5h10M3 10.5h7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
-          Copy style
-          @if (book.voice.tone) {
             <span class="bb-binder-nav__check">✓</span>
           }
         </button>
@@ -365,67 +353,7 @@
             }
           }
 
-          <!-- ── COPY STYLE ── -->
-          @case ('copy-style') {
-            <div class="bb-panel-head">
-              <div class="bb-panel-kicker">Content · Copy style</div>
-              <h2 class="bb-panel-title">How you sound</h2>
-              <p class="bb-panel-deck">Tone, point of view, and gold paragraphs the writer should emulate. These feed directly into every draft.</p>
-            </div>
-
-            <div class="bb-voice-layout">
-              <div class="bb-voice-fields">
-                <label class="bb-field-label">
-                  <span>Tone</span>
-                  <input
-                    pInputText
-                    class="w-full"
-                    placeholder="e.g. confident, approachable, expert"
-                    [ngModel]="book.voice.tone ?? ''"
-                    (ngModelChange)="brandBookSvc.patchVoiceField('tone', $event)"
-                  />
-                </label>
-                <label class="bb-field-label">
-                  <span>Point of view</span>
-                  <input
-                    pInputText
-                    class="w-full"
-                    placeholder="e.g. first person plural, we"
-                    [ngModel]="book.voice.pointOfView ?? ''"
-                    (ngModelChange)="brandBookSvc.patchVoiceField('pointOfView', $event)"
-                  />
-                </label>
-                <label class="bb-field-label">
-                  <span>Phrases to avoid</span>
-                  <input
-                    pInputText
-                    class="w-full"
-                    placeholder="Comma-separated"
-                    [ngModel]="(book.voice.avoidPhrases ?? []).join(', ')"
-                    (ngModelChange)="brandBookSvc.patchAvoidPhrases($event)"
-                  />
-                </label>
-              </div>
-
-              <div class="bb-voice-examples">
-                <div class="bb-voice-examples__label">Style examples — gold paragraphs to emulate</div>
-                @for (i of [0, 1, 2, 3, 4]; track i) {
-                  <div class="bb-voice-example">
-                    <textarea
-                      pTextarea
-                      class="w-full"
-                      rows="3"
-                      placeholder="Paste a paragraph from your best content…"
-                      [ngModel]="book.styleExamples[i] ?? ''"
-                      (ngModelChange)="brandBookSvc.patchStyleExample(i, $event)"
-                    ></textarea>
-                  </div>
-                }
-              </div>
-            </div>
-          }
-
-          <!-- ── INSPIRATION ── -->
+          <!-- Copy style moved to Audience book -->
           @case ('inspiration') {
             <div class="bb-panel-head">
               <div class="bb-panel-kicker">References · Inspiration</div>

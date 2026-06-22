@@ -22,7 +22,7 @@ import {
   BRAND_BOOK_INFOGRAPH_VARIANTS,
 } from '../../brand-book/brand-book.constants';
 
-type BinderSection = 'images' | 'infographics' | 'copy-style' | 'typography' | 'logo' | 'inspiration' | 'corrections';
+type BinderSection = 'images' | 'infographics' | 'typography' | 'logo' | 'inspiration' | 'corrections';
 
 @Component({
   selector: 'app-protopipe-home-brand-book',

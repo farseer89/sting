@@ -1,19 +1,26 @@
 <div class="sharpen-audiences">
-  <p class="sharpen-audiences__lede">
-    Who you're writing for — refine descriptions, emotional targeting, and search intent over time.
-  </p>
-
-  @if (loading()) {
-    <p class="sharpen-audiences__status" aria-busy="true">Loading audiences…</p>
-  } @else if (error()) {
-    <p class="sharpen-audiences__status sharpen-audiences__status--error">{{ error() }}</p>
-  }
+  <section class="sharpen-audiences__redirect" aria-label="Audience book">
+    <h2 class="sharpen-audiences__section-title">Audience profiles live in Audience book</h2>
+    <p class="sharpen-audiences__section-lede">
+      Who you write for and how you sound are managed in Audience book — the same source article generation reads at write time.
+      The more detail you add there, the better your articles match your reader.
+    </p>
+    <button type="button" class="sharpen-btn sharpen-btn--primary" (click)="openAudienceBook()">
+      Open Audience book →
+    </button>
+  </section>
 
   <section class="sharpen-audiences__target-customers" aria-label="Example target customer businesses">
     <h2 class="sharpen-audiences__section-title">Example businesses you want to reach</h2>
     <p class="sharpen-audiences__section-lede">
       Add companies like your ideal customers. We'll scan their sites during keyword discovery to sharpen fit scoring.
     </p>
+
+    @if (loading()) {
+      <p class="sharpen-audiences__status" aria-busy="true">Loading…</p>
+    } @else if (error()) {
+      <p class="sharpen-audiences__status sharpen-audiences__status--error">{{ error() }}</p>
+    }
 
     <div class="sharpen-audiences__chip-row">
       <input
@@ -68,127 +75,4 @@
       }
     </div>
   </section>
-
-  <div class="sharpen-audiences__toolbar">
-    <button type="button" class="sharpen-btn sharpen-btn--primary" (click)="startAdd()" [disabled]="saving()">
-      Add audience
-    </button>
-  </div>
-
-  @if (draft(); as d) {
-    <section class="sharpen-audiences__editor" aria-label="Edit audience">
-      <h2 class="sharpen-audiences__editor-title">
-        {{ isEditingExisting() ? 'Edit audience' : 'New audience' }}
-      </h2>
-
-      <label class="sharpen-field-label">
-        Short label
-        <input
-          class="sharpen-field-input"
-          type="text"
-          [value]="d.label ?? ''"
-          (input)="updateDraftField('label', $any($event.target).value)"
-          placeholder="Engaged bride"
-        />
-      </label>
-
-      <label class="sharpen-field-label">
-        Who they are
-        <textarea
-          class="sharpen-field-textarea"
-          rows="3"
-          [value]="d.description"
-          (input)="updateDraftField('description', $any($event.target).value)"
-          placeholder="A couple actively planning their wedding who wants a live painter…"
-        ></textarea>
-      </label>
-
-      <label class="sharpen-field-label">
-        Example searches (one per line)
-        <textarea
-          class="sharpen-field-textarea"
-          rows="3"
-          [value]="queriesText()"
-          (input)="updateDraftQueries($any($event.target).value)"
-          placeholder="live wedding painter near me"
-        ></textarea>
-      </label>
-
-      <label class="sharpen-field-label">
-        How they feel when they land on your site
-        <span class="sharpen-audiences__hint">This shapes how articles speak to them.</span>
-        <textarea
-          class="sharpen-field-textarea"
-          rows="2"
-          [value]="d.emotionalState ?? ''"
-          (input)="updateDraftField('emotionalState', $any($event.target).value)"
-        ></textarea>
-      </label>
-
-      <label class="sharpen-field-label">
-        What they need to feel to take the next step
-        <textarea
-          class="sharpen-field-textarea"
-          rows="2"
-          [value]="d.whatTheyNeed ?? ''"
-          (input)="updateDraftField('whatTheyNeed', $any($event.target).value)"
-        ></textarea>
-      </label>
-
-      <label class="sharpen-field-label">
-        Voice / tone they respond to
-        <textarea
-          class="sharpen-field-textarea"
-          rows="2"
-          [value]="d.voiceTheyRespondTo ?? ''"
-          (input)="updateDraftField('voiceTheyRespondTo', $any($event.target).value)"
-        ></textarea>
-      </label>
-
-      <div class="sharpen-actions">
-        <button type="button" class="sharpen-btn sharpen-btn--primary" (click)="saveDraft()" [disabled]="saving()">
-          {{ saving() ? 'Saving…' : 'Save audience' }}
-        </button>
-        <button type="button" class="sharpen-btn sharpen-btn--ghost" (click)="cancelEdit()">Cancel</button>
-      </div>
-    </section>
-  }
-
-  <ul class="sharpen-audiences__list">
-    @for (a of audiences(); track a.id) {
-      <li class="sharpen-audiences__card">
-        <header class="sharpen-audiences__card-head">
-          <div>
-            <h3 class="sharpen-audiences__card-title">{{ a.label || a.intentCluster }}</h3>
-            <p class="sharpen-audiences__card-meta">{{ completeness(a) }}</p>
-          </div>
-          <div class="sharpen-audiences__card-actions">
-            <button type="button" class="sharpen-btn sharpen-btn--ghost" (click)="startEdit(a)">Edit</button>
-            <button type="button" class="sharpen-btn sharpen-btn--ghost" (click)="deleteAudience(a)">Delete</button>
-          </div>
-        </header>
-        <p class="sharpen-audiences__card-desc">{{ a.description }}</p>
-        @if (a.emotionalState) {
-          <p class="sharpen-audiences__card-note"><strong>Feels:</strong> {{ a.emotionalState }}</p>
-        }
-        @if (a.whatTheyNeed) {
-          <p class="sharpen-audiences__card-note"><strong>Needs:</strong> {{ a.whatTheyNeed }}</p>
-        }
-        @if (a.voiceTheyRespondTo) {
-          <p class="sharpen-audiences__card-note"><strong>Voice:</strong> {{ a.voiceTheyRespondTo }}</p>
-        }
-        @if (pendingCountFor(a.id) > 0) {
-          <button
-            type="button"
-            class="sharpen-audiences__assumption"
-            (click)="questionsRequested.emit()"
-          >
-            {{ pendingCountFor(a.id) }} assumption{{ pendingCountFor(a.id) === 1 ? '' : 's' }} about this audience
-          </button>
-        }
-      </li>
-    } @empty {
-      <li class="sharpen-audiences__empty">No audiences yet. Add one or confirm keywords to generate suggested profiles.</li>
-    }
-  </ul>
 </div>

@@ -102,6 +102,9 @@ import type {
   ListAudiencesResponse,
   UpsertAudienceRequest,
   UpsertAudienceResponse,
+  ProtopipeAudienceBookResponse,
+  PutAudienceBookVoiceRequest,
+  PutAudienceBookVoiceResponse,
   DeleteAudienceRequest,
   DeleteAudienceResponse,
   CreateProjectRequest,
@@ -850,6 +853,26 @@ export class ProtopipeApiService {
     return firstValueFrom(
       this.http.get<ProtopipeBrandBookResponse>(
         protopipeApiUrl(ProtopipeEndpoints.getBrandBook.path, { siteId }),
+      ),
+    );
+  }
+
+  getAudienceBook(siteId: string): Promise<ProtopipeAudienceBookResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeAudienceBookResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.getAudienceBook.path, { siteId }),
+      ),
+    );
+  }
+
+  putAudienceBookVoice(
+    siteId: string,
+    body: PutAudienceBookVoiceRequest,
+  ): Promise<PutAudienceBookVoiceResponse> {
+    return firstValueFrom(
+      this.http.put<PutAudienceBookVoiceResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.putAudienceBookVoice.path, { siteId }),
+        body,
       ),
     );
   }

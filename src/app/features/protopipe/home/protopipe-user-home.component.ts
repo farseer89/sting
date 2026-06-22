@@ -39,6 +39,7 @@ import { ProtopipeHomeRunbooksComponent } from './runbooks/protopipe-home-runboo
 import { ProtopipeHomeIntakeDemoComponent } from './intake-demo/protopipe-home-intake-demo.component';
 import { ProtopipeMediaStudioComponent } from '../admin/media-studio/protopipe-media-studio.component';
 import { ProtopipeHomeBrandBookComponent } from './books/protopipe-home-brand-book.component';
+import { ProtopipeHomeAudienceBookComponent } from './books/protopipe-home-audience-book.component';
 import { ProtopipeHomeBuildBookComponent } from './books/protopipe-home-build-book.component';
 import { ProtopipeHomeBusinessDetailsComponent } from './books/protopipe-home-business-details.component';
 import { ProtopipeHomeGoalsComponent } from './books/protopipe-home-goals.component';
@@ -69,6 +70,7 @@ export type ProtopipeHomeView =
   | 'pitch-prep'
   | 'leads'
   | 'brand-book'
+  | 'audience-book'
   | 'build-book'
   | 'ads-book'
   | 'business-details'
@@ -119,6 +121,7 @@ type HomeFocusHistoryKind = 'thinker' | 'writer';
     ProtopipeHomeIntakeDemoComponent,
     ProtopipeMediaStudioComponent,
     ProtopipeHomeBrandBookComponent,
+    ProtopipeHomeAudienceBookComponent,
     ProtopipeHomeBuildBookComponent,
     ProtopipeHomeBusinessDetailsComponent,
     ProtopipeHomeGoalsComponent,
@@ -315,6 +318,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.sidePanel.setOpen(false);
       this.activeNavId.set(item.id);
       this.activeView.set('runbooks');
+    } else if (item.id === 'books-audience') {
+      this.openAudienceBookView();
     } else if (item.id === 'books-brand') {
       this.openBrandBookView();
     } else if (item.id === 'books-build') {
@@ -522,6 +527,13 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.activeView.set('brand-book');
   }
 
+  openAudienceBookView(): void {
+    this.leaveWriterFocus();
+    this.sidePanel.setOpen(false);
+    this.activeNavId.set('books-audience');
+    this.activeView.set('audience-book');
+  }
+
   openBuildBookView(): void {
     this.enterBuildBookFocus();
   }
@@ -565,6 +577,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
     const view = this.route.snapshot.queryParamMap.get('view');
     if (view === 'brand-book') {
       this.openBrandBookView();
+    } else if (view === 'audience-book') {
+      this.openAudienceBookView();
     } else if (view === 'intake') {
       this.openIntakeDemoView();
     }

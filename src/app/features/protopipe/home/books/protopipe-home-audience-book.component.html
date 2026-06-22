@@ -1,0 +1,317 @@
+<div class="ab-shell">
+
+  <header class="ab-masthead">
+    <div class="ab-masthead__left">
+      <h1 class="ab-masthead__title">Audience book</h1>
+      <p class="ab-masthead__deck">
+        Who you write for and how you sound — the same cues article generation reads at write time.
+        The more detail you add, the better your articles match your reader.
+      </p>
+    </div>
+    @if (audienceBookSvc.book(); as book) {
+      <div class="ab-masthead__meter" aria-label="Audience book completeness">
+        <div class="ab-meter__label">
+          <span class="ab-meter__tier ab-meter__tier--{{ overallTier() }}">{{ tierLabel(overallTier()) }}</span>
+          <span class="ab-meter__pct">{{ overallPct() }}% complete</span>
+        </div>
+        <div class="ab-meter__track">
+          <div class="ab-meter__fill ab-meter__fill--{{ overallTier() }}" [style.width.%]="overallPct()"></div>
+        </div>
+        <p class="ab-meter__hint">{{ tierHint(overallTier()) }}</p>
+      </div>
+    }
+  </header>
+
+  @if (audienceBookSvc.error(); as err) {
+    <p-message severity="error" [text]="err" styleClass="w-full" />
+  }
+
+  @if (audienceBookSvc.loading()) {
+    <div class="ab-loading">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Loading audience book" />
+    </div>
+  } @else if (audienceBookSvc.book(); as book) {
+
+    <div class="ab-binder">
+
+      <nav class="ab-binder-nav" aria-label="Audience book sections">
+        <div class="ab-binder-nav__label">Audience book</div>
+        <button
+          type="button"
+          class="ab-binder-nav__item"
+          [class.is-active]="binderSection() === 'overview'"
+          (click)="selectSection('overview')"
+        >
+          Overview
+        </button>
+        <button
+          type="button"
+          class="ab-binder-nav__item"
+          [class.is-active]="binderSection() === 'voice'"
+          (click)="selectSection('voice')"
+        >
+          Our voice
+          @if (book.completeness.siteVoice.tier !== 'basic') {
+            <span class="ab-binder-nav__check">✓</span>
+          }
+        </button>
+        <button
+          type="button"
+          class="ab-binder-nav__item"
+          [class.is-active]="binderSection() === 'audiences' || binderSection() === 'edit-audience'"
+          (click)="selectSection('audiences')"
+        >
+          Audiences
+          @if (book.audiences.length) {
+            <span class="ab-binder-nav__count">{{ book.audiences.length }}</span>
+          }
+        </button>
+      </nav>
+
+      <div class="ab-binder-panel">
+
+        @switch (binderSection()) {
+          @case ('overview') {
+            <div class="ab-panel-head">
+              <div class="ab-panel-kicker">Tuning layer</div>
+              <h2 class="ab-panel-title">Better detail → better articles</h2>
+              <p class="ab-panel-deck">
+                Every field here feeds directly into outline and draft prompts when you generate content.
+                Sharpen your site voice and each target reader — then regenerate to see the difference.
+              </p>
+            </div>
+
+            <div class="ab-overview-grid">
+              <section class="ab-stat-card">
+                <h3 class="ab-stat-card__title">Site voice</h3>
+                <p class="ab-stat-card__meta">
+                  {{ book.completeness.siteVoice.filled }} of {{ book.completeness.siteVoice.total }} fields ·
+                  {{ tierLabel(book.completeness.siteVoice.tier) }}
+                </p>
+                <button type="button" class="ab-link-btn" (click)="selectSection('voice')">Edit our voice →</button>
+              </section>
+
+              <section class="ab-stat-card">
+                <h3 class="ab-stat-card__title">Audiences</h3>
+                <p class="ab-stat-card__meta">{{ book.audiences.length }} reader profile(s)</p>
+                @if (book.audiences.length === 0) {
+                  <p class="ab-stat-card__hint">Add at least one audience from keyword discovery or manually.</p>
+                }
+                <button type="button" class="ab-link-btn" (click)="selectSection('audiences')">Manage audiences →</button>
+              </section>
+            </div>
+
+            @if (book.audiences.length) {
+              <h3 class="ab-subhead">Reader profiles</h3>
+              <ul class="ab-audience-list ab-audience-list--compact">
+                @for (a of book.audiences; track a.id) {
+                  <li class="ab-audience-card">
+                    <div class="ab-audience-card__head">
+                      <strong>{{ a.label || a.intentCluster }}</strong>
+                      @if (audienceCompleteness(a); as c) {
+                        <span class="ab-tier ab-tier--{{ c.tier }}">{{ tierLabel(c.tier) }}</span>
+                      }
+                    </div>
+                    @if (audienceCompleteness(a); as c) {
+                      <p class="ab-audience-card__meta">{{ c.filled }} of {{ c.total }} fields filled</p>
+                      @if (c.missingFields.length) {
+                        <p class="ab-audience-card__missing">Add: {{ c.missingFields.slice(0, 3).join(', ') }}</p>
+                      }
+                    }
+                  </li>
+                }
+              </ul>
+            }
+          }
+
+          @case ('voice') {
+            <div class="ab-panel-head">
+              <div class="ab-panel-head__row">
+                <div>
+                  <div class="ab-panel-kicker">Speaker lens</div>
+                  <h2 class="ab-panel-title">How we speak</h2>
+                  <p class="ab-panel-deck">Tone, point of view, and gold paragraphs the writer should emulate.</p>
+                </div>
+                <p-button
+                  [label]="audienceBookSvc.savingVoice() ? 'Saving…' : audienceBookSvc.voiceDirty() ? 'Save voice' : 'Saved'"
+                  [disabled]="!audienceBookSvc.voiceDirty() || audienceBookSvc.savingVoice()"
+                  size="small"
+                  (onClick)="saveVoice()"
+                />
+              </div>
+            </div>
+
+            @if (audienceBookSvc.voiceDraft(); as voice) {
+              <div class="ab-voice-layout">
+                <div class="ab-voice-fields">
+                  <label class="ab-field-label">
+                    <span>Tone</span>
+                    <span class="ab-field-hint">How your business sounds — confident, warm, expert…</span>
+                    <input
+                      pInputText
+                      class="w-full"
+                      placeholder="e.g. confident, approachable, expert"
+                      [ngModel]="voice.tone ?? ''"
+                      (ngModelChange)="audienceBookSvc.patchVoiceField('tone', $event)"
+                    />
+                  </label>
+                  <label class="ab-field-label">
+                    <span>Point of view</span>
+                    <span class="ab-field-hint">First person I/we, second person you…</span>
+                    <input
+                      pInputText
+                      class="w-full"
+                      placeholder="e.g. first person plural, we"
+                      [ngModel]="voice.pointOfView ?? ''"
+                      (ngModelChange)="audienceBookSvc.patchVoiceField('pointOfView', $event)"
+                    />
+                  </label>
+                  <label class="ab-field-label">
+                    <span>Reading level</span>
+                    <input
+                      pInputText
+                      class="w-full"
+                      placeholder="e.g. plain language, no jargon"
+                      [ngModel]="voice.readingLevel ?? ''"
+                      (ngModelChange)="audienceBookSvc.patchVoiceField('readingLevel', $event)"
+                    />
+                  </label>
+                  <label class="ab-field-label">
+                    <span>Phrases to avoid</span>
+                    <input
+                      pInputText
+                      class="w-full"
+                      placeholder="Comma-separated"
+                      [ngModel]="(voice.avoidPhrases ?? []).join(', ')"
+                      (ngModelChange)="audienceBookSvc.patchAvoidPhrases($event)"
+                    />
+                  </label>
+                </div>
+
+                <div class="ab-voice-examples">
+                  <div class="ab-voice-examples__label">Style examples — gold paragraphs to emulate</div>
+                  @for (i of [0, 1, 2]; track i) {
+                    <textarea
+                      pTextarea
+                      class="w-full ab-voice-example"
+                      rows="3"
+                      placeholder="Paste a paragraph from your best content…"
+                      [ngModel]="voice.styleExamples[i] ?? ''"
+                      (ngModelChange)="audienceBookSvc.patchStyleExample(i, $event)"
+                    ></textarea>
+                  }
+                </div>
+              </div>
+            }
+          }
+
+          @case ('audiences') {
+            <div class="ab-panel-head">
+              <div class="ab-panel-head__row">
+                <div>
+                  <div class="ab-panel-kicker">Reader lens</div>
+                  <h2 class="ab-panel-title">Who you're writing for</h2>
+                  <p class="ab-panel-deck">
+                    Each audience links to keywords and calendar posts. Emotional fields have the biggest impact on tone.
+                  </p>
+                </div>
+                <p-button label="Add audience" size="small" (onClick)="startAddAudience()" />
+              </div>
+            </div>
+
+            @if (book.audiences.length === 0) {
+              <p class="ab-empty">No audiences yet. Confirm keyword strategy or add one manually.</p>
+            } @else {
+              <ul class="ab-audience-list">
+                @for (a of book.audiences; track a.id) {
+                  <li class="ab-audience-card ab-audience-card--full">
+                    <header class="ab-audience-card__head">
+                      <div>
+                        <h3 class="ab-audience-card__title">{{ a.label || a.intentCluster }}</h3>
+                        @if (audienceCompleteness(a); as c) {
+                          <p class="ab-audience-card__meta">
+                            {{ c.filled }} of {{ c.total }} fields · {{ tierLabel(c.tier) }}
+                          </p>
+                        }
+                      </div>
+                      <div class="ab-audience-card__actions">
+                        <button type="button" class="ab-ghost-btn" (click)="startEditAudience(a)">Edit</button>
+                        <button type="button" class="ab-ghost-btn ab-ghost-btn--danger" (click)="deleteAudience(a)">Delete</button>
+                      </div>
+                    </header>
+                    <p class="ab-audience-card__desc">{{ a.description }}</p>
+                    @if (audienceCompleteness(a); as c) {
+                      @if (c.missingFields.length) {
+                        <p class="ab-audience-card__missing">
+                          <strong>Improve output:</strong> {{ c.missingFields.join(' · ') }}
+                        </p>
+                      }
+                    }
+                  </li>
+                }
+              </ul>
+            }
+          }
+
+          @case ('edit-audience') {
+            @if (audienceDraft(); as d) {
+              <div class="ab-panel-head">
+                <h2 class="ab-panel-title">{{ isEditingExistingAudience() ? 'Edit audience' : 'New audience' }}</h2>
+              </div>
+
+              <div class="ab-edit-form">
+                <label class="ab-field-label">
+                  <span>Short label</span>
+                  <span class="ab-field-hint">Shown in the UI — e.g. Engaged bride</span>
+                  <input pInputText class="w-full" [ngModel]="d.label ?? ''" (ngModelChange)="updateDraftField('label', $event)" />
+                </label>
+
+                <label class="ab-field-label">
+                  <span>Who they are</span>
+                  <span class="ab-field-hint">Concrete situation, not a demographic bucket</span>
+                  <textarea pTextarea rows="3" class="w-full" [ngModel]="d.description" (ngModelChange)="updateDraftField('description', $event)"></textarea>
+                </label>
+
+                <label class="ab-field-label">
+                  <span>Intent cluster</span>
+                  <input pInputText class="w-full" [ngModel]="d.intentCluster" (ngModelChange)="updateDraftField('intentCluster', $event)" />
+                </label>
+
+                <label class="ab-field-label">
+                  <span>Example searches (one per line)</span>
+                  <textarea pTextarea rows="3" class="w-full" [ngModel]="queriesText()" (ngModelChange)="updateDraftQueries($event)"></textarea>
+                </label>
+
+                <label class="ab-field-label">
+                  <span>How they feel when they land on your site</span>
+                  <span class="ab-field-hint">Shapes emotional register in every draft</span>
+                  <textarea pTextarea rows="2" class="w-full" [ngModel]="d.emotionalState ?? ''" (ngModelChange)="updateDraftField('emotionalState', $event)"></textarea>
+                </label>
+
+                <label class="ab-field-label">
+                  <span>What they need to feel to take the next step</span>
+                  <textarea pTextarea rows="2" class="w-full" [ngModel]="d.whatTheyNeed ?? ''" (ngModelChange)="updateDraftField('whatTheyNeed', $event)"></textarea>
+                </label>
+
+                <label class="ab-field-label">
+                  <span>Voice / tone they respond to</span>
+                  <span class="ab-field-hint">Include what to avoid — e.g. not corporate, not analytical</span>
+                  <textarea pTextarea rows="2" class="w-full" [ngModel]="d.voiceTheyRespondTo ?? ''" (ngModelChange)="updateDraftField('voiceTheyRespondTo', $event)"></textarea>
+                </label>
+
+                <div class="ab-form-actions">
+                  <p-button
+                    [label]="savingAudience() ? 'Saving…' : 'Save audience'"
+                    [disabled]="savingAudience() || !d.description.trim()"
+                    (onClick)="saveAudience()"
+                  />
+                  <button type="button" class="ab-ghost-btn" (click)="cancelAudienceEdit()">Cancel</button>
+                </div>
+              </div>
+            }
+          }
+        }
+      </div>
+    </div>
+  }
+</div>

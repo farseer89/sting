@@ -1,0 +1,348 @@
+$ab-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+$ab-border: #e4e4e7;
+$ab-bg: #ffffff;
+$ab-bg-subtle: #fafafa;
+$ab-ink: #09090b;
+$ab-text: #18181b;
+$ab-muted: #71717a;
+$ab-accent: #2563eb;
+
+.ab-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-family: $ab-sans;
+  color: $ab-text;
+}
+
+.ab-masthead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.25rem 1.5rem 1rem;
+  border-bottom: 1px solid $ab-border;
+  flex-shrink: 0;
+}
+
+.ab-masthead__title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: $ab-ink;
+  margin: 0 0 0.2rem;
+}
+
+.ab-masthead__deck {
+  font-size: 0.75rem;
+  color: $ab-muted;
+  margin: 0;
+  max-width: 36rem;
+  line-height: 1.45;
+}
+
+.ab-masthead__meter {
+  min-width: 14rem;
+  max-width: 18rem;
+}
+
+.ab-meter__label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6875rem;
+  margin-bottom: 0.35rem;
+}
+
+.ab-meter__pct {
+  color: $ab-muted;
+}
+
+.ab-meter__track {
+  height: 6px;
+  background: $ab-bg-subtle;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.ab-meter__fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.ab-meter__fill--basic { background: #fbbf24; }
+.ab-meter__fill--good { background: #60a5fa; }
+.ab-meter__fill--great { background: #22c55e; }
+
+.ab-meter__tier--basic { color: #b45309; }
+.ab-meter__tier--good { color: #2563eb; }
+.ab-meter__tier--great { color: #16a34a; }
+
+.ab-meter__hint {
+  font-size: 0.6875rem;
+  color: $ab-muted;
+  margin: 0.35rem 0 0;
+  line-height: 1.35;
+}
+
+.ab-loading {
+  display: flex;
+  justify-content: center;
+  padding: 3rem;
+}
+
+.ab-binder {
+  display: grid;
+  grid-template-columns: 11rem 1fr;
+  flex: 1;
+  min-height: 0;
+}
+
+.ab-binder-nav {
+  border-right: 1px solid $ab-border;
+  padding: 1rem 0.75rem;
+  background: $ab-bg-subtle;
+}
+
+.ab-binder-nav__label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: $ab-muted;
+  padding: 0 0.5rem 0.5rem;
+}
+
+.ab-binder-nav__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 0.45rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  color: $ab-text;
+  cursor: pointer;
+
+  &.is-active {
+    background: $ab-bg;
+    font-weight: 600;
+  }
+}
+
+.ab-binder-nav__check,
+.ab-binder-nav__count {
+  font-size: 0.6875rem;
+  color: $ab-muted;
+}
+
+.ab-binder-panel {
+  overflow: auto;
+  padding: 1.25rem 1.5rem 2rem;
+}
+
+.ab-panel-head {
+  margin-bottom: 1.25rem;
+}
+
+.ab-panel-head__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.ab-panel-kicker {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: $ab-muted;
+  margin-bottom: 0.25rem;
+}
+
+.ab-panel-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+  color: $ab-ink;
+}
+
+.ab-panel-deck {
+  font-size: 0.8125rem;
+  color: $ab-muted;
+  margin: 0;
+  max-width: 40rem;
+  line-height: 1.5;
+}
+
+.ab-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.ab-stat-card {
+  border: 1px solid $ab-border;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  background: $ab-bg;
+}
+
+.ab-stat-card__title {
+  font-size: 0.875rem;
+  margin: 0 0 0.35rem;
+}
+
+.ab-stat-card__meta,
+.ab-stat-card__hint {
+  font-size: 0.75rem;
+  color: $ab-muted;
+  margin: 0 0 0.5rem;
+}
+
+.ab-link-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 0.75rem;
+  color: $ab-accent;
+  cursor: pointer;
+}
+
+.ab-subhead {
+  font-size: 0.8125rem;
+  margin: 0 0 0.75rem;
+}
+
+.ab-audience-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ab-audience-card {
+  border: 1px solid $ab-border;
+  border-radius: 0.5rem;
+  padding: 0.85rem 1rem;
+  background: $ab-bg;
+}
+
+.ab-audience-card--full .ab-audience-card__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.ab-audience-card__title {
+  font-size: 0.9375rem;
+  margin: 0;
+}
+
+.ab-audience-card__meta {
+  font-size: 0.75rem;
+  color: $ab-muted;
+  margin: 0.15rem 0 0;
+}
+
+.ab-audience-card__desc {
+  font-size: 0.8125rem;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.ab-audience-card__missing {
+  font-size: 0.75rem;
+  color: #b45309;
+  margin: 0.5rem 0 0;
+}
+
+.ab-audience-card__actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.ab-tier {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+}
+
+.ab-tier--basic { background: #fef3c7; color: #b45309; }
+.ab-tier--good { background: #dbeafe; color: #1d4ed8; }
+.ab-tier--great { background: #dcfce7; color: #15803d; }
+
+.ab-voice-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .ab-binder { grid-template-columns: 1fr; }
+  .ab-binder-nav { display: flex; flex-wrap: wrap; gap: 0.25rem; border-right: none; border-bottom: 1px solid $ab-border; }
+  .ab-voice-layout { grid-template-columns: 1fr; }
+}
+
+.ab-field-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.ab-field-hint {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: $ab-muted;
+}
+
+.ab-voice-examples__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.ab-voice-example {
+  margin-bottom: 0.5rem;
+}
+
+.ab-ghost-btn {
+  border: 1px solid $ab-border;
+  background: $ab-bg;
+  border-radius: 0.375rem;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+
+  &--danger {
+    color: #b91c1c;
+  }
+}
+
+.ab-empty {
+  font-size: 0.8125rem;
+  color: $ab-muted;
+}
+
+.ab-form-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.ab-edit-form {
+  max-width: 36rem;
+}

@@ -63,6 +63,15 @@ export const CONTENT_PLAN_STEP_ORDER: ProtopipeContentPlanStep[] = [
   'strategy_intel',
 ];
 
+/** First five pipeline steps — unchanged in the strategy runner side nav. */
+export const CONTENT_PLAN_FOUNDATION_STEPS = [
+  'audit',
+  'score_tier',
+  'cluster',
+  'unify',
+  'deep_scan',
+] as const satisfies readonly ProtopipeContentPlanStep[];
+
 const STEP_META: Record<
   ProtopipeContentPlanStep,
   { label: string; summary: string; description: string }
@@ -331,38 +340,64 @@ const STRATEGY_INTEL_STAGE_LABELS: Record<string, string> = {
   thesis_seeds: 'Thesis seeds',
 };
 
-const STRATEGY_INTEL_PHASES = [
+const STRATEGY_INTEL_NAV_PHASES = [
   {
     id: 'intel:keyword',
+    navLabel: 'Keyword intel',
     label: 'Keyword-level competitive intel',
     detail: 'Gap synthesis & unanswered questions per calendar keyword',
     stages: ['strategy_intel', 'keyword_intel', 'keyword_uq'],
   },
   {
     id: 'intel:cluster',
+    navLabel: 'Cluster themes',
     label: 'Cluster strategy themes',
     detail: 'One LLM call per cluster theme (~1–3 min each)',
     stages: ['cluster_intel'],
   },
   {
     id: 'intel:journey',
+    navLabel: 'Audience journeys',
     label: 'Audience journey maps',
     detail: 'Voice and intent per avatar',
     stages: ['avatar_intel'],
   },
   {
     id: 'intel:thesis',
+    navLabel: 'Thesis seeds',
     label: 'Thesis seeds',
     detail: 'Article angle per calendar keyword',
     stages: ['thesis_seeds'],
   },
   {
     id: 'intel:backlog',
+    navLabel: 'Topic backlog',
     label: 'Harvest topic backlog',
     detail: 'Unscheduled candidates for later',
     stages: [] as string[],
   },
 ] as const;
+
+export { STRATEGY_INTEL_NAV_PHASES };
+
+export type StrategyIntelNavStepId = (typeof STRATEGY_INTEL_NAV_PHASES)[number]['id'];
+
+export const STRATEGY_RESULT_STEP_ID = 'strategy_result' as const;
+
+export type StrategyResultStepId = typeof STRATEGY_RESULT_STEP_ID;
+
+/** Side-nav focus while strategy intel runs. */
+export function resolveStrategyIntelNavStepId(
+  plan: ProtopipeSiteContentPlan,
+): StrategyIntelNavStepId {
+  if (plan.currentStep === 'strategy_intel') {
+    const idx = activeStrategyIntelPhaseIndex(plan.progress?.stage);
+    return STRATEGY_INTEL_NAV_PHASES[idx]?.id ?? 'intel:keyword';
+  }
+  return 'intel:keyword';
+}
+
+const STRATEGY_INTEL_PHASES = STRATEGY_INTEL_NAV_PHASES;
 
 function activeStrategyIntelPhaseIndex(stage: string | undefined): number {
   if (
@@ -782,11 +817,19 @@ export function contentPlanRunToThought(plan: ProtopipeSiteContentPlan): Thought
     steps[i].input = steps[i - 1].output;
   }
 
-  const currentStepId =
-    plan.currentStep && plan.currentStep !== 'done'
-      ? plan.currentStep
-      : steps.find((s) => s.status === 'running')?.id ??
-        steps.filter((s) => s.status === 'complete').at(-1)?.id;
+  const currentStepId = (() => {
+    if (plan.currentStep === 'strategy_intel') {
+      return resolveStrategyIntelNavStepId(plan);
+    }
+    if (allDone || plan.currentStep === 'done') {
+      return STRATEGY_RESULT_STEP_ID;
+    }
+    if (plan.currentStep) return plan.currentStep;
+    return (
+      steps.find((s) => s.status === 'running')?.id ??
+      steps.filter((s) => s.status === 'complete').at(-1)?.id
+    );
+  })();
 
   const outputArtifact =
     plan.calendar.length > 0

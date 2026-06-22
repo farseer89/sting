@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  OnInit,
   computed,
   ElementRef,
   inject,
@@ -9,7 +10,6 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { Router } from '@angular/router';
 import {
   formatCompetitionCell,
   fitLabel,
@@ -29,7 +29,6 @@ import { sourceLabel, formatKeywordVolume, formatCompetitionLabel, MIN_KEYWORD_V
 import type { ProtopipeSuggestedAvatar } from '@hive/contracts';
 import type { KeywordPickerOption } from './keyword-picker.types';
 import { ProtopipeHomeSidePanelService } from '../protopipe-home-side-panel.service';
-import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { ProtopipeAvatarSuggestionPanelComponent } from './protopipe-avatar-suggestion-panel.component';
 import {
   ProtopipeKeywordPickerStore,
@@ -44,17 +43,17 @@ import {
   templateUrl: './protopipe-keyword-picker.component.html',
   styleUrl: './protopipe-keyword-picker.component.scss',
 })
-export class ProtopipeKeywordPickerComponent {
+export class ProtopipeKeywordPickerComponent implements OnInit {
   private static readonly SELECTED_PANEL_KEY = 'protopipe.keywords.selectedPanelOpen';
 
   readonly store = inject(ProtopipeKeywordPickerStore);
   readonly sidePanel = inject(ProtopipeHomeSidePanelService);
-  private readonly router = inject(Router);
-  private readonly strategy = inject(ProtopipeStrategyService);
 
   readonly explorerAnchor = viewChild<ElementRef<HTMLElement>>('explorerAnchor');
 
   readonly siteLabel = input('');
+  readonly bookMode = input(false);
+  readonly bookSection = input<KeywordPickerWizardStep | null>(null);
   readonly confirmed = output<void>();
 
   readonly formatCompetitionCell = formatCompetitionCell;
@@ -134,6 +133,10 @@ export class ProtopipeKeywordPickerComponent {
     { id: 'build', label: 'Build' },
   ];
 
+  readonly activeWizardStep = computed(
+    () => this.bookSection() ?? this.store.wizardStep(),
+  );
+
   readonly headline = computed(() => {
     switch (this.store.wizardStep()) {
       case 'avatars':
@@ -156,7 +159,8 @@ export class ProtopipeKeywordPickerComponent {
     }
   });
 
-  constructor() {
+  ngOnInit(): void {
+    if (this.bookMode()) return;
     try {
       if (!localStorage.getItem(ProtopipeKeywordPickerComponent.SELECTED_PANEL_KEY)) {
         this.sidePanel.ensureOpen();
@@ -233,7 +237,9 @@ export class ProtopipeKeywordPickerComponent {
     if (!this.store.isSelected(option.phraseKey)) {
       return;
     }
-    this.sidePanel.ensureOpen();
+    if (!this.bookMode()) {
+      this.sidePanel.ensureOpen();
+    }
   }
 
   continueFromKeywords(): void {
@@ -295,15 +301,5 @@ export class ProtopipeKeywordPickerComponent {
       return `${(total / 1000).toFixed(1).replace(/\.0$/, '')}k`;
     }
     return total.toLocaleString();
-  }
-
-  /** TODO(pre-launch): remove temporary operator debug entry to the discovery Thinker lab. */
-  viewDiscoveryRun(): void {
-    const siteId = this.strategy.siteId();
-    const runId = this.store.discoveryRunId();
-    if (!siteId || !runId) return;
-    void this.router.navigate(['/protopipe/lab/keyword-discovery'], {
-      queryParams: { siteId, runId, returnTo: '/home' },
-    });
   }
 }

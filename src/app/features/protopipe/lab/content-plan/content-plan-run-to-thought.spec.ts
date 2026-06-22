@@ -129,8 +129,18 @@ describe('contentPlanRunToThought', () => {
       'deep_scan',
       'strategy_intel',
     ]);
+    expect(thought.currentStepId).toBe('strategy_result');
     expect(thought.steps.every((s) => s.status === 'complete')).toBe(true);
     expect(thought.steps.find((s) => s.id === 'unify')?.output?.length).toBeGreaterThan(0);
+  });
+
+  it('maps strategy intel phase sub-steps for side nav', () => {
+    const thought = contentPlanRunToThought(minimalPlan());
+    const intel = thought.steps.find((s) => s.id === 'strategy_intel');
+    expect(intel?.subSteps?.some((s) => s.id === 'intel:keyword')).toBe(true);
+    expect(intel?.subSteps?.some((s) => s.id === 'intel:thesis')).toBe(true);
+    expect(intel?.subSteps?.some((s) => s.id === 'intel:backlog')).toBe(true);
+    expect(intel?.output?.length).toBeGreaterThan(0);
   });
 
   it('includes score tier description and per-keyword sub-steps', () => {

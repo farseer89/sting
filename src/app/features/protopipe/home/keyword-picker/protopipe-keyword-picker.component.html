@@ -1,4 +1,5 @@
-<div class="kwpick">
+<div class="kwpick" [class.kwpick--book]="bookMode()">
+  @if (!bookMode()) {
   <header class="kwpick__intro">
     <div class="kwpick__intro-copy">
       <span class="kwpick__eyebrow">Your keyword strategy</span>
@@ -25,18 +26,9 @@
       @if (siteLabel()) {
         <span class="kwpick__site">{{ siteLabel() }}</span>
       }
-      @if (store.discoveryRunId(); as runId) {
-        <button
-          type="button"
-          class="kwpick__dev-run"
-          title="Open keyword discovery Thinker run (temporary)"
-          (click)="viewDiscoveryRun()"
-        >
-          View discovery run
-        </button>
-      }
       @if (store.wizardStep() === 'keywords' || !store.wizardEnabled()) {
         <span class="kwpick__count">{{ store.selectedCount() }} selected</span>
+        @if (!bookMode()) {
         <button
           type="button"
           class="kwpick__slider-toggle"
@@ -50,13 +42,15 @@
           </svg>
           <span>Your keywords</span>
         </button>
+        }
       } @else if (store.wizardStep() === 'avatars') {
         <span class="kwpick__count">{{ store.selectedAvatarCount() }} audiences</span>
       }
     </div>
   </header>
+  }
 
-  @if (store.loading()) {
+  @if (!bookMode() && store.loading()) {
     <div
       class="kwpick__progress"
       role="progressbar"
@@ -82,12 +76,12 @@
         <span class="kwpick__progress-pct">{{ store.discoveryProgressPercent() }}%</span>
       </div>
     </div>
-  } @else {
+  } @else if (bookMode() || !store.loading()) {
     @if (store.error(); as err) {
       <div class="kwpick__alert" role="alert">{{ err }}</div>
     }
 
-    @switch (store.wizardStep()) {
+    @switch (activeWizardStep()) {
       @case ('avatars') {
         <div class="kwpick__body kwpick__body--avatars">
           <aside class="kwpick__avatar-keywords" aria-label="Selected keywords by audience">
@@ -419,7 +413,7 @@
     }
 
     <footer class="kwpick__footer" [class.kwpick__footer--empty]="store.selectedCount() === 0">
-      @switch (store.wizardStep()) {
+      @switch (activeWizardStep()) {
         @case ('avatars') {
           <div class="kwpick__footer-actions">
             <button type="button" class="kwpick__back" (click)="store.backWizardStep()">Back</button>

@@ -25,7 +25,6 @@ import { ContentPlanStore } from '../content-plan/content-plan.store';
 import { ProtopipeOnboardingStateService } from '../onboarding/protopipe-onboarding-state.service';
 import { ProtopipeStrategyService } from '../protopipe-strategy.service';
 import { ProtopipeContentService } from '../protopipe-content.service';
-import { ProtopipeKeywordSearchPanelComponent } from './keyword-picker/protopipe-keyword-search-panel.component';
 import { ProtopipeKeywordPickerStore } from './keyword-picker/protopipe-keyword-picker.store';
 import { ProtopipeHomeSharpenComponent } from './sharpen/protopipe-home-sharpen.component';
 import { ProtopipeHomeStrategyComponent } from './strategy/protopipe-home-strategy.component';
@@ -35,7 +34,7 @@ import { ProtopipeHomeWriterComponent } from './protopipe-home-writer.component'
 import { ProtopipeHomeWriterViewState } from './protopipe-home-writer-view.state';
 import { ProtopipeHomeThinkerViewState } from './protopipe-home-thinker-view.state';
 import { ArticleGenerationRunSession } from '../article/article-generation-run-session.service';
-import { ProtopipeKeywordPickerComponent } from './keyword-picker/protopipe-keyword-picker.component';
+import { ProtopipeHomeKeywordBookComponent } from './books/protopipe-home-keyword-book.component';
 import { ProtopipeHomeRunbooksComponent } from './runbooks/protopipe-home-runbooks.component';
 import { ProtopipeHomeIntakeDemoComponent } from './intake-demo/protopipe-home-intake-demo.component';
 import { ProtopipeMediaStudioComponent } from '../admin/media-studio/protopipe-media-studio.component';
@@ -109,8 +108,7 @@ type HomeFocusHistoryKind = 'thinker' | 'writer';
     ArticleGenerationRunSession,
   ],
   imports: [
-    ProtopipeKeywordPickerComponent,
-    ProtopipeKeywordSearchPanelComponent,
+    ProtopipeHomeKeywordBookComponent,
     ProtopipeHomeStrategyComponent,
     ProtopipeHomeSharpenComponent,
     ProtopipeHomeWriterComponent,

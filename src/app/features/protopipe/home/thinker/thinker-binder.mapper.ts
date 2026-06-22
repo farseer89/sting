@@ -241,6 +241,12 @@ export function runStatusLabel(status: string | undefined): string {
       return 'Running';
     case 'complete':
       return 'Complete';
+    case 'discovering':
+      return 'Running';
+    case 'ready':
+      return 'Ready';
+    case 'confirmed':
+      return 'Confirmed';
     case 'failed':
       return 'Failed';
     default:
@@ -252,8 +258,11 @@ export function runStatusClass(status: string | undefined): string {
   switch (status) {
     case 'running':
     case 'pending':
+    case 'discovering':
       return 'running';
     case 'complete':
+    case 'ready':
+    case 'confirmed':
       return 'done';
     case 'failed':
       return 'failed';

@@ -50,6 +50,18 @@ export interface StepVisualizerView {
   subtitle?: string;
   emptyMessage?: string;
   blocks: VisualizerBlock[];
+  /** Context tabs for compile_context — header stays in `blocks`, tab bodies here. */
+  tabs?: VisualizerTab[];
+  defaultTabId?: string;
+}
+
+export type ContextVisualizerTabId = 'thesis' | 'strategy' | 'audience' | 'business' | 'voice-brand';
+
+export interface VisualizerTab {
+  id: string;
+  label: string;
+  emptyMessage?: string;
+  blocks: VisualizerBlock[];
 }
 
 export function buildArticleStepVisualizer(
@@ -158,8 +170,17 @@ function parseKnowledgeLines(lines: string[]): VisualizerBlock[] {
   return blocks;
 }
 
-function parseIntelligenceContextPanels(text: string): VisualizerBlock[] {
-  const blocks: VisualizerBlock[] = [];
+function isVoiceBrandSection(title: string): boolean {
+  const key = title.trim().toLowerCase();
+  return key.includes('style') || key.includes('brand');
+}
+
+function partitionIntelligenceContext(text: string): {
+  business: VisualizerBlock[];
+  voiceBrand: VisualizerBlock[];
+} {
+  const business: VisualizerBlock[] = [];
+  const voiceBrand: VisualizerBlock[] = [];
   const lines = text.split('\n');
   let sectionTitle = 'Business intelligence';
   let sectionTone: ContextPanelTone = 'neutral';
@@ -168,13 +189,15 @@ function parseIntelligenceContextPanels(text: string): VisualizerBlock[] {
   let topicLabel: string | undefined;
   let topicItems: string[] = [];
 
+  const sectionTarget = () => (isVoiceBrandSection(sectionTitle) ? voiceBrand : business);
+
   const flushTopic = () => {
     if (!topicLabel || !topicItems.length) {
       topicLabel = undefined;
       topicItems = [];
       return;
     }
-    blocks.push({
+    sectionTarget().push({
       kind: 'context-panel',
       tone: sectionTone,
       label: topicLabel,
@@ -189,7 +212,7 @@ function parseIntelligenceContextPanels(text: string): VisualizerBlock[] {
     const intro = sectionIntro.join('\n').trim();
     const items = sectionItems.map(stripBulletPrefix).filter(Boolean);
     if (intro || items.length) {
-      blocks.push({
+      sectionTarget().push({
         kind: 'context-panel',
         tone: sectionTone,
         label: sectionTitle,
@@ -239,7 +262,12 @@ function parseIntelligenceContextPanels(text: string): VisualizerBlock[] {
   }
 
   flushSection();
-  return blocks;
+  return { business, voiceBrand };
+}
+
+function parseIntelligenceContextPanels(text: string): VisualizerBlock[] {
+  const { business, voiceBrand } = partitionIntelligenceContext(text);
+  return [...business, ...voiceBrand];
 }
 
 function extractPlanNarrative(combined: string, intelligenceBlock?: string): string | undefined {
@@ -275,87 +303,89 @@ function extractPlanNarrative(combined: string, intelligenceBlock?: string): str
   return narrative.join('\n\n').trim() || undefined;
 }
 
+function partitionBusinessContext(
+  combined: string | undefined,
+  intelligenceBlock: string | undefined,
+): {
+  planNarrative?: string;
+  business: VisualizerBlock[];
+  voiceBrand: VisualizerBlock[];
+} {
+  const combinedText = combined?.trim() ?? '';
+  const planNarrative = combinedText
+    ? extractPlanNarrative(combinedText, intelligenceBlock)
+    : undefined;
+
+  const business: VisualizerBlock[] = [];
+  const voiceBrand: VisualizerBlock[] = [];
+
+  const intelSource =
+    intelligenceBlock?.trim() ||
+    (combinedText.includes('---') ? combinedText : '');
+
+  if (intelSource) {
+    const partitioned = partitionIntelligenceContext(intelSource);
+    business.push(...partitioned.business);
+    voiceBrand.push(...partitioned.voiceBrand);
+  }
+
+  if (!intelSource && combinedText) {
+    const knowledgeLines = combinedText
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l && /^[-•*]?\s*[^:]+:\s+/.test(l));
+    if (knowledgeLines.length) {
+      business.push({ kind: 'kicker', text: 'Site knowledge' });
+      business.push(...parseKnowledgeLines(knowledgeLines));
+    }
+
+    const remainder = combinedText
+      .split('\n')
+      .filter((l) => l.trim() && !knowledgeLines.includes(l.trim()))
+      .join('\n')
+      .trim();
+    if (remainder && !planNarrative) {
+      business.push({
+        kind: 'context-panel',
+        tone: 'neutral',
+        label: 'Business context',
+        text: remainder,
+      });
+    }
+  }
+
+  return { planNarrative, business, voiceBrand };
+}
+
 function parseBusinessContextPanels(combined: string, intelligenceBlock?: string): VisualizerBlock[] {
+  const { planNarrative, business, voiceBrand } = partitionBusinessContext(
+    combined,
+    intelligenceBlock,
+  );
   const blocks: VisualizerBlock[] = [];
-  const plan = extractPlanNarrative(combined, intelligenceBlock);
-  if (plan) {
+  if (planNarrative) {
     blocks.push({
       kind: 'context-panel',
       tone: 'strategy',
       label: 'Plan narrative',
-      text: plan,
+      text: planNarrative,
     });
   }
-
-  if (intelligenceBlock?.trim()) {
-    blocks.push(...parseIntelligenceContextPanels(intelligenceBlock));
-    return blocks;
-  }
-
-  if (combined.includes('---')) {
-    blocks.push(...parseIntelligenceContextPanels(combined));
-    return blocks;
-  }
-
-  const knowledgeLines = combined
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l && /^[-•*]?\s*[^:]+:\s+/.test(l));
-  if (knowledgeLines.length) {
-    blocks.push({ kind: 'kicker', text: 'Site knowledge' });
-    blocks.push(...parseKnowledgeLines(knowledgeLines));
-  }
-
-  const remainder = combined
-    .split('\n')
-    .filter((l) => l.trim() && !knowledgeLines.includes(l.trim()))
-    .join('\n')
-    .trim();
-  if (remainder && !plan) {
-    blocks.push({
-      kind: 'context-panel',
-      tone: 'neutral',
-      label: 'Business context',
-      text: remainder,
-    });
-  }
-
+  blocks.push(...business, ...voiceBrand);
   return blocks;
 }
 
-function pushStrategyContextBlocks(blocks: VisualizerBlock[], brief: BriefStrategyView): void {
-  const hasStrategy =
-    brief.recommendedAngle ||
-    brief.positioningSummary ||
-    brief.rationale ||
-    brief.audienceSummary ||
-    brief.strategyNarrative ||
-    brief.thesisSeed ||
-    brief.keyQuestionToAnswer ||
-    brief.keyValidationQuestion ||
-    brief.coreCompetitorError ||
-    brief.mechanismApplication ||
-    brief.novelMechanism;
+function buildThesisTabBlocks(brief: BriefStrategyView | undefined): VisualizerBlock[] {
+  if (!brief) return [];
 
-  if (!hasStrategy) return;
+  const blocks: VisualizerBlock[] = [];
 
-  blocks.push({ kind: 'kicker', text: 'Strategy lens' });
-
-  if (brief.recommendedAngle) {
+  if (brief.thesisSeed) {
     blocks.push({
       kind: 'context-panel',
       tone: 'strategy',
-      label: 'Recommended angle',
-      text: brief.recommendedAngle,
-    });
-  }
-
-  if (brief.positioningSummary) {
-    blocks.push({
-      kind: 'context-panel',
-      tone: 'strategy',
-      label: 'Positioning',
-      text: brief.positioningSummary,
+      label: 'Thesis seed',
+      text: brief.thesisSeed,
     });
   }
 
@@ -368,49 +398,181 @@ function pushStrategyContextBlocks(blocks: VisualizerBlock[], brief: BriefStrate
     });
   }
 
-  const metaRows: VisualizerBlock[] = [];
   const pushMeta = (label: string, value?: string) => {
-    if (value?.trim()) metaRows.push({ kind: 'meta-row', label, value: value.trim() });
+    if (value?.trim()) blocks.push({ kind: 'meta-row', label, value: value.trim() });
   };
 
-  pushMeta('Thesis seed', brief.thesisSeed);
   pushMeta('Key question', brief.keyQuestionToAnswer ?? brief.keyValidationQuestion);
   pushMeta('Competitor gap', brief.coreCompetitorError);
   pushMeta('Mechanism', brief.mechanismApplication ?? brief.novelMechanism);
-  pushMeta('Journey stage', brief.journeyStage);
-  pushMeta('Cluster', brief.clusterName);
 
-  if (metaRows.length) {
-    blocks.push(...metaRows);
+  return blocks;
+}
+
+function buildStrategyTabBlocks(
+  brief: BriefStrategyView | undefined,
+  planNarrative?: string,
+): VisualizerBlock[] {
+  if (!brief && !planNarrative) return [];
+
+  const blocks: VisualizerBlock[] = [];
+
+  if (brief) {
+    blocks.push({
+      kind: 'chips',
+      items: [
+        brief.primaryKeyword.phrase,
+        brief.primaryKeyword.intent,
+        `${brief.targetWordCount.toLocaleString()} words`,
+        brief.serpGeo.locationName,
+        ...(brief.clusterName ? [brief.clusterName] : []),
+      ],
+    });
+
+    if (brief.recommendedAngle) {
+      blocks.push({
+        kind: 'context-panel',
+        tone: 'strategy',
+        label: 'Recommended angle',
+        text: brief.recommendedAngle,
+      });
+    }
+
+    if (brief.positioningSummary) {
+      blocks.push({
+        kind: 'context-panel',
+        tone: 'strategy',
+        label: 'Positioning',
+        text: brief.positioningSummary,
+      });
+    }
+
+    if (brief.rationale) {
+      blocks.push({ kind: 'paragraph', text: brief.rationale });
+    }
+
+    const pushMeta = (label: string, value?: string) => {
+      if (value?.trim()) blocks.push({ kind: 'meta-row', label, value: value.trim() });
+    };
+
+    pushMeta('Journey stage', brief.journeyStage);
+    pushMeta('Cluster', brief.clusterName);
+
+    if (brief.mandatorySections?.length) {
+      blocks.push({ kind: 'kicker', text: 'Mandatory sections' });
+      blocks.push({ kind: 'list', items: brief.mandatorySections });
+    }
+
+    if (brief.internalLinkTargets?.length) {
+      blocks.push({ kind: 'kicker', text: 'Internal links' });
+      blocks.push({
+        kind: 'list',
+        items: brief.internalLinkTargets.map(
+          (t) => `${t.label}${t.reason ? ` — ${t.reason}` : ''}`,
+        ),
+      });
+    }
+
+    if (brief.contentGaps.length) {
+      blocks.push({ kind: 'kicker', text: 'Content gaps to cover' });
+      blocks.push({ kind: 'list', items: brief.contentGaps });
+    }
+
+    if (brief.secondaryKeywords.length) {
+      blocks.push({ kind: 'kicker', text: 'Secondary keywords' });
+      blocks.push({ kind: 'chips', items: brief.secondaryKeywords.slice(0, 16) });
+    }
+
+    if (brief.nlpTerms.length) {
+      blocks.push({ kind: 'kicker', text: 'NLP terms' });
+      blocks.push({ kind: 'chips', items: brief.nlpTerms.slice(0, 20) });
+    }
   }
 
-  if (brief.rationale) {
-    blocks.push({ kind: 'paragraph', text: brief.rationale });
+  if (planNarrative) {
+    blocks.push({
+      kind: 'context-panel',
+      tone: 'strategy',
+      label: 'Plan narrative',
+      text: planNarrative,
+    });
   }
+
+  return blocks;
+}
+
+function buildAudienceTabBlocks(brief: BriefStrategyView | undefined): VisualizerBlock[] {
+  if (!brief?.audienceSummary && !brief?.authorContext) return [];
+
+  const blocks: VisualizerBlock[] = [];
 
   if (brief.audienceSummary) {
     blocks.push({
       kind: 'context-panel',
       tone: 'neutral',
-      label: 'Audience',
+      label: 'Audience summary',
       text: brief.audienceSummary,
     });
   }
 
-  if (brief.mandatorySections?.length) {
-    blocks.push({ kind: 'kicker', text: 'Mandatory sections' });
-    blocks.push({ kind: 'list', items: brief.mandatorySections });
-  }
-
-  if (brief.internalLinkTargets?.length) {
-    blocks.push({ kind: 'kicker', text: 'Internal links' });
+  if (brief.authorContext) {
     blocks.push({
-      kind: 'list',
-      items: brief.internalLinkTargets.map(
-        (t) => `${t.label}${t.reason ? ` — ${t.reason}` : ''}`,
-      ),
+      kind: 'context-panel',
+      tone: 'neutral',
+      label: 'Author context',
+      text: brief.authorContext,
     });
   }
+
+  return blocks;
+}
+
+function buildBusinessTabBlocks(
+  panels: VisualizerBlock[],
+  ctx: WritingContextView | undefined,
+): VisualizerBlock[] {
+  const blocks: VisualizerBlock[] = [];
+
+  if (ctx?.answeredContextCardCount != null && ctx.answeredContextCardCount > 0) {
+    blocks.push({
+      kind: 'meta-row',
+      label: 'Sharpen answers',
+      value: `${ctx.answeredContextCardCount} verified fact(s) loaded`,
+    });
+  }
+
+  blocks.push(...panels);
+  return blocks;
+}
+
+function buildVoiceBrandTabBlocks(
+  brief: ArticleGenerationBrief | undefined,
+  panels: VisualizerBlock[],
+): VisualizerBlock[] {
+  const blocks: VisualizerBlock[] = [];
+
+  if (brief) {
+    blocks.push({
+      kind: 'context-panel',
+      tone: 'style',
+      label: 'Voice config',
+      text: [
+        brief.voiceConfig.tone,
+        brief.voiceConfig.pov.replace(/_/g, ' '),
+        `${brief.voiceConfig.sentenceLength} sentences`,
+        `${brief.voiceConfig.jargonLevel} jargon`,
+        `${brief.voiceConfig.ctaStyle} CTA`,
+      ].join(' · '),
+    });
+
+    if (brief.voiceConfig.avoid.length) {
+      blocks.push({ kind: 'kicker', text: 'Phrases to avoid' });
+      blocks.push({ kind: 'chips', items: brief.voiceConfig.avoid });
+    }
+  }
+
+  blocks.push(...panels);
+  return blocks;
 }
 
 function compileContextVisualizer(
@@ -428,84 +590,26 @@ function compileContextVisualizer(
     };
   }
 
-  const blocks: VisualizerBlock[] = [];
-
-  blocks.push({ kind: 'kicker', text: 'Article assignment' });
-  blocks.push({
-    kind: 'heading',
-    level: 1,
-    text: ctx?.workingTitle ?? brief?.primaryKeyword.phrase ?? 'Writing context',
-  });
-
-  if (brief) {
-    blocks.push({
-      kind: 'chips',
-      items: [
-        brief.primaryKeyword.phrase,
-        brief.primaryKeyword.intent,
-        `${brief.targetWordCount.toLocaleString()} words`,
-        brief.serpGeo.locationName,
-        ...(brief.clusterName ? [brief.clusterName] : []),
-      ],
-    });
-  }
-
-  if (ctx?.answeredContextCardCount != null && ctx.answeredContextCardCount > 0) {
-    blocks.push({
-      kind: 'meta-row',
-      label: 'Sharpen answers',
-      value: `${ctx.answeredContextCardCount} verified fact(s) loaded`,
-    });
-  }
-
-  if (strategyBrief) {
-    pushStrategyContextBlocks(blocks, strategyBrief);
-  }
-
-  blocks.push({ kind: 'kicker', text: 'Business context' });
   const intelligenceBlock = ctx?.intelligenceContextBlock;
-  if (brief?.businessContext || intelligenceBlock) {
-    blocks.push(
-      ...parseBusinessContextPanels(brief?.businessContext ?? intelligenceBlock ?? '', intelligenceBlock),
-    );
-  } else {
-    blocks.push({
-      kind: 'notice',
-      text: 'No business context compiled yet. Answer Sharpen questions to ground the writer in verified facts.',
-    });
-  }
+  const { planNarrative, business, voiceBrand } = partitionBusinessContext(
+    brief?.businessContext,
+    intelligenceBlock,
+  );
 
-  if (brief) {
-    blocks.push({ kind: 'kicker', text: 'Voice & coverage' });
-    blocks.push({
-      kind: 'paragraph',
-      text: [
-        brief.voiceConfig.tone,
-        brief.voiceConfig.pov.replace(/_/g, ' '),
-        `${brief.voiceConfig.sentenceLength} sentences`,
-        `${brief.voiceConfig.jargonLevel} jargon`,
-      ].join(' · '),
-    });
+  const headerBlocks: VisualizerBlock[] = [
+    { kind: 'kicker', text: 'Article assignment' },
+    {
+      kind: 'heading',
+      level: 1,
+      text: ctx?.workingTitle ?? brief?.primaryKeyword.phrase ?? 'Writing context',
+    },
+  ];
 
-    if (brief.voiceConfig.avoid.length) {
-      blocks.push({ kind: 'chips', items: brief.voiceConfig.avoid.map((a) => `Avoid: ${a}`) });
-    }
-
-    if (brief.contentGaps.length) {
-      blocks.push({ kind: 'kicker', text: 'Content gaps to cover' });
-      blocks.push({ kind: 'list', items: brief.contentGaps });
-    }
-
-    if (brief.secondaryKeywords.length) {
-      blocks.push({ kind: 'kicker', text: 'Secondary keywords' });
-      blocks.push({ kind: 'chips', items: brief.secondaryKeywords.slice(0, 16) });
-    }
-
-    if (brief.authorContext) {
-      blocks.push({ kind: 'kicker', text: 'Author context' });
-      blocks.push({ kind: 'paragraph', text: brief.authorContext });
-    }
-  }
+  const thesisBlocks = buildThesisTabBlocks(strategyBrief);
+  const strategyBlocks = buildStrategyTabBlocks(strategyBrief, planNarrative);
+  const audienceBlocks = buildAudienceTabBlocks(strategyBrief);
+  const businessBlocks = buildBusinessTabBlocks(business, ctx);
+  const voiceBrandBlocks = buildVoiceBrandTabBlocks(brief, voiceBrand);
 
   const subtitleParts = [
     brief?.primaryKeyword.phrase,
@@ -516,7 +620,43 @@ function compileContextVisualizer(
   return {
     title: 'Writing context',
     subtitle: subtitleParts.join(' · '),
-    blocks,
+    blocks: headerBlocks,
+    defaultTabId: 'thesis',
+    tabs: [
+      {
+        id: 'thesis',
+        label: 'Thesis',
+        emptyMessage:
+          'Thesis sharpens after the cognitive pass. Plan thesis seed and key question land here when set.',
+        blocks: thesisBlocks,
+      },
+      {
+        id: 'strategy',
+        label: 'Strategy',
+        emptyMessage: 'Strategy angle, positioning, and coverage targets from your content plan.',
+        blocks: strategyBlocks,
+      },
+      {
+        id: 'audience',
+        label: 'Audience',
+        emptyMessage: 'Audience profile and author context from Sharpen and the plan brief.',
+        blocks: audienceBlocks,
+      },
+      {
+        id: 'business',
+        label: 'Business',
+        emptyMessage:
+          'Verified facts, offers, and site knowledge from Sharpen — answer questions to fill this in.',
+        blocks: businessBlocks,
+      },
+      {
+        id: 'voice-brand',
+        label: 'Voice & Brand',
+        emptyMessage:
+          'Voice settings, style examples, and brand book context from Sharpen and brand setup.',
+        blocks: voiceBrandBlocks,
+      },
+    ],
   };
 }
 

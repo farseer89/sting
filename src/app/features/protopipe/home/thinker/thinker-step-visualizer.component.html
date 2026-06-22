@@ -6,143 +6,176 @@
     }
   </header>
 
-  @if (view().emptyMessage && view().blocks.length === 0) {
+  @if (view().tabs?.length && !hideTabNav()) {
+    @if (view().blocks.length) {
+      <div class="viz__header-blocks">
+        <ng-container *ngTemplateOutlet="blocksTpl; context: { $implicit: view().blocks }" />
+      </div>
+    }
+
+    <nav class="viz__tabs" [attr.aria-label]="view().tabs?.length ? 'Preview sections' : null">
+      @for (tab of view().tabs; track tab.id) {
+        <button
+          type="button"
+          class="viz__tab"
+          [class.is-active]="activeTabId() === tab.id"
+          (click)="selectTab(tab.id)"
+        >
+          {{ tab.label }}
+        </button>
+      }
+    </nav>
+
+    <div class="viz__body">
+      @if (tabEmptyMessage(); as empty) {
+        <div class="viz__empty viz__empty--tab">
+          <p>{{ empty }}</p>
+        </div>
+      } @else {
+        <ng-container *ngTemplateOutlet="blocksTpl; context: { $implicit: bodyBlocks() }" />
+      }
+    </div>
+  } @else if (view().emptyMessage && view().blocks.length === 0) {
     <div class="viz__empty">
       <p>{{ view().emptyMessage }}</p>
     </div>
   } @else {
     <div class="viz__body">
-      @for (block of view().blocks; track $index) {
-        @switch (block.kind) {
-          @case ('kicker') {
-            <div class="viz__kicker">{{ block.text }}</div>
+      <ng-container *ngTemplateOutlet="blocksTpl; context: { $implicit: view().blocks }" />
+    </div>
+  }
+</div>
+
+<ng-template #blocksTpl let-blocks>
+  @for (block of blocks; track $index) {
+    @switch (block.kind) {
+      @case ('kicker') {
+        <div class="viz__kicker">{{ block.text }}</div>
+      }
+      @case ('heading') {
+        @if (block.level === 1) {
+          <h1 class="viz__h1">{{ block.text }}</h1>
+        } @else if (block.level === 3) {
+          <h3 class="viz__h3">{{ block.text }}</h3>
+        } @else {
+          <h2 class="viz__h2">{{ block.text }}</h2>
+        }
+      }
+      @case ('paragraph') {
+        <p class="viz__p">{{ block.text }}</p>
+      }
+      @case ('list') {
+        <ul class="viz__list">
+          @for (item of block.items ?? []; track item) {
+            <li>{{ item }}</li>
           }
-          @case ('heading') {
-            @if (block.level === 1) {
-              <h1 class="viz__h1">{{ block.text }}</h1>
-            } @else if (block.level === 3) {
-              <h3 class="viz__h3">{{ block.text }}</h3>
-            } @else {
-              <h2 class="viz__h2">{{ block.text }}</h2>
+        </ul>
+      }
+      @case ('chips') {
+        <div class="viz__chips">
+          @for (item of block.items ?? []; track item) {
+            <span class="viz__chip">{{ item }}</span>
+          }
+        </div>
+      }
+      @case ('meta-row') {
+        <div class="viz__row">
+          <span class="viz__row-label">{{ block.label }}</span>
+          <span class="viz__row-value">{{ block.value }}</span>
+          @if (block.hint) {
+            <span class="viz__row-hint">{{ block.hint }}</span>
+          }
+        </div>
+      }
+      @case ('article-section') {
+        <section class="viz__section">
+          <header class="viz__section-head">
+            <h2 class="viz__h2">{{ block.text }}</h2>
+            @if (block.hint) {
+              <span class="viz__section-hint">{{ block.hint }}</span>
             }
+          </header>
+          @if (block.value) {
+            <div class="viz__prose">{{ block.value }}</div>
           }
-          @case ('paragraph') {
-            <p class="viz__p">{{ block.text }}</p>
+          @if (block.items?.length) {
+            <ul class="viz__list viz__list--notes">
+              @for (note of block.items; track note) {
+                <li>{{ note }}</li>
+              }
+            </ul>
           }
-          @case ('list') {
-            <ul class="viz__list">
-              @for (item of block.items ?? []; track item) {
+        </section>
+      }
+      @case ('faq') {
+        <article class="viz__faq">
+          <h3 class="viz__faq-q">{{ block.label }}</h3>
+          <p class="viz__faq-a">{{ block.text }}</p>
+        </article>
+      }
+      @case ('score-bar') {
+        <div class="viz__score">
+          <div class="viz__score-top">
+            <span class="viz__score-label">{{ block.label }}</span>
+            @if (block.score != null) {
+              <span class="viz__score-num">{{ block.score }}</span>
+            }
+          </div>
+          @if (block.score != null) {
+            <div class="viz__score-track">
+              <span
+                class="viz__score-fill"
+                [class]="'is-' + scoreTone(block.score)"
+                [style.width]="scoreWidth(block.score)"
+              ></span>
+            </div>
+          }
+          @if (block.text) {
+            <span class="viz__score-note">{{ block.text }}</span>
+          }
+        </div>
+      }
+      @case ('notice') {
+        <div class="viz__notice">{{ block.text }}</div>
+      }
+      @case ('context-panel') {
+        <section class="viz__panel" [class]="'viz__panel--' + (block.tone ?? 'neutral')">
+          <header class="viz__panel-head">
+            <h3 class="viz__panel-title">{{ block.label }}</h3>
+          </header>
+          @if (block.text) {
+            <p class="viz__panel-text">{{ block.text }}</p>
+          }
+          @if (block.items?.length) {
+            <ul class="viz__panel-list">
+              @for (item of block.items; track item) {
                 <li>{{ item }}</li>
               }
             </ul>
           }
-          @case ('chips') {
-            <div class="viz__chips">
-              @for (item of block.items ?? []; track item) {
-                <span class="viz__chip">{{ item }}</span>
-              }
-            </div>
-          }
-          @case ('meta-row') {
-            <div class="viz__row">
-              <span class="viz__row-label">{{ block.label }}</span>
-              <span class="viz__row-value">{{ block.value }}</span>
-              @if (block.hint) {
-                <span class="viz__row-hint">{{ block.hint }}</span>
-              }
-            </div>
-          }
-          @case ('article-section') {
-            <section class="viz__section">
-              <header class="viz__section-head">
-                <h2 class="viz__h2">{{ block.text }}</h2>
-                @if (block.hint) {
-                  <span class="viz__section-hint">{{ block.hint }}</span>
-                }
-              </header>
-              @if (block.value) {
-                <div class="viz__prose">{{ block.value }}</div>
-              }
-              @if (block.items?.length) {
-                <ul class="viz__list viz__list--notes">
-                  @for (note of block.items; track note) {
-                    <li>{{ note }}</li>
-                  }
-                </ul>
-              }
-            </section>
-          }
-          @case ('faq') {
-            <article class="viz__faq">
-              <h3 class="viz__faq-q">{{ block.label }}</h3>
-              <p class="viz__faq-a">{{ block.text }}</p>
-            </article>
-          }
-          @case ('score-bar') {
-            <div class="viz__score">
-              <div class="viz__score-top">
-                <span class="viz__score-label">{{ block.label }}</span>
-                @if (block.score != null) {
-                  <span class="viz__score-num">{{ block.score }}</span>
-                }
-              </div>
-              @if (block.score != null) {
-                <div class="viz__score-track">
-                  <span
-                    class="viz__score-fill"
-                    [class]="'is-' + scoreTone(block.score)"
-                    [style.width]="scoreWidth(block.score)"
-                  ></span>
-                </div>
-              }
-              @if (block.text) {
-                <span class="viz__score-note">{{ block.text }}</span>
-              }
-            </div>
-          }
-          @case ('notice') {
-            <div class="viz__notice">{{ block.text }}</div>
-          }
-          @case ('context-panel') {
-            <section class="viz__panel" [class]="'viz__panel--' + (block.tone ?? 'neutral')">
-              <header class="viz__panel-head">
-                <h3 class="viz__panel-title">{{ block.label }}</h3>
-              </header>
-              @if (block.text) {
-                <p class="viz__panel-text">{{ block.text }}</p>
-              }
-              @if (block.items?.length) {
-                <ul class="viz__panel-list">
-                  @for (item of block.items; track item) {
-                    <li>{{ item }}</li>
-                  }
-                </ul>
-              }
-            </section>
-          }
-          @case ('image') {
-            <figure class="viz__figure">
-              <figcaption class="viz__figure-cap">
-                <span class="viz__figure-label">{{ block.label }}</span>
-                @if (block.hint) {
-                  <span class="viz__figure-hint">{{ block.hint }}</span>
-                }
-              </figcaption>
-              @if (block.imageUrl) {
-                <img
-                  class="viz__img"
-                  [src]="block.imageUrl"
-                  [alt]="block.imageAlt ?? block.label ?? 'Generated image'"
-                  loading="lazy"
-                />
-              }
-              @if (block.text) {
-                <p class="viz__figure-prompt">{{ block.text }}</p>
-              }
-            </figure>
-          }
-        }
+        </section>
       }
-    </div>
+      @case ('image') {
+        <figure class="viz__figure">
+          <figcaption class="viz__figure-cap">
+            <span class="viz__figure-label">{{ block.label }}</span>
+            @if (block.hint) {
+              <span class="viz__figure-hint">{{ block.hint }}</span>
+            }
+          </figcaption>
+          @if (block.imageUrl) {
+            <img
+              class="viz__img"
+              [src]="block.imageUrl"
+              [alt]="block.imageAlt ?? block.label ?? 'Generated image'"
+              loading="lazy"
+            />
+          }
+          @if (block.text) {
+            <p class="viz__figure-prompt">{{ block.text }}</p>
+          }
+        </figure>
+      }
+    }
   }
-</div>
+</ng-template>

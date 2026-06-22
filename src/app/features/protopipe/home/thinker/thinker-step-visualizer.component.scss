@@ -40,6 +40,59 @@ $viz-low: #dc2626;
   color: $viz-muted;
   font-size: 0.875rem;
   line-height: 1.6;
+
+  &--tab {
+    padding: 1.5rem 1rem;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+  }
+}
+
+.viz__header-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0 0.25rem;
+}
+
+.viz__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid $viz-border;
+}
+
+.viz__tab {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: $viz-muted;
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    background 120ms ease,
+    border-color 120ms ease;
+
+  &:hover {
+    color: $viz-ink;
+    background: #f4f4f5;
+  }
+
+  &.is-active {
+    color: $viz-accent;
+    background: #eff6ff;
+    border-color: #bfdbfe;
+  }
 }
 
 .viz__body {

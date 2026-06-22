@@ -51,6 +51,9 @@ export class DiscoveryBookOnboardingStore {
   readonly tradeSuggestions = signal<string[]>([]);
   readonly customerAvatarSuggestions = signal<string[]>([]);
   readonly scanResolvedBy = signal<'llm' | 'deterministic' | null>(null);
+  readonly expandedSuggestions = signal<string[]>([]);
+  readonly offerExpanding = signal(false);
+  readonly offerExpandError = signal<string | null>(null);
 
   readonly isDirty = computed(
     () => draftFingerprint(this.draft()) !== this.baselineFingerprint(),
@@ -103,6 +106,73 @@ export class DiscoveryBookOnboardingStore {
     return this.tradeSuggestions().filter((s) => !selected.has(s.toLowerCase()));
   }
 
+  availableExpandedSuggestions(): string[] {
+    const selected = new Set(this.draft().services.map((s) => s.toLowerCase()));
+    return this.expandedSuggestions().filter((s) => !selected.has(s.toLowerCase()));
+  }
+
+  canExpandServices(): boolean {
+    return (
+      this.draft().services.length > 0 &&
+      this.draft().services.length < MAX_SERVICES &&
+      !this.offerExpanding()
+    );
+  }
+
+  expandExcludeList(): string[] {
+    return Array.from(
+      new Set([
+        ...this.draft().services,
+        ...this.tradeSuggestions(),
+        ...this.expandedSuggestions(),
+      ]),
+    );
+  }
+
+  async expandServices(): Promise<void> {
+    const selected = this.draft().services;
+    if (selected.length === 0 || selected.length >= MAX_SERVICES) return;
+
+    const siteId = this.strategy.siteId();
+    if (!siteId) {
+      this.offerExpandError.set('No site loaded.');
+      return;
+    }
+
+    this.offerExpanding.set(true);
+    this.offerExpandError.set(null);
+
+    try {
+      const res = await this.api.expandOffer(siteId, {
+        selectedServices: selected,
+        tradeLabel: this.tradeLabel() ?? undefined,
+        websiteUrl: this.draft().websiteUrl.trim() || undefined,
+        exclude: this.expandExcludeList(),
+      });
+
+      if (res.error === 'llm_not_configured') {
+        this.offerExpandError.set('Expand needs AI configured on the server.');
+        return;
+      }
+      if (res.error && res.expandedServices.length === 0) {
+        this.offerExpandError.set('Could not expand services right now — try again.');
+        return;
+      }
+
+      if (res.expandedServices.length > 0) {
+        this.expandedSuggestions.update((current) =>
+          Array.from(new Set([...current, ...res.expandedServices])),
+        );
+      } else {
+        this.offerExpandError.set('No new related services found — try adjusting your selection.');
+      }
+    } catch (err) {
+      this.offerExpandError.set(parseProtopipeApiError(err, 'Could not expand services.'));
+    } finally {
+      this.offerExpanding.set(false);
+    }
+  }
+
   availableAvatarSuggestions(): string[] {
     const used = new Set(
       this.draft()
@@ -135,6 +205,8 @@ export class DiscoveryBookOnboardingStore {
     this.tradeSuggestions.set([]);
     this.customerAvatarSuggestions.set([]);
     this.scanResolvedBy.set(null);
+    this.expandedSuggestions.set([]);
+    this.offerExpandError.set(null);
     this.offerScanError.set(null);
   }
 

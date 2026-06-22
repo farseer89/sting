@@ -89,6 +89,54 @@
         }
       }
 
+      @if (draft().services.length > 0 && draft().services.length < 8) {
+        <div class="kb-offer-expand">
+          <button
+            type="button"
+            class="kb-offer-expand__btn"
+            (click)="store.expandServices()"
+            [disabled]="!store.canExpandServices()"
+          >
+            @if (store.offerExpanding()) {
+              <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+              Expanding…
+            } @else {
+              <i class="pi pi-arrow-right-arrow-left" aria-hidden="true"></i>
+              Expand related services
+            }
+          </button>
+          <p class="kb-offer-expand__hint">
+            Interpret what you've selected and suggest more offerings you may sell.
+          </p>
+        </div>
+        @if (store.offerExpandError(); as expandErr) {
+          <p class="kb-offer-scan kb-offer-scan--error">{{ expandErr }}</p>
+        }
+      }
+
+      @if (store.availableExpandedSuggestions().length > 0) {
+        <section class="kb-offer-section" aria-labelledby="kb-offer-expanded-heading">
+          <h3 id="kb-offer-expanded-heading" class="kb-offer-section__title">
+            Related to your selections — tap to add
+          </h3>
+          <ul class="kb-offer-suggestions" aria-label="Expanded service suggestions">
+            @for (svc of store.availableExpandedSuggestions(); track svc) {
+              <li>
+                <button
+                  type="button"
+                  class="kb-offer-suggestion"
+                  (click)="store.addSuggestedService(svc)"
+                  [disabled]="draft().services.length >= 8"
+                >
+                  <i class="pi pi-plus" aria-hidden="true"></i>
+                  {{ svc }}
+                </button>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
       <section class="kb-offer-section" aria-labelledby="kb-offer-manual-heading">
         <h3 id="kb-offer-manual-heading" class="kb-offer-section__title">Add another service</h3>
         <div class="kb-chip-input">

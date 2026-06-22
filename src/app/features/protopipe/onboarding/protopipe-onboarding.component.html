@@ -202,6 +202,54 @@
             }
           }
 
+          @if (services().length > 0 && services().length < maxServices) {
+            <div class="offer-expand">
+              <button
+                type="button"
+                class="offer-expand__btn"
+                (click)="expandServices()"
+                [disabled]="!canExpandServices()"
+              >
+                @if (offerExpanding()) {
+                  <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                  Expanding…
+                } @else {
+                  <i class="pi pi-arrow-right-arrow-left" aria-hidden="true"></i>
+                  Expand related services
+                }
+              </button>
+              <p class="offer-expand__hint">
+                Interpret what you've selected and suggest more offerings you may sell.
+              </p>
+            </div>
+            @if (offerExpandError(); as expandErr) {
+              <p class="offer-scan offer-scan--error">{{ expandErr }}</p>
+            }
+          }
+
+          @if (availableExpandedSuggestions().length > 0) {
+            <section class="offer-section" aria-labelledby="offer-expanded-heading">
+              <h2 id="offer-expanded-heading" class="offer-section__title">
+                Related to your selections — tap to add
+              </h2>
+              <ul class="offer-suggestions" aria-label="Expanded service suggestions">
+                @for (svc of availableExpandedSuggestions(); track svc) {
+                  <li>
+                    <button
+                      type="button"
+                      class="offer-suggestion"
+                      (click)="addSuggestedService(svc)"
+                      [disabled]="services().length >= maxServices"
+                    >
+                      <i class="pi pi-plus" aria-hidden="true"></i>
+                      {{ svc }}
+                    </button>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+
           <section class="offer-section" aria-labelledby="offer-manual-heading">
             <h2 id="offer-manual-heading" class="offer-section__title">
               {{ isStrategyOnly() ? 'Services to test' : 'Add another service' }}

@@ -908,6 +908,80 @@
         </section>
       }
 
+      <!-- ===================== AUDIENCE REVIEW ===================== -->
+      @case ('audience_review') {
+        @if (audienceReview(); as r) {
+          <section class="review">
+            <div class="review__hero">
+              <div class="review__overall">
+                <span class="review__overall-label">Reader score</span>
+                <span
+                  class="review__overall-score"
+                  [style.color]="scoreColor(r.overallScore)"
+                >{{ r.overallScore }}</span>
+                <span
+                  class="review__overall-status"
+                  [class.is-pass]="r.passesThreshold"
+                  [class.is-fail]="!r.passesThreshold"
+                >
+                  {{ r.passesThreshold ? 'Reads well for audience' : 'Needs reader work' }}
+                </span>
+              </div>
+            </div>
+
+            @if (r.readerSummary) {
+              <div class="review__block">
+                <h4 class="brief__h">Reader voice</h4>
+                <p class="drafts__prose">{{ r.readerSummary }}</p>
+              </div>
+            }
+
+            <div class="review__scores">
+              @for (s of audienceReviewScoreRows(); track s.key) {
+                <div class="review__row">
+                  <span class="review__row-label">{{ s.label }}</span>
+                  <div class="review__bar">
+                    <div
+                      class="review__bar-fill"
+                      [style.width]="scoreWidth(s.value)"
+                      [style.background]="scoreColor(s.value)"
+                    ></div>
+                  </div>
+                  <span class="review__row-value">{{ s.value }}</span>
+                </div>
+              }
+            </div>
+
+            @if (r.sectionFeedback.length > 0) {
+              <div class="review__block">
+                <h4 class="brief__h">Section feedback</h4>
+                <ul class="review__list">
+                  @for (sf of r.sectionFeedback; track $index) {
+                    <li>
+                      <strong>{{ sf.h2 }}</strong> — {{ sf.message }}
+                      @if (sf.readerExpectation) {
+                        <span class="review__expectation">Expected: {{ sf.readerExpectation }}</span>
+                      }
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+
+            @if (r.suggestions.length > 0) {
+              <div class="review__block">
+                <h4 class="brief__h">Suggestions</h4>
+                <ul class="review__list">
+                  @for (s of r.suggestions; track s) {
+                    <li>{{ s }}</li>
+                  }
+                </ul>
+              </div>
+            }
+          </section>
+        }
+      }
+
       <!-- ===================== REVIEW ===================== -->
       @case ('review') {
         @if (review(); as r) {

@@ -293,26 +293,30 @@
       }
 
       @if (asHowto(block); as howto) {
-        <div class="abc-section__inner abc-section__inner--body">
+        <div class="abc-section__inner abc-section__inner--body abc-steps-wrap">
+          <h2 class="abc-steps__title">{{ howto.label || 'Step by step' }}</h2>
           <ol class="abc-steps">
             @for (step of howto.steps; track $index) {
               <li class="abc-steps__item">
-                <input
-                  class="abc-steps__name"
-                  type="text"
-                  placeholder="Step name"
-                  [ngModel]="step.name"
-                  (ngModelChange)="patchStep(howto, $index, 'name', $event)"
-                  [disabled]="readOnly()"
-                />
-                <textarea
-                  class="abc-steps__body"
-                  rows="2"
-                  placeholder="Step details"
-                  [ngModel]="step.body"
-                  (ngModelChange)="patchStep(howto, $index, 'body', $event)"
-                  [disabled]="readOnly()"
-                ></textarea>
+                <span class="abc-steps__num">{{ $index + 1 }}</span>
+                <div class="abc-steps__fields">
+                  <input
+                    class="abc-steps__name"
+                    type="text"
+                    placeholder="Step name"
+                    [ngModel]="step.name"
+                    (ngModelChange)="patchStep(howto, $index, 'name', $event)"
+                    [disabled]="readOnly()"
+                  />
+                  <textarea
+                    class="abc-steps__body"
+                    rows="3"
+                    placeholder="Step details"
+                    [ngModel]="step.body"
+                    (ngModelChange)="patchStep(howto, $index, 'body', $event)"
+                    [disabled]="readOnly()"
+                  ></textarea>
+                </div>
               </li>
             }
           </ol>
@@ -320,14 +324,15 @@
       }
 
       @if (asList(block); as list) {
-        <div class="abc-section__inner abc-section__inner--body">
+        <div class="abc-section__inner abc-section__inner--body abc-list-wrap">
+          <h2 class="abc-list__title">{{ list.label || 'Key points' }}</h2>
           <ol class="abc-list">
             @for (item of list.items; track $index) {
               <li class="abc-list__item" [class.is-highlight]="item.highlight">
                 <span class="abc-list__rank">{{ item.rank ?? $index + 1 }}</span>
                 <div class="abc-list__fields">
                   <input
-                    class="abc-list__title"
+                    class="abc-list__item-title"
                     type="text"
                     placeholder="Item title"
                     [ngModel]="item.title"
@@ -336,7 +341,7 @@
                   />
                   <textarea
                     class="abc-list__body"
-                    rows="2"
+                    rows="3"
                     placeholder="Item details"
                     [ngModel]="item.body"
                     (ngModelChange)="patchListItem(list, $index, 'body', $event)"
@@ -350,33 +355,32 @@
       }
 
       @if (asFaq(block); as faq) {
-        <div class="abc-section__inner abc-section__inner--body">
-          <dl class="abc-faq">
+        <div class="abc-section__inner abc-section__inner--body abc-faq-wrap">
+          <h2 class="abc-faq__title">{{ faq.label || 'Questions & answers' }}</h2>
+          <div class="abc-faq">
             @for (item of faq.items; track $index) {
-              <div class="abc-faq__item">
-                <dt>
-                  <input
-                    class="abc-faq__question"
-                    type="text"
-                    placeholder="Question"
-                    [ngModel]="item.question"
-                    (ngModelChange)="patchFaqItem(faq, $index, 'question', $event)"
-                    [disabled]="readOnly()"
-                  />
-                </dt>
-                <dd>
-                  <textarea
-                    class="abc-faq__answer"
-                    rows="2"
-                    placeholder="Answer"
-                    [ngModel]="item.answer"
-                    (ngModelChange)="patchFaqItem(faq, $index, 'answer', $event)"
-                    [disabled]="readOnly()"
-                  ></textarea>
-                </dd>
-              </div>
+              <article class="abc-faq__item">
+                <label class="abc-faq__question-label">Question</label>
+                <input
+                  class="abc-faq__question"
+                  type="text"
+                  placeholder="Question"
+                  [ngModel]="item.question"
+                  (ngModelChange)="patchFaqItem(faq, $index, 'question', $event)"
+                  [disabled]="readOnly()"
+                />
+                <label class="abc-faq__answer-label">Answer</label>
+                <textarea
+                  class="abc-faq__answer"
+                  rows="3"
+                  placeholder="Answer"
+                  [ngModel]="item.answer"
+                  (ngModelChange)="patchFaqItem(faq, $index, 'answer', $event)"
+                  [disabled]="readOnly()"
+                ></textarea>
+              </article>
             }
-          </dl>
+          </div>
         </div>
       }
 

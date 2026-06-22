@@ -87,6 +87,12 @@ const STEP_META: Record<
     description:
       'Writes intro and body sections one at a time against the outline and brief, streaming partial drafts as each section completes.',
   },
+  audience_review: {
+    label: 'Audience review',
+    summary: 'Read the draft as the target reader.',
+    description:
+      'Scores clarity and relevance from the audience perspective using the audience book — advisory before FAQ and layout.',
+  },
   draft_faq: {
     label: 'FAQ',
     summary: 'Draft FAQ answers from PAA and brief questions for pillar guides.',
@@ -510,6 +516,19 @@ function buildArticleSubSteps(
     case 'draft':
       return buildDraftSubSteps(run, stepStatus);
 
+    case 'audience_review':
+      return [
+        {
+          id: 'audience:read',
+          label: 'Read as target audience',
+          detail: a.audienceReview
+            ? `Score ${formatReviewScore(a.audienceReview.overallScore)}`
+            : 'One LLM pass in reader voice',
+          status: stepStatus === 'completed' ? 'completed' : phaseStatus(0, 1, stepStatus),
+          isLlm: true,
+        },
+      ];
+
     case 'draft_faq':
       if (run.articleType !== 'pillar') {
         return [
@@ -898,6 +917,17 @@ function stepOutput(
               'Draft',
               sectionsToMarkdown(a.sections),
               `${a.sections.reduce((n, s) => n + s.wordCount, 0)} words`,
+            ),
+          ]
+        : [];
+    case 'audience_review':
+      return a.audienceReview
+        ? [
+            json(
+              'audience-review',
+              'Audience review',
+              a.audienceReview,
+              `Score ${formatReviewScore(a.audienceReview.overallScore)} · ${a.audienceReview.passesThreshold ? 'reads well' : 'needs work'}`,
             ),
           ]
         : [];

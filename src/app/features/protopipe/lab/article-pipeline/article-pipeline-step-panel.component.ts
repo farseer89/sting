@@ -6,6 +6,7 @@ import {
 } from '@angular/core';
 import type {
   ArticleGenerationBrief,
+  ArticleGenerationAudienceReview,
   ArticleGenerationClusterContext,
   ArticleGenerationCognitiveRun,
   ArticleGenerationCompetitionAnalysis,
@@ -74,6 +75,7 @@ const STEP_TITLES: Record<ArticleGenerationStep, string> = {
   cognitive_pass: 'Cognitive pass',
   outline: 'Outline',
   draft: 'Drafts',
+  audience_review: 'Audience review',
   draft_faq: 'FAQ items',
   layout_plan: 'Section layouts',
   review: 'Review',
@@ -261,6 +263,10 @@ export class ArticlePipelineStepPanelComponent {
     () => this.run()?.artifacts?.review ?? null,
   );
 
+  readonly audienceReview = computed<ArticleGenerationAudienceReview | null>(
+    () => this.run()?.artifacts?.audienceReview ?? null,
+  );
+
   readonly metadata = computed<ArticleGenerationMetadata | null>(
     () => this.run()?.artifacts?.metadata ?? null,
   );
@@ -279,6 +285,18 @@ export class ArticlePipelineStepPanelComponent {
       { key: 'specificity', label: 'Specificity', value: r.scores.specificity },
       { key: 'readability', label: 'Readability', value: r.scores.readability },
       { key: 'eeatSignal', label: 'E-E-A-T signal', value: r.scores.eeatSignal },
+    ];
+  });
+
+  readonly audienceReviewScoreRows = computed<ScoreRow[]>(() => {
+    const r = this.audienceReview();
+    if (!r) return [];
+    return [
+      { key: 'clarity', label: 'Clarity', value: r.scores.clarity },
+      { key: 'speaksToMe', label: 'Speaks to me', value: r.scores.speaksToMe },
+      { key: 'jargonFit', label: 'Jargon fit', value: r.scores.jargonFit },
+      { key: 'trustAndRelevance', label: 'Trust & relevance', value: r.scores.trustAndRelevance },
+      { key: 'actionability', label: 'Actionability', value: r.scores.actionability },
     ];
   });
 
@@ -316,6 +334,8 @@ export class ArticlePipelineStepPanelComponent {
         return !!run.artifacts?.outline;
       case 'draft':
         return (run.artifacts?.sections?.length ?? 0) > 0;
+      case 'audience_review':
+        return !!run.artifacts?.audienceReview;
       case 'review':
         return !!run.artifacts?.review;
       case 'metadata':

@@ -13,6 +13,7 @@ import {
   type OnboardingModeId,
 } from '../../onboarding/onboarding-market.constants';
 import { ProtopipeKeywordPickerStore } from '../keyword-picker/protopipe-keyword-picker.store';
+import { ProtopipeOnboardingStateService } from '../../onboarding/protopipe-onboarding-state.service';
 import type { DiscoveryBookOnboardingStepId } from './discovery-book-onboarding.steps';
 import {
   draftFingerprint,
@@ -36,6 +37,7 @@ export class DiscoveryBookOnboardingStore {
   private readonly api = inject(ProtopipeApiService);
   private readonly strategy = inject(ProtopipeStrategyService);
   private readonly keywordStore = inject(ProtopipeKeywordPickerStore);
+  private readonly onboardingState = inject(ProtopipeOnboardingStateService);
 
   private readonly baselineFingerprint = signal('');
   private readonly draft = signal<DiscoveryBookOnboardingDraft>(draftFromStrategy(null, null));
@@ -724,6 +726,7 @@ export class DiscoveryBookOnboardingStore {
     try {
       const body = draftToOnboardingRequest(this.draft());
       const res = await this.api.completeOnboarding(siteId, body);
+      this.onboardingState.invalidate();
       await this.strategy.refreshPlan();
       this.syncFromStrategy();
 
@@ -731,6 +734,14 @@ export class DiscoveryBookOnboardingStore {
         this.saveStatus.set('Saved — starting a fresh discovery run…');
         await this.keywordStore.followDiscoveryRun(siteId, res.discoveryRunId);
         return res.discoveryRunId;
+      }
+
+      const latest = await this.api.getLatestKeywordDiscoveryRun(siteId);
+      if (!latest.run) {
+        this.saveStatus.set('Saved — starting keyword discovery…');
+        const started = await this.api.startKeywordDiscoveryRun(siteId);
+        await this.keywordStore.followDiscoveryRun(siteId, started.run.id);
+        return started.run.id;
       }
 
       this.saveStatus.set('Saved — discovery inputs unchanged, no new run started.');

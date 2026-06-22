@@ -19,9 +19,12 @@ export const protopipeProductConfig: ProductConfig = {
   routes: {
     signup: '/signup',
     signupSuccess: '/signup/success',
-    postSignupRedirect: '/protopipe/onboarding',
+    postSignupRedirect: '/home',
     login: '/login',
     home: '/home',
+  },
+  onboarding: {
+    bypassLegacyWizard: true,
   },
   scheduleCallUrl: 'https://calendly.com/server-futureproofsystems/30min',
 };

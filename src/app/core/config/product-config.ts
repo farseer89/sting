@@ -23,12 +23,19 @@ export interface ProductRoutesConfig {
   home: string;
 }
 
+/** Protopipe-only: route onboarding through Discovery book instead of the legacy wizard. */
+export interface ProductOnboardingConfig {
+  /** When true, home is reachable without legacy wizard completion; /protopipe/onboarding redirects home. */
+  bypassLegacyWizard?: boolean;
+}
+
 export interface ProductConfig {
   id: string;
   displayName: string;
   auth: ProductAuthConfig;
   billing: ProductBillingConfig;
   routes: ProductRoutesConfig;
+  onboarding?: ProductOnboardingConfig;
   /** Optional sales CTA (e.g. Calendly) for website-build upsell. */
   scheduleCallUrl?: string;
 }

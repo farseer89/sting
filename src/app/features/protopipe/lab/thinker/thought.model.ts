@@ -55,6 +55,8 @@ export interface ThoughtSubStep {
   detail?: string;
   status: ThoughtStepStatus;
   isLlm?: boolean;
+  /** Per sub-step cost when known (e.g. fal.ai image slot). */
+  costUsd?: number;
 }
 
 /** Recorded LLM prompt/response for inspector UI. */

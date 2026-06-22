@@ -11,6 +11,7 @@ export interface BinderSubStepView {
   status: BinderStepStatus;
   at?: string;
   isLlm?: boolean;
+  costUsd?: number;
 }
 
 export interface BinderLlmCallView {
@@ -154,6 +155,7 @@ function mapSubSteps(step: ThoughtStep, parentStatus: BinderStepStatus): BinderS
         detail: sub.detail,
         status: mapStepStatus(sub.status),
         isLlm: sub.isLlm,
+        costUsd: sub.costUsd,
       }))
     : step.events.map((event, index) => ({
         id: `${index}:${event.at}`,

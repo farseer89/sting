@@ -103,6 +103,27 @@
           @case ('notice') {
             <div class="viz__notice">{{ block.text }}</div>
           }
+          @case ('image') {
+            <figure class="viz__figure">
+              <figcaption class="viz__figure-cap">
+                <span class="viz__figure-label">{{ block.label }}</span>
+                @if (block.hint) {
+                  <span class="viz__figure-hint">{{ block.hint }}</span>
+                }
+              </figcaption>
+              @if (block.imageUrl) {
+                <img
+                  class="viz__img"
+                  [src]="block.imageUrl"
+                  [alt]="block.imageAlt ?? block.label ?? 'Generated image'"
+                  loading="lazy"
+                />
+              }
+              @if (block.text) {
+                <p class="viz__figure-prompt">{{ block.text }}</p>
+              }
+            </figure>
+          }
         }
       }
     </div>

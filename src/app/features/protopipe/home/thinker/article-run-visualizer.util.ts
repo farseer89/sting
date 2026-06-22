@@ -2,11 +2,14 @@ import type {
   ArticleGenerationBrief,
   ArticleGenerationDraftedFaqItem,
   ArticleGenerationDraftedSection,
+  ArticleGenerationImageGeneration,
+  ArticleGenerationImageSlot,
   ArticleGenerationOutline,
   ArticleGenerationReview,
   ArticleGenerationRunDto,
   ArticleGenerationStep,
   ProtopipeContentTemplate,
+  ProtopipeArticleBlock,
 } from '@hive/contracts';
 import type { BinderStepStatus } from './thinker-binder.mapper';
 
@@ -20,7 +23,8 @@ export type VisualizerBlockKind =
   | 'article-section'
   | 'faq'
   | 'score-bar'
-  | 'notice';
+  | 'notice'
+  | 'image';
 
 export interface VisualizerBlock {
   kind: VisualizerBlockKind;
@@ -32,6 +36,8 @@ export interface VisualizerBlock {
   hint?: string;
   /** 0–100 for score-bar */
   score?: number;
+  imageUrl?: string;
+  imageAlt?: string;
 }
 
 export interface StepVisualizerView {
@@ -67,7 +73,7 @@ export function buildArticleStepVisualizer(
     case 'draft_faq':
       return faqVisualizer(a.faqItems, a.outline?.h1);
     case 'assemble':
-      return templateVisualizer(a.template);
+      return templateVisualizer(a.template, a.imageGeneration);
     case 'metadata':
       return metadataVisualizer(a.metadata);
     case 'review':
@@ -253,7 +259,10 @@ function faqVisualizer(
   };
 }
 
-function templateVisualizer(template: ProtopipeContentTemplate | undefined): StepVisualizerView {
+function templateVisualizer(
+  template: ProtopipeContentTemplate | undefined,
+  imageGeneration?: ArticleGenerationImageGeneration,
+): StepVisualizerView {
   if (!template) {
     return { title: 'Assembled article', emptyMessage: 'Template not assembled yet.', blocks: [] };
   }
@@ -263,16 +272,28 @@ function templateVisualizer(template: ProtopipeContentTemplate | undefined): Ste
     { kind: 'paragraph', text: template.title },
     { kind: 'meta-row', label: 'Meta description', value: template.metaDescription },
     { kind: 'heading', level: 1, text: template.h1 },
-    { kind: 'paragraph', text: template.intro },
   ];
 
-  for (const section of template.sections ?? []) {
-    blocks.push({
-      kind: 'article-section',
-      level: 2,
-      text: section.h2,
-      value: section.body,
-    });
+  if (template.blocks?.length) {
+    blocks.push(...templateBlockVisualizerBlocks(template.blocks));
+  } else {
+    blocks.push({ kind: 'paragraph', text: template.intro });
+    blocks.push(
+      ...imageSlotBlocks(
+        imageGeneration?.slots?.filter(
+          (s) => s.status === 'generated' && Boolean(s.publicUrl?.trim() || s.sourceUrl?.trim()),
+        ),
+      ),
+    );
+
+    for (const section of template.sections ?? []) {
+      blocks.push({
+        kind: 'article-section',
+        level: 2,
+        text: section.h2,
+        value: section.body,
+      });
+    }
   }
 
   if (template.cta) {
@@ -282,9 +303,81 @@ function templateVisualizer(template: ProtopipeContentTemplate | undefined): Ste
 
   return {
     title: 'Assembled article',
-    subtitle: 'Full post preview',
+    subtitle: 'Full post preview with images',
     blocks,
   };
+}
+
+function templateBlockVisualizerBlocks(blocks: ProtopipeArticleBlock[]): VisualizerBlock[] {
+  const out: VisualizerBlock[] = [];
+
+  for (const block of blocks) {
+    if (block.visible === false) continue;
+
+    switch (block.kind) {
+      case 'prose':
+        if (block.h2) out.push({ kind: 'heading', level: 2, text: block.h2 });
+        if (block.body?.trim()) out.push({ kind: 'paragraph', text: block.body });
+        for (const img of block.images ?? []) {
+          const url = img.url?.trim();
+          if (!url) continue;
+          out.push({
+            kind: 'image',
+            label: block.label ?? block.h2 ?? 'Section image',
+            imageUrl: url,
+            imageAlt: img.alt,
+          });
+        }
+        break;
+      case 'image': {
+        const url = block.url?.trim();
+        if (!url) break;
+        out.push({
+          kind: 'image',
+          label: block.label ?? block.role ?? 'Image',
+          imageUrl: url,
+          imageAlt: block.alt,
+          text: block.promptHint,
+        });
+        break;
+      }
+      case 'howto_steps':
+        out.push({ kind: 'kicker', text: block.label ?? 'How-to steps' });
+        out.push({ kind: 'list', items: block.steps.map((s) => s.name).filter(Boolean) });
+        break;
+      case 'list_items':
+        out.push({ kind: 'kicker', text: block.label ?? 'List' });
+        out.push({ kind: 'list', items: block.items.map((i) => i.title).filter(Boolean) });
+        break;
+      case 'faq_list':
+        for (const item of block.items ?? []) {
+          out.push({ kind: 'faq', label: item.question, text: item.answer });
+        }
+        break;
+      case 'internal_links':
+        out.push({ kind: 'kicker', text: 'Internal links' });
+        out.push({
+          kind: 'list',
+          items: block.links.map((l) => `${l.label} → ${l.href}`),
+        });
+        break;
+      case 'cta':
+        out.push({ kind: 'paragraph', text: `${block.label} → ${block.href}` });
+        break;
+      case 'author_line':
+        out.push({ kind: 'paragraph', text: block.text });
+        break;
+      case 'comparison_table':
+        out.push({ kind: 'kicker', text: block.label ?? 'Comparison' });
+        out.push({
+          kind: 'paragraph',
+          text: `${block.columns.map((c) => c.label).join(' · ')} — ${block.rows.length} row(s)`,
+        });
+        break;
+    }
+  }
+
+  return out;
 }
 
 function metadataVisualizer(
@@ -391,25 +484,60 @@ function imageVisualizer(
     return { title: 'Images', emptyMessage: 'Image slots will appear here.', blocks: [] };
   }
 
+  const totalCost =
+    ig.totalCostUsd ??
+    ig.slots.reduce((sum, s) => sum + (s.costUsd ?? 0), 0);
+  const costLabel = totalCost > 0 ? `$${totalCost.toFixed(4)}` : null;
+
   const blocks: VisualizerBlock[] = [
     {
       kind: 'notice',
-      text: `${ig.mode} mode · ${ig.generatedCount ?? 0}/${ig.plannedCount} generated${ig.totalCostUsd ? ` · ~$${ig.totalCostUsd.toFixed(4)}` : ''}`,
+      text: `${ig.mode} mode · ${ig.generatedCount ?? 0}/${ig.plannedCount} generated${costLabel ? ` · ${costLabel}${ig.costEstimated ? ' est.' : ''}` : ''}`,
     },
+    { kind: 'kicker', text: 'Style profile' },
+    { kind: 'paragraph', text: `${ig.styleProfile.label} — ${ig.styleProfile.promptSuffix}` },
   ];
 
-  for (const slot of ig.slots) {
-    blocks.push({
-      kind: 'meta-row',
-      label: slot.label,
-      value: slot.publicUrl ?? slot.sourceUrl ?? slot.status,
-      hint: slot.costUsd != null ? `$${slot.costUsd.toFixed(4)}` : slot.imageSize,
-    });
-  }
+  blocks.push(...imageSlotBlocks(ig.slots));
 
   return {
     title: 'Generated images',
-    subtitle: ig.model ?? 'fal.ai',
+    subtitle: [ig.model ?? 'fal.ai', costLabel ? `${costLabel} total` : null].filter(Boolean).join(' · '),
     blocks,
   };
+}
+
+function imageSlotBlocks(slots: ArticleGenerationImageSlot[] | undefined): VisualizerBlock[] {
+  if (!slots?.length) return [];
+
+  const blocks: VisualizerBlock[] = [{ kind: 'kicker', text: 'Image slots' }];
+
+  for (const slot of slots) {
+    const url = slot.publicUrl?.trim() || slot.sourceUrl?.trim();
+    const costHint =
+      slot.costUsd != null ? `$${slot.costUsd.toFixed(4)}${slot.status === 'planned' ? ' est.' : ''}` : slot.imageSize;
+
+    if (url) {
+      blocks.push({
+        kind: 'image',
+        label: slot.label,
+        imageUrl: url,
+        imageAlt: slot.altSuggestion ?? slot.label,
+        hint: costHint,
+        text: slot.builtPrompt,
+      });
+    } else {
+      blocks.push({
+        kind: 'meta-row',
+        label: slot.label,
+        value: slot.status === 'failed' ? slot.error ?? 'Failed' : slot.status,
+        hint: costHint,
+      });
+      if (slot.builtPrompt) {
+        blocks.push({ kind: 'paragraph', text: slot.builtPrompt });
+      }
+    }
+  }
+
+  return blocks;
 }

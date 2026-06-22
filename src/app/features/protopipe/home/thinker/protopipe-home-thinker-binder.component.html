@@ -122,13 +122,16 @@
                 <span class="tb-rail__tag tb-rail__tag--llm">LLM</span>
               }
             </span>
-            @if (step.status === 'done') {
+            @if (step.status === 'done' || step.status === 'failed') {
               <span class="tb-rail__meta">
                 @if (step.durationMs) { {{ formatDuration(step.durationMs) }} }
-                @if (step.costUsd) {<span class="tb-rail__cost">{{ formatCost(step.costUsd) }}</span>}
+                @if (formatCost(step.costUsd)) { <span class="tb-rail__cost">{{ formatCost(step.costUsd) }}</span> }
               </span>
             } @else if (step.status === 'running') {
-              <span class="tb-rail__live">live</span>
+              <span class="tb-rail__meta">
+                <span class="tb-rail__live">live</span>
+                @if (formatCost(step.costUsd)) { <span class="tb-rail__cost">{{ formatCost(step.costUsd) }}</span> }
+              </span>
             }
           </span>
           <span class="tb-rail__dot-wrap">
@@ -173,14 +176,16 @@
                 Complete
               </span>
               @if (step.durationMs) { <span class="tb-chip tb-chip--meta">{{ formatDuration(step.durationMs) }}</span> }
-              @if (step.costUsd) { <span class="tb-chip tb-chip--cost">{{ formatCost(step.costUsd) }}</span> }
+              @if (formatCost(step.costUsd)) { <span class="tb-chip tb-chip--cost">{{ formatCost(step.costUsd) }}</span> }
             } @else if (step.status === 'running') {
               <span class="tb-chip tb-chip--running">
                 <span class="tb-chip__pulse"></span>
                 Running
               </span>
+              @if (formatCost(step.costUsd)) { <span class="tb-chip tb-chip--cost">{{ formatCost(step.costUsd) }}</span> }
             } @else if (step.status === 'failed') {
               <span class="tb-chip tb-chip--failed">Failed</span>
+              @if (formatCost(step.costUsd)) { <span class="tb-chip tb-chip--cost">{{ formatCost(step.costUsd) }}</span> }
             } @else {
               <span class="tb-chip tb-chip--pending">Pending</span>
             }
@@ -297,6 +302,8 @@
                       </span>
                       @if (sub.detail) {
                         <span class="tb-rail__meta">{{ sub.detail }}</span>
+                      } @else if (formatCost(sub.costUsd)) {
+                        <span class="tb-rail__meta"><span class="tb-rail__cost">{{ formatCost(sub.costUsd) }}</span></span>
                       } @else if (sub.at) {
                         <span class="tb-rail__meta">{{ sub.at }}</span>
                       } @else if (sub.status === 'running') {

@@ -1,6 +1,7 @@
 import type {
   ArticleGenerationArtifacts,
   ArticleGenerationEvent,
+  ArticleGenerationImageGeneration,
   ArticleGenerationOutline,
   ArticleGenerationDraftedSection,
   ArticleGenerationReview,
@@ -263,6 +264,14 @@ function buildDraftSubSteps(
   return phases;
 }
 
+function resolveImageGenerationCostUsd(
+  ig: ArticleGenerationImageGeneration | undefined,
+): number | undefined {
+  if (!ig) return undefined;
+  if (ig.totalCostUsd != null && ig.totalCostUsd > 0) return ig.totalCostUsd;
+  return sumCosts(ig.slots.map((s) => s.costUsd));
+}
+
 function buildImageSubSteps(
   run: ArticleGenerationRunDto,
   stepStatus: ThoughtStepStatus,
@@ -278,16 +287,17 @@ function buildImageSubSteps(
             ? slot.error ?? 'Failed'
             : slot.status === 'skipped'
               ? 'Skipped'
-              : ig.mode === 'stub' && costLabel
-                ? `Planned · est. ${costLabel}`
+              : ig.mode === 'stub'
+                ? 'Planned (stub)'
                 : 'Planned';
-      const detail = costLabel && slot.status === 'generated'
+      const detail = costLabel
         ? `${statusDetail} · ${costLabel}${ig.costEstimated ? ' est.' : ''}`
         : statusDetail;
       return {
         id: `img:${slot.id}`,
         label: slot.label,
         detail,
+        costUsd: slot.costUsd,
         status:
           slot.status === 'generated'
             ? ('complete' as ThoughtStepStatus)
@@ -297,7 +307,9 @@ function buildImageSubSteps(
                 ? ('skipped' as ThoughtStepStatus)
                 : stepStatus === 'running'
                   ? ('running' as ThoughtStepStatus)
-                  : ('pending' as ThoughtStepStatus),
+                  : stepStatus === 'complete'
+                    ? ('complete' as ThoughtStepStatus)
+                    : ('pending' as ThoughtStepStatus),
       };
     });
   }
@@ -1250,13 +1262,23 @@ export function articleRunToThought(run: ArticleGenerationRunDto): Thought {
 
     const finishedNote = finished?.note;
     const runningSummary = articleStepRunningSummary(step, run);
-    const summary = reviewFailed
+    let summary = reviewFailed
       ? `Below threshold (score ${formatReviewScore(reviewArtifact.overallScore)})`
       : reviewArtifact?.passesThreshold
         ? `Passed (score ${formatReviewScore(reviewArtifact.overallScore)})`
         : stepStatus === 'running' && runningSummary
           ? runningSummary
           : finishedNote ?? meta.summary;
+
+    if (step === 'generate_images' && stepStatus !== 'pending') {
+      const imageCost = resolveImageGenerationCostUsd(run.artifacts.imageGeneration);
+      const imageCostLabel = formatThinkerCostUsd(imageCost);
+      if (imageCostLabel) {
+        summary = summary?.includes(imageCostLabel)
+          ? summary
+          : `${summary ?? meta.summary} · ${imageCostLabel}${run.artifacts.imageGeneration?.costEstimated ? ' est.' : ''}`;
+      }
+    }
 
     return {
       id: step,
@@ -1266,7 +1288,9 @@ export function articleRunToThought(run: ArticleGenerationRunDto): Thought {
       status: stepStatus,
       costUsd:
         sumCosts(evs.map((e) => e.cost)) ??
-        (step === 'generate_images' ? run.artifacts.imageGeneration?.totalCostUsd : undefined),
+        (step === 'generate_images'
+          ? resolveImageGenerationCostUsd(run.artifacts.imageGeneration)
+          : undefined),
       startedAt: started?.startedAt,
       finishedAt: finished?.finishedAt,
       durationMs: finished?.durationMs,

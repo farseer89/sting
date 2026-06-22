@@ -57,12 +57,13 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
   readonly confirmed = output<void>();
 
   readonly onboardingSteps = DISCOVERY_BOOK_ONBOARDING_STEPS;
-  readonly activeSection = signal<DiscoveryBookSection>('keywords');
+  readonly activeSection = signal<DiscoveryBookSection>(
+    DISCOVERY_BOOK_ONBOARDING_STEPS[0].id,
+  );
   private readonly didAutoLeaveDiscovery = signal(false);
+  private readonly didResolveInitialSection = signal(false);
 
   readonly discoveryRun = this.thinkerView.discoveryRun;
-  readonly onboardingProfile = this.strategy.onboardingProfile;
-  readonly site = this.strategy.site;
 
   readonly hasDiscoveryRun = computed(() => Boolean(this.discoveryRun()));
 
@@ -114,8 +115,23 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
     effect(() => {
       this.strategy.onboardingProfile();
       this.strategy.site();
-      if (!this.strategy.loading()) {
-        this.onboardingStore.syncFromStrategy();
+      if (this.strategy.loading()) return;
+
+      this.onboardingStore.syncFromStrategy();
+
+      if (this.didResolveInitialSection()) return;
+      this.didResolveInitialSection.set(true);
+
+      if (!this.strategy.onboardingProfile()) {
+        this.activeSection.set(DISCOVERY_BOOK_ONBOARDING_STEPS[0].id);
+        return;
+      }
+
+      const run = this.discoveryRun();
+      if (run?.status === 'pending' || run?.status === 'discovering') {
+        this.activeSection.set('discovery');
+      } else {
+        this.activeSection.set('keywords');
       }
     });
 

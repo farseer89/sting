@@ -684,7 +684,13 @@ export class DiscoveryBookOnboardingStore {
   }
 
   canSave(stepId: DiscoveryBookOnboardingStepId): boolean {
-    return this.isDirty() && this.stepValidationError(stepId) == null && this.fullValidationError() == null;
+    const firstSave = !this.strategy.onboardingProfile();
+    const dirtyOk = this.isDirty() || firstSave;
+    return (
+      dirtyOk &&
+      this.stepValidationError(stepId) == null &&
+      this.fullValidationError() == null
+    );
   }
 
   fullValidationError(): string | null {

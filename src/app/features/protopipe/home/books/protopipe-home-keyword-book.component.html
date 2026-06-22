@@ -177,16 +177,10 @@
                 </p>
               </div>
 
-              @if (!onboardingProfile()) {
-                <p class="kb-onboarding-empty">
-                  No onboarding profile saved yet. Complete onboarding to edit these steps.
-                </p>
-              } @else {
-                <app-protopipe-discovery-book-onboarding-panel
-                  [stepId]="meta.id"
-                  (discoveryStarted)="onDiscoveryStarted()"
-                />
-              }
+              <app-protopipe-discovery-book-onboarding-panel
+                [stepId]="meta.id"
+                (discoveryStarted)="onDiscoveryStarted()"
+              />
             }
           }
         }

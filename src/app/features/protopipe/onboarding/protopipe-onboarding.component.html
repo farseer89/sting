@@ -581,6 +581,55 @@
               }
             </ul>
           }
+
+          @if (competitors().length > 0 && competitors().length < maxCompetitors) {
+            <div class="offer-expand">
+              <button
+                type="button"
+                class="offer-expand__btn"
+                (click)="fanOutCompetition()"
+                [disabled]="!canFanOutCompetition()"
+              >
+                @if (competitionFanningOut()) {
+                  <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                  Finding…
+                } @else {
+                  <i class="pi pi-share-alt" aria-hidden="true"></i>
+                  Fan out competitors
+                }
+              </button>
+              <p class="offer-expand__hint">
+                Find similar businesses in your market from who you've added.
+              </p>
+            </div>
+            @if (competitionFanOutError(); as fanOutErr) {
+              <p class="offer-scan offer-scan--error">{{ fanOutErr }}</p>
+            }
+          }
+
+          @if (availableCompetitorFanOutSuggestions().length > 0) {
+            <section class="offer-section" aria-labelledby="competition-fanout-heading">
+              <h2 id="competition-fanout-heading" class="offer-section__title">
+                Related competitors — tap to add
+              </h2>
+              <ul class="offer-suggestions" aria-label="Suggested competitor sites">
+                @for (domain of availableCompetitorFanOutSuggestions(); track domain) {
+                  <li>
+                    <button
+                      type="button"
+                      class="offer-suggestion"
+                      (click)="addSuggestedCompetitor(domain)"
+                      [disabled]="competitors().length >= maxCompetitors"
+                    >
+                      <i class="pi pi-plus" aria-hidden="true"></i>
+                      {{ domain }}
+                    </button>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+
           <small class="helper-inline">
             @if (isStrategyOnly()) {
               {{ copy().step5Footer }}

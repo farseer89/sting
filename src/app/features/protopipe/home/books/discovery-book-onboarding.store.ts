@@ -62,6 +62,9 @@ export class DiscoveryBookOnboardingStore {
   readonly avatarEnrichmentPending = signal<Record<number, AvatarEnrichmentPending>>({});
   readonly avatarEnrichingSlot = signal<number | null>(null);
   readonly avatarEnrichError = signal<string | null>(null);
+  readonly competitorFanOutSuggestions = signal<string[]>([]);
+  readonly competitionFanningOut = signal(false);
+  readonly competitionFanOutError = signal<string | null>(null);
 
   readonly isDirty = computed(
     () => draftFingerprint(this.draft()) !== this.baselineFingerprint(),
@@ -425,6 +428,83 @@ export class DiscoveryBookOnboardingStore {
     this.commitDraft(this.competitorDraft, 'competitors', MAX_COMPETITORS, normalizeDomain);
   }
 
+  addSuggestedCompetitor(domain: string): void {
+    const label = normalizeDomain(domain);
+    if (!label) return;
+    this.draft.update((current) => {
+      if (current.competitors.length >= MAX_COMPETITORS) return current;
+      if (current.competitors.some((c) => c.toLowerCase() === label.toLowerCase())) return current;
+      return { ...current, competitors: [...current.competitors, label] };
+    });
+  }
+
+  availableCompetitorFanOutSuggestions(): string[] {
+    const selected = new Set(this.draft().competitors.map((c) => c.toLowerCase()));
+    return this.competitorFanOutSuggestions().filter((d) => !selected.has(d.toLowerCase()));
+  }
+
+  canFanOutCompetition(): boolean {
+    return (
+      this.draft().competitors.length > 0 &&
+      this.draft().competitors.length < MAX_COMPETITORS &&
+      !this.competitionFanningOut()
+    );
+  }
+
+  competitionFanOutExcludeList(): string[] {
+    return Array.from(new Set([...this.draft().competitors, ...this.competitorFanOutSuggestions()]));
+  }
+
+  async fanOutCompetition(): Promise<void> {
+    const selected = this.draft().competitors;
+    if (selected.length === 0 || selected.length >= MAX_COMPETITORS) return;
+
+    const siteId = this.strategy.siteId();
+    if (!siteId) {
+      this.competitionFanOutError.set('No site loaded.');
+      return;
+    }
+
+    this.competitionFanningOut.set(true);
+    this.competitionFanOutError.set(null);
+
+    try {
+      const draft = this.draft();
+      const res = await this.api.fanOutCompetition(siteId, {
+        selectedCompetitors: selected,
+        services: draft.services,
+        tradeLabel: this.tradeLabel() ?? undefined,
+        websiteUrl: draft.websiteUrl.trim() || undefined,
+        marketScope: draft.marketScope ?? undefined,
+        serpLocationName: draft.serpLocationName,
+        exclude: this.competitionFanOutExcludeList(),
+      });
+
+      if (res.error === 'llm_not_configured') {
+        this.competitionFanOutError.set('Fan out needs AI configured on the server.');
+        return;
+      }
+      if (res.error && res.suggestedCompetitors.length === 0) {
+        this.competitionFanOutError.set('Could not find related competitors right now — try again.');
+        return;
+      }
+
+      if (res.suggestedCompetitors.length > 0) {
+        this.competitorFanOutSuggestions.update((current) =>
+          Array.from(new Set([...current, ...res.suggestedCompetitors])),
+        );
+      } else {
+        this.competitionFanOutError.set(
+          'No new competitors found — try adjusting who you added first.',
+        );
+      }
+    } catch (err) {
+      this.competitionFanOutError.set(parseProtopipeApiError(err, 'Could not fan out competitors.'));
+    } finally {
+      this.competitionFanningOut.set(false);
+    }
+  }
+
   removeCompetitor(index: number): void {
     this.draft.update((d) => ({
       ...d,
@@ -450,6 +530,15 @@ export class DiscoveryBookOnboardingStore {
 
   selectLocation(option: ProtopipeSerpLocationOption | null): void {
     if (!option) {
+      const d = this.draft();
+      if (
+        d.serpLocationCode == null &&
+        !d.serpLocationName &&
+        !d.city &&
+        !d.state
+      ) {
+        return;
+      }
       this.draft.update((d) => ({
         ...d,
         serpLocationCode: undefined,
@@ -460,6 +549,10 @@ export class DiscoveryBookOnboardingStore {
       return;
     }
     const parts = option.name.split(',').map((p) => p.trim());
+    const d = this.draft();
+    if (d.serpLocationCode === option.code && d.serpLocationName === option.name) {
+      return;
+    }
     this.draft.update((d) => ({
       ...d,
       serpLocationCode: option.code,
@@ -472,12 +565,24 @@ export class DiscoveryBookOnboardingStore {
 
   selectCountry(option: MarketCountryOption | null): void {
     if (!option) {
+      const d = this.draft();
+      if (d.serpLocationCode == null && !d.serpLocationName && !d.countryIso) {
+        return;
+      }
       this.draft.update((d) => ({
         ...d,
         serpLocationCode: undefined,
         serpLocationName: undefined,
         countryIso: undefined,
       }));
+      return;
+    }
+    const d = this.draft();
+    if (
+      d.serpLocationCode === option.code &&
+      d.serpLocationName === option.name &&
+      d.countryIso === option.iso
+    ) {
       return;
     }
     this.draft.update((d) => ({

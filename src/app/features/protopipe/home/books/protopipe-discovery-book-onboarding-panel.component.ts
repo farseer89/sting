@@ -19,10 +19,6 @@ import {
   ONBOARDING_MODE_OPTIONS,
 } from '../../onboarding/onboarding-market.constants';
 import {
-  countryFromDraft,
-  locationFromDraft,
-} from './discovery-book-onboarding.draft';
-import {
   customerProfileInitials,
   customerProfileStyle,
   customerProfileSubtitle,
@@ -70,14 +66,6 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
     if (index >= 0) {
       this.store.removeService(index);
     }
-  }
-
-  selectedLocation() {
-    return locationFromDraft(this.draft());
-  }
-
-  selectedCountry() {
-    return countryFromDraft(this.draft());
   }
 
   avatarSlots(): number[] {

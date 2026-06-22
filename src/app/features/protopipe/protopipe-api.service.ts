@@ -55,6 +55,8 @@ import type {
   ProtopipeExpandOfferResponse,
   ProtopipeEnrichCustomerRequest,
   ProtopipeEnrichCustomerResponse,
+  ProtopipeFanOutCompetitionRequest,
+  ProtopipeFanOutCompetitionResponse,
   ProtopipeUpdateTargetCustomersRequest,
   ProtopipeUpdateTargetCustomersResponse,
   ProtopipePlan,
@@ -243,6 +245,18 @@ export class ProtopipeApiService {
     return firstValueFrom(
       this.http.post<ProtopipeEnrichCustomerResponse>(
         protopipeApiUrl(ProtopipeEndpoints.enrichCustomer.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  fanOutCompetition(
+    siteId: string,
+    body: ProtopipeFanOutCompetitionRequest,
+  ): Promise<ProtopipeFanOutCompetitionResponse> {
+    return firstValueFrom(
+      this.http.post<ProtopipeFanOutCompetitionResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.fanOutCompetition.path, { siteId }),
         body,
       ),
     );

@@ -108,6 +108,9 @@ export class ProtopipeOnboardingComponent implements OnInit {
   readonly offerExpandError = signal<string | null>(null);
   readonly competitors = signal<string[]>([]);
   readonly competitorDraft = signal('');
+  readonly competitorFanOutSuggestions = signal<string[]>([]);
+  readonly competitionFanningOut = signal(false);
+  readonly competitionFanOutError = signal<string | null>(null);
   readonly targetCustomerSites = signal<string[]>([]);
   readonly targetCustomerDraft = signal('');
 
@@ -547,6 +550,89 @@ export class ProtopipeOnboardingComponent implements OnInit {
     this.commitDraft(this.competitorDraft, this.competitors, MAX_COMPETITORS, (v) =>
       v.replace(/^https?:\/\//i, '').replace(/\/.*$/, '').toLowerCase(),
     );
+  }
+
+  addSuggestedCompetitor(domain: string): void {
+    const label = domain
+      .trim()
+      .replace(/^https?:\/\//i, '')
+      .replace(/^www\./i, '')
+      .replace(/\/.*$/, '')
+      .toLowerCase();
+    if (!label) return;
+    this.competitors.update((list) => {
+      if (list.length >= MAX_COMPETITORS) return list;
+      if (list.some((c) => c.toLowerCase() === label)) return list;
+      return [...list, label];
+    });
+  }
+
+  availableCompetitorFanOutSuggestions(): string[] {
+    const selected = new Set(this.competitors().map((c) => c.toLowerCase()));
+    return this.competitorFanOutSuggestions().filter((d) => !selected.has(d.toLowerCase()));
+  }
+
+  canFanOutCompetition(): boolean {
+    return (
+      this.competitors().length > 0 &&
+      this.competitors().length < MAX_COMPETITORS &&
+      !this.competitionFanningOut()
+    );
+  }
+
+  competitionFanOutExcludeList(): string[] {
+    return Array.from(
+      new Set([...this.competitors(), ...this.competitorFanOutSuggestions()]),
+    );
+  }
+
+  async fanOutCompetition(): Promise<void> {
+    const selected = this.competitors();
+    if (selected.length === 0 || selected.length >= MAX_COMPETITORS) return;
+
+    const siteId = this.siteId();
+    if (!siteId) {
+      this.competitionFanOutError.set('No site loaded.');
+      return;
+    }
+
+    this.competitionFanningOut.set(true);
+    this.competitionFanOutError.set(null);
+
+    try {
+      const res = await this.api.fanOutCompetition(siteId, {
+        selectedCompetitors: selected,
+        services: this.services(),
+        tradeLabel: this.tradeLabel() ?? undefined,
+        websiteUrl: (this.form.controls.websiteUrl.value ?? '').trim() || undefined,
+        marketScope: this.customerScope() ?? undefined,
+        serpLocationName: this.selectedLocation()?.name,
+        exclude: this.competitionFanOutExcludeList(),
+      });
+
+      if (res.error === 'llm_not_configured') {
+        this.competitionFanOutError.set('Fan out needs AI configured on the server.');
+        return;
+      }
+      if (res.error && res.suggestedCompetitors.length === 0) {
+        this.competitionFanOutError.set('Could not find related competitors right now — try again.');
+        return;
+      }
+
+      if (res.suggestedCompetitors.length > 0) {
+        this.competitorFanOutSuggestions.update((current) =>
+          Array.from(new Set([...current, ...res.suggestedCompetitors])),
+        );
+      } else {
+        this.competitionFanOutError.set(
+          'No new competitors found — try adjusting who you added first.',
+        );
+      }
+    } catch (err) {
+      this.competitionFanOutError.set(parseProtopipeApiError(err, 'Could not fan out competitors.'));
+    } finally {
+      this.competitionFanningOut.set(false);
+    }
   }
 
   removeCompetitor(index: number): void {

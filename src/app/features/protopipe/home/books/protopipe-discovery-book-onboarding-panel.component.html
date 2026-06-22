@@ -378,6 +378,54 @@
           }
         </ul>
       }
+
+      @if (draft().competitors.length > 0 && draft().competitors.length < 3) {
+        <div class="kb-offer-expand">
+          <button
+            type="button"
+            class="kb-offer-expand__btn"
+            (click)="store.fanOutCompetition()"
+            [disabled]="!store.canFanOutCompetition()"
+          >
+            @if (store.competitionFanningOut()) {
+              <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+              Finding…
+            } @else {
+              <i class="pi pi-share-alt" aria-hidden="true"></i>
+              Fan out competitors
+            }
+          </button>
+          <p class="kb-offer-expand__hint">
+            Find similar businesses in your market from who you've added.
+          </p>
+        </div>
+        @if (store.competitionFanOutError(); as fanOutErr) {
+          <p class="kb-offer-scan kb-offer-scan--error">{{ fanOutErr }}</p>
+        }
+      }
+
+      @if (store.availableCompetitorFanOutSuggestions().length > 0) {
+        <section class="kb-offer-section" aria-labelledby="kb-competition-fanout-heading">
+          <h3 id="kb-competition-fanout-heading" class="kb-offer-section__title">
+            Related competitors — tap to add
+          </h3>
+          <ul class="kb-offer-suggestions" aria-label="Suggested competitor sites">
+            @for (domain of store.availableCompetitorFanOutSuggestions(); track domain) {
+              <li>
+                <button
+                  type="button"
+                  class="kb-offer-suggestion"
+                  (click)="store.addSuggestedCompetitor(domain)"
+                  [disabled]="draft().competitors.length >= 3"
+                >
+                  <i class="pi pi-plus" aria-hidden="true"></i>
+                  {{ domain }}
+                </button>
+              </li>
+            }
+          </ul>
+        </section>
+      }
     }
 
     @case ('onboarding:market') {
@@ -401,9 +449,10 @@
       @if (draft().marketScope === 'local') {
         <label class="kb-field">
           <span class="kb-field__label">Your town or city</span>
+          @if (draft().serpLocationName; as locationName) {
+            <p class="kb-field__selected">Selected: {{ locationName }}</p>
+          }
           <p-autocomplete
-            [ngModel]="selectedLocation()"
-            (ngModelChange)="store.selectLocation($event)"
             [suggestions]="store.locationSuggestions()"
             (completeMethod)="searchLocations($event)"
             (onSelect)="onLocationSelected($event)"
@@ -422,9 +471,10 @@
       @if (draft().marketScope === 'national') {
         <label class="kb-field">
           <span class="kb-field__label">Country</span>
+          @if (draft().serpLocationName; as countryName) {
+            <p class="kb-field__selected">Selected: {{ countryName }}</p>
+          }
           <p-autocomplete
-            [ngModel]="selectedCountry()"
-            (ngModelChange)="store.selectCountry($event)"
             [suggestions]="store.countrySuggestions()"
             (completeMethod)="searchCountries($event)"
             (onSelect)="onCountrySelected($event)"

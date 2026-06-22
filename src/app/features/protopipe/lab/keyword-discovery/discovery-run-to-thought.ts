@@ -23,6 +23,55 @@ import type {
  * tick (or against a hardcoded fixture in the lab).
  */
 
+/** Pipeline steps shown in the grouped discovery runner side nav. */
+export const DISCOVERY_NAV_PHASES = [
+  {
+    id: 'discovery:sources',
+    navLabel: 'Sources',
+    label: 'Data sources',
+    detail: 'Profile, Search Console, ranked keywords, and competitor gaps',
+    steps: [
+      'load_profile',
+      'fetch_gsc',
+      'fetch_site_snapshot',
+      'fetch_ranked',
+      'spyfu_gaps',
+    ] as DiscoveryStepId[],
+  },
+  {
+    id: 'discovery:expansion',
+    navLabel: 'Expansion',
+    label: 'Seed expansion',
+    detail: 'Resolve seeds, ad ideas, geo expansion, and related keywords',
+    steps: [
+      'resolve_discovery_seeds',
+      'fetch_ads_ideas',
+      'geo_expansion',
+      'seed_expansion',
+    ] as DiscoveryStepId[],
+  },
+  {
+    id: 'discovery:scoring',
+    navLabel: 'Scoring',
+    label: 'Merge & SERP enrich',
+    detail: 'Score the keyword pool and enrich top candidates from SERP',
+    steps: ['merge_score', 'serp_enrichment'] as DiscoveryStepId[],
+  },
+  {
+    id: 'discovery:audience',
+    navLabel: 'Audience',
+    label: 'Avatars & context',
+    detail: 'Infer customer avatars and surface strategy context questions',
+    steps: ['infer_avatars', 'extract_context_questions'] as DiscoveryStepId[],
+  },
+] as const;
+
+export type DiscoveryNavPhaseId = (typeof DISCOVERY_NAV_PHASES)[number]['id'];
+
+export const DISCOVERY_RESULT_STEP_ID = 'discovery_result' as const;
+
+export type DiscoveryResultStepId = typeof DISCOVERY_RESULT_STEP_ID;
+
 export const DISCOVERY_STEP_ORDER: DiscoveryStepId[] = [
   'load_profile',
   'fetch_gsc',
@@ -42,7 +91,7 @@ export const DISCOVERY_STEP_ORDER: DiscoveryStepId[] = [
   'confirm',
 ];
 
-const STEP_META: Record<DiscoveryStepId, { label: string; summary: string }> = {
+export const STEP_META: Record<DiscoveryStepId, { label: string; summary: string }> = {
   load_profile: {
     label: 'Profile',
     summary: 'Load the structured onboarding profile + site context.',
@@ -100,6 +149,34 @@ const STEP_META: Record<DiscoveryStepId, { label: string; summary: string }> = {
     summary: 'Persist confirmed keywords + avatars for content planning.',
   },
 };
+
+function activeDiscoveryPhaseIndex(run: KeywordDiscoveryRunDto): number {
+  const current = run.currentStep;
+  if (current === 'done' || run.status === 'ready' || run.status === 'confirmed') {
+    return DISCOVERY_NAV_PHASES.length;
+  }
+  for (let i = 0; i < DISCOVERY_NAV_PHASES.length; i++) {
+    if (DISCOVERY_NAV_PHASES[i].steps.includes(current as DiscoveryStepId)) {
+      return i;
+    }
+  }
+  if (current === 'confirm') {
+    return DISCOVERY_NAV_PHASES.length;
+  }
+  return 0;
+}
+
+/** Side-nav focus while discovery runs or after completion. */
+export function resolveDiscoveryNavStepId(run: KeywordDiscoveryRunDto): DiscoveryNavPhaseId | DiscoveryResultStepId {
+  if (run.status === 'ready' || run.status === 'confirmed' || run.currentStep === 'done') {
+    return DISCOVERY_RESULT_STEP_ID;
+  }
+  if (run.status === 'pending' || run.status === 'discovering') {
+    const idx = activeDiscoveryPhaseIndex(run);
+    return DISCOVERY_NAV_PHASES[idx]?.id ?? 'discovery:sources';
+  }
+  return 'discovery:sources';
+}
 
 function runStatus(run: KeywordDiscoveryRunDto): ThoughtStatus {
   switch (run.status) {
@@ -480,8 +557,15 @@ export function discoveryRunToThought(run: KeywordDiscoveryRunDto): Thought {
     steps[i].input = steps[i - 1].output;
   }
 
-  const currentStepId =
-    run.currentStep === 'done' ? steps[steps.length - 1]?.id : (run.currentStep as string);
+  const currentStepId = (() => {
+    if (run.status === 'ready' || run.status === 'confirmed' || run.currentStep === 'done') {
+      return DISCOVERY_RESULT_STEP_ID;
+    }
+    if (run.status === 'pending' || run.status === 'discovering') {
+      return resolveDiscoveryNavStepId(run);
+    }
+    return run.currentStep as string;
+  })();
 
   const startedAt = run.events[0]?.startedAt ?? run.createdAt;
   const finishedAt = allDone || run.status === 'failed' ? run.updatedAt : undefined;
@@ -492,7 +576,7 @@ export function discoveryRunToThought(run: KeywordDiscoveryRunDto): Thought {
 
   return {
     id: run.id,
-    thinkerKind: 'keyword-discovery',
+    thinkerKind: 'keyword-discovery' as const,
     title: run.artifacts.profile?.businessName
       ? `Discovery · ${run.artifacts.profile.businessName}`
       : 'Keyword discovery',
@@ -527,4 +611,31 @@ export function discoveryRunToThought(run: KeywordDiscoveryRunDto): Thought {
     startedAt,
     finishedAt,
   } satisfies Thought;
+}
+
+/** Masthead subtitle for the embedded discovery runner. */
+export function formatDiscoveryMastheadDeck(
+  run: KeywordDiscoveryRunDto,
+  siteLabel: string,
+): string {
+  const started = run.createdAt;
+  const startLine = started
+    ? `Keyword discovery · ${siteLabel} · started ${new Date(started).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+      })}`
+    : `Keyword discovery · ${siteLabel}`;
+
+  const candidates = run.artifacts.scoredCandidates?.length ?? 0;
+  const avatars = run.artifacts.suggestedAvatars?.length ?? 0;
+
+  if (run.status === 'ready' || run.status === 'confirmed') {
+    return `${startLine} · ${candidates} keyword(s) · ${avatars} audience(s)`;
+  }
+  if (run.status === 'discovering' || run.status === 'pending') {
+    const phase = DISCOVERY_NAV_PHASES.find((p) => p.steps.includes(run.currentStep as DiscoveryStepId));
+    const phaseLabel = phase?.navLabel ?? run.currentStep;
+    return `${startLine} · ${phaseLabel}`;
+  }
+  return startLine;
 }

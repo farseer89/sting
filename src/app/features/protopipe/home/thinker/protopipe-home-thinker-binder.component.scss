@@ -309,6 +309,74 @@ $tb-red: #dc2626;
       background: transparent;
     }
   }
+
+  &--link {
+    width: 100%;
+  }
+
+  &--child {
+    padding-left: 1.35rem;
+    border-radius: 0.25rem;
+
+    &.is-active {
+      background: #eff6ff;
+      box-shadow: inset 2px 0 0 $tb-accent;
+    }
+
+    .tb-rail__step-label {
+      font-size: 0.75rem;
+    }
+  }
+
+  &.is-expanded {
+    background: $tb-bg-subtle;
+    box-shadow: none;
+  }
+}
+
+.tb-rail__divider {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.75rem 0.35rem 0.5rem;
+  padding: 0 0.35rem;
+
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: $tb-border;
+  }
+}
+
+.tb-rail__divider-label {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: $tb-dim;
+  white-space: nowrap;
+}
+
+.tb-rail__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.tb-rail__children {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  margin: 0.1rem 0 0.25rem 0.35rem;
+  padding-left: 0.35rem;
+  border-left: 1px solid $tb-border;
+}
+
+.tb-rail__num--child {
+  min-width: 0.5rem;
+  text-align: center;
+  color: $tb-muted;
 }
 
 .tb-rail__num {

@@ -1,0 +1,196 @@
+<div class="kb-shell">
+
+  <header class="kb-masthead">
+    <div class="kb-masthead__left">
+      <h1 class="kb-masthead__title">Discovery book</h1>
+      <p class="kb-masthead__deck">
+        @if (siteLabel()) {
+          {{ siteLabel() }} ·
+        }
+        {{ mastheadStats() }}
+      </p>
+      @if (store.discoveryNote(); as note) {
+        <p class="kb-masthead__note">{{ note }}</p>
+      }
+      @if (store.error(); as err) {
+        <p class="kb-masthead__error">{{ err }}</p>
+      }
+    </div>
+    <div class="kb-masthead__stats">
+      <div class="kb-stat">
+        <span class="kb-stat__val">{{ store.selectedCount() }}</span>
+        <span class="kb-stat__lbl">Selected</span>
+      </div>
+      @if (store.wizardEnabled()) {
+        <div class="kb-stat">
+          <span class="kb-stat__val">{{ store.selectedAvatarCount() }}</span>
+          <span class="kb-stat__lbl">Audiences</span>
+        </div>
+      }
+      <div class="kb-stat">
+        <span class="kb-stat__val kb-stat__val--status">{{ discoveryStatusLabel() }}</span>
+        <span class="kb-stat__lbl">Discovery</span>
+      </div>
+    </div>
+  </header>
+
+  @if (store.loading()) {
+    <div class="kb-loading">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Loading discovery book" />
+      <p class="kb-loading__label">
+        @if (store.discoveryProgress(); as progress) {
+          {{ progress }}
+        } @else {
+          Loading keyword strategy…
+        }
+      </p>
+    </div>
+  } @else {
+    <div class="kb-binder">
+      <nav class="kb-binder-nav" aria-label="Discovery book sections">
+        <div class="kb-binder-nav__label">Onboarding</div>
+        @for (step of onboardingSteps; track step.id) {
+          <button
+            type="button"
+            class="kb-binder-nav__item"
+            [class.is-active]="isOnboardingStepActive(step.id)"
+            (click)="selectSection(step.id)"
+          >
+            {{ step.navLabel }}
+          </button>
+        }
+
+        <div class="kb-binder-nav__label kb-binder-nav__label--discovery">Discovery</div>
+
+        @if (showDiscoveryNav()) {
+          <button
+            type="button"
+            class="kb-binder-nav__item"
+            [class.is-active]="isPipelineSectionActive('discovery')"
+            (click)="selectSection('discovery')"
+          >
+            Discovery run
+            @if (discoveryRun()?.status === 'discovering' || discoveryRun()?.status === 'pending') {
+              <span class="kb-binder-nav__live">live</span>
+            }
+          </button>
+        }
+
+        <button
+          type="button"
+          class="kb-binder-nav__item"
+          [class.is-active]="isPipelineSectionActive('keywords')"
+          (click)="selectSection('keywords')"
+        >
+          Keywords
+        </button>
+
+        @if (showAudiencesNav()) {
+          <button
+            type="button"
+            class="kb-binder-nav__item"
+            [class.is-active]="isPipelineSectionActive('audiences')"
+            (click)="selectSection('audiences')"
+          >
+            Audiences
+          </button>
+        }
+
+        @if (showBuildNav()) {
+          <button
+            type="button"
+            class="kb-binder-nav__item"
+            [class.is-active]="isPipelineSectionActive('build')"
+            (click)="selectSection('build')"
+          >
+            Build plan
+          </button>
+        }
+      </nav>
+
+      <div class="kb-panel" [class.kb-panel--runner]="activeSection() === 'discovery'">
+        @switch (activeSection()) {
+          @case ('discovery') {
+            <app-protopipe-home-thinker-binder [embedded]="true" />
+          }
+          @case ('keywords') {
+            <div class="kb-panel__head">
+              <span class="kb-panel-kicker">Selection</span>
+              <h2 class="kb-panel-title">Choose what you want to rank for</h2>
+              <p class="kb-panel-deck">
+                Search for a topic to explore related keywords from Google Ads. Selected keywords appear on the right.
+              </p>
+            </div>
+            <div class="kb-keywords-layout">
+              <div class="kb-keywords-main">
+                <app-protopipe-keyword-picker
+                  [bookMode]="true"
+                  [bookSection]="'keywords'"
+                  (confirmed)="onKeywordsConfirmed()"
+                />
+              </div>
+              <aside class="kb-keywords-selected" aria-label="Your keywords">
+                <app-protopipe-keyword-search-panel />
+              </aside>
+            </div>
+          }
+          @case ('audiences') {
+            <div class="kb-panel__head">
+              <span class="kb-panel-kicker">Audiences</span>
+              <h2 class="kb-panel-title">Who are you writing for?</h2>
+              <p class="kb-panel-deck">
+                Pick the customer types that match your selected keywords.
+              </p>
+            </div>
+            <div class="kb-keywords-main">
+            <app-protopipe-keyword-picker
+              [bookMode]="true"
+              [bookSection]="'avatars'"
+              (confirmed)="onKeywordsConfirmed()"
+            />
+            </div>
+          }
+          @case ('build') {
+            <div class="kb-panel__head">
+              <span class="kb-panel-kicker">Build</span>
+              <h2 class="kb-panel-title">Ready to build your plan</h2>
+              <p class="kb-panel-deck">
+                Save your keywords and audiences, then generate your content plan.
+              </p>
+            </div>
+            <div class="kb-keywords-main">
+            <app-protopipe-keyword-picker
+              [bookMode]="true"
+              [bookSection]="'build'"
+              (confirmed)="onKeywordsConfirmed()"
+            />
+            </div>
+          }
+          @default {
+            @if (activeOnboardingMeta(); as meta) {
+              <div class="kb-panel__head">
+                <span class="kb-panel-kicker">{{ meta.kicker }}</span>
+                <h2 class="kb-panel-title">{{ meta.title }}</h2>
+                <p class="kb-panel-deck">{{ meta.helper }}</p>
+                <p class="kb-onboarding-trace">
+                  Onboarding step {{ meta.onboardingStep }} of {{ onboardingSteps.length }}
+                </p>
+              </div>
+
+              @if (!onboardingProfile()) {
+                <p class="kb-onboarding-empty">
+                  No onboarding profile saved yet. Complete onboarding to edit these steps.
+                </p>
+              } @else {
+                <app-protopipe-discovery-book-onboarding-panel
+                  [stepId]="meta.id"
+                  (discoveryStarted)="onDiscoveryStarted()"
+                />
+              }
+            }
+          }
+        }
+      </div>
+    </div>
+  }
+</div>

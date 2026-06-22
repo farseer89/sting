@@ -249,6 +249,12 @@ export class ProtopipeStrategyService {
     this.applyPlan(plan);
   }
 
+  async refreshPlan(): Promise<void> {
+    const siteId = this._siteId();
+    if (!siteId) return;
+    await this.reloadPlanOnly(siteId);
+  }
+
   private applyPlan(plan: ProtopipeStrategySummary): void {
     this._siteId.set(plan.site.id);
     this._site.set(plan.site);

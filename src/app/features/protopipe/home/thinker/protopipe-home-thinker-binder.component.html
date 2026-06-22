@@ -1,23 +1,33 @@
 <div class="tb-shell">
 
   @if (!hasSession()) {
+    @if (!embedded()) {
     <header class="tb-masthead tb-masthead--compact">
       <button type="button" class="tb-masthead__back" (click)="exitRunner()">
         <span aria-hidden="true">←</span>
         <span>{{ focusBackLabel() }}</span>
       </button>
     </header>
+    }
     <div class="tb-empty">
       <h2 class="tb-empty__title">No active generation</h2>
-      <p class="tb-empty__deck">Write an article from your strategy calendar to watch the pipeline run here.</p>
+      <p class="tb-empty__deck">
+        @if (runKind() === 'keyword-discovery') {
+          Keyword discovery has not started yet. Complete onboarding to begin research.
+        } @else {
+          Write an article from your strategy calendar to watch the pipeline run here.
+        }
+      </p>
     </div>
   } @else if (loadError(); as err) {
+    @if (!embedded()) {
     <header class="tb-masthead tb-masthead--compact">
       <button type="button" class="tb-masthead__back" (click)="exitRunner()">
         <span aria-hidden="true">←</span>
         <span>{{ focusBackLabel() }}</span>
       </button>
     </header>
+    }
     <div class="tb-empty">
       <h2 class="tb-empty__title">Could not load run</h2>
       <p class="tb-empty__deck">{{ err }}</p>
@@ -28,10 +38,12 @@
   <!-- Masthead -->
   <header class="tb-masthead">
     <div class="tb-masthead__left">
+      @if (!embedded()) {
       <button type="button" class="tb-masthead__back" (click)="exitRunner()">
         <span aria-hidden="true">←</span>
         <span>{{ focusBackLabel() }}</span>
       </button>
+      }
       <div class="tb-masthead__identity">
       <div class="tb-masthead__title-row">
         <h1 class="tb-masthead__title">{{ workingTitle() || 'Article generation' }}</h1>
@@ -103,47 +115,245 @@
     <nav class="tb-rail" aria-label="Pipeline steps">
       <div class="tb-rail__label">Pipeline steps</div>
 
-      @for (step of steps(); track step.id) {
+      @for (step of railSteps(); track step.id) {
+        <div class="tb-rail__group">
+          <button
+            type="button"
+            class="tb-rail__item"
+            [class.is-active]="activeStep()?.id === step.id"
+            [class.is-expanded]="activeStep()?.id === step.id && showAspectNav()"
+            [class.tb-rail__item--done]="step.status === 'done'"
+            [class.tb-rail__item--running]="step.status === 'running'"
+            [class.tb-rail__item--pending]="step.status === 'pending'"
+            [class.tb-rail__item--failed]="step.status === 'failed'"
+            (click)="selectStep(step.id)"
+          >
+            <span class="tb-rail__num">{{ step.num }}</span>
+            <span class="tb-rail__step-body">
+              <span class="tb-rail__step-top">
+                <span class="tb-rail__step-label">{{ step.label }}</span>
+                @if (step.isLlmStep) {
+                  <span class="tb-rail__tag tb-rail__tag--llm">LLM</span>
+                }
+              </span>
+              @if (step.status === 'done' || step.status === 'failed') {
+                <span class="tb-rail__meta">
+                  @if (step.durationMs) { {{ formatDuration(step.durationMs) }} }
+                  @if (formatCost(step.costUsd)) { <span class="tb-rail__cost">{{ formatCost(step.costUsd) }}</span> }
+                </span>
+              } @else if (step.status === 'running') {
+                <span class="tb-rail__meta">
+                  <span class="tb-rail__live">live</span>
+                  @if (formatCost(step.costUsd)) { <span class="tb-rail__cost">{{ formatCost(step.costUsd) }}</span> }
+                </span>
+              } @else if (step.summary && runKind() === 'article') {
+                <span class="tb-rail__meta">{{ step.summary }}</span>
+              }
+            </span>
+            <span class="tb-rail__dot-wrap">
+              @if (step.status === 'done') {
+                <svg class="tb-rail__check" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              } @else if (step.status === 'running') {
+                <span class="tb-rail__pulse"></span>
+              } @else {
+                <span class="tb-rail__circle"></span>
+              }
+            </span>
+          </button>
+
+          @if (activeStep()?.id === step.id && showAspectNav()) {
+            <div class="tb-rail__children" aria-label="Context sections">
+              @for (aspect of aspectNav(); track aspect.id) {
+                <button
+                  type="button"
+                  class="tb-rail__item tb-rail__item--child"
+                  [class.is-active]="activeAspectId() === aspect.id"
+                  [class.tb-rail__item--done]="aspect.status === 'done'"
+                  [class.tb-rail__item--running]="aspect.status === 'running'"
+                  [class.tb-rail__item--pending]="aspect.status === 'pending'"
+                  [class.tb-rail__item--failed]="aspect.status === 'failed'"
+                  (click)="selectAspect(aspect.id)"
+                >
+                  <span class="tb-rail__num tb-rail__num--child">·</span>
+                  <span class="tb-rail__step-body">
+                    <span class="tb-rail__step-top">
+                      <span class="tb-rail__step-label">{{ aspect.label }}</span>
+                    </span>
+                    @if (aspect.detail) {
+                      <span class="tb-rail__meta">{{ aspect.detail }}</span>
+                    }
+                  </span>
+                  <span class="tb-rail__dot-wrap">
+                    @if (aspect.status === 'done') {
+                      <svg class="tb-rail__check" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    } @else if (aspect.status === 'running') {
+                      <span class="tb-rail__pulse"></span>
+                    } @else {
+                      <span class="tb-rail__circle"></span>
+                    }
+                  </span>
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      @if (runKind() === 'content-plan' && strategyIntelSteps().length) {
+        <div class="tb-rail__divider">
+          <span class="tb-rail__divider-label">Strategy intel</span>
+        </div>
+
+        @for (step of strategyIntelSteps(); track step.id) {
+          <button
+            type="button"
+            class="tb-rail__item"
+            [class.is-active]="activeStep()?.id === step.id"
+            [class.tb-rail__item--done]="step.status === 'done'"
+            [class.tb-rail__item--running]="step.status === 'running'"
+            [class.tb-rail__item--pending]="step.status === 'pending'"
+            [class.tb-rail__item--failed]="step.status === 'failed'"
+            (click)="selectStep(step.id)"
+          >
+            <span class="tb-rail__num">{{ step.num }}</span>
+            <span class="tb-rail__step-body">
+              <span class="tb-rail__step-top">
+                <span class="tb-rail__step-label">{{ step.label }}</span>
+                <span class="tb-rail__tag tb-rail__tag--llm">LLM</span>
+              </span>
+              @if (step.summary && step.status !== 'pending') {
+                <span class="tb-rail__meta">{{ step.summary }}</span>
+              } @else if (step.status === 'running') {
+                <span class="tb-rail__meta"><span class="tb-rail__live">live</span></span>
+              }
+            </span>
+            <span class="tb-rail__dot-wrap">
+              @if (step.status === 'done') {
+                <svg class="tb-rail__check" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              } @else if (step.status === 'running') {
+                <span class="tb-rail__pulse"></span>
+              } @else {
+                <span class="tb-rail__circle"></span>
+              }
+            </span>
+          </button>
+        }
+      }
+
+      @if (runKind() === 'content-plan') {
+        @if (strategyResultStep(); as resultStep) {
+        <div class="tb-rail__divider">
+          <span class="tb-rail__divider-label">Output</span>
+        </div>
+
         <button
           type="button"
           class="tb-rail__item"
-          [class.is-active]="activeStep()?.id === step.id"
-          [class.tb-rail__item--done]="step.status === 'done'"
-          [class.tb-rail__item--running]="step.status === 'running'"
-          [class.tb-rail__item--pending]="step.status === 'pending'"
-          [class.tb-rail__item--failed]="step.status === 'failed'"
-          (click)="selectStep(step.id)"
+          [class.is-active]="activeStep()?.id === resultStep.id"
+          [class.tb-rail__item--done]="resultStep.status === 'done'"
+          [class.tb-rail__item--running]="resultStep.status === 'running'"
+          [class.tb-rail__item--pending]="resultStep.status === 'pending'"
+          [class.tb-rail__item--failed]="resultStep.status === 'failed'"
+          (click)="selectStep(resultStep.id)"
         >
-          <span class="tb-rail__num">{{ step.num }}</span>
+          <span class="tb-rail__num">{{ resultStep.num }}</span>
           <span class="tb-rail__step-body">
             <span class="tb-rail__step-top">
-              <span class="tb-rail__step-label">{{ step.label }}</span>
-              @if (step.isLlmStep) {
-                <span class="tb-rail__tag tb-rail__tag--llm">LLM</span>
-              }
+              <span class="tb-rail__step-label">{{ resultStep.label }}</span>
             </span>
-            @if (step.status === 'done' || step.status === 'failed') {
-              <span class="tb-rail__meta">
-                @if (step.durationMs) { {{ formatDuration(step.durationMs) }} }
-                @if (formatCost(step.costUsd)) { <span class="tb-rail__cost">{{ formatCost(step.costUsd) }}</span> }
-              </span>
-            } @else if (step.status === 'running') {
-              <span class="tb-rail__meta">
-                <span class="tb-rail__live">live</span>
-                @if (formatCost(step.costUsd)) { <span class="tb-rail__cost">{{ formatCost(step.costUsd) }}</span> }
-              </span>
+            @if (resultStep.summary && resultStep.status !== 'pending') {
+              <span class="tb-rail__meta">{{ resultStep.summary }}</span>
+            } @else if (resultStep.status === 'running') {
+              <span class="tb-rail__meta"><span class="tb-rail__live">live</span></span>
             }
           </span>
           <span class="tb-rail__dot-wrap">
-            @if (step.status === 'done') {
+            @if (resultStep.status === 'done') {
               <svg class="tb-rail__check" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            } @else if (step.status === 'running') {
+            } @else if (resultStep.status === 'running') {
               <span class="tb-rail__pulse"></span>
             } @else {
               <span class="tb-rail__circle"></span>
             }
           </span>
         </button>
+        }
+      }
+
+      @if (runKind() === 'keyword-discovery' && discoveryNavPhases().length) {
+        @for (step of discoveryNavPhases(); track step.id) {
+          <button
+            type="button"
+            class="tb-rail__item"
+            [class.is-active]="activeStep()?.id === step.id"
+            [class.tb-rail__item--done]="step.status === 'done'"
+            [class.tb-rail__item--running]="step.status === 'running'"
+            [class.tb-rail__item--pending]="step.status === 'pending'"
+            [class.tb-rail__item--failed]="step.status === 'failed'"
+            (click)="selectStep(step.id)"
+          >
+            <span class="tb-rail__num">{{ step.num }}</span>
+            <span class="tb-rail__step-body">
+              <span class="tb-rail__step-top">
+                <span class="tb-rail__step-label">{{ step.label }}</span>
+              </span>
+              @if (step.summary && step.status !== 'pending') {
+                <span class="tb-rail__meta">{{ step.summary }}</span>
+              } @else if (step.status === 'running') {
+                <span class="tb-rail__meta"><span class="tb-rail__live">live</span></span>
+              }
+            </span>
+            <span class="tb-rail__dot-wrap">
+              @if (step.status === 'done') {
+                <svg class="tb-rail__check" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              } @else if (step.status === 'running') {
+                <span class="tb-rail__pulse"></span>
+              } @else {
+                <span class="tb-rail__circle"></span>
+              }
+            </span>
+          </button>
+        }
+      }
+
+      @if (runKind() === 'keyword-discovery') {
+        @if (discoveryResultStep(); as resultStep) {
+        <div class="tb-rail__divider">
+          <span class="tb-rail__divider-label">Output</span>
+        </div>
+
+        <button
+          type="button"
+          class="tb-rail__item"
+          [class.is-active]="activeStep()?.id === resultStep.id"
+          [class.tb-rail__item--done]="resultStep.status === 'done'"
+          [class.tb-rail__item--running]="resultStep.status === 'running'"
+          [class.tb-rail__item--pending]="resultStep.status === 'pending'"
+          [class.tb-rail__item--failed]="resultStep.status === 'failed'"
+          (click)="selectStep(resultStep.id)"
+        >
+          <span class="tb-rail__num">{{ resultStep.num }}</span>
+          <span class="tb-rail__step-body">
+            <span class="tb-rail__step-top">
+              <span class="tb-rail__step-label">{{ resultStep.label }}</span>
+            </span>
+            @if (resultStep.summary && resultStep.status !== 'pending') {
+              <span class="tb-rail__meta">{{ resultStep.summary }}</span>
+            } @else if (resultStep.status === 'running') {
+              <span class="tb-rail__meta"><span class="tb-rail__live">live</span></span>
+            }
+          </span>
+          <span class="tb-rail__dot-wrap">
+            @if (resultStep.status === 'done') {
+              <svg class="tb-rail__check" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            } @else if (resultStep.status === 'running') {
+              <span class="tb-rail__pulse"></span>
+            } @else {
+              <span class="tb-rail__circle"></span>
+            }
+          </span>
+        </button>
+        }
       }
     </nav>
 
@@ -155,7 +365,19 @@
         <!-- Step header -->
         <div class="tb-stage-head">
           <div class="tb-stage-head__left">
-            <div class="tb-panel-kicker">Step {{ step.num }}</div>
+            <div class="tb-panel-kicker">
+              @if (runKind() === 'content-plan' && step.id.startsWith('intel:')) {
+                Strategy intel · Step {{ step.num }}
+              } @else if (runKind() === 'content-plan' && step.id === 'strategy_result') {
+                Output · Step {{ step.num }}
+              } @else if (runKind() === 'keyword-discovery' && step.id === 'discovery_result') {
+                Output · Step {{ step.num }}
+              } @else if (runKind() === 'keyword-discovery' && step.id.startsWith('discovery:')) {
+                Discovery · Step {{ step.num }}
+              } @else {
+                Step {{ step.num }}
+              }
+            </div>
             <h2 class="tb-panel-title">{{ step.label }}</h2>
             @if (step.description) {
               <p class="tb-panel-deck">{{ step.description }}</p>
@@ -219,7 +441,11 @@
         @switch (activeTab()) {
 
           @case ('visualizer') {
-            <app-thinker-step-visualizer [view]="stepVisualizer()" />
+            <app-thinker-step-visualizer
+              [view]="stepVisualizer()"
+              [selectedTabId]="visualizerTabId()"
+              [hideTabNav]="showAspectNav()"
+            />
           }
 
           @case ('output') {
@@ -285,6 +511,42 @@
                 <div class="tb-rail__label">Internal steps</div>
 
                 @for (sub of step.subSteps; track sub.id) {
+                  @if (isAspectNavItem(sub.id)) {
+                    <button
+                      type="button"
+                      class="tb-rail__item tb-rail__item--child tb-rail__item--link"
+                      [class.is-active]="activeAspectId() === sub.id"
+                      [class.tb-rail__item--done]="sub.status === 'done'"
+                      [class.tb-rail__item--running]="sub.status === 'running'"
+                      [class.tb-rail__item--pending]="sub.status === 'pending'"
+                      [class.tb-rail__item--failed]="sub.status === 'failed'"
+                      (click)="selectAspect(sub.id)"
+                    >
+                      <span class="tb-rail__num">{{ sub.num }}</span>
+                      <span class="tb-rail__step-body">
+                        <span class="tb-rail__step-top">
+                          <span class="tb-rail__step-label">{{ sub.label }}</span>
+                          @if (sub.isLlm) {
+                            <span class="tb-rail__tag tb-rail__tag--llm">LLM</span>
+                          }
+                        </span>
+                        @if (sub.detail) {
+                          <span class="tb-rail__meta">{{ sub.detail }}</span>
+                        }
+                      </span>
+                      <span class="tb-rail__dot-wrap">
+                        @if (sub.status === 'done') {
+                          <svg class="tb-rail__check" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        } @else if (sub.status === 'running') {
+                          <span class="tb-rail__pulse"></span>
+                        } @else if (sub.status === 'failed') {
+                          <span class="tb-rail__circle tb-rail__circle--failed"></span>
+                        } @else {
+                          <span class="tb-rail__circle"></span>
+                        }
+                      </span>
+                    </button>
+                  } @else {
                   <div
                     class="tb-rail__item tb-rail__item--static"
                     [class.tb-rail__item--done]="sub.status === 'done'"
@@ -322,6 +584,7 @@
                       }
                     </span>
                   </div>
+                  }
                 }
               </nav>
             }

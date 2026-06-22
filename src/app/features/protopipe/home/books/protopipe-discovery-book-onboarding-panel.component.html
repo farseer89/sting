@@ -1,0 +1,234 @@
+<div class="kb-onboarding-form">
+  @switch (stepId()) {
+    @case ('onboarding:getting-started') {
+      <div class="kb-scope-picker" role="radiogroup" aria-label="Onboarding path">
+        @for (option of onboardingModeOptions; track option.id) {
+          <button
+            type="button"
+            class="kb-scope-option"
+            role="radio"
+            [class.kb-scope-option--active]="draft().onboardingMode === option.id"
+            [attr.aria-checked]="draft().onboardingMode === option.id"
+            (click)="store.selectMode(option.id)"
+          >
+            <i [class]="option.icon" aria-hidden="true"></i>
+            <span class="kb-scope-option__title">{{ option.label }}</span>
+            <span class="kb-scope-option__desc">{{ option.description }}</span>
+          </button>
+        }
+      </div>
+
+      @if (draft().onboardingMode === 'existing_site') {
+        <label class="kb-field">
+          <span class="kb-field__label">Website</span>
+          <input
+            type="url"
+            pInputText
+            [ngModel]="draft().websiteUrl"
+            (ngModelChange)="store.setWebsiteUrl($event)"
+            placeholder="mauielectric.com"
+            autocomplete="url"
+          />
+        </label>
+      }
+    }
+
+    @case ('onboarding:offer') {
+      <div class="kb-chip-input">
+        <input
+          type="text"
+          pInputText
+          [ngModel]="store.serviceDraft()"
+          (ngModelChange)="store.onServiceDraftInput($event)"
+          (keydown.enter)="store.addService(); $event.preventDefault()"
+          placeholder="e.g. EV charger installation"
+        />
+        <button type="button" class="kb-chip-add" (click)="store.addService()">
+          Add
+        </button>
+      </div>
+      @if (draft().services.length > 0) {
+        <ul class="kb-onboarding-chips">
+          @for (svc of draft().services; track svc; let i = $index) {
+            <li class="kb-onboarding-chip">
+              <span>{{ svc }}</span>
+              <button type="button" class="kb-chip-remove" (click)="store.removeService(i)" [attr.aria-label]="'Remove ' + svc">
+                ×
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    }
+
+    @case ('onboarding:customers') {
+      <div class="kb-avatar-list">
+        @for (slot of avatarSlots(); track slot) {
+          <input
+            type="text"
+            pInputText
+            class="kb-avatar-input"
+            [ngModel]="draft().customerAvatars[slot]"
+            (ngModelChange)="store.updateCustomerAvatar(slot, $event)"
+            [placeholder]="slot === 0 ? 'Homeowner wants reliable EV charging at home' : 'Add another customer type'"
+          />
+        }
+      </div>
+      @if (canAddCustomerAvatar()) {
+        <button type="button" class="kb-text-btn" (click)="store.addCustomerAvatarSlot()">
+          + Add more
+        </button>
+      }
+    }
+
+    @case ('onboarding:ideal-customers') {
+      <div class="kb-chip-input">
+        <input
+          type="text"
+          pInputText
+          [ngModel]="store.targetCustomerDraft()"
+          (ngModelChange)="store.onTargetCustomerDraftInput($event)"
+          (keydown.enter)="store.addTargetCustomer(); $event.preventDefault()"
+          placeholder="e.g. acme-engineering.com"
+        />
+        <button type="button" class="kb-chip-add" (click)="store.addTargetCustomer()">
+          Add
+        </button>
+      </div>
+      @if (draft().targetCustomerSites.length > 0) {
+        <ul class="kb-onboarding-chips">
+          @for (site of draft().targetCustomerSites; track site; let i = $index) {
+            <li class="kb-onboarding-chip">
+              <span>{{ site }}</span>
+              <button type="button" class="kb-chip-remove" (click)="store.removeTargetCustomer(i)" [attr.aria-label]="'Remove ' + site">
+                ×
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    }
+
+    @case ('onboarding:competition') {
+      <div class="kb-chip-input">
+        <input
+          type="text"
+          pInputText
+          [ngModel]="store.competitorDraft()"
+          (ngModelChange)="store.onCompetitorDraftInput($event)"
+          (keydown.enter)="store.addCompetitor(); $event.preventDefault()"
+          placeholder="e.g. competitorelectric.com"
+        />
+        <button type="button" class="kb-chip-add" (click)="store.addCompetitor()">
+          Add
+        </button>
+      </div>
+      @if (draft().competitors.length > 0) {
+        <ul class="kb-onboarding-chips">
+          @for (comp of draft().competitors; track comp; let i = $index) {
+            <li class="kb-onboarding-chip">
+              <span>{{ comp }}</span>
+              <button type="button" class="kb-chip-remove" (click)="store.removeCompetitor(i)" [attr.aria-label]="'Remove ' + comp">
+                ×
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    }
+
+    @case ('onboarding:market') {
+      <div class="kb-scope-picker" role="radiogroup" aria-label="Customer market scope">
+        @for (option of marketScopeOptions; track option.id) {
+          <button
+            type="button"
+            class="kb-scope-option"
+            role="radio"
+            [class.kb-scope-option--active]="draft().marketScope === option.id"
+            [attr.aria-checked]="draft().marketScope === option.id"
+            (click)="store.selectMarketScope(option.id)"
+          >
+            <i [class]="option.icon" aria-hidden="true"></i>
+            <span class="kb-scope-option__title">{{ option.label }}</span>
+            <span class="kb-scope-option__desc">{{ option.description }}</span>
+          </button>
+        }
+      </div>
+
+      @if (draft().marketScope === 'local') {
+        <label class="kb-field">
+          <span class="kb-field__label">Your town or city</span>
+          <p-autocomplete
+            [ngModel]="selectedLocation()"
+            (ngModelChange)="store.selectLocation($event)"
+            [suggestions]="store.locationSuggestions()"
+            (completeMethod)="searchLocations($event)"
+            (onSelect)="onLocationSelected($event)"
+            (onClear)="onLocationCleared()"
+            field="name"
+            optionLabel="name"
+            placeholder="Start typing (e.g. Maui)"
+            [forceSelection]="false"
+            [minLength]="2"
+            [delay]="250"
+            appendTo="body"
+          />
+        </label>
+      }
+
+      @if (draft().marketScope === 'national') {
+        <label class="kb-field">
+          <span class="kb-field__label">Country</span>
+          <p-autocomplete
+            [ngModel]="selectedCountry()"
+            (ngModelChange)="store.selectCountry($event)"
+            [suggestions]="store.countrySuggestions()"
+            (completeMethod)="searchCountries($event)"
+            (onSelect)="onCountrySelected($event)"
+            (onClear)="onCountryCleared()"
+            field="name"
+            optionLabel="name"
+            placeholder="Search countries"
+            [forceSelection]="true"
+            [minLength]="0"
+            [delay]="0"
+            appendTo="body"
+          />
+        </label>
+      }
+    }
+
+    @case ('onboarding:business-name') {
+      <label class="kb-field">
+        <span class="kb-field__label">Business or project name</span>
+        <input
+          type="text"
+          pInputText
+          [ngModel]="draft().businessName"
+          (ngModelChange)="store.setBusinessName($event)"
+          placeholder="Maui Electric"
+          autocomplete="organization"
+        />
+      </label>
+    }
+  }
+
+  <div class="kb-onboarding-actions">
+    @if (store.saveError(); as err) {
+      <p class="kb-onboarding-error">{{ err }}</p>
+    }
+    @if (store.saveStatus(); as status) {
+      <p class="kb-onboarding-status">{{ status }}</p>
+    }
+    <p-button
+      type="button"
+      [label]="store.saving() ? 'Saving…' : store.isDirty() ? 'Save & rerun discovery' : 'Saved'"
+      [disabled]="!store.canSave(stepId()) || store.saving()"
+      icon="pi pi-refresh"
+      (onClick)="save()"
+    />
+    @if (store.isDirty()) {
+      <span class="kb-onboarding-dirty">Unsaved changes</span>
+    }
+  </div>
+</div>

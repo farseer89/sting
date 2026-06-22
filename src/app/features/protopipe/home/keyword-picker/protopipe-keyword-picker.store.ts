@@ -15,6 +15,7 @@ import { ContentPlanStore } from '../../content-plan/content-plan.store';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 import { ProtopipeApiService } from '../../protopipe-api.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
+import { ProtopipeHomeThinkerViewState } from '../protopipe-home-thinker-view.state';
 import {
   buildRelevanceContext,
   isRelevantForPicker,
@@ -67,6 +68,7 @@ export class ProtopipeKeywordPickerStore {
   private readonly api = inject(ProtopipeApiService);
   private readonly strategy = inject(ProtopipeStrategyService);
   private readonly contentPlan = inject(ContentPlanStore);
+  private readonly thinkerView = inject(ProtopipeHomeThinkerViewState);
 
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
   private siteId: string | null = null;
@@ -179,14 +181,17 @@ export class ProtopipeKeywordPickerStore {
 
       if (existing) {
         this._discoveryRunId.set(existing.id);
+        this.thinkerView.openDiscoveryRun(siteId, existing, { enterFocus: false });
         if (existing.status === 'pending' || existing.status === 'discovering') {
           this._discoveryProgress.set(discoveryStepLabel(existing.currentStep));
           this._discoveryProgressPercent.set(discoveryProgressPercent(existing));
           const run = await this.pollDiscoveryRun(siteId, existing.id);
+          this.thinkerView.updateDiscoveryRun(run);
           this.mergeDiscoveryRun(run, map);
           this.applySuggestedAvatars(run.artifacts.suggestedAvatars ?? []);
           await this.seedRelatedKeywords(map);
         } else if (existing.status === 'ready' || existing.status === 'confirmed') {
+          this.thinkerView.updateDiscoveryRun(existing);
           this.mergeDiscoveryRun(existing, map);
           this.applySuggestedAvatars(existing.artifacts.suggestedAvatars ?? []);
           await this.seedRelatedKeywords(map);
@@ -228,6 +233,7 @@ export class ProtopipeKeywordPickerStore {
       }
       this._discoveryProgress.set(discoveryStepLabel(run.currentStep));
       this._discoveryProgressPercent.set(discoveryProgressPercent(run));
+      this.thinkerView.updateDiscoveryRun(run);
       await sleep(DISCOVERY_POLL_MS);
     }
     throw new Error('Keyword discovery timed out — try again in a moment.');
@@ -259,6 +265,54 @@ export class ProtopipeKeywordPickerStore {
       this._wizardStep.set('keywords');
     }
     this._error.set(null);
+  }
+
+  setWizardStep(step: KeywordPickerWizardStep): void {
+    this._wizardStep.set(step);
+    this._error.set(null);
+  }
+
+  /** Attach and poll a discovery run started after onboarding profile changes. */
+  async followDiscoveryRun(siteId: string, runId: string): Promise<void> {
+    this.siteId = siteId;
+    this._error.set(null);
+    this._discoveryNote.set(null);
+    this._discoveryProgress.set('Starting discovery…');
+    this._discoveryProgressPercent.set(0);
+    this._wizardStep.set('keywords');
+    this._selected.set(new Map());
+    this._selectedAvatarIds.set(new Set());
+    this._suggestedAvatars.set([]);
+
+    const map = new Map<string, KeywordPickerOption>();
+    this.relevanceCtx = buildRelevanceContext({
+      strategySummary: this.strategy.strategy().summary,
+      onboardingProfile: this.strategy.onboardingProfile() ?? undefined,
+      displayName: this.strategy.site()?.displayName,
+      hostname: this.strategy.site()?.hostname,
+    });
+
+    try {
+      const { run: initial } = await this.api.getKeywordDiscoveryRun(siteId, runId);
+      this._discoveryRunId.set(runId);
+      this.thinkerView.openDiscoveryRun(siteId, initial, { enterFocus: false });
+
+      let run = initial;
+      if (run.status === 'pending' || run.status === 'discovering') {
+        run = await this.pollDiscoveryRun(siteId, runId);
+      }
+
+      this.thinkerView.updateDiscoveryRun(run);
+      this.mergeDiscoveryRun(run, map);
+      this.applySuggestedAvatars(run.artifacts.suggestedAvatars ?? []);
+      await this.seedRelatedKeywords(map);
+      this.applyScoredPool(map);
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Discovery run failed after save.'));
+    } finally {
+      this._discoveryProgress.set(null);
+      this._discoveryProgressPercent.set(0);
+    }
   }
 
   setHoveredAvatarId(id: string | null): void {
@@ -757,6 +811,8 @@ export class ProtopipeKeywordPickerStore {
   }
 
   private applyScoredPool(map: Map<string, KeywordPickerOption>): void {
+    // Keep saved + strategy keywords in the browsable pool (confirmed runs may omit scoredCandidates).
+    this.loadFromSavedStrategy(map);
     const scored = scoreKeywordOptions([...map.values()], this.relevanceCtx, this.scoringConfig());
     this._pool.set(scored);
     this._suggested.set(pickSuggestedPanel(scored));

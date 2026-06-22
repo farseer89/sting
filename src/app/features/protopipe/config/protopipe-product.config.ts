@@ -7,9 +7,9 @@ export const protopipeProductConfig: ProductConfig = {
     loginWelcome: 'Welcome to SearchClimber.ai',
     loginTagline: 'Sign in to your SEO workspace',
     signupCta: 'Start 3-day free trial',
-    loginHeroTitle: 'SEO content that ranks.',
+    loginHeroTitle: 'Content Made Easy',
     loginHeroSubtitle: 'Plan keywords, schedule articles, and grow organic traffic.',
-    loginImageUrl: 'assets/images/surfing.jpeg',
+    loginImageUrl: 'assets/images/login-mckinley.jpg',
     supportEmail: 'support@protopipe.com',
   },
   billing: {

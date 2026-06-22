@@ -48,12 +48,17 @@
         </button>
       </div>
       @if (draft().services.length > 0) {
-        <ul class="kb-onboarding-chips">
+        <ul class="kb-onboarding-chips" aria-label="Services added">
           @for (svc of draft().services; track svc; let i = $index) {
             <li class="kb-onboarding-chip">
-              <span>{{ svc }}</span>
-              <button type="button" class="kb-chip-remove" (click)="store.removeService(i)" [attr.aria-label]="'Remove ' + svc">
-                ×
+              <span class="kb-onboarding-chip__label">{{ svc }}</span>
+              <button
+                type="button"
+                class="kb-chip-remove"
+                (click)="store.removeService(i)"
+                [attr.aria-label]="'Remove ' + svc"
+              >
+                <i class="pi pi-times" aria-hidden="true"></i>
               </button>
             </li>
           }
@@ -62,23 +67,65 @@
     }
 
     @case ('onboarding:customers') {
-      <div class="kb-avatar-list">
+      <div class="kb-customer-cards" role="group" aria-label="Customer profiles">
         @for (slot of avatarSlots(); track slot) {
-          <input
-            type="text"
-            pInputText
-            class="kb-avatar-input"
-            [ngModel]="draft().customerAvatars[slot]"
-            (ngModelChange)="store.updateCustomerAvatar(slot, $event)"
-            [placeholder]="slot === 0 ? 'Homeowner wants reliable EV charging at home' : 'Add another customer type'"
-          />
+          <article
+            class="kb-customer-card"
+            [class.kb-customer-card--filled]="isCustomerCardFilled(slot)"
+          >
+            <header class="kb-customer-card__head">
+              <span class="kb-customer-card__avatar" aria-hidden="true">
+                <i class="pi pi-user"></i>
+              </span>
+              <div class="kb-customer-card__meta">
+                <span class="kb-customer-card__title">Customer {{ slot + 1 }}</span>
+                @if (slot === 0) {
+                  <span class="kb-customer-card__badge">Primary</span>
+                }
+              </div>
+              @if (slot > 0) {
+                <button
+                  type="button"
+                  class="kb-customer-card__remove"
+                  (click)="store.removeCustomerAvatar(slot)"
+                  [attr.aria-label]="'Remove customer ' + (slot + 1)"
+                >
+                  <i class="pi pi-times" aria-hidden="true"></i>
+                </button>
+              }
+            </header>
+
+            <label class="kb-customer-card__field">
+              <span class="kb-field__label">What they want</span>
+              <input
+                type="text"
+                pInputText
+                class="kb-customer-card__input"
+                [ngModel]="draft().customerAvatars[slot]"
+                (ngModelChange)="store.updateCustomerAvatar(slot, $event)"
+                [placeholder]="avatarPlaceholder(slot)"
+                [attr.aria-label]="'Customer ' + (slot + 1) + ': what they want'"
+                [attr.aria-required]="slot === 0"
+              />
+            </label>
+          </article>
         }
       </div>
-      @if (canAddCustomerAvatar()) {
-        <button type="button" class="kb-text-btn" (click)="store.addCustomerAvatarSlot()">
-          + Add more
+
+      <div class="kb-customer-add">
+        <button
+          type="button"
+          class="kb-customer-add__btn"
+          [disabled]="!canAddCustomerAvatar()"
+          (click)="store.addCustomerAvatarSlot()"
+        >
+          <i class="pi pi-plus" aria-hidden="true"></i>
+          Add another customer
         </button>
-      }
+        @if (!canAddCustomerAvatar() && (draft().customerAvatars[0] ?? '').trim().length < 5) {
+          <p class="kb-customer-add__hint">Describe your primary customer first (5+ characters).</p>
+        }
+      </div>
     }
 
     @case ('onboarding:ideal-customers') {
@@ -96,12 +143,17 @@
         </button>
       </div>
       @if (draft().targetCustomerSites.length > 0) {
-        <ul class="kb-onboarding-chips">
+        <ul class="kb-onboarding-chips" aria-label="Target customer examples">
           @for (site of draft().targetCustomerSites; track site; let i = $index) {
             <li class="kb-onboarding-chip">
-              <span>{{ site }}</span>
-              <button type="button" class="kb-chip-remove" (click)="store.removeTargetCustomer(i)" [attr.aria-label]="'Remove ' + site">
-                ×
+              <span class="kb-onboarding-chip__label">{{ site }}</span>
+              <button
+                type="button"
+                class="kb-chip-remove"
+                (click)="store.removeTargetCustomer(i)"
+                [attr.aria-label]="'Remove ' + site"
+              >
+                <i class="pi pi-times" aria-hidden="true"></i>
               </button>
             </li>
           }
@@ -124,12 +176,17 @@
         </button>
       </div>
       @if (draft().competitors.length > 0) {
-        <ul class="kb-onboarding-chips">
+        <ul class="kb-onboarding-chips" aria-label="Competitors added">
           @for (comp of draft().competitors; track comp; let i = $index) {
             <li class="kb-onboarding-chip">
-              <span>{{ comp }}</span>
-              <button type="button" class="kb-chip-remove" (click)="store.removeCompetitor(i)" [attr.aria-label]="'Remove ' + comp">
-                ×
+              <span class="kb-onboarding-chip__label">{{ comp }}</span>
+              <button
+                type="button"
+                class="kb-chip-remove"
+                (click)="store.removeCompetitor(i)"
+                [attr.aria-label]="'Remove ' + comp"
+              >
+                <i class="pi pi-times" aria-hidden="true"></i>
               </button>
             </li>
           }

@@ -99,6 +99,22 @@ export class DiscoveryBookOnboardingStore {
     });
   }
 
+  removeCustomerAvatar(index: number): void {
+    if (index <= 0) return;
+    this.draft.update((d) => {
+      if (d.customerAvatars.length <= 1) return d;
+      return {
+        ...d,
+        customerAvatars: d.customerAvatars.filter((_, i) => i !== index),
+      };
+    });
+  }
+
+  canAddCustomerAvatar(): boolean {
+    const avatars = this.draft().customerAvatars;
+    return avatars.length < MAX_CUSTOMER_AVATARS && (avatars[0] ?? '').trim().length >= 5;
+  }
+
   addTargetCustomer(): void {
     this.commitDraft(this.targetCustomerDraft, 'targetCustomerSites', MAX_TARGET_CUSTOMERS, normalizeDomain);
   }

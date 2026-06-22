@@ -56,7 +56,20 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
   }
 
   canAddCustomerAvatar(): boolean {
-    return this.draft().customerAvatars.length < 12;
+    return this.store.canAddCustomerAvatar();
+  }
+
+  avatarPlaceholder(index: number): string {
+    const samples = [
+      'Homeowner wants reliable EV charging at home',
+      'Comparing EV charger options for a new build',
+      'Needs emergency help after a panel issue',
+    ];
+    return samples[index] ?? 'What does this person want?';
+  }
+
+  isCustomerCardFilled(slot: number): boolean {
+    return (this.draft().customerAvatars[slot] ?? '').trim().length > 0;
   }
 
   async save(): Promise<void> {

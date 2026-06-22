@@ -1,0 +1,379 @@
+$aw-border: #e4e4e7;
+$aw-border-soft: rgb(9 9 11 / 0.06);
+$aw-bg: #ffffff;
+$aw-bg-subtle: #fafafa;
+$aw-bg-panel: #f4f4f5;
+$aw-ink: #09090b;
+$aw-muted: #71717a;
+$aw-dim: #a1a1aa;
+$aw-accent: #2563eb;
+$aw-green: #16a34a;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.aw-section-nav {
+  border-right: 1px solid $aw-border;
+  padding: 0.75rem 0.625rem;
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  background: $aw-bg-subtle;
+  height: 100%;
+}
+
+.aw-section-nav__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.25rem 0.375rem 0.15rem;
+}
+
+.aw-section-nav__label {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: $aw-dim;
+}
+
+.aw-section-nav__progress {
+  font-size: 0.5625rem;
+  color: $aw-muted;
+  font-variant-numeric: tabular-nums;
+}
+
+.aw-section-nav__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+
+  &:hover {
+    background: $aw-bg;
+    border-color: $aw-border-soft;
+  }
+
+  &.is-active {
+    background: $aw-bg;
+    border-color: $aw-border;
+    box-shadow: 0 1px 4px $aw-border-soft;
+
+    .aw-sk {
+      opacity: 1;
+    }
+
+    .aw-section-nav__name {
+      color: $aw-ink;
+      font-weight: 600;
+    }
+  }
+
+  &.is-drafting .aw-sk {
+    animation: aw-sk-pulse 1.4s ease-in-out infinite;
+  }
+}
+
+.aw-section-nav__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 0.125rem;
+  min-width: 0;
+}
+
+.aw-section-nav__num {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  color: $aw-dim;
+  font-variant-numeric: tabular-nums;
+}
+
+.aw-section-nav__name {
+  font-size: 0.75rem;
+  color: $aw-muted;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.aw-section-nav__check {
+  margin-left: auto;
+  font-size: 0.5625rem;
+  color: $aw-green;
+}
+
+.aw-section-nav__foot {
+  margin-top: auto;
+  padding: 0.75rem 0.375rem 0.25rem;
+  border-top: 1px solid $aw-border;
+}
+
+.aw-section-nav__foot-label {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: $aw-dim;
+  margin-bottom: 0.35rem;
+}
+
+.aw-system-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.6875rem;
+  color: $aw-muted;
+  padding: 0.35rem 0.5rem;
+  background: $aw-bg;
+  border: 1px solid $aw-border;
+  border-radius: 0.375rem;
+}
+
+.aw-system-chip__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: $aw-accent;
+}
+
+.aw-sk {
+  aspect-ratio: 16 / 10;
+  background: $aw-bg-panel;
+  border: 1px solid $aw-border;
+  border-radius: 0.3rem;
+  padding: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  opacity: 0.85;
+  overflow: hidden;
+
+  &.is-filled {
+    opacity: 1;
+  }
+}
+
+.aw-sk__bar {
+  height: 0.2rem;
+  background: $aw-dim;
+  border-radius: 1px;
+  opacity: 0.5;
+
+  &--nav {
+    width: 100%;
+  }
+}
+
+.aw-sk__block {
+  &--hero-photo,
+  &--photo {
+    flex: 1;
+    background: linear-gradient(135deg, #d4d4d8 0%, #a1a1aa 100%);
+    border-radius: 0.15rem;
+    min-height: 0;
+  }
+
+  &--photo {
+    flex: 0 0 42%;
+  }
+}
+
+.aw-sk__line {
+  height: 0.15rem;
+  background: $aw-dim;
+  border-radius: 1px;
+  width: 55%;
+  opacity: 0.45;
+
+  &--lg {
+    width: 75%;
+    height: 0.2rem;
+  }
+
+  &--md {
+    width: 65%;
+  }
+
+  &--sm {
+    width: 40%;
+  }
+}
+
+.aw-sk__split {
+  display: flex;
+  gap: 0.2rem;
+  flex: 1;
+  min-height: 0;
+
+  &--left,
+  &--right {
+    align-items: stretch;
+  }
+}
+
+.aw-sk__split-copy {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  justify-content: center;
+}
+
+.aw-sk__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+
+  span {
+    height: 0.35rem;
+    background: $aw-dim;
+    border-radius: 0.1rem;
+    opacity: 0.3;
+
+    &:nth-child(2) {
+      width: 85%;
+    }
+
+    &:nth-child(3) {
+      width: 70%;
+    }
+  }
+}
+
+.aw-sk__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  justify-content: center;
+
+  span {
+    height: 0.3rem;
+    background: $aw-dim;
+    border-radius: 100px;
+    opacity: 0.35;
+
+    &:nth-child(2) {
+      width: 88%;
+    }
+
+    &:nth-child(3) {
+      width: 76%;
+    }
+  }
+}
+
+.aw-sk__faq {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  flex: 1;
+  justify-content: center;
+
+  span {
+    height: 0.22rem;
+    background: $aw-dim;
+    border-radius: 0.08rem;
+    opacity: 0.35;
+    position: relative;
+    padding-left: 0.35rem;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0.04rem;
+      width: 0.15rem;
+      height: 0.15rem;
+      border-right: 1px solid $aw-dim;
+      border-bottom: 1px solid $aw-dim;
+      transform: rotate(-45deg);
+      opacity: 0.7;
+    }
+  }
+}
+
+.aw-sk__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.15rem;
+  flex: 1;
+  background:
+    linear-gradient($aw-dim 0 0) 0 0 / 100% 0.18rem no-repeat,
+    linear-gradient($aw-dim 0 0) 0 0.28rem / 100% 0.12rem no-repeat,
+    linear-gradient($aw-dim 0 0) 0 0.5rem / 100% 0.12rem no-repeat;
+  opacity: 0.28;
+  border-radius: 0.1rem;
+}
+
+.aw-sk__infograph {
+  flex: 1;
+  background:
+    linear-gradient(135deg, rgb(37 99 235 / 0.15), rgb(13 148 136 / 0.12));
+  border-radius: 0.15rem;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 28% 22%;
+    border-left: 2px solid rgb(37 99 235 / 0.35);
+    border-bottom: 2px solid rgb(37 99 235 / 0.35);
+  }
+}
+
+.aw-sk__pill-row {
+  display: flex;
+  gap: 0.15rem;
+  justify-content: center;
+  margin-top: auto;
+
+  span {
+    width: 1rem;
+    height: 0.25rem;
+    background: $aw-dim;
+    border-radius: 100px;
+    opacity: 0.35;
+  }
+}
+
+.aw-sk__cta {
+  height: 0.35rem;
+  width: 1.1rem;
+  background: $aw-ink;
+  border-radius: 0.1rem;
+  opacity: 0.35;
+
+  &--wide {
+    width: 2.5rem;
+    margin: 0 auto;
+  }
+}
+
+@keyframes aw-sk-pulse {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}

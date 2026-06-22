@@ -75,6 +75,7 @@ const STEP_TITLES: Record<ArticleGenerationStep, string> = {
   outline: 'Outline',
   draft: 'Drafts',
   draft_faq: 'FAQ items',
+  layout_plan: 'Section layouts',
   review: 'Review',
   metadata: 'Metadata',
   assemble: 'Assembled post preview',

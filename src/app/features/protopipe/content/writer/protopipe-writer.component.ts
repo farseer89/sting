@@ -77,6 +77,11 @@ import {
   syncTemplateImagesToSections,
 } from '../block-template.util';
 import { ProtopipeBlockSlotsPanelComponent } from './block-slots-panel/block-slots-panel.component';
+import { ArticleSectionNavComponent } from './article-section-nav/article-section-nav.component';
+import {
+  buildArticleNavSlots,
+  mergeRunPreviewTemplate,
+} from './article-nav.util';
 import { ProtopipeImagePlaceholderComponent } from './image-placeholder/image-placeholder.component';
 import type { Editor } from '@tiptap/core';
 import type { FactHighlightItem } from './prose-editor/fact-highlight.extension';
@@ -275,6 +280,7 @@ function buildHighlightSegments(prose: string, claims: string[]): HighlightSegme
     ProseEditorComponent,
     ProtopipeBlockSlotsPanelComponent,
     ProtopipeImagePlaceholderComponent,
+    ArticleSectionNavComponent,
   ],
   providers: [MessageService],
   templateUrl: './protopipe-writer.component.html',
@@ -531,7 +537,51 @@ export class ProtopipeWriterComponent implements OnDestroy {
   readonly previewTakeover = signal(false);
   private previewRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 
+  readonly structuredPreviewOpen = signal(false);
+  readonly structuredPreviewWidth = signal(420);
+  readonly activeArticleSectionId = signal<string | null>(null);
+
   readonly hasBlockLayout = computed(() => (this.session()?.template.blocks?.length ?? 0) > 0);
+
+  readonly hasStructuredLayout = computed(() => {
+    const run = this.run();
+    const sessionBlocks = this.session()?.template.blocks?.length ?? 0;
+    const layoutSlots = run?.artifacts?.layoutPlan?.slots?.length ?? 0;
+    const skeletonBlocks = run?.artifacts?.layoutSkeleton?.blocks?.length ?? 0;
+    return sessionBlocks > 0 || layoutSlots > 0 || skeletonBlocks > 0;
+  });
+
+  readonly showArticleSectionNav = computed(
+    () => this.hasStructuredLayout() && this.isCanvasPanel() && !this.immersive(),
+  );
+
+  readonly runPreviewTemplate = computed(() =>
+    mergeRunPreviewTemplate(this.run(), this.session()?.template),
+  );
+
+  readonly articleNavSlots = computed(() =>
+    buildArticleNavSlots({
+      layoutPlan: this.run()?.artifacts?.layoutPlan?.slots ?? null,
+      template: this.runPreviewTemplate() ?? this.session()?.template ?? null,
+      run: this.run(),
+    }),
+  );
+
+  readonly articleNavReadyCount = computed(() =>
+    this.articleNavSlots().filter(
+      (slot) => slot.readiness === 'copy-ready' || slot.readiness === 'visual-ready',
+    ).length,
+  );
+
+  readonly structuredCanvasTemplate = computed(() => {
+    const preview = this.runPreviewTemplate();
+    if (preview?.blocks?.length) return preview;
+    return this.session()?.template ?? null;
+  });
+
+  readonly showBlockCanvas = computed(
+    () => this.hasStructuredLayout() && Boolean(this.structuredCanvasTemplate()?.blocks?.length),
+  );
 
   readonly publishTarget = signal<ProtopipePublishTarget>('astro');
   readonly publishConnectionId = signal<string | null>(null);
@@ -1057,6 +1107,26 @@ export class ProtopipeWriterComponent implements OnDestroy {
     });
 
     effect(() => {
+      if (!this.showArticleSectionNav()) return;
+      this.runPreviewTemplate();
+      this.run()?.artifacts?.sections;
+      this.run()?.artifacts?.layoutPlan;
+      untracked(() => this.schedulePreviewRefresh());
+    });
+
+    effect(() => {
+      if (!this.run()?.artifacts?.layoutPlan?.slots?.length) return;
+      untracked(() => {
+        if (!this.activeArticleSectionId()) {
+          this.activeArticleSectionId.set(this.run()!.artifacts!.layoutPlan!.slots[0]!.slotId);
+        }
+        if (this.runIsActive()) {
+          this.structuredPreviewOpen.set(true);
+        }
+      });
+    });
+
+    effect(() => {
       if (!this.content.publishSucceeded()) return;
       untracked(() => {
         if (this.content.consumePublishSucceeded()) {
@@ -1322,6 +1392,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
   }
 
   focusCanvasSlot(slotId: string): void {
+    this.activeArticleSectionId.set(slotId);
     const s = this.session();
     if (!s) return;
     if (slotId === 'intro') {
@@ -1333,6 +1404,14 @@ export class ProtopipeWriterComponent implements OnDestroy {
       const idx = s.template.sections.findIndex((sec) => sec.h2 === block.h2);
       if (idx >= 0) this.focusSection(idx);
     }
+  }
+
+  selectArticleSection(slotId: string): void {
+    this.focusCanvasSlot(slotId);
+  }
+
+  toggleStructuredPreview(): void {
+    this.structuredPreviewOpen.update((open) => !open);
   }
 
   private publishRequestBody(): { target: ProtopipePublishTarget; connectionId?: string } {
@@ -1353,8 +1432,9 @@ export class ProtopipeWriterComponent implements OnDestroy {
     this.blogPreviewError.set(null);
     try {
       const publishAt = s.scheduleAt?.toISOString();
+      const previewTemplate = this.runPreviewTemplate() ?? s.template;
       const response = await this.api.previewContent(siteId, {
-        template: s.template,
+        template: previewTemplate,
         slug: s.slug,
         publishAt,
       });

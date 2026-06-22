@@ -1,0 +1,112 @@
+<nav class="aw-section-nav" aria-label="Article sections">
+  <div class="aw-section-nav__head">
+    <div class="aw-section-nav__label">Article stack</div>
+    @if (readyCount() > 0 && slots().length > 0) {
+      <span class="aw-section-nav__progress">{{ readyCount() }} / {{ slots().length }} ready</span>
+    }
+  </div>
+
+  @for (slot of slots(); track slot.slotId) {
+    <button
+      type="button"
+      class="aw-section-nav__item"
+      [class.is-active]="activeSlotId() === slot.slotId"
+      [class.is-drafting]="slot.readiness === 'drafting'"
+      [class.is-ready]="slot.readiness === 'copy-ready' || slot.readiness === 'visual-ready'"
+      (click)="slotSelect.emit(slot.slotId)"
+    >
+      <div
+        class="aw-sk"
+        [class]="'aw-sk aw-sk--' + slot.presentation"
+        [class.is-filled]="slot.readiness !== 'empty'"
+        aria-hidden="true"
+      >
+        @switch (slot.presentation) {
+          @case ('hero') {
+            <span class="aw-sk__bar aw-sk__bar--nav"></span>
+            <span class="aw-sk__block aw-sk__block--hero-photo"></span>
+            <span class="aw-sk__line aw-sk__line--lg"></span>
+            <span class="aw-sk__line"></span>
+          }
+          @case ('full_photo') {
+            <span class="aw-sk__block aw-sk__block--hero-photo"></span>
+            <span class="aw-sk__line aw-sk__line--sm"></span>
+          }
+          @case ('image_left') {
+            <span class="aw-sk__split aw-sk__split--left">
+              <span class="aw-sk__block aw-sk__block--photo"></span>
+              <span class="aw-sk__split-copy">
+                <span class="aw-sk__line aw-sk__line--lg"></span>
+                <span class="aw-sk__line"></span>
+                <span class="aw-sk__line aw-sk__line--sm"></span>
+              </span>
+            </span>
+          }
+          @case ('image_right') {
+            <span class="aw-sk__split aw-sk__split--right">
+              <span class="aw-sk__split-copy">
+                <span class="aw-sk__line aw-sk__line--lg"></span>
+                <span class="aw-sk__line"></span>
+                <span class="aw-sk__line aw-sk__line--sm"></span>
+              </span>
+              <span class="aw-sk__block aw-sk__block--photo"></span>
+            </span>
+          }
+          @case ('listicle') {
+            <span class="aw-sk__line aw-sk__line--sm"></span>
+            <span class="aw-sk__list">
+              <span></span><span></span><span></span>
+            </span>
+          }
+          @case ('steps') {
+            <span class="aw-sk__steps">
+              <span></span><span></span><span></span>
+            </span>
+          }
+          @case ('faq') {
+            <span class="aw-sk__faq">
+              <span></span><span></span><span></span>
+            </span>
+          }
+          @case ('comparison_table') {
+            <span class="aw-sk__grid"></span>
+          }
+          @case ('infographic') {
+            <span class="aw-sk__infograph"></span>
+            <span class="aw-sk__line aw-sk__line--sm"></span>
+          }
+          @case ('related') {
+            <span class="aw-sk__pill-row"><span></span><span></span><span></span></span>
+          }
+          @case ('cta') {
+            <span class="aw-sk__line aw-sk__line--md"></span>
+            <span class="aw-sk__cta aw-sk__cta--wide"></span>
+          }
+          @default {
+            <span class="aw-sk__line aw-sk__line--lg"></span>
+            <span class="aw-sk__line"></span>
+            <span class="aw-sk__line aw-sk__line--sm"></span>
+          }
+        }
+      </div>
+      <div class="aw-section-nav__meta">
+        <span class="aw-section-nav__num">{{ slot.index + 1 }}</span>
+        <span class="aw-section-nav__name">{{ slot.label }}</span>
+        @if (slot.readiness === 'copy-ready' || slot.readiness === 'visual-ready') {
+          <span class="aw-section-nav__check">✓</span>
+        }
+      </div>
+    </button>
+  }
+
+  <div class="aw-section-nav__foot">
+    <div class="aw-section-nav__foot-label">Target</div>
+    <div class="aw-system-chip">
+      <span class="aw-system-chip__dot"></span>
+      {{ keywordLabel() || 'Article' }}
+      @if (footChip()) {
+        · {{ footChip() }}
+      }
+    </div>
+  </div>
+</nav>

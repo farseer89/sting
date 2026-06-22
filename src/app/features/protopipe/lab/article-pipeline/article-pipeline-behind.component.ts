@@ -155,6 +155,7 @@ const STEP_TO_ARTIFACT_KEY: Record<ArticleGenerationStep, keyof ArticleGeneratio
   outline: 'outline',
   draft: 'sections',
   draft_faq: 'faqItems',
+  layout_plan: 'layoutPlan',
   review: 'review',
   metadata: 'metadata',
   assemble: 'template',

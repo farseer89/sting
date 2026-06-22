@@ -104,9 +104,24 @@
     </div>
   </header>
 
-  <div class="wb-binder">
+  <div
+    class="wb-binder"
+    [class.wb-binder--structured]="showArticleSectionNav()"
+    [class.wb-binder--preview-open]="structuredPreviewOpen()"
+    [style.--wb-preview-w.px]="structuredPreviewWidth()"
+  >
 
     @if (!immersive()) {
+      @if (showArticleSectionNav()) {
+        <app-article-section-nav
+          [slots]="articleNavSlots()"
+          [activeSlotId]="activeArticleSectionId()"
+          [keywordLabel]="topicLabel() ?? session()?.template?.primaryKeywordPhrase ?? ''"
+          [footChip]="resolvedPackLabel()"
+          [readyCount]="articleNavReadyCount()"
+          (slotSelect)="selectArticleSection($event)"
+        />
+      } @else {
     <nav class="wb-binder-nav" aria-label="Writing book sections">
       <div class="wb-binder-nav__label">Editing</div>
       <button
@@ -162,6 +177,7 @@
         </button>
       }
     </nav>
+      }
     }
 
     <div class="wb-panel" [class.wb-panel--canvas-stage]="immersive() && isCanvasPanel()">
@@ -180,6 +196,16 @@
                   Flagged claims are underlined in your draft — click to confirm or dismiss.
                 </p>
               }
+
+              @if (showBlockCanvas() && structuredCanvasTemplate(); as blockTemplate) {
+                <app-protopipe-block-slots-panel
+                  [template]="blockTemplate"
+                  [readOnly]="isReadOnly() || runIsActive()"
+                  (templateChange)="onBlocksTemplateChange($event)"
+                  (focusCanvasSlot)="focusCanvasSlot($event)"
+                  (imageUploadRequest)="onBlockImageUploadRequest($event)"
+                />
+              } @else {
 
               <div class="pw__block pw__block--title">
                 <div class="pw__block-main pw__block-main--title">
@@ -260,6 +286,8 @@
                   </div>
                 </div>
               }
+
+              }
             </article>
           } @else if (loading() || loadingPost()) {
             <p class="wb-panel-empty">Loading article…</p>
@@ -280,6 +308,38 @@
 
       }
     </div>
+
+    @if (showArticleSectionNav()) {
+      <div class="wb-preview-shell" [class.is-open]="structuredPreviewOpen()">
+        <aside class="wb-stack-rail" aria-label="Article preview">
+          <header class="wb-stack-rail__head">Live preview</header>
+          <div class="wb-stack-rail__body">
+            @if (blogPreviewSafeHtml(); as previewHtml) {
+              <div class="wb-stack-rail__article" [innerHTML]="previewHtml"></div>
+            } @else if (blogPreviewLoading()) {
+              <p class="wb-panel-empty">Rendering preview…</p>
+            } @else {
+              <p class="wb-panel-empty">Preview updates as sections fill during the run.</p>
+            }
+          </div>
+        </aside>
+      </div>
+
+      <nav class="wb-preview-rail" aria-label="Preview panel">
+        <button
+          type="button"
+          class="wb-preview-rail__toggle"
+          [class.is-active]="structuredPreviewOpen()"
+          [attr.aria-pressed]="structuredPreviewOpen()"
+          aria-label="Live preview"
+          title="Live preview"
+          (click)="toggleStructuredPreview()"
+        >
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M1.5 8s2.5-4.5 6.5-4.5S14.5 8 14.5 8s-2.5 4.5-6.5 4.5S1.5 8 1.5 8z" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/></svg>
+          <span class="wb-preview-rail__label">Preview</span>
+        </button>
+      </nav>
+    }
   </div>
 
   @if (immersive()) {

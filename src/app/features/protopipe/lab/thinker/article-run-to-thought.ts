@@ -93,6 +93,12 @@ const STEP_META: Record<
     description:
       'Drafts FAQ Q&A blocks from people-also-ask and brief questions — required for pillar guides, skipped for other types.',
   },
+  layout_plan: {
+    label: 'Layout',
+    summary: 'Assign visual presentation per section.',
+    description:
+      'Maps each outline section to a presentation (prose, split photo, listicle, FAQ, infographic) and seeds the block skeleton for the writer.',
+  },
   review: {
     label: 'Review',
     summary: 'Score the draft against the brief.',

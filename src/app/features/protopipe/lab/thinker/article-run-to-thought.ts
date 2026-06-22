@@ -1184,6 +1184,56 @@ function resolveCurrentStepId(
   return lastTrain ? `train:${lastTrain.slug}` : 'cognitive_pass';
 }
 
+function healAgeMs(updatedAt?: string): number {
+  if (!updatedAt) return Number.POSITIVE_INFINITY;
+  const ms = new Date(updatedAt).getTime();
+  return Number.isFinite(ms) ? Date.now() - ms : Number.POSITIVE_INFINITY;
+}
+
+/** Review can finish in artifacts while the run is still marked running (orphaned worker). */
+function inferReviewStepStatus(
+  run: ArticleGenerationRunDto,
+  evs: ArticleGenerationEvent[],
+  baseStatus: ThoughtStepStatus,
+): ThoughtStepStatus {
+  if (baseStatus !== 'running') return baseStatus;
+  if (run.currentStep !== 'review' || run.status !== 'running') return baseStatus;
+
+  const review = run.artifacts?.review;
+  if (!review) return baseStatus;
+  if (evs.some((e) => e.status === 'completed')) return baseStatus;
+
+  const heal = run.artifacts.selfHealProgress;
+  const terminalFailed = (): ThoughtStepStatus =>
+    review.passesThreshold ? 'complete' : 'failed';
+
+  if (heal?.phase === 'done' || heal?.phase === 'skipped') {
+    return terminalFailed();
+  }
+
+  if (!run.artifacts.selfHealAttempted && review.failingSections.length === 0) {
+    return terminalFailed();
+  }
+
+  if (
+    heal?.phase === 'redraft' &&
+    heal.totalToRedraft > 0 &&
+    heal.redraftedCount >= heal.totalToRedraft
+  ) {
+    return terminalFailed();
+  }
+
+  if (heal?.phase === 're-assemble' && healAgeMs(heal.updatedAt) > 30_000) {
+    return terminalFailed();
+  }
+
+  if (heal?.phase === 're-review' && healAgeMs(heal.updatedAt) > 90_000) {
+    return terminalFailed();
+  }
+
+  return baseStatus;
+}
+
 function mapEvents(events: ArticleGenerationEvent[]): ThoughtEvent[] {
   return events.map((e) => {
     const parts: string[] = [e.status];
@@ -1248,7 +1298,8 @@ export function articleRunToThought(run: ArticleGenerationRunDto): Thought {
     const reviewArtifact = step === 'review' ? run.artifacts?.review : undefined;
     const reviewFailed = reviewArtifact && !reviewArtifact.passesThreshold;
 
-    let stepStatus = status;
+    let stepStatus =
+      step === 'review' ? inferReviewStepStatus(run, evs, status) : status;
     if (reviewFailed && stepStatus === 'complete') {
       stepStatus = 'failed';
     }

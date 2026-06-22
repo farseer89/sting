@@ -201,4 +201,55 @@ describe('articleRunToThought', () => {
     expect(draft?.subSteps?.some((s) => s.label === 'Why timing matters')).toBe(true);
     expect(draft?.subSteps?.some((s) => s.status === 'running')).toBe(true);
   });
+
+  it('marks review failed when self-heal finished but run is still running', () => {
+    const thought = articleRunToThought(
+      minimalV2Run({
+        status: 'running',
+        currentStep: 'review',
+        artifacts: {
+          ...minimalV2Run().artifacts,
+          review: {
+            scores: {
+              keywordIntegration: 0.8,
+              voiceMatch: 0.75,
+              structuralAdherence: 0.5,
+              specificity: 0.7,
+              readability: 0.8,
+              eeatSignal: 0.7,
+            },
+            overallScore: 0.73,
+            violations: ['STRUCTURAL: missing outline sections'],
+            sectionViolations: [],
+            flaggedFacts: [],
+            passesThreshold: false,
+            failingSections: [0, 1],
+            promptVersion: 'review/v3',
+            rawCompletion: '{}',
+          },
+          selfHealAttempted: true,
+          selfHealProgress: {
+            phase: 'done',
+            failingSectionIndices: [0, 1],
+            redraftSectionIndices: [0, 1],
+            redraftedCount: 2,
+            totalToRedraft: 2,
+            updatedAt: '2026-01-01T00:10:00.000Z',
+          },
+        },
+        events: [
+          ...minimalV2Run().events,
+          {
+            step: 'review',
+            status: 'started',
+            startedAt: '2026-01-01T00:05:00.000Z',
+          },
+        ],
+      }),
+    );
+
+    const review = thought.steps.find((s) => s.id === 'review');
+    expect(review?.status).toBe('failed');
+    expect(review?.summary).toContain('Below threshold');
+  });
 });

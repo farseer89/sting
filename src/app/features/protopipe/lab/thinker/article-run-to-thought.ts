@@ -4,6 +4,7 @@ import type {
   ArticleGenerationOutline,
   ArticleGenerationDraftedSection,
   ArticleGenerationReview,
+  ArticleGenerationSelfHealProgress,
   ArticleGenerationRunDto,
   ArticleGenerationStep,
   CognitiveTrainStep,
@@ -519,29 +520,84 @@ function buildArticleSubSteps(
       ];
 
     case 'review': {
+      const heal = run.artifacts.selfHealProgress;
+      const reviewArtifact = a.review;
+      const selfHealRan = Boolean(run.artifacts.selfHealAttempted || heal);
+
       const phases: ThoughtSubStep[] = [
         {
           id: 'rev:score',
           label: 'Score against brief',
-          detail: a.review
-            ? `Score ${formatReviewScore(a.review.overallScore)}`
+          detail: reviewArtifact
+            ? `Score ${formatReviewScore(reviewArtifact.overallScore)}`
             : 'Threshold check',
-          status: phaseStatus(0, 2, stepStatus),
+          status:
+            selfHealRan || stepStatus !== 'running'
+              ? 'complete'
+              : phaseStatus(0, 2, stepStatus),
           isLlm: true,
         },
-        {
+      ];
+
+      if (heal?.phase === 'skipped') {
+        phases.push({
+          id: 'rev:heal-skip',
+          label: 'Self-heal',
+          detail: 'Not needed — all sections passed',
+          status: 'skipped',
+        });
+      } else if (selfHealRan || (reviewArtifact?.failingSections.length ?? 0) > 0) {
+        phases.push({
           id: 'rev:heal',
           label: 'Self-heal failing sections',
-          detail: evs.some((e) => e.note?.includes('self-heal'))
-            ? 'Regenerated failing sections'
-            : 'Only when review fails threshold',
-          status: phaseStatus(1, 2, stepStatus),
-        },
-      ];
-      if (a.review?.violations.length || a.review?.sectionViolations.length) {
+          detail: formatSelfHealDetail(heal, reviewArtifact),
+          status: selfHealPhaseStatus(heal, stepStatus, 1),
+          isLlm: true,
+        });
+
+        for (const idx of heal?.redraftSectionIndices ?? reviewArtifact?.failingSections ?? []) {
+          const h2 = run.artifacts.outline?.sections[idx]?.h2 ?? `Section ${idx}`;
+          const note =
+            heal?.sectionNotes?.[String(idx)] ??
+            reviewArtifact?.sectionViolations.find((v) => v.sectionIndex === idx)?.message;
+          phases.push({
+            id: `rev:heal:${idx}`,
+            label: h2,
+            detail: note ?? 'Regenerate section prose',
+            status: selfHealSectionStatus(heal, idx, stepStatus),
+            isLlm: true,
+          });
+        }
+
+        if (selfHealRan) {
+          phases.push({
+            id: 'rev:re-score',
+            label: 'Re-score after self-heal',
+            detail:
+              heal?.phase === 're-review'
+                ? 'Running review on healed draft'
+                : heal?.phase === 'done'
+                  ? reviewArtifact
+                    ? `Score ${formatReviewScore(reviewArtifact.overallScore)}`
+                    : 'Review complete'
+                  : 'After sections are redrafted',
+            status: selfHealPhaseStatus(heal, stepStatus, 2, true),
+            isLlm: true,
+          });
+        }
+      } else {
+        phases.push({
+          id: 'rev:heal-skip',
+          label: 'Self-heal',
+          detail: 'Only when review fails threshold',
+          status: stepStatus === 'complete' ? 'skipped' : 'pending',
+        });
+      }
+
+      if (reviewArtifact?.violations.length || reviewArtifact?.sectionViolations.length) {
         return [
-          ...phases.map((p) => ({ ...p, status: 'complete' as ThoughtStepStatus })),
-          ...a.review!.violations.slice(0, 4).map((v, i) => ({
+          ...phases,
+          ...reviewArtifact!.violations.slice(0, 4).map((v, i) => ({
             id: `rev:v:${i}`,
             label: v.slice(0, 64),
             detail: 'Brief violation',
@@ -621,6 +677,19 @@ function articleStepRunningSummary(
     if (ig?.plannedCount) {
       const done = ig.generatedCount ?? 0;
       return `${done}/${ig.plannedCount} generated`;
+    }
+  }
+
+  if (step === 'review') {
+    const heal = run.artifacts.selfHealProgress;
+    if (heal?.phase === 'redraft' && heal.totalToRedraft > 0) {
+      const label = heal.currentSectionH2 ? `: ${heal.currentSectionH2}` : '';
+      return `Self-heal redraft ${heal.redraftedCount}/${heal.totalToRedraft}${label}`;
+    }
+    if (heal?.phase === 're-assemble') return 'Self-heal: rebuilding article…';
+    if (heal?.phase === 're-review') return 'Self-heal: re-scoring draft…';
+    if (!run.artifacts.review && !run.artifacts.selfHealProgress) {
+      return 'Scoring draft against brief…';
     }
   }
 
@@ -1263,6 +1332,80 @@ export function articleRunToThought(run: ArticleGenerationRunDto): Thought {
 
 function formatReviewScore(score: number): string {
   return Number.isFinite(score) ? score.toFixed(2) : '—';
+}
+
+function formatSelfHealDetail(
+  heal: ArticleGenerationRunDto['artifacts']['selfHealProgress'],
+  review?: ArticleGenerationReview,
+): string {
+  if (!heal) {
+    const n = review?.failingSections.length ?? 0;
+    return n > 0 ? `${n} section(s) flagged` : 'Only when review fails threshold';
+  }
+  if (heal.skippedSectionIndices?.length) {
+    return `Redrafting ${heal.redraftSectionIndices.length}/${heal.failingSectionIndices.length} failing section(s)`;
+  }
+  switch (heal.phase) {
+    case 'redraft':
+      return heal.totalToRedraft > 0
+        ? `Redrafting ${heal.redraftedCount}/${heal.totalToRedraft}`
+        : 'Preparing redraft…';
+    case 're-assemble':
+      return 'Merging healed sections into article';
+    case 're-review':
+      return 'Re-running quality review';
+    case 'done':
+      return 'Self-heal complete';
+    default:
+      return 'Self-heal';
+  }
+}
+
+function selfHealPhaseStatus(
+  heal: ArticleGenerationRunDto['artifacts']['selfHealProgress'],
+  stepStatus: ThoughtStepStatus,
+  phaseIndex: number,
+  isReScore = false,
+): ThoughtStepStatus {
+  if (stepStatus === 'pending') return 'pending';
+  if (!heal) return phaseStatus(phaseIndex, 3, stepStatus);
+  if (stepStatus === 'failed') return 'failed';
+
+  const order: Array<ArticleGenerationSelfHealProgress['phase']> = [
+    'redraft',
+    're-assemble',
+    're-review',
+    'done',
+  ];
+  const current = order.indexOf(heal.phase);
+  const target = isReScore ? order.indexOf('re-review') : order.indexOf('redraft');
+
+  if (stepStatus === 'running') {
+    if (current < target) return 'complete';
+    if (current === target || (isReScore && heal.phase === 're-review')) return 'running';
+    if (isReScore && heal.phase === 'done') return 'complete';
+    if (!isReScore && current > target) return 'complete';
+    return 'pending';
+  }
+
+  return heal.phase === 'skipped' ? 'skipped' : 'complete';
+}
+
+function selfHealSectionStatus(
+  heal: ArticleGenerationRunDto['artifacts']['selfHealProgress'],
+  sectionIndex: number,
+  stepStatus: ThoughtStepStatus,
+): ThoughtStepStatus {
+  if (stepStatus === 'pending') return 'pending';
+  if (!heal?.redraftSectionIndices.includes(sectionIndex)) return 'skipped';
+  if (stepStatus === 'failed') return 'failed';
+  if (stepStatus !== 'running') return 'complete';
+
+  const pos = heal.redraftSectionIndices.indexOf(sectionIndex);
+  if (heal.phase !== 'redraft') return 'complete';
+  if (pos < heal.redraftedCount) return 'complete';
+  if (pos === heal.redraftedCount) return 'running';
+  return 'pending';
 }
 
 function formatReviewViolations(review: ArticleGenerationReview): string {

@@ -175,6 +175,7 @@
 
         <!-- Inspector tabs -->
         <div class="tb-tabs">
+          <button type="button" class="tb-tab" [class.is-active]="activeTab() === 'visualizer'" (click)="activeTab.set('visualizer')">visualizer</button>
           <button type="button" class="tb-tab" [class.is-active]="activeTab() === 'output'" (click)="activeTab.set('output')">output</button>
           <button type="button" class="tb-tab" [class.is-active]="activeTab() === 'steps'" (click)="activeTab.set('steps')">steps</button>
           @if (step.isLlmStep) {
@@ -186,6 +187,10 @@
 
         <!-- Tab content -->
         @switch (activeTab()) {
+
+          @case ('visualizer') {
+            <app-thinker-step-visualizer [view]="stepVisualizer()" />
+          }
 
           @case ('output') {
             @if (step.status === 'pending') {

@@ -1,0 +1,270 @@
+$viz-border: #e4e4e7;
+$viz-muted: #71717a;
+$viz-ink: #09090b;
+$viz-accent: #2563eb;
+$viz-good: #16a34a;
+$viz-mid: #d97706;
+$viz-low: #dc2626;
+
+:host {
+  display: block;
+}
+
+.viz {
+  max-width: 42rem;
+}
+
+.viz__head {
+  margin-bottom: 1.25rem;
+}
+
+.viz__title {
+  margin: 0 0 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: $viz-accent;
+}
+
+.viz__sub {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: $viz-muted;
+}
+
+.viz__empty {
+  padding: 2rem 1.5rem;
+  border: 1px dashed $viz-border;
+  border-radius: 0.75rem;
+  color: $viz-muted;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.viz__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  border: 1px solid $viz-border;
+  border-radius: 0.75rem;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(9 9 11 / 0.04);
+}
+
+.viz__kicker {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: $viz-muted;
+  margin-top: 0.25rem;
+}
+
+.viz__h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: $viz-ink;
+  letter-spacing: -0.03em;
+}
+
+.viz__h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: $viz-ink;
+  letter-spacing: -0.02em;
+}
+
+.viz__h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: $viz-ink;
+}
+
+.viz__p {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: #27272a;
+}
+
+.viz__list {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: #3f3f46;
+
+  &--notes {
+    color: $viz-muted;
+    font-size: 0.8125rem;
+  }
+}
+
+.viz__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.viz__chip {
+  display: inline-flex;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #f4f4f5;
+  border: 1px solid $viz-border;
+  font-size: 0.75rem;
+  color: #3f3f46;
+}
+
+.viz__row {
+  display: grid;
+  grid-template-columns: 7rem 1fr auto;
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid rgb(228 228 231 / 0.6);
+  font-size: 0.8125rem;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.viz__row-label {
+  color: $viz-muted;
+  font-weight: 600;
+}
+
+.viz__row-value {
+  color: $viz-ink;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.viz__row-hint {
+  color: $viz-muted;
+  font-size: 0.75rem;
+}
+
+.viz__section {
+  padding-top: 0.5rem;
+  border-top: 1px solid rgb(228 228 231 / 0.8);
+
+  &:first-of-type {
+    border-top: none;
+    padding-top: 0;
+  }
+}
+
+.viz__section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.viz__section-hint {
+  font-size: 0.75rem;
+  color: $viz-muted;
+  flex-shrink: 0;
+}
+
+.viz__prose {
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  color: #27272a;
+  white-space: pre-wrap;
+}
+
+.viz__faq {
+  padding: 0.85rem 0;
+  border-top: 1px solid rgb(228 228 231 / 0.8);
+
+  &:first-of-type {
+    border-top: none;
+  }
+}
+
+.viz__faq-q {
+  margin: 0 0 0.35rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: $viz-ink;
+}
+
+.viz__faq-a {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: #3f3f46;
+}
+
+.viz__score {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.viz__score-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.8125rem;
+}
+
+.viz__score-label {
+  color: $viz-muted;
+  font-weight: 600;
+}
+
+.viz__score-num {
+  font-weight: 700;
+  color: $viz-ink;
+}
+
+.viz__score-track {
+  height: 0.35rem;
+  background: #f4f4f5;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.viz__score-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+
+  &.is-good {
+    background: $viz-good;
+  }
+
+  &.is-mid {
+    background: $viz-mid;
+  }
+
+  &.is-low {
+    background: $viz-low;
+  }
+}
+
+.viz__score-note {
+  font-size: 0.75rem;
+  color: $viz-muted;
+}
+
+.viz__notice {
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.5rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #1e3a8a;
+}

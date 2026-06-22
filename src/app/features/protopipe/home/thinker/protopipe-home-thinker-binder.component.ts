@@ -15,19 +15,23 @@ import { formatThinkerCostUsd, sumCosts } from '../../lab/thinker/thinker-cost';
 import { exportThoughtRunbookPdf } from '../../lab/thinker/thought-runbook-pdf';
 import { ProtopipeHomeThinkerViewState } from '../protopipe-home-thinker-view.state';
 import { ProtopipeHomeWriterViewState } from '../protopipe-home-writer-view.state';
+import type { ArticleGenerationStep } from '@hive/contracts';
+import { buildArticleStepVisualizer } from './article-run-visualizer.util';
 import {
   mapThoughtStep,
   runStatusClass,
   runStatusLabel,
   type BinderStepView,
 } from './thinker-binder.mapper';
+import { ThinkerStepVisualizerComponent } from './thinker-step-visualizer.component';
 
-type ThinkerTab = 'output' | 'steps' | 'prompt' | 'events' | 'raw';
+type ThinkerTab = 'visualizer' | 'output' | 'steps' | 'prompt' | 'events' | 'raw';
 
 @Component({
   selector: 'app-protopipe-home-thinker-binder',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ThinkerStepVisualizerComponent],
   templateUrl: './protopipe-home-thinker-binder.component.html',
   styleUrl: './protopipe-home-thinker-binder.component.scss',
 })
@@ -39,7 +43,7 @@ export class ProtopipeHomeThinkerBinderComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly activeStepId = signal<string | null>(null);
-  readonly activeTab = signal<ThinkerTab>('output');
+  readonly activeTab = signal<ThinkerTab>('visualizer');
   readonly exportingRunbook = signal(false);
   readonly exportError = signal<string | null>(null);
 
@@ -69,6 +73,22 @@ export class ProtopipeHomeThinkerBinderComponent {
     const steps = this.steps();
     const id = this.activeStepId() ?? this.defaultStepId();
     return steps.find((s) => s.id === id) ?? steps[0];
+  });
+
+  readonly stepVisualizer = computed(() => {
+    if (this.runKind() !== 'article') {
+      return {
+        title: 'Visualizer',
+        emptyMessage: 'Article previews appear here for writer runs. Strategy builds use the output tab.',
+        blocks: [],
+      };
+    }
+    const run = this.run();
+    const step = this.activeStep();
+    if (!run || !step) {
+      return { title: 'Visualizer', emptyMessage: 'Select a pipeline step.', blocks: [] };
+    }
+    return buildArticleStepVisualizer(run, step.id as ArticleGenerationStep, step.status);
   });
 
   readonly progress = computed(() => {
@@ -155,7 +175,7 @@ export class ProtopipeHomeThinkerBinderComponent {
 
   selectStep(id: string): void {
     this.activeStepId.set(id);
-    this.activeTab.set('output');
+    this.activeTab.set('visualizer');
   }
 
   exitRunner(): void {

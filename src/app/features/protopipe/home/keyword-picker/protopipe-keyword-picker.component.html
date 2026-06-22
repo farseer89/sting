@@ -261,8 +261,15 @@
               </p>
             } @else {
               <div class="kwpick__panel-body">
-                <div class="kwpick__table-wrap kwpick__table-wrap--suggested">
-                  <table class="kwpick__table kwpick__table--plan" [attr.aria-label]="tableLabel()">
+                <div
+                  class="kwpick__table-wrap kwpick__table-wrap--suggested"
+                  [class.kwpick__table-wrap--book-slim]="bookMode()"
+                >
+                  <table
+                    class="kwpick__table kwpick__table--plan"
+                    [class.kwpick__table--book-slim]="bookMode()"
+                    [attr.aria-label]="tableLabel()"
+                  >
                     <thead>
                       <tr>
                         <th class="kwpick__th-check" scope="col"><span class="kwpick__sr">Include</span></th>
@@ -283,7 +290,11 @@
                             [title]="columnTooltips.volume"
                             (click)="toggleSort('volume')"
                           >
-                            Volume<span class="kwpick__th-sub">/mo searches</span>
+                            @if (bookMode()) {
+                              Vol
+                            } @else {
+                              Volume<span class="kwpick__th-sub">/mo searches</span>
+                            }
                             <span class="kwpick__sort-ind">{{ sortIndicator('volume') }}</span>
                           </button>
                         </th>
@@ -294,7 +305,11 @@
                             [title]="columnTooltips.competition"
                             (click)="toggleSort('competition')"
                           >
-                            Competition<span class="kwpick__th-sub">0–100 score</span>
+                            @if (bookMode()) {
+                              Cmp
+                            } @else {
+                              Competition<span class="kwpick__th-sub">0–100 score</span>
+                            }
                             <span class="kwpick__sort-ind">{{ sortIndicator('competition') }}</span>
                           </button>
                         </th>
@@ -305,7 +320,7 @@
                             [title]="columnTooltips.fit"
                             (click)="toggleSort('fit')"
                           >
-                            Fit<span class="kwpick__th-sub">on-brand</span>
+                            Fit@if (!bookMode()) {<span class="kwpick__th-sub">on-brand</span>}
                             <span class="kwpick__sort-ind">{{ sortIndicator('fit') }}</span>
                           </button>
                         </th>
@@ -316,7 +331,11 @@
                             [title]="columnTooltips.opportunity"
                             (click)="toggleSort('opportunity')"
                           >
-                            Opportunity<span class="kwpick__th-sub">score</span>
+                            @if (bookMode()) {
+                              Opp
+                            } @else {
+                              Opportunity<span class="kwpick__th-sub">score</span>
+                            }
                             <span class="kwpick__sort-ind">{{ sortIndicator('opportunity') }}</span>
                           </button>
                         </th>
@@ -327,7 +346,12 @@
                             [title]="columnTooltips.source"
                             (click)="toggleSort('source')"
                           >
-                            Source <span class="kwpick__sort-ind">{{ sortIndicator('source') }}</span>
+                            @if (bookMode()) {
+                              Src
+                            } @else {
+                              Source
+                            }
+                            <span class="kwpick__sort-ind">{{ sortIndicator('source') }}</span>
                           </button>
                         </th>
                         <th scope="col" class="kwpick__th-actions"><span class="kwpick__sr">Explore</span></th>

@@ -180,7 +180,7 @@
               @if (availableTradeSuggestions().length > 0) {
                 <section class="offer-section" aria-labelledby="offer-trade-heading">
                   <h2 id="offer-trade-heading" class="offer-section__title">
-                    Common for {{ trade }} — tap to add
+                    Suggested for {{ trade }} — tap to add
                   </h2>
                   <ul class="offer-suggestions" aria-label="Suggested services for your trade">
                     @for (svc of availableTradeSuggestions(); track svc) {
@@ -291,6 +291,28 @@
         <p class="eyebrow">Your customers</p>
         <h1 class="question">Who are your perfect customers?</h1>
         <p class="helper">Describe what each person wants — keep it simple.</p>
+
+        @if (availableAvatarSuggestions().length > 0) {
+          <section class="offer-section" aria-labelledby="customer-suggest-heading">
+            <h2 id="customer-suggest-heading" class="offer-section__title">
+              Suggested from your site — tap to add
+            </h2>
+            <ul class="offer-suggestions" aria-label="Suggested customer profiles">
+              @for (avatar of availableAvatarSuggestions(); track avatar) {
+                <li>
+                  <button
+                    type="button"
+                    class="offer-suggestion offer-suggestion--avatar"
+                    (click)="applyAvatarSuggestion(avatar)"
+                  >
+                    <i class="pi pi-plus" aria-hidden="true"></i>
+                    {{ avatar }}
+                  </button>
+                </li>
+              }
+            </ul>
+          </section>
+        }
 
         <div class="avatar-list" role="group" aria-label="Customer avatars">
           @for (slot of avatarSlots(); track slot) {

@@ -68,7 +68,7 @@
         @if (store.availableTradeSuggestions().length > 0) {
           <section class="kb-offer-section" aria-labelledby="kb-offer-trade-heading">
             <h3 id="kb-offer-trade-heading" class="kb-offer-section__title">
-              Common for {{ trade }} — tap to add
+              Suggested for {{ trade }} — tap to add
             </h3>
             <ul class="kb-offer-suggestions" aria-label="Suggested services for your trade">
               @for (svc of store.availableTradeSuggestions(); track svc) {
@@ -129,6 +129,28 @@
     }
 
     @case ('onboarding:customers') {
+      @if (store.availableAvatarSuggestions().length > 0) {
+        <section class="kb-offer-section" aria-labelledby="kb-customer-suggest-heading">
+          <h3 id="kb-customer-suggest-heading" class="kb-offer-section__title">
+            Suggested from your site — tap to add
+          </h3>
+          <ul class="kb-offer-suggestions" aria-label="Suggested customer profiles">
+            @for (avatar of store.availableAvatarSuggestions(); track avatar) {
+              <li>
+                <button
+                  type="button"
+                  class="kb-offer-suggestion kb-offer-suggestion--avatar"
+                  (click)="store.applyAvatarSuggestion(avatar)"
+                >
+                  <i class="pi pi-plus" aria-hidden="true"></i>
+                  {{ avatar }}
+                </button>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
       <div class="kb-person-grid" role="group" aria-label="Customer profiles">
         @for (slot of avatarSlots(); track slot) {
           <article

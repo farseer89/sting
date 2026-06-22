@@ -482,3 +482,10 @@
     cursor: not-allowed;
   }
 }
+
+.kb-offer-suggestion--avatar {
+  max-width: 100%;
+  text-align: left;
+  border-radius: 0.75rem;
+  line-height: 1.45;
+}

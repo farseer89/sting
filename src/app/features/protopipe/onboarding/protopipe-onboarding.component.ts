@@ -97,6 +97,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
   readonly siteFoundServices = signal<string[]>([]);
   readonly tradeLabel = signal<string | null>(null);
   readonly tradeSuggestions = signal<string[]>([]);
+  readonly customerAvatarSuggestions = signal<string[]>([]);
   readonly competitors = signal<string[]>([]);
   readonly competitorDraft = signal('');
   readonly targetCustomerSites = signal<string[]>([]);
@@ -333,6 +334,31 @@ export class ProtopipeOnboardingComponent implements OnInit {
     return this.tradeSuggestions().filter((s) => !selected.has(s.toLowerCase()));
   }
 
+  availableAvatarSuggestions(): string[] {
+    const used = new Set(
+      this.customerAvatars()
+        .map((a) => a.trim().toLowerCase())
+        .filter(Boolean),
+    );
+    return this.customerAvatarSuggestions().filter((s) => !used.has(s.trim().toLowerCase()));
+  }
+
+  applyAvatarSuggestion(text: string): void {
+    const value = text.trim();
+    if (value.length < 5) return;
+
+    this.customerAvatars.update((avatars) => {
+      const next = [...avatars];
+      const emptyIndex = next.findIndex((a) => !a.trim());
+      if (emptyIndex >= 0) {
+        next[emptyIndex] = value;
+        return next;
+      }
+      if (next.length >= MAX_CUSTOMER_AVATARS) return next;
+      return [...next, value];
+    });
+  }
+
   removeServiceByName(name: string): void {
     const index = this.services().findIndex((s) => s.toLowerCase() === name.toLowerCase());
     if (index >= 0) {
@@ -345,6 +371,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
     this.siteFoundServices.set([]);
     this.tradeLabel.set(null);
     this.tradeSuggestions.set([]);
+    this.customerAvatarSuggestions.set([]);
     this.offerScanError.set(null);
   }
 
@@ -374,11 +401,33 @@ export class ProtopipeOnboardingComponent implements OnInit {
       const res = await this.api.scanOffer(siteId, { websiteUrl: url });
       this.offerScannedUrl.set(url);
       this.siteFoundServices.set(res.siteServices);
-      this.tradeLabel.set(res.tradeLabel ?? res.inferredTrade ?? null);
-      this.tradeSuggestions.set(res.tradeSuggestions);
+      this.tradeLabel.set(res.tradeLabel ?? null);
+      this.tradeSuggestions.set(res.suggestedServices ?? res.tradeSuggestions ?? []);
+      this.customerAvatarSuggestions.set(res.customerAvatars ?? []);
+
+      if (res.error === 'llm_not_configured') {
+        this.offerScanError.set(
+          'Site scan needs AI configured on the server — showing page headings only.',
+        );
+      }
 
       if (res.siteServices.length > 0 && this.services().length === 0) {
         this.services.set(res.siteServices.slice(0, MAX_SERVICES));
+      }
+
+      const suggestions = res.customerAvatars ?? [];
+      if (suggestions.length > 0) {
+        this.customerAvatars.update((avatars) => {
+          const next = [...avatars];
+          let changed = false;
+          for (let i = 0; i < suggestions.length && i < next.length; i += 1) {
+            if (!next[i]?.trim()) {
+              next[i] = suggestions[i];
+              changed = true;
+            }
+          }
+          return changed ? next : avatars;
+        });
       }
     } catch (err) {
       this.offerScanError.set(parseProtopipeApiError(err, 'Could not scan your website.'));

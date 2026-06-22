@@ -62,6 +62,9 @@
           <span class="tb-rail__num">{{ step.num }}</span>
           <span class="tb-rail__step-body">
             <span class="tb-rail__step-label">{{ step.label }}</span>
+            @if (step.isLlmStep) {
+              <span class="tb-rail__tag tb-rail__tag--llm">LLM</span>
+            }
             @if (step.status === 'done') {
               <span class="tb-rail__meta">
                 @if (step.durationMs) { {{ formatDuration(step.durationMs) }} }
@@ -94,11 +97,19 @@
           <div class="tb-stage-head__left">
             <div class="tb-panel-kicker">Step {{ step.num }}</div>
             <h2 class="tb-panel-title">{{ step.label }}</h2>
-            @if (step.summary) {
+            @if (step.description) {
+              <p class="tb-panel-deck">{{ step.description }}</p>
+              @if (step.summary && step.status !== 'pending') {
+                <p class="tb-panel-outcome">{{ step.summary }}</p>
+              }
+            } @else if (step.summary) {
               <p class="tb-panel-deck">{{ step.summary }}</p>
             }
           </div>
           <div class="tb-stage-head__right">
+            @if (step.isLlmStep) {
+              <span class="tb-chip tb-chip--llm">LLM step</span>
+            }
             @if (step.status === 'done') {
               <span class="tb-chip tb-chip--done">
                 <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -123,6 +134,9 @@
         <div class="tb-tabs">
           <button type="button" class="tb-tab" [class.is-active]="activeTab() === 'output'" (click)="activeTab.set('output')">output</button>
           <button type="button" class="tb-tab" [class.is-active]="activeTab() === 'steps'" (click)="activeTab.set('steps')">steps</button>
+          @if (step.isLlmStep) {
+            <button type="button" class="tb-tab" [class.is-active]="activeTab() === 'prompt'" (click)="activeTab.set('prompt')">prompt</button>
+          }
           <button type="button" class="tb-tab" [class.is-active]="activeTab() === 'events'" (click)="activeTab.set('events')">events</button>
           <button type="button" class="tb-tab" [class.is-active]="activeTab() === 'raw'" (click)="activeTab.set('raw')">raw</button>
         </div>
@@ -202,9 +216,18 @@
                   >
                     <span class="tb-rail__num">{{ sub.num }}</span>
                     <span class="tb-rail__step-body">
-                      <span class="tb-rail__step-label">{{ sub.label }}</span>
-                      @if (sub.at) {
+                      <span class="tb-rail__step-top">
+                        <span class="tb-rail__step-label">{{ sub.label }}</span>
+                        @if (sub.isLlm) {
+                          <span class="tb-rail__tag tb-rail__tag--llm">LLM</span>
+                        }
+                      </span>
+                      @if (sub.detail) {
+                        <span class="tb-rail__meta">{{ sub.detail }}</span>
+                      } @else if (sub.at) {
                         <span class="tb-rail__meta">{{ sub.at }}</span>
+                      } @else if (sub.status === 'running') {
+                        <span class="tb-rail__live">live</span>
                       }
                     </span>
                     <span class="tb-rail__dot-wrap">
@@ -221,6 +244,62 @@
                   </div>
                 }
               </nav>
+            }
+          }
+
+          @case ('prompt') {
+            @if (step.llmCalls.length === 0) {
+              <div class="tb-pending">
+                <span class="tb-pending__icon">○</span>
+                <p>
+                  @if (step.status === 'pending') {
+                    Prompt and response will appear here when this LLM step runs.
+                  } @else if (step.status === 'running') {
+                    Waiting for the model response…
+                  } @else {
+                    No LLM trace recorded for this step.
+                  }
+                </p>
+              </div>
+            } @else {
+              <div class="tb-llm-stack">
+                @for (call of step.llmCalls; track call.id) {
+                  <section class="tb-llm-call">
+                    <header class="tb-llm-call__head">
+                      <div>
+                        <div class="tb-llm-call__label">{{ call.label }}</div>
+                        <div class="tb-llm-call__meta">
+                          @if (call.model) { <span>{{ call.model }}</span> }
+                          @if (call.promptVersion) { <span>{{ call.promptVersion }}</span> }
+                          @if (call.tokenSummary) { <span>{{ call.tokenSummary }}</span> }
+                          @if (call.costUsd) { <span>{{ formatCost(call.costUsd) }}</span> }
+                        </div>
+                      </div>
+                    </header>
+
+                    <div class="tb-llm-call__grid">
+                      <div class="tb-artifact-col">
+                        <div class="tb-artifact-col__label">System</div>
+                        <div class="tb-artifact-card">
+                          <pre class="tb-artifact-card__body">{{ call.system }}</pre>
+                        </div>
+                      </div>
+                      <div class="tb-artifact-col">
+                        <div class="tb-artifact-col__label">User prompt</div>
+                        <div class="tb-artifact-card tb-artifact-card--input">
+                          <pre class="tb-artifact-card__body">{{ call.user }}</pre>
+                        </div>
+                      </div>
+                      <div class="tb-artifact-col tb-artifact-col--out">
+                        <div class="tb-artifact-col__label">Model response</div>
+                        <div class="tb-artifact-card tb-artifact-card--output">
+                          <pre class="tb-artifact-card__body">{{ call.response }}</pre>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                }
+              </div>
             }
           }
 

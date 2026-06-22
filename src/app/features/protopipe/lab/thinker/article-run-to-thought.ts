@@ -16,6 +16,7 @@ import type {
   ThoughtStatus,
   ThoughtStep,
   ThoughtStepStatus,
+  ThoughtLlmCall,
 } from './thought.model';
 import { sumCosts } from './thinker-cost';
 
@@ -56,6 +57,48 @@ const STEP_META: Record<
     summary: 'Plan hero and section images with consistent editorial style via fal.ai.',
   },
 };
+
+function mapLlmTrace(trace: NonNullable<ArticleGenerationRunDto['llmTraces']>[number]): ThoughtLlmCall {
+  return {
+    id: trace.id,
+    label: trace.label,
+    callId: trace.callId,
+    promptVersion: trace.promptVersion,
+    model: trace.model,
+    system: trace.system,
+    user: trace.user,
+    response: trace.response,
+    inputTokens: trace.inputTokens,
+    outputTokens: trace.outputTokens,
+    costUsd: trace.costUsd,
+    durationMs: trace.durationMs,
+  };
+}
+
+function attachArticleLlmCalls(steps: ThoughtStep[], run: ArticleGenerationRunDto): void {
+  const traces = run.llmTraces ?? [];
+  if (traces.length === 0) return;
+
+  const byStep = new Map<string, ThoughtLlmCall[]>();
+  for (const trace of traces) {
+    const list = byStep.get(trace.pipelineStep) ?? [];
+    list.push(mapLlmTrace(trace));
+    byStep.set(trace.pipelineStep, list);
+  }
+
+  const trainSteps = steps.filter((s) => s.id.startsWith('train:'));
+  const cognitiveTraces = byStep.get('cognitive_pass') ?? [];
+
+  for (const step of steps) {
+    if (step.id.startsWith('train:')) {
+      if (step === trainSteps[0]) {
+        step.llmCalls = cognitiveTraces;
+      }
+      continue;
+    }
+    step.llmCalls = byStep.get(step.id) ?? [];
+  }
+}
 
 function runStatus(run: ArticleGenerationRunDto): ThoughtStatus {
   switch (run.status) {
@@ -577,6 +620,7 @@ export function articleRunToThought(run: ArticleGenerationRunDto): Thought {
   });
 
   let expandedSteps = expandCognitiveTrainSteps(run, steps, stepOrder);
+  attachArticleLlmCalls(expandedSteps, run);
 
   // Chain inputs: each step takes the prior step's output as its input view.
   for (let i = 1; i < expandedSteps.length; i++) {

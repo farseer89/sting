@@ -1,6 +1,8 @@
 import type {
   ProtopipeContentPlanStep,
   ProtopipeContentPlanStepEvent,
+  ProtopipeKeywordTier,
+  ProtopipeScoredKeyword,
   ProtopipeSiteContentPlan,
 } from '@hive/contracts';
 import type {
@@ -10,6 +12,8 @@ import type {
   ThoughtStatus,
   ThoughtStep,
   ThoughtStepStatus,
+  ThoughtSubStep,
+  ThoughtLlmCall,
 } from '../thinker/thought.model';
 import { sumCosts } from '../thinker/thinker-cost';
 
@@ -17,6 +21,38 @@ import { sumCosts } from '../thinker/thinker-cost';
  * Adapter: project a SiteContentPlan run onto the generic Thought model so the
  * content-plan pipeline renders in the same Thinker view as article generation.
  */
+
+export const CONTENT_PLAN_LLM_STEPS = new Set<ProtopipeContentPlanStep>([
+  'cluster',
+  'unify',
+  'strategy_intel',
+]);
+
+function mapLlmTrace(trace: NonNullable<ProtopipeSiteContentPlan['llmTraces']>[number]): ThoughtLlmCall {
+  return {
+    id: trace.id,
+    label: trace.label,
+    callId: trace.callId,
+    promptVersion: trace.promptVersion,
+    model: trace.model,
+    system: trace.system,
+    user: trace.user,
+    response: trace.response,
+    inputTokens: trace.inputTokens,
+    outputTokens: trace.outputTokens,
+    costUsd: trace.costUsd,
+    durationMs: trace.durationMs,
+  };
+}
+
+function llmCallsForStep(
+  plan: ProtopipeSiteContentPlan,
+  step: ProtopipeContentPlanStep,
+): ThoughtLlmCall[] {
+  return (plan.llmTraces ?? [])
+    .filter((trace) => trace.pipelineStep === step)
+    .map(mapLlmTrace);
+}
 
 export const CONTENT_PLAN_STEP_ORDER: ProtopipeContentPlanStep[] = [
   'audit',
@@ -29,31 +65,43 @@ export const CONTENT_PLAN_STEP_ORDER: ProtopipeContentPlanStep[] = [
 
 const STEP_META: Record<
   ProtopipeContentPlanStep,
-  { label: string; summary: string }
+  { label: string; summary: string; description: string }
 > = {
   audit: {
     label: 'Site audit',
     summary: 'Scan existing site content for gaps and overlap.',
+    description:
+      'Crawls your site (sitemap or homepage links) and maps what you already publish. Flags pages that overlap your target keywords and spots gaps where new content can win.',
   },
   score_tier: {
     label: 'Score & tier',
     summary: 'Score keywords and assign immediate / long-term / long-tail tiers.',
+    description:
+      'Takes each keyword from your strategy and scores its opportunity — search volume weighed against organic ranking difficulty. Keywords are sorted into immediate focus (win now), long-term (build toward), and long-tail (quick wins and expansions).',
   },
   cluster: {
     label: 'Cluster',
     summary: 'Group keywords into thematic clusters with LLM categorization.',
+    description:
+      'Groups related keywords into content themes. Each cluster gets a pillar phrase and supporting members so articles reinforce each other instead of competing.',
   },
   unify: {
     label: 'Unify plan',
     summary: 'Build pillars, calendar, and narrative from clusters.',
+    description:
+      'Turns clusters into a concrete plan: content pillars, a prioritized publishing calendar, and a short narrative explaining why this sequence wins.',
   },
   deep_scan: {
     label: 'Deep scan',
     summary: 'Run competition analysis on calendar focus keywords.',
+    description:
+      'Runs a full competitor analysis on each calendar keyword — who ranks today, what angles they take, and what your articles need to beat them.',
   },
   strategy_intel: {
     label: 'Strategy intel',
     summary: 'Warm shared competitive strategy, journey maps, and thesis seeds.',
+    description:
+      'Builds shared strategy intelligence from the deep scans: per-keyword competitive angles, cluster-level themes, audience journey maps, and topic backlog seeds for later.',
   },
 };
 
@@ -193,6 +241,298 @@ function mapEvents(evs: ProtopipeContentPlanStepEvent[]): ThoughtEvent[] {
   });
 }
 
+function tierLabel(tier: ProtopipeKeywordTier): string {
+  switch (tier) {
+    case 'immediate_focus':
+      return 'immediate focus';
+    case 'long_term':
+      return 'long-term';
+    case 'long_tail':
+      return 'long-tail';
+  }
+}
+
+function formatVolume(volume: number | undefined): string | undefined {
+  if (volume == null) return undefined;
+  if (volume >= 1000) return `${(volume / 1000).toFixed(1)}k/mo`;
+  return `${volume}/mo`;
+}
+
+function flattenScoredKeywords(plan: ProtopipeSiteContentPlan): ProtopipeScoredKeyword[] {
+  const { immediateFocus, longTerm, longTail } = plan.keywordTiers;
+  return [...immediateFocus, ...longTerm, ...longTail];
+}
+
+function keywordInputCount(plan: ProtopipeSiteContentPlan): number {
+  const tiered = flattenScoredKeywords(plan);
+  if (tiered.length > 0) return tiered.length;
+  return plan.keywordStrategySnapshot?.confirmedKeywords?.length ?? 0;
+}
+
+function phaseStatus(
+  phaseIndex: number,
+  phaseCount: number,
+  stepStatus: ThoughtStepStatus,
+): ThoughtStepStatus {
+  if (stepStatus === 'pending') return 'pending';
+  if (stepStatus === 'failed') return phaseIndex === phaseCount - 1 ? 'failed' : 'complete';
+  if (stepStatus === 'running') {
+    if (phaseIndex < phaseCount - 1) return 'complete';
+    return 'running';
+  }
+  return 'complete';
+}
+
+function keywordDetail(kw: ProtopipeScoredKeyword): string {
+  const parts = [tierLabel(kw.tier), `score ${kw.opportunityScore}`];
+  const vol = formatVolume(kw.searchVolume);
+  if (vol) parts.push(vol);
+  if (kw.difficulty != null) parts.push(`KD ${kw.difficulty}`);
+  return parts.join(' · ');
+}
+
+function buildContentPlanSubSteps(
+  step: ProtopipeContentPlanStep,
+  plan: ProtopipeSiteContentPlan,
+  evs: ProtopipeContentPlanStepEvent[],
+  stepStatus: ThoughtStepStatus,
+): ThoughtSubStep[] {
+  const keywordCount = keywordInputCount(plan);
+
+  switch (step) {
+    case 'audit': {
+      const phases: ThoughtSubStep[] = [
+        {
+          id: 'audit:crawl',
+          label: 'Crawl site pages',
+          detail: 'Sitemap or homepage link discovery',
+          status: phaseStatus(0, 3, stepStatus),
+        },
+        {
+          id: 'audit:match',
+          label: 'Match keywords to existing content',
+          detail: keywordCount ? `${keywordCount} target phrase(s)` : 'Target phrases from strategy',
+          status: phaseStatus(1, 3, stepStatus),
+        },
+        {
+          id: 'audit:gaps',
+          label: 'Flag gaps and overlap',
+          detail: 'Pages to refresh vs net-new topics',
+          status: phaseStatus(2, 3, stepStatus),
+        },
+      ];
+      if (plan.existingContent?.scannedCount) {
+        phases[2] = {
+          ...phases[2],
+          detail: `${plan.existingContent.scannedCount} page(s) scanned · gaps and overlap flagged`,
+          status: 'complete',
+        };
+      }
+      return phases;
+    }
+
+    case 'score_tier': {
+      const hasSnapshot = Boolean(plan.keywordStrategySnapshot?.confirmedKeywords?.length);
+      const phases: ThoughtSubStep[] = [
+        {
+          id: 'score:load',
+          label: 'Load saved keywords',
+          detail: keywordCount ? `${keywordCount} phrase(s) from your strategy` : 'From site keyword list',
+          status: phaseStatus(0, 4, stepStatus),
+        },
+        {
+          id: 'score:metrics',
+          label: 'Fetch volume & difficulty',
+          detail: hasSnapshot
+            ? 'Reuse discovery metrics where still fresh'
+            : 'DataForSEO difficulty + Google Ads volume',
+          status: phaseStatus(1, 4, stepStatus),
+        },
+        {
+          id: 'score:opportunity',
+          label: 'Score opportunity',
+          detail: 'Volume × (1 − difficulty) for each phrase',
+          status: phaseStatus(2, 4, stepStatus),
+        },
+        {
+          id: 'score:tier',
+          label: 'Assign tiers',
+          detail: 'Immediate focus · long-term · long-tail',
+          status: phaseStatus(3, 4, stepStatus),
+        },
+      ];
+
+      const scored = flattenScoredKeywords(plan);
+      if (scored.length > 0 && (stepStatus === 'complete' || stepStatus === 'failed')) {
+        const keywordRows: ThoughtSubStep[] = scored.map((kw) => ({
+          id: `score:kw:${kw.phrase}`,
+          label: kw.phrase,
+          detail: keywordDetail(kw),
+          status: 'complete',
+        }));
+        return [...phases.map((p) => ({ ...p, status: 'complete' as ThoughtStepStatus })), ...keywordRows];
+      }
+
+      return phases;
+    }
+
+    case 'cluster': {
+      const phases: ThoughtSubStep[] = [
+        {
+          id: 'cluster:group',
+          label: 'Group related keywords',
+          detail: keywordCount ? `${keywordCount} scored phrase(s)` : 'Scored keywords from prior step',
+          status: phaseStatus(0, 2, stepStatus),
+        },
+        {
+          id: 'cluster:label',
+          label: 'Name clusters and assign pillars',
+          detail: 'LLM categorization with business context',
+          status: phaseStatus(1, 2, stepStatus),
+        },
+      ];
+      if (plan.clusters.length > 0 && stepStatus !== 'pending') {
+        return [
+          ...phases.map((p) => ({ ...p, status: 'complete' as ThoughtStepStatus })),
+          ...plan.clusters.map((c) => ({
+            id: `cluster:${c.name}`,
+            label: c.name,
+            detail: `${c.members.length} member(s) · pillar “${c.pillarKeyword}”`,
+            status: 'complete' as ThoughtStepStatus,
+          })),
+        ];
+      }
+      return phases;
+    }
+
+    case 'unify': {
+      const phases: ThoughtSubStep[] = [
+        {
+          id: 'unify:pillars',
+          label: 'Define content pillars',
+          detail: 'One pillar per cluster theme',
+          status: phaseStatus(0, 3, stepStatus),
+        },
+        {
+          id: 'unify:calendar',
+          label: 'Build publishing calendar',
+          detail: 'Prioritized articles with publish dates',
+          status: phaseStatus(1, 3, stepStatus),
+        },
+        {
+          id: 'unify:narrative',
+          label: 'Write plan narrative',
+          detail: 'Headline and why this sequence wins',
+          status: phaseStatus(2, 3, stepStatus),
+        },
+      ];
+      if (stepStatus === 'complete' && plan.calendar.length > 0) {
+        return [
+          ...phases.map((p) => ({ ...p, status: 'complete' as ThoughtStepStatus })),
+          ...plan.calendar.slice(0, 8).map((item, i) => ({
+            id: `unify:cal:${i}`,
+            label: item.workingTitle,
+            detail: `${item.suggestedKeyword} · ${item.priority} priority`,
+            status: 'complete' as ThoughtStepStatus,
+          })),
+          ...(plan.calendar.length > 8
+            ? [
+                {
+                  id: 'unify:cal:more',
+                  label: `${plan.calendar.length - 8} more calendar item(s)`,
+                  detail: 'See output tab for full calendar',
+                  status: 'complete' as ThoughtStepStatus,
+                },
+              ]
+            : []),
+        ];
+      }
+      return phases;
+    }
+
+    case 'deep_scan': {
+      const scanNotes = evs
+        .map((e) => e.note)
+        .filter((note): note is string => Boolean(note?.includes('scanning "')));
+      if (scanNotes.length > 0) {
+        return scanNotes.map((note, i) => {
+          const phraseMatch = note.match(/scanning "([^"]+)"/);
+          const progressMatch = note.match(/(\d+)\/(\d+)/);
+          return {
+            id: `deep:${i}:${phraseMatch?.[1] ?? i}`,
+            label: phraseMatch?.[1] ?? `Keyword ${i + 1}`,
+            detail: progressMatch ? `${progressMatch[1]} of ${progressMatch[2]} calendar keywords` : 'Competitor analysis',
+            status: 'complete' as ThoughtStepStatus,
+          };
+        });
+      }
+
+      const calendarCount = plan.calendar.length;
+      return [
+        {
+          id: 'deep:prepare',
+          label: 'Prepare calendar keywords',
+          detail: calendarCount ? `${calendarCount} focus phrase(s)` : 'From unified calendar',
+          status: phaseStatus(0, 2, stepStatus),
+        },
+        {
+          id: 'deep:analyze',
+          label: 'Analyze top-ranking competitors',
+          detail: 'SERP scan per calendar keyword',
+          status: phaseStatus(1, 2, stepStatus),
+        },
+      ];
+    }
+
+    case 'strategy_intel': {
+      const phases: ThoughtSubStep[] = [
+        {
+          id: 'intel:keyword',
+          label: 'Keyword-level competitive intel',
+          detail: 'Angles and gaps from deep scans',
+          status: phaseStatus(0, 4, stepStatus),
+        },
+        {
+          id: 'intel:cluster',
+          label: 'Cluster strategy themes',
+          detail: 'Shared narratives per theme',
+          status: phaseStatus(1, 4, stepStatus),
+        },
+        {
+          id: 'intel:journey',
+          label: 'Audience journey maps',
+          detail: 'Voice and intent per avatar',
+          status: phaseStatus(2, 4, stepStatus),
+        },
+        {
+          id: 'intel:backlog',
+          label: 'Harvest topic backlog',
+          detail: 'Unscheduled candidates for later',
+          status: phaseStatus(3, 4, stepStatus),
+        },
+      ];
+      if (plan.strategyIntel && stepStatus === 'complete') {
+        return phases.map((p) => ({
+          ...p,
+          status: 'complete' as ThoughtStepStatus,
+          detail:
+            p.id === 'intel:keyword'
+              ? `${plan.strategyIntel!.keywordIntel?.length ?? 0} keyword intel row(s)`
+              : p.id === 'intel:cluster'
+                ? `${plan.strategyIntel!.clusterIntel?.length ?? 0} cluster theme(s)`
+                : p.id === 'intel:journey'
+                  ? `${plan.strategyIntel!.avatarIntel?.length ?? 0} audience journey(s)`
+                  : `${plan.backlog?.length ?? 0} backlog candidate(s)`,
+        }));
+      }
+      return phases;
+    }
+
+    default:
+      return [];
+  }
+}
+
 export function contentPlanRunToThought(plan: ProtopipeSiteContentPlan): Thought {
   const events = plan.events ?? [];
   const eventsByStep = new Map<ProtopipeContentPlanStep, ProtopipeContentPlanStepEvent[]>();
@@ -244,6 +584,7 @@ export function contentPlanRunToThought(plan: ProtopipeSiteContentPlan): Thought
     return {
       id: step,
       label: meta.label,
+      description: meta.description,
       summary: finished?.note ?? meta.summary,
       status,
       costUsd: stepCostUsd,
@@ -253,6 +594,8 @@ export function contentPlanRunToThought(plan: ProtopipeSiteContentPlan): Thought
       attempt: Math.max(1, evs.filter((e) => e.status === 'started').length),
       output: status === 'complete' || status === 'failed' ? stepOutput(step, plan) : undefined,
       events: mapEvents(evs),
+      subSteps: buildContentPlanSubSteps(step, plan, evs, status),
+      llmCalls: llmCallsForStep(plan, step),
       error,
     } satisfies ThoughtStep;
   });

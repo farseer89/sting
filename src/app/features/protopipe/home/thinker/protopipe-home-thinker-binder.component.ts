@@ -20,7 +20,7 @@ import {
   type BinderStepView,
 } from './thinker-binder.mapper';
 
-type ThinkerTab = 'output' | 'steps' | 'events' | 'raw';
+type ThinkerTab = 'output' | 'steps' | 'prompt' | 'events' | 'raw';
 
 @Component({
   selector: 'app-protopipe-home-thinker-binder',

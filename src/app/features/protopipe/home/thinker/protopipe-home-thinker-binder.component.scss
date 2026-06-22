@@ -251,6 +251,29 @@ $tb-red: #dc2626;
   .tb-rail__item--pending & { color: $tb-dim; }
 }
 
+.tb-rail__step-top {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.tb-rail__tag {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.05rem 0.35rem;
+  border-radius: 100px;
+  flex-shrink: 0;
+
+  &--llm {
+    background: #ede9fe;
+    color: #6d28d9;
+    border: 1px solid #ddd6fe;
+  }
+}
+
 .tb-rail__meta {
   font-size: 0.5875rem;
   color: $tb-dim;
@@ -355,6 +378,18 @@ $tb-red: #dc2626;
   line-height: 1.6;
 }
 
+.tb-panel-outcome {
+  font-size: 0.75rem;
+  color: $tb-ink;
+  margin: 0.5rem 0 0;
+  max-width: 48rem;
+  line-height: 1.5;
+  padding: 0.45rem 0.65rem;
+  border-left: 3px solid $tb-accent;
+  background: #fafbff;
+  border-radius: 0 0.25rem 0.25rem 0;
+}
+
 // ── Status chips
 
 .tb-chip {
@@ -403,6 +438,12 @@ $tb-red: #dc2626;
     background: #fef2f2;
     color: $tb-red;
     border-color: #fecaca;
+  }
+
+  &--llm {
+    background: #ede9fe;
+    color: #6d28d9;
+    border-color: #ddd6fe;
   }
 }
 
@@ -453,7 +494,53 @@ $tb-red: #dc2626;
   border-radius: 0.5rem;
   padding: 0.75rem 0.5rem;
   background: $tb-bg-subtle;
-  max-width: 28rem;
+  max-width: 36rem;
+}
+
+.tb-llm-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.tb-llm-call {
+  border: 1px solid $tb-border;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: $tb-bg;
+}
+
+.tb-llm-call__head {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid $tb-border;
+  background: $tb-bg-subtle;
+}
+
+.tb-llm-call__label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: $tb-ink;
+}
+
+.tb-llm-call__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  font-size: 0.625rem;
+  color: $tb-muted;
+  font-family: $tb-mono;
+}
+
+.tb-llm-call__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.75rem;
+  padding: 0.75rem;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
 }
 
 // ── Artifact flow

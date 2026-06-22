@@ -48,6 +48,31 @@ export interface ThoughtStepError {
   offendingInput?: ThoughtArtifact;
 }
 
+/** One internal operation within a pipeline step (shown in the steps tab). */
+export interface ThoughtSubStep {
+  id: string;
+  label: string;
+  detail?: string;
+  status: ThoughtStepStatus;
+  isLlm?: boolean;
+}
+
+/** Recorded LLM prompt/response for inspector UI. */
+export interface ThoughtLlmCall {
+  id: string;
+  label: string;
+  callId: string;
+  promptVersion?: string;
+  model?: string;
+  system: string;
+  user: string;
+  response: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  costUsd?: number;
+  durationMs?: number;
+}
+
 export interface ThoughtStep {
   id: string;
   label: string;
@@ -65,6 +90,10 @@ export interface ThoughtStep {
   /** Prior output retained when a step is rerun, to power the diff view. */
   previousOutput?: ThoughtArtifact[];
   events: ThoughtEvent[];
+  /** Structured breakdown of work inside this step (preferred over raw events in UI). */
+  subSteps?: ThoughtSubStep[];
+  /** LLM calls recorded during this step (prompt in / response out). */
+  llmCalls?: ThoughtLlmCall[];
   error?: ThoughtStepError;
   promptVersion?: string;
   /** Estimated API + LLM cost for this step (USD). */

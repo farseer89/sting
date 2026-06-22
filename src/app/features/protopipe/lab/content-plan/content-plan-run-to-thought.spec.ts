@@ -133,6 +133,47 @@ describe('contentPlanRunToThought', () => {
     expect(thought.steps.find((s) => s.id === 'unify')?.output?.length).toBeGreaterThan(0);
   });
 
+  it('includes score tier description and per-keyword sub-steps', () => {
+    const thought = contentPlanRunToThought(
+      minimalPlan({
+        keywordStrategySnapshot: {
+          confirmedKeywords: [
+            { phrase: 'emergency plumber', avatarId: 'a1' },
+            { phrase: 'drain cleaning', avatarId: 'a1' },
+          ],
+          confirmedAvatars: [{ id: 'a1', description: 'Homeowner' }],
+        },
+        keywordTiers: {
+          immediateFocus: [
+            {
+              phrase: 'emergency plumber',
+              opportunityScore: 80,
+              tier: 'immediate_focus',
+              source: 'plan',
+              searchVolume: 1200,
+              difficulty: 35,
+            },
+          ],
+          longTerm: [
+            {
+              phrase: 'drain cleaning',
+              opportunityScore: 55,
+              tier: 'long_term',
+              source: 'plan',
+              searchVolume: 800,
+              difficulty: 48,
+            },
+          ],
+          longTail: [],
+        },
+      }),
+    );
+    const score = thought.steps.find((s) => s.id === 'score_tier');
+    expect(score?.description).toContain('opportunity');
+    expect(score?.subSteps?.some((s) => s.id === 'score:load')).toBe(true);
+    expect(score?.subSteps?.some((s) => s.label === 'emergency plumber')).toBe(true);
+  });
+
   it('surfaces failed run on active step', () => {
     const thought = contentPlanRunToThought(
       minimalPlan({

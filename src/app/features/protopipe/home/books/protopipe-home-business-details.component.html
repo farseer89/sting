@@ -191,7 +191,7 @@
               <p class="bus-panel-deck">Services captured during onboarding — used for keyword relevance and content angles.</p>
             </div>
 
-            @if (profile()?.services.length) {
+            @if (profile()?.services?.length) {
               <ul class="bus-chip-list">
                 @for (service of profile()!.services; track $index) {
                   <li class="bus-chip">{{ service }}</li>
@@ -280,7 +280,7 @@
               <p class="bus-panel-deck">Competitor domains from onboarding — used for gap analysis and SERP context.</p>
             </div>
 
-            @if (profile()?.competitors.length) {
+            @if (profile()?.competitors?.length) {
               <ul class="bus-chip-list">
                 @for (competitor of profile()!.competitors; track $index) {
                   <li class="bus-chip bus-chip--muted">{{ competitor }}</li>

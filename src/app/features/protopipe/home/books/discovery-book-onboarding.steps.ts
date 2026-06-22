@@ -46,7 +46,7 @@ export const DISCOVERY_BOOK_ONBOARDING_STEPS: readonly DiscoveryBookOnboardingSt
     navLabel: 'Your customers',
     kicker: 'Your customers',
     title: 'Who are your perfect customers?',
-    helper: 'Describe what each person wants — keep it simple.',
+    helper: 'Describe what each person wants — then add detail to sharpen each profile.',
   },
   {
     onboardingStep: 4,

@@ -338,7 +338,7 @@
       <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
         <p class="eyebrow">Your customers</p>
         <h1 class="question">Who are your perfect customers?</h1>
-        <p class="helper">Describe what each person wants — keep it simple.</p>
+        <p class="helper">Describe what each person wants — then add detail to sharpen the profile.</p>
 
         @if (availableAvatarSuggestions().length > 0) {
           <section class="offer-section" aria-labelledby="customer-suggest-heading">
@@ -364,41 +364,85 @@
 
         <div class="avatar-list" role="group" aria-label="Customer avatars">
           @for (slot of avatarSlots(); track slot) {
-            <div
-              class="avatar-row"
-              [class.avatar-row--filled]="customerAvatars()[slot].trim().length > 0"
-            >
-              <span class="avatar-head" aria-hidden="true">
-                <i class="pi pi-user"></i>
-              </span>
-              @if (slot === 0) {
-                <input
-                  #avatarInput0
-                  id="avatarInput0"
-                  type="text"
-                  pInputText
-                  class="avatar-row__input"
-                  [value]="customerAvatars()[slot]"
-                  (input)="updateCustomerAvatar(slot, $any($event.target).value)"
-                  [placeholder]="avatarPlaceholder(slot)"
-                  aria-label="Customer 1: what they want"
-                  aria-required="true"
-                />
-              } @else {
-                <input
-                  [id]="'avatarInput' + slot"
-                  type="text"
-                  pInputText
-                  class="avatar-row__input"
-                  [value]="customerAvatars()[slot]"
-                  (input)="updateCustomerAvatar(slot, $any($event.target).value)"
-                  [placeholder]="avatarPlaceholder(slot)"
-                  [attr.aria-label]="'Customer ' + (slot + 1) + ': what they want'"
-                />
+            <div class="avatar-block">
+              <div
+                class="avatar-row"
+                [class.avatar-row--filled]="customerAvatars()[slot].trim().length > 0"
+              >
+                <span class="avatar-head" aria-hidden="true">
+                  <i class="pi pi-user"></i>
+                </span>
+                @if (slot === 0) {
+                  <input
+                    #avatarInput0
+                    id="avatarInput0"
+                    type="text"
+                    pInputText
+                    class="avatar-row__input"
+                    [value]="customerAvatars()[slot]"
+                    (input)="updateCustomerAvatar(slot, $any($event.target).value)"
+                    [placeholder]="avatarPlaceholder(slot)"
+                    aria-label="Customer 1: what they want"
+                    aria-required="true"
+                  />
+                } @else {
+                  <input
+                    [id]="'avatarInput' + slot"
+                    type="text"
+                    pInputText
+                    class="avatar-row__input"
+                    [value]="customerAvatars()[slot]"
+                    (input)="updateCustomerAvatar(slot, $any($event.target).value)"
+                    [placeholder]="avatarPlaceholder(slot)"
+                    [attr.aria-label]="'Customer ' + (slot + 1) + ': what they want'"
+                  />
+                }
+              </div>
+
+              @if (avatarEnrichmentFor(slot); as pending) {
+                <div class="avatar-enrich" aria-live="polite">
+                  <p class="avatar-enrich__label">Suggested detail</p>
+                  <p class="avatar-enrich__text">{{ pending.enriched }}</p>
+                  <div class="avatar-enrich__actions">
+                    <button
+                      type="button"
+                      class="avatar-enrich__confirm"
+                      (click)="confirmAvatarEnrichment(slot)"
+                    >
+                      Use this
+                    </button>
+                    <button
+                      type="button"
+                      class="avatar-enrich__dismiss"
+                      (click)="dismissAvatarEnrichment(slot)"
+                    >
+                      Keep mine
+                    </button>
+                  </div>
+                </div>
+              } @else if (canEnrichCustomerAvatar(slot)) {
+                <button
+                  type="button"
+                  class="avatar-enrich__trigger"
+                  (click)="enrichCustomerAvatar(slot)"
+                  [disabled]="avatarEnrichingSlot() === slot"
+                >
+                  @if (avatarEnrichingSlot() === slot) {
+                    <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                    Adding detail…
+                  } @else {
+                    <i class="pi pi-sparkles" aria-hidden="true"></i>
+                    Add detail
+                  }
+                </button>
               }
             </div>
           }
         </div>
+
+        @if (avatarEnrichError(); as enrichErr) {
+          <p class="offer-scan offer-scan--error">{{ enrichErr }}</p>
+        }
 
         <div class="avatar-add-more">
           <button

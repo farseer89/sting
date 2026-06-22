@@ -240,6 +240,44 @@
               ></textarea>
             </label>
 
+            @if (store.avatarEnrichmentFor(slot); as pending) {
+              <div class="kb-person-enrich" aria-live="polite">
+                <p class="kb-person-enrich__label">Suggested detail</p>
+                <p class="kb-person-enrich__text">{{ pending.enriched }}</p>
+                <div class="kb-person-enrich__actions">
+                  <button
+                    type="button"
+                    class="kb-person-enrich__confirm"
+                    (click)="store.confirmAvatarEnrichment(slot)"
+                  >
+                    Use this
+                  </button>
+                  <button
+                    type="button"
+                    class="kb-person-enrich__dismiss"
+                    (click)="store.dismissAvatarEnrichment(slot)"
+                  >
+                    Keep mine
+                  </button>
+                </div>
+              </div>
+            } @else if (store.canEnrichCustomerAvatar(slot)) {
+              <button
+                type="button"
+                class="kb-person-enrich__trigger"
+                (click)="store.enrichCustomerAvatar(slot)"
+                [disabled]="store.avatarEnrichingSlot() === slot"
+              >
+                @if (store.avatarEnrichingSlot() === slot) {
+                  <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                  Adding detail…
+                } @else {
+                  <i class="pi pi-sparkles" aria-hidden="true"></i>
+                  Add detail
+                }
+              </button>
+            }
+
             <footer class="kb-person-card__foot">
               @if (slot === 0) {
                 <span class="kb-person-card__badge kb-person-card__badge--primary">Primary profile</span>
@@ -255,6 +293,10 @@
           </article>
         }
       </div>
+
+      @if (store.avatarEnrichError(); as enrichErr) {
+        <p class="kb-offer-scan kb-offer-scan--error">{{ enrichErr }}</p>
+      }
 
       <div class="kb-customer-add">
         <button

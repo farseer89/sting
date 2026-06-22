@@ -53,6 +53,8 @@ import type {
   ProtopipeScanOfferResponse,
   ProtopipeExpandOfferRequest,
   ProtopipeExpandOfferResponse,
+  ProtopipeEnrichCustomerRequest,
+  ProtopipeEnrichCustomerResponse,
   ProtopipeUpdateTargetCustomersRequest,
   ProtopipeUpdateTargetCustomersResponse,
   ProtopipePlan,
@@ -229,6 +231,18 @@ export class ProtopipeApiService {
     return firstValueFrom(
       this.http.post<ProtopipeExpandOfferResponse>(
         protopipeApiUrl(ProtopipeEndpoints.expandOffer.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  enrichCustomer(
+    siteId: string,
+    body: ProtopipeEnrichCustomerRequest,
+  ): Promise<ProtopipeEnrichCustomerResponse> {
+    return firstValueFrom(
+      this.http.post<ProtopipeEnrichCustomerResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.enrichCustomer.path, { siteId }),
         body,
       ),
     );

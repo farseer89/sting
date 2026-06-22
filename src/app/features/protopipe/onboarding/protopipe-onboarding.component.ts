@@ -48,6 +48,11 @@ const MAX_COMPETITORS = 3;
 const MAX_TARGET_CUSTOMERS = 5;
 const MAX_CUSTOMER_AVATARS = 12;
 
+interface AvatarEnrichmentPending {
+  original: string;
+  enriched: string;
+}
+
 @Component({
   selector: 'app-protopipe-onboarding',
   standalone: true,
@@ -109,6 +114,9 @@ export class ProtopipeOnboardingComponent implements OnInit {
   /** Customer avatars — what each person wants (simple text per slot). */
   readonly maxCustomerAvatars = MAX_CUSTOMER_AVATARS;
   readonly customerAvatars = signal<string[]>(['', '', '']);
+  readonly avatarEnrichmentPending = signal<Record<number, AvatarEnrichmentPending>>({});
+  readonly avatarEnrichingSlot = signal<number | null>(null);
+  readonly avatarEnrichError = signal<string | null>(null);
 
   readonly avatarSlots = computed(() =>
     this.customerAvatars().map((_, index) => index),
@@ -555,6 +563,90 @@ export class ProtopipeOnboardingComponent implements OnInit {
       next[index] = value.slice(0, 200);
       return next;
     });
+    this.clearAvatarEnrichment(index);
+  }
+
+  avatarEnrichmentFor(index: number): AvatarEnrichmentPending | null {
+    return this.avatarEnrichmentPending()[index] ?? null;
+  }
+
+  canEnrichCustomerAvatar(index: number): boolean {
+    const text = (this.customerAvatars()[index] ?? '').trim();
+    return (
+      text.length >= 5 &&
+      this.avatarEnrichmentFor(index) == null &&
+      this.avatarEnrichingSlot() !== index
+    );
+  }
+
+  private clearAvatarEnrichment(index: number): void {
+    this.avatarEnrichmentPending.update((pending) => {
+      if (!(index in pending)) return pending;
+      const next = { ...pending };
+      delete next[index];
+      return next;
+    });
+  }
+
+  dismissAvatarEnrichment(index: number): void {
+    this.clearAvatarEnrichment(index);
+    this.avatarEnrichError.set(null);
+  }
+
+  confirmAvatarEnrichment(index: number): void {
+    const pending = this.avatarEnrichmentFor(index);
+    if (!pending) return;
+    this.customerAvatars.update((list) => {
+      const next = [...list];
+      next[index] = pending.enriched;
+      return next;
+    });
+    this.clearAvatarEnrichment(index);
+    this.avatarEnrichError.set(null);
+  }
+
+  async enrichCustomerAvatar(index: number): Promise<void> {
+    const draft = (this.customerAvatars()[index] ?? '').trim();
+    if (draft.length < 5) return;
+
+    const siteId = this.siteId();
+    if (!siteId) {
+      this.avatarEnrichError.set('No site loaded.');
+      return;
+    }
+
+    this.avatarEnrichingSlot.set(index);
+    this.avatarEnrichError.set(null);
+
+    try {
+      const res = await this.api.enrichCustomer(siteId, {
+        draft,
+        services: this.services(),
+        tradeLabel: this.tradeLabel() ?? undefined,
+      });
+
+      if (res.error === 'llm_not_configured') {
+        this.avatarEnrichError.set('Add detail needs AI configured on the server.');
+        return;
+      }
+      if (res.error === 'no_change') {
+        this.avatarEnrichError.set('Already specific enough — add a bit more detail first.');
+        return;
+      }
+      if (res.error && res.enriched === draft) {
+        this.avatarEnrichError.set('Could not add detail right now — try again.');
+        return;
+      }
+
+      this.avatarEnrichmentPending.update((pending) => ({
+        ...pending,
+        [index]: { original: draft, enriched: res.enriched },
+      }));
+    } catch (err) {
+      this.avatarEnrichError.set(parseProtopipeApiError(err, 'Could not add detail.'));
+    } finally {
+      this.avatarEnrichingSlot.set(null);
+    }
   }
 
   addCustomerAvatarSlot(): void {

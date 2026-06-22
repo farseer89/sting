@@ -8,6 +8,7 @@ import type {
   ArticleGenerationReview,
   ArticleGenerationRunDto,
   ArticleGenerationStep,
+  ArticleGenerationWritingContext,
   ProtopipeContentTemplate,
   ProtopipeArticleBlock,
 } from '@hive/contracts';
@@ -24,7 +25,10 @@ export type VisualizerBlockKind =
   | 'faq'
   | 'score-bar'
   | 'notice'
-  | 'image';
+  | 'image'
+  | 'context-panel';
+
+export type ContextPanelTone = 'neutral' | 'strategy' | 'verified' | 'warning' | 'style';
 
 export interface VisualizerBlock {
   kind: VisualizerBlockKind;
@@ -38,6 +42,7 @@ export interface VisualizerBlock {
   score?: number;
   imageUrl?: string;
   imageAlt?: string;
+  tone?: ContextPanelTone;
 }
 
 export interface StepVisualizerView {
@@ -64,8 +69,9 @@ export function buildArticleStepVisualizer(
 
   switch (step) {
     case 'build_brief':
+      return briefVisualizer(a.brief, 'SEO brief');
     case 'compile_context':
-      return briefVisualizer(a.brief, step === 'compile_context' ? 'Writing context' : 'SEO brief');
+      return compileContextVisualizer(a.brief, a.writingContext);
     case 'outline':
       return outlineVisualizer(a.outline, a.metadata?.titleTag);
     case 'draft':
@@ -94,6 +100,424 @@ export function buildArticleStepVisualizer(
         blocks: [],
       };
   }
+}
+
+/** Extra fields persisted on brief / writingContext beyond hive-contracts base types. */
+type BriefStrategyView = ArticleGenerationBrief & {
+  thesisSeed?: string;
+  keyQuestionToAnswer?: string;
+  strategyNarrative?: string;
+  coreCompetitorError?: string;
+  mechanismApplication?: string;
+  journeyStage?: string;
+  novelMechanism?: string;
+  keyValidationQuestion?: string;
+};
+
+type WritingContextView = ArticleGenerationWritingContext & {
+  intelligenceContextBlock?: string;
+  answeredContextCardCount?: number;
+};
+
+const INTELLIGENCE_SECTION_RE = /^---\s*(.+?)\s*---$/;
+const TOPIC_HEADER_RE = /^([A-Z][A-Z0-9 /_-]{1,40}):$/;
+
+function panelToneForSection(title: string): ContextPanelTone {
+  const key = title.trim().toLowerCase();
+  if (key.includes('do not repeat')) return 'warning';
+  if (key.includes('verified')) return 'verified';
+  if (key.includes('style')) return 'style';
+  if (key.includes('business context') || key.includes('offers') || key.includes('brand')) {
+    return 'neutral';
+  }
+  return 'neutral';
+}
+
+function stripBulletPrefix(line: string): string {
+  return line.replace(/^[-•*]\s*/, '').trim();
+}
+
+function parseKnowledgeLines(lines: string[]): VisualizerBlock[] {
+  const blocks: VisualizerBlock[] = [];
+  for (const raw of lines) {
+    const line = stripBulletPrefix(raw);
+    const colon = line.indexOf(':');
+    if (colon <= 0 || colon > 80) {
+      if (line) blocks.push({ kind: 'list', items: [line] });
+      continue;
+    }
+    const label = line.slice(0, colon).trim();
+    const value = line.slice(colon + 1).trim();
+    if (!value) continue;
+    blocks.push({
+      kind: 'article-section',
+      text: label,
+      value,
+    });
+  }
+  return blocks;
+}
+
+function parseIntelligenceContextPanels(text: string): VisualizerBlock[] {
+  const blocks: VisualizerBlock[] = [];
+  const lines = text.split('\n');
+  let sectionTitle = 'Business intelligence';
+  let sectionTone: ContextPanelTone = 'neutral';
+  let sectionIntro: string[] = [];
+  let sectionItems: string[] = [];
+  let topicLabel: string | undefined;
+  let topicItems: string[] = [];
+
+  const flushTopic = () => {
+    if (!topicLabel || !topicItems.length) {
+      topicLabel = undefined;
+      topicItems = [];
+      return;
+    }
+    blocks.push({
+      kind: 'context-panel',
+      tone: sectionTone,
+      label: topicLabel,
+      items: topicItems.map(stripBulletPrefix),
+    });
+    topicLabel = undefined;
+    topicItems = [];
+  };
+
+  const flushSection = () => {
+    flushTopic();
+    const intro = sectionIntro.join('\n').trim();
+    const items = sectionItems.map(stripBulletPrefix).filter(Boolean);
+    if (intro || items.length) {
+      blocks.push({
+        kind: 'context-panel',
+        tone: sectionTone,
+        label: sectionTitle,
+        text: intro || undefined,
+        items: items.length ? items : undefined,
+      });
+    }
+    sectionIntro = [];
+    sectionItems = [];
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd();
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    const sectionMatch = trimmed.match(INTELLIGENCE_SECTION_RE);
+    if (sectionMatch) {
+      flushSection();
+      sectionTitle = sectionMatch[1].trim();
+      sectionTone = panelToneForSection(sectionTitle);
+      continue;
+    }
+
+    const topicMatch = trimmed.match(TOPIC_HEADER_RE);
+    if (topicMatch) {
+      flushTopic();
+      topicLabel = topicMatch[1]
+        .split(' ')
+        .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
+        .join(' ');
+      continue;
+    }
+
+    if (topicLabel) {
+      topicItems.push(trimmed);
+      continue;
+    }
+
+    if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+      sectionItems.push(trimmed);
+    } else if (!sectionIntro.length && !sectionItems.length) {
+      sectionIntro.push(trimmed);
+    } else {
+      sectionItems.push(trimmed);
+    }
+  }
+
+  flushSection();
+  return blocks;
+}
+
+function extractPlanNarrative(combined: string, intelligenceBlock?: string): string | undefined {
+  let text = combined.trim();
+  if (intelligenceBlock?.trim()) {
+    text = text.replace(intelligenceBlock.trim(), '').trim();
+  }
+  const marker = text.search(/\n---\s*.+\s*---/);
+  if (marker >= 0) {
+    text = text.slice(0, marker).trim();
+  }
+
+  const chunks = text.split(/\n\n+/).filter(Boolean);
+  const narrative: string[] = [];
+  const knowledge: string[] = [];
+
+  for (const chunk of chunks) {
+    const lines = chunk.split('\n').map((l) => l.trim()).filter(Boolean);
+    if (
+      lines.length > 0 &&
+      lines.every((l) => {
+        const stripped = stripBulletPrefix(l);
+        const colon = stripped.indexOf(':');
+        return colon > 0 && colon < 80 && stripped.slice(colon + 1).trim().length > 0;
+      })
+    ) {
+      knowledge.push(...lines);
+    } else {
+      narrative.push(chunk);
+    }
+  }
+
+  return narrative.join('\n\n').trim() || undefined;
+}
+
+function parseBusinessContextPanels(combined: string, intelligenceBlock?: string): VisualizerBlock[] {
+  const blocks: VisualizerBlock[] = [];
+  const plan = extractPlanNarrative(combined, intelligenceBlock);
+  if (plan) {
+    blocks.push({
+      kind: 'context-panel',
+      tone: 'strategy',
+      label: 'Plan narrative',
+      text: plan,
+    });
+  }
+
+  if (intelligenceBlock?.trim()) {
+    blocks.push(...parseIntelligenceContextPanels(intelligenceBlock));
+    return blocks;
+  }
+
+  if (combined.includes('---')) {
+    blocks.push(...parseIntelligenceContextPanels(combined));
+    return blocks;
+  }
+
+  const knowledgeLines = combined
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l && /^[-•*]?\s*[^:]+:\s+/.test(l));
+  if (knowledgeLines.length) {
+    blocks.push({ kind: 'kicker', text: 'Site knowledge' });
+    blocks.push(...parseKnowledgeLines(knowledgeLines));
+  }
+
+  const remainder = combined
+    .split('\n')
+    .filter((l) => l.trim() && !knowledgeLines.includes(l.trim()))
+    .join('\n')
+    .trim();
+  if (remainder && !plan) {
+    blocks.push({
+      kind: 'context-panel',
+      tone: 'neutral',
+      label: 'Business context',
+      text: remainder,
+    });
+  }
+
+  return blocks;
+}
+
+function pushStrategyContextBlocks(blocks: VisualizerBlock[], brief: BriefStrategyView): void {
+  const hasStrategy =
+    brief.recommendedAngle ||
+    brief.positioningSummary ||
+    brief.rationale ||
+    brief.audienceSummary ||
+    brief.strategyNarrative ||
+    brief.thesisSeed ||
+    brief.keyQuestionToAnswer ||
+    brief.keyValidationQuestion ||
+    brief.coreCompetitorError ||
+    brief.mechanismApplication ||
+    brief.novelMechanism;
+
+  if (!hasStrategy) return;
+
+  blocks.push({ kind: 'kicker', text: 'Strategy lens' });
+
+  if (brief.recommendedAngle) {
+    blocks.push({
+      kind: 'context-panel',
+      tone: 'strategy',
+      label: 'Recommended angle',
+      text: brief.recommendedAngle,
+    });
+  }
+
+  if (brief.positioningSummary) {
+    blocks.push({
+      kind: 'context-panel',
+      tone: 'strategy',
+      label: 'Positioning',
+      text: brief.positioningSummary,
+    });
+  }
+
+  if (brief.strategyNarrative) {
+    blocks.push({
+      kind: 'context-panel',
+      tone: 'strategy',
+      label: 'Strategy narrative',
+      text: brief.strategyNarrative,
+    });
+  }
+
+  const metaRows: VisualizerBlock[] = [];
+  const pushMeta = (label: string, value?: string) => {
+    if (value?.trim()) metaRows.push({ kind: 'meta-row', label, value: value.trim() });
+  };
+
+  pushMeta('Thesis seed', brief.thesisSeed);
+  pushMeta('Key question', brief.keyQuestionToAnswer ?? brief.keyValidationQuestion);
+  pushMeta('Competitor gap', brief.coreCompetitorError);
+  pushMeta('Mechanism', brief.mechanismApplication ?? brief.novelMechanism);
+  pushMeta('Journey stage', brief.journeyStage);
+  pushMeta('Cluster', brief.clusterName);
+
+  if (metaRows.length) {
+    blocks.push(...metaRows);
+  }
+
+  if (brief.rationale) {
+    blocks.push({ kind: 'paragraph', text: brief.rationale });
+  }
+
+  if (brief.audienceSummary) {
+    blocks.push({
+      kind: 'context-panel',
+      tone: 'neutral',
+      label: 'Audience',
+      text: brief.audienceSummary,
+    });
+  }
+
+  if (brief.mandatorySections?.length) {
+    blocks.push({ kind: 'kicker', text: 'Mandatory sections' });
+    blocks.push({ kind: 'list', items: brief.mandatorySections });
+  }
+
+  if (brief.internalLinkTargets?.length) {
+    blocks.push({ kind: 'kicker', text: 'Internal links' });
+    blocks.push({
+      kind: 'list',
+      items: brief.internalLinkTargets.map(
+        (t) => `${t.label}${t.reason ? ` — ${t.reason}` : ''}`,
+      ),
+    });
+  }
+}
+
+function compileContextVisualizer(
+  brief: ArticleGenerationBrief | undefined,
+  writingContext: ArticleGenerationWritingContext | undefined,
+): StepVisualizerView {
+  const ctx = writingContext as WritingContextView | undefined;
+  const strategyBrief = brief as BriefStrategyView | undefined;
+
+  if (!brief && !ctx) {
+    return {
+      title: 'Writing context',
+      emptyMessage: 'Context compiles from your calendar post, plan brief, and Sharpen answers.',
+      blocks: [],
+    };
+  }
+
+  const blocks: VisualizerBlock[] = [];
+
+  blocks.push({ kind: 'kicker', text: 'Article assignment' });
+  blocks.push({
+    kind: 'heading',
+    level: 1,
+    text: ctx?.workingTitle ?? brief?.primaryKeyword.phrase ?? 'Writing context',
+  });
+
+  if (brief) {
+    blocks.push({
+      kind: 'chips',
+      items: [
+        brief.primaryKeyword.phrase,
+        brief.primaryKeyword.intent,
+        `${brief.targetWordCount.toLocaleString()} words`,
+        brief.serpGeo.locationName,
+        ...(brief.clusterName ? [brief.clusterName] : []),
+      ],
+    });
+  }
+
+  if (ctx?.answeredContextCardCount != null && ctx.answeredContextCardCount > 0) {
+    blocks.push({
+      kind: 'meta-row',
+      label: 'Sharpen answers',
+      value: `${ctx.answeredContextCardCount} verified fact(s) loaded`,
+    });
+  }
+
+  if (strategyBrief) {
+    pushStrategyContextBlocks(blocks, strategyBrief);
+  }
+
+  blocks.push({ kind: 'kicker', text: 'Business context' });
+  const intelligenceBlock = ctx?.intelligenceContextBlock;
+  if (brief?.businessContext || intelligenceBlock) {
+    blocks.push(
+      ...parseBusinessContextPanels(brief?.businessContext ?? intelligenceBlock ?? '', intelligenceBlock),
+    );
+  } else {
+    blocks.push({
+      kind: 'notice',
+      text: 'No business context compiled yet. Answer Sharpen questions to ground the writer in verified facts.',
+    });
+  }
+
+  if (brief) {
+    blocks.push({ kind: 'kicker', text: 'Voice & coverage' });
+    blocks.push({
+      kind: 'paragraph',
+      text: [
+        brief.voiceConfig.tone,
+        brief.voiceConfig.pov.replace(/_/g, ' '),
+        `${brief.voiceConfig.sentenceLength} sentences`,
+        `${brief.voiceConfig.jargonLevel} jargon`,
+      ].join(' · '),
+    });
+
+    if (brief.voiceConfig.avoid.length) {
+      blocks.push({ kind: 'chips', items: brief.voiceConfig.avoid.map((a) => `Avoid: ${a}`) });
+    }
+
+    if (brief.contentGaps.length) {
+      blocks.push({ kind: 'kicker', text: 'Content gaps to cover' });
+      blocks.push({ kind: 'list', items: brief.contentGaps });
+    }
+
+    if (brief.secondaryKeywords.length) {
+      blocks.push({ kind: 'kicker', text: 'Secondary keywords' });
+      blocks.push({ kind: 'chips', items: brief.secondaryKeywords.slice(0, 16) });
+    }
+
+    if (brief.authorContext) {
+      blocks.push({ kind: 'kicker', text: 'Author context' });
+      blocks.push({ kind: 'paragraph', text: brief.authorContext });
+    }
+  }
+
+  const subtitleParts = [
+    brief?.primaryKeyword.phrase,
+    brief ? `${brief.targetWordCount.toLocaleString()} words` : null,
+    ctx?.answeredContextCardCount ? `${ctx.answeredContextCardCount} Sharpen answers` : null,
+  ].filter(Boolean);
+
+  return {
+    title: 'Writing context',
+    subtitle: subtitleParts.join(' · '),
+    blocks,
+  };
 }
 
 function briefVisualizer(
@@ -147,8 +571,7 @@ function briefVisualizer(
   }
 
   if (brief.businessContext) {
-    blocks.push({ kind: 'kicker', text: 'Business context' });
-    blocks.push({ kind: 'paragraph', text: brief.businessContext });
+    blocks.push(...parseBusinessContextPanels(brief.businessContext));
   }
 
   if (brief.authorContext) {

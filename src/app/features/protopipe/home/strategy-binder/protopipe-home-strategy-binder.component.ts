@@ -60,8 +60,17 @@ export class ProtopipeHomeStrategyBinderComponent {
     void this.viewState.openInWriter(item);
   }
 
+  viewArticleRun(item: ProtopipeContentPlanCalendarItem, event: Event): void {
+    event.stopPropagation();
+    void this.viewState.openInThinker(item);
+  }
+
   openKeyword(kw: StrategyBinderKeyword): void {
     this.viewState.selectFromKeywordPhrase(this.plan(), kw.phrase);
+  }
+
+  viewStrategyBuildRun(): void {
+    this.viewState.openStrategyBuildRun();
   }
 
   difficultyLabel(n: number): string {

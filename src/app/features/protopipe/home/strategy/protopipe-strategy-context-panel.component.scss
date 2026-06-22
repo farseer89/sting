@@ -218,13 +218,15 @@
 
 .stratctx__actions {
   display: flex;
+  gap: 0.4rem;
   padding-top: 0.35rem;
   margin-top: 0.15rem;
   border-top: 0.5px solid var(--void-tile-border);
 }
 
 .stratctx__writer-btn {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   border: 0.5px solid rgba(var(--void-ocean-rgb), 0.45);
   border-radius: 4px;
   background: var(--void-ocean-fill);
@@ -244,5 +246,16 @@
   &:disabled {
     opacity: 0.65;
     cursor: wait;
+  }
+
+  &--secondary {
+    background: transparent;
+    color: var(--void-ink-muted);
+    border-color: var(--void-tile-border);
+
+    &:hover:not(:disabled) {
+      background: var(--void-tile-bg);
+      color: var(--void-ink-strong);
+    }
   }
 }

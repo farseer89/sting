@@ -7,22 +7,31 @@
       <h1 class="sb-masthead__title">{{ siteLabel() || 'Your site' }}</h1>
       <p class="sb-masthead__deck">{{ mastheadDeck() }}</p>
     </div>
-    <div class="sb-masthead__stats">
-      <div class="sb-stat">
-        <span class="sb-stat__num">{{ stats().pillars }}</span>
-        <span class="sb-stat__label">pillars</span>
-      </div>
-      <div class="sb-stat">
-        <span class="sb-stat__num">{{ stats().scheduled }}</span>
-        <span class="sb-stat__label">scheduled</span>
-      </div>
-      <div class="sb-stat">
-        <span class="sb-stat__num">{{ stats().backlog }}</span>
-        <span class="sb-stat__label">in backlog</span>
-      </div>
-      <div class="sb-stat">
-        <span class="sb-stat__num">{{ stats().existingWins }}</span>
-        <span class="sb-stat__label">ranking now</span>
+    <div class="sb-masthead__right">
+      <button
+        type="button"
+        class="sb-btn sb-btn--ghost sb-btn--sm"
+        (click)="viewStrategyBuildRun()"
+      >
+        View build run
+      </button>
+      <div class="sb-masthead__stats">
+        <div class="sb-stat">
+          <span class="sb-stat__num">{{ stats().pillars }}</span>
+          <span class="sb-stat__label">pillars</span>
+        </div>
+        <div class="sb-stat">
+          <span class="sb-stat__num">{{ stats().scheduled }}</span>
+          <span class="sb-stat__label">scheduled</span>
+        </div>
+        <div class="sb-stat">
+          <span class="sb-stat__num">{{ stats().backlog }}</span>
+          <span class="sb-stat__label">in backlog</span>
+        </div>
+        <div class="sb-stat">
+          <span class="sb-stat__num">{{ stats().existingWins }}</span>
+          <span class="sb-stat__label">ranking now</span>
+        </div>
       </div>
     </div>
   </header>
@@ -227,6 +236,9 @@
                   </div>
                 </div>
                 <div class="sb-cal-row__actions">
+                  @if (item.source.contentPostId) {
+                    <button type="button" class="sb-btn sb-btn--ghost sb-btn--xs" (click)="viewArticleRun(item.source, $event)">View run</button>
+                  }
                   <button type="button" class="sb-btn sb-btn--ghost sb-btn--xs" (click)="writeCalendarItem(item.source, $event)">Write</button>
                 </div>
               </div>

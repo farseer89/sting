@@ -143,6 +143,32 @@ export class ProtopipeHomeStrategyViewState {
     this._selectedArticle.set(null);
   }
 
+  /** Open an existing article generation run in the Thinker view (even when complete). */
+  async openInThinker(article: ProtopipeContentPlanCalendarItem): Promise<void> {
+    if (this._openingWriter()) return;
+    this._openingWriter.set(true);
+    try {
+      const postId = await this.resolvePostId(article);
+      if (!postId) return;
+
+      const siteId = this.strategy.siteId();
+      if (!siteId) return;
+
+      const { post } = await firstValueFrom(this.content.findPost$(postId, siteId));
+      const runId = post.articleGenerationRunId;
+      if (!runId) return;
+
+      this.thinkerView.openRun({
+        siteId,
+        postId,
+        runId,
+        workingTitle: article.workingTitle || post.title || 'Article',
+      });
+    } finally {
+      this._openingWriter.set(false);
+    }
+  }
+
   /** Materialize draft post if needed, then open Thinker (generation) or Writer (completed draft). */
   async openInWriter(article: ProtopipeContentPlanCalendarItem): Promise<void> {
     if (this._openingWriter()) return;
@@ -155,36 +181,8 @@ export class ProtopipeHomeStrategyViewState {
       this.contentPlan.setSiteId(siteId);
       this.content.setEditingSiteId(siteId);
 
-      let postId = article.contentPostId;
-      if (postId) {
-        try {
-          const { post } = await firstValueFrom(this.content.findPost$(postId, siteId));
-          postId = post.id;
-          this.content.setEditingSiteId(post.siteId);
-        } catch {
-          postId = undefined;
-        }
-      }
-
-      if (!postId) {
-        if (!article.proposedPublishAt) {
-          return;
-        }
-        const res = await this.contentPlan.confirmCalendarItem({
-          proposedPublishAt: article.proposedPublishAt,
-          workingTitle: article.workingTitle,
-        });
-        if (!res) return;
-        postId = res.contentPostId;
-        const plan = this.contentPlan.plan();
-        const key = calendarItemKey(article);
-        const updated = plan?.calendar.find((item) => calendarItemKey(item) === key) ?? {
-          ...article,
-          contentPostId: postId,
-        };
-        this._plan.set(plan);
-        this._selectedArticle.set(updated);
-      }
+      const postId = await this.resolvePostId(article);
+      if (!postId) return;
 
       const outcome = await this.thinkerView.openForGeneration(
         siteId,
@@ -204,6 +202,13 @@ export class ProtopipeHomeStrategyViewState {
     }
   }
 
+  /** Open the content-plan pipeline run that produced the current strategy. */
+  openStrategyBuildRun(): void {
+    const plan = this.contentPlan.plan();
+    if (!plan?.id) return;
+    this.thinkerView.openContentPlanRun(plan.siteId, plan);
+  }
+
   setVisualView(view: StrategyVisualView): void {
     if (this._visualView() === view) {
       return;
@@ -218,5 +223,49 @@ export class ProtopipeHomeStrategyViewState {
   /** Opens the home-scoped right panel (void__side-panel). Matches Brief button behavior. */
   private openStrategyPanel(): void {
     this.sidePanel.setOpen(true);
+  }
+
+  private async resolvePostId(
+    article: ProtopipeContentPlanCalendarItem,
+  ): Promise<string | undefined> {
+    await this.strategy.ensureLoaded();
+    const siteId = this.strategy.siteId();
+    if (!siteId || !this.hasLivePlan()) return undefined;
+
+    this.contentPlan.setSiteId(siteId);
+    this.content.setEditingSiteId(siteId);
+
+    let postId = article.contentPostId;
+    if (postId) {
+      try {
+        const { post } = await firstValueFrom(this.content.findPost$(postId, siteId));
+        postId = post.id;
+        this.content.setEditingSiteId(post.siteId);
+      } catch {
+        postId = undefined;
+      }
+    }
+
+    if (!postId) {
+      if (!article.proposedPublishAt) {
+        return undefined;
+      }
+      const res = await this.contentPlan.confirmCalendarItem({
+        proposedPublishAt: article.proposedPublishAt,
+        workingTitle: article.workingTitle,
+      });
+      if (!res) return undefined;
+      postId = res.contentPostId;
+      const plan = this.contentPlan.plan();
+      const key = calendarItemKey(article);
+      const updated = plan?.calendar.find((item) => calendarItemKey(item) === key) ?? {
+        ...article,
+        contentPostId: postId,
+      };
+      this._plan.set(plan);
+      this._selectedArticle.set(updated);
+    }
+
+    return postId;
   }
 }

@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
+import { contentPlanRunToThought } from '../../lab/content-plan/content-plan-run-to-thought';
 import { articleRunToThought } from '../../lab/thinker/article-run-to-thought';
 import { formatThinkerCostUsd, sumCosts } from '../../lab/thinker/thinker-cost';
 import { ProtopipeHomeThinkerViewState } from '../protopipe-home-thinker-view.state';
@@ -37,6 +38,7 @@ export class ProtopipeHomeThinkerBinderComponent {
   readonly activeStepId = signal<string | null>(null);
   readonly activeTab = signal<ThinkerTab>('output');
 
+  readonly runKind = this.thinkerView.runKind;
   readonly run = this.thinkerView.run;
   readonly loadError = this.thinkerView.loadError;
   readonly connection = this.thinkerView.connection;
@@ -44,6 +46,10 @@ export class ProtopipeHomeThinkerBinderComponent {
   readonly isActive = this.thinkerView.isActive;
 
   readonly thought = computed(() => {
+    if (this.runKind() === 'content-plan') {
+      const plan = this.thinkerView.contentPlanRun();
+      return plan ? contentPlanRunToThought(plan) : null;
+    }
     const r = this.run();
     return r ? articleRunToThought(r) : null;
   });
@@ -72,12 +78,34 @@ export class ProtopipeHomeThinkerBinderComponent {
     return formatted ?? '$0.000';
   });
 
-  readonly statusLabel = computed(() => runStatusLabel(this.run()?.status));
-  readonly statusClass = computed(() => runStatusClass(this.run()?.status));
+  readonly statusLabel = computed(() => {
+    if (this.runKind() === 'content-plan') {
+      return runStatusLabel(this.thinkerView.contentPlanRun()?.status);
+    }
+    return runStatusLabel(this.run()?.status);
+  });
+  readonly statusClass = computed(() => {
+    if (this.runKind() === 'content-plan') {
+      return runStatusClass(this.thinkerView.contentPlanRun()?.status);
+    }
+    return runStatusClass(this.run()?.status);
+  });
 
   readonly mastheadDeck = computed(() => {
     const site = this.strategy.site();
     const label = site?.displayName?.trim() || site?.hostname?.trim() || 'Your site';
+
+    if (this.runKind() === 'content-plan') {
+      const plan = this.thinkerView.contentPlanRun();
+      const started = plan?.createdAt;
+      if (!started) return `Strategy build · ${label}`;
+      const time = new Date(started).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+      return `Strategy build · ${label} · started ${time}`;
+    }
+
     const started = this.run()?.createdAt;
     if (!started) return `Article generation · ${label}`;
     const time = new Date(started).toLocaleTimeString('en-US', {
@@ -87,11 +115,16 @@ export class ProtopipeHomeThinkerBinderComponent {
     return `Article generation · ${label} · started ${time}`;
   });
 
-  readonly showOpenWriter = computed(() => this.run()?.status === 'complete');
-
-  readonly hasSession = computed(
-    () => Boolean(this.thinkerView.runId()) || Boolean(this.run()),
+  readonly showOpenWriter = computed(
+    () => this.runKind() === 'article' && this.run()?.status === 'complete',
   );
+
+  readonly hasSession = computed(() => {
+    if (this.runKind() === 'content-plan') {
+      return Boolean(this.thinkerView.contentPlanRun());
+    }
+    return Boolean(this.thinkerView.runId()) || Boolean(this.run());
+  });
 
   constructor() {
     effect(() => {

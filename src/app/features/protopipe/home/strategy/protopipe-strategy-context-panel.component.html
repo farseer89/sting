@@ -198,6 +198,16 @@
         }
 
         <footer class="stratctx__actions">
+          @if (article.contentPostId) {
+            <button
+              type="button"
+              class="stratctx__writer-btn stratctx__writer-btn--secondary"
+              [disabled]="view.openingWriter() || !view.hasLivePlan()"
+              (click)="openInThinker(article)"
+            >
+              View run
+            </button>
+          }
           <button
             type="button"
             class="stratctx__writer-btn"

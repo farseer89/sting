@@ -55,4 +55,8 @@ export class ProtopipeStrategyContextPanelComponent {
   openInWriter(article: ProtopipeContentPlanCalendarItem): void {
     void this.view.openInWriter(article);
   }
+
+  openInThinker(article: ProtopipeContentPlanCalendarItem): void {
+    void this.view.openInThinker(article);
+  }
 }

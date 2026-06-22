@@ -21,6 +21,12 @@ import {
   countryFromDraft,
   locationFromDraft,
 } from './discovery-book-onboarding.draft';
+import {
+  customerProfileInitials,
+  customerProfileStyle,
+  customerProfileSubtitle,
+  customerProfileTitle,
+} from './discovery-book-customer-profile.util';
 import { DiscoveryBookOnboardingStore } from './discovery-book-onboarding.store';
 import type { DiscoveryBookOnboardingStepId } from './discovery-book-onboarding.steps';
 
@@ -70,6 +76,26 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
 
   isCustomerCardFilled(slot: number): boolean {
     return (this.draft().customerAvatars[slot] ?? '').trim().length > 0;
+  }
+
+  customerText(slot: number): string {
+    return this.draft().customerAvatars[slot] ?? '';
+  }
+
+  profileStyle(slot: number): Record<string, string> {
+    return customerProfileStyle(slot);
+  }
+
+  profileInitials(slot: number): string {
+    return customerProfileInitials(this.customerText(slot));
+  }
+
+  profileTitle(slot: number): string {
+    return customerProfileTitle(this.customerText(slot), slot);
+  }
+
+  profileSubtitle(slot: number): string {
+    return customerProfileSubtitle(this.customerText(slot), slot);
   }
 
   async save(): Promise<void> {

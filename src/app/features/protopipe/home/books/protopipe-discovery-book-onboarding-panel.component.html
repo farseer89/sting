@@ -1,4 +1,7 @@
-<div class="kb-onboarding-form">
+<div
+  class="kb-onboarding-form"
+  [class.kb-onboarding-form--people]="stepId() === 'onboarding:customers'"
+>
   @switch (stepId()) {
     @case ('onboarding:getting-started') {
       <div class="kb-scope-picker" role="radiogroup" aria-label="Onboarding path">
@@ -67,47 +70,59 @@
     }
 
     @case ('onboarding:customers') {
-      <div class="kb-customer-cards" role="group" aria-label="Customer profiles">
+      <div class="kb-person-grid" role="group" aria-label="Customer profiles">
         @for (slot of avatarSlots(); track slot) {
           <article
-            class="kb-customer-card"
-            [class.kb-customer-card--filled]="isCustomerCardFilled(slot)"
+            class="kb-person-card"
+            [class.kb-person-card--filled]="isCustomerCardFilled(slot)"
+            [class.kb-person-card--primary]="slot === 0"
+            [style]="profileStyle(slot)"
           >
-            <header class="kb-customer-card__head">
-              <span class="kb-customer-card__avatar" aria-hidden="true">
-                <i class="pi pi-user"></i>
+            <header class="kb-person-card__profile">
+              <span class="kb-person-card__portrait" aria-hidden="true">
+                {{ profileInitials(slot) }}
               </span>
-              <div class="kb-customer-card__meta">
-                <span class="kb-customer-card__title">Customer {{ slot + 1 }}</span>
-                @if (slot === 0) {
-                  <span class="kb-customer-card__badge">Primary</span>
-                }
+              <div class="kb-person-card__identity">
+                <h3 class="kb-person-card__name">{{ profileTitle(slot) }}</h3>
+                <p class="kb-person-card__subtitle">{{ profileSubtitle(slot) }}</p>
               </div>
               @if (slot > 0) {
                 <button
                   type="button"
-                  class="kb-customer-card__remove"
+                  class="kb-person-card__remove"
                   (click)="store.removeCustomerAvatar(slot)"
-                  [attr.aria-label]="'Remove customer ' + (slot + 1)"
+                  [attr.aria-label]="'Remove ' + profileTitle(slot)"
                 >
                   <i class="pi pi-times" aria-hidden="true"></i>
                 </button>
               }
             </header>
 
-            <label class="kb-customer-card__field">
-              <span class="kb-field__label">What they want</span>
-              <input
-                type="text"
-                pInputText
-                class="kb-customer-card__input"
+            <label class="kb-person-card__bio">
+              <span class="kb-person-card__bio-label">In their words</span>
+              <textarea
+                rows="3"
+                class="kb-person-card__bio-input"
                 [ngModel]="draft().customerAvatars[slot]"
                 (ngModelChange)="store.updateCustomerAvatar(slot, $event)"
                 [placeholder]="avatarPlaceholder(slot)"
-                [attr.aria-label]="'Customer ' + (slot + 1) + ': what they want'"
+                [attr.aria-label]="profileTitle(slot) + ': what they want'"
                 [attr.aria-required]="slot === 0"
-              />
+              ></textarea>
             </label>
+
+            <footer class="kb-person-card__foot">
+              @if (slot === 0) {
+                <span class="kb-person-card__badge kb-person-card__badge--primary">Primary profile</span>
+              } @else {
+                <span class="kb-person-card__badge">Profile {{ slot + 1 }}</span>
+              }
+              @if (isCustomerCardFilled(slot)) {
+                <span class="kb-person-card__status">Profile started</span>
+              } @else {
+                <span class="kb-person-card__status kb-person-card__status--empty">Needs a description</span>
+              }
+            </footer>
           </article>
         }
       </div>
@@ -120,7 +135,7 @@
           (click)="store.addCustomerAvatarSlot()"
         >
           <i class="pi pi-plus" aria-hidden="true"></i>
-          Add another customer
+          Add another person
         </button>
         @if (!canAddCustomerAvatar() && (draft().customerAvatars[0] ?? '').trim().length < 5) {
           <p class="kb-customer-add__hint">Describe your primary customer first (5+ characters).</p>

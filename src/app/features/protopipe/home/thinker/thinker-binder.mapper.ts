@@ -2,12 +2,12 @@ import type { ThoughtArtifact, ThoughtEvent, ThoughtStep, ThoughtStepStatus } fr
 
 export type BinderStepStatus = 'done' | 'running' | 'pending' | 'failed';
 
-export interface BinderArtifactView {
+export interface BinderSubStepView {
   id: string;
+  num: string;
   label: string;
-  kind: string;
-  summary?: string;
-  preview: string;
+  status: BinderStepStatus;
+  at?: string;
 }
 
 export interface BinderStepView {
@@ -18,10 +18,9 @@ export interface BinderStepView {
   durationMs?: number;
   costUsd?: number;
   summary?: string;
-  /** One-line takeaway from this step's primary output. */
-  conclusion?: string;
-  inputs: BinderArtifactView[];
-  outputs: BinderArtifactView[];
+  inputArtifact?: { label: string; kind: string; preview: string };
+  outputArtifact?: { label: string; kind: string; preview: string };
+  subSteps: BinderSubStepView[];
   events: { at: string; level: string; msg: string }[];
   rawJson: string;
 }
@@ -46,7 +45,8 @@ function formatEventTime(iso: string): string {
   return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' });
 }
 
-function artifactPreview(artifact: ThoughtArtifact): string {
+function artifactPreview(artifact: ThoughtArtifact | undefined): string {
+  if (!artifact) return '';
   if (typeof artifact.data === 'string') return artifact.data;
   try {
     return JSON.stringify(artifact.data, null, 2);
@@ -55,23 +55,13 @@ function artifactPreview(artifact: ThoughtArtifact): string {
   }
 }
 
-function mapArtifact(artifact: ThoughtArtifact): BinderArtifactView {
+function mapArtifact(artifact: ThoughtArtifact | undefined): BinderStepView['inputArtifact'] {
+  if (!artifact) return undefined;
   return {
-    id: artifact.id,
     label: artifact.label,
     kind: artifact.kind,
-    summary: artifact.summary,
     preview: artifactPreview(artifact),
   };
-}
-
-function stepConclusion(step: ThoughtStep, outputs: BinderArtifactView[]): string | undefined {
-  if (outputs[0]?.summary?.trim()) return outputs[0].summary.trim();
-  if (step.summary?.trim()) return step.summary.trim();
-  const preview = outputs[0]?.preview.trim();
-  if (!preview) return undefined;
-  const oneLine = preview.replace(/\s+/g, ' ');
-  return oneLine.length > 140 ? `${oneLine.slice(0, 137)}…` : oneLine;
 }
 
 function mapEvents(events: ThoughtEvent[]): BinderStepView['events'] {
@@ -82,21 +72,52 @@ function mapEvents(events: ThoughtEvent[]): BinderStepView['events'] {
   }));
 }
 
+function subStepLabel(message: string): string {
+  const parts = message.split(' — ');
+  if (parts.length > 1 && parts[1]?.trim()) return parts[1].trim();
+  return parts[0]?.trim() || message;
+}
+
+function subStepStatus(
+  event: ThoughtEvent,
+  index: number,
+  total: number,
+  parentStatus: BinderStepStatus,
+): BinderStepStatus {
+  if (event.level === 'error') return 'failed';
+
+  const head = event.message.split(' — ')[0]?.trim().toLowerCase() ?? '';
+  if (head.includes('failed')) return 'failed';
+  if (head.includes('started') && index === total - 1 && parentStatus === 'running') return 'running';
+  if (head.includes('started') && index === total - 1 && parentStatus === 'pending') return 'pending';
+  if (parentStatus === 'pending') return 'pending';
+  return 'done';
+}
+
+function mapSubSteps(events: ThoughtEvent[], parentStatus: BinderStepStatus): BinderSubStepView[] {
+  return events.map((event, index) => ({
+    id: `${index}:${event.at}`,
+    num: String(index + 1).padStart(2, '0'),
+    label: subStepLabel(event.message),
+    status: subStepStatus(event, index, events.length, parentStatus),
+    at: formatEventTime(event.at),
+  }));
+}
+
 export function mapThoughtStep(step: ThoughtStep, index: number): BinderStepView {
-  const inputs = (step.input ?? []).map(mapArtifact);
-  const outputs = (step.output ?? []).map(mapArtifact);
+  const status = mapStepStatus(step.status);
 
   return {
     id: step.id,
     num: String(index + 1).padStart(2, '0'),
     label: step.label,
-    status: mapStepStatus(step.status),
+    status,
     durationMs: step.durationMs,
     costUsd: step.costUsd,
     summary: step.summary ?? step.description,
-    conclusion: stepConclusion(step, outputs),
-    inputs,
-    outputs,
+    inputArtifact: mapArtifact(step.input?.[0]),
+    outputArtifact: mapArtifact(step.output?.[0]),
+    subSteps: mapSubSteps(step.events, status),
     events: mapEvents(step.events),
     rawJson: JSON.stringify(
       {
@@ -107,8 +128,6 @@ export function mapThoughtStep(step: ThoughtStep, index: number): BinderStepView
         costUsd: step.costUsd ?? null,
         attempt: step.attempt,
         error: step.error ?? null,
-        inputs: inputs.map((a) => ({ id: a.id, label: a.label, summary: a.summary ?? null })),
-        outputs: outputs.map((a) => ({ id: a.id, label: a.label, summary: a.summary ?? null })),
       },
       null,
       2,

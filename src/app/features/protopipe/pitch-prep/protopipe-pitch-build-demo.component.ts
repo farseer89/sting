@@ -9,7 +9,6 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { UpperCasePipe } from '@angular/common';
 import type {
   BrandBookImageStylePresetId,
   MediaStudioGeneratedImage,
@@ -27,34 +26,16 @@ import { ProtopipeMediaStudioService } from '../protopipe-media-studio.service';
 import { ProtopipePitchPrepService } from './protopipe-pitch-prep.service';
 import { ProtopipePitchProspectService } from './protopipe-pitch-prospect.service';
 import type { PitchLead } from './protopipe-pitch-prospect-board.component';
+import {
+  BUILD_DEMO_HERO_VARIANTS,
+  type BuildDemoHeroVariant,
+} from '../build-book/build-book-demo.catalog';
+
+export type { BuildDemoHeroVariant as HeroVariant };
 
 export type BuildDemoStep = 'url' | 'images' | 'theme' | 'logo' | 'style';
 
 const STEP_ORDER: BuildDemoStep[] = ['url', 'images', 'theme', 'logo', 'style'];
-
-export interface HeroVariant {
-  id: string;
-  label: string;
-  brand: 'sparky' | 'wri' | 'consult';
-  layout: string;
-  url: string;
-}
-
-const HERO_VARIANTS: HeroVariant[] = [
-  { id: 'sp-callout',    label: 'Fullbleed Callout', brand: 'sparky',  layout: 'sp-callout',    url: 'sparkyelectrichawaii.com' },
-  { id: 'sp-bento',      label: 'Bento Grid',        brand: 'sparky',  layout: 'sp-bento',      url: 'sparkyelectrichawaii.com' },
-  { id: 'sp-asymmetric', label: 'Asymmetric',         brand: 'sparky',  layout: 'sp-asymmetric', url: 'sparkyelectrichawaii.com' },
-  { id: 'sp-horizon',    label: 'Horizon Band',       brand: 'sparky',  layout: 'sp-horizon',    url: 'sparkyelectrichawaii.com' },
-  { id: 'sp-teal',       label: 'Teal Brand',         brand: 'sparky',  layout: 'sp-teal',       url: 'sparkyelectrichawaii.com' },
-  { id: 'sp-dispatch',   label: 'Dispatch CTA',       brand: 'sparky',  layout: 'sp-dispatch',   url: 'sparkyelectrichawaii.com' },
-  { id: 'wri-fullbleed', label: 'Fullbleed Rig',      brand: 'wri',     layout: 'wri-fullbleed', url: 'waterresourcesinternational.com' },
-  { id: 'wri-split',     label: 'Split Field',        brand: 'wri',     layout: 'wri-split',     url: 'waterresourcesinternational.com' },
-  { id: 'wri-bento',     label: 'Photo Bento',        brand: 'wri',     layout: 'wri-bento',     url: 'waterresourcesinternational.com' },
-  { id: 'wri-metrics',   label: 'Metrics',            brand: 'wri',     layout: 'wri-metrics',   url: 'waterresourcesinternational.com' },
-  { id: 'wri-coastal',   label: 'Coastal Band',       brand: 'wri',     layout: 'wri-coastal',   url: 'waterresourcesinternational.com' },
-  { id: 'co-split',      label: 'Split Layout',       brand: 'consult', layout: 'co-split',      url: 'wilcoconsulting.com' },
-  { id: 'co-fullbleed',  label: 'Fullbleed',          brand: 'consult', layout: 'co-fullbleed',  url: 'wilcoconsulting.com' },
-];
 
 const THEME_OPTIONS: { label: string; value: string; swatch: string; bg: string }[] = [
   { label: 'Ocean', value: 'ocean', swatch: '#0369a1', bg: '#e0f2fe' },
@@ -68,7 +49,7 @@ const THEME_OPTIONS: { label: string; value: string; swatch: string; bg: string 
 @Component({
   selector: 'app-protopipe-pitch-build-demo',
   standalone: true,
-  imports: [FormsModule, UpperCasePipe],
+  imports: [FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './protopipe-pitch-build-demo.component.html',
   styleUrl: './protopipe-pitch-build-demo.component.scss',
@@ -113,7 +94,7 @@ export class ProtopipePitchBuildDemoComponent implements OnInit {
   readonly previewHeroIdx = signal(0);
 
   readonly currentBrandHeroes = computed(() =>
-    HERO_VARIANTS.filter((h) => h.brand === this.previewBrand())
+    BUILD_DEMO_HERO_VARIANTS.filter((h) => h.brand === this.previewBrand())
   );
 
   readonly currentHero = computed(() => {

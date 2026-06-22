@@ -1,16 +1,23 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-
-export interface MockStep {
-  id: string;
-  num: string;
-  label: string;
-  status: 'done' | 'running' | 'pending' | 'failed';
-  durationMs?: number;
-  costUsd?: number;
-  summary?: string;
-  inputArtifact?: { label: string; kind: string; preview: string };
-  outputArtifact?: { label: string; kind: string; preview: string };
-}
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
+import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
+import { articleRunToThought } from '../../lab/thinker/article-run-to-thought';
+import { formatThinkerCostUsd, sumCosts } from '../../lab/thinker/thinker-cost';
+import { ProtopipeHomeThinkerViewState } from '../protopipe-home-thinker-view.state';
+import { ProtopipeHomeWriterViewState } from '../protopipe-home-writer-view.state';
+import {
+  mapThoughtStep,
+  runStatusClass,
+  runStatusLabel,
+  type BinderStepView,
+} from './thinker-binder.mapper';
 
 type ThinkerTab = 'output' | 'events' | 'raw';
 
@@ -22,124 +29,98 @@ type ThinkerTab = 'output' | 'events' | 'raw';
   styleUrl: './protopipe-home-thinker-binder.component.scss',
 })
 export class ProtopipeHomeThinkerBinderComponent {
-  readonly activeStepId = signal<string>('draft-writing');
+  private readonly thinkerView = inject(ProtopipeHomeThinkerViewState);
+  private readonly writerView = inject(ProtopipeHomeWriterViewState);
+  private readonly strategy = inject(ProtopipeStrategyService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  readonly activeStepId = signal<string | null>(null);
   readonly activeTab = signal<ThinkerTab>('output');
 
-  readonly steps: MockStep[] = [
-    {
-      id: 'site-context',
-      num: '01',
-      label: 'Site context',
-      status: 'done',
-      durationMs: 210,
-      costUsd: 0.001,
-      summary: 'Loaded site profile for Sparky Electric. Industry: electrical contractor. Voice: confident, approachable. Avg content length: 1,600 words.',
-      inputArtifact: { label: 'Site ID', kind: 'text', preview: 'sparky-electric-phoenix-az' },
-      outputArtifact: {
-        label: 'Site profile',
-        kind: 'json',
-        preview: `{\n  "name": "Sparky Electric",\n  "industry": "Electrical contractor",\n  "location": "Phoenix, AZ",\n  "tone": "confident, approachable",\n  "avgWordCount": 1620\n}`,
-      },
-    },
-    {
-      id: 'keyword-analysis',
-      num: '02',
-      label: 'Keyword analysis',
-      status: 'done',
-      durationMs: 8340,
-      costUsd: 0.012,
-      summary: 'Found 47 related keywords. Primary: "electrical panel upgrade". Secondary: "panel replacement cost", "when to replace breaker box", "200 amp service upgrade".',
-      inputArtifact: {
-        label: 'Target topic',
-        kind: 'text',
-        preview: 'When should you upgrade your electrical panel?',
-      },
-      outputArtifact: {
-        label: 'Keyword clusters',
-        kind: 'table',
-        preview: `PRIMARY\n  electrical panel upgrade        Vol: 12,100   KD: 42\n  breaker box replacement         Vol: 8,200    KD: 38\n\nSECONDARY\n  panel upgrade cost              Vol: 4,400    KD: 31\n  200 amp service upgrade         Vol: 3,600    KD: 29\n  how long do electrical panels last Vol: 2,900  KD: 24`,
-      },
-    },
-    {
-      id: 'competitor-research',
-      num: '03',
-      label: 'Competitor research',
-      status: 'done',
-      durationMs: 12060,
-      costUsd: 0.019,
-      summary: 'Analyzed 8 competitor articles. Avg length: 1,847 words. Content gaps found: permit process detail, cost by amperage tier, DIY risk section.',
-      inputArtifact: {
-        label: 'Keyword set',
-        kind: 'text',
-        preview: 'electrical panel upgrade, breaker box replacement',
-      },
-      outputArtifact: {
-        label: 'Gap analysis',
-        kind: 'markdown',
-        preview: `## Content gaps vs competitors\n\n- ✗ Permit requirements by city\n- ✗ Cost breakdown by amperage (100A vs 200A)\n- ✗ Financing options\n- ✓ Signs you need an upgrade\n- ✓ DIY vs professional comparison`,
-      },
-    },
-    {
-      id: 'topic-structuring',
-      num: '04',
-      label: 'Topic structuring',
-      status: 'done',
-      durationMs: 6720,
-      costUsd: 0.009,
-      summary: 'Generated 6-section outline targeting 2,100 words. H2 structure optimized for featured snippet capture on "when to upgrade" query.',
-      inputArtifact: {
-        label: 'Gap analysis + keywords',
-        kind: 'text',
-        preview: 'Merged keyword clusters and content gaps',
-      },
-      outputArtifact: {
-        label: 'Article outline',
-        kind: 'markdown',
-        preview: `# When Should You Upgrade Your Electrical Panel?\n\n## Signs Your Panel Needs Replacing\n## Understanding Panel Capacity\n## The Cost of a Panel Upgrade (2024)\n## The Permit Process in Arizona\n## DIY vs. Hiring a Licensed Electrician\n## Next Steps: What to Expect\n\n→ Target: 2,100 words  → Reading level: 8th grade`,
-      },
-    },
-    {
-      id: 'draft-writing',
-      num: '05',
-      label: 'Draft writing',
-      status: 'running',
-      summary: 'Generating full article draft based on outline and keyword targets. Currently writing section 3 of 6.',
-      inputArtifact: {
-        label: 'Article outline',
-        kind: 'markdown',
-        preview: '6-section outline, 2,100 word target',
-      },
-    },
-    {
-      id: 'fact-extraction',
-      num: '06',
-      label: 'Fact extraction',
-      status: 'pending',
-    },
-    {
-      id: 'quality-review',
-      num: '07',
-      label: 'Quality review',
-      status: 'pending',
-    },
-  ];
+  readonly run = this.thinkerView.run;
+  readonly loadError = this.thinkerView.loadError;
+  readonly connection = this.thinkerView.connection;
+  readonly workingTitle = this.thinkerView.workingTitle;
+  readonly isActive = this.thinkerView.isActive;
 
-  readonly mockEvents = [
-    { at: '12:04:31', level: 'info', msg: 'Draft writing started' },
-    { at: '12:04:32', level: 'info', msg: 'Writing section 1: Signs Your Panel Needs Replacing' },
-    { at: '12:04:48', level: 'info', msg: 'Section 1 complete (312 words)' },
-    { at: '12:04:49', level: 'info', msg: 'Writing section 2: Understanding Panel Capacity' },
-    { at: '12:05:02', level: 'info', msg: 'Section 2 complete (287 words)' },
-    { at: '12:05:03', level: 'info', msg: 'Writing section 3: The Cost of a Panel Upgrade' },
-  ];
+  readonly thought = computed(() => {
+    const r = this.run();
+    return r ? articleRunToThought(r) : null;
+  });
 
-  get activeStep(): MockStep | undefined {
-    return this.steps.find((s) => s.id === this.activeStepId());
+  readonly steps = computed((): BinderStepView[] => {
+    const t = this.thought();
+    if (!t) return [];
+    return t.steps.map((step, index) => mapThoughtStep(step, index));
+  });
+
+  readonly activeStep = computed((): BinderStepView | undefined => {
+    const steps = this.steps();
+    const id = this.activeStepId() ?? this.defaultStepId();
+    return steps.find((s) => s.id === id) ?? steps[0];
+  });
+
+  readonly progress = computed(() => {
+    const steps = this.steps();
+    if (steps.length === 0) return 0;
+    const done = steps.filter((s) => s.status === 'done').length;
+    return Math.round((done / steps.length) * 100);
+  });
+
+  readonly totalCost = computed(() => {
+    const formatted = formatThinkerCostUsd(sumCosts(this.steps().map((s) => s.costUsd)));
+    return formatted ?? '$0.000';
+  });
+
+  readonly statusLabel = computed(() => runStatusLabel(this.run()?.status));
+  readonly statusClass = computed(() => runStatusClass(this.run()?.status));
+
+  readonly mastheadDeck = computed(() => {
+    const site = this.strategy.site();
+    const label = site?.displayName?.trim() || site?.hostname?.trim() || 'Your site';
+    const started = this.run()?.createdAt;
+    if (!started) return `Article generation · ${label}`;
+    const time = new Date(started).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    return `Article generation · ${label} · started ${time}`;
+  });
+
+  readonly showOpenWriter = computed(() => this.run()?.status === 'complete');
+
+  readonly hasSession = computed(
+    () => Boolean(this.thinkerView.runId()) || Boolean(this.run()),
+  );
+
+  constructor() {
+    effect(() => {
+      const t = this.thought();
+      if (!t) return;
+      const current = this.activeStepId();
+      if (current && t.steps.some((s) => s.id === current)) return;
+      const next = t.currentStepId ?? t.steps.find((s) => s.status === 'running')?.id ?? t.steps[0]?.id;
+      if (next) this.activeStepId.set(next);
+    });
+
+    this.destroyRef.onDestroy(() => {
+      // Session lifecycle is owned by ProtopipeHomeThinkerViewState / user-home focus handlers.
+    });
   }
 
-  get progress(): number {
-    const done = this.steps.filter((s) => s.status === 'done').length;
-    return Math.round((done / this.steps.length) * 100);
+  selectStep(id: string): void {
+    this.activeStepId.set(id);
+  }
+
+  retryConnection(): void {
+    this.thinkerView.retryPoll();
+  }
+
+  openInWriter(): void {
+    const postId = this.thinkerView.postId();
+    if (!postId) return;
+    this.writerView.openPost(postId);
+    this.thinkerView.openInWriter();
   }
 
   formatDuration(ms: number): string {
@@ -148,14 +129,16 @@ export class ProtopipeHomeThinkerBinderComponent {
   }
 
   formatCost(usd?: number): string {
-    if (!usd) return '';
-    return `$${usd.toFixed(3)}`;
+    return formatThinkerCostUsd(usd) ?? '';
   }
 
-  totalCost(): string {
-    const total = this.steps
-      .filter((s) => s.status === 'done')
-      .reduce((sum, s) => sum + (s.costUsd ?? 0), 0);
-    return `$${total.toFixed(3)}`;
+  private defaultStepId(): string | undefined {
+    const t = this.thought();
+    if (!t) return undefined;
+    if (t.currentStepId) return t.currentStepId;
+    const running = t.steps.find((s) => s.status === 'running');
+    if (running) return running.id;
+    const lastDone = [...t.steps].reverse().find((s) => s.status !== 'pending');
+    return lastDone?.id ?? t.steps[0]?.id;
   }
 }

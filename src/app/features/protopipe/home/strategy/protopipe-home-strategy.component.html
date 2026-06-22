@@ -21,13 +21,28 @@
       }
       <button type="button" class="strat-shell__retry" (click)="retry()">Try again</button>
     </div>
-  } @else if (showResults()) {
+  } @else if (showEmpty()) {
+    <div class="strat-shell__empty">
+      <header class="strat__intro">
+        <div class="strat__intro-copy">
+          <span class="strat__eyebrow">Your content strategy</span>
+          <h1 class="strat__title">No strategy yet</h1>
+          <p class="strat__lede">Build a content plan from your confirmed keywords — pillars, calendar, and backlog.</p>
+        </div>
+      </header>
+      <button type="button" class="strat-shell__retry" (click)="buildStrategy()">Build strategy</button>
+    </div>
+  } @else if (showResults() && displayPlan(); as plan) {
     @if (showBuildingBanner()) {
       <div class="strat-shell__building" role="status" aria-live="polite">
         <span class="strat-shell__building-dot" aria-hidden="true"></span>
         {{ buildingStageLabel() }}
       </div>
     }
-    <app-strategy-layout-a [plan]="displayPlan()" [siteLabel]="siteLabel()" />
+    <app-protopipe-home-strategy-binder
+      [plan]="plan"
+      [siteLabel]="siteLabel()"
+      [strategySummary]="strategySummary()"
+    />
   }
 </section>

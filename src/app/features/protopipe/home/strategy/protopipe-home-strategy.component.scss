@@ -20,11 +20,16 @@
 
 .strat-shell > app-strategy-layout-a,
 .strat-shell > app-strategy-layout-b,
-.strat-shell > app-strategy-layout-c {
+.strat-shell > app-strategy-layout-c,
+.strat-shell > app-protopipe-home-strategy-binder {
   display: flex;
   flex: 1 1 0;
   min-height: 0;
   overflow: hidden;
+}
+
+.strat-shell__empty {
+  padding: 0.75rem;
 }
 
 .strat-shell__error {

@@ -11,15 +11,14 @@ import {
 import type { ProtopipeSiteContentPlan } from '@hive/contracts';
 import { ContentPlanStore } from '../../content-plan/content-plan.store';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
-import { MOCK_STRATEGY_PLAN } from './strategy.mock';
 import { ProtopipeHomeStrategyViewState } from './protopipe-home-strategy-view.state';
-import { StrategyLayoutAComponent } from './strategy-layout-a.component';
+import { ProtopipeHomeStrategyBinderComponent } from '../strategy-binder/protopipe-home-strategy-binder.component';
 
 @Component({
   selector: 'app-protopipe-home-strategy',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [StrategyLayoutAComponent],
+  imports: [ProtopipeHomeStrategyBinderComponent],
   templateUrl: './protopipe-home-strategy.component.html',
   styleUrl: './protopipe-home-strategy.component.scss',
 })
@@ -30,6 +29,7 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly siteLabel = signal('');
+  readonly strategySummary = signal('');
 
   readonly isRunning = this.store.isRunning;
   readonly starting = this.store.starting;
@@ -41,13 +41,19 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
   readonly progress = this.store.progress;
   readonly currentStep = this.store.currentStep;
 
-  /** Layout A only — live plan when the store has one, otherwise mock fallback for empty state. */
-  readonly displayPlan = computed<ProtopipeSiteContentPlan>(
-    () => this.store.plan() ?? MOCK_STRATEGY_PLAN,
-  );
+  readonly displayPlan = computed<ProtopipeSiteContentPlan | null>(() => this.store.plan());
 
   readonly showLoading = computed(
     () => (this.loading() || this.starting()) && !this.store.plan(),
+  );
+
+  readonly showEmpty = computed(
+    () =>
+      !this.showLoading() &&
+      !this.hasFailed() &&
+      !this.displayPlan() &&
+      !this.loading() &&
+      !this.starting(),
   );
 
   readonly showBuildingBanner = computed(
@@ -75,7 +81,7 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
 
   readonly showResults = computed(() => {
     if (this.hasFailed()) return false;
-    return this.isComplete() || this.isRunning() || !!this.store.plan();
+    return Boolean(this.displayPlan());
   });
 
   constructor() {
@@ -94,15 +100,17 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
     void this.store.generate();
   }
 
+  buildStrategy(): void {
+    void this.store.generate();
+  }
+
   private async bootstrap(): Promise<void> {
     await this.strategy.ensureLoaded();
     const site = this.strategy.site();
     this.siteLabel.set(site?.hostname?.trim() || site?.displayName?.trim() || '');
     const summary = this.strategy.strategy().summary.trim();
-    this.viewState.setStrategySummary(
-      summary ||
-        'Live wedding painter specializing in destination ceremonies across Italy and the Mediterranean.',
-    );
+    this.viewState.setStrategySummary(summary);
+    this.strategySummary.set(summary);
 
     const siteId = this.strategy.siteId();
     if (siteId) {

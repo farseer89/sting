@@ -410,42 +410,53 @@
         </button>
       </header>
 
-      <!-- Brand tabs -->
-      <div class="bd-brand-tabs">
-        <button type="button" class="bd-brand-tab" [class.is-active]="previewBrand() === 'sparky'" (click)="selectBrand('sparky')">
-          <span class="bd-brand-dot" style="background:#f59e0b"></span>
-          Sparky Electric
-          <span class="bd-brand-count">6</span>
-        </button>
-        <button type="button" class="bd-brand-tab" [class.is-active]="previewBrand() === 'wri'" (click)="selectBrand('wri')">
-          <span class="bd-brand-dot" style="background:#0ea5e9"></span>
-          Water Resources Int'l
-          <span class="bd-brand-count">5</span>
-        </button>
-        <button type="button" class="bd-brand-tab" [class.is-active]="previewBrand() === 'consult'" (click)="selectBrand('consult')">
-          <span class="bd-brand-dot" style="background:#64748b"></span>
-          Wilco Consulting
-          <span class="bd-brand-count">2</span>
-        </button>
-      </div>
-
-      <!-- Hero name + position -->
-      <div class="bd-hero-label-bar">
-        <span class="bd-hero-label-bar__name">{{ currentHero().layout | uppercase }} &mdash; {{ currentHero().label }}</span>
-        <span class="bd-hero-label-bar__pos">{{ previewHeroIdx() + 1 }} / {{ currentBrandHeroes().length }}</span>
-      </div>
-
-      <!-- Browser chrome + viewport -->
+      <!-- Chrome-style browser window: tab strip + toolbar + viewport -->
       <div class="bd-browser">
-        <div class="bd-browser__chrome">
-          <div class="bd-browser__dots">
-            <span class="bd-browser__dot bd-browser__dot--red"></span>
-            <span class="bd-browser__dot bd-browser__dot--yellow"></span>
-            <span class="bd-browser__dot bd-browser__dot--green"></span>
-          </div>
-          <div class="bd-browser__address">{{ currentHero().url }}</div>
-          <div class="bd-browser__spacer"></div>
+
+        <!-- Browser tab strip (brand selector) -->
+        <div class="bd-browser__tabstrip">
+          <button type="button" class="bd-browser__tab" [class.is-active]="previewBrand() === 'sparky'" (click)="selectBrand('sparky')">
+            <span class="bd-browser__tab-fav" style="background:#f59e0b"></span>
+            <span class="bd-browser__tab-label">Sparky Electric</span>
+          </button>
+          <button type="button" class="bd-browser__tab" [class.is-active]="previewBrand() === 'wri'" (click)="selectBrand('wri')">
+            <span class="bd-browser__tab-fav" style="background:#0ea5e9"></span>
+            <span class="bd-browser__tab-label">WRI</span>
+          </button>
+          <button type="button" class="bd-browser__tab" [class.is-active]="previewBrand() === 'consult'" (click)="selectBrand('consult')">
+            <span class="bd-browser__tab-fav" style="background:#64748b"></span>
+            <span class="bd-browser__tab-label">Wilco Consulting</span>
+          </button>
+          <div class="bd-browser__tab-rest"></div>
         </div>
+
+        <!-- Browser toolbar: nav arrows + omnibox + hero indicator + dots -->
+        <div class="bd-browser__toolbar">
+          <div class="bd-browser__navbtns">
+            <button type="button" class="bd-browser__navbtn" (click)="prevHero()" title="Previous layout">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button type="button" class="bd-browser__navbtn" (click)="nextHero()" title="Next layout">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <div class="bd-browser__omnibox">
+            <svg class="bd-browser__omni-lock" viewBox="0 0 12 12" fill="none">
+              <rect x="2" y="5.5" width="8" height="5.5" rx="1" stroke="currentColor" stroke-width="1"/>
+              <path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" stroke="currentColor" stroke-width="1"/>
+            </svg>
+            <span class="bd-browser__omni-url">{{ currentHero().url }}</span>
+          </div>
+          <div class="bd-browser__omni-trail">
+            <span class="bd-browser__omni-name">{{ currentHero().label }}</span>
+            <div class="bd-browser__omni-dots">
+              @for (hero of currentBrandHeroes(); track hero.id; let i = $index) {
+                <button type="button" class="bd-browser__omni-dot" [class.is-active]="previewHeroIdx() === i" (click)="previewHeroIdx.set(i)"></button>
+              }
+            </div>
+          </div>
+        </div>
+
         <div class="bd-browser__viewport">
 
           <!-- ══ SPARKY CALLOUT: fullbleed photo, dark overlay, centered content ══ -->
@@ -718,21 +729,6 @@
 
         </div><!-- /bd-browser__viewport -->
       </div><!-- /bd-browser -->
-
-      <!-- Carousel navigation -->
-      <div class="bd-carousel-nav">
-        <button type="button" class="bd-carousel-nav__arrow" (click)="prevHero()">
-          <svg viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <div class="bd-carousel-dots">
-          @for (hero of currentBrandHeroes(); track hero.id; let i = $index) {
-            <button type="button" class="bd-carousel-dot" [class.is-active]="previewHeroIdx() === i" (click)="previewHeroIdx.set(i)"></button>
-          }
-        </div>
-        <button type="button" class="bd-carousel-nav__arrow" (click)="nextHero()">
-          <svg viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-      </div>
 
       <div class="bd-preview-modal__footer">
         <button type="button" class="bd-btn bd-btn--primary" (click)="toggleImage(previewUrl); closePreview()">

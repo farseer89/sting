@@ -6,6 +6,7 @@ import type { SpokeNode } from '../../lab/void-dashboard/void-content-spoke.mock
 import { ProtopipeContentService } from '../../protopipe-content.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { ProtopipeHomeSidePanelService } from '../protopipe-home-side-panel.service';
+import { ProtopipeHomeThinkerViewState } from '../protopipe-home-thinker-view.state';
 import { ProtopipeHomeWriterViewState } from '../protopipe-home-writer-view.state';
 import {
   calendarItemByKey,
@@ -31,6 +32,7 @@ import type { StrategyVisualView } from './strategy-visual-view';
 export class ProtopipeHomeStrategyViewState {
   private readonly sidePanel = inject(ProtopipeHomeSidePanelService);
   private readonly writerView = inject(ProtopipeHomeWriterViewState);
+  private readonly thinkerView = inject(ProtopipeHomeThinkerViewState);
   private readonly contentPlan = inject(ContentPlanStore);
   private readonly strategy = inject(ProtopipeStrategyService);
   private readonly content = inject(ProtopipeContentService);
@@ -141,7 +143,7 @@ export class ProtopipeHomeStrategyViewState {
     this._selectedArticle.set(null);
   }
 
-  /** Materialize draft post if needed, then switch to the embedded home writer. */
+  /** Materialize draft post if needed, then open Thinker (generation) or Writer (completed draft). */
   async openInWriter(article: ProtopipeContentPlanCalendarItem): Promise<void> {
     if (this._openingWriter()) return;
     this._openingWriter.set(true);
@@ -154,13 +156,11 @@ export class ProtopipeHomeStrategyViewState {
       this.content.setEditingSiteId(siteId);
 
       let postId = article.contentPostId;
-      let resumeExistingRun = false;
       if (postId) {
         try {
           const { post } = await firstValueFrom(this.content.findPost$(postId, siteId));
           postId = post.id;
           this.content.setEditingSiteId(post.siteId);
-          resumeExistingRun = Boolean(post.articleGenerationRunId);
         } catch {
           postId = undefined;
         }
@@ -186,12 +186,19 @@ export class ProtopipeHomeStrategyViewState {
         this._selectedArticle.set(updated);
       }
 
-      if (resumeExistingRun) {
+      const outcome = await this.thinkerView.openForGeneration(
+        siteId,
+        postId,
+        article.workingTitle,
+      );
+
+      if (outcome === 'writer') {
         this.writerView.openPost(postId);
-      } else {
+        this.enterWriterFocus?.();
+      } else if (outcome === 'failed') {
         this.writerView.openPostForWriting(postId);
+        this.enterWriterFocus?.();
       }
-      this.enterWriterFocus?.();
     } finally {
       this._openingWriter.set(false);
     }

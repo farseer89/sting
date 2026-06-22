@@ -19,6 +19,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NgTemplateOutlet } from '@angular/common';
 import { ProtopipeHomeSidePanelService } from '../../home/protopipe-home-side-panel.service';
 import { ProtopipeHomeWriterViewState } from '../../home/protopipe-home-writer-view.state';
+import { ProtopipeHomeThinkerViewState } from '../../home/protopipe-home-thinker-view.state';
 import { ProtopipeWriterInspectorBridge } from './protopipe-writer-inspector.bridge';
 import {
   type WriterInspectorPanelId,
@@ -307,6 +308,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
   private readonly destroyRef = inject(DestroyRef);
   protected readonly inspectorSidePanel = inject(ProtopipeWriterSidePanelService);
   private readonly homeWriterView = inject(ProtopipeHomeWriterViewState, { optional: true });
+  private readonly homeThinkerView = inject(ProtopipeHomeThinkerViewState, { optional: true });
   private readonly homeSidePanel = inject(ProtopipeHomeSidePanelService, { optional: true });
   private readonly inspectorBridge = inject(ProtopipeWriterInspectorBridge, { optional: true });
   private readonly imageFileInput = viewChild<ElementRef<HTMLInputElement>>('imageFileInput');
@@ -1935,7 +1937,19 @@ export class ProtopipeWriterComponent implements OnDestroy {
           });
         }
         this.generating.set(false);
-        this.openInspectorPanel('behind');
+        if (this.embedded() && this.homeThinkerView) {
+          this.homeThinkerView.attachRun(
+            {
+              siteId,
+              postId,
+              runId: run.id,
+              workingTitle: this.topicLabel() || post.title || 'Article',
+            },
+            run,
+          );
+        } else {
+          this.openInspectorPanel('behind');
+        }
         if (run.status === 'running' || run.status === 'pending') {
           this.startPolling();
         }
@@ -2062,12 +2076,21 @@ export class ProtopipeWriterComponent implements OnDestroy {
     this._runElapsedSec.set(0);
   }
 
-  /** Open the live run in the generic Thinker view (Thought stepper). */
+  /** Open the live run in the home Thinker binder (embedded) or lab route. */
   openInThinker(): void {
     const siteId = this.content.siteId();
     const runId = this.run()?.id;
     if (!siteId || !runId) return;
     const postId = this.content.editingId();
+    if (this.embedded() && this.homeThinkerView && postId && postId !== 'new') {
+      this.homeThinkerView.openRun({
+        siteId,
+        postId,
+        runId,
+        workingTitle: this.topicLabel() || 'Article',
+      });
+      return;
+    }
     void this.router.navigate(['/protopipe/lab/thinker/run', siteId, runId], {
       queryParams: postId && postId !== 'new' ? { postId } : undefined,
     });

@@ -33,6 +33,8 @@ import { ProtopipeStrategyContextPanelComponent } from './strategy/protopipe-str
 import { ProtopipeHomeStrategyViewState } from './strategy/protopipe-home-strategy-view.state';
 import { ProtopipeHomeWriterComponent } from './protopipe-home-writer.component';
 import { ProtopipeHomeWriterViewState } from './protopipe-home-writer-view.state';
+import { ProtopipeHomeThinkerViewState } from './protopipe-home-thinker-view.state';
+import { ArticleGenerationRunSession } from '../article/article-generation-run-session.service';
 import { ProtopipeWriterContextPanelComponent } from './strategy/protopipe-writer-context-panel.component';
 import { ProtopipeKeywordPickerComponent } from './keyword-picker/protopipe-keyword-picker.component';
 import { ProtopipeHomeRunbooksComponent } from './runbooks/protopipe-home-runbooks.component';
@@ -48,7 +50,6 @@ import { ProtopipePitchPrepWizardComponent } from '../pitch-prep/protopipe-pitch
 import { ProtopipeLeadsListComponent } from '../leads/protopipe-leads-list.component';
 import { ProtopipeHomeThinkerBinderComponent } from './thinker/protopipe-home-thinker-binder.component';
 import { ProtopipeHomeWriterBinderComponent } from './writer-binder/protopipe-home-writer-binder.component';
-import { ProtopipeHomeStrategyBinderComponent } from './strategy-binder/protopipe-home-strategy-binder.component';
 import { ProtopipeHomeAnalyticsBinderComponent } from './analytics-binder/protopipe-home-analytics-binder.component';
 import { ProtopipeWriterInspectorBridge } from '../content/writer/protopipe-writer-inspector.bridge';
 import { ProtopipeHomeSidePanelService } from './protopipe-home-side-panel.service';
@@ -96,6 +97,8 @@ function initialsFromName(name: string): string {
     ProtopipeHomeSidePanelService,
     ProtopipeHomeStrategyViewState,
     ProtopipeHomeWriterViewState,
+    ProtopipeHomeThinkerViewState,
+    ArticleGenerationRunSession,
     ProtopipeWriterInspectorBridge,
   ],
   imports: [
@@ -121,7 +124,6 @@ function initialsFromName(name: string): string {
     ProtopipeLeadsListComponent,
     ProtopipeHomeThinkerBinderComponent,
     ProtopipeHomeWriterBinderComponent,
-    ProtopipeHomeStrategyBinderComponent,
     ProtopipeHomeAnalyticsBinderComponent,
   ],
   templateUrl: './protopipe-user-home.component.html',
@@ -141,6 +143,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   /** Shared with strategy children + context panel — inspect selectedArticle() when debugging clicks. */
   readonly strategyViewState = inject(ProtopipeHomeStrategyViewState);
   readonly writerViewState = inject(ProtopipeHomeWriterViewState);
+  readonly thinkerViewState = inject(ProtopipeHomeThinkerViewState);
   private readonly keywordStore = inject(ProtopipeKeywordPickerStore);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly homeWorkspaceEl = viewChild<ElementRef<HTMLElement>>('homeWorkspace');
@@ -217,12 +220,17 @@ export class ProtopipeUserHomeComponent implements OnInit {
   });
 
   readonly isWriterFocus = computed(() => this.activeView() === 'writer');
+  readonly isThinkerFocus = computed(() => this.activeView() === 'thinker');
   readonly isBuildBookFocus = computed(() => this.activeView() === 'build-book');
-  readonly isRailHidden = computed(() => this.isWriterFocus() || this.isBuildBookFocus());
+  readonly isRailHidden = computed(
+    () => this.isWriterFocus() || this.isBuildBookFocus() || this.isThinkerFocus(),
+  );
 
   ngOnInit(): void {
     this.destroyRef.onDestroy(() => this.sidePanel.detachResizeListeners());
     this.writerViewState.setExitHandler(() => this.leaveWriterFocus());
+    this.thinkerViewState.setEnterThinkerHandler(() => this.enterThinkerFocus());
+    this.thinkerViewState.setEnterWriterHandler(() => this.enterWriterFocus());
     this.strategyViewState.setEnterWriterHandler(() => this.enterWriterFocus());
     this.syncPacksFromRoute();
     this.syncPitchPrepFromRoute();
@@ -271,6 +279,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.activeView.set('keywords');
     } else if (item.id === 'start-strategy') {
       this.leaveWriterFocus();
+      this.leaveThinkerFocus();
       this.activeNavId.set(item.id);
       this.activeView.set('strategy');
     } else if (item.id === 'start-sharpen') {
@@ -345,12 +354,33 @@ export class ProtopipeUserHomeComponent implements OnInit {
 
   enterWriterFocus(): void {
     if (!this.writerViewState.activePostId()) {
-      this.writerViewState.openCreate();
+      const thinkerPostId = this.thinkerViewState.postId();
+      if (thinkerPostId) {
+        this.writerViewState.openPost(thinkerPostId);
+      } else {
+        this.writerViewState.openCreate();
+      }
     }
+    this.thinkerViewState.clearSession();
     this.writerViewState.clearPanel();
     this.sidePanel.setOpen(false);
     this.activeNavId.set('content-writer');
     this.activeView.set('writer');
+  }
+
+  enterThinkerFocus(): void {
+    this.writerViewState.clearPanel();
+    this.sidePanel.setOpen(false);
+    this.activeView.set('thinker');
+  }
+
+  leaveThinkerFocus(): void {
+    this.thinkerViewState.clearSession();
+    this.sidePanel.setOpen(false);
+    if (this.activeView() === 'thinker') {
+      this.activeView.set('strategy');
+      this.activeNavId.set('start-strategy');
+    }
   }
 
   leaveBuildBookFocus(): void {
@@ -403,6 +433,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.closeUserMenu();
     if (this.activeView() === 'writer') {
       this.leaveWriterFocus();
+    } else if (this.activeView() === 'thinker') {
+      this.leaveThinkerFocus();
     } else if (this.activeView() === 'build-book') {
       this.leaveBuildBookFocus();
     }

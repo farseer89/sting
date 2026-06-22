@@ -1,0 +1,133 @@
+@if (open()) {
+  <div class="bis-overlay" (click)="close()">
+    <div class="bis-dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Hero images and copy">
+
+      <header class="bis-dialog__head">
+        <div>
+          <h2 class="bis-dialog__title">Hero images &amp; copy</h2>
+          <p class="bis-dialog__deck">Generate photos, pick one, and set the headline text — preview updates live in the layout you selected.</p>
+        </div>
+        <button type="button" class="bis-dialog__close" (click)="close()" aria-label="Close">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+      </header>
+
+      <div class="bis-dialog__body">
+        <div class="bis-dialog__left">
+
+          <section class="bis-copy">
+            <h3 class="bis-copy__title">Hero copy</h3>
+            <div class="bis-copy__grid">
+              <label class="bis-field">
+                <span class="bis-field__label">Eyebrow</span>
+                <input class="bis-field__input" type="text" [ngModel]="localCopy().eyebrow" (ngModelChange)="patchCopy('eyebrow', $event)" />
+              </label>
+              <label class="bis-field bis-field--full">
+                <span class="bis-field__label">Headline</span>
+                <textarea class="bis-field__textarea" rows="2" [ngModel]="localCopy().headline" (ngModelChange)="patchCopy('headline', $event)"></textarea>
+              </label>
+              <label class="bis-field bis-field--full">
+                <span class="bis-field__label">Subhead</span>
+                <input class="bis-field__input" type="text" [ngModel]="localCopy().subhead" (ngModelChange)="patchCopy('subhead', $event)" />
+              </label>
+              <label class="bis-field">
+                <span class="bis-field__label">Primary CTA</span>
+                <input class="bis-field__input" type="text" [ngModel]="localCopy().primaryCta" (ngModelChange)="patchCopy('primaryCta', $event)" />
+              </label>
+              <label class="bis-field">
+                <span class="bis-field__label">Secondary CTA</span>
+                <input class="bis-field__input" type="text" [ngModel]="localCopy().secondaryCta" (ngModelChange)="patchCopy('secondaryCta', $event)" />
+              </label>
+            </div>
+          </section>
+
+          <div class="bd-gen-form">
+            <div class="bd-gen-form__row">
+              <div class="bd-field bd-field--grow">
+                <label class="bd-field__label">Image prompt</label>
+                <textarea
+                  class="bd-field__textarea"
+                  rows="2"
+                  placeholder="Describe the hero photo…"
+                  [ngModel]="imgPrompt()"
+                  (ngModelChange)="imgPrompt.set($event)"
+                ></textarea>
+              </div>
+            </div>
+            <div class="bd-gen-form__row bd-gen-form__row--controls">
+              <div class="bd-field bd-field--model">
+                <label class="bd-field__label">Model</label>
+                <select class="bd-field__select" [ngModel]="imgModel()" (ngModelChange)="imgModel.set($event)">
+                  @if (studio.loadingConfig()) {
+                    <option value="">Loading…</option>
+                  } @else {
+                    @for (m of photoModelChoices(); track m.id) {
+                      <option [value]="m.id">{{ m.label }}</option>
+                    }
+                  }
+                </select>
+              </div>
+              <div class="bd-field bd-field--count">
+                <label class="bd-field__label">Count</label>
+                <div class="bd-stepper">
+                  <button type="button" class="bd-stepper__btn" (click)="adjustNumImages(-1)" [disabled]="imgNumImages() <= 1">−</button>
+                  <span class="bd-stepper__val">{{ imgNumImages() }}</span>
+                  <button type="button" class="bd-stepper__btn" (click)="adjustNumImages(1)" [disabled]="imgNumImages() >= (photoKindMeta()?.maxVariants ?? 4)">+</button>
+                </div>
+              </div>
+              <button type="button" class="bd-btn bd-btn--primary bd-gen-form__submit" [disabled]="!canGenerate()" (click)="generateSiteImages()">
+                @if (studio.generating()) {
+                  Generating…
+                } @else {
+                  Generate
+                }
+              </button>
+            </div>
+            @if (studio.error(); as err) {
+              <div class="bd-error">{{ err }}</div>
+            }
+          </div>
+
+          @if (galleryImages().length) {
+            <div class="bd-gallery-head">
+              <div class="bd-sub-head">Gallery <span class="bd-count">{{ galleryImages().length }}</span></div>
+            </div>
+            <div class="bd-gallery">
+              @for (img of galleryImages(); track img.url) {
+                <div class="bd-gallery__item" [class.is-selected]="previewImageUrl() === img.url || selectedImageUrl() === img.url">
+                  <img [src]="img.url" alt="Generated hero" loading="lazy" (click)="openImagePreview(img.url, $event)" />
+                  <button type="button" class="bd-gallery__preview-btn" (click)="openImagePreview(img.url, $event)">Preview</button>
+                  <button type="button" class="bd-gallery__select-btn" (click)="selectImage(img.url)">Use as hero</button>
+                </div>
+              }
+            </div>
+          } @else if (!studio.generating()) {
+            <div class="bd-gallery-empty">
+              <p>Generate images above — click any thumbnail to preview it in your selected hero layout.</p>
+            </div>
+          }
+        </div>
+
+        <div class="bis-dialog__right">
+          @if (activePreviewUrl(); as url) {
+            <app-protopipe-build-hero-preview
+              [imageUrl]="url"
+              [layout]="currentHero()?.layout ?? heroLayout()"
+              [copy]="localCopy()"
+              [brand]="previewBrand()"
+              [heroLabel]="currentHero()?.label ?? heroLabel()"
+              [siteUrl]="currentHero()?.url ?? siteUrl()"
+              [heroIndex]="previewHeroIdx()"
+              (brandChange)="onPreviewBrandChange($event)"
+              (heroIndexChange)="onPreviewHeroIndexChange($event)"
+            />
+          } @else {
+            <div class="bis-preview-empty">
+              <p>Generate or pick an image to see the hero preview.</p>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}

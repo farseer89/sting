@@ -1,0 +1,180 @@
+@import './image-studio';
+
+:host {
+  display: contents;
+}
+
+.bis-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgb(9 9 11 / 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.bis-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(1120px, 100%);
+  max-height: min(92vh, 900px);
+  background: #fff;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 0.22);
+}
+
+.bis-dialog__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid $border;
+}
+
+.bis-dialog__title {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: $ink;
+}
+
+.bis-dialog__deck {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: $muted;
+  max-width: 36rem;
+  line-height: 1.45;
+}
+
+.bis-dialog__close {
+  appearance: none;
+  border: 1px solid $border;
+  border-radius: 0.45rem;
+  background: $bg;
+  color: $muted;
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  svg { width: 0.875rem; height: 0.875rem; }
+  &:hover { color: $ink; }
+}
+
+.bis-dialog__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 42%);
+  gap: 0;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.bis-dialog__left {
+  overflow-y: auto;
+  padding: 1rem 1.25rem 1.25rem;
+  border-right: 1px solid $border;
+}
+
+.bis-dialog__right {
+  overflow-y: auto;
+  padding: 1rem;
+  background: $bg-subtle;
+}
+
+.bis-copy {
+  margin-bottom: 1rem;
+}
+
+.bis-copy__title {
+  margin: 0 0 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: $muted;
+}
+
+.bis-copy__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.625rem;
+}
+
+.bis-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  &--full { grid-column: 1 / -1; }
+}
+
+.bis-field__label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: $muted;
+}
+
+.bis-field__input,
+.bis-field__textarea {
+  width: 100%;
+  border: 1px solid $border;
+  border-radius: 0.45rem;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.8125rem;
+  font-family: inherit;
+  color: $ink;
+  background: #fff;
+}
+
+.bis-preview-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  padding: 2rem;
+  text-align: center;
+  color: $muted;
+  font-size: 0.8125rem;
+  border: 1px dashed $border;
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+.bd-gallery__select-btn {
+  position: absolute;
+  left: 0.35rem;
+  right: 0.35rem;
+  bottom: 0.35rem;
+  border: none;
+  border-radius: 0.35rem;
+  background: rgb(13 148 136 / 0.92);
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 0.35rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s;
+
+  .bd-gallery__item:hover & { opacity: 1; }
+}
+
+@media (max-width: 900px) {
+  .bis-dialog__body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(240px, 1fr);
+  }
+
+  .bis-dialog__left {
+    border-right: 0;
+    border-bottom: 1px solid $border;
+  }
+}

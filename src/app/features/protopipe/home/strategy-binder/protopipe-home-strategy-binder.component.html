@@ -4,24 +4,24 @@
   <header class="sb-masthead">
     <div class="sb-masthead__left">
       <span class="sb-masthead__kicker">Content strategy</span>
-      <h1 class="sb-masthead__title">Sparky Electric</h1>
-      <p class="sb-masthead__deck">Phoenix, AZ · Electrical contractor · 62 keywords tracked</p>
+      <h1 class="sb-masthead__title">{{ siteLabel() || 'Your site' }}</h1>
+      <p class="sb-masthead__deck">{{ mastheadDeck() }}</p>
     </div>
     <div class="sb-masthead__stats">
       <div class="sb-stat">
-        <span class="sb-stat__num">{{ stats.pillars }}</span>
+        <span class="sb-stat__num">{{ stats().pillars }}</span>
         <span class="sb-stat__label">pillars</span>
       </div>
       <div class="sb-stat">
-        <span class="sb-stat__num">{{ stats.scheduled }}</span>
+        <span class="sb-stat__num">{{ stats().scheduled }}</span>
         <span class="sb-stat__label">scheduled</span>
       </div>
       <div class="sb-stat">
-        <span class="sb-stat__num">{{ stats.backlog }}</span>
+        <span class="sb-stat__num">{{ stats().backlog }}</span>
         <span class="sb-stat__label">in backlog</span>
       </div>
       <div class="sb-stat">
-        <span class="sb-stat__num">{{ stats.existingWins }}</span>
+        <span class="sb-stat__num">{{ stats().existingWins }}</span>
         <span class="sb-stat__label">ranking now</span>
       </div>
     </div>
@@ -51,7 +51,7 @@
       >
         <svg class="sb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><path d="M3 13V7M6 13V4M9 13V6M12 13V3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
         Pillars
-        <span class="sb-binder-nav__count">{{ stats.pillars }}</span>
+        <span class="sb-binder-nav__count">{{ stats().pillars }}</span>
       </button>
 
       <button
@@ -62,7 +62,7 @@
       >
         <svg class="sb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M2 7h12M5 3V1M11 3V1" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
         Calendar
-        <span class="sb-binder-nav__count">{{ stats.scheduled }}</span>
+        <span class="sb-binder-nav__count">{{ stats().scheduled }}</span>
       </button>
 
       <button
@@ -73,7 +73,7 @@
       >
         <svg class="sb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><path d="M3 5h10M3 8h10M3 11h7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
         Backlog
-        <span class="sb-binder-nav__count">{{ stats.backlog }}</span>
+        <span class="sb-binder-nav__count">{{ stats().backlog }}</span>
       </button>
 
       <button
@@ -84,7 +84,7 @@
       >
         <svg class="sb-binder-nav__icon" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.1"/><path d="M10.5 10.5L13.5 13.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
         Keywords
-        <span class="sb-binder-nav__count">{{ stats.keywords }}</span>
+        <span class="sb-binder-nav__count">{{ stats().keywords }}</span>
       </button>
 
       <div class="sb-binder-nav__sep"></div>
@@ -110,13 +110,13 @@
         @case ('overview') {
           <div class="sb-panel-head">
             <div class="sb-panel-kicker">Strategy · Overview</div>
-            <h2 class="sb-panel-title">{{ narrative.headline }}</h2>
-            <p class="sb-panel-deck">{{ narrative.why }}</p>
+            <h2 class="sb-panel-title">{{ narrative().headline }}</h2>
+            <p class="sb-panel-deck">{{ narrative().why }}</p>
           </div>
 
           <!-- Pillar overview cards -->
           <div class="sb-pillar-grid">
-            @for (pillar of pillars; track pillar.id) {
+            @for (pillar of pillars(); track pillar.id) {
               <div class="sb-pillar-card" (click)="activeSection.set('pillars')">
                 <div class="sb-pillar-card__head">
                   <span class="sb-pillar-card__name">{{ pillar.name }}</span>
@@ -131,8 +131,8 @@
           <!-- Next up -->
           <div class="sb-section-head">Next up</div>
           <div class="sb-next-list">
-            @for (item of calendar.slice(0, 3); track item.title) {
-              <div class="sb-next-item">
+            @for (item of calendar().slice(0, 3); track item.key) {
+              <div class="sb-next-item" (click)="openCalendarItem(item.source)">
                 <div class="sb-next-item__left">
                   <span class="sb-type-chip sb-type-chip--{{ item.type }}">{{ item.type }}</span>
                   <span class="sb-next-item__title">{{ item.title }}</span>
@@ -146,21 +146,17 @@
           </div>
 
           <!-- Existing wins -->
-          <div class="sb-section-head">Already ranking</div>
-          <div class="sb-wins">
-            <div class="sb-win-row">
-              <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              <span>"How much does an electrician cost in Phoenix?" — Position #4</span>
+          @if (existingWins().length > 0) {
+            <div class="sb-section-head">Already ranking</div>
+            <div class="sb-wins">
+              @for (win of existingWins(); track win.phrase) {
+                <div class="sb-win-row">
+                  <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span>"{{ win.phrase }}" — Position #{{ win.position }}</span>
+                </div>
+              }
             </div>
-            <div class="sb-win-row">
-              <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              <span>"Emergency electrician Phoenix AZ" — Position #7</span>
-            </div>
-            <div class="sb-win-row">
-              <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              <span>"Licensed electrician Scottsdale" — Position #11</span>
-            </div>
-          </div>
+          }
         }
 
         <!-- ── PILLARS ── -->
@@ -168,11 +164,11 @@
           <div class="sb-panel-head">
             <div class="sb-panel-kicker">Strategy · Content pillars</div>
             <h2 class="sb-panel-title">Topic pillars</h2>
-            <p class="sb-panel-deck">Your strategy is built around {{ pillars.length }} content pillars. Each pillar owns a keyword cluster and a distinct positioning angle.</p>
+            <p class="sb-panel-deck">Your strategy is built around {{ pillars().length }} content pillars. Each pillar owns a keyword cluster and a distinct positioning angle.</p>
           </div>
 
           <div class="sb-pillar-list">
-            @for (pillar of pillars; track pillar.id) {
+            @for (pillar of pillars(); track pillar.id) {
               <div class="sb-pillar-block">
                 <div class="sb-pillar-block__head">
                   <div class="sb-pillar-block__meta">
@@ -204,12 +200,16 @@
           <div class="sb-panel-head">
             <div class="sb-panel-kicker">Strategy · Schedule</div>
             <h2 class="sb-panel-title">Content calendar</h2>
-            <p class="sb-panel-deck">{{ calendar.length }} articles scheduled over the next 8 weeks. Publishing cadence: 1 article per week.</p>
+            <p class="sb-panel-deck">{{ calendarDeck() }}</p>
           </div>
 
           <div class="sb-cal-list">
-            @for (item of calendar; track item.title; let i = $index) {
-              <div class="sb-cal-row" [class.sb-cal-row--high]="item.priority === 'high'">
+            @for (item of calendar(); track item.key; let i = $index) {
+              <div
+                class="sb-cal-row"
+                [class.sb-cal-row--high]="item.priority === 'high'"
+                (click)="openCalendarItem(item.source)"
+              >
                 <div class="sb-cal-row__date">
                   <span class="sb-cal-row__week">Wk {{ i + 1 }}</span>
                   <span class="sb-cal-row__day">{{ item.publishAt }}</span>
@@ -227,7 +227,7 @@
                   </div>
                 </div>
                 <div class="sb-cal-row__actions">
-                  <button type="button" class="sb-btn sb-btn--ghost sb-btn--xs">Write</button>
+                  <button type="button" class="sb-btn sb-btn--ghost sb-btn--xs" (click)="writeCalendarItem(item.source, $event)">Write</button>
                 </div>
               </div>
             }
@@ -239,12 +239,12 @@
           <div class="sb-panel-head">
             <div class="sb-panel-kicker">Strategy · Backlog</div>
             <h2 class="sb-panel-title">Idea backlog</h2>
-            <p class="sb-panel-deck">{{ backlog.length }} unscheduled ideas. Add any of these to the calendar when you're ready to write.</p>
+            <p class="sb-panel-deck">{{ backlog().length }} unscheduled ideas. Add any of these to the calendar when you're ready to write.</p>
           </div>
 
           <div class="sb-backlog-list">
-            @for (item of backlog; track item.title) {
-              <div class="sb-backlog-row">
+            @for (item of backlog(); track item.key) {
+              <div class="sb-backlog-row" (click)="openCalendarItem(item.source)">
                 <div class="sb-backlog-row__body">
                   <p class="sb-backlog-row__title">{{ item.title }}</p>
                   <div class="sb-backlog-row__meta">
@@ -253,15 +253,18 @@
                   </div>
                 </div>
                 <div class="sb-backlog-row__stats">
-                  <div class="sb-kw-stat">
-                    <span class="sb-kw-stat__val">{{ formatVolume(item.volume) }}</span>
-                    <span class="sb-kw-stat__label">vol</span>
-                  </div>
-                  <div class="sb-kw-stat">
-                    <span class="sb-kw-stat__val sb-kw-stat__val--diff sb-kw-stat__val--{{ difficultyClass(item.difficulty) }}">{{ item.difficulty }}</span>
-                    <span class="sb-kw-stat__label">KD</span>
-                  </div>
-                  <button type="button" class="sb-btn sb-btn--ghost sb-btn--xs">Schedule</button>
+                  @if (item.volume > 0) {
+                    <div class="sb-kw-stat">
+                      <span class="sb-kw-stat__val">{{ formatVolume(item.volume) }}</span>
+                      <span class="sb-kw-stat__label">vol</span>
+                    </div>
+                  }
+                  @if (item.difficulty > 0) {
+                    <div class="sb-kw-stat">
+                      <span class="sb-kw-stat__val sb-kw-stat__val--diff sb-kw-stat__val--{{ difficultyClass(item.difficulty) }}">{{ item.difficulty }}</span>
+                      <span class="sb-kw-stat__label">KD</span>
+                    </div>
+                  }
                 </div>
               </div>
             }
@@ -273,74 +276,77 @@
           <div class="sb-panel-head">
             <div class="sb-panel-kicker">Strategy · Keywords</div>
             <h2 class="sb-panel-title">Keyword plan</h2>
-            <p class="sb-panel-deck">{{ keywords.length }} keywords organized into three action tiers.</p>
+            <p class="sb-panel-deck">{{ keywords().length }} keywords organized into three action tiers.</p>
           </div>
 
-          <!-- Tier: Immediate focus -->
-          <div class="sb-kw-tier">
-            <div class="sb-kw-tier__head">
-              <span class="sb-tier-badge sb-tier-badge--immediate">Immediate focus</span>
-              <span class="sb-kw-tier__desc">Highest priority — pursue these first</span>
-            </div>
-            <div class="sb-kw-table">
-              @for (kw of immediateFocus; track kw.phrase) {
-                <div class="sb-kw-row" [class.sb-kw-row--gap]="kw.gap">
-                  <span class="sb-kw-row__phrase">{{ kw.phrase }}</span>
-                  <span class="sb-kw-row__intent">{{ kw.intent }}</span>
-                  <span class="sb-kw-row__vol">{{ formatVolume(kw.volume) }}</span>
-                  <div class="sb-kd-bar">
-                    <div class="sb-kd-bar__fill sb-kd-bar__fill--{{ difficultyClass(kw.difficulty) }}" [style.width.%]="kw.difficulty"></div>
+          @if (immediateFocus().length > 0) {
+            <div class="sb-kw-tier">
+              <div class="sb-kw-tier__head">
+                <span class="sb-tier-badge sb-tier-badge--immediate">Immediate focus</span>
+                <span class="sb-kw-tier__desc">Highest priority — pursue these first</span>
+              </div>
+              <div class="sb-kw-table">
+                @for (kw of immediateFocus(); track kw.phrase) {
+                  <div class="sb-kw-row" [class.sb-kw-row--gap]="kw.gap" (click)="openKeyword(kw)">
+                    <span class="sb-kw-row__phrase">{{ kw.phrase }}</span>
+                    <span class="sb-kw-row__intent">{{ kw.intent }}</span>
+                    <span class="sb-kw-row__vol">{{ formatVolume(kw.volume) }}</span>
+                    <div class="sb-kd-bar">
+                      <div class="sb-kd-bar__fill sb-kd-bar__fill--{{ difficultyClass(kw.difficulty) }}" [style.width.%]="kw.difficulty"></div>
+                    </div>
+                    <span class="sb-kw-row__kd sb-kw-row__kd--{{ difficultyClass(kw.difficulty) }}">{{ kw.difficulty }}</span>
+                    @if (kw.gap) { <span class="sb-gap-flag">gap</span> }
                   </div>
-                  <span class="sb-kw-row__kd sb-kw-row__kd--{{ difficultyClass(kw.difficulty) }}">{{ kw.difficulty }}</span>
-                  @if (kw.gap) { <span class="sb-gap-flag">gap</span> }
-                </div>
-              }
+                }
+              </div>
             </div>
-          </div>
+          }
 
-          <!-- Tier: Long-term -->
-          <div class="sb-kw-tier">
-            <div class="sb-kw-tier__head">
-              <span class="sb-tier-badge sb-tier-badge--long-term">Long-term</span>
-              <span class="sb-kw-tier__desc">Build authority over 3–6 months</span>
-            </div>
-            <div class="sb-kw-table">
-              @for (kw of longTerm; track kw.phrase) {
-                <div class="sb-kw-row" [class.sb-kw-row--gap]="kw.gap">
-                  <span class="sb-kw-row__phrase">{{ kw.phrase }}</span>
-                  <span class="sb-kw-row__intent">{{ kw.intent }}</span>
-                  <span class="sb-kw-row__vol">{{ formatVolume(kw.volume) }}</span>
-                  <div class="sb-kd-bar">
-                    <div class="sb-kd-bar__fill sb-kd-bar__fill--{{ difficultyClass(kw.difficulty) }}" [style.width.%]="kw.difficulty"></div>
+          @if (longTerm().length > 0) {
+            <div class="sb-kw-tier">
+              <div class="sb-kw-tier__head">
+                <span class="sb-tier-badge sb-tier-badge--long-term">Long-term</span>
+                <span class="sb-kw-tier__desc">Build authority over 3–6 months</span>
+              </div>
+              <div class="sb-kw-table">
+                @for (kw of longTerm(); track kw.phrase) {
+                  <div class="sb-kw-row" [class.sb-kw-row--gap]="kw.gap" (click)="openKeyword(kw)">
+                    <span class="sb-kw-row__phrase">{{ kw.phrase }}</span>
+                    <span class="sb-kw-row__intent">{{ kw.intent }}</span>
+                    <span class="sb-kw-row__vol">{{ formatVolume(kw.volume) }}</span>
+                    <div class="sb-kd-bar">
+                      <div class="sb-kd-bar__fill sb-kd-bar__fill--{{ difficultyClass(kw.difficulty) }}" [style.width.%]="kw.difficulty"></div>
+                    </div>
+                    <span class="sb-kw-row__kd sb-kw-row__kd--{{ difficultyClass(kw.difficulty) }}">{{ kw.difficulty }}</span>
+                    @if (kw.gap) { <span class="sb-gap-flag">gap</span> }
                   </div>
-                  <span class="sb-kw-row__kd sb-kw-row__kd--{{ difficultyClass(kw.difficulty) }}">{{ kw.difficulty }}</span>
-                  @if (kw.gap) { <span class="sb-gap-flag">gap</span> }
-                </div>
-              }
+                }
+              </div>
             </div>
-          </div>
+          }
 
-          <!-- Tier: Long-tail -->
-          <div class="sb-kw-tier">
-            <div class="sb-kw-tier__head">
-              <span class="sb-tier-badge sb-tier-badge--long-tail">Long-tail</span>
-              <span class="sb-kw-tier__desc">Low competition, high conversion intent</span>
-            </div>
-            <div class="sb-kw-table">
-              @for (kw of longTail; track kw.phrase) {
-                <div class="sb-kw-row" [class.sb-kw-row--gap]="kw.gap">
-                  <span class="sb-kw-row__phrase">{{ kw.phrase }}</span>
-                  <span class="sb-kw-row__intent">{{ kw.intent }}</span>
-                  <span class="sb-kw-row__vol">{{ formatVolume(kw.volume) }}</span>
-                  <div class="sb-kd-bar">
-                    <div class="sb-kd-bar__fill sb-kd-bar__fill--{{ difficultyClass(kw.difficulty) }}" [style.width.%]="kw.difficulty"></div>
+          @if (longTail().length > 0) {
+            <div class="sb-kw-tier">
+              <div class="sb-kw-tier__head">
+                <span class="sb-tier-badge sb-tier-badge--long-tail">Long-tail</span>
+                <span class="sb-kw-tier__desc">Low competition, high conversion intent</span>
+              </div>
+              <div class="sb-kw-table">
+                @for (kw of longTail(); track kw.phrase) {
+                  <div class="sb-kw-row" [class.sb-kw-row--gap]="kw.gap" (click)="openKeyword(kw)">
+                    <span class="sb-kw-row__phrase">{{ kw.phrase }}</span>
+                    <span class="sb-kw-row__intent">{{ kw.intent }}</span>
+                    <span class="sb-kw-row__vol">{{ formatVolume(kw.volume) }}</span>
+                    <div class="sb-kd-bar">
+                      <div class="sb-kd-bar__fill sb-kd-bar__fill--{{ difficultyClass(kw.difficulty) }}" [style.width.%]="kw.difficulty"></div>
+                    </div>
+                    <span class="sb-kw-row__kd sb-kw-row__kd--{{ difficultyClass(kw.difficulty) }}">{{ kw.difficulty }}</span>
+                    @if (kw.gap) { <span class="sb-gap-flag">gap</span> }
                   </div>
-                  <span class="sb-kw-row__kd sb-kw-row__kd--{{ difficultyClass(kw.difficulty) }}">{{ kw.difficulty }}</span>
-                  @if (kw.gap) { <span class="sb-gap-flag">gap</span> }
-                </div>
-              }
+                }
+              </div>
             </div>
-          </div>
+          }
         }
 
         <!-- ── TUNE ── -->

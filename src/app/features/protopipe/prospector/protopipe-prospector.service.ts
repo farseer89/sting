@@ -1,7 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 import type { ProspectorRunDto } from './prospector-run.model';
+
+const API = environment.MICRO_BASE_URL;
 
 @Injectable({ providedIn: 'root' })
 export class ProtopipeProspectorService {
@@ -10,7 +13,7 @@ export class ProtopipeProspectorService {
   async createRun(category: string, location: string): Promise<ProspectorRunDto> {
     const res = await firstValueFrom(
       this.http.post<{ ok: boolean; data: ProspectorRunDto }>(
-        '/api/v2/protopipe/prospector/runs',
+        `${API}/api/v2/protopipe/prospector/runs`,
         { category, location },
       ),
     );
@@ -20,7 +23,7 @@ export class ProtopipeProspectorService {
   async getRun(runId: string): Promise<ProspectorRunDto> {
     const res = await firstValueFrom(
       this.http.get<{ ok: boolean; data: ProspectorRunDto }>(
-        `/api/v2/protopipe/prospector/runs/${runId}`,
+        `${API}/api/v2/protopipe/prospector/runs/${runId}`,
       ),
     );
     return res.data;
@@ -29,7 +32,7 @@ export class ProtopipeProspectorService {
   async listRuns(): Promise<ProspectorRunDto[]> {
     const res = await firstValueFrom(
       this.http.get<{ ok: boolean; data: ProspectorRunDto[] }>(
-        '/api/v2/protopipe/prospector/runs',
+        `${API}/api/v2/protopipe/prospector/runs`,
       ),
     );
     return res.data;

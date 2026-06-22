@@ -1,17 +1,25 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  inject,
   input,
   output,
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import {
+  AutoComplete,
+  type AutoCompleteCompleteEvent,
+  type AutoCompleteSelectEvent,
+} from 'primeng/autocomplete';
+import type { ProtopipeSerpLocationOption } from '@hive/contracts';
+import { ProtopipeApiService } from '../protopipe-api.service';
 
 @Component({
   selector: 'app-protopipe-prospector-avatar-form',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
+  imports: [FormsModule, AutoComplete],
   template: `
     <div class="af-wrap">
       <div class="af-card">
@@ -22,9 +30,9 @@ import { FormsModule } from '@angular/forms';
 
         <form class="af-form" (ngSubmit)="onSubmit()">
           <div class="af-field">
-            <label class="af-label" for="category">Business category</label>
+            <label class="af-label" for="pp-category">Business category</label>
             <input
-              id="category"
+              id="pp-category"
               class="af-input"
               type="text"
               placeholder="e.g. Electricians, Plumbers, HVAC companies"
@@ -36,15 +44,21 @@ import { FormsModule } from '@angular/forms';
           </div>
 
           <div class="af-field">
-            <label class="af-label" for="location">Location</label>
-            <input
-              id="location"
-              class="af-input"
-              type="text"
-              placeholder="e.g. Chandler, AZ  or  Phoenix metro"
-              [(ngModel)]="location"
-              name="location"
-              autocomplete="off"
+            <label class="af-label" for="pp-location">Location</label>
+            <p-autocomplete
+              inputId="pp-location"
+              styleClass="af-location-ac"
+              [suggestions]="locationSuggestions()"
+              (completeMethod)="searchLocations($event)"
+              (onSelect)="onLocationSelected($event)"
+              (onClear)="onLocationCleared()"
+              field="name"
+              optionLabel="name"
+              placeholder="Start typing a city (e.g. Chandler, AZ)"
+              [forceSelection]="false"
+              [minLength]="2"
+              [delay]="250"
+              appendTo="body"
               [disabled]="loading()"
             />
           </div>
@@ -80,22 +94,53 @@ import { FormsModule } from '@angular/forms';
   styleUrl: './protopipe-prospector-avatar-form.component.scss',
 })
 export class ProtopipeProspectorAvatarFormComponent {
+  private readonly api = inject(ProtopipeApiService);
+
   readonly loading = input(false);
   readonly error = input<string | null>(null);
   readonly search = output<{ category: string; location: string }>();
 
   category = '';
-  location = '';
+  locationText = '';
+  private selectedLocation: ProtopipeSerpLocationOption | null = null;
 
+  readonly locationSuggestions = signal<ProtopipeSerpLocationOption[]>([]);
   readonly canSubmit = signal(false);
 
-  // Recompute canSubmit on every change since we're using template-driven forms
   ngDoCheck(): void {
-    this.canSubmit.set(this.category.trim().length > 0 && this.location.trim().length > 0);
+    this.canSubmit.set(
+      this.category.trim().length > 0 && this.locationText.trim().length > 0,
+    );
+  }
+
+  async searchLocations(event: AutoCompleteCompleteEvent): Promise<void> {
+    const q = event.query?.trim() ?? '';
+    if (q.length < 2) {
+      this.locationSuggestions.set([]);
+      return;
+    }
+    try {
+      const res = await this.api.searchSerpLocations(q, 8);
+      this.locationSuggestions.set(res.locations);
+    } catch {
+      this.locationSuggestions.set([]);
+    }
+  }
+
+  onLocationSelected(event: AutoCompleteSelectEvent): void {
+    const opt = event.value as ProtopipeSerpLocationOption | null;
+    this.selectedLocation = opt ?? null;
+    this.locationText = opt?.name ?? '';
+  }
+
+  onLocationCleared(): void {
+    this.selectedLocation = null;
+    this.locationText = '';
   }
 
   onSubmit(): void {
     if (!this.canSubmit() || this.loading()) return;
-    this.search.emit({ category: this.category.trim(), location: this.location.trim() });
+    const location = this.selectedLocation?.name ?? this.locationText.trim();
+    this.search.emit({ category: this.category.trim(), location });
   }
 }

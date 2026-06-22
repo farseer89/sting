@@ -76,7 +76,7 @@ import {
   proseBlocksForSections,
   syncTemplateImagesToSections,
 } from '../block-template.util';
-import { ProtopipeBlockSlotsPanelComponent } from './block-slots-panel/block-slots-panel.component';
+import { ProtopipeArticleBlockCanvasComponent } from './article-block-canvas/article-block-canvas.component';
 import { ArticleSectionNavComponent } from './article-section-nav/article-section-nav.component';
 import {
   buildArticleNavSlots,
@@ -278,7 +278,7 @@ function buildHighlightSegments(prose: string, claims: string[]): HighlightSegme
     NgTemplateOutlet,
     Toast,
     ProseEditorComponent,
-    ProtopipeBlockSlotsPanelComponent,
+    ProtopipeArticleBlockCanvasComponent,
     ProtopipeImagePlaceholderComponent,
     ArticleSectionNavComponent,
   ],
@@ -313,6 +313,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
   private readonly homeWriterView = inject(ProtopipeHomeWriterViewState, { optional: true });
   private readonly homeThinkerView = inject(ProtopipeHomeThinkerViewState, { optional: true });
   private readonly imageFileInput = viewChild<ElementRef<HTMLInputElement>>('imageFileInput');
+  private readonly articleBlockCanvas = viewChild(ProtopipeArticleBlockCanvasComponent);
 
   readonly imageUploading = signal(false);
   readonly imageUploadSectionIndex = signal<number | null>(null);
@@ -582,6 +583,13 @@ export class ProtopipeWriterComponent implements OnDestroy {
   readonly showBlockCanvas = computed(
     () => this.hasStructuredLayout() && Boolean(this.structuredCanvasTemplate()?.blocks?.length),
   );
+
+  readonly sectionFactsByBlockId = computed(() => {
+    const s = this.session();
+    if (!s) return {};
+    const proseList = proseBlocksForSections(s.template);
+    return Object.fromEntries(proseList.map((block, index) => [block.id, this.factsForSection(index)]));
+  });
 
   readonly publishTarget = signal<ProtopipePublishTarget>('astro');
   readonly publishConnectionId = signal<string | null>(null);
@@ -1308,20 +1316,49 @@ export class ProtopipeWriterComponent implements OnDestroy {
   }
 
   onBlockImageUploadRequest(event: { blockId: string; imageIndex?: number }): void {
-    const block = this.session()?.template.blocks?.find((b) => b.id === event.blockId);
+    const s = this.session();
+    if (!s) return;
+    const block = s.template.blocks?.find((b) => b.id === event.blockId);
     if (!block) return;
-    if (block.kind === 'image') {
+    if (block.kind === 'image' || block.kind === 'infographic') {
       this.imageUploadTarget.set({ kind: 'hero', blockId: block.id });
-    } else if (block.kind === 'prose' && event.imageIndex != null) {
+    } else if (block.kind === 'prose') {
+      const imageIndex = event.imageIndex ?? 0;
+      if (!block.images?.length) {
+        const align =
+          block.presentation === 'image_left'
+            ? 'left'
+            : block.presentation === 'image_right'
+              ? 'right'
+              : 'full';
+        this.patchBlockById(block.id, {
+          images: [{ url: '', alt: '', align, role: 'section' }],
+        });
+      }
       this.imageUploadTarget.set({
         kind: 'prose',
         blockId: block.id,
-        imageIndex: event.imageIndex,
+        imageIndex,
       });
     } else {
       return;
     }
     this.imageFileInput()?.nativeElement.click();
+  }
+
+  onCanvasEditorReady(event: { slotId: string; sectionIndex: number | null; editor: Editor }): void {
+    if (event.sectionIndex == null) {
+      this.introEditor = event.editor;
+      event.editor.commands.setFlaggedFacts(this.factsForIntro());
+      return;
+    }
+    this.sectionEditors.set(event.sectionIndex, event.editor);
+    event.editor.commands.setFlaggedFacts(this.factsForSection(event.sectionIndex));
+  }
+
+  onCanvasFactClick(event: { slotId: string; sectionIndex: number | null; factId: string; rect: DOMRect }): void {
+    const sectionIndex = event.sectionIndex ?? -1;
+    this.onFactClick(sectionIndex, { factId: event.factId, rect: event.rect });
   }
 
   patchHeroImage(field: 'url' | 'alt' | 'align', value: string): void {
@@ -1393,6 +1430,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
 
   focusCanvasSlot(slotId: string): void {
     this.activeArticleSectionId.set(slotId);
+    this.articleBlockCanvas()?.scrollToSlot(slotId);
     const s = this.session();
     if (!s) return;
     if (slotId === 'intro') {
@@ -1400,9 +1438,11 @@ export class ProtopipeWriterComponent implements OnDestroy {
       return;
     }
     const block = s.template.blocks?.find((b) => b.slotId === slotId);
-    if (block?.kind === 'prose' && block.h2) {
-      const idx = s.template.sections.findIndex((sec) => sec.h2 === block.h2);
-      if (idx >= 0) this.focusSection(idx);
+    if (block?.kind === 'prose') {
+      const idx = proseBlocksForSections(s.template).findIndex((b) => b.id === block.id);
+      if (idx >= 0) {
+        this.sectionEditors.get(idx)?.commands.focus('end');
+      }
     }
   }
 

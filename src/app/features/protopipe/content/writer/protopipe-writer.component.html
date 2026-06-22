@@ -198,11 +198,17 @@
               }
 
               @if (showBlockCanvas() && structuredCanvasTemplate(); as blockTemplate) {
-                <app-protopipe-block-slots-panel
+                <app-protopipe-article-block-canvas
                   [template]="blockTemplate"
                   [readOnly]="isReadOnly() || runIsActive()"
+                  [activeSlotId]="activeArticleSectionId()"
+                  [introFlaggedFacts]="factsForIntro()"
+                  [sectionFactsByBlockId]="sectionFactsByBlockId()"
+                  [imageUploading]="imageUploading()"
+                  [imageUploadTarget]="imageUploadTarget()"
                   (templateChange)="onBlocksTemplateChange($event)"
-                  (focusCanvasSlot)="focusCanvasSlot($event)"
+                  (editorReady)="onCanvasEditorReady($event)"
+                  (factClick)="onCanvasFactClick($event)"
                   (imageUploadRequest)="onBlockImageUploadRequest($event)"
                 />
               } @else {

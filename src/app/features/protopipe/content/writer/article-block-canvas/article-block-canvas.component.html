@@ -1,0 +1,464 @@
+<div class="abc">
+  <div class="pw__block pw__block--title">
+    <div class="pw__block-main pw__block-main--title">
+      <textarea
+        class="pw__h1"
+        rows="1"
+        [ngModel]="template().h1"
+        (ngModelChange)="patchHeadline($event)"
+        (keydown.enter)="$event.preventDefault()"
+        [disabled]="readOnly()"
+        placeholder="Your headline…"
+      ></textarea>
+    </div>
+  </div>
+
+  @for (block of canvasBlocks(); track block.id) {
+    <section
+      class="abc-section"
+      [class.is-active]="isActive(block.slotId)"
+      [attr.data-presentation]="block.presentation ?? null"
+      [id]="slotAnchorId(block.slotId)"
+    >
+      @if (asImage(block); as imageBlock) {
+        <div
+          class="abc-section__inner"
+          [class.abc-section__inner--hero]="imageBlock.presentation === 'hero' || imageBlock.slotId === 'hero'"
+          [class.abc-section__inner--photo]="imageBlock.presentation === 'full_photo'"
+        >
+          <app-protopipe-image-placeholder
+            mode="insert"
+            [hero]="imageBlock.presentation === 'hero' || imageBlock.slotId === 'hero'"
+            [label]="imageBlock.label || 'Hero image'"
+            [hint]="imageHint(imageBlock)"
+            [url]="imageBlock.url"
+            [alt]="imageBlock.alt"
+            [align]="imageBlock.align ?? 'full'"
+            [readOnly]="readOnly()"
+            [uploading]="isHeroUploading(imageBlock.id)"
+            (urlChange)="patchImageBlock(imageBlock, 'url', $event)"
+            (altChange)="patchImageBlock(imageBlock, 'alt', $event)"
+            (alignChange)="patchImageBlock(imageBlock, 'align', $event)"
+            (upload)="imageUploadRequest.emit({ blockId: imageBlock.id })"
+            (remove)="clearImageBlock(imageBlock)"
+          />
+        </div>
+      }
+
+      @if (asProse(block); as prose) {
+        @switch (prosePresentation(prose)) {
+          @case ('prose') {
+            <div
+              class="abc-section__inner"
+              [class.abc-section__inner--intro]="prose.slotId === 'intro'"
+              [class.abc-section__inner--body]="prose.slotId !== 'intro'"
+            >
+              @if (prose.slotId !== 'intro') {
+                <textarea
+                  class="pw__h2"
+                  rows="1"
+                  [ngModel]="prose.h2 ?? ''"
+                  (ngModelChange)="patchProse(prose, 'h2', $event)"
+                  (keydown.enter)="$event.preventDefault()"
+                  [disabled]="readOnly()"
+                  placeholder="Section heading…"
+                ></textarea>
+              }
+              <app-prose-editor
+                [class.pw__intro]="prose.slotId === 'intro'"
+                [class.pw__intro--editor]="prose.slotId === 'intro'"
+                [class.pw__section-body]="prose.slotId !== 'intro'"
+                [class.pw__section-body--editor]="prose.slotId !== 'intro'"
+                [value]="prose.body"
+                (valueChange)="patchProse(prose, 'body', $event)"
+                [flaggedFacts]="factsForProse(prose)"
+                (factClick)="onFactClick(prose, $event)"
+                (ready)="onEditorReady(prose, $event)"
+                [disabled]="readOnly()"
+                [placeholder]="prose.slotId === 'intro' ? 'Open with the promise of the piece…' : 'Write this section…'"
+              ></app-prose-editor>
+              @for (img of prose.images ?? []; track $index) {
+                <app-protopipe-image-placeholder
+                  class="pw__inline-image"
+                  mode="insert"
+                  [label]="prose.label || prose.slotId"
+                  [hint]="imageHint(img)"
+                  [url]="img.url"
+                  [alt]="img.alt"
+                  [align]="img.align ?? 'full'"
+                  [readOnly]="readOnly()"
+                  [uploading]="isProseImageUploading(prose.id, $index)"
+                  (urlChange)="patchProseImage(prose, $index, 'url', $event)"
+                  (altChange)="patchProseImage(prose, $index, 'alt', $event)"
+                  (alignChange)="patchProseImage(prose, $index, 'align', $event)"
+                  (upload)="imageUploadRequest.emit({ blockId: prose.id, imageIndex: $index })"
+                  (remove)="clearProseImage(prose, $index)"
+                />
+              }
+            </div>
+          }
+          @case ('image_left') {
+            <div class="abc-split abc-split--image-left">
+              <div class="abc-split__media">
+                @if (firstProseImage(prose); as img) {
+                  <app-protopipe-image-placeholder
+                    mode="insert"
+                    [label]="prose.label || prose.slotId"
+                    [hint]="imageHint(img)"
+                    [url]="img.url"
+                    [alt]="img.alt"
+                    [align]="img.align ?? 'left'"
+                    [readOnly]="readOnly()"
+                    [uploading]="isProseImageUploading(prose.id, 0)"
+                    (urlChange)="patchProseImage(prose, 0, 'url', $event)"
+                    (altChange)="patchProseImage(prose, 0, 'alt', $event)"
+                    (alignChange)="patchProseImage(prose, 0, 'align', $event)"
+                    (upload)="imageUploadRequest.emit({ blockId: prose.id, imageIndex: 0 })"
+                    (remove)="clearProseImage(prose, 0)"
+                  />
+                } @else {
+                  <app-protopipe-image-placeholder
+                    mode="insert"
+                    [label]="prose.label || prose.slotId"
+                    hint="Upload a section image"
+                    url=""
+                    alt=""
+                    align="left"
+                    [readOnly]="readOnly()"
+                    (upload)="requestProseImageUpload(prose, 0)"
+                  />
+                }
+              </div>
+              <div class="abc-split__copy">
+                <textarea
+                  class="pw__h2"
+                  rows="1"
+                  [ngModel]="prose.h2 ?? ''"
+                  (ngModelChange)="patchProse(prose, 'h2', $event)"
+                  (keydown.enter)="$event.preventDefault()"
+                  [disabled]="readOnly()"
+                  placeholder="Section heading…"
+                ></textarea>
+                <app-prose-editor
+                  class="pw__section-body pw__section-body--editor"
+                  [value]="prose.body"
+                  (valueChange)="patchProse(prose, 'body', $event)"
+                  [flaggedFacts]="factsForProse(prose)"
+                  (factClick)="onFactClick(prose, $event)"
+                  (ready)="onEditorReady(prose, $event)"
+                  [disabled]="readOnly()"
+                  placeholder="Write this section…"
+                ></app-prose-editor>
+              </div>
+            </div>
+          }
+          @case ('image_right') {
+            <div class="abc-split abc-split--image-right">
+              <div class="abc-split__copy">
+                <textarea
+                  class="pw__h2"
+                  rows="1"
+                  [ngModel]="prose.h2 ?? ''"
+                  (ngModelChange)="patchProse(prose, 'h2', $event)"
+                  (keydown.enter)="$event.preventDefault()"
+                  [disabled]="readOnly()"
+                  placeholder="Section heading…"
+                ></textarea>
+                <app-prose-editor
+                  class="pw__section-body pw__section-body--editor"
+                  [value]="prose.body"
+                  (valueChange)="patchProse(prose, 'body', $event)"
+                  [flaggedFacts]="factsForProse(prose)"
+                  (factClick)="onFactClick(prose, $event)"
+                  (ready)="onEditorReady(prose, $event)"
+                  [disabled]="readOnly()"
+                  placeholder="Write this section…"
+                ></app-prose-editor>
+              </div>
+              <div class="abc-split__media">
+                @if (firstProseImage(prose); as img) {
+                  <app-protopipe-image-placeholder
+                    mode="insert"
+                    [label]="prose.label || prose.slotId"
+                    [hint]="imageHint(img)"
+                    [url]="img.url"
+                    [alt]="img.alt"
+                    [align]="img.align ?? 'right'"
+                    [readOnly]="readOnly()"
+                    [uploading]="isProseImageUploading(prose.id, 0)"
+                    (urlChange)="patchProseImage(prose, 0, 'url', $event)"
+                    (altChange)="patchProseImage(prose, 0, 'alt', $event)"
+                    (alignChange)="patchProseImage(prose, 0, 'align', $event)"
+                    (upload)="imageUploadRequest.emit({ blockId: prose.id, imageIndex: 0 })"
+                    (remove)="clearProseImage(prose, 0)"
+                  />
+                } @else {
+                  <app-protopipe-image-placeholder
+                    mode="insert"
+                    [label]="prose.label || prose.slotId"
+                    hint="Upload a section image"
+                    url=""
+                    alt=""
+                    align="right"
+                    [readOnly]="readOnly()"
+                    (upload)="requestProseImageUpload(prose, 0)"
+                  />
+                }
+              </div>
+            </div>
+          }
+          @case ('infographic') {
+            <div class="abc-section__inner abc-section__inner--body">
+              <textarea
+                class="pw__h2"
+                rows="1"
+                [ngModel]="prose.h2 ?? ''"
+                (ngModelChange)="patchProse(prose, 'h2', $event)"
+                (keydown.enter)="$event.preventDefault()"
+                [disabled]="readOnly()"
+                placeholder="Section heading…"
+              ></textarea>
+              <div class="abc-infographic">
+                @if (firstProseImage(prose); as img) {
+                  <app-protopipe-image-placeholder
+                    mode="insert"
+                    [label]="prose.label || 'Infographic'"
+                    [hint]="imageHint(img)"
+                    [url]="img.url"
+                    [alt]="img.alt"
+                    align="full"
+                    [readOnly]="readOnly()"
+                    [uploading]="isProseImageUploading(prose.id, 0)"
+                    (urlChange)="patchProseImage(prose, 0, 'url', $event)"
+                    (altChange)="patchProseImage(prose, 0, 'alt', $event)"
+                    (upload)="imageUploadRequest.emit({ blockId: prose.id, imageIndex: 0 })"
+                    (remove)="clearProseImage(prose, 0)"
+                  />
+                } @else {
+                  <div class="abc-infographic__placeholder">
+                    <span>Infographic</span>
+                    @if (!readOnly()) {
+                      <button type="button" (click)="requestProseImageUpload(prose, 0)">
+                        Add infographic
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+              <app-prose-editor
+                class="pw__section-body pw__section-body--editor"
+                [value]="prose.body"
+                (valueChange)="patchProse(prose, 'body', $event)"
+                [flaggedFacts]="factsForProse(prose)"
+                (factClick)="onFactClick(prose, $event)"
+                (ready)="onEditorReady(prose, $event)"
+                [disabled]="readOnly()"
+                placeholder="Write this section…"
+              ></app-prose-editor>
+            </div>
+          }
+          @default {
+            <div
+              class="abc-section__inner"
+              [class.abc-section__inner--intro]="prose.slotId === 'intro'"
+              [class.abc-section__inner--body]="prose.slotId !== 'intro'"
+            >
+              @if (prose.slotId !== 'intro') {
+                <textarea
+                  class="pw__h2"
+                  rows="1"
+                  [ngModel]="prose.h2 ?? ''"
+                  (ngModelChange)="patchProse(prose, 'h2', $event)"
+                  (keydown.enter)="$event.preventDefault()"
+                  [disabled]="readOnly()"
+                  placeholder="Section heading…"
+                ></textarea>
+              }
+              <app-prose-editor
+                [class.pw__intro]="prose.slotId === 'intro'"
+                [class.pw__intro--editor]="prose.slotId === 'intro'"
+                [class.pw__section-body]="prose.slotId !== 'intro'"
+                [class.pw__section-body--editor]="prose.slotId !== 'intro'"
+                [value]="prose.body"
+                (valueChange)="patchProse(prose, 'body', $event)"
+                [flaggedFacts]="factsForProse(prose)"
+                (factClick)="onFactClick(prose, $event)"
+                (ready)="onEditorReady(prose, $event)"
+                [disabled]="readOnly()"
+                [placeholder]="prose.slotId === 'intro' ? 'Open with the promise of the piece…' : 'Write this section…'"
+              ></app-prose-editor>
+            </div>
+          }
+        }
+      }
+
+      @if (asHowto(block); as howto) {
+        <div class="abc-section__inner abc-section__inner--body">
+          <ol class="abc-steps">
+            @for (step of howto.steps; track $index) {
+              <li class="abc-steps__item">
+                <input
+                  class="abc-steps__name"
+                  type="text"
+                  placeholder="Step name"
+                  [ngModel]="step.name"
+                  (ngModelChange)="patchStep(howto, $index, 'name', $event)"
+                  [disabled]="readOnly()"
+                />
+                <textarea
+                  class="abc-steps__body"
+                  rows="2"
+                  placeholder="Step details"
+                  [ngModel]="step.body"
+                  (ngModelChange)="patchStep(howto, $index, 'body', $event)"
+                  [disabled]="readOnly()"
+                ></textarea>
+              </li>
+            }
+          </ol>
+        </div>
+      }
+
+      @if (asList(block); as list) {
+        <div class="abc-section__inner abc-section__inner--body">
+          <ol class="abc-list">
+            @for (item of list.items; track $index) {
+              <li class="abc-list__item" [class.is-highlight]="item.highlight">
+                <span class="abc-list__rank">{{ item.rank ?? $index + 1 }}</span>
+                <div class="abc-list__fields">
+                  <input
+                    class="abc-list__title"
+                    type="text"
+                    placeholder="Item title"
+                    [ngModel]="item.title"
+                    (ngModelChange)="patchListItem(list, $index, 'title', $event)"
+                    [disabled]="readOnly()"
+                  />
+                  <textarea
+                    class="abc-list__body"
+                    rows="2"
+                    placeholder="Item details"
+                    [ngModel]="item.body"
+                    (ngModelChange)="patchListItem(list, $index, 'body', $event)"
+                    [disabled]="readOnly()"
+                  ></textarea>
+                </div>
+              </li>
+            }
+          </ol>
+        </div>
+      }
+
+      @if (asFaq(block); as faq) {
+        <div class="abc-section__inner abc-section__inner--body">
+          <dl class="abc-faq">
+            @for (item of faq.items; track $index) {
+              <div class="abc-faq__item">
+                <dt>
+                  <input
+                    class="abc-faq__question"
+                    type="text"
+                    placeholder="Question"
+                    [ngModel]="item.question"
+                    (ngModelChange)="patchFaqItem(faq, $index, 'question', $event)"
+                    [disabled]="readOnly()"
+                  />
+                </dt>
+                <dd>
+                  <textarea
+                    class="abc-faq__answer"
+                    rows="2"
+                    placeholder="Answer"
+                    [ngModel]="item.answer"
+                    (ngModelChange)="patchFaqItem(faq, $index, 'answer', $event)"
+                    [disabled]="readOnly()"
+                  ></textarea>
+                </dd>
+              </div>
+            }
+          </dl>
+        </div>
+      }
+
+      @if (asLinks(block); as links) {
+        <div class="abc-section__inner abc-section__inner--body abc-related">
+          <h2 class="abc-related__title">Related on this site</h2>
+          <ul class="abc-related__list">
+            @for (link of links.links; track $index) {
+              <li class="abc-related__item">
+                <input
+                  class="abc-related__label"
+                  type="text"
+                  placeholder="Label"
+                  [ngModel]="link.label"
+                  (ngModelChange)="patchLink(links, $index, 'label', $event)"
+                  [disabled]="readOnly()"
+                />
+                <input
+                  class="abc-related__href"
+                  type="text"
+                  placeholder="/path"
+                  [ngModel]="link.href"
+                  (ngModelChange)="patchLink(links, $index, 'href', $event)"
+                  [disabled]="readOnly()"
+                />
+              </li>
+            }
+          </ul>
+        </div>
+      }
+
+      @if (asInfographic(block); as infographic) {
+        <div class="abc-section__inner abc-infographic">
+          <app-protopipe-image-placeholder
+            mode="insert"
+            [label]="infographic.label || 'Infographic'"
+            [hint]="imageHint(infographic)"
+            [url]="infographic.url"
+            [alt]="infographic.alt"
+            align="full"
+            [readOnly]="readOnly()"
+            [uploading]="isHeroUploading(infographic.id)"
+            (urlChange)="patchInfographic(infographic, 'url', $event)"
+            (altChange)="patchInfographic(infographic, 'alt', $event)"
+            (upload)="imageUploadRequest.emit({ blockId: infographic.id })"
+          />
+        </div>
+      }
+
+      @if (asCta(block); as cta) {
+        <aside class="abc-cta">
+          <input
+            class="abc-cta__label"
+            type="text"
+            placeholder="Button label"
+            [ngModel]="cta.label"
+            (ngModelChange)="patchCta(cta, 'label', $event)"
+            [disabled]="readOnly()"
+          />
+          <input
+            class="abc-cta__href"
+            type="text"
+            placeholder="/contact"
+            [ngModel]="cta.href"
+            (ngModelChange)="patchCta(cta, 'href', $event)"
+            [disabled]="readOnly()"
+          />
+        </aside>
+      }
+
+      @if (asAuthor(block); as author) {
+        <div class="abc-section__inner abc-author">
+          <input
+            class="abc-author__line"
+            type="text"
+            placeholder="Author byline"
+            [ngModel]="author.text ?? ''"
+            (ngModelChange)="patchAuthor(author, $event)"
+            [disabled]="readOnly()"
+          />
+        </div>
+      }
+    </section>
+  }
+</div>

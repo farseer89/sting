@@ -1,56 +1,320 @@
-<div class="book-aggregator">
-  <header>
-    <h1>Business details</h1>
-    <p class="lead">Verified facts and onboarding context — edit in Sharpen.</p>
-    <p-button label="Open Sharpen" icon="pi pi-pencil" severity="secondary" (onClick)="goSharpen.emit()" />
+<div class="bus-shell">
+
+  <header class="bus-masthead">
+    <div class="bus-masthead__left">
+      <h1 class="bus-masthead__title">Business book</h1>
+      <p class="bus-masthead__deck">
+        Verified facts and onboarding context — the profile Sharpen and strategy builds draw from.
+      </p>
+    </div>
+    <div class="bus-masthead__actions">
+      <p-button
+        label="Open Sharpen"
+        icon="pi pi-pencil"
+        severity="secondary"
+        size="small"
+        (onClick)="goSharpen.emit()"
+      />
+    </div>
   </header>
 
+  @if (error(); as err) {
+    <p-message severity="error" [text]="err" styleClass="w-full" />
+  }
+
   @if (loading()) {
-    <div class="loading"><p-progressSpinner strokeWidth="4" /></div>
+    <div class="bus-loading">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Loading business book" />
+    </div>
   } @else {
-    @if (error(); as err) {
-      <p class="error">{{ err }}</p>
-    }
+    <div class="bus-binder">
 
-    @if (profile(); as p) {
-      <section>
-        <h2>Onboarding profile</h2>
-        @if (p.services.length) {
-          <p><strong>Services:</strong> {{ p.services.join(', ') }}</p>
-        }
-        @if (p.competitors.length) {
-          <p><strong>Competitors:</strong> {{ p.competitors.join(', ') }}</p>
-        }
-        @if (p.customerAvatars.length) {
-          <p><strong>Customer avatars:</strong></p>
-          <ul>
-            @for (a of p.customerAvatars; track $index) {
-              <li>{{ a }}</li>
-            }
-          </ul>
-        }
-        @if (p.targetCustomerSites?.length) {
-          <p><strong>Target customers:</strong> {{ p.targetCustomerSites!.join(', ') }}</p>
-        }
-        <p><strong>Market:</strong> {{ p.marketScope }}</p>
-      </section>
-    }
-
-    <section>
-      <h2>Answered context cards</h2>
-      @if (answeredCards().length) {
-        <ul class="card-list">
-          @for (card of answeredCards(); track card.id) {
-            <li>
-              <strong>{{ card.cardText }}</strong>
-              <p>{{ card.answer?.value }}</p>
-              <small>{{ card.updatedAt | date: 'mediumDate' }}</small>
-            </li>
+      <nav class="bus-binder-nav" aria-label="Business book sections">
+        <div class="bus-binder-nav__label">Profile</div>
+        <button
+          type="button"
+          class="bus-binder-nav__item"
+          [class.is-active]="binderSection() === 'overview'"
+          (click)="selectSection('overview')"
+        >
+          <svg class="bus-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" stroke="currentColor" stroke-width="1.1"/>
+            <path d="M5 6h6M5 8.5h4M5 11h5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          </svg>
+          Overview
+        </button>
+        <button
+          type="button"
+          class="bus-binder-nav__item"
+          [class.is-active]="binderSection() === 'services'"
+          (click)="selectSection('services')"
+        >
+          <svg class="bus-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M3 4.5h10M3 8h10M3 11.5h6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          </svg>
+          Services
+          @if (serviceCount(); as count) {
+            <span class="bus-binder-nav__badge">{{ count }}</span>
           }
-        </ul>
-      } @else {
-        <p class="empty">No answered cards yet.</p>
-      }
-    </section>
+        </button>
+        <button
+          type="button"
+          class="bus-binder-nav__item"
+          [class.is-active]="binderSection() === 'market'"
+          (click)="selectSection('market')"
+        >
+          <svg class="bus-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 1.5a4 4 0 00-4 4c0 3 4 8.5 4 8.5s4-5.5 4-8.5a4 4 0 00-4-4z" stroke="currentColor" stroke-width="1.1"/>
+            <circle cx="8" cy="5.5" r="1.25" fill="currentColor"/>
+          </svg>
+          Market
+        </button>
+
+        <div class="bus-binder-nav__label" style="margin-top:0.75rem;">Audience</div>
+        <button
+          type="button"
+          class="bus-binder-nav__item"
+          [class.is-active]="binderSection() === 'customers'"
+          (click)="selectSection('customers')"
+        >
+          <svg class="bus-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="6" cy="5.5" r="2" stroke="currentColor" stroke-width="1.1"/>
+            <path d="M2.5 13c0-2 1.6-3.5 3.5-3.5S9.5 11 9.5 13" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+            <circle cx="11.5" cy="6" r="1.5" stroke="currentColor" stroke-width="1.1"/>
+            <path d="M10 13c.2-1.4 1-2.2 2.2-2.2 1.1 0 1.9.7 2.1 2.2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          </svg>
+          Customers
+          @if (avatarCount(); as count) {
+            <span class="bus-binder-nav__badge">{{ count }}</span>
+          }
+        </button>
+        <button
+          type="button"
+          class="bus-binder-nav__item"
+          [class.is-active]="binderSection() === 'competitors'"
+          (click)="selectSection('competitors')"
+        >
+          <svg class="bus-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M4 12V6M8 12V4M12 12V8" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          </svg>
+          Competitors
+          @if (competitorCount(); as count) {
+            <span class="bus-binder-nav__badge">{{ count }}</span>
+          }
+        </button>
+
+        <div class="bus-binder-nav__label" style="margin-top:0.75rem;">Sharpen</div>
+        <button
+          type="button"
+          class="bus-binder-nav__item"
+          [class.is-active]="binderSection() === 'facts'"
+          (click)="selectSection('facts')"
+        >
+          <svg class="bus-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M4 2.5h8l1 1.5v9.5H3V4l1-1.5z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+            <path d="M6 7.5h4M6 10h4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          </svg>
+          Verified facts
+          @if (factCount(); as count) {
+            <span class="bus-binder-nav__badge">{{ count }}</span>
+          }
+        </button>
+      </nav>
+
+      <div class="bus-binder-panel">
+        @switch (binderSection()) {
+
+          @case ('overview') {
+            <div class="bus-panel-head">
+              <div class="bus-panel-kicker">Profile · Overview</div>
+              <h2 class="bus-panel-title">Business snapshot</h2>
+              <p class="bus-panel-deck">
+                What Protopipe knows about this site from onboarding and Sharpen — edit details in Sharpen.
+              </p>
+            </div>
+
+            @if (site(); as s) {
+              <div class="bus-card bus-card--hero">
+                <div class="bus-card__label">Site</div>
+                <div class="bus-card__title">{{ s.displayName || 'Untitled site' }}</div>
+                @if (s.url) {
+                  <div class="bus-card__meta">{{ s.url }}</div>
+                }
+              </div>
+            }
+
+            @if (profile(); as p) {
+              <div class="bus-stat-grid">
+                <div class="bus-stat">
+                  <span class="bus-stat__value">{{ serviceCount() }}</span>
+                  <span class="bus-stat__label">Services</span>
+                </div>
+                <div class="bus-stat">
+                  <span class="bus-stat__value">{{ avatarCount() }}</span>
+                  <span class="bus-stat__label">Customer avatars</span>
+                </div>
+                <div class="bus-stat">
+                  <span class="bus-stat__value">{{ competitorCount() }}</span>
+                  <span class="bus-stat__label">Competitors</span>
+                </div>
+                <div class="bus-stat">
+                  <span class="bus-stat__value">{{ factCount() }}</span>
+                  <span class="bus-stat__label">Verified facts</span>
+                </div>
+              </div>
+
+              <dl class="bus-dl">
+                <div class="bus-dl__row">
+                  <dt>Onboarding mode</dt>
+                  <dd>{{ onboardingModeLabel(p.onboardingMode) }}</dd>
+                </div>
+                <div class="bus-dl__row">
+                  <dt>Market scope</dt>
+                  <dd>{{ marketScopeLabel(p.marketScope) }}</dd>
+                </div>
+                @if (locationSummary(p); as location) {
+                  <div class="bus-dl__row">
+                    <dt>Location</dt>
+                    <dd>{{ location }}</dd>
+                  </div>
+                }
+              </dl>
+            } @else {
+              <p class="bus-empty">No onboarding profile yet. Complete onboarding or add facts in Sharpen.</p>
+            }
+          }
+
+          @case ('services') {
+            <div class="bus-panel-head">
+              <div class="bus-panel-kicker">Profile · Services</div>
+              <h2 class="bus-panel-title">What you offer</h2>
+              <p class="bus-panel-deck">Services captured during onboarding — used for keyword relevance and content angles.</p>
+            </div>
+
+            @if (profile()?.services.length) {
+              <ul class="bus-chip-list">
+                @for (service of profile()!.services; track $index) {
+                  <li class="bus-chip">{{ service }}</li>
+                }
+              </ul>
+            } @else {
+              <p class="bus-empty">No services listed yet.</p>
+            }
+          }
+
+          @case ('market') {
+            <div class="bus-panel-head">
+              <div class="bus-panel-kicker">Profile · Market</div>
+              <h2 class="bus-panel-title">Where you compete</h2>
+              <p class="bus-panel-deck">Geographic scope and SERP location used for local vs national keyword research.</p>
+            </div>
+
+            @if (profile(); as p) {
+              <dl class="bus-dl">
+                <div class="bus-dl__row">
+                  <dt>Market scope</dt>
+                  <dd>{{ marketScopeLabel(p.marketScope) }}</dd>
+                </div>
+                @if (locationSummary(p); as location) {
+                  <div class="bus-dl__row">
+                    <dt>Location</dt>
+                    <dd>{{ location }}</dd>
+                  </div>
+                }
+                @if (p.serpLocationName) {
+                  <div class="bus-dl__row">
+                    <dt>SERP location</dt>
+                    <dd>{{ p.serpLocationName }}</dd>
+                  </div>
+                }
+                @if (p.serpLocationCode) {
+                  <div class="bus-dl__row">
+                    <dt>SERP location code</dt>
+                    <dd>{{ p.serpLocationCode }}</dd>
+                  </div>
+                }
+              </dl>
+            } @else {
+              <p class="bus-empty">No market details yet.</p>
+            }
+          }
+
+          @case ('customers') {
+            <div class="bus-panel-head">
+              <div class="bus-panel-kicker">Audience · Customers</div>
+              <h2 class="bus-panel-title">Who you serve</h2>
+              <p class="bus-panel-deck">Customer avatars and example businesses you want to reach — not competitors.</p>
+            </div>
+
+            @if (profile(); as p) {
+              @if (p.customerAvatars.length) {
+                <h3 class="bus-subhead">Customer avatars</h3>
+                <ul class="bus-list">
+                  @for (avatar of p.customerAvatars; track $index) {
+                    <li>{{ avatar }}</li>
+                  }
+                </ul>
+              }
+
+              @if (p.targetCustomerSites?.length) {
+                <h3 class="bus-subhead">Target customer examples</h3>
+                <ul class="bus-chip-list">
+                  @for (site of p.targetCustomerSites!; track $index) {
+                    <li class="bus-chip bus-chip--muted">{{ site }}</li>
+                  }
+                </ul>
+              }
+
+              @if (!p.customerAvatars.length && !p.targetCustomerSites?.length) {
+                <p class="bus-empty">No customer details yet.</p>
+              }
+            } @else {
+              <p class="bus-empty">No customer details yet.</p>
+            }
+          }
+
+          @case ('competitors') {
+            <div class="bus-panel-head">
+              <div class="bus-panel-kicker">Audience · Competitors</div>
+              <h2 class="bus-panel-title">Who you compete with</h2>
+              <p class="bus-panel-deck">Competitor domains from onboarding — used for gap analysis and SERP context.</p>
+            </div>
+
+            @if (profile()?.competitors.length) {
+              <ul class="bus-chip-list">
+                @for (competitor of profile()!.competitors; track $index) {
+                  <li class="bus-chip bus-chip--muted">{{ competitor }}</li>
+                }
+              </ul>
+            } @else {
+              <p class="bus-empty">No competitors listed yet.</p>
+            }
+          }
+
+          @case ('facts') {
+            <div class="bus-panel-head">
+              <div class="bus-panel-kicker">Sharpen · Verified facts</div>
+              <h2 class="bus-panel-title">Answered context cards</h2>
+              <p class="bus-panel-deck">Facts confirmed in Sharpen — the most recent twelve answered cards for this site.</p>
+            </div>
+
+            @if (answeredCards().length) {
+              <ul class="bus-fact-list">
+                @for (card of answeredCards(); track card.id) {
+                  <li class="bus-fact">
+                    <div class="bus-fact__question">{{ card.cardText }}</div>
+                    <div class="bus-fact__answer">{{ card.answer?.value }}</div>
+                    <div class="bus-fact__meta">{{ card.updatedAt | date: 'mediumDate' }}</div>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="bus-empty">No answered cards yet. Open Sharpen to verify business facts.</p>
+            }
+          }
+
+        }
+      </div>
+    </div>
   }
 </div>

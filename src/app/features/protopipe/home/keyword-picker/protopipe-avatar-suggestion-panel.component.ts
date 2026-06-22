@@ -100,10 +100,13 @@ export class ProtopipeAvatarSuggestionPanelComponent {
   profileTitle(av: ProtopipeSuggestedAvatar): string {
     const label = av.label?.trim();
     if (label) return label;
-    const cluster = av.intentCluster?.trim();
-    if (cluster) return cluster;
     const first = av.description.split(/[.!?]/)[0]?.trim();
-    return first && first.length <= 48 ? first : 'Customer profile';
+    if (first && first.length <= 72) return first;
+    const cluster = av.intentCluster?.trim();
+    if (cluster && cluster !== 'From your onboarding' && cluster !== 'Onboarding customer') {
+      return cluster;
+    }
+    return 'Customer profile';
   }
 
   profileSubtitle(av: ProtopipeSuggestedAvatar): string {

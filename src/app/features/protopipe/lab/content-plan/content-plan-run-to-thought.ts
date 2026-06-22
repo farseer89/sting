@@ -302,7 +302,7 @@ const STRATEGY_INTEL_PHASES = [
   {
     id: 'intel:cluster',
     label: 'Cluster strategy themes',
-    detail: 'Shared narratives per theme',
+    detail: 'One LLM call per cluster theme (~1–3 min each)',
     stages: ['cluster_intel'],
   },
   {
@@ -356,6 +356,50 @@ function strategyIntelRunningSummary(
   progress: ProtopipeSiteContentPlan['progress'],
 ): string {
   return strategyIntelProgressDetail(progress) ?? 'Running strategy intel…';
+}
+
+/** Live backend progress line for running content-plan builds (Thinker masthead). */
+export function formatContentPlanLiveProgress(plan: ProtopipeSiteContentPlan): string | null {
+  if (plan.status !== 'running' && plan.status !== 'pending') return null;
+  if (plan.currentStep === 'strategy_intel') {
+    return strategyIntelRunningSummary(plan.progress);
+  }
+  const progress = plan.progress;
+  if (!progress?.stage) return null;
+  if (progress.total > 0) {
+    const current = Math.min(progress.scanned + 1, progress.total);
+    return `${progress.stage} · ${current} of ${progress.total}`;
+  }
+  return progress.stage;
+}
+
+function formatRelativeUpdatedAt(iso?: string): string | null {
+  if (!iso) return null;
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  if (ms < 60_000) return `${Math.max(1, Math.round(ms / 1000))}s ago`;
+  if (ms < 3_600_000) return `${Math.round(ms / 60_000)}m ago`;
+  return `${Math.round(ms / 3_600_000)}h ago`;
+}
+
+export function formatContentPlanMastheadDeck(
+  plan: ProtopipeSiteContentPlan,
+  siteLabel: string,
+): string {
+  const started = plan.createdAt;
+  const startLine = started
+    ? `Strategy build · ${siteLabel} · started ${new Date(started).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+      })}`
+    : `Strategy build · ${siteLabel}`;
+
+  const live = formatContentPlanLiveProgress(plan);
+  const updated = formatRelativeUpdatedAt(plan.updatedAt);
+  const parts = [startLine];
+  if (live) parts.push(live);
+  if (updated && plan.status === 'running') parts.push(`updated ${updated}`);
+  return parts.join(' · ');
 }
 
 function resolveStrategyIntelSubStep(

@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
-import { contentPlanRunToThought } from '../../lab/content-plan/content-plan-run-to-thought';
+import { contentPlanRunToThought, formatContentPlanMastheadDeck } from '../../lab/content-plan/content-plan-run-to-thought';
 import { articleRunToThought } from '../../lab/thinker/article-run-to-thought';
 import { formatThinkerCostUsd, sumCosts } from '../../lab/thinker/thinker-cost';
 import { exportThoughtRunbookPdf } from '../../lab/thinker/thought-runbook-pdf';
@@ -100,13 +100,8 @@ export class ProtopipeHomeThinkerBinderComponent {
 
     if (this.runKind() === 'content-plan') {
       const plan = this.thinkerView.contentPlanRun();
-      const started = plan?.createdAt;
-      if (!started) return `Strategy build · ${label}`;
-      const time = new Date(started).toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-      });
-      return `Strategy build · ${label} · started ${time}`;
+      if (!plan) return `Strategy build · ${label}`;
+      return formatContentPlanMastheadDeck(plan, label);
     }
 
     const started = this.run()?.createdAt;

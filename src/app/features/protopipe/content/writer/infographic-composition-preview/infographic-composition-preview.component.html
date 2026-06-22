@@ -1,0 +1,34 @@
+@if (composition(); as ig) {
+  <figure
+    class="pp-infographic"
+    [ngClass]="variantClass()"
+    [attr.data-slot]="slotId() ?? null"
+  >
+    <div class="pp-infographic__canvas" [ngStyle]="canvasStyle()">
+      @if (ig.headline?.trim()) {
+        <h3 class="pp-infographic__headline">{{ ig.headline }}</h3>
+      }
+
+      <div [class]="gridClass()">
+        @for (item of ig.items; track $index) {
+          <div class="pp-infographic__item">
+            @if (showStepNumbers()) {
+              <span class="pp-infographic__step-num" aria-hidden="true">{{ $index + 1 }}</span>
+            }
+            @if (item.value?.trim()) {
+              <span class="pp-infographic__value">{{ item.value }}</span>
+            }
+            <span class="pp-infographic__label">{{ item.label }}</span>
+            @if (item.detail?.trim()) {
+              <span class="pp-infographic__detail">{{ item.detail }}</span>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    @if (ig.headline?.trim()) {
+      <figcaption class="pp-infographic__caption">{{ ig.headline }}</figcaption>
+    }
+  </figure>
+}

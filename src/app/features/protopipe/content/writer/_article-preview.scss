@@ -1,4 +1,5 @@
 // Live preview rail — news/article reading experience (matches bagend pp-blog-preview markup).
+@import 'infographic-composition';
 
 $preview-serif: Georgia, 'Times New Roman', Times, serif;
 $preview-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -200,8 +201,7 @@ $preview-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
       }
     }
 
-    .pp-image-block img,
-    .pp-infographic img {
+    .pp-image-block img {
       display: block;
       width: 100%;
       height: auto;

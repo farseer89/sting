@@ -27,7 +27,10 @@ function blockHasCopy(block: ProtopipeArticleBlock | undefined): boolean {
     case 'image':
       return Boolean(block.url?.trim() && block.alt?.trim());
     case 'infographic':
-      return Boolean(block.url?.trim() && block.alt?.trim());
+      return Boolean(
+        block.infographic?.items?.length ||
+          (block.url?.trim() && block.alt?.trim()),
+      );
     case 'howto_steps':
       return block.steps.some((s) => s.body?.trim());
     case 'list_items':
@@ -61,9 +64,13 @@ function blockHasVisual(block: ProtopipeArticleBlock | undefined, presentation: 
   if (!blockNeedsVisual(presentation)) return true;
   if (!block) return false;
   if (block.kind === 'image' || block.kind === 'infographic') {
+    if (block.kind === 'infographic' && block.infographic?.items?.length) return true;
     return Boolean(block.url?.trim());
   }
   if (block.kind === 'prose') {
+    if (presentation === 'infographic' && block.infographic?.items?.length) {
+      return true;
+    }
     return (block.images ?? []).some((img) => Boolean(img.url?.trim()));
   }
   return false;

@@ -16,6 +16,7 @@ import {
   visibleBlocks,
 } from '../../block-template.util';
 import { ProtopipeImagePlaceholderComponent } from '../image-placeholder/image-placeholder.component';
+import { InfographicCompositionPreviewComponent } from '../infographic-composition-preview/infographic-composition-preview.component';
 import type { FactHighlightItem } from '../prose-editor/fact-highlight.extension';
 import { ProseEditorComponent } from '../prose-editor/prose-editor.component';
 
@@ -36,7 +37,7 @@ export interface ArticleCanvasFactClick {
   selector: 'app-protopipe-article-block-canvas',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ProseEditorComponent, ProtopipeImagePlaceholderComponent],
+  imports: [FormsModule, ProseEditorComponent, ProtopipeImagePlaceholderComponent, InfographicCompositionPreviewComponent],
   templateUrl: './article-block-canvas.component.html',
   styleUrl: './article-block-canvas.component.scss',
 })

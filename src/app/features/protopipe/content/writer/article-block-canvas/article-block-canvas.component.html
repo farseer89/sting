@@ -219,7 +219,12 @@
                 placeholder="Section heading…"
               ></textarea>
               <div class="abc-infographic">
-                @if (firstProseImage(prose); as img) {
+                @if (prose.infographic?.items?.length) {
+                  <app-infographic-composition-preview
+                    [composition]="prose.infographic"
+                    [slotId]="prose.slotId"
+                  />
+                } @else if (firstProseImage(prose); as img) {
                   <app-protopipe-image-placeholder
                     mode="insert"
                     [label]="prose.label || 'Infographic'"
@@ -237,11 +242,9 @@
                 } @else {
                   <div class="abc-infographic__placeholder">
                     <span>Infographic</span>
-                    @if (!readOnly()) {
-                      <button type="button" (click)="requestProseImageUpload(prose, 0)">
-                        Add infographic
-                      </button>
-                    }
+                    <p class="abc-infographic__hint">
+                      Composes from section bullets and outline notes using your brand book style.
+                    </p>
                   </div>
                 }
               </div>
@@ -414,19 +417,33 @@
 
       @if (asInfographic(block); as infographic) {
         <div class="abc-section__inner abc-infographic">
-          <app-protopipe-image-placeholder
-            mode="insert"
-            [label]="infographic.label || 'Infographic'"
-            [hint]="imageHint(infographic)"
-            [url]="infographic.url"
-            [alt]="infographic.alt"
-            align="full"
-            [readOnly]="readOnly()"
-            [uploading]="isHeroUploading(infographic.id)"
-            (urlChange)="patchInfographic(infographic, 'url', $event)"
-            (altChange)="patchInfographic(infographic, 'alt', $event)"
-            (upload)="imageUploadRequest.emit({ blockId: infographic.id })"
-          />
+          @if (infographic.infographic?.items?.length) {
+            <app-infographic-composition-preview
+              [composition]="infographic.infographic"
+              [slotId]="infographic.slotId"
+            />
+          } @else if (infographic.url?.trim()) {
+            <app-protopipe-image-placeholder
+              mode="insert"
+              [label]="infographic.label || 'Infographic'"
+              [hint]="imageHint(infographic)"
+              [url]="infographic.url ?? ''"
+              [alt]="infographic.alt ?? ''"
+              align="full"
+              [readOnly]="readOnly()"
+              [uploading]="isHeroUploading(infographic.id)"
+              (urlChange)="patchInfographic(infographic, 'url', $event)"
+              (altChange)="patchInfographic(infographic, 'alt', $event)"
+              (upload)="imageUploadRequest.emit({ blockId: infographic.id })"
+            />
+          } @else {
+            <div class="abc-infographic__placeholder">
+              <span>Infographic</span>
+              <p class="abc-infographic__hint">
+                Composes from section bullets and outline notes using your brand book style.
+              </p>
+            </div>
+          }
         </div>
       }
 

@@ -1,0 +1,37 @@
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import type { ProspectorRunDto } from './prospector-run.model';
+
+@Injectable({ providedIn: 'root' })
+export class ProtopipeProspectorService {
+  private readonly http = inject(HttpClient);
+
+  async createRun(category: string, location: string): Promise<ProspectorRunDto> {
+    const res = await firstValueFrom(
+      this.http.post<{ ok: boolean; data: ProspectorRunDto }>(
+        '/api/v2/protopipe/prospector/runs',
+        { category, location },
+      ),
+    );
+    return res.data;
+  }
+
+  async getRun(runId: string): Promise<ProspectorRunDto> {
+    const res = await firstValueFrom(
+      this.http.get<{ ok: boolean; data: ProspectorRunDto }>(
+        `/api/v2/protopipe/prospector/runs/${runId}`,
+      ),
+    );
+    return res.data;
+  }
+
+  async listRuns(): Promise<ProspectorRunDto[]> {
+    const res = await firstValueFrom(
+      this.http.get<{ ok: boolean; data: ProspectorRunDto[] }>(
+        '/api/v2/protopipe/prospector/runs',
+      ),
+    );
+    return res.data;
+  }
+}

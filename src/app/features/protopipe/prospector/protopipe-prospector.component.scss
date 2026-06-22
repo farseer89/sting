@@ -1,0 +1,85 @@
+$sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+$border: #e4e4e7;
+$bg: #ffffff;
+$bg-subtle: #fafafa;
+$ink: #09090b;
+$text: #18181b;
+$muted: #71717a;
+$accent: #2563eb;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.psp-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-family: $sans;
+  color: $text;
+  -webkit-font-smoothing: antialiased;
+  background: $bg;
+}
+
+.psp-masthead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.25rem 1.5rem 1rem;
+  border-bottom: 1px solid $border;
+  flex-shrink: 0;
+}
+
+.psp-masthead__title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: $ink;
+  letter-spacing: -0.025em;
+  margin: 0 0 0.2rem;
+}
+
+.psp-masthead__deck {
+  font-size: 0.75rem;
+  color: $muted;
+  margin: 0;
+}
+
+.psp-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+// ── Shared button primitives ─────────────────────────────────────────────────
+
+.psp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.4375rem 0.875rem;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-family: $sans;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  white-space: nowrap;
+  text-decoration: none;
+  border: 1px solid transparent;
+
+  &--ghost {
+    background: transparent;
+    color: $muted;
+    border-color: $border;
+    &:hover { background: $bg-subtle; color: $text; }
+  }
+}

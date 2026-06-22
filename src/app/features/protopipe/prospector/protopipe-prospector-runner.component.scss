@@ -1,0 +1,147 @@
+$sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+$border: #e4e4e7;
+$bg-subtle: #fafafa;
+$ink: #09090b;
+$text: #18181b;
+$muted: #71717a;
+$dim: #a1a1aa;
+$accent: #2563eb;
+$success: #16a34a;
+$danger: #dc2626;
+$warning: #d97706;
+
+:host { display: block; }
+
+.runner {
+  border-bottom: 1px solid $border;
+  padding: 1rem 1.5rem;
+  background: $bg-subtle;
+  font-family: $sans;
+}
+
+.runner__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.runner__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.runner__query {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: $ink;
+}
+
+.runner__status {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.125rem 0.5rem;
+  border-radius: 99px;
+
+  &--pending { background: #f4f4f5; color: $muted; }
+  &--running { background: #eff6ff; color: $accent; }
+  &--complete { background: #f0fdf4; color: $success; }
+  &--failed { background: #fef2f2; color: $danger; }
+}
+
+.runner__cost {
+  font-size: 0.75rem;
+  color: $muted;
+  strong { color: $text; font-weight: 600; }
+}
+
+.runner__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.runner__step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.3125rem 0;
+
+  &--pending { opacity: 0.45; }
+  &--running { opacity: 1; }
+  &--complete { opacity: 1; }
+  &--failed { opacity: 1; }
+}
+
+.runner__step-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 0.0625rem;
+
+  .runner__step--complete & { color: $success; }
+  .runner__step--failed & { color: $danger; }
+  .runner__step--running & { color: $accent; }
+  .runner__step--pending & { color: $dim; }
+}
+
+.runner__spinner {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 1.5px solid rgb(37 99 235 / 0.25);
+  border-top-color: $accent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: block;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.runner__step-body {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.runner__step-label {
+  font-size: 0.8125rem;
+  color: $text;
+  font-weight: 500;
+
+  .runner__step--pending & { color: $dim; }
+}
+
+.runner__step-note {
+  font-size: 0.75rem;
+  color: $muted;
+}
+
+.runner__step-error {
+  font-size: 0.75rem;
+  color: $danger;
+}
+
+.runner__step-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.runner__step-cost,
+.runner__step-dur {
+  font-size: 0.6875rem;
+  color: $dim;
+  font-variant-numeric: tabular-nums;
+}

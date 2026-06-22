@@ -196,6 +196,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'home/prospector',
+    canActivate: [authGuard, operatorOnlyGuard],
+    loadComponent: () =>
+      import('./features/protopipe/home/protopipe-user-home.component').then(
+        (m) => m.ProtopipeUserHomeComponent,
+      ),
+  },
+  {
     // User-facing home — void white dashboard, outside the PrimeNG admin shell.
     path: 'home',
     canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],

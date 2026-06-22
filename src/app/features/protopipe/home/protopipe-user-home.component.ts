@@ -50,6 +50,7 @@ import { ProtopipePitchPrepWizardComponent } from '../pitch-prep/protopipe-pitch
 import { ProtopipeLeadsListComponent } from '../leads/protopipe-leads-list.component';
 import { ProtopipeHomeThinkerBinderComponent } from './thinker/protopipe-home-thinker-binder.component';
 import { ProtopipeHomeAnalyticsBinderComponent } from './analytics-binder/protopipe-home-analytics-binder.component';
+import { ProtopipeProspectorComponent } from '../prospector/protopipe-prospector.component';
 import { ProtopipeHomeSidePanelService } from './protopipe-home-side-panel.service';
 import {
   PROTOPIPE_HOME_NAV,
@@ -80,7 +81,8 @@ export type ProtopipeHomeView =
   | 'intake'
   | 'thinker'
   | 'strategy-binder'
-  | 'analytics-binder';
+  | 'analytics-binder'
+  | 'prospector';
 
 function initialsFromName(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -134,6 +136,7 @@ type HomeFocusHistoryKind = 'thinker' | 'writer';
     ProtopipeLeadsListComponent,
     ProtopipeHomeThinkerBinderComponent,
     ProtopipeHomeAnalyticsBinderComponent,
+    ProtopipeProspectorComponent,
   ],
   templateUrl: './protopipe-user-home.component.html',
   styleUrl: './protopipe-user-home.component.scss',
@@ -248,6 +251,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.syncPacksFromRoute();
     this.syncPitchPrepFromRoute();
     this.syncLeadsFromRoute();
+    this.syncProspectorFromRoute();
     this.syncViewFromQuery();
     this.router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
@@ -255,6 +259,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
         this.syncPacksFromRoute();
         this.syncPitchPrepFromRoute();
         this.syncLeadsFromRoute();
+        this.syncProspectorFromRoute();
         this.syncViewFromQuery();
       });
     void this.loadBootstrap();
@@ -316,6 +321,12 @@ export class ProtopipeUserHomeComponent implements OnInit {
     } else if (item.id === 'analytics-leads') {
       this.showLeadsView();
       void this.router.navigate(['/home/leads']);
+    } else if (item.id === 'prospector') {
+      this.leaveWriterFocus();
+      this.sidePanel.setOpen(false);
+      this.activeNavId.set(item.id);
+      this.activeView.set('prospector');
+      void this.router.navigate(['/home/prospector']);
     } else if (item.id === 'dev-runbooks') {
       this.leaveWriterFocus();
       this.sidePanel.setOpen(false);
@@ -680,6 +691,16 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.sidePanel.setOpen(true);
     } else {
       this.sidePanel.setOpen(false);
+    }
+  }
+
+  private syncProspectorFromRoute(): void {
+    const path = this.router.url.split('?')[0] ?? '';
+    if (path === '/home/prospector' || path.startsWith('/home/prospector')) {
+      this.leaveWriterFocus();
+      this.sidePanel.setOpen(false);
+      this.activeView.set('prospector');
+      this.activeNavId.set('prospector');
     }
   }
 

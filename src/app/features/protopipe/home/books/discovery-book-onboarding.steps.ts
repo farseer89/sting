@@ -62,7 +62,7 @@ export const DISCOVERY_BOOK_ONBOARDING_STEPS: readonly DiscoveryBookOnboardingSt
     navLabel: 'Your competition',
     kicker: 'Your competition',
     title: 'Who are your competitors?',
-    helper: "Add competitor sites — then fan out to find others in your market.",
+    helper: "Add competitor sites — then fan out to find others ranking in search.",
   },
   {
     onboardingStep: 6,

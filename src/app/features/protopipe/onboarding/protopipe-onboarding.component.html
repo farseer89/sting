@@ -599,7 +599,7 @@
                 }
               </button>
               <p class="offer-expand__hint">
-                Find similar businesses in your market from who you've added.
+                Look up sites actually ranking alongside yours in search.
               </p>
             </div>
             @if (competitionFanOutError(); as fanOutErr) {
@@ -610,19 +610,22 @@
           @if (availableCompetitorFanOutSuggestions().length > 0) {
             <section class="offer-section" aria-labelledby="competition-fanout-heading">
               <h2 id="competition-fanout-heading" class="offer-section__title">
-                Related competitors — tap to add
+                Also ranking in your market — tap to add
               </h2>
               <ul class="offer-suggestions" aria-label="Suggested competitor sites">
-                @for (domain of availableCompetitorFanOutSuggestions(); track domain) {
+                @for (suggestion of availableCompetitorFanOutSuggestions(); track suggestion.domain) {
                   <li>
                     <button
                       type="button"
-                      class="offer-suggestion"
-                      (click)="addSuggestedCompetitor(domain)"
+                      class="offer-suggestion offer-suggestion--ranked"
+                      (click)="addSuggestedCompetitor(suggestion.domain)"
                       [disabled]="competitors().length >= maxCompetitors"
                     >
                       <i class="pi pi-plus" aria-hidden="true"></i>
-                      {{ domain }}
+                      <span class="offer-suggestion__copy">
+                        <span class="offer-suggestion__title">{{ suggestion.domain }}</span>
+                        <span class="offer-suggestion__meta">{{ suggestion.label }}</span>
+                      </span>
                     </button>
                   </li>
                 }

@@ -23,6 +23,7 @@ import { InputText } from 'primeng/inputtext';
 import { MessageService } from 'primeng/api';
 import { Toast } from 'primeng/toast';
 import type {
+  ProtopipeFanOutCompetitorSuggestion,
   ProtopipeOnboardingMode,
   ProtopipeOnboardingProfile,
   ProtopipeSerpLocationOption,
@@ -108,7 +109,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
   readonly offerExpandError = signal<string | null>(null);
   readonly competitors = signal<string[]>([]);
   readonly competitorDraft = signal('');
-  readonly competitorFanOutSuggestions = signal<string[]>([]);
+  readonly competitorFanOutSuggestions = signal<ProtopipeFanOutCompetitorSuggestion[]>([]);
   readonly competitionFanningOut = signal(false);
   readonly competitionFanOutError = signal<string | null>(null);
   readonly targetCustomerSites = signal<string[]>([]);
@@ -567,9 +568,11 @@ export class ProtopipeOnboardingComponent implements OnInit {
     });
   }
 
-  availableCompetitorFanOutSuggestions(): string[] {
+  availableCompetitorFanOutSuggestions(): ProtopipeFanOutCompetitorSuggestion[] {
     const selected = new Set(this.competitors().map((c) => c.toLowerCase()));
-    return this.competitorFanOutSuggestions().filter((d) => !selected.has(d.toLowerCase()));
+    return this.competitorFanOutSuggestions().filter(
+      (suggestion) => !selected.has(suggestion.domain.toLowerCase()),
+    );
   }
 
   canFanOutCompetition(): boolean {
@@ -582,7 +585,10 @@ export class ProtopipeOnboardingComponent implements OnInit {
 
   competitionFanOutExcludeList(): string[] {
     return Array.from(
-      new Set([...this.competitors(), ...this.competitorFanOutSuggestions()]),
+      new Set([
+        ...this.competitors(),
+        ...this.competitorFanOutSuggestions().map((suggestion) => suggestion.domain),
+      ]),
     );
   }
 
@@ -606,26 +612,37 @@ export class ProtopipeOnboardingComponent implements OnInit {
         tradeLabel: this.tradeLabel() ?? undefined,
         websiteUrl: (this.form.controls.websiteUrl.value ?? '').trim() || undefined,
         marketScope: this.customerScope() ?? undefined,
-        serpLocationName: this.selectedLocation()?.name,
+        serpLocationCode: this.selectedLocation()?.code ?? this.selectedCountry()?.code,
+        serpLocationName: this.selectedLocation()?.name ?? this.selectedCountry()?.name,
         exclude: this.competitionFanOutExcludeList(),
       });
 
-      if (res.error === 'llm_not_configured') {
-        this.competitionFanOutError.set('Fan out needs AI configured on the server.');
+      if (res.error === 'dataforseo_not_configured') {
+        this.competitionFanOutError.set('Fan out needs DataForSEO configured on the server.');
         return;
       }
-      if (res.error && res.suggestedCompetitors.length === 0) {
-        this.competitionFanOutError.set('Could not find related competitors right now — try again.');
+      if (res.error === 'no_ranking_competitors_found') {
+        this.competitionFanOutError.set(
+          'No ranking competitors found for your site and market yet.',
+        );
+        return;
+      }
+      if (res.error && res.suggestions.length === 0) {
+        this.competitionFanOutError.set('Could not look up ranking competitors right now — try again.');
         return;
       }
 
-      if (res.suggestedCompetitors.length > 0) {
-        this.competitorFanOutSuggestions.update((current) =>
-          Array.from(new Set([...current, ...res.suggestedCompetitors])),
-        );
+      if (res.suggestions.length > 0) {
+        this.competitorFanOutSuggestions.update((current) => {
+          const byDomain = new Map(current.map((suggestion) => [suggestion.domain.toLowerCase(), suggestion]));
+          for (const suggestion of res.suggestions) {
+            byDomain.set(suggestion.domain.toLowerCase(), suggestion);
+          }
+          return Array.from(byDomain.values());
+        });
       } else {
         this.competitionFanOutError.set(
-          'No new competitors found — try adjusting who you added first.',
+          'No new ranking competitors found — try adjusting who you added first.',
         );
       }
     } catch (err) {

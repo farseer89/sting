@@ -1,5 +1,8 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import type { ProtopipeSerpLocationOption } from '@hive/contracts';
+import type {
+  ProtopipeFanOutCompetitorSuggestion,
+  ProtopipeSerpLocationOption,
+} from '@hive/contracts';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 import { ProtopipeApiService } from '../../protopipe-api.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
@@ -62,7 +65,7 @@ export class DiscoveryBookOnboardingStore {
   readonly avatarEnrichmentPending = signal<Record<number, AvatarEnrichmentPending>>({});
   readonly avatarEnrichingSlot = signal<number | null>(null);
   readonly avatarEnrichError = signal<string | null>(null);
-  readonly competitorFanOutSuggestions = signal<string[]>([]);
+  readonly competitorFanOutSuggestions = signal<ProtopipeFanOutCompetitorSuggestion[]>([]);
   readonly competitionFanningOut = signal(false);
   readonly competitionFanOutError = signal<string | null>(null);
 
@@ -438,9 +441,11 @@ export class DiscoveryBookOnboardingStore {
     });
   }
 
-  availableCompetitorFanOutSuggestions(): string[] {
+  availableCompetitorFanOutSuggestions(): ProtopipeFanOutCompetitorSuggestion[] {
     const selected = new Set(this.draft().competitors.map((c) => c.toLowerCase()));
-    return this.competitorFanOutSuggestions().filter((d) => !selected.has(d.toLowerCase()));
+    return this.competitorFanOutSuggestions().filter(
+      (suggestion) => !selected.has(suggestion.domain.toLowerCase()),
+    );
   }
 
   canFanOutCompetition(): boolean {
@@ -452,7 +457,12 @@ export class DiscoveryBookOnboardingStore {
   }
 
   competitionFanOutExcludeList(): string[] {
-    return Array.from(new Set([...this.draft().competitors, ...this.competitorFanOutSuggestions()]));
+    return Array.from(
+      new Set([
+        ...this.draft().competitors,
+        ...this.competitorFanOutSuggestions().map((suggestion) => suggestion.domain),
+      ]),
+    );
   }
 
   async fanOutCompetition(): Promise<void> {
@@ -476,26 +486,37 @@ export class DiscoveryBookOnboardingStore {
         tradeLabel: this.tradeLabel() ?? undefined,
         websiteUrl: draft.websiteUrl.trim() || undefined,
         marketScope: draft.marketScope ?? undefined,
+        serpLocationCode: draft.serpLocationCode,
         serpLocationName: draft.serpLocationName,
         exclude: this.competitionFanOutExcludeList(),
       });
 
-      if (res.error === 'llm_not_configured') {
-        this.competitionFanOutError.set('Fan out needs AI configured on the server.');
+      if (res.error === 'dataforseo_not_configured') {
+        this.competitionFanOutError.set('Fan out needs DataForSEO configured on the server.');
         return;
       }
-      if (res.error && res.suggestedCompetitors.length === 0) {
-        this.competitionFanOutError.set('Could not find related competitors right now — try again.');
+      if (res.error === 'no_ranking_competitors_found') {
+        this.competitionFanOutError.set(
+          'No ranking competitors found for your site and market yet.',
+        );
+        return;
+      }
+      if (res.error && res.suggestions.length === 0) {
+        this.competitionFanOutError.set('Could not look up ranking competitors right now — try again.');
         return;
       }
 
-      if (res.suggestedCompetitors.length > 0) {
-        this.competitorFanOutSuggestions.update((current) =>
-          Array.from(new Set([...current, ...res.suggestedCompetitors])),
-        );
+      if (res.suggestions.length > 0) {
+        this.competitorFanOutSuggestions.update((current) => {
+          const byDomain = new Map(current.map((suggestion) => [suggestion.domain.toLowerCase(), suggestion]));
+          for (const suggestion of res.suggestions) {
+            byDomain.set(suggestion.domain.toLowerCase(), suggestion);
+          }
+          return Array.from(byDomain.values());
+        });
       } else {
         this.competitionFanOutError.set(
-          'No new competitors found — try adjusting who you added first.',
+          'No new ranking competitors found — try adjusting who you added first.',
         );
       }
     } catch (err) {

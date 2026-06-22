@@ -685,6 +685,30 @@ textarea.p-inputtextarea {
   line-height: 1.45;
 }
 
+.offer-suggestion--ranked {
+  align-items: flex-start;
+  max-width: 100%;
+  text-align: left;
+  border-radius: 0.75rem;
+  line-height: 1.35;
+}
+
+.offer-suggestion__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.offer-suggestion__title {
+  font-weight: 600;
+}
+
+.offer-suggestion__meta {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
 .chip-add {
   display: inline-flex;
   align-items: center;

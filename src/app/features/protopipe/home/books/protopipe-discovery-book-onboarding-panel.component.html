@@ -396,7 +396,7 @@
             }
           </button>
           <p class="kb-offer-expand__hint">
-            Find similar businesses in your market from who you've added.
+            Look up sites actually ranking alongside yours in search.
           </p>
         </div>
         @if (store.competitionFanOutError(); as fanOutErr) {
@@ -407,19 +407,22 @@
       @if (store.availableCompetitorFanOutSuggestions().length > 0) {
         <section class="kb-offer-section" aria-labelledby="kb-competition-fanout-heading">
           <h3 id="kb-competition-fanout-heading" class="kb-offer-section__title">
-            Related competitors — tap to add
+            Also ranking in your market — tap to add
           </h3>
           <ul class="kb-offer-suggestions" aria-label="Suggested competitor sites">
-            @for (domain of store.availableCompetitorFanOutSuggestions(); track domain) {
+            @for (suggestion of store.availableCompetitorFanOutSuggestions(); track suggestion.domain) {
               <li>
                 <button
                   type="button"
-                  class="kb-offer-suggestion"
-                  (click)="store.addSuggestedCompetitor(domain)"
+                  class="kb-offer-suggestion kb-offer-suggestion--ranked"
+                  (click)="store.addSuggestedCompetitor(suggestion.domain)"
                   [disabled]="draft().competitors.length >= 3"
                 >
                   <i class="pi pi-plus" aria-hidden="true"></i>
-                  {{ domain }}
+                  <span class="kb-offer-suggestion__copy">
+                    <span class="kb-offer-suggestion__title">{{ suggestion.domain }}</span>
+                    <span class="kb-offer-suggestion__meta">{{ suggestion.label }}</span>
+                  </span>
                 </button>
               </li>
             }

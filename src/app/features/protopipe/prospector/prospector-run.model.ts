@@ -1,4 +1,4 @@
-export type ProspectorStep = 'places_search' | 'score_leads' | 'generate_pitch';
+export type ProspectorStep = 'places_search' | 'score_leads';
 export type ProspectorStatus = 'pending' | 'running' | 'complete' | 'failed';
 export type ProspectorWebsiteQuality = 'none' | 'present';
 export type ProspectorPriority = 'critical' | 'high' | 'medium' | 'monitor';
@@ -27,13 +27,6 @@ export interface ProspectorScoredLead {
   googleRank: number;
   areaBestRating: number;
   reviewGap: number;
-}
-
-export interface ProspectorLeadPitch {
-  placeId: string;
-  pitchLines: string[];
-  promptVersion: string;
-  costUsd?: number;
 }
 
 export interface ProspectorStepEvent {
@@ -65,7 +58,6 @@ export interface ProspectorRunDto {
       userRatingCount?: number;
     }[];
     scoredLeads?: ProspectorScoredLead[];
-    pitchCopy?: ProspectorLeadPitch[];
   };
   events: ProspectorStepEvent[];
   totalCostUsd?: number;
@@ -77,11 +69,6 @@ export interface ProspectorRunDto {
 export const PROSPECTOR_STEP_LABELS: Record<ProspectorStep, string> = {
   places_search: 'Google Places search',
   score_leads: 'Score leads',
-  generate_pitch: 'Generate pitch',
 };
 
-export const PROSPECTOR_STEPS_ORDERED: ProspectorStep[] = [
-  'places_search',
-  'score_leads',
-  'generate_pitch',
-];
+export const PROSPECTOR_STEPS_ORDERED: ProspectorStep[] = ['places_search', 'score_leads'];

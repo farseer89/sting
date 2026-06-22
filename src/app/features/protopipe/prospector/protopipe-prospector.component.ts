@@ -31,7 +31,12 @@ type ProspectorView = 'form' | 'running' | 'results';
           <p class="psp-masthead__deck">Find and score local businesses for outbound pitch.</p>
         </div>
         @if (view() === 'results') {
-          <button class="psp-btn psp-btn--ghost" (click)="reset()">New search</button>
+          <div class="psp-masthead__actions">
+            <button class="psp-btn psp-btn--ghost" (click)="toggleRunner()">
+              {{ showRunner() ? 'Hide' : 'Run details' }}
+            </button>
+            <button class="psp-btn psp-btn--ghost" (click)="reset()">New search</button>
+          </div>
         }
       </div>
 
@@ -44,16 +49,14 @@ type ProspectorView = 'form' | 'running' | 'results';
           />
         }
 
-        @if (view() === 'running' || view() === 'results') {
-          <app-protopipe-prospector-runner
-            [run]="activeRun()"
-          />
+        @if (view() === 'running' || (view() === 'results' && showRunner())) {
+          <div class="psp-runner-panel" [class.psp-runner-panel--inline]="view() === 'results'">
+            <app-protopipe-prospector-runner [run]="activeRun()" />
+          </div>
         }
 
         @if (view() === 'results') {
-          <app-protopipe-prospector-results
-            [run]="activeRun()!"
-          />
+          <app-protopipe-prospector-results [run]="activeRun()!" />
         }
       </div>
     </div>
@@ -67,6 +70,7 @@ export class ProtopipeProspectorComponent implements OnDestroy {
   readonly activeRun = signal<ProspectorRunDto | null>(null);
   readonly launching = signal(false);
   readonly launchError = signal<string | null>(null);
+  readonly showRunner = signal(false);
 
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -83,6 +87,7 @@ export class ProtopipeProspectorComponent implements OnDestroy {
       const run = await this.service.createRun(input.category, input.location);
       this.activeRun.set(run);
       this.view.set('running');
+      this.showRunner.set(false);
       this.startPolling(run.id);
     } catch {
       this.launchError.set('Failed to start search. Please try again.');
@@ -95,7 +100,12 @@ export class ProtopipeProspectorComponent implements OnDestroy {
     this.activeRun.set(null);
     this.launchError.set(null);
     this.launching.set(false);
+    this.showRunner.set(false);
     this.view.set('form');
+  }
+
+  toggleRunner(): void {
+    this.showRunner.update((v) => !v);
   }
 
   ngOnDestroy(): void {
@@ -117,16 +127,11 @@ export class ProtopipeProspectorComponent implements OnDestroy {
       const run = await this.service.getRun(runId);
       this.activeRun.set(run);
 
-      if (run.status === 'complete') {
-        this.view.set('results');
-        return;
-      }
-      if (run.status === 'failed') {
+      if (run.status === 'complete' || run.status === 'failed') {
         this.view.set('results');
         return;
       }
 
-      // Transition to results view as soon as scored leads land (before pitch is done)
       if ((run.artifacts?.scoredLeads?.length ?? 0) > 0 && this.view() === 'running') {
         this.view.set('results');
       }

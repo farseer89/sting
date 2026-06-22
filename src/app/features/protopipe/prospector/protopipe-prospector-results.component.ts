@@ -3,13 +3,8 @@ import {
   Component,
   computed,
   input,
-  signal,
 } from '@angular/core';
-import type {
-  ProspectorRunDto,
-  ProspectorScoredLead,
-  ProspectorLeadPitch,
-} from './prospector-run.model';
+import type { ProspectorRunDto, ProspectorScoredLead } from './prospector-run.model';
 
 @Component({
   selector: 'app-protopipe-prospector-results',
@@ -17,74 +12,80 @@ import type {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="res-wrap">
-      @if (leads().length === 0 && run().status !== 'complete') {
-        <div class="res-empty">
-          <p>Scoring leads…</p>
-        </div>
-      } @else if (leads().length === 0) {
+      @if (leads().length === 0) {
         <div class="res-empty">
           <p>No businesses found for this search. Try a broader category or location.</p>
         </div>
       } @else {
-        <div class="res-grid">
-          @for (lead of leads(); track lead.placeId) {
-            <div class="lc" [class]="'lc--' + lead.priority">
-              <!-- Score badge -->
-              <div class="lc__badge">
-                <span class="lc__score">{{ lead.score }}</span>
-                <span class="lc__priority">{{ lead.priority }}</span>
-              </div>
-
-              <!-- Main info -->
-              <div class="lc__body">
-                <div class="lc__head">
-                  <h3 class="lc__name">{{ lead.displayName ?? 'Unknown' }}</h3>
-                  <div class="lc__chips">
+        <div class="res-header">
+          <span class="res-count">{{ leads().length }} businesses found</span>
+          @if (run().totalCostUsd && run().totalCostUsd! > 0) {
+            <span class="res-cost">Search cost: {{ formatCost(run().totalCostUsd) }}</span>
+          }
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th class="tbl-th tbl-th--score">Score</th>
+                <th class="tbl-th">Business</th>
+                <th class="tbl-th tbl-th--rating">Rating</th>
+                <th class="tbl-th tbl-th--web">Website</th>
+                <th class="tbl-th tbl-th--factors">Factors</th>
+                <th class="tbl-th tbl-th--links">Links</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (lead of leads(); track lead.placeId) {
+                <tr class="tbl-row" [class]="'tbl-row--' + lead.priority">
+                  <td class="tbl-td tbl-td--score">
+                    <span class="score-num" [class]="'score-num--' + lead.priority">{{ lead.score }}</span>
+                    <span class="priority-label" [class]="'priority-label--' + lead.priority">{{ lead.priority }}</span>
+                  </td>
+                  <td class="tbl-td tbl-td--biz">
+                    <span class="biz-name">{{ lead.displayName ?? '—' }}</span>
+                    @if (lead.formattedAddress) {
+                      <span class="biz-addr">{{ lead.formattedAddress }}</span>
+                    }
+                    @if (lead.internationalPhoneNumber) {
+                      <span class="biz-phone">{{ lead.internationalPhoneNumber }}</span>
+                    }
+                  </td>
+                  <td class="tbl-td tbl-td--rating">
                     @if (lead.rating) {
-                      <span class="lc__chip">
-                        ★ {{ lead.rating.toFixed(1) }}
-                        @if (lead.userRatingCount) { ({{ lead.userRatingCount }}) }
-                      </span>
+                      <span class="rating">★ {{ lead.rating.toFixed(1) }}</span>
+                      @if (lead.userRatingCount) {
+                        <span class="rating-count">({{ lead.userRatingCount }})</span>
+                      }
+                    } @else {
+                      <span class="rating-none">—</span>
                     }
-                    <span class="lc__chip lc__chip--web" [class.lc__chip--no-web]="lead.websiteQuality === 'none'">
-                      {{ lead.websiteQuality === 'none' ? 'No website' : 'Has website' }}
-                    </span>
-                    @if (lead.googleMapsUri) {
-                      <a class="lc__chip lc__chip--link" [href]="lead.googleMapsUri" target="_blank" rel="noopener">
-                        Maps ↗
-                      </a>
+                  </td>
+                  <td class="tbl-td tbl-td--web">
+                    @if (lead.websiteQuality === 'none') {
+                      <span class="web-badge web-badge--none">No site</span>
+                    } @else if (lead.websiteUri) {
+                      <a class="web-badge web-badge--yes" [href]="lead.websiteUri" target="_blank" rel="noopener">Has site ↗</a>
+                    } @else {
+                      <span class="web-badge web-badge--yes">Has site</span>
                     }
-                  </div>
-                  @if (lead.formattedAddress) {
-                    <p class="lc__addr">{{ lead.formattedAddress }}</p>
-                  }
-                  @if (lead.internationalPhoneNumber) {
-                    <p class="lc__phone">{{ lead.internationalPhoneNumber }}</p>
-                  }
-                </div>
-
-                <!-- Score breakdown -->
-                <div class="lc__breakdown">
-                  @for (b of lead.scoreBreakdown; track b.label) {
-                    <span class="lc__gap">{{ b.label }} <em>+{{ b.pts }}</em></span>
-                  }
-                </div>
-
-                <!-- Pitch copy (once available) -->
-                @if (pitchFor(lead.placeId); as pitch) {
-                  @if (pitch.pitchLines.length > 0) {
-                    <div class="lc__pitch">
-                      @for (line of pitch.pitchLines; track $index) {
-                        <p class="lc__pitch-line">{{ line }}</p>
+                  </td>
+                  <td class="tbl-td tbl-td--factors">
+                    <div class="factors">
+                      @for (b of lead.scoreBreakdown; track b.label) {
+                        <span class="factor">{{ b.label }} <em>+{{ b.pts }}</em></span>
                       }
                     </div>
-                  }
-                } @else if (run().status === 'running' && run().currentStep === 'generate_pitch') {
-                  <div class="lc__pitch-pending">Generating pitch…</div>
-                }
-              </div>
-            </div>
-          }
+                  </td>
+                  <td class="tbl-td tbl-td--links">
+                    @if (lead.googleMapsUri) {
+                      <a class="map-link" [href]="lead.googleMapsUri" target="_blank" rel="noopener">Maps ↗</a>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
         </div>
       }
     </div>
@@ -95,18 +96,12 @@ export class ProtopipeProspectorResultsComponent {
   readonly run = input.required<ProspectorRunDto>();
 
   readonly leads = computed((): ProspectorScoredLead[] => {
-    return this.run().artifacts?.scoredLeads ?? [];
+    return (this.run().artifacts?.scoredLeads ?? []).slice().sort((a, b) => b.score - a.score);
   });
 
-  private readonly pitchMap = computed((): Map<string, ProspectorLeadPitch> => {
-    const map = new Map<string, ProspectorLeadPitch>();
-    for (const p of this.run().artifacts?.pitchCopy ?? []) {
-      map.set(p.placeId, p);
-    }
-    return map;
-  });
-
-  pitchFor(placeId: string): ProspectorLeadPitch | null {
-    return this.pitchMap().get(placeId) ?? null;
+  formatCost(usd: number | undefined | null): string {
+    if (!usd || usd === 0) return '';
+    if (usd < 0.01) return `$${(usd * 1000).toFixed(3)}m`;
+    return `$${usd.toFixed(4)}`;
   }
 }

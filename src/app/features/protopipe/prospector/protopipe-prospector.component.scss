@@ -58,6 +58,24 @@ $accent: #2563eb;
   overflow-y: auto;
 }
 
+.psp-masthead__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+// ── Runner panel (collapsible overlay in results view) ───────────────────────
+
+.psp-runner-panel {
+  flex-shrink: 0;
+
+  &--inline {
+    border-bottom: 1px solid $border;
+    background: $bg-subtle;
+  }
+}
+
 // ── Shared button primitives ─────────────────────────────────────────────────
 
 .psp-btn {

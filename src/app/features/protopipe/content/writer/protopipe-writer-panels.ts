@@ -1,3 +1,7 @@
+/** MVP Writing book binder panels. */
+export type WritingBookPanelId = 'canvas' | 'behind' | 'seo' | 'facts';
+
+/** @deprecated Use WritingBookPanelId — retained for deferred tier panels. */
 export type WriterInspectorPanelId =
   | 'brief'
   | 'preview'
@@ -7,6 +11,13 @@ export type WriterInspectorPanelId =
   | 'seo'
   | 'behind'
   | 'facts';
+
+export const WRITING_BOOK_MVP_PANELS: { id: WritingBookPanelId; label: string }[] = [
+  { id: 'canvas', label: 'Canvas' },
+  { id: 'behind', label: 'Generation' },
+  { id: 'seo', label: 'SEO & schedule' },
+  { id: 'facts', label: 'Fact check' },
+];
 
 export const WRITER_INSPECTOR_PANELS: { id: WriterInspectorPanelId; label: string }[] = [
   { id: 'brief', label: 'Brief' },
@@ -18,6 +29,10 @@ export const WRITER_INSPECTOR_PANELS: { id: WriterInspectorPanelId; label: strin
   { id: 'behind', label: 'Behind the curtain' },
   { id: 'facts', label: 'Fact check' },
 ];
+
+export function writingBookPanelLabel(id: WritingBookPanelId): string {
+  return WRITING_BOOK_MVP_PANELS.find((p) => p.id === id)?.label ?? 'Writing book';
+}
 
 export function writerInspectorPanelLabel(id: WriterInspectorPanelId | null): string {
   if (!id) return 'Writer tools';

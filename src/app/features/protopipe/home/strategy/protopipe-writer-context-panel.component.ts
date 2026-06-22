@@ -1,7 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { ProtopipeWriterInspectorBridge } from '../../content/writer/protopipe-writer-inspector.bridge';
-import { writerInspectorPanelLabel } from '../../content/writer/protopipe-writer-panels';
+import { writingBookPanelLabel } from '../../content/writer/protopipe-writer-panels';
 import { ProtopipeHomeSidePanelService } from '../protopipe-home-side-panel.service';
 import { ProtopipeHomeWriterViewState } from '../protopipe-home-writer-view.state';
 
@@ -21,7 +21,7 @@ export class ProtopipeWriterContextPanelComponent {
   readonly activePanel = this.writerView.activePanel;
   readonly panelRevision = this.bridge.panelRevision;
 
-  readonly panelLabel = computed(() => writerInspectorPanelLabel(this.activePanel()));
+  readonly panelLabel = computed(() => writingBookPanelLabel(this.activePanel()));
 
   close(): void {
     this.writerView.clearPanel();

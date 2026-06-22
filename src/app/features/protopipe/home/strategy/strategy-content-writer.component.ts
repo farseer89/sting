@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ProtopipeHomeWriterViewState } from '../protopipe-home-writer-view.state';
 import {
   MOCK_STRATEGY_WRITER,
   STRATEGY_WRITER_PANELS,
+  type StrategyWriterPanelId,
   type StrategyWriterSection,
 } from './strategy-writer.mock';
 
@@ -19,12 +19,12 @@ import {
   },
 })
 export class StrategyContentWriterComponent {
-  private readonly writerView = inject(ProtopipeHomeWriterViewState);
-
   readonly full = input(false);
 
   readonly mock = MOCK_STRATEGY_WRITER;
   readonly panels = STRATEGY_WRITER_PANELS;
+
+  readonly activePanel = signal<StrategyWriterPanelId>('brief');
 
   readonly h1 = signal(this.mock.h1);
   readonly intro = signal(this.mock.intro);
@@ -33,12 +33,12 @@ export class StrategyContentWriterComponent {
 
   readonly saveLabel = signal('Draft saved');
 
-  selectPanel(id: (typeof STRATEGY_WRITER_PANELS)[number]['id']): void {
-    this.writerView.selectPanel(id);
+  selectPanel(id: StrategyWriterPanelId): void {
+    this.activePanel.set(id);
   }
 
-  isPanel(id: (typeof STRATEGY_WRITER_PANELS)[number]['id']): boolean {
-    return this.writerView.isPanel(id);
+  isPanel(id: StrategyWriterPanelId): boolean {
+    return this.activePanel() === id;
   }
 
   markDirty(): void {
@@ -62,6 +62,6 @@ export class StrategyContentWriterComponent {
   }
 
   exitFocus(): void {
-    this.writerView.exitFocus();
+    // Orphan mock — no home shell wiring.
   }
 }

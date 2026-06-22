@@ -10,22 +10,15 @@ import {
   OnDestroy,
   output,
   signal,
-  TemplateRef,
   untracked,
   viewChild,
 } from '@angular/core';
 import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { NgTemplateOutlet } from '@angular/common';
-import { ProtopipeHomeSidePanelService } from '../../home/protopipe-home-side-panel.service';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ProtopipeHomeWriterViewState } from '../../home/protopipe-home-writer-view.state';
 import { ProtopipeHomeThinkerViewState } from '../../home/protopipe-home-thinker-view.state';
-import { ProtopipeWriterInspectorBridge } from './protopipe-writer-inspector.bridge';
-import {
-  type WriterInspectorPanelId,
-  writerInspectorPanelLabel,
-} from './protopipe-writer-panels';
-import { ProtopipeWriterSidePanelService } from './protopipe-writer-side-panel.service';
+import { type WritingBookPanelId } from './protopipe-writer-panels';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import type {
@@ -153,7 +146,7 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { id: 'quote', label: 'Quote', icon: 'pi pi-comment', keywords: 'quote blockquote' },
 ];
 
-type InspectorPanel = WriterInspectorPanelId;
+type BookPanel = WritingBookPanelId;
 
 function detectEmbedKind(url: string): ProtopipeContentEmbedKind {
   const lower = url.trim().toLowerCase();
@@ -271,14 +264,13 @@ function buildHighlightSegments(prose: string, claims: string[]): HighlightSegme
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule,
-    DatePicker,
+    NgTemplateOutlet,
     Toast,
     ProseEditorComponent,
-    NgTemplateOutlet,
     ProtopipeBlockSlotsPanelComponent,
     ProtopipeImagePlaceholderComponent,
   ],
-  providers: [MessageService, ProtopipeWriterSidePanelService],
+  providers: [MessageService],
   templateUrl: './protopipe-writer.component.html',
   styleUrl: './protopipe-writer.component.scss',
   host: {
@@ -306,14 +298,9 @@ export class ProtopipeWriterComponent implements OnDestroy {
   private readonly messages = inject(MessageService);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly destroyRef = inject(DestroyRef);
-  protected readonly inspectorSidePanel = inject(ProtopipeWriterSidePanelService);
   private readonly homeWriterView = inject(ProtopipeHomeWriterViewState, { optional: true });
   private readonly homeThinkerView = inject(ProtopipeHomeThinkerViewState, { optional: true });
-  private readonly homeSidePanel = inject(ProtopipeHomeSidePanelService, { optional: true });
-  private readonly inspectorBridge = inject(ProtopipeWriterInspectorBridge, { optional: true });
   private readonly imageFileInput = viewChild<ElementRef<HTMLInputElement>>('imageFileInput');
-  private readonly writerShell = viewChild<ElementRef<HTMLElement>>('writerShell');
-  private readonly inspectorPanelsRef = viewChild<TemplateRef<unknown>>('inspectorPanels');
 
   readonly imageUploading = signal(false);
   readonly imageUploadSectionIndex = signal<number | null>(null);
@@ -352,29 +339,26 @@ export class ProtopipeWriterComponent implements OnDestroy {
   /** Local fetch state for the by-id load (separate from catalog loading). */
   readonly loadingPost = signal(false);
 
-  /** Active inspector tab on standalone writer route. */
-  private readonly localActivePanel = signal<InspectorPanel | null>(null);
+  /** Active binder panel on standalone writer route. */
+  private readonly localActivePanel = signal<BookPanel>('canvas');
 
-  readonly useExternalSidePanel = computed(() => this.embedded());
-
-  readonly activeInspectorPanel = computed<InspectorPanel | null>(() => {
+  readonly activeBookPanel = computed<BookPanel>(() => {
     if (this.embedded() && this.homeWriterView) {
       return this.homeWriterView.activePanel();
     }
     return this.localActivePanel();
   });
 
-  readonly inspectorSliderOpen = computed(() => {
-    if (!this.activeInspectorPanel()) return false;
-    if (this.embedded() && this.homeSidePanel) {
-      return this.homeSidePanel.open();
-    }
-    return this.inspectorSidePanel.open();
-  });
+  readonly showFactsNav = computed(() => this.unresolvedCriticalFacts() > 0);
 
-  readonly inspectorPanelLabel = computed(() =>
-    writerInspectorPanelLabel(this.activeInspectorPanel()),
-  );
+  readonly articleKicker = computed(() => {
+    const type = this.articleTypeDisplay();
+    const topic = this.topicLabel();
+    if (type && topic) return `${type} · ${topic}`;
+    if (topic) return topic;
+    if (type) return type;
+    return 'New article';
+  });
 
   private readonly publishAfterSave = signal(false);
 
@@ -923,6 +907,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
    * direct click on the highlighted text.
    */
   locateFact(fact: FlaggedFactView): void {
+    this.selectBookPanel('canvas');
     this.selectedFactId.set(fact.id);
     const target = this.templateTargetForFact(fact);
     const editor = target.intro
@@ -1007,29 +992,11 @@ export class ProtopipeWriterComponent implements OnDestroy {
     });
 
     effect(() => {
-      if (this.activeInspectorPanel() !== 'blog') return;
-      const s = this.session();
-      if (!s) return;
-      untracked(() => void this.refreshBlogPreview());
-    });
-
-    effect(() => {
-      const tpl = this.inspectorPanelsRef();
-      if (!tpl || !this.inspectorBridge) return;
-      untracked(() => this.inspectorBridge!.setTemplate(tpl));
-    });
-
-    effect(() => {
-      if (!this.embedded() || !this.inspectorBridge) return;
-      this.activeInspectorPanel();
-      untracked(() => this.inspectorBridge!.notifyPanelChange());
-    });
-
-    effect(() => {
       if (this.runIsActive()) {
         untracked(() => {
           this.syncRunElapsed();
           this.startRunElapsedTimer();
+          this.selectBookPanel('behind');
         });
       } else {
         untracked(() => this.stopRunElapsedTimer());
@@ -1037,8 +1004,8 @@ export class ProtopipeWriterComponent implements OnDestroy {
     });
 
     this.destroyRef.onDestroy(() => {
-      this.inspectorBridge?.clear();
-      this.inspectorSidePanel.detachResizeListeners();
+      this.stopPolling();
+      this.stopRunElapsedTimer();
     });
 
     effect(() => {
@@ -1191,63 +1158,21 @@ export class ProtopipeWriterComponent implements OnDestroy {
     this.content.setCognitivePackId(packId);
   }
 
-  // --- inspector panels -----------------------------------------------------
+  // --- Writing book panels --------------------------------------------------
 
-  isPanelOpen(panel: InspectorPanel): boolean {
-    return this.activeInspectorPanel() === panel;
-  }
-
-  togglePanel(panel: InspectorPanel): void {
+  selectBookPanel(panel: BookPanel): void {
     if (this.embedded() && this.homeWriterView) {
       this.homeWriterView.selectPanel(panel);
-      if (panel === 'blog' && this.homeWriterView.isPanel(panel)) {
-        void this.refreshBlogPreview();
-      }
-      return;
+    } else {
+      this.localActivePanel.set(panel);
     }
-    const current = this.localActivePanel();
-    if (current === panel) {
-      this.localActivePanel.set(null);
-      this.inspectorSidePanel.setOpen(false);
-      return;
-    }
-    this.localActivePanel.set(panel);
-    this.inspectorSidePanel.ensureOpen();
-    if (panel === 'blog') {
-      void this.refreshBlogPreview();
-    }
-  }
-
-  openInspectorPanel(panel: InspectorPanel): void {
-    if (this.embedded() && this.homeWriterView) {
-      if (this.homeWriterView.isPanel(panel)) {
-        this.homeSidePanel?.ensureOpen();
-      } else {
-        this.homeWriterView.openPanel(panel);
-      }
-      return;
-    }
-    this.localActivePanel.set(panel);
-    this.inspectorSidePanel.ensureOpen();
     if (panel === 'facts') {
       this.loadArticleContextCards();
     }
   }
 
-  closeInspectorSlider(): void {
-    if (this.embedded() && this.homeWriterView) {
-      this.homeWriterView.clearPanel();
-      this.homeSidePanel?.setOpen(false);
-      return;
-    }
-    this.localActivePanel.set(null);
-    this.inspectorSidePanel.setOpen(false);
-  }
-
-  onSideSplitterPointerDown(event: PointerEvent): void {
-    const host = this.writerShell()?.nativeElement;
-    if (!host) return;
-    this.inspectorSidePanel.startResize(event, host);
+  openInspectorPanel(panel: BookPanel): void {
+    this.selectBookPanel(panel);
   }
 
   enterPreviewTakeover(): void {
@@ -1801,7 +1726,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
     if (!s || s.readOnly) return false;
     const t = s.template;
 
-    let blocker: { detail: string; panel?: InspectorPanel } | null = null;
+    let blocker: { detail: string; panel?: BookPanel } | null = null;
     if (!(t.title?.trim() ?? '')) {
       blocker = { detail: 'Add a title before saving.' };
     } else if (!(t.metaDescription?.trim() ?? '')) {
@@ -1853,6 +1778,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
 
   private maybeAutoWriteArticle(): void {
     if (!this.showWriteArticle() || this.run()) return;
+    this.selectBookPanel('behind');
     this.writeArticle();
   }
 
@@ -1947,9 +1873,8 @@ export class ProtopipeWriterComponent implements OnDestroy {
             },
             run,
           );
-        } else {
-          this.openInspectorPanel('behind');
         }
+        this.selectBookPanel('behind');
         if (run.status === 'running' || run.status === 'pending') {
           this.startPolling();
         }
@@ -2910,5 +2835,6 @@ export class ProtopipeWriterComponent implements OnDestroy {
         life: 4000,
       });
     }
+    this.selectBookPanel('canvas');
   }
 }

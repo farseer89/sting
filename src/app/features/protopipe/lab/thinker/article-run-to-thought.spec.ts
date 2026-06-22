@@ -6,7 +6,7 @@ function minimalV2Run(overrides: Partial<ArticleGenerationRunDto> = {}): Article
     id: 'run1',
     siteId: 'site1',
     keywordId: 'kw1',
-    articleType: 'guide',
+    articleType: 'howto',
     pipelineVersion: 2,
     contentPostId: 'post1',
     resolvedCognitivePackId: 'trains_of_thought/v1',
@@ -19,6 +19,7 @@ function minimalV2Run(overrides: Partial<ArticleGenerationRunDto> = {}): Article
         secondaryKeywords: [],
         nlpTerms: [],
         contentGaps: ['timing'],
+        competitorOutlines: [],
         voiceConfig: {
           tone: 'friendly',
           pov: 'second_person',
@@ -108,7 +109,7 @@ function minimalV2Run(overrides: Partial<ArticleGenerationRunDto> = {}): Article
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:03.000Z',
     ...overrides,
-  };
+  } as ArticleGenerationRunDto;
 }
 
 describe('articleRunToThought', () => {
@@ -138,5 +139,66 @@ describe('articleRunToThought', () => {
 
     expect(thought.steps.some((s) => s.id === 'cognitive_pass')).toBe(true);
     expect(thought.currentStepId).toBe('cognitive_pass');
+  });
+
+  it('includes step descriptions and structured sub-steps like strategy runbook', () => {
+    const thought = articleRunToThought(minimalV2Run());
+    const context = thought.steps.find((s) => s.id === 'compile_context');
+    expect(context?.description).toContain('content plan');
+    expect(context?.subSteps?.some((s) => s.id === 'ctx:load')).toBe(true);
+
+    const synthesis = thought.steps.find((s) => s.id === 'train:synthesis');
+    expect(synthesis?.description).toContain('thesis');
+    expect(synthesis?.subSteps?.length).toBeGreaterThan(0);
+  });
+
+  it('maps draft sub-steps from outline sections while running', () => {
+    const section = (h2: string) => ({
+      h2,
+      notes: [] as string[],
+      kwSlice: [] as string[],
+      targetWordCount: 300,
+    });
+
+    const thought = articleRunToThought(
+      minimalV2Run({
+        status: 'running',
+        currentStep: 'draft',
+        artifacts: {
+          ...minimalV2Run().artifacts,
+          outline: {
+            h1: 'Live wedding painter guide',
+            sections: [
+              section('Why timing matters'),
+              section('How we work the room'),
+              section('Booking the right artist'),
+            ],
+          },
+          sections: [
+            {
+              section: section('Why timing matters'),
+              prose: 'Timing wins trust.',
+              wordCount: 120,
+              promptVersion: 'draft/v1',
+              rawCompletion: 'Timing wins trust.',
+            },
+          ],
+        },
+        events: [
+          ...minimalV2Run().events,
+          {
+            step: 'draft',
+            status: 'started',
+            startedAt: '2026-01-01T00:00:04.000Z',
+          },
+        ],
+      }),
+    );
+
+    const draft = thought.steps.find((s) => s.id === 'draft');
+    expect(draft?.status).toBe('running');
+    expect(draft?.summary).toBe('Section 2 of 3');
+    expect(draft?.subSteps?.some((s) => s.label === 'Why timing matters')).toBe(true);
+    expect(draft?.subSteps?.some((s) => s.status === 'running')).toBe(true);
   });
 });

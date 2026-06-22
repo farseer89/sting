@@ -152,7 +152,7 @@
       <div
         #homeWorkspace
         class="void__workspace-shell"
-        [class.has-side-panel]="sidePanel.open() && (activeView() === 'keywords' || activeView() === 'strategy' || activeView() === 'writer')"
+        [class.has-side-panel]="sidePanel.open() && (activeView() === 'keywords' || activeView() === 'strategy')"
         [style.--side-panel-width.%]="sidePanel.widthPct()"
       >
         <div class="void__viewport">
@@ -182,7 +182,7 @@
                   </section>
                 }
                 @case ('writer') {
-                  <section class="glass glass--full glass--premiere glass--writer" aria-label="Article writer">
+                  <section class="glass glass--full glass--premiere glass--writer" aria-label="Writing book">
                     <app-protopipe-home-writer />
                   </section>
                 }
@@ -275,11 +275,6 @@
                     <app-protopipe-home-thinker-binder />
                   </section>
                 }
-                @case ('writer-binder') {
-                  <section class="glass glass--full glass--premiere" aria-label="Writer">
-                    <app-protopipe-home-writer-binder />
-                  </section>
-                }
                 @case ('brand-book') {
                   <section class="glass glass--full glass--premiere" aria-label="Brand book">
                     <app-protopipe-home-brand-book (runWizard)="openBrandSetupWizard()" />
@@ -311,17 +306,15 @@
         </div>
 
         <!-- TROUBLESHOOT: strategy slider requires activeView=strategy AND sidePanel.open(); inspect data-* on aside -->
-        @if (sidePanel.open() && (activeView() === 'keywords' || activeView() === 'strategy' || activeView() === 'writer')) {
+        @if (sidePanel.open() && (activeView() === 'keywords' || activeView() === 'strategy')) {
           <div
             class="void__side-splitter"
             role="separator"
             aria-orientation="vertical"
             [attr.aria-label]="
-              activeView() === 'writer'
-                ? 'Resize writer panel'
-                : activeView() === 'strategy'
-                  ? 'Resize strategy brief panel'
-                  : 'Resize selected keywords panel'
+              activeView() === 'strategy'
+                ? 'Resize strategy brief panel'
+                : 'Resize selected keywords panel'
             "
             (pointerdown)="onSideSplitterPointerDown($event)"
           ></div>
@@ -340,11 +333,6 @@
               [attr.data-strategy-article]="strategyViewState.selectedArticle()?.workingTitle ?? ''"
             >
               <app-protopipe-strategy-context-panel />
-            </aside>
-          }
-          @if (activeView() === 'writer') {
-            <aside class="void__side-panel" aria-label="Writer tools">
-              <app-protopipe-writer-context-panel />
             </aside>
           }
         }

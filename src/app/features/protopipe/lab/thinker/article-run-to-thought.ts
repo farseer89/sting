@@ -16,6 +16,7 @@ import type {
   ThoughtStatus,
   ThoughtStep,
   ThoughtStepStatus,
+  ThoughtSubStep,
   ThoughtLlmCall,
 } from './thought.model';
 import { sumCosts } from './thinker-cost';
@@ -28,35 +29,594 @@ import { sumCosts } from './thinker-cost';
 
 const STEP_META: Record<
   ArticleGenerationStep,
-  { label: string; summary: string }
+  { label: string; summary: string; description: string }
 > = {
-  infer_type: { label: 'Classify', summary: 'Infer the article type from the keyword.' },
-  analyse_competition: { label: 'Competition', summary: 'Profile the top-ranking pages.' },
-  content_plan: { label: 'Strategy', summary: 'Consolidate the competitor scan into a strategy.' },
-  research: { label: 'Research', summary: 'Gather SERP, PAA, site + brand context.' },
-  build_brief: { label: 'Brief', summary: 'Compile the SEO brief.' },
+  infer_type: {
+    label: 'Classify',
+    summary: 'Infer the article type from the keyword.',
+    description:
+      'Assigns an article type (guide, pillar, etc.) that drives template blocks, FAQ rules, and review thresholds for the rest of the pipeline.',
+  },
+  analyse_competition: {
+    label: 'Competition',
+    summary: 'Profile the top-ranking pages.',
+    description:
+      'Scans who ranks for the target keyword today — page structure, angles, and gaps your draft needs to beat.',
+  },
+  content_plan: {
+    label: 'Strategy',
+    summary: 'Consolidate the competitor scan into a strategy.',
+    description:
+      'Turns competitor profiles into a content strategy: mandatory sections, demand consensus, and article ideas aligned to the cluster.',
+  },
+  research: {
+    label: 'Research',
+    summary: 'Gather SERP, PAA, site + brand context.',
+    description:
+      'Builds the research bundle — SERP features, people-also-ask, related terms, and brand context that feed the SEO brief.',
+  },
+  build_brief: {
+    label: 'Brief',
+    summary: 'Compile the SEO brief.',
+    description:
+      'Compiles primary keyword, voice, word-count target, content gaps, and NLP terms into the brief every later step writes against.',
+  },
   compile_context: {
     label: 'Context',
     summary: 'Load the plan brief and compile the writing context.',
+    description:
+      'Loads the calendar post brief from your content plan, merges business intelligence, and compiles the v2 writing context.',
   },
   cognitive_pass: {
     label: 'Think',
     summary: 'Run the selected thought pack before outline and draft.',
+    description:
+      'Runs the selected thought pack — multiple cognitive trains plus synthesis — to sharpen angle, thesis, and outline before drafting.',
   },
-  outline: { label: 'Outline', summary: 'Design the H1 and section outline.' },
-  draft: { label: 'Draft', summary: 'Write the section prose.' },
+  outline: {
+    label: 'Outline',
+    summary: 'Design the H1 and section outline.',
+    description:
+      'Designs the H1 and H2 section outline from the enriched brief, or reuses the cognitive article package when available.',
+  },
+  draft: {
+    label: 'Draft',
+    summary: 'Write the section prose.',
+    description:
+      'Writes intro and body sections one at a time against the outline and brief, streaming partial drafts as each section completes.',
+  },
   draft_faq: {
     label: 'FAQ',
     summary: 'Draft FAQ answers from PAA and brief questions for pillar guides.',
+    description:
+      'Drafts FAQ Q&A blocks from people-also-ask and brief questions — required for pillar guides, skipped for other types.',
   },
-  review: { label: 'Review', summary: 'Score the draft against the brief.' },
-  metadata: { label: 'Metadata', summary: 'Generate title tag, meta and schema.' },
-  assemble: { label: 'Assemble', summary: 'Assemble the final article template.' },
+  review: {
+    label: 'Review',
+    summary: 'Score the draft against the brief.',
+    description:
+      'Scores the assembled draft against brief requirements; may trigger a self-heal pass to regenerate failing sections.',
+  },
+  metadata: {
+    label: 'Metadata',
+    summary: 'Generate title tag, meta and schema.',
+    description:
+      'Generates title tag, meta description, and JSON-LD schema hints ready for publish.',
+  },
+  assemble: {
+    label: 'Assemble',
+    summary: 'Assemble the final article template.',
+    description:
+      'Merges outline, drafted sections, metadata, FAQ, and site CTA into the block template the writer canvas loads.',
+  },
   generate_images: {
     label: 'Images',
     summary: 'Plan hero and section images with consistent editorial style via fal.ai.',
+    description:
+      'Plans hero and section image slots with a shared style profile, then generates and uploads assets via fal.ai when live.',
   },
 };
+
+function phaseStatus(
+  phaseIndex: number,
+  phaseCount: number,
+  stepStatus: ThoughtStepStatus,
+): ThoughtStepStatus {
+  if (stepStatus === 'pending') return 'pending';
+  if (stepStatus === 'failed') return phaseIndex === phaseCount - 1 ? 'failed' : 'complete';
+  if (stepStatus === 'running') {
+    if (phaseIndex < phaseCount - 1) return 'complete';
+    return 'running';
+  }
+  return 'complete';
+}
+
+function trainStepDescription(train: CognitiveTrainStep): string {
+  if (train.slug === 'synthesis') {
+    return 'Combines train outputs into a thesis, article package outline, and enriched brief angle.';
+  }
+  return `Runs the “${train.label}” lens from the thought pack before outline and draft.`;
+}
+
+function buildTrainSubSteps(train: CognitiveTrainStep): ThoughtSubStep[] {
+  const status = mapTrainStatus(train.status);
+  if (train.status === 'skipped') {
+    return [
+      {
+        id: `${train.slug}:skip`,
+        label: 'Skipped in stub mode',
+        detail: 'Thought pack stub — no LLM call',
+        status: 'skipped',
+      },
+    ];
+  }
+  const detailParts: string[] = [];
+  if (train.promptVersion) detailParts.push(train.promptVersion);
+  if (train.durationMs != null) detailParts.push(`${train.durationMs}ms`);
+  if (train.error) detailParts.push(train.error);
+  return [
+    {
+      id: `${train.slug}:run`,
+      label: `Run ${train.label}`,
+      detail: detailParts.length ? detailParts.join(' · ') : undefined,
+      status,
+      isLlm: true,
+    },
+  ];
+}
+
+function buildCognitivePassSubSteps(
+  run: ArticleGenerationRunDto,
+  stepStatus: ThoughtStepStatus,
+): ThoughtSubStep[] {
+  const trains = run.artifacts.cognitiveRun?.trains;
+  if (trains?.length) {
+    return trains.map((train) => ({
+      id: `train:${train.slug}`,
+      label: train.label,
+      detail:
+        train.status === 'skipped'
+          ? 'Stub mode'
+          : train.slug === 'synthesis' && run.artifacts.cognitiveRun?.synthesis?.thesis
+            ? run.artifacts.cognitiveRun.synthesis.thesis
+            : train.durationMs != null
+              ? `${train.durationMs}ms`
+              : undefined,
+      status: mapTrainStatus(train.status),
+      isLlm: train.status !== 'skipped',
+    }));
+  }
+
+  const packLabel = run.resolvedCognitivePackId ?? 'thought pack';
+  return [
+    {
+      id: 'cog:load',
+      label: 'Load thought pack',
+      detail: packLabel === 'none' ? 'No pack selected' : packLabel,
+      status: phaseStatus(0, 2, stepStatus),
+    },
+    {
+      id: 'cog:run',
+      label: 'Run cognitive trains',
+      detail: 'Parallel lenses then master synthesis',
+      status: phaseStatus(1, 2, stepStatus),
+      isLlm: true,
+    },
+  ];
+}
+
+function buildDraftSubSteps(
+  run: ArticleGenerationRunDto,
+  stepStatus: ThoughtStepStatus,
+): ThoughtSubStep[] {
+  const outline = run.artifacts.outline;
+  const sections = run.artifacts.sections ?? [];
+  const total = outline?.sections.length ?? 0;
+
+  if (sections.length > 0) {
+    const sectionRows: ThoughtSubStep[] = sections.map((sec, index) => ({
+      id: `draft:sec:${index}`,
+      label: sec.section.h2,
+      detail: `${sec.wordCount} words`,
+      status: 'complete' as ThoughtStepStatus,
+    }));
+    if (stepStatus === 'complete' || stepStatus === 'failed') {
+      return sectionRows;
+    }
+    if (total > sections.length) {
+      return [
+        ...sectionRows,
+        {
+          id: 'draft:next',
+          label: outline!.sections[sections.length]?.h2 ?? 'Next section',
+          detail: `${sections.length + 1} of ${total}`,
+          status: 'running' as ThoughtStepStatus,
+          isLlm: true,
+        },
+        ...outline!.sections.slice(sections.length + 1).map((s, i) => ({
+          id: `draft:pending:${i}`,
+          label: s.h2,
+          detail: 'Pending',
+          status: 'pending' as ThoughtStepStatus,
+        })),
+      ];
+    }
+    return sectionRows;
+  }
+
+  const phases: ThoughtSubStep[] = [
+    {
+      id: 'draft:plan',
+      label: 'Plan section order',
+      detail: total ? `${total} section(s) from outline` : 'From outline',
+      status: phaseStatus(0, 2, stepStatus),
+    },
+    {
+      id: 'draft:write',
+      label: 'Write section prose',
+      detail: 'One LLM call per section',
+      status: phaseStatus(1, 2, stepStatus),
+      isLlm: true,
+    },
+  ];
+  return phases;
+}
+
+function buildImageSubSteps(
+  run: ArticleGenerationRunDto,
+  stepStatus: ThoughtStepStatus,
+): ThoughtSubStep[] {
+  const ig = run.artifacts.imageGeneration;
+  if (ig?.slots.length) {
+    return ig.slots.map((slot) => ({
+      id: `img:${slot.id}`,
+      label: slot.label,
+      detail:
+        slot.status === 'generated'
+          ? 'Generated'
+          : slot.status === 'failed'
+            ? slot.error ?? 'Failed'
+            : slot.status === 'skipped'
+              ? 'Skipped'
+              : 'Planned',
+      status:
+        slot.status === 'generated'
+          ? ('complete' as ThoughtStepStatus)
+          : slot.status === 'failed'
+            ? ('failed' as ThoughtStepStatus)
+            : slot.status === 'skipped'
+              ? ('skipped' as ThoughtStepStatus)
+              : stepStatus === 'running'
+                ? ('running' as ThoughtStepStatus)
+                : ('pending' as ThoughtStepStatus),
+    }));
+  }
+
+  return [
+    {
+      id: 'img:plan',
+      label: 'Plan image slots',
+      detail: 'Hero + section placeholders with shared style',
+      status: phaseStatus(0, 2, stepStatus),
+    },
+    {
+      id: 'img:gen',
+      label: 'Generate via fal.ai',
+      detail: ig?.mode === 'live' ? 'Live generation + S3 upload' : 'Stub — prompts only',
+      status: phaseStatus(1, 2, stepStatus),
+    },
+  ];
+}
+
+function buildArticleSubSteps(
+  step: ArticleGenerationStep,
+  run: ArticleGenerationRunDto,
+  evs: ArticleGenerationEvent[],
+  stepStatus: ThoughtStepStatus,
+): ThoughtSubStep[] {
+  const a = run.artifacts;
+  const keyword = a.brief?.primaryKeyword.phrase ?? 'target keyword';
+
+  switch (step) {
+    case 'infer_type':
+      return [
+        {
+          id: 'type:resolve',
+          label: 'Resolve article type',
+          detail: run.articleType.replace(/_/g, ' '),
+          status: stepStatus === 'pending' ? 'pending' : 'complete',
+        },
+      ];
+
+    case 'analyse_competition': {
+      const phases: ThoughtSubStep[] = [
+        {
+          id: 'comp:serp',
+          label: 'Load SERP snapshot',
+          detail: keyword,
+          status: phaseStatus(0, 3, stepStatus),
+        },
+        {
+          id: 'comp:scan',
+          label: 'Profile ranking pages',
+          detail: 'Structure, headings, and angles',
+          status: phaseStatus(1, 3, stepStatus),
+        },
+        {
+          id: 'comp:gaps',
+          label: 'Extract gaps and consensus',
+          detail: 'What winners cover vs miss',
+          status: phaseStatus(2, 3, stepStatus),
+        },
+      ];
+      const pages = a.competitionAnalysis?.pages ?? [];
+      if (pages.length > 0 && stepStatus !== 'pending') {
+        return [
+          ...phases.map((p) => ({ ...p, status: 'complete' as ThoughtStepStatus })),
+          ...pages.slice(0, 6).map((page, i) => ({
+            id: `comp:page:${i}`,
+            label: page.domain || page.url.replace(/^https?:\/\//, '').slice(0, 48),
+            detail: page.titleTag ?? page.h1 ?? `#${page.serpPosition ?? i + 1} organic`,
+            status: 'complete' as ThoughtStepStatus,
+          })),
+        ];
+      }
+      return phases;
+    }
+
+    case 'content_plan':
+      return [
+        {
+          id: 'plan:read',
+          label: 'Read competition profiles',
+          detail: a.competitionAnalysis
+            ? `${a.competitionAnalysis.scannedCount} page(s) scanned`
+            : 'From competition step',
+          status: phaseStatus(0, 2, stepStatus),
+          isLlm: false,
+        },
+        {
+          id: 'plan:strategy',
+          label: 'Build content strategy',
+          detail: 'Mandatory sections and article ideas',
+          status: phaseStatus(1, 2, stepStatus),
+          isLlm: true,
+        },
+      ];
+
+    case 'research':
+      return [
+        {
+          id: 'res:serp',
+          label: 'SERP features & PAA',
+          detail: keyword,
+          status: phaseStatus(0, 3, stepStatus),
+        },
+        {
+          id: 'res:related',
+          label: 'Related terms & gaps',
+          detail: 'Demand signals for the brief',
+          status: phaseStatus(1, 3, stepStatus),
+        },
+        {
+          id: 'res:brand',
+          label: 'Site and brand context',
+          detail: 'Voice and positioning inputs',
+          status: phaseStatus(2, 3, stepStatus),
+        },
+      ];
+
+    case 'build_brief':
+      return [
+        {
+          id: 'brief:research',
+          label: 'Merge research bundle',
+          detail: a.research?.inferenceRationale?.slice(0, 72) ?? 'From research step',
+          status: phaseStatus(0, 2, stepStatus),
+        },
+        {
+          id: 'brief:compile',
+          label: 'Compile SEO brief',
+          detail: a.brief
+            ? `${a.brief.targetWordCount} words · ${a.brief.primaryKeyword.phrase}`
+            : 'Keyword, voice, gaps, NLP terms',
+          status: phaseStatus(1, 2, stepStatus),
+          isLlm: true,
+        },
+      ];
+
+    case 'compile_context':
+      return [
+        {
+          id: 'ctx:load',
+          label: 'Load calendar post brief',
+          detail: a.writingContext?.workingTitle ?? keyword,
+          status: phaseStatus(0, 3, stepStatus),
+        },
+        {
+          id: 'ctx:intelligence',
+          label: 'Assemble business intelligence',
+          detail: a.writingContext?.workingTitle
+            ? `Plan brief · ${a.writingContext.workingTitle}`
+            : 'Sharpen Q&A and site facts',
+          status: phaseStatus(1, 3, stepStatus),
+        },
+        {
+          id: 'ctx:compile',
+          label: 'Compile writing context',
+          detail: 'Brief + voice + plan narrative',
+          status: phaseStatus(2, 3, stepStatus),
+        },
+      ];
+
+    case 'cognitive_pass':
+      return buildCognitivePassSubSteps(run, stepStatus);
+
+    case 'outline': {
+      const fromPackage = Boolean(
+        a.cognitiveRun?.synthesis?.articlePackage?.outline?.length &&
+          evs.some((e) => e.note?.includes('cognitive package')),
+      );
+      return [
+        {
+          id: 'out:h1',
+          label: 'Set H1 headline',
+          detail: a.outline?.h1 ?? a.brief?.recommendedAngle ?? keyword,
+          status: phaseStatus(0, 2, stepStatus),
+          isLlm: !fromPackage,
+        },
+        {
+          id: 'out:sections',
+          label: 'Plan section outline',
+          detail: fromPackage
+            ? 'From cognitive article package'
+            : a.outline
+              ? `${a.outline.sections.length} section(s)`
+              : 'H2 headings and section notes',
+          status: phaseStatus(1, 2, stepStatus),
+          isLlm: !fromPackage,
+        },
+      ];
+    }
+
+    case 'draft':
+      return buildDraftSubSteps(run, stepStatus);
+
+    case 'draft_faq':
+      if (run.articleType !== 'pillar') {
+        return [
+          {
+            id: 'faq:skip',
+            label: 'Skipped',
+            detail: 'FAQ step runs for pillar guides only',
+            status: stepStatus === 'pending' ? 'pending' : 'skipped',
+          },
+        ];
+      }
+      return [
+        {
+          id: 'faq:match',
+          label: 'Match PAA to questions',
+          detail: 'From research and brief',
+          status: phaseStatus(0, 2, stepStatus),
+        },
+        {
+          id: 'faq:draft',
+          label: 'Draft FAQ answers',
+          detail: a.faqItems?.length ? `${a.faqItems.length} item(s)` : 'One LLM pass',
+          status: phaseStatus(1, 2, stepStatus),
+          isLlm: true,
+        },
+      ];
+
+    case 'review': {
+      const phases: ThoughtSubStep[] = [
+        {
+          id: 'rev:score',
+          label: 'Score against brief',
+          detail: a.review
+            ? `Score ${formatReviewScore(a.review.overallScore)}`
+            : 'Threshold check',
+          status: phaseStatus(0, 2, stepStatus),
+          isLlm: true,
+        },
+        {
+          id: 'rev:heal',
+          label: 'Self-heal failing sections',
+          detail: evs.some((e) => e.note?.includes('self-heal'))
+            ? 'Regenerated failing sections'
+            : 'Only when review fails threshold',
+          status: phaseStatus(1, 2, stepStatus),
+        },
+      ];
+      if (a.review?.violations.length || a.review?.sectionViolations.length) {
+        return [
+          ...phases.map((p) => ({ ...p, status: 'complete' as ThoughtStepStatus })),
+          ...a.review!.violations.slice(0, 4).map((v, i) => ({
+            id: `rev:v:${i}`,
+            label: v.slice(0, 64),
+            detail: 'Brief violation',
+            status: 'failed' as ThoughtStepStatus,
+          })),
+        ];
+      }
+      return phases;
+    }
+
+    case 'metadata':
+      return [
+        {
+          id: 'meta:title',
+          label: 'Title tag',
+          detail: a.metadata?.titleTag?.slice(0, 60) ?? 'From brief + outline',
+          status: phaseStatus(0, 2, stepStatus),
+          isLlm: true,
+        },
+        {
+          id: 'meta:desc',
+          label: 'Meta description & schema',
+          detail: a.metadata?.metaDesc
+            ? `${a.metadata.metaDesc.length} chars`
+            : 'JSON-LD type from article strategy',
+          status: phaseStatus(1, 2, stepStatus),
+          isLlm: true,
+        },
+      ];
+
+    case 'assemble':
+      return [
+        {
+          id: 'asm:blocks',
+          label: 'Merge template blocks',
+          detail: a.sections?.length ? `${a.sections.length} section(s)` : 'Sections + metadata',
+          status: phaseStatus(0, 2, stepStatus),
+        },
+        {
+          id: 'asm:cta',
+          label: 'Attach CTA and FAQ',
+          detail: a.faqItems?.length ? `${a.faqItems.length} FAQ block(s)` : 'Site CTA when configured',
+          status: phaseStatus(1, 2, stepStatus),
+        },
+      ];
+
+    case 'generate_images':
+      return buildImageSubSteps(run, stepStatus);
+
+    default:
+      return [];
+  }
+}
+
+function articleStepRunningSummary(
+  step: ArticleGenerationStep,
+  run: ArticleGenerationRunDto,
+): string | undefined {
+  if (run.status !== 'running') return undefined;
+
+  if (step === 'draft') {
+    const outline = run.artifacts.outline;
+    const done = run.artifacts.sections?.length ?? 0;
+    const total = outline?.sections.length ?? 0;
+    if (total > 0 && done > 0) return `Section ${Math.min(done + 1, total)} of ${total}`;
+  }
+
+  if (step === 'cognitive_pass') {
+    const trains = run.artifacts.cognitiveRun?.trains;
+    const active = trains?.find((t) => t.status !== 'complete' && t.status !== 'skipped');
+    if (active) return `${active.label}…`;
+    if (!run.artifacts.cognitiveRun?.synthesis?.thesis) return 'Synthesizing…';
+  }
+
+  if (step === 'generate_images') {
+    const ig = run.artifacts.imageGeneration;
+    if (ig?.plannedCount) {
+      const done = ig.generatedCount ?? 0;
+      return `${done}/${ig.plannedCount} generated`;
+    }
+  }
+
+  return undefined;
+}
 
 function mapLlmTrace(trace: NonNullable<ArticleGenerationRunDto['llmTraces']>[number]): ThoughtLlmCall {
   return {
@@ -408,6 +968,7 @@ function expandCognitiveTrainSteps(
   const trainSteps: ThoughtStep[] = trains.map((train) => ({
     id: `train:${train.slug}`,
     label: train.label,
+    description: trainStepDescription(train),
     summary: trainStepSummary(train),
     status: mapTrainStatus(train.status),
     costUsd: train.costUsd,
@@ -426,6 +987,7 @@ function expandCognitiveTrainSteps(
           ? [json(`train-${train.slug}`, train.label, train.output, 'Skipped (stub)')]
           : undefined,
     events: [],
+    subSteps: buildTrainSubSteps(train),
     error:
       train.status === 'failed' && train.error ? { message: train.error } : undefined,
     promptVersion: train.promptVersion,
@@ -438,11 +1000,21 @@ function expandCognitiveTrainSteps(
     trainSteps.push({
       id: 'train:__in_progress__',
       label: 'Next phase…',
+      description: 'Waiting for the next thought-pack phase to finish.',
       summary: 'Running…',
       status: 'running',
       startedAt: parent.startedAt,
       attempt: 1,
       events: [],
+      subSteps: [
+        {
+          id: 'train:pending',
+          label: 'Next train phase',
+          detail: 'Master synthesis or remaining lens',
+          status: 'running',
+          isLlm: true,
+        },
+      ],
     });
   }
 
@@ -577,6 +1149,7 @@ export function articleRunToThought(run: ArticleGenerationRunDto): Thought {
     const meta = STEP_META[step] ?? {
       label: STEP_SHORT_LABELS[step],
       summary: STEP_SHORT_LABELS[step],
+      description: STEP_SHORT_LABELS[step],
     };
     const reviewArtifact = step === 'review' ? run.artifacts?.review : undefined;
     const reviewFailed = reviewArtifact && !reviewArtifact.passesThreshold;
@@ -593,15 +1166,20 @@ export function articleRunToThought(run: ArticleGenerationRunDto): Thought {
           ? { message: formatReviewViolations(reviewArtifact) }
           : undefined;
 
+    const finishedNote = finished?.note;
+    const runningSummary = articleStepRunningSummary(step, run);
     const summary = reviewFailed
       ? `Below threshold (score ${formatReviewScore(reviewArtifact.overallScore)})`
       : reviewArtifact?.passesThreshold
         ? `Passed (score ${formatReviewScore(reviewArtifact.overallScore)})`
-        : meta.summary;
+        : stepStatus === 'running' && runningSummary
+          ? runningSummary
+          : finishedNote ?? meta.summary;
 
     return {
       id: step,
       label: meta.label,
+      description: meta.description,
       summary,
       status: stepStatus,
       costUsd: sumCosts(evs.map((e) => e.cost)),
@@ -614,6 +1192,7 @@ export function articleRunToThought(run: ArticleGenerationRunDto): Thought {
           ? stepOutput(step, run)
           : undefined,
       events: mapEvents(evs),
+      subSteps: buildArticleSubSteps(step, run, evs, stepStatus),
       error,
       promptVersion: finished?.promptVersion ?? started?.promptVersion,
     } satisfies ThoughtStep;

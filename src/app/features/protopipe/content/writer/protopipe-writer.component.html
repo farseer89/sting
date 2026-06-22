@@ -8,63 +8,38 @@
   (change)="onSectionImageFileSelected($event)"
 />
 
-<div class="pw" [class.pw--readonly]="isReadOnly()">
-  <!-- Top bar -->
-  <header class="pw__bar">
-    <button type="button" class="pw__back" (click)="backToLibrary()">
-      <i class="pi pi-arrow-left"></i>
-      <span>{{ backLabel() }}</span>
-    </button>
+<div class="wb-shell" [class.wb-shell--readonly]="isReadOnly()">
 
-    <div class="pw__bar-status">
-      @if (loading() || loadingPost()) {
-        <span class="pw__status"><i class="pi pi-spin pi-spinner"></i> Loading…</span>
-      } @else if (isReadOnly()) {
-        <span class="pw__status pw__status--pub"><i class="pi pi-check-circle"></i> Published</span>
-      } @else {
-        <span
-          class="pw__status"
-          [class.pw__status--dirty]="content.dirty()"
-        >{{ saveLabel() }}</span>
-      }
-      @if (!loading() && !loadingPost()) {
-        <span
-          class="pw__pack-pill"
-          [class.pw__pack-pill--standard]="cognitivePackId() === 'none'"
-          [attr.title]="cognitivePackId() === 'none' ? 'Standard writer path' : resolvedPackLabel()"
-        >
-          <i class="pi pi-box"></i>
-          @if (isReadOnly()) {
-            {{ resolvedPackLabel() }}
+  <header class="wb-masthead">
+    <div class="wb-masthead__left">
+      <button type="button" class="wb-masthead__back" (click)="backToLibrary()">
+        <i class="pi pi-arrow-left"></i>
+        <span>{{ backLabel() }}</span>
+      </button>
+      <div class="wb-masthead__identity">
+        <h1 class="wb-masthead__title">Writing book</h1>
+        <p class="wb-masthead__deck">Draft, refine, and publish articles from your content plan.</p>
+        <div class="wb-masthead__meta">
+          <span class="wb-masthead__kicker">{{ articleKicker() }}</span>
+          <span class="wb-masthead__sep">·</span>
+          @if (loading() || loadingPost()) {
+            <span class="wb-masthead__status">Loading…</span>
+          } @else if (isReadOnly()) {
+            <span class="wb-masthead__status wb-masthead__status--pub">Published</span>
           } @else {
-            <select
-              class="pw__pack-select"
-              [ngModel]="cognitivePackId()"
-              (ngModelChange)="onCognitivePackChange($event)"
-              aria-label="Thought pack"
-            >
-              @for (opt of packPickerOptions(); track opt.id) {
-                <option [value]="opt.id">{{ opt.label }}</option>
-              }
-            </select>
+            <span class="wb-masthead__status" [class.is-dirty]="content.dirty()">{{ saveLabel() }}</span>
           }
-        </span>
-      }
+        </div>
+      </div>
     </div>
-
-    <div class="pw__bar-actions">
+    <div class="wb-masthead__actions">
       @if (showWriteArticle()) {
-        <button
-          type="button"
-          class="pw__btn pw__btn--accent"
-          (click)="writeArticle()"
-          [disabled]="generating()"
-        >
+        <button type="button" class="wb-btn wb-btn--accent wb-btn--sm" (click)="writeArticle()" [disabled]="generating()">
           <i class="pi pi-bolt"></i>
           {{ writeArticleLabel() }}
         </button>
       } @else if (runIsActive()) {
-        <span class="pw__status pw__status--running" title="Pipeline is running on the server">
+        <span class="wb-masthead__running" title="Pipeline is running on the server">
           <i class="pi pi-spin pi-spinner"></i>
           @if (runActivityDetail(); as detail) {
             {{ detail }}
@@ -75,1065 +50,394 @@
         </span>
       }
       @if (generatedReady() && !isReadOnly()) {
-        <button
-          type="button"
-          class="pw__btn pw__btn--ghost pw__btn--pull"
-          (click)="applyGenerated()"
-          [attr.title]="pullDraftHint()"
-        >
+        <button type="button" class="wb-btn wb-btn--ghost wb-btn--sm" (click)="applyGenerated()" [attr.title]="pullDraftHint()">
           <i class="pi pi-download"></i>
-          Pull pipeline draft
+          Pull draft
         </button>
       }
       @if (!isReadOnly()) {
-        <button
-          type="button"
-          class="pw__btn pw__btn--ghost"
-          (click)="saveDraft()"
-          [disabled]="saving() || !content.dirty()"
-        >
+        <button type="button" class="wb-btn wb-btn--ghost wb-btn--sm" (click)="saveDraft()" [disabled]="saving() || !content.dirty()">
           {{ saving() ? 'Saving…' : 'Save draft' }}
         </button>
       }
-      <button
-        type="button"
-        class="pw__btn pw__btn--accent"
-        (click)="publish()"
-        [disabled]="publishing() || isReadOnly()"
-      >
+      <button type="button" class="wb-btn wb-btn--primary wb-btn--sm" (click)="publish()" [disabled]="publishing() || isReadOnly()">
         {{ publishing() ? 'Publishing…' : 'Publish' }}
       </button>
     </div>
   </header>
 
-  @if (typeReadiness().length) {
-    <div class="pw__readiness" role="status" aria-live="polite">
-      <div class="pw__readiness-head">
-        <span class="pw__readiness-type">{{ articleTypeDisplay() }}</span>
-        <span class="pw__readiness-score">
-          {{ typeReadinessSummary().pass }}/{{ typeReadinessSummary().total }} ready
-        </span>
-        @if (typeReadinessSummary().fail > 0) {
-          <span class="pw__readiness-blockers">{{ typeReadinessSummary().fail }} blocking</span>
-        }
-      </div>
-      <ul class="pw__readiness-chips">
-        @for (chip of typeReadiness(); track chip.id) {
-          <li
-            class="pw__readiness-chip"
-            [class.is-pass]="chip.status === 'pass'"
-            [class.is-warn]="chip.status === 'warn'"
-            [class.is-fail]="chip.status === 'fail'"
-            [attr.title]="chip.message ?? null"
-          >
-            @if (chip.status === 'pass') {
-              <i class="pi pi-check" aria-hidden="true"></i>
-            } @else if (chip.status === 'fail') {
-              <i class="pi pi-times" aria-hidden="true"></i>
-            } @else {
-              <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
-            }
-            {{ chip.label }}
-          </li>
-        }
-      </ul>
-    </div>
-  }
+  <div class="wb-binder">
 
-  <!-- Workspace: tool-rail · stage(canvas + inspector) -->
-  <div class="pw__workspace">
-    <nav class="pw__rail" aria-label="Writer tools">
+    <nav class="wb-binder-nav" aria-label="Writing book sections">
+      <div class="wb-binder-nav__label">Editing</div>
       <button
         type="button"
-        class="pw__tool"
-        (click)="addSection()"
-        [disabled]="isReadOnly()"
-        title="Add section"
+        class="wb-binder-nav__item"
+        [class.is-active]="activeBookPanel() === 'canvas'"
+        (click)="selectBookPanel('canvas')"
       >
-        <i class="pi pi-plus"></i>
-        <span class="pw__tool-tip">Add section</span>
+        <svg class="wb-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M3 4h10M3 7h10M3 10h7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        </svg>
+        Canvas
       </button>
 
-      <span class="pw__rail-divider"></span>
+      <div class="wb-binder-nav__label" style="margin-top:0.75rem;">Generate</div>
+      <button
+        type="button"
+        class="wb-binder-nav__item"
+        [class.is-active]="activeBookPanel() === 'behind'"
+        (click)="selectBookPanel('behind')"
+      >
+        <svg class="wb-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M3 4h2M7 4h6M3 8h5M10 8h3M3 12h3M8 12h5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        </svg>
+        Generation
+      </button>
 
+      <div class="wb-binder-nav__label" style="margin-top:0.75rem;">Publish</div>
       <button
         type="button"
-        class="pw__tool"
-        [class.is-active]="activeInspectorPanel() === 'brief'"
-        (click)="togglePanel('brief')"
-        title="Research brief"
+        class="wb-binder-nav__item"
+        [class.is-active]="activeBookPanel() === 'seo'"
+        (click)="selectBookPanel('seo')"
       >
-        <i class="pi pi-flag"></i>
-        @if (hasBrief()) { <span class="pw__tool-dot"></span> }
-        <span class="pw__tool-tip">Brief</span>
+        <svg class="wb-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M3 8h10M8 3v10M5 5l6 6M11 5l-6 6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        </svg>
+        SEO &amp; schedule
       </button>
-      <button
-        type="button"
-        class="pw__tool"
-        [class.is-active]="activeInspectorPanel() === 'preview'"
-        (click)="togglePanel('preview')"
-        title="Search preview"
-      >
-        <i class="pi pi-google"></i>
-        <span class="pw__tool-tip">Search preview</span>
-      </button>
-      <button
-        type="button"
-        class="pw__tool"
-        [class.is-active]="activeInspectorPanel() === 'blog'"
-        (click)="togglePanel('blog')"
-        title="Blog preview"
-      >
-        <i class="pi pi-eye"></i>
-        <span class="pw__tool-tip">Blog preview</span>
-      </button>
-      @if (hasBlockLayout()) {
+      @if (showFactsNav()) {
         <button
           type="button"
-          class="pw__tool"
-          [class.is-active]="activeInspectorPanel() === 'layout'"
-          (click)="togglePanel('layout')"
-          title="Layout slots"
+          class="wb-binder-nav__item"
+          [class.is-active]="activeBookPanel() === 'facts'"
+          (click)="selectBookPanel('facts')"
         >
-          <i class="pi pi-th-large"></i>
-          <span class="pw__tool-tip">Layout slots</span>
-        </button>
-      }
-      <button
-        type="button"
-        class="pw__tool"
-        [class.is-active]="activeInspectorPanel() === 'hints'"
-        (click)="togglePanel('hints')"
-        title="Writing hints"
-      >
-        <i class="pi pi-check-circle"></i>
-        <span class="pw__tool-tip">Hints</span>
-      </button>
-      <button
-        type="button"
-        class="pw__tool"
-        [class.is-active]="activeInspectorPanel() === 'seo'"
-        (click)="togglePanel('seo')"
-        title="SEO & schedule"
-      >
-        <i class="pi pi-sliders-h"></i>
-        <span class="pw__tool-tip">SEO & schedule</span>
-      </button>
-      <button
-        type="button"
-        class="pw__tool"
-        [class.is-active]="activeInspectorPanel() === 'behind'"
-        (click)="togglePanel('behind')"
-        title="Behind the curtain"
-      >
-        <i class="pi pi-server"></i>
-        <span class="pw__tool-tip">Behind the curtain</span>
-      </button>
-
-      @if (flaggedFactCount() || pendingContextCardCount()) {
-        <button
-          type="button"
-          class="pw__tool"
-          [class.is-active]="activeInspectorPanel() === 'facts'"
-          [class.is-warn]="unresolvedCriticalFacts() > 0 || pendingContextCardCount() > 0"
-          (click)="togglePanel('facts')"
-          title="Fact check"
-        >
-          <i class="pi pi-exclamation-triangle"></i>
-          <span class="pw__tool-badge">{{ flaggedFactCount() || pendingContextCardCount() }}</span>
-          <span class="pw__tool-tip">Fact check</span>
+          <svg class="wb-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.1"/>
+            <path d="M8 7v3M8 5.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          Fact check
+          <span class="wb-binder-nav__flag">{{ unresolvedCriticalFacts() }}</span>
         </button>
       }
     </nav>
 
-    <div
-      #writerShell
-      class="pw__shell"
-      [class.has-side-panel]="!useExternalSidePanel() && inspectorSliderOpen()"
-      [style.--side-panel-width.%]="inspectorSidePanel.widthPct()"
-    >
-      <div class="pw__stage">
-        <div class="pw__scroll" [class.pw__scroll--preview]="previewTakeover()">
-        @if (previewTakeover()) {
-          <div class="pw__preview-stage">
-            <header class="pw__preview-bar">
-              <button type="button" class="pw__btn pw__btn--ghost" (click)="exitPreviewTakeover()">
-                <i class="pi pi-arrow-left"></i> Back to writing
-              </button>
-              <span class="pw__preview-bar-title">Live preview</span>
-              <button
-                type="button"
-                class="pw__refresh"
-                (click)="refreshBlogPreview()"
-                [disabled]="blogPreviewLoading()"
-              >
-                <i
-                  class="pi"
-                  [class.pi-spin]="blogPreviewLoading()"
-                  [class.pi-spinner]="blogPreviewLoading()"
-                  [class.pi-refresh]="!blogPreviewLoading()"
-                ></i>
-              </button>
-            </header>
-            @if (blogPreviewLoading()) {
-              <p class="pw__panel-empty">Rendering preview…</p>
-            } @else if (blogPreviewError(); as err) {
-              <p class="pw__panel-empty pw__panel-empty--error">{{ err }}</p>
-            } @else if (blogPreviewSafeHtml()) {
-              <div class="pw__blog-preview pw__blog-preview--takeover" [innerHTML]="blogPreviewSafeHtml()"></div>
-            } @else {
-              <p class="pw__panel-empty">Preview will appear when you add content.</p>
-            }
-          </div>
-        } @else if (session(); as s) {
-          <article class="pw__canvas">
-            @if (topicLabel(); as topic) {
-              <p class="pw__topic">Writing for <strong>{{ topic }}</strong></p>
-            }
+    <div class="wb-panel">
+      @switch (activeBookPanel()) {
 
-            @if (articleKeywords().length) {
-              <div class="pw__kw-strip" role="toolbar" aria-label="Keywords in article">
-                <span class="pw__kw-strip-label">Keywords in your draft</span>
-                @for (kw of articleKeywords(); track kw) {
-                  <span class="pw__kw-strip-mark" [attr.title]="kw">{{ kw }}</span>
+        @case ('canvas') {
+          @if (session(); as s) {
+            <article class="pw__canvas wb-canvas">
+              @if (topicLabel(); as topic) {
+                <p class="pw__topic">Writing for <strong>{{ topic }}</strong></p>
+              }
+              @if (flaggedFactCount()) {
+                <p class="pw__editor-legend">
+                  Flagged claims are underlined in your draft — click to confirm or dismiss.
+                </p>
+              }
+
+              <div class="pw__block pw__block--title">
+                <div class="pw__block-main pw__block-main--title">
+                  <textarea
+                    class="pw__h1"
+                    rows="1"
+                    [ngModel]="s.template.h1"
+                    (ngModelChange)="onHeadlineInput($event)"
+                    (keydown.enter)="$event.preventDefault()"
+                    [disabled]="isReadOnly()"
+                    placeholder="Your headline…"
+                  ></textarea>
+                </div>
+              </div>
+
+              <div class="pw__block">
+                <div class="pw__block-main">
+                  <app-prose-editor
+                    class="pw__intro pw__intro--editor"
+                    [value]="s.template.intro"
+                    (valueChange)="patchTemplate({ intro: $event })"
+                    [flaggedFacts]="factsForIntro()"
+                    (factClick)="onFactClick(-1, $event)"
+                    (ready)="registerIntroEditor($event)"
+                    [disabled]="isReadOnly()"
+                    placeholder="Open with the promise of the piece…"
+                  ></app-prose-editor>
+                </div>
+              </div>
+
+              @for (sec of s.template.sections; track $index) {
+                @if (!isReadOnly()) {
+                  <div class="pw__insert">
+                    <button type="button" class="pw__insert-btn" (click)="insertSection($index)" title="Insert section here">
+                      <span class="pw__insert-icon"></span>
+                    </button>
+                  </div>
                 }
-                <button
-                  type="button"
-                  class="pw__kw-strip-toggle"
-                  [class.is-on]="keywordsVisible()"
-                  (click)="toggleKeywords()"
-                  [attr.aria-pressed]="keywordsVisible()"
-                >
-                  {{ keywordsVisible() ? 'Hide in text' : 'Show in text' }}
-                </button>
-              </div>
-            }
-            @if (flaggedFactCount()) {
-              <p class="pw__editor-legend">
-                Flagged claims are underlined in your draft — hover for guidance, click to confirm or dismiss.
-              </p>
-            }
 
-            <!-- Headline -->
-            <div class="pw__block pw__block--title">
-              <div class="pw__block-main pw__block-main--title">
-                <textarea
-                  class="pw__h1"
-                  rows="1"
-                  [ngModel]="s.template.h1"
-                  (ngModelChange)="onHeadlineInput($event)"
-                  (keydown.enter)="$event.preventDefault()"
-                  [disabled]="isReadOnly()"
-                  placeholder="Your headline…"
-                ></textarea>
-              </div>
-            </div>
-
-            @if (hasBlockLayout() && heroImageBlock(); as hero) {
-              <div class="pw__block pw__block--hero-image">
-                <app-protopipe-image-placeholder
-                  [hero]="true"
-                  [label]="hero.label || 'Hero image'"
-                  [hint]="imagePlaceholderHint(hero)"
-                  [url]="hero.url"
-                  [alt]="hero.alt"
-                  [align]="hero.align ?? 'full'"
-                  [readOnly]="isReadOnly()"
-                  [uploading]="isHeroImageUploading(hero.id)"
-                  (urlChange)="patchHeroImage('url', $event)"
-                  (altChange)="patchHeroImage('alt', $event)"
-                  (alignChange)="patchHeroImage('align', $event)"
-                  (upload)="triggerHeroImageUpload()"
-                  (remove)="clearHeroImage()"
-                />
-              </div>
-            }
-
-            <!-- Intro -->
-            <div class="pw__block">
-              <div class="pw__block-main">
-                <app-prose-editor
-                  class="pw__intro pw__intro--editor"
-                  [value]="s.template.intro"
-                  (valueChange)="patchTemplate({ intro: $event })"
-                  (selectionChange)="onSelectionMenu($event)"
-                  (slashChange)="onSlashMenu($event)"
-                  [flaggedFacts]="factsForIntro()"
-                  (factClick)="onFactClick(-1, $event)"
-                  (ready)="registerIntroEditor($event)"
-                  [keywords]="activeKeywords()"
-                  [disabled]="isReadOnly()"
-                  placeholder="Open with the promise of the piece…"
-                ></app-prose-editor>
-                @if (introSuggestion(); as hint) {
-                  <button type="button" class="pw__suggest" (click)="insertIntroSuggestion()">
-                    <i class="pi pi-sparkles"></i> Suggest an opening
-                  </button>
-                }
-              </div>
-            </div>
-
-            <!-- Sections -->
-            @for (sec of s.template.sections; track $index) {
-              @if (!isReadOnly()) {
-                <div class="pw__insert">
-                  <button
-                    type="button"
-                    class="pw__insert-btn"
-                    (click)="insertSection($index)"
-                    title="Insert section here"
-                  >
-                    <span class="pw__insert-icon"></span>
-                  </button>
+                <div class="pw__block pw__section">
+                  <div class="pw__block-main">
+                    <textarea
+                      class="pw__h2"
+                      rows="1"
+                      [ngModel]="sec.h2"
+                      (ngModelChange)="patchSection($index, { h2: $event })"
+                      (keydown.enter)="$event.preventDefault()"
+                      (focus)="focusSection($index)"
+                      [disabled]="isReadOnly()"
+                      placeholder="Section heading…"
+                    ></textarea>
+                    <app-prose-editor
+                      class="pw__section-body pw__section-body--editor"
+                      [value]="sec.body"
+                      (valueChange)="patchSection($index, { body: $event })"
+                      (focused)="focusSection($index)"
+                      [flaggedFacts]="factsForSection($index)"
+                      (factClick)="onFactClick($index, $event)"
+                      (ready)="registerEditor($index, $event)"
+                      [disabled]="isReadOnly()"
+                      placeholder="Write this section…"
+                    ></app-prose-editor>
+                    @if (!isReadOnly() && s.template.sections.length > 1) {
+                      <button type="button" class="pw__remove" (click)="removeSection($index)">
+                        Remove section
+                      </button>
+                    }
+                  </div>
                 </div>
               }
 
-              <div class="pw__block pw__section">
-                <div class="pw__block-main">
-                  <textarea
-                    class="pw__h2"
-                    rows="1"
-                    [ngModel]="sec.h2"
-                    (ngModelChange)="patchSection($index, { h2: $event })"
-                    (keydown.enter)="$event.preventDefault()"
-                    (focus)="focusSection($index)"
-                    [disabled]="isReadOnly()"
-                    placeholder="Section heading…"
-                  ></textarea>
-                  @if ((sec.images ?? []).length === 0 && !isReadOnly()) {
-                    <app-protopipe-image-placeholder
-                      class="pw__inline-image"
-                      [compact]="true"
-                      label="Image"
-                      url=""
-                      alt=""
-                      align="full"
-                      [readOnly]="isReadOnly()"
-                      [uploading]="isSectionImageUploading($index, 0)"
-                      (upload)="onSectionImageUpload($index, null)"
-                      (urlChange)="onSectionImageUrl($index, null, $event)"
-                    />
-                  } @else {
-                    @for (img of sec.images ?? []; track $index; let imgIdx = $index) {
-                      <app-protopipe-image-placeholder
-                        class="pw__inline-image"
-                        [compact]="true"
-                        [label]="sec.h2 || 'Section image'"
-                        [hint]="imagePlaceholderHint(img)"
-                        [url]="img.url"
-                        [alt]="img.alt"
-                        [align]="img.align ?? 'full'"
-                        [readOnly]="isReadOnly()"
-                        [uploading]="isSectionImageUploading($index, imgIdx)"
-                        (urlChange)="patchSectionImageField($index, imgIdx, 'url', $event)"
-                        (altChange)="patchSectionImageField($index, imgIdx, 'alt', $event)"
-                        (alignChange)="patchSectionImageField($index, imgIdx, 'align', $event)"
-                        (upload)="onSectionImageUpload($index, imgIdx)"
-                        (remove)="onSectionImageRemove($index, imgIdx)"
-                      />
-                    }
-                  }
-                  <app-prose-editor
-                    class="pw__section-body pw__section-body--editor"
-                    [value]="sec.body"
-                    (valueChange)="patchSection($index, { body: $event })"
-                    (focused)="focusSection($index)"
-                    [flaggedFacts]="factsForSection($index)"
-                    [keywords]="activeKeywords()"
-                    (factClick)="onFactClick($index, $event)"
-                    (selectionChange)="onSelectionMenu($event)"
-                    (slashChange)="onSlashMenu($event)"
-                    (ready)="registerEditor($index, $event)"
-                    [disabled]="isReadOnly()"
-                    placeholder="Write this section…"
-                  ></app-prose-editor>
-                  @if (!isReadOnly()) {
-                    <div class="pw__embeds">
-                      <div class="pw__embeds-head">
-                        <span>Video / embeds</span>
-                      </div>
-                      @for (embed of sec.embeds ?? []; track $index; let ei = $index) {
-                        <div class="pw__embed-row">
-                          <input
-                            type="url"
-                            placeholder="YouTube, Vimeo, or URL"
-                            [ngModel]="embed.url"
-                            (ngModelChange)="updateSectionEmbed($index, ei, { url: $event, kind: detectEmbedKind($event) })"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Caption (optional)"
-                            [ngModel]="embed.caption ?? ''"
-                            (ngModelChange)="updateSectionEmbed($index, ei, { caption: $event })"
-                          />
-                          <button type="button" class="pw__media-remove" (click)="removeSectionEmbed($index, ei)" aria-label="Remove embed">×</button>
-                        </div>
-                      }
-                      <div class="pw__embed-add">
-                        <input
-                          #embedInput
-                          type="url"
-                          placeholder="Paste YouTube or Vimeo link…"
-                          (keydown.enter)="addSectionEmbed($index, embedInput.value); embedInput.value = ''"
-                        />
-                        <button
-                          type="button"
-                          class="pw__media-add"
-                          (click)="addSectionEmbed($index, embedInput.value); embedInput.value = ''"
-                        >
-                          Add
-                        </button>
-                      </div>
-                    </div>
-                  }
-                  @if (!isReadOnly() && s.template.sections.length > 1) {
-                    <button type="button" class="pw__remove" (click)="removeSection($index)">
-                      Remove section
+              @if (!isReadOnly()) {
+                <div class="pw__block pw__block--foot">
+                  <div class="pw__block-main">
+                    <button type="button" class="pw__add" (click)="addSection()">
+                      <i class="pi pi-plus"></i> Add section
                     </button>
-                  }
+                  </div>
                 </div>
-              </div>
-            }
-
-            @if (!isReadOnly()) {
-              <div class="pw__block pw__block--foot">
-                <div class="pw__block-main">
-                  <button type="button" class="pw__add" (click)="addSection()">
-                    <i class="pi pi-plus"></i> Add section
-                  </button>
-                </div>
-              </div>
-            }
-
-            <div class="pw__preview-strip">
-              <button type="button" class="pw__preview-strip-btn" (click)="enterPreviewTakeover()">
-                <i class="pi pi-eye"></i> Preview on site
-              </button>
-            </div>
-          </article>
+              }
+            </article>
+          } @else if (loading() || loadingPost()) {
+            <p class="wb-panel-empty">Loading article…</p>
+          }
         }
-        </div>
-      </div>
 
-      @if (!useExternalSidePanel() && inspectorSliderOpen()) {
-        <div
-          class="pw__side-splitter"
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Resize writer panel"
-          (pointerdown)="onSideSplitterPointerDown($event)"
-        ></div>
-        <aside class="pw__side-panel" aria-label="Writer tools">
-          <header class="pw__side-head">
-            <button
-              type="button"
-              class="pw__side-close"
-              (click)="closeInspectorSlider()"
-              aria-label="Close panel"
-            >
-              <span aria-hidden="true">×</span>
-            </button>
-            <span class="pw__side-label">{{ inspectorPanelLabel() }}</span>
-          </header>
-          <div class="pw__side-scroll">
-            <ng-container *ngTemplateOutlet="inspectorPanels" />
-          </div>
-        </aside>
+        @case ('behind') {
+          <ng-container *ngTemplateOutlet="generationPanel" />
+        }
+
+        @case ('seo') {
+          <ng-container *ngTemplateOutlet="seoPanel" />
+        }
+
+        @case ('facts') {
+          <ng-container *ngTemplateOutlet="factsPanel" />
+        }
+
       }
     </div>
   </div>
 </div>
 
-<ng-template #inspectorPanels>
-  <div class="pw__aside pw__aside--slider">
-        @if (error(); as err) {
-          <div class="pw__panel pw__panel--error">{{ err }}</div>
-        }
+<ng-template #generationPanel>
+  <div class="wb-panel-head">
+    <div class="wb-panel-kicker">Generate · Pipeline</div>
+    <h2 class="wb-panel-title">Article generation</h2>
+    <p class="wb-panel-deck">Write from your brief — pull the draft onto the canvas when the run completes.</p>
+  </div>
+  @if (error(); as err) {
+    <div class="pw__panel pw__panel--error">{{ err }}</div>
+  }
+  <section class="pw__panel pw__panel--behind">
+    @if (topicLabel(); as topic) {
+      <p class="pw__brief-target">Brief keyword: <strong>{{ topic }}</strong></p>
+    } @else {
+      <p class="pw__panel-empty">No brief keyword — open this post from your content plan before writing.</p>
+    }
 
-        @if (publishReview()) {
-          <section class="pw__panel pw__panel--review">
-            <h3 class="pw__panel-title">Review before publishing</h3>
-            <ul class="pw__blockers">
-              @for (b of publishBlockers(); track b) {
-                <li>{{ b }}</li>
-              }
-            </ul>
-            <button type="button" class="pw__dismiss" (click)="dismissPublishReview()">Dismiss</button>
-          </section>
-        }
-
-        @if (activeInspectorPanel() === 'brief') {
-          <section class="pw__panel pw__panel--brief">
-            <h3 class="pw__panel-title">Brief</h3>
-            @if (hasBrief() && brief(); as b) {
-              @if (b.targetWordCount) {
-                <p class="pw__brief-target">Target ~{{ b.targetWordCount }} words</p>
-              }
-              @if (b.positioningSummary) {
-                <p class="pw__brief-note">{{ b.positioningSummary }}</p>
-              }
-              @if (b.recommendedAngle) {
-                <p class="pw__brief-angle"><span>Angle</span> {{ b.recommendedAngle }}</p>
-              }
-              @if (b.mustCoverTerms.length) {
-                <div class="pw__brief-group">
-                  <span class="pw__brief-label">Must cover</span>
-                  <div class="pw__chips">
-                    @for (t of b.mustCoverTerms; track t) { <span class="pw__chip">{{ t }}</span> }
-                  </div>
-                </div>
-              }
-              @if (b.secondaryKeywords.length) {
-                <div class="pw__brief-group">
-                  <span class="pw__brief-label">Secondary keywords</span>
-                  <div class="pw__chips">
-                    @for (t of b.secondaryKeywords; track t) { <span class="pw__chip pw__chip--soft">{{ t }}</span> }
-                  </div>
-                </div>
-              }
-              @if (b.contentGaps.length) {
-                <div class="pw__brief-group">
-                  <span class="pw__brief-label">Content gaps</span>
-                  <ul class="pw__brief-list">
-                    @for (g of b.contentGaps; track g) { <li>{{ g }}</li> }
-                  </ul>
-                </div>
-              }
-              @if (b.competitorHeadings.length) {
-                <div class="pw__brief-group">
-                  <span class="pw__brief-label">Competitor headings</span>
-                  <ul class="pw__brief-list">
-                    @for (h of b.competitorHeadings; track h) { <li>{{ h }}</li> }
-                  </ul>
-                </div>
-              }
-            } @else {
-              <p class="pw__panel-empty">
-                No research brief on this post. Briefs are seeded when a post is created from a
-                confirmed content plan.
-              </p>
-            }
-          </section>
-        }
-
-        @if (activeInspectorPanel() === 'preview') {
-          <section class="pw__panel">
-            <h3 class="pw__panel-title">Search preview</h3>
-            @if (serp(); as p) {
-              <p class="pw__serp-url">{{ p.url }}</p>
-              <p class="pw__serp-title">{{ p.title }}</p>
-              <p class="pw__serp-desc">{{ p.description }}</p>
-            }
-          </section>
-        }
-
-        @if (activeInspectorPanel() === 'blog') {
-          <section class="pw__panel pw__panel--blog">
-            <div class="pw__panel-head">
-              <h3 class="pw__panel-title">Blog preview</h3>
-              <div class="pw__panel-head-actions">
-                <button type="button" class="pw__refresh" (click)="enterPreviewTakeover()" title="Expand preview">
-                  <i class="pi pi-window-maximize"></i>
-                </button>
-                <button type="button" class="pw__refresh" (click)="refreshBlogPreview()" [disabled]="blogPreviewLoading()">
-                  <i class="pi" [class.pi-spin]="blogPreviewLoading()" [class.pi-spinner]="blogPreviewLoading()" [class.pi-refresh]="!blogPreviewLoading()"></i>
-                </button>
-              </div>
-            </div>
-            @if (blogPreviewLoading()) {
-              <p class="pw__panel-empty">Rendering preview…</p>
-            } @else if (blogPreviewError(); as err) {
-              <p class="pw__panel-empty pw__panel-empty--error">{{ err }}</p>
-            } @else if (blogPreviewSafeHtml()) {
-              <div class="pw__blog-preview" [innerHTML]="blogPreviewSafeHtml()"></div>
-            } @else {
-              <p class="pw__panel-empty">Preview will appear when you add content.</p>
-            }
-          </section>
-        }
-
-        @if (activeInspectorPanel() === 'layout' && session(); as s) {
-          <section class="pw__panel pw__panel--layout">
-            <h3 class="pw__panel-title">Layout slots</h3>
-            @if (s.template.blocks?.length) {
-              <app-protopipe-block-slots-panel
-                [template]="s.template"
-                [readOnly]="isReadOnly()"
-                (templateChange)="onBlocksTemplateChange($event)"
-                (focusCanvasSlot)="focusCanvasSlot($event)"
-                (imageUploadRequest)="onBlockImageUploadRequest($event)"
-              />
-            } @else {
-              <p class="pw__panel-empty">
-                Typed layout slots appear when this post has a blueprint — confirm from a content plan or run generation.
-              </p>
-            }
-          </section>
-        }
-
-        @if (activeInspectorPanel() === 'hints') {
-          <section class="pw__panel">
-            <h3 class="pw__panel-title">Hints</h3>
-            @if (typeReadiness().length) {
-              <div class="pw__readiness pw__readiness--panel">
-                <p class="pw__readiness-type-label">{{ articleTypeDisplay() }} readiness</p>
-                <ul class="pw__readiness-chips">
-                  @for (chip of typeReadiness(); track chip.id) {
-                    <li
-                      class="pw__readiness-chip"
-                      [class.is-pass]="chip.status === 'pass'"
-                      [class.is-warn]="chip.status === 'warn'"
-                      [class.is-fail]="chip.status === 'fail'"
-                      [attr.title]="chip.message ?? null"
-                    >
-                      @if (chip.status === 'pass') {
-                        <i class="pi pi-check" aria-hidden="true"></i>
-                      } @else if (chip.status === 'fail') {
-                        <i class="pi pi-times" aria-hidden="true"></i>
-                      } @else {
-                        <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
-                      }
-                      {{ chip.label }}
-                    </li>
-                  }
-                </ul>
-              </div>
-            }
-            <ul class="pw__hints">
-              @for (h of writingHints(); track h.id) {
-                <li class="pw__hint" [class.is-done]="h.done">
-                  <span class="pw__hint-dot"></span>{{ h.label }}
-                </li>
-              }
-            </ul>
-          </section>
-        }
-
-        @if (activeInspectorPanel() === 'seo') {
-          <section class="pw__panel">
-            <h3 class="pw__panel-title">SEO &amp; schedule</h3>
-            @if (content.seoValidation(); as validation) {
-              @if (validation.errors.length) {
-                <ul class="pw__seo-blockers">
-                  @for (err of validation.errors; track err.code) {
-                    <li>{{ err.message }}</li>
-                  }
-                </ul>
+    @if (run(); as r) {
+      <div class="pw__run-status" [attr.data-status]="r.status">
+        <span class="pw__run-dot"></span>
+        <span class="pw__run-label">
+          @switch (r.status) {
+            @case ('running') {
+              @if (runActivityDetail(); as detail) {
+                Running · {{ detail }} · {{ runElapsedLabel() }}
+              } @else {
+                Running · {{ r.currentStep }} · {{ runElapsedLabel() }}
               }
             }
-            @if (session(); as s) {
-              <label class="pw__field">
-                <span>Title</span>
-                <input
-                  type="text"
-                  [ngModel]="s.template.title"
-                  (ngModelChange)="patchTemplate({ title: $event })"
-                  [disabled]="isReadOnly()"
-                />
-              </label>
-              <label class="pw__field">
-                <span>Slug</span>
-                <input
-                  type="text"
-                  [ngModel]="s.slug"
-                  (ngModelChange)="setSlug($event)"
-                  [disabled]="isReadOnly()"
-                />
-              </label>
-              <label class="pw__field">
-                <span>Meta description</span>
-                <textarea
-                  rows="3"
-                  [ngModel]="s.template.metaDescription"
-                  (ngModelChange)="patchTemplate({ metaDescription: $event })"
-                  [disabled]="isReadOnly()"
-                ></textarea>
-                <span class="pw__meta-count" [class.is-warn]="metaWarn()">
-                  {{ metaLen() }} / {{ metaMin }}–{{ metaMax }}
-                </span>
-              </label>
-              @if (!isReadOnly()) {
-                <label class="pw__field">
-                  <span>Publish to</span>
-                  <select [ngModel]="publishTarget()" (ngModelChange)="setPublishTarget($event)">
-                    <option value="astro">Protopipe site (Astro)</option>
-                    <option value="wordpress">WordPress</option>
-                  </select>
-                </label>
-                @if (publishTarget() === 'wordpress') {
-                  <label class="pw__field">
-                    <span>WordPress connection</span>
-                    @if (wordpressConnections().length) {
-                      <select
-                        [ngModel]="publishConnectionId() ?? ''"
-                        (ngModelChange)="setPublishConnectionId($event)"
-                      >
-                        @for (conn of wordpressConnections(); track conn.id) {
-                          <option [value]="conn.id">{{ conn.label }} ({{ conn.metadata['siteUrl'] }})</option>
-                        }
-                      </select>
-                    } @else {
-                      <p class="pw__panel-empty">
-                        No WordPress connection.
-                        <a href="/protopipe/settings/integrations">Connect in Integrations</a>
-                      </p>
-                    }
-                  </label>
-                }
-              }
-              <label class="pw__field">
-                <span>Schedule</span>
-                <p-datepicker
-                  [ngModel]="s.scheduleAt"
-                  (ngModelChange)="setSchedule($event)"
-                  [showTime]="true"
-                  [showButtonBar]="true"
-                  hourFormat="12"
-                  dateFormat="M d, yy"
-                  appendTo="body"
-                  [disabled]="isReadOnly()"
-                  placeholder="Publish immediately"
-                />
-              </label>
-            }
-          </section>
+            @case ('pending') { Queued }
+            @case ('complete') { Complete }
+            @case ('failed') { Failed }
+          }
+        </span>
+      </div>
+
+      @if (r.error) {
+        <p class="pw__run-error">{{ r.error.step }}: {{ r.error.message }}</p>
+      }
+
+      @if (generatedReady() && !isReadOnly()) {
+        <button type="button" class="pw__btn pw__btn--accent pw__run-apply" (click)="applyGenerated()">
+          <i class="pi pi-download"></i> Pull draft into canvas
+        </button>
+      }
+
+      @if (!runIsActive()) {
+        <button type="button" class="pw__run-relaunch" (click)="writeArticle()" [disabled]="generating()">
+          {{ writeArticleLabel() }}
+        </button>
+      }
+    } @else {
+      <p class="pw__panel-empty">
+        Run the article pipeline to draft from your brief.
+        @if (briefSource()) { Seeded from <strong>{{ briefSource() }}</strong>. }
+      </p>
+      <button
+        type="button"
+        class="pw__btn pw__btn--accent pw__run-apply"
+        (click)="writeArticle()"
+        [disabled]="generating() || isReadOnly() || !showWriteArticle()"
+      >
+        <i class="pi pi-bolt"></i>
+        {{ writeArticleLabel() }}
+      </button>
+    }
+  </section>
+</ng-template>
+
+<ng-template #seoPanel>
+  <div class="wb-panel-head">
+    <div class="wb-panel-kicker">Publish · SEO</div>
+    <h2 class="wb-panel-title">SEO &amp; schedule</h2>
+    <p class="wb-panel-deck">Meta title, slug, and publish target — required before you ship.</p>
+  </div>
+  @if (publishReview()) {
+    <section class="pw__panel pw__panel--review">
+      <h3 class="pw__panel-title">Review before publishing</h3>
+      <ul class="pw__blockers">
+        @for (b of publishBlockers(); track b) {
+          <li>{{ b }}</li>
         }
-
-        @if (activeInspectorPanel() === 'behind') {
-          <section class="pw__panel pw__panel--behind">
-            <h3 class="pw__panel-title">Behind the curtain</h3>
-
-            @if (topicLabel(); as topic) {
-              <p class="pw__brief-target">
-                Brief keyword: <strong>{{ topic }}</strong>
-              </p>
-            } @else {
-              <p class="pw__panel-empty">
-                No brief keyword on this post — open it from your content plan before writing.
-              </p>
-            }
-
-            <label class="pw__field">
-              <span>CTA promotion</span>
-              <select
-                [ngModel]="ctaOfferingId() ?? ''"
-                (ngModelChange)="onCtaOfferingChange($event)"
-                [disabled]="isReadOnly() || ctaOfferingSaving()"
-              >
-                <option value="">Site default (active promotion)</option>
-                @for (offer of ctaOfferings(); track offer.id) {
-                  <option [value]="offer.id">{{ offer.headline }}</option>
+      </ul>
+      <button type="button" class="pw__dismiss" (click)="dismissPublishReview()">Dismiss</button>
+    </section>
+  }
+  <section class="pw__panel">
+    @if (content.seoValidation(); as validation) {
+      @if (validation.errors.length) {
+        <ul class="pw__seo-blockers">
+          @for (err of validation.errors; track err.code) {
+            <li>{{ err.message }}</li>
+          }
+        </ul>
+      }
+    }
+    @if (session(); as s) {
+      <label class="pw__field">
+        <span>Title</span>
+        <input type="text" [ngModel]="s.template.title" (ngModelChange)="patchTemplate({ title: $event })" [disabled]="isReadOnly()" />
+      </label>
+      <label class="pw__field">
+        <span>Slug</span>
+        <input type="text" [ngModel]="s.slug" (ngModelChange)="setSlug($event)" [disabled]="isReadOnly()" />
+      </label>
+      <label class="pw__field">
+        <span>Meta description</span>
+        <textarea rows="3" [ngModel]="s.template.metaDescription" (ngModelChange)="patchTemplate({ metaDescription: $event })" [disabled]="isReadOnly()"></textarea>
+        <span class="pw__meta-count" [class.is-warn]="metaWarn()">{{ metaLen() }} / {{ metaMin }}–{{ metaMax }}</span>
+      </label>
+      @if (!isReadOnly()) {
+        <label class="pw__field">
+          <span>Publish to</span>
+          <select [ngModel]="publishTarget()" (ngModelChange)="setPublishTarget($event)">
+            <option value="astro">Protopipe site (Astro)</option>
+            <option value="wordpress">WordPress</option>
+          </select>
+        </label>
+        @if (publishTarget() === 'wordpress') {
+          <label class="pw__field">
+            <span>WordPress connection</span>
+            @if (wordpressConnections().length) {
+              <select [ngModel]="publishConnectionId() ?? ''" (ngModelChange)="setPublishConnectionId($event)">
+                @for (conn of wordpressConnections(); track conn.id) {
+                  <option [value]="conn.id">{{ conn.label }} ({{ conn.metadata['siteUrl'] }})</option>
                 }
               </select>
-              <span class="pw__meta-count">{{ ctaOfferingLabel() }}</span>
-            </label>
-
-            @if (run(); as r) {
-              <div class="pw__run-status" [attr.data-status]="r.status">
-                <span class="pw__run-dot"></span>
-                <span class="pw__run-label">
-                  @switch (r.status) {
-                    @case ('running') {
-                      @if (runActivityDetail(); as detail) {
-                        Running · {{ detail }} · {{ runElapsedLabel() }}
-                      } @else {
-                        Running · {{ r.currentStep }} · {{ runElapsedLabel() }}
-                      }
-                    }
-                    @case ('pending') { Queued }
-                    @case ('complete') { Complete }
-                    @case ('failed') { Failed }
-                  }
-                </span>
-              </div>
-
-              @if (runOnCognitivePass()) {
-                <p class="pw__run-hint">
-                  Trains of Thought runs 16 sequential AI phases — often 5–15 minutes total.
-                  @if (cognitiveTrainProgress(); as p) {
-                    {{ p.done }} of {{ p.total }} complete so far.
-                  } @else {
-                    Progress updates as each phase finishes.
-                  }
-                </p>
-              }
-
-              <ol class="pw__steps">
-                @for (st of pipelineSteps(); track st.step) {
-                  <li class="pw__step" [attr.data-status]="st.status">
-                    <span class="pw__step-dot">
-                      @if (st.status === 'complete') { <i class="pi pi-check"></i> }
-                      @else if (st.status === 'running') { <i class="pi pi-spin pi-spinner"></i> }
-                      @else if (st.status === 'failed') { <i class="pi pi-times"></i> }
-                    </span>
-                    <span class="pw__step-label">{{ st.label }}</span>
-                  </li>
-                }
-              </ol>
-
-              <button
-                type="button"
-                class="pw__run-relaunch"
-                (click)="openInThinker()"
-              >
-                <i class="pi pi-sitemap"></i> Open in Thinker
-              </button>
-
-              @if (r.error) {
-                <p class="pw__run-error">{{ r.error.step }}: {{ r.error.message }}</p>
-              }
-
-              @if (generationSelfHealNote(); as healNote) {
-                <p class="pw__meta-count">{{ healNote }}</p>
-              }
-
-              @if (!generationReviewFailed() && generationHumanReviewCount() > 0) {
-                <p class="pw__meta-count is-warn">
-                  {{ generationHumanReviewCount() }} claim(s) need your confirmation — open fact check.
-                </p>
-              }
-
-              @if (generationReviewFailed()) {
-                <div class="pw__panel pw__panel--review">
-                  <h4 class="pw__panel-title">Draft review did not pass</h4>
-                  @if (generationReviewScoreLabel(); as score) {
-                    <p class="pw__meta-count is-warn">
-                      Score {{ score }}
-                      @if (unresolvedCriticalFacts() > 0) {
-                        — {{ unresolvedCriticalFacts() }} fact(s) need your review.
-                      } @else {
-                        — review the flagged details below.
-                      }
-                    </p>
-                  }
-                  @if (flaggedFactCount()) {
-                    <button
-                      type="button"
-                      class="pw__btn pw__run-relaunch"
-                      (click)="togglePanel('facts')"
-                    >
-                      <i class="pi pi-exclamation-triangle"></i>
-                      Open fact check ({{ flaggedFactCount() }})
-                    </button>
-                  }
-                  <ul class="pw__blockers">
-                    @for (b of generationReviewBlockers(); track b) {
-                      <li>{{ b }}</li>
-                    }
-                  </ul>
-                </div>
-              }
-
-              @if (generatedReady() && !isReadOnly()) {
-                <button type="button" class="pw__btn pw__btn--accent pw__run-apply" (click)="applyGenerated()">
-                  <i class="pi pi-download"></i> Pull draft into document
-                </button>
-                @if (factCheckBlocksPull()) {
-                  <p class="pw__pull-note">
-                    {{ unresolvedCriticalFacts() }} critical fact(s) still need review — you can pull the draft
-                    anyway and resolve them in the editor.
-                  </p>
-                }
-              }
-
-              @if (!runIsActive()) {
-                <button
-                  type="button"
-                  class="pw__run-relaunch"
-                  (click)="writeArticle()"
-                  [disabled]="generating()"
-                >
-                  {{ writeArticleLabel() }}
-                </button>
-              }
-
-              @if (runEvents().length) {
-                <div class="pw__log">
-                  <span class="pw__log-h">Event log</span>
-                  @for (ev of runEvents(); track $index) {
-                    <div class="pw__log-row" [attr.data-status]="ev.status">
-                      <span class="pw__log-step">{{ ev.step }}</span>
-                      <span class="pw__log-state">{{ ev.status }}</span>
-                      @if (ev.durationMs) { <span class="pw__log-dur">{{ ev.durationMs }}ms</span> }
-                    </div>
-                  }
-                </div>
-              }
             } @else {
               <p class="pw__panel-empty">
-                Run the article pipeline to draft from your brief — title, meta, outline, and body
-                are filled in automatically.
-                @if (briefSource()) { Seeded from <strong>{{ briefSource() }}</strong>. }
-              </p>
-              <button
-                type="button"
-                class="pw__btn pw__btn--accent pw__run-apply"
-                (click)="writeArticle()"
-                [disabled]="generating() || isReadOnly() || !showWriteArticle()"
-              >
-                <i class="pi pi-bolt"></i>
-                {{ writeArticleLabel() }}
-              </button>
-            }
-          </section>
-        }
-
-        @if (activeInspectorPanel() === 'facts') {
-          <section class="pw__panel pw__panel--facts">
-            <h3 class="pw__panel-title">Fact check</h3>
-            @if (flaggedFactCount()) {
-              @if (factReviewComplete()) {
-                <p class="pw__meta-count">Fact review complete</p>
-              } @else {
-                <p class="pw__meta-count" [class.is-warn]="unresolvedCriticalFacts() > 0">
-                  {{ flaggedFactCount() }} flagged · {{ unresolvedCriticalFacts() }} critical need your decision
-                </p>
-              }
-              @if (!isReadOnly() && !factReviewComplete() && unresolvedCriticalFacts() === 0) {
-                <button type="button" class="pw__btn pw__btn--accent pw__run-apply" (click)="markFactReviewComplete()">
-                  <i class="pi pi-check-circle"></i> Mark fact review complete
-                </button>
-              }
-              @for (sec of flaggedSections(); track sec.sectionIndex) {
-                <div class="pw__fact-section">
-                  <button
-                    type="button"
-                    class="pw__fact-h2"
-                    (click)="goToFlaggedSection(sec.sectionIndex)"
-                    title="Jump to this section"
-                  >
-                    <i class="pi pi-arrow-right"></i> {{ sec.h2 }}
-                  </button>
-
-                  @for (fact of sec.facts; track fact.id) {
-                    <div
-                      class="pw__fact"
-                      [attr.data-category]="fact.category"
-                      [class.is-resolved]="fact.resolution"
-                    >
-                      <div class="pw__fact-head">
-                        <span class="pw__fact-tag">{{ factCategoryLabels[fact.category] }}</span>
-                        @if (fact.severity === 'critical') {
-                          <span class="pw__fact-tag is-critical">Critical</span>
-                        }
-                        @if (fact.stale) {
-                          <span class="pw__fact-tag is-stale">Text changed</span>
-                        } @else if (fact.addressedInText && !fact.resolution) {
-                          <span class="pw__fact-tag is-done">Fixed in text</span>
-                        } @else if (fact.resolution) {
-                          <span class="pw__fact-tag is-done">
-                            {{ fact.resolution === 'confirmed' ? 'Confirmed' : 'Dismissed' }}
-                          </span>
-                        }
-                      </div>
-                      <button
-                        type="button"
-                        class="pw__fact-claim"
-                        [class.is-selected]="selectedFactId() === fact.id"
-                        (click)="locateFact(fact)"
-                        title="Show this claim in the article"
-                      >
-                        “{{ fact.claim }}”
-                      </button>
-                      <p class="pw__fact-suggestion">{{ fact.suggestion }}</p>
-                      @if (!isReadOnly()) {
-                        <div class="pw__fact-actions">
-                          <button
-                            type="button"
-                            class="pw__btn pw__btn--sm"
-                            [class.is-active]="fact.resolution === 'confirmed'"
-                            (click)="resolveFact(fact, 'confirmed')"
-                          >
-                            <i class="pi pi-check"></i> Confirm
-                          </button>
-                          <button
-                            type="button"
-                            class="pw__btn pw__btn--sm"
-                            [class.is-active]="fact.resolution === 'dismissed'"
-                            (click)="resolveFact(fact, 'dismissed')"
-                          >
-                            <i class="pi pi-times"></i> Dismiss
-                          </button>
-                          <button
-                            type="button"
-                            class="pw__btn pw__btn--sm"
-                            (click)="locateFact(fact)"
-                          >
-                            <i class="pi pi-eye"></i> Show in text
-                          </button>
-                        </div>
-                      }
-                    </div>
-                  }
-                </div>
-              }
-            } @else {
-              <p class="pw__panel-empty">
-                No flagged facts. Run the pipeline and review the draft to surface
-                claims that need grounding.
+                No WordPress connection.
+                <a href="/protopipe/settings/integrations">Connect in Integrations</a>
               </p>
             }
-
-            @if (pendingContextCardCount()) {
-              <div class="pw__context-cards">
-                <h4 class="pw__context-cards-title">
-                  Claims to confirm
-                  <span class="pw__meta-count">{{ pendingContextCardCount() }} pending</span>
-                </h4>
-                <p class="pw__context-cards-hint">
-                  Answers are saved for this site and reused when drafting future articles.
-                </p>
-                @for (card of pendingArticleContextCards(); track card.id) {
-                  <div class="pw__context-card">
-                    <p class="pw__context-card-text">{{ card.cardText }}</p>
-                    @if (card.suggestedValue) {
-                      <p class="pw__context-card-suggested">
-                        Draft had: “{{ card.suggestedValue }}”
-                      </p>
-                    }
-                    @if (!isReadOnly()) {
-                      <label class="pw__context-card-label" [for]="'ctx-' + card.id">
-                        Correct value
-                      </label>
-                      <input
-                        class="pw__context-card-input"
-                        [id]="'ctx-' + card.id"
-                        type="text"
-                        [ngModel]="contextCardDraft(card.id)"
-                        (ngModelChange)="setContextCardDraft(card.id, $event)"
-                        [placeholder]="card.suggestedValue ?? 'Enter the right answer'"
-                      />
-                      <div class="pw__fact-actions">
-                        <button
-                          type="button"
-                          class="pw__btn pw__btn--sm pw__btn--accent"
-                          (click)="answerContextCard(card)"
-                        >
-                          <i class="pi pi-check"></i> Save answer
-                        </button>
-                        <button
-                          type="button"
-                          class="pw__btn pw__btn--sm"
-                          (click)="skipContextCard(card)"
-                        >
-                          Skip for now
-                        </button>
-                        <button
-                          type="button"
-                          class="pw__btn pw__btn--sm"
-                          (click)="dismissContextCard(card)"
-                        >
-                          Dismiss
-                        </button>
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            }
-          </section>
+          </label>
         }
+      }
+    }
+  </section>
+</ng-template>
+
+<ng-template #factsPanel>
+  <div class="wb-panel-head">
+    <div class="wb-panel-kicker">Publish · Fact check</div>
+    <h2 class="wb-panel-title">Resolve flagged claims</h2>
+    <p class="wb-panel-deck">Confirm or dismiss critical claims before publishing.</p>
   </div>
+  <section class="pw__panel pw__panel--facts">
+    @if (flaggedFactCount()) {
+      @if (factReviewComplete()) {
+        <p class="pw__meta-count">Fact review complete</p>
+      } @else {
+        <p class="pw__meta-count" [class.is-warn]="unresolvedCriticalFacts() > 0">
+          {{ flaggedFactCount() }} flagged · {{ unresolvedCriticalFacts() }} critical need your decision
+        </p>
+      }
+      @if (!isReadOnly() && !factReviewComplete() && unresolvedCriticalFacts() === 0) {
+        <button type="button" class="pw__btn pw__btn--accent pw__run-apply" (click)="markFactReviewComplete()">
+          <i class="pi pi-check-circle"></i> Mark fact review complete
+        </button>
+      }
+      @for (sec of flaggedSections(); track sec.sectionIndex) {
+        <div class="pw__fact-section">
+          <button type="button" class="pw__fact-h2" (click)="goToFlaggedSection(sec.sectionIndex)" title="Jump to this section">
+            <i class="pi pi-arrow-right"></i> {{ sec.h2 }}
+          </button>
+          @for (fact of sec.facts; track fact.id) {
+            <div class="pw__fact" [attr.data-category]="fact.category" [class.is-resolved]="fact.resolution">
+              <div class="pw__fact-head">
+                <span class="pw__fact-tag">{{ factCategoryLabels[fact.category] }}</span>
+                @if (fact.severity === 'critical') {
+                  <span class="pw__fact-tag is-critical">Critical</span>
+                }
+              </div>
+              <button type="button" class="pw__fact-claim" [class.is-selected]="selectedFactId() === fact.id" (click)="locateFact(fact)">
+                “{{ fact.claim }}”
+              </button>
+              <p class="pw__fact-suggestion">{{ fact.suggestion }}</p>
+              @if (!isReadOnly()) {
+                <div class="pw__fact-actions">
+                  <button type="button" class="pw__btn pw__btn--sm" [class.is-active]="fact.resolution === 'confirmed'" (click)="resolveFact(fact, 'confirmed')">
+                    <i class="pi pi-check"></i> Confirm
+                  </button>
+                  <button type="button" class="pw__btn pw__btn--sm" [class.is-active]="fact.resolution === 'dismissed'" (click)="resolveFact(fact, 'dismissed')">
+                    <i class="pi pi-times"></i> Dismiss
+                  </button>
+                  <button type="button" class="pw__btn pw__btn--sm" (click)="locateFact(fact)">
+                    <i class="pi pi-eye"></i> Show in text
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    } @else {
+      <p class="pw__panel-empty">No flagged facts. Run the pipeline to surface claims that need grounding.</p>
+    }
+  </section>
 </ng-template>
 
 @if (bubbleMenu(); as bm) {

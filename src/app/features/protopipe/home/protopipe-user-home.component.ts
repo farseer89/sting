@@ -35,7 +35,6 @@ import { ProtopipeHomeWriterComponent } from './protopipe-home-writer.component'
 import { ProtopipeHomeWriterViewState } from './protopipe-home-writer-view.state';
 import { ProtopipeHomeThinkerViewState } from './protopipe-home-thinker-view.state';
 import { ArticleGenerationRunSession } from '../article/article-generation-run-session.service';
-import { ProtopipeWriterContextPanelComponent } from './strategy/protopipe-writer-context-panel.component';
 import { ProtopipeKeywordPickerComponent } from './keyword-picker/protopipe-keyword-picker.component';
 import { ProtopipeHomeRunbooksComponent } from './runbooks/protopipe-home-runbooks.component';
 import { ProtopipeHomeIntakeDemoComponent } from './intake-demo/protopipe-home-intake-demo.component';
@@ -49,9 +48,7 @@ import { ProtopipePitchProspectBoardComponent } from '../pitch-prep/protopipe-pi
 import { ProtopipePitchPrepWizardComponent } from '../pitch-prep/protopipe-pitch-prep-wizard.component';
 import { ProtopipeLeadsListComponent } from '../leads/protopipe-leads-list.component';
 import { ProtopipeHomeThinkerBinderComponent } from './thinker/protopipe-home-thinker-binder.component';
-import { ProtopipeHomeWriterBinderComponent } from './writer-binder/protopipe-home-writer-binder.component';
 import { ProtopipeHomeAnalyticsBinderComponent } from './analytics-binder/protopipe-home-analytics-binder.component';
-import { ProtopipeWriterInspectorBridge } from '../content/writer/protopipe-writer-inspector.bridge';
 import { ProtopipeHomeSidePanelService } from './protopipe-home-side-panel.service';
 import {
   PROTOPIPE_HOME_NAV,
@@ -77,7 +74,6 @@ export type ProtopipeHomeView =
   | 'goals'
   | 'intake'
   | 'thinker'
-  | 'writer-binder'
   | 'strategy-binder'
   | 'analytics-binder';
 
@@ -99,7 +95,6 @@ function initialsFromName(name: string): string {
     ProtopipeHomeWriterViewState,
     ProtopipeHomeThinkerViewState,
     ArticleGenerationRunSession,
-    ProtopipeWriterInspectorBridge,
   ],
   imports: [
     ProtopipeKeywordPickerComponent,
@@ -108,7 +103,6 @@ function initialsFromName(name: string): string {
     ProtopipeHomeSharpenComponent,
     ProtopipeHomeWriterComponent,
     ProtopipeStrategyContextPanelComponent,
-    ProtopipeWriterContextPanelComponent,
     ThoughtPackStoreComponent,
     ThoughtPackDetailComponent,
     ProtopipeHomeRunbooksComponent,
@@ -123,7 +117,6 @@ function initialsFromName(name: string): string {
     ProtopipePitchPrepWizardComponent,
     ProtopipeLeadsListComponent,
     ProtopipeHomeThinkerBinderComponent,
-    ProtopipeHomeWriterBinderComponent,
     ProtopipeHomeAnalyticsBinderComponent,
   ],
   templateUrl: './protopipe-user-home.component.html',
@@ -153,7 +146,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
       return false;
     }
     const view = this.activeView();
-    return view === 'keywords' || view === 'strategy' || view === 'writer';
+    return view === 'keywords' || view === 'strategy';
   });
 
   readonly showKeywordSidePanel = computed(
@@ -162,10 +155,6 @@ export class ProtopipeUserHomeComponent implements OnInit {
 
   readonly showStrategySidePanel = computed(
     () => this.showSidePanel() && this.activeView() === 'strategy',
-  );
-
-  readonly showWriterSidePanel = computed(
-    () => this.showSidePanel() && this.activeView() === 'writer',
   );
 
   readonly sidePanelArticleOpen = computed(
@@ -223,7 +212,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   readonly isThinkerFocus = computed(() => this.activeView() === 'thinker');
   readonly isBuildBookFocus = computed(() => this.activeView() === 'build-book');
   readonly isRailHidden = computed(
-    () => this.isWriterFocus() || this.isBuildBookFocus() || this.isThinkerFocus(),
+    () => this.isBuildBookFocus() || this.isThinkerFocus(),
   );
 
   ngOnInit(): void {
@@ -337,11 +326,6 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.sidePanel.setOpen(false);
       this.activeNavId.set(item.id);
       this.activeView.set('thinker');
-    } else if (item.id === 'dev-writer') {
-      this.leaveWriterFocus();
-      this.sidePanel.setOpen(false);
-      this.activeNavId.set(item.id);
-      this.activeView.set('writer-binder');
     } else if (item.id === 'intake-studio') {
       const siteId = this.siteId();
       void this.router.navigate(['/protopipe/lab/intake-studio'], {

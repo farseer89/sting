@@ -148,30 +148,110 @@
         <p class="helper">{{ copy().step2Helper }}</p>
 
         <div class="field">
-          <div class="chip-input">
-            <input
-              #serviceInput
-              id="serviceDraft"
-              type="text"
-              pInputText
-              [value]="serviceDraft()"
-              (input)="onServiceDraftInput($any($event.target).value)"
-              (keydown.enter)="addService($event)"
-              [disabled]="services().length >= maxServices"
-              placeholder="e.g. EV charger installation"
-            />
-            <button
-              type="button"
-              class="chip-add"
-              (click)="addService($event)"
-              [disabled]="!serviceDraft().trim() || services().length >= maxServices"
-            >
-              <i class="pi pi-plus" aria-hidden="true"></i>
-              Add
-            </button>
-          </div>
+          @if (!isStrategyOnly()) {
+            @if (offerScanning()) {
+              <p class="offer-scan" aria-live="polite">Scanning your website…</p>
+            } @else if (offerScanError(); as scanErr) {
+              <p class="offer-scan offer-scan--error">{{ scanErr }}</p>
+            }
 
-          @if (services().length > 0) {
+            @if (siteFoundInServices().length > 0) {
+              <section class="offer-section" aria-labelledby="offer-found-heading">
+                <h2 id="offer-found-heading" class="offer-section__title">Found on your site</h2>
+                <ul class="chip-list" aria-label="Services found on your site">
+                  @for (svc of siteFoundInServices(); track svc) {
+                    <li class="chip">
+                      <span>{{ svc }}</span>
+                      <button
+                        type="button"
+                        class="chip-remove"
+                        (click)="removeServiceByName(svc)"
+                        [attr.aria-label]="'Remove ' + svc"
+                      >
+                        <i class="pi pi-times" aria-hidden="true"></i>
+                      </button>
+                    </li>
+                  }
+                </ul>
+              </section>
+            }
+
+            @if (tradeLabel(); as trade) {
+              @if (availableTradeSuggestions().length > 0) {
+                <section class="offer-section" aria-labelledby="offer-trade-heading">
+                  <h2 id="offer-trade-heading" class="offer-section__title">
+                    Common for {{ trade }} — tap to add
+                  </h2>
+                  <ul class="offer-suggestions" aria-label="Suggested services for your trade">
+                    @for (svc of availableTradeSuggestions(); track svc) {
+                      <li>
+                        <button
+                          type="button"
+                          class="offer-suggestion"
+                          (click)="addSuggestedService(svc)"
+                          [disabled]="services().length >= maxServices"
+                        >
+                          <i class="pi pi-plus" aria-hidden="true"></i>
+                          {{ svc }}
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                </section>
+              }
+            }
+          }
+
+          <section class="offer-section" aria-labelledby="offer-manual-heading">
+            <h2 id="offer-manual-heading" class="offer-section__title">
+              {{ isStrategyOnly() ? 'Services to test' : 'Add another service' }}
+            </h2>
+            <div class="chip-input">
+              <input
+                #serviceInput
+                id="serviceDraft"
+                type="text"
+                pInputText
+                [value]="serviceDraft()"
+                (input)="onServiceDraftInput($any($event.target).value)"
+                (keydown.enter)="addService($event)"
+                [disabled]="services().length >= maxServices"
+                [placeholder]="isStrategyOnly() ? 'e.g. EV charger installation' : 'e.g. emergency call-outs'"
+              />
+              <button
+                type="button"
+                class="chip-add"
+                (click)="addService($event)"
+                [disabled]="!serviceDraft().trim() || services().length >= maxServices"
+              >
+                <i class="pi pi-plus" aria-hidden="true"></i>
+                Add
+              </button>
+            </div>
+          </section>
+
+          @if (otherServices().length > 0) {
+            <section class="offer-section" aria-labelledby="offer-other-heading">
+              <h2 id="offer-other-heading" class="offer-section__title">Also selling</h2>
+              <ul class="chip-list" aria-label="Other services added">
+                @for (svc of otherServices(); track svc) {
+                  <li class="chip">
+                    <span>{{ svc }}</span>
+                    <button
+                      type="button"
+                      class="chip-remove"
+                      (click)="removeServiceByName(svc)"
+                      [attr.aria-label]="'Remove ' + svc"
+                    >
+                      <i class="pi pi-times" aria-hidden="true"></i>
+                    </button>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+
+          @if (isStrategyOnly() && services().length > 0) {
             <ul class="chip-list" aria-label="Services added">
               @for (svc of services(); track svc; let i = $index) {
                 <li class="chip">
@@ -188,6 +268,7 @@
               }
             </ul>
           }
+
           <small class="helper-inline">
             Add up to {{ maxServices }}. Press Enter or tap Add.
           </small>

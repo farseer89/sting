@@ -145,6 +145,9 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
 
   selectSection(section: DiscoveryBookSection): void {
     this.activeSection.set(section);
+    if (section === 'onboarding:offer') {
+      void this.onboardingStore.ensureOfferScan();
+    }
     if (!isOnboardingSection(section)) {
       this.syncWizardStep(section);
     }

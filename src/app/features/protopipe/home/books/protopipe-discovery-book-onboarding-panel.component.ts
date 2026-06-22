@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  effect,
   inject,
   input,
   output,
@@ -48,6 +49,28 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
   readonly marketScopeOptions = MARKET_SCOPE_OPTIONS;
 
   readonly draft = this.store.draftSnapshot;
+
+  constructor() {
+    effect(() => {
+      if (this.stepId() === 'onboarding:offer') {
+        void this.store.ensureOfferScan();
+      }
+    });
+  }
+
+  otherServices(): string[] {
+    const found = new Set(this.store.siteFoundServices().map((s) => s.toLowerCase()));
+    return this.draft().services.filter((s) => !found.has(s.toLowerCase()));
+  }
+
+  removeServiceByName(name: string): void {
+    const index = this.draft().services.findIndex(
+      (s) => s.toLowerCase() === name.toLowerCase(),
+    );
+    if (index >= 0) {
+      this.store.removeService(index);
+    }
+  }
 
   selectedLocation() {
     return locationFromDraft(this.draft());

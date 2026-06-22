@@ -37,7 +37,8 @@ export const DISCOVERY_BOOK_ONBOARDING_STEPS: readonly DiscoveryBookOnboardingSt
     navLabel: 'Your offer',
     kicker: 'Your offer',
     title: 'What services are you trying to sell?',
-    helper: 'Services drive your keyword suggestions and discovery inputs.',
+    helper:
+      "Some we've pre-filled from your site and industry — remove anything that doesn't fit, then add what's missing.",
   },
   {
     onboardingStep: 3,

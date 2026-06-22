@@ -37,35 +37,94 @@
     }
 
     @case ('onboarding:offer') {
-      <div class="kb-chip-input">
-        <input
-          type="text"
-          pInputText
-          [ngModel]="store.serviceDraft()"
-          (ngModelChange)="store.onServiceDraftInput($event)"
-          (keydown.enter)="store.addService(); $event.preventDefault()"
-          placeholder="e.g. EV charger installation"
-        />
-        <button type="button" class="kb-chip-add" (click)="store.addService()">
-          Add
-        </button>
-      </div>
-      @if (draft().services.length > 0) {
-        <ul class="kb-onboarding-chips" aria-label="Services added">
-          @for (svc of draft().services; track svc; let i = $index) {
-            <li class="kb-onboarding-chip">
-              <span class="kb-onboarding-chip__label">{{ svc }}</span>
-              <button
-                type="button"
-                class="kb-chip-remove"
-                (click)="store.removeService(i)"
-                [attr.aria-label]="'Remove ' + svc"
-              >
-                <i class="pi pi-times" aria-hidden="true"></i>
-              </button>
-            </li>
-          }
-        </ul>
+      @if (store.offerScanning()) {
+        <p class="kb-offer-scan" aria-live="polite">Scanning your website…</p>
+      } @else if (store.offerScanError(); as scanErr) {
+        <p class="kb-offer-scan kb-offer-scan--error">{{ scanErr }}</p>
+      }
+
+      @if (store.siteFoundInServices().length > 0) {
+        <section class="kb-offer-section" aria-labelledby="kb-offer-found-heading">
+          <h3 id="kb-offer-found-heading" class="kb-offer-section__title">Found on your site</h3>
+          <ul class="kb-onboarding-chips" aria-label="Services found on your site">
+            @for (svc of store.siteFoundInServices(); track svc) {
+              <li class="kb-onboarding-chip">
+                <span class="kb-onboarding-chip__label">{{ svc }}</span>
+                <button
+                  type="button"
+                  class="kb-chip-remove"
+                  (click)="removeServiceByName(svc)"
+                  [attr.aria-label]="'Remove ' + svc"
+                >
+                  <i class="pi pi-times" aria-hidden="true"></i>
+                </button>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      @if (store.tradeLabel(); as trade) {
+        @if (store.availableTradeSuggestions().length > 0) {
+          <section class="kb-offer-section" aria-labelledby="kb-offer-trade-heading">
+            <h3 id="kb-offer-trade-heading" class="kb-offer-section__title">
+              Common for {{ trade }} — tap to add
+            </h3>
+            <ul class="kb-offer-suggestions" aria-label="Suggested services for your trade">
+              @for (svc of store.availableTradeSuggestions(); track svc) {
+                <li>
+                  <button
+                    type="button"
+                    class="kb-offer-suggestion"
+                    (click)="store.addSuggestedService(svc)"
+                    [disabled]="draft().services.length >= 8"
+                  >
+                    <i class="pi pi-plus" aria-hidden="true"></i>
+                    {{ svc }}
+                  </button>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      }
+
+      <section class="kb-offer-section" aria-labelledby="kb-offer-manual-heading">
+        <h3 id="kb-offer-manual-heading" class="kb-offer-section__title">Add another service</h3>
+        <div class="kb-chip-input">
+          <input
+            type="text"
+            pInputText
+            [ngModel]="store.serviceDraft()"
+            (ngModelChange)="store.onServiceDraftInput($event)"
+            (keydown.enter)="store.addService(); $event.preventDefault()"
+            placeholder="e.g. emergency call-outs"
+          />
+          <button type="button" class="kb-chip-add" (click)="store.addService()">
+            Add
+          </button>
+        </div>
+      </section>
+
+      @if (otherServices().length > 0) {
+        <section class="kb-offer-section" aria-labelledby="kb-offer-other-heading">
+          <h3 id="kb-offer-other-heading" class="kb-offer-section__title">Also selling</h3>
+          <ul class="kb-onboarding-chips" aria-label="Other services added">
+            @for (svc of otherServices(); track svc) {
+              <li class="kb-onboarding-chip">
+                <span class="kb-onboarding-chip__label">{{ svc }}</span>
+                <button
+                  type="button"
+                  class="kb-chip-remove"
+                  (click)="removeServiceByName(svc)"
+                  [attr.aria-label]="'Remove ' + svc"
+                >
+                  <i class="pi pi-times" aria-hidden="true"></i>
+                </button>
+              </li>
+            }
+          </ul>
+        </section>
       }
     }
 

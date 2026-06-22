@@ -91,6 +91,12 @@ export class ProtopipeOnboardingComponent implements OnInit {
   // chip add/remove UX stays simple; drafts hold the in-progress text entry.
   readonly services = signal<string[]>([]);
   readonly serviceDraft = signal('');
+  readonly offerScanning = signal(false);
+  readonly offerScanError = signal<string | null>(null);
+  readonly offerScannedUrl = signal('');
+  readonly siteFoundServices = signal<string[]>([]);
+  readonly tradeLabel = signal<string | null>(null);
+  readonly tradeSuggestions = signal<string[]>([]);
   readonly competitors = signal<string[]>([]);
   readonly competitorDraft = signal('');
   readonly targetCustomerSites = signal<string[]>([]);
@@ -137,7 +143,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
         : 'What services are you trying to sell?',
       step2Helper: strategy
         ? 'Add the services you want to test — these drive your market research.'
-        : 'Add the things you want more customers for — one at a time. These drive your keyword suggestions.',
+        : "Some we've pre-filled from your site and industry — remove anything that doesn't fit, then add what's missing.",
       step4Question: 'Businesses you want to reach',
       step4Helper:
         "Add a few companies like the customers you want — e.g. acme-engineering.com. We'll scan their sites to learn what they do.",
@@ -219,6 +225,17 @@ export class ProtopipeOnboardingComponent implements OnInit {
     effect(() => {
       const s = this.step();
       setTimeout(() => this.focusForStep(s), 50);
+      if (s === 2) {
+        void this.ensureOfferScan();
+      }
+    });
+
+    effect(() => {
+      const url = (this.formValue().websiteUrl ?? '').trim();
+      const scanned = this.offerScannedUrl();
+      if (scanned && url !== scanned) {
+        this.invalidateOfferScan();
+      }
     });
   }
 
@@ -272,6 +289,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
 
   selectMode(mode: OnboardingModeId): void {
     this.onboardingMode.set(mode);
+    this.invalidateOfferScan();
     const urlControl = this.form.controls.websiteUrl;
     if (mode === 'existing_site') {
       urlControl.setValidators([Validators.required, Validators.maxLength(300)]);
@@ -288,6 +306,85 @@ export class ProtopipeOnboardingComponent implements OnInit {
   addService(event?: Event): void {
     event?.preventDefault();
     this.commitDraft(this.serviceDraft, this.services, MAX_SERVICES);
+  }
+
+  addSuggestedService(service: string): void {
+    const label = service.trim();
+    if (!label) return;
+    this.services.update((list) => {
+      if (list.length >= MAX_SERVICES) return list;
+      if (list.some((s) => s.toLowerCase() === label.toLowerCase())) return list;
+      return [...list, label];
+    });
+  }
+
+  siteFoundInServices(): string[] {
+    const found = new Set(this.siteFoundServices().map((s) => s.toLowerCase()));
+    return this.services().filter((s) => found.has(s.toLowerCase()));
+  }
+
+  otherServices(): string[] {
+    const found = new Set(this.siteFoundServices().map((s) => s.toLowerCase()));
+    return this.services().filter((s) => !found.has(s.toLowerCase()));
+  }
+
+  availableTradeSuggestions(): string[] {
+    const selected = new Set(this.services().map((s) => s.toLowerCase()));
+    return this.tradeSuggestions().filter((s) => !selected.has(s.toLowerCase()));
+  }
+
+  removeServiceByName(name: string): void {
+    const index = this.services().findIndex((s) => s.toLowerCase() === name.toLowerCase());
+    if (index >= 0) {
+      this.removeService(index);
+    }
+  }
+
+  invalidateOfferScan(): void {
+    this.offerScannedUrl.set('');
+    this.siteFoundServices.set([]);
+    this.tradeLabel.set(null);
+    this.tradeSuggestions.set([]);
+    this.offerScanError.set(null);
+  }
+
+  async ensureOfferScan(): Promise<void> {
+    if (this.isStrategyOnly()) return;
+
+    const url = (this.form.controls.websiteUrl.value ?? '').trim();
+    if (!url) {
+      this.offerScanError.set('Add your website on step 1 to scan services.');
+      return;
+    }
+
+    if (this.offerScannedUrl() === url && !this.offerScanning()) {
+      return;
+    }
+
+    const siteId = this.siteId();
+    if (!siteId) {
+      this.offerScanError.set('No site loaded.');
+      return;
+    }
+
+    this.offerScanning.set(true);
+    this.offerScanError.set(null);
+
+    try {
+      const res = await this.api.scanOffer(siteId, { websiteUrl: url });
+      this.offerScannedUrl.set(url);
+      this.siteFoundServices.set(res.siteServices);
+      this.tradeLabel.set(res.tradeLabel ?? res.inferredTrade ?? null);
+      this.tradeSuggestions.set(res.tradeSuggestions);
+
+      if (res.siteServices.length > 0 && this.services().length === 0) {
+        this.services.set(res.siteServices.slice(0, MAX_SERVICES));
+      }
+    } catch (err) {
+      this.offerScanError.set(parseProtopipeApiError(err, 'Could not scan your website.'));
+    } finally {
+      this.offerScanning.set(false);
+    }
   }
 
   removeService(index: number): void {

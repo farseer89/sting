@@ -307,6 +307,11 @@
                     <app-protopipe-home-ads-book />
                   </section>
                 }
+                @case ('research-book') {
+                  <section class="glass glass--full glass--premiere" aria-label="Research book">
+                    <app-protopipe-home-research-book />
+                  </section>
+                }
                 @case ('business-details') {
                   <section class="glass glass--full glass--premiere" aria-label="Business book">
                     <app-protopipe-home-business-details (goSharpen)="selectNavItem({ id: 'start-sharpen', label: 'Sharpen' })" />

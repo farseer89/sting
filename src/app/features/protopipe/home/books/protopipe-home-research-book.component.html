@@ -1,0 +1,234 @@
+<div class="rb-shell">
+
+  <header class="rb-masthead">
+    <div class="rb-masthead__left">
+      <h1 class="rb-masthead__title">Research book</h1>
+      <p class="rb-masthead__deck">
+        Experiment with topic research — SERP fetch, page scrape, and citable fact extraction. Pin facts you trust for later article use.
+      </p>
+    </div>
+    <div class="rb-masthead__meta">
+      <span class="rb-masthead__cost">Total spend {{ formatCost(store.totalCostUsd()) }}</span>
+      <span class="rb-masthead__recipe">Recipe: serp_extract</span>
+    </div>
+  </header>
+
+  <div class="rb-binder">
+    <nav class="rb-binder-nav" aria-label="Research book sections">
+      <button
+        type="button"
+        class="rb-binder-nav__item"
+        [class.rb-binder-nav__item--active]="store.section() === 'new'"
+        (click)="selectSection('new')"
+      >
+        New research
+      </button>
+      <button
+        type="button"
+        class="rb-binder-nav__item"
+        [class.rb-binder-nav__item--active]="store.section() === 'runs'"
+        (click)="selectSection('runs')"
+      >
+        Saved runs
+        @if (store.runs().length) {
+          <span class="rb-binder-nav__count">{{ store.runs().length }}</span>
+        }
+      </button>
+      <button
+        type="button"
+        class="rb-binder-nav__item"
+        [class.rb-binder-nav__item--active]="store.section() === 'pinned'"
+        (click)="selectSection('pinned')"
+      >
+        Pinned facts
+        @if (store.pinnedFacts().length) {
+          <span class="rb-binder-nav__count">{{ store.pinnedFacts().length }}</span>
+        }
+      </button>
+    </nav>
+
+    <div class="rb-panel">
+      @if (store.error(); as err) {
+        <p class="rb-error" role="alert">{{ err }}</p>
+      }
+
+      @switch (store.section()) {
+        @case ('new') {
+          <section class="rb-section">
+            <h2 class="rb-section__title">Run topic research</h2>
+            <p class="rb-section__hint">
+              Fetches live SERP results, scrapes top organic pages, and extracts factual claims with source URLs.
+            </p>
+
+            <label class="rb-field">
+              <span class="rb-field__label">Topic or keyword</span>
+              <input
+                pInputText
+                class="rb-field__input"
+                [ngModel]="store.topic()"
+                (ngModelChange)="store.setTopic($event)"
+                placeholder="e.g. solar panel payback period Hawaii"
+                maxlength="200"
+              />
+            </label>
+
+            <label class="rb-field rb-field--inline">
+              <span class="rb-field__label">Pages to fetch</span>
+              <p-select
+                [options]="maxPageOptions"
+                optionLabel="label"
+                optionValue="value"
+                [ngModel]="store.maxPages()"
+                (ngModelChange)="store.setMaxPages($event)"
+                appendTo="body"
+              />
+            </label>
+
+            <div class="rb-actions">
+              <p-button
+                label="Run research"
+                icon="pi pi-search"
+                [loading]="store.running()"
+                [disabled]="store.running() || !store.topic().trim()"
+                (onClick)="store.runResearch()"
+              />
+            </div>
+
+            @if (store.running()) {
+              <div class="rb-running">
+                <p-progressSpinner strokeWidth="4" [style]="{ width: '28px', height: '28px' }" />
+                <span>Fetching SERP, scraping pages, extracting facts…</span>
+              </div>
+            }
+          </section>
+        }
+
+        @case ('runs') {
+          <section class="rb-section rb-section--split">
+            @if (store.loading() && !store.runs().length) {
+              <div class="rb-empty">
+                <p-progressSpinner strokeWidth="4" [style]="{ width: '32px', height: '32px' }" />
+              </div>
+            } @else if (!store.runs().length) {
+              <p class="rb-empty">No runs yet — start with <button type="button" class="rb-link" (click)="selectSection('new')">New research</button>.</p>
+            } @else {
+              <aside class="rb-run-list">
+                <h2 class="rb-run-list__title">Runs</h2>
+                @for (run of store.runs(); track run.id) {
+                  <button
+                    type="button"
+                    class="rb-run-card"
+                    [class.rb-run-card--active]="store.activeRun()?.id === run.id"
+                    (click)="store.selectRun(run.id)"
+                  >
+                    <span class="rb-run-card__topic">{{ run.topic }}</span>
+                    <span class="rb-run-card__meta">
+                      {{ formatCost(run.costUsd) }} · {{ formatDuration(run.durationMs) }} · {{ run.facts.length }} facts
+                    </span>
+                  </button>
+                }
+              </aside>
+
+              @if (store.activeRun(); as run) {
+                <div class="rb-run-detail">
+                  <header class="rb-run-detail__head">
+                    <h2 class="rb-run-detail__title">{{ run.topic }}</h2>
+                    <div class="rb-run-detail__chips">
+                      <p-tag [value]="run.status" [severity]="statusSeverity(run.status)" />
+                      <span class="rb-chip">SERP {{ formatCost(run.serpCostUsd) }}</span>
+                      <span class="rb-chip">LLM {{ formatCost(run.llmCostUsd) }}</span>
+                      <span class="rb-chip">{{ formatDuration(run.durationMs) }}</span>
+                    </div>
+                    @if (run.error) {
+                      <p class="rb-run-detail__error">{{ run.error }}</p>
+                    }
+                  </header>
+
+                  <h3 class="rb-subhead">Sources ({{ run.sources.length }})</h3>
+                  <ul class="rb-sources">
+                    @for (src of run.sources; track src.url) {
+                      <li class="rb-sources__item">
+                        <a [href]="src.url" target="_blank" rel="noopener" class="rb-sources__link">
+                          #{{ src.serpPosition }} {{ src.title || src.domain }}
+                        </a>
+                        <p-tag [value]="src.fetchStatus" [severity]="fetchSeverity(src.fetchStatus)" />
+                      </li>
+                    }
+                  </ul>
+
+                  <h3 class="rb-subhead">Facts ({{ run.facts.length }})</h3>
+                  @if (!run.facts.length) {
+                    <p class="rb-muted">No facts extracted — check sources or try a broader topic.</p>
+                  } @else {
+                    <ul class="rb-facts">
+                      @for (fact of run.facts; track fact.id) {
+                        <li class="rb-fact" [class.rb-fact--pinned]="fact.status === 'pinned'" [class.rb-fact--rejected]="fact.status === 'rejected'">
+                          <p class="rb-fact__claim">{{ fact.claim }}</p>
+                          @if (fact.excerpt) {
+                            <p class="rb-fact__excerpt">"{{ fact.excerpt }}"</p>
+                          }
+                          <a [href]="fact.sourceUrl" target="_blank" rel="noopener" class="rb-fact__source">
+                            {{ fact.sourceTitle || fact.sourceUrl }}
+                          </a>
+                          <div class="rb-fact__actions">
+                            @if (fact.status !== 'pinned') {
+                              <p-button
+                                label="Pin"
+                                size="small"
+                                severity="success"
+                                [outlined]="true"
+                                (onClick)="store.setFactStatus(run.id, fact.id, 'pinned')"
+                              />
+                            }
+                            @if (fact.status !== 'rejected') {
+                              <p-button
+                                label="Reject"
+                                size="small"
+                                severity="secondary"
+                                [outlined]="true"
+                                (onClick)="store.setFactStatus(run.id, fact.id, 'rejected')"
+                              />
+                            }
+                            @if (fact.status !== 'pending') {
+                              <p-button
+                                label="Reset"
+                                size="small"
+                                [text]="true"
+                                (onClick)="store.setFactStatus(run.id, fact.id, 'pending')"
+                              />
+                            }
+                          </div>
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+              }
+            }
+          </section>
+        }
+
+        @case ('pinned') {
+          <section class="rb-section">
+            <h2 class="rb-section__title">Pinned facts</h2>
+            @if (!store.pinnedFacts().length) {
+              <p class="rb-empty">Pin facts from saved runs to build a curated research corpus.</p>
+            } @else {
+              <ul class="rb-facts">
+                @for (item of store.pinnedFacts(); track item.fact.id) {
+                  <li class="rb-fact rb-fact--pinned">
+                    <p class="rb-fact__topic">{{ item.run.topic }}</p>
+                    <p class="rb-fact__claim">{{ item.fact.claim }}</p>
+                    <a [href]="item.fact.sourceUrl" target="_blank" rel="noopener" class="rb-fact__source">
+                      {{ item.fact.sourceTitle || item.fact.sourceUrl }}
+                    </a>
+                  </li>
+                }
+              </ul>
+            }
+          </section>
+        }
+      }
+    </div>
+  </div>
+</div>

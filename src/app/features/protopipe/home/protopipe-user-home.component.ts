@@ -44,6 +44,7 @@ import { ProtopipeHomeBuildBookComponent } from './books/protopipe-home-build-bo
 import { ProtopipeHomeBusinessDetailsComponent } from './books/protopipe-home-business-details.component';
 import { ProtopipeHomeGoalsComponent } from './books/protopipe-home-goals.component';
 import { ProtopipeHomeAdsBookComponent } from './books/protopipe-home-ads-book.component';
+import { ProtopipeHomeResearchBookComponent } from './books/protopipe-home-research-book.component';
 import { ProtopipePitchProspectBoardComponent } from '../pitch-prep/protopipe-pitch-prospect-board.component';
 import { ProtopipePitchPrepWizardComponent } from '../pitch-prep/protopipe-pitch-prep-wizard.component';
 import { ProtopipeLeadsListComponent } from '../leads/protopipe-leads-list.component';
@@ -73,6 +74,7 @@ export type ProtopipeHomeView =
   | 'audience-book'
   | 'build-book'
   | 'ads-book'
+  | 'research-book'
   | 'business-details'
   | 'goals'
   | 'intake'
@@ -126,6 +128,7 @@ type HomeFocusHistoryKind = 'thinker' | 'writer';
     ProtopipeHomeBusinessDetailsComponent,
     ProtopipeHomeGoalsComponent,
     ProtopipeHomeAdsBookComponent,
+    ProtopipeHomeResearchBookComponent,
     ProtopipePitchProspectBoardComponent,
     ProtopipePitchPrepWizardComponent,
     ProtopipeLeadsListComponent,
@@ -326,6 +329,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.openBuildBookView();
     } else if (item.id === 'books-ads') {
       this.openAdsBookView();
+    } else if (item.id === 'books-research') {
+      this.openResearchBookView();
     } else if (item.id === 'books-business') {
       this.openBusinessDetailsView();
     } else if (item.id === 'books-goals') {
@@ -543,6 +548,13 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.sidePanel.setOpen(false);
     this.activeNavId.set('books-ads');
     this.activeView.set('ads-book');
+  }
+
+  openResearchBookView(): void {
+    this.leaveWriterFocus();
+    this.sidePanel.setOpen(false);
+    this.activeNavId.set('books-research');
+    this.activeView.set('research-book');
   }
 
   openBusinessDetailsView(): void {

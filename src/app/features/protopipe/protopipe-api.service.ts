@@ -157,6 +157,12 @@ import type {
   PitchPrepStyleResponse,
   PatchPitchMediaAssetRequest,
   PatchPitchMediaAssetResponse,
+  CreateResearchBookRunRequest,
+  CreateResearchBookRunResponse,
+  ListResearchBookRunsResponse,
+  GetResearchBookRunResponse,
+  PatchResearchBookFactRequest,
+  PatchResearchBookFactResponse,
 } from '@hive/contracts';
 import { Observable, firstValueFrom, shareReplay } from 'rxjs';
 import { protopipeApiUrl } from './protopipe-http.util';
@@ -1415,6 +1421,52 @@ export class ProtopipeApiService {
     return firstValueFrom(
       this.http.patch<PitchPrepStyleResponse>(
         protopipeApiUrl(ProtopipeEndpoints.pitchPrepStyle.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  createResearchBookRun(
+    siteId: string,
+    body: CreateResearchBookRunRequest,
+  ): Promise<CreateResearchBookRunResponse> {
+    return firstValueFrom(
+      this.http.post<CreateResearchBookRunResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.researchBookCreateRun.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  listResearchBookRuns(siteId: string): Promise<ListResearchBookRunsResponse> {
+    return firstValueFrom(
+      this.http.get<ListResearchBookRunsResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.researchBookListRuns.path, { siteId }),
+      ),
+    );
+  }
+
+  getResearchBookRun(siteId: string, runId: string): Promise<GetResearchBookRunResponse> {
+    return firstValueFrom(
+      this.http.get<GetResearchBookRunResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.researchBookGetRun.path, { siteId, runId }),
+      ),
+    );
+  }
+
+  patchResearchBookFact(
+    siteId: string,
+    runId: string,
+    factId: string,
+    body: PatchResearchBookFactRequest,
+  ): Promise<PatchResearchBookFactResponse> {
+    return firstValueFrom(
+      this.http.patch<PatchResearchBookFactResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.researchBookPatchFact.path, {
+          siteId,
+          runId,
+          factId,
+        }),
         body,
       ),
     );

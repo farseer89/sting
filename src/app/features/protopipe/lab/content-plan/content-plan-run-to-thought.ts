@@ -283,6 +283,132 @@ function phaseStatus(
   return 'complete';
 }
 
+const STRATEGY_INTEL_STAGE_LABELS: Record<string, string> = {
+  strategy_intel: 'Starting',
+  keyword_intel: 'Gap synthesis',
+  keyword_uq: 'Unanswered questions',
+  cluster_intel: 'Cluster mechanism',
+  avatar_intel: 'Avatar journey',
+  thesis_seeds: 'Thesis seeds',
+};
+
+const STRATEGY_INTEL_PHASES = [
+  {
+    id: 'intel:keyword',
+    label: 'Keyword-level competitive intel',
+    detail: 'Gap synthesis & unanswered questions per calendar keyword',
+    stages: ['strategy_intel', 'keyword_intel', 'keyword_uq'],
+  },
+  {
+    id: 'intel:cluster',
+    label: 'Cluster strategy themes',
+    detail: 'Shared narratives per theme',
+    stages: ['cluster_intel'],
+  },
+  {
+    id: 'intel:journey',
+    label: 'Audience journey maps',
+    detail: 'Voice and intent per avatar',
+    stages: ['avatar_intel'],
+  },
+  {
+    id: 'intel:thesis',
+    label: 'Thesis seeds',
+    detail: 'Article angle per calendar keyword',
+    stages: ['thesis_seeds'],
+  },
+  {
+    id: 'intel:backlog',
+    label: 'Harvest topic backlog',
+    detail: 'Unscheduled candidates for later',
+    stages: [] as string[],
+  },
+] as const;
+
+function activeStrategyIntelPhaseIndex(stage: string | undefined): number {
+  if (!stage || STRATEGY_INTEL_PHASES[0].stages.includes(stage)) return 0;
+  if (stage === 'cluster_intel') return 1;
+  if (stage === 'avatar_intel') return 2;
+  if (stage === 'thesis_seeds') return 3;
+  return 4;
+}
+
+function strategyIntelProgressDetail(
+  progress: ProtopipeSiteContentPlan['progress'],
+): string | undefined {
+  if (!progress) return undefined;
+  const stageLabel = STRATEGY_INTEL_STAGE_LABELS[progress.stage] ?? progress.stage;
+  if (progress.total > 0) {
+    const current = Math.min(progress.scanned + 1, progress.total);
+    return `${stageLabel} · ${current} of ${progress.total}`;
+  }
+  return stageLabel;
+}
+
+function strategyIntelRunningSummary(
+  progress: ProtopipeSiteContentPlan['progress'],
+): string {
+  return strategyIntelProgressDetail(progress) ?? 'Running strategy intel…';
+}
+
+function resolveStrategyIntelSubStep(
+  phaseIndex: number,
+  plan: ProtopipeSiteContentPlan,
+  stepStatus: ThoughtStepStatus,
+): ThoughtSubStep {
+  const phase = STRATEGY_INTEL_PHASES[phaseIndex];
+  const base: ThoughtSubStep = {
+    id: phase.id,
+    label: phase.label,
+    detail: phase.detail,
+    status: phaseStatus(phaseIndex, STRATEGY_INTEL_PHASES.length, stepStatus),
+  };
+
+  if (stepStatus !== 'running') return base;
+
+  const activeIdx = activeStrategyIntelPhaseIndex(plan.progress?.stage);
+  const progressDetail = strategyIntelProgressDetail(plan.progress);
+
+  if (phaseIndex < activeIdx) {
+    return { ...base, status: 'complete' };
+  }
+  if (phaseIndex > activeIdx) {
+    return { ...base, status: 'pending' };
+  }
+  return {
+    ...base,
+    status: 'running',
+    detail: progressDetail ?? phase.detail,
+  };
+}
+
+function buildStrategyIntelSubSteps(
+  plan: ProtopipeSiteContentPlan,
+  stepStatus: ThoughtStepStatus,
+): ThoughtSubStep[] {
+  if (plan.strategyIntel && stepStatus === 'complete') {
+    return STRATEGY_INTEL_PHASES.map((phase) => ({
+      id: phase.id,
+      label: phase.label,
+      detail:
+        phase.id === 'intel:keyword'
+          ? `${plan.strategyIntel!.keywordIntel?.length ?? 0} keyword intel row(s)`
+          : phase.id === 'intel:cluster'
+            ? `${plan.strategyIntel!.clusterIntel?.length ?? 0} cluster theme(s)`
+            : phase.id === 'intel:journey'
+              ? `${plan.strategyIntel!.avatarIntel?.length ?? 0} audience journey(s)`
+              : phase.id === 'intel:thesis'
+                ? `${plan.strategyIntel!.thesisSeeds?.length ?? 0} thesis seed(s)`
+                : `${plan.backlog?.length ?? 0} backlog candidate(s)`,
+      status: 'complete' as ThoughtStepStatus,
+    }));
+  }
+
+  return STRATEGY_INTEL_PHASES.map((_, index) =>
+    resolveStrategyIntelSubStep(index, plan, stepStatus),
+  );
+}
+
 function keywordDetail(kw: ProtopipeScoredKeyword): string {
   const parts = [tierLabel(kw.tier), `score ${kw.opportunityScore}`];
   const vol = formatVolume(kw.searchVolume);
@@ -484,49 +610,8 @@ function buildContentPlanSubSteps(
       ];
     }
 
-    case 'strategy_intel': {
-      const phases: ThoughtSubStep[] = [
-        {
-          id: 'intel:keyword',
-          label: 'Keyword-level competitive intel',
-          detail: 'Angles and gaps from deep scans',
-          status: phaseStatus(0, 4, stepStatus),
-        },
-        {
-          id: 'intel:cluster',
-          label: 'Cluster strategy themes',
-          detail: 'Shared narratives per theme',
-          status: phaseStatus(1, 4, stepStatus),
-        },
-        {
-          id: 'intel:journey',
-          label: 'Audience journey maps',
-          detail: 'Voice and intent per avatar',
-          status: phaseStatus(2, 4, stepStatus),
-        },
-        {
-          id: 'intel:backlog',
-          label: 'Harvest topic backlog',
-          detail: 'Unscheduled candidates for later',
-          status: phaseStatus(3, 4, stepStatus),
-        },
-      ];
-      if (plan.strategyIntel && stepStatus === 'complete') {
-        return phases.map((p) => ({
-          ...p,
-          status: 'complete' as ThoughtStepStatus,
-          detail:
-            p.id === 'intel:keyword'
-              ? `${plan.strategyIntel!.keywordIntel?.length ?? 0} keyword intel row(s)`
-              : p.id === 'intel:cluster'
-                ? `${plan.strategyIntel!.clusterIntel?.length ?? 0} cluster theme(s)`
-                : p.id === 'intel:journey'
-                  ? `${plan.strategyIntel!.avatarIntel?.length ?? 0} audience journey(s)`
-                  : `${plan.backlog?.length ?? 0} backlog candidate(s)`,
-        }));
-      }
-      return phases;
-    }
+    case 'strategy_intel':
+      return buildStrategyIntelSubSteps(plan, stepStatus);
 
     default:
       return [];
@@ -585,7 +670,10 @@ export function contentPlanRunToThought(plan: ProtopipeSiteContentPlan): Thought
       id: step,
       label: meta.label,
       description: meta.description,
-      summary: finished?.note ?? meta.summary,
+      summary:
+        status === 'running' && step === 'strategy_intel'
+          ? strategyIntelRunningSummary(plan.progress)
+          : finished?.note ?? meta.summary,
       status,
       costUsd: stepCostUsd,
       startedAt: started?.startedAt,

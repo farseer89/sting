@@ -186,6 +186,10 @@ function writeStepSection(w: PdfWriter, step: ThoughtStep, index: number, total:
     writeSubheading(w, 'Summary');
     writeParagraph(w, step.summary.trim());
   }
+  if (step.description?.trim()) {
+    writeSubheading(w, 'Description');
+    writeParagraph(w, step.description.trim());
+  }
   if (step.error?.message) {
     writeSubheading(w, 'Error');
     writeParagraph(w, step.error.message);
@@ -228,6 +232,31 @@ function writeStepSection(w: PdfWriter, step: ThoughtStep, index: number, total:
         BODY_SIZE,
         LINE_H,
       );
+    }
+  }
+
+  if (step.llmCalls?.length) {
+    writeSubheading(w, 'LLM calls');
+    for (const call of step.llmCalls) {
+      const meta = [
+        call.model,
+        call.promptVersion,
+        call.inputTokens != null ? `${call.inputTokens} in` : null,
+        call.outputTokens != null ? `${call.outputTokens} out` : null,
+        call.durationMs != null ? formatDuration(call.durationMs) : null,
+      ]
+        .filter(Boolean)
+        .join(' · ');
+      writeParagraph(w, `${call.label}${meta ? ` (${meta})` : ''}`);
+      writeSubheading(w, 'System prompt');
+      writeWrapped(w, truncateArtifactText(call.system), 'courier', MONO_SIZE, MONO_LINE_H);
+      w.y += 6;
+      writeSubheading(w, 'User prompt');
+      writeWrapped(w, truncateArtifactText(call.user), 'courier', MONO_SIZE, MONO_LINE_H);
+      w.y += 6;
+      writeSubheading(w, 'Model response');
+      writeWrapped(w, truncateArtifactText(call.response), 'courier', MONO_SIZE, MONO_LINE_H);
+      w.y += 10;
     }
   }
 }
@@ -308,7 +337,9 @@ export async function exportThoughtRunbookPdf(
   const w: PdfWriter = { doc, y: MARGIN, page: 1 };
 
   // Cover
-  writeHeading(w, 'Article Runbook', 20);
+  const coverTitle =
+    thought.thinkerKind === 'content-plan' ? 'Strategy Runbook' : 'Article Runbook';
+  writeHeading(w, coverTitle, 20);
   writeParagraph(w, thought.title);
   if (thought.summary) writeParagraph(w, thought.summary);
   writeParagraph(w, `Status: ${thought.status.toUpperCase()}`);

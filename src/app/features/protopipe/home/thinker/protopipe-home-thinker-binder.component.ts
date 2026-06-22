@@ -11,6 +11,7 @@ import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { contentPlanRunToThought } from '../../lab/content-plan/content-plan-run-to-thought';
 import { articleRunToThought } from '../../lab/thinker/article-run-to-thought';
 import { formatThinkerCostUsd, sumCosts } from '../../lab/thinker/thinker-cost';
+import { exportThoughtRunbookPdf } from '../../lab/thinker/thought-runbook-pdf';
 import { ProtopipeHomeThinkerViewState } from '../protopipe-home-thinker-view.state';
 import { ProtopipeHomeWriterViewState } from '../protopipe-home-writer-view.state';
 import {
@@ -37,6 +38,8 @@ export class ProtopipeHomeThinkerBinderComponent {
 
   readonly activeStepId = signal<string | null>(null);
   readonly activeTab = signal<ThinkerTab>('output');
+  readonly exportingRunbook = signal(false);
+  readonly exportError = signal<string | null>(null);
 
   readonly runKind = this.thinkerView.runKind;
   readonly run = this.thinkerView.run;
@@ -119,6 +122,8 @@ export class ProtopipeHomeThinkerBinderComponent {
     () => this.runKind() === 'article' && this.run()?.status === 'complete',
   );
 
+  readonly canExportRunbook = computed(() => Boolean(this.thought()));
+
   readonly hasSession = computed(() => {
     if (this.runKind() === 'content-plan') {
       return Boolean(this.thinkerView.contentPlanRun());
@@ -155,6 +160,23 @@ export class ProtopipeHomeThinkerBinderComponent {
     if (!postId) return;
     this.writerView.openPost(postId);
     this.thinkerView.openInWriter();
+  }
+
+  async exportRunbook(): Promise<void> {
+    const thought = this.thought();
+    const siteId = this.thinkerView.siteId();
+    const runId = this.thinkerView.runId();
+    if (!thought || !siteId || !runId || this.exportingRunbook()) return;
+
+    this.exportingRunbook.set(true);
+    this.exportError.set(null);
+    try {
+      await exportThoughtRunbookPdf(thought, { runId, siteId });
+    } catch {
+      this.exportError.set('Could not export runbook PDF. Try again in a moment.');
+    } finally {
+      this.exportingRunbook.set(false);
+    }
   }
 
   formatDuration(ms: number): string {

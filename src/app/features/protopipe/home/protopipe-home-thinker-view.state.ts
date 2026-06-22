@@ -86,6 +86,7 @@ export class ProtopipeHomeThinkerViewState {
     this._contentPlanRun.set(plan);
     this.content.setEditingSiteId(siteId);
     this.maybePollContentPlan(plan);
+    void this.reloadContentPlanRun();
     this.enterThinkerFocus?.();
   }
 

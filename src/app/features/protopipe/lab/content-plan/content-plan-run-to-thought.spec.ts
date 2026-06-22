@@ -174,6 +174,59 @@ describe('contentPlanRunToThought', () => {
     expect(score?.subSteps?.some((s) => s.label === 'emergency plumber')).toBe(true);
   });
 
+  it('maps strategy intel sub-steps from live progress while running', () => {
+    const thought = contentPlanRunToThought(
+      minimalPlan({
+        status: 'running',
+        currentStep: 'strategy_intel',
+        progress: { stage: 'thesis_seeds', scanned: 4, total: 12 },
+        events: [
+          {
+            step: 'audit',
+            status: 'completed',
+            startedAt: '2026-01-01T00:00:00.000Z',
+            finishedAt: '2026-01-01T00:00:05.000Z',
+          },
+          {
+            step: 'score_tier',
+            status: 'completed',
+            startedAt: '2026-01-01T00:00:05.000Z',
+            finishedAt: '2026-01-01T00:00:08.000Z',
+          },
+          {
+            step: 'cluster',
+            status: 'completed',
+            startedAt: '2026-01-01T00:00:08.000Z',
+            finishedAt: '2026-01-01T00:00:20.000Z',
+          },
+          {
+            step: 'unify',
+            status: 'completed',
+            startedAt: '2026-01-01T00:00:20.000Z',
+            finishedAt: '2026-01-01T00:00:35.000Z',
+          },
+          {
+            step: 'deep_scan',
+            status: 'completed',
+            startedAt: '2026-01-01T00:00:35.000Z',
+            finishedAt: '2026-01-01T00:01:00.000Z',
+          },
+          {
+            step: 'strategy_intel',
+            status: 'started',
+            startedAt: '2026-01-01T00:01:00.000Z',
+          },
+        ],
+      }),
+    );
+    const intel = thought.steps.find((s) => s.id === 'strategy_intel');
+    expect(intel?.status).toBe('running');
+    expect(intel?.summary).toBe('Thesis seeds · 5 of 12');
+    expect(intel?.subSteps?.find((s) => s.id === 'intel:thesis')?.status).toBe('running');
+    expect(intel?.subSteps?.find((s) => s.id === 'intel:backlog')?.status).toBe('pending');
+    expect(intel?.subSteps?.find((s) => s.id === 'intel:keyword')?.status).toBe('complete');
+  });
+
   it('surfaces failed run on active step', () => {
     const thought = contentPlanRunToThought(
       minimalPlan({

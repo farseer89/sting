@@ -19,7 +19,7 @@ import type {
   ThoughtSubStep,
   ThoughtLlmCall,
 } from './thought.model';
-import { sumCosts } from './thinker-cost';
+import { formatThinkerCostUsd, sumCosts } from './thinker-cost';
 
 /**
  * Adapter: project a live ArticleGenerationRun (the 10-step writer pipeline)
@@ -268,28 +268,37 @@ function buildImageSubSteps(
 ): ThoughtSubStep[] {
   const ig = run.artifacts.imageGeneration;
   if (ig?.slots.length) {
-    return ig.slots.map((slot) => ({
-      id: `img:${slot.id}`,
-      label: slot.label,
-      detail:
+    return ig.slots.map((slot) => {
+      const costLabel = formatThinkerCostUsd(slot.costUsd);
+      const statusDetail =
         slot.status === 'generated'
           ? 'Generated'
           : slot.status === 'failed'
             ? slot.error ?? 'Failed'
             : slot.status === 'skipped'
               ? 'Skipped'
-              : 'Planned',
-      status:
-        slot.status === 'generated'
-          ? ('complete' as ThoughtStepStatus)
-          : slot.status === 'failed'
-            ? ('failed' as ThoughtStepStatus)
-            : slot.status === 'skipped'
-              ? ('skipped' as ThoughtStepStatus)
-              : stepStatus === 'running'
-                ? ('running' as ThoughtStepStatus)
-                : ('pending' as ThoughtStepStatus),
-    }));
+              : ig.mode === 'stub' && costLabel
+                ? `Planned · est. ${costLabel}`
+                : 'Planned';
+      const detail = costLabel && slot.status === 'generated'
+        ? `${statusDetail} · ${costLabel}${ig.costEstimated ? ' est.' : ''}`
+        : statusDetail;
+      return {
+        id: `img:${slot.id}`,
+        label: slot.label,
+        detail,
+        status:
+          slot.status === 'generated'
+            ? ('complete' as ThoughtStepStatus)
+            : slot.status === 'failed'
+              ? ('failed' as ThoughtStepStatus)
+              : slot.status === 'skipped'
+                ? ('skipped' as ThoughtStepStatus)
+                : stepStatus === 'running'
+                  ? ('running' as ThoughtStepStatus)
+                  : ('pending' as ThoughtStepStatus),
+      };
+    });
   }
 
   return [
@@ -850,6 +859,7 @@ function stepOutput(
       const ig = a.imageGeneration;
       const generated = ig.generatedCount ?? 0;
       const failed = ig.failedCount ?? 0;
+      const costLabel = formatThinkerCostUsd(ig.totalCostUsd);
       const slotSummary =
         ig.mode === 'live'
           ? generated > 0
@@ -860,8 +870,11 @@ function stepOutput(
           : ig.plannedCount === 0
             ? 'Stub — no image slots'
             : `Stub — ${ig.plannedCount} slot(s) planned`;
+      const summaryWithCost = costLabel
+        ? `${slotSummary} · ${costLabel}${ig.costEstimated ? ' est.' : ''}`
+        : slotSummary;
       const outputs: ThoughtArtifact[] = [
-        json('image-generation', 'Image generation plan', ig, slotSummary),
+        json('image-generation', 'Image generation plan', ig, summaryWithCost),
         json(
           'image-style',
           'Shared style profile',
@@ -1182,7 +1195,9 @@ export function articleRunToThought(run: ArticleGenerationRunDto): Thought {
       description: meta.description,
       summary,
       status: stepStatus,
-      costUsd: sumCosts(evs.map((e) => e.cost)),
+      costUsd:
+        sumCosts(evs.map((e) => e.cost)) ??
+        (step === 'generate_images' ? run.artifacts.imageGeneration?.totalCostUsd : undefined),
       startedAt: started?.startedAt,
       finishedAt: finished?.finishedAt,
       durationMs: finished?.durationMs,

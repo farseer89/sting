@@ -28,6 +28,7 @@ function toLeadTableRow(lead: ProspectorScoredLead): LeadTableRow {
     ratingCount: lead.userRatingCount ?? undefined,
     hasWebsite: lead.websiteQuality !== 'none',
     websiteQuality: lead.websiteQuality,
+    websiteUri: lead.websiteUri ?? undefined,
     address: lead.formattedAddress ?? undefined,
     factors: factors?.length ? factors : undefined,
     runsAds: lead.runsAds,
@@ -68,6 +69,7 @@ function buildPlacesSearchBlocks(run: ProspectorRunDto): VisualizerBlock[] {
       rating: p.rating ?? undefined,
       ratingCount: p.userRatingCount ?? undefined,
       hasWebsite: Boolean(p.websiteUri),
+      websiteUri: p.websiteUri ?? undefined,
       address: p.formattedAddress ?? undefined,
     })),
   };

@@ -165,7 +165,7 @@
                   <th class="viz__lt-th viz__lt-th--score">Score</th>
                   <th class="viz__lt-th viz__lt-th--priority">Priority</th>
                   <th class="viz__lt-th viz__lt-th--rating">Rating</th>
-                  <th class="viz__lt-th viz__lt-th--web">Site</th>
+                  <th class="viz__lt-th viz__lt-th--web">Website</th>
                   <th class="viz__lt-th viz__lt-th--ads">Ads</th>
                   <th class="viz__lt-th viz__lt-th--factors">Factors</th>
                 </tr>
@@ -196,10 +196,10 @@
                       }
                     </td>
                     <td class="viz__lt-td viz__lt-td--web">
-                      @if (lead.hasWebsite) {
-                        <span class="viz__lt-web viz__lt-web--yes">yes</span>
+                      @if (lead.websiteUri) {
+                        <a class="viz__lt-site-link" [href]="lead.websiteUri" target="_blank" rel="noopener noreferrer">visit ↗</a>
                       } @else {
-                        <span class="viz__lt-web viz__lt-web--no">no</span>
+                        <span class="viz__lt-web viz__lt-web--no">none</span>
                       }
                     </td>
                     <td class="viz__lt-td viz__lt-td--ads">

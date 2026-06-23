@@ -39,6 +39,7 @@ export interface LeadTableRow {
   ratingCount?: number;
   hasWebsite: boolean;
   websiteQuality?: string;
+  websiteUri?: string;
   address?: string;
   mapsUrl?: string;
   factors?: string[];

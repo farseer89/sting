@@ -1,0 +1,204 @@
+<p-drawer
+  [(visible)]="visible"
+  position="right"
+  [modal]="true"
+  [blockScroll]="true"
+  appendTo="body"
+  styleClass="ld-drawer"
+  (onHide)="onHide()"
+>
+  @if (lead(); as lead) {
+    <div class="ld-shell">
+
+      <!-- ── Header ─────────────────────────────────────────────── -->
+      <div class="ld-head">
+        <div class="ld-head__name">{{ lead.displayName ?? 'Unknown business' }}</div>
+        @if (lead.formattedAddress) {
+          <div class="ld-head__addr">{{ lead.formattedAddress }}</div>
+        }
+        <div class="ld-head__badges">
+          <span class="ld-priority ld-priority--{{ lead.priority }}">{{ priorityLabel() }}</span>
+          <span class="ld-score">{{ lead.score }} pts</span>
+          @if (lead.runsAds) {
+            <span class="ld-ads-badge ld-ads-badge--spending">running ads</span>
+          } @else {
+            <span class="ld-ads-badge ld-ads-badge--gap">ad gap</span>
+          }
+        </div>
+      </div>
+
+      <!-- ── What we know ───────────────────────────────────────── -->
+      <section class="ld-section">
+        <div class="ld-section__title">What we know</div>
+
+        <div class="ld-grid">
+          @if (lead.rating) {
+            <div class="ld-grid__item">
+              <span class="ld-grid__label">Rating</span>
+              <span class="ld-grid__val">★ {{ lead.rating.toFixed(1) }} ({{ lead.userRatingCount ?? 0 }} reviews)</span>
+            </div>
+          }
+          @if (lead.internationalPhoneNumber) {
+            <div class="ld-grid__item">
+              <span class="ld-grid__label">Phone</span>
+              <a class="ld-grid__link" [href]="'tel:' + lead.internationalPhoneNumber">{{ lead.internationalPhoneNumber }}</a>
+            </div>
+          }
+          @if (lead.websiteUri) {
+            <div class="ld-grid__item">
+              <span class="ld-grid__label">Website</span>
+              <a class="ld-grid__link" [href]="lead.websiteUri" target="_blank" rel="noopener">{{ lead.websiteUri }}</a>
+            </div>
+          }
+          @if (lead.googleMapsUri) {
+            <div class="ld-grid__item">
+              <span class="ld-grid__label">Maps</span>
+              <a class="ld-grid__link" [href]="lead.googleMapsUri" target="_blank" rel="noopener">Open in Google Maps ↗</a>
+            </div>
+          }
+          @if (lead.googleRank) {
+            <div class="ld-grid__item">
+              <span class="ld-grid__label">Search rank</span>
+              <span class="ld-grid__val">#{{ lead.googleRank }}</span>
+            </div>
+          }
+        </div>
+
+        @if (lead.scoreBreakdown.length) {
+          <div class="ld-breakdown">
+            <div class="ld-breakdown__title">Score breakdown</div>
+            @for (factor of lead.scoreBreakdown; track factor.label) {
+              <div class="ld-breakdown__row">
+                <span class="ld-breakdown__label">{{ factor.label }}</span>
+                <span class="ld-breakdown__pts" [class.ld-breakdown__pts--neg]="factor.pts < 0">
+                  {{ factor.pts > 0 ? '+' : '' }}{{ factor.pts }}
+                </span>
+              </div>
+            }
+          </div>
+        }
+      </section>
+
+      <!-- ── Deep research ──────────────────────────────────────── -->
+      <section class="ld-section">
+        <div class="ld-section__title">Deep research</div>
+
+        @if (!enrichment() && !enrichLoading()) {
+          <div class="ld-enrich-cta">
+            <p class="ld-enrich-cta__body">
+              Run a second-tier research pass to pull the owner's name, services offered, and a business description from Google Place Details and their website.
+            </p>
+            <button class="ld-enrich-btn" (click)="enrich()">
+              Enrich this lead
+            </button>
+          </div>
+        }
+
+        @if (enrichLoading()) {
+          <div class="ld-spinner-wrap">
+            <p-progress-spinner [style]="{ width: '32px', height: '32px' }" />
+          </div>
+        }
+
+        @if (enrichError()) {
+          <div class="ld-enrich-error">{{ enrichError() }}</div>
+        }
+
+        @if (enrichment(); as e) {
+
+          <!-- Step rail -->
+          <div class="ld-steps">
+            @for (step of stepsOrdered; track step) {
+              <div class="ld-step ld-step--{{ stepStatus(step) }}">
+                <div class="ld-step__dot"></div>
+                <div class="ld-step__body">
+                  <div class="ld-step__name">{{ stepLabels[step] }}</div>
+                  @if (stepStatus(step) === 'active') {
+                    <div class="ld-step__note ld-step__note--pulse">Running…</div>
+                  } @else if (stepEvent(step); as ev) {
+                    <div class="ld-step__note">
+                      {{ ev.note ?? '' }}
+                      @if (ev.durationMs) { <span class="ld-step__meta">{{ formatDuration(ev.durationMs) }}</span> }
+                      @if (ev.costUsd) { <span class="ld-step__meta">{{ formatCost(ev.costUsd) }}</span> }
+                    </div>
+                  }
+                  @if (stepStatus(step) === 'failed') {
+                    <div class="ld-step__note ld-step__note--error">{{ e.error?.message }}</div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Results -->
+          @if (e.status === 'complete') {
+            <div class="ld-results">
+
+              @if (e.placeDetails?.primaryTypeDisplayName ?? e.placeDetails?.primaryType; as type) {
+                <div class="ld-result-row">
+                  <span class="ld-result-label">Business type</span>
+                  <span class="ld-result-val">{{ type }}</span>
+                </div>
+              }
+
+              @if (e.placeDetails?.weekdayDescriptions?.length) {
+                <div class="ld-result-row ld-result-row--col">
+                  <span class="ld-result-label">Hours</span>
+                  <ul class="ld-hours">
+                    @for (day of e.placeDetails!.weekdayDescriptions!; track day) {
+                      <li>{{ day }}</li>
+                    }
+                  </ul>
+                </div>
+              }
+
+              @if (e.ownerName) {
+                <div class="ld-result-row">
+                  <span class="ld-result-label">Owner</span>
+                  <span class="ld-result-val">{{ e.ownerName }}</span>
+                </div>
+              }
+
+              @if (e.description) {
+                <div class="ld-result-row ld-result-row--col">
+                  <span class="ld-result-label">About</span>
+                  <span class="ld-result-desc">{{ e.description }}</span>
+                </div>
+              }
+
+              @if (e.services?.length) {
+                <div class="ld-result-row ld-result-row--col">
+                  <span class="ld-result-label">Services offered</span>
+                  <ul class="ld-services">
+                    @for (svc of e.services!; track svc) {
+                      <li>{{ svc }}</li>
+                    }
+                  </ul>
+                </div>
+              }
+
+              @if (e.totalCostUsd) {
+                <div class="ld-cost-row">Research cost: {{ formatCost(e.totalCostUsd) }}</div>
+              }
+            </div>
+
+            @if (canEnrich()) {
+              <button class="ld-enrich-btn ld-enrich-btn--sm" (click)="enrich()">
+                Re-run research
+              </button>
+            }
+          }
+
+          @if (e.status === 'failed' && canEnrich()) {
+            <button class="ld-enrich-btn ld-enrich-btn--sm" (click)="enrich()">
+              Retry enrichment
+            </button>
+          }
+        }
+      </section>
+
+    </div>
+  } @else {
+    <div class="ld-empty">Select a lead to view details.</div>
+  }
+</p-drawer>

@@ -10,6 +10,7 @@ import { ProtopipeProspectorService } from './protopipe-prospector.service';
 import { ProtopipeProspectorAvatarFormComponent } from './protopipe-prospector-avatar-form.component';
 import { ProtopipeHomeThinkerViewState } from '../home/protopipe-home-thinker-view.state';
 import { ProtopipeHomeThinkerBinderComponent } from '../home/thinker/protopipe-home-thinker-binder.component';
+import { ProtopipeProspectorLeadDrawerComponent } from './protopipe-prospector-lead-drawer.component';
 import type { ProspectorRunDto, ProspectorScoredLead } from './prospector-run.model';
 
 export type ProspectorSection = 'new-search' | 'leads' | 'run-pipeline';
@@ -34,6 +35,7 @@ function relativeTime(iso: string | undefined): string {
   imports: [
     ProtopipeProspectorAvatarFormComponent,
     ProtopipeHomeThinkerBinderComponent,
+    ProtopipeProspectorLeadDrawerComponent,
   ],
   templateUrl: './protopipe-prospector.component.html',
   styleUrl: './protopipe-prospector.component.scss',
@@ -49,6 +51,16 @@ export class ProtopipeProspectorComponent implements OnInit {
   readonly runsError = signal<string | null>(null);
   readonly launching = signal(false);
   readonly launchError = signal<string | null>(null);
+
+  // ── Lead drawer ───────────────────────────────────────────────────────────
+
+  readonly drawerLead = signal<ProspectorScoredLead | null>(null);
+  readonly drawerVisible = signal(false);
+
+  openLeadDrawer(lead: ProspectorScoredLead): void {
+    this.drawerLead.set(lead);
+    this.drawerVisible.set(true);
+  }
 
   // ── Lead selection ────────────────────────────────────────────────────────
 

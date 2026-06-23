@@ -158,7 +158,7 @@
                     <tr
                       class="pb-lt-row pb-lt-row--{{ lead.priority }}"
                       [class.pb-lt-row--selected]="isLeadSelected(lead.displayName)"
-                      (click)="toggleLead(lead.displayName)"
+                      (click)="openLeadDrawer(lead)"
                     >
                       <td class="pb-lt-td pb-lt-td--check" (click)="$event.stopPropagation()">
                         <input type="checkbox" class="pb-lt-check" [checked]="isLeadSelected(lead.displayName)" (change)="toggleLead(lead.displayName)" />
@@ -232,3 +232,9 @@
 
   </div>
 </div>
+
+<!-- Lead detail drawer (portal — appended to body) -->
+<app-protopipe-prospector-lead-drawer
+  [lead]="drawerLead()"
+  [(visible)]="drawerVisible"
+/>

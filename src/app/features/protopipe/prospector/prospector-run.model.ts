@@ -79,3 +79,59 @@ export const PROSPECTOR_STEP_LABELS: Record<ProspectorStep, string> = {
 };
 
 export const PROSPECTOR_STEPS_ORDERED: ProspectorStep[] = ['places_search', 'score_leads', 'check_ads'];
+
+// ── Lead Enrichment ───────────────────────────────────────────────────────────
+
+export type EnrichmentStep = 'fetch_details' | 'fetch_site' | 'extract_info';
+export type EnrichmentStatus = 'pending' | 'running' | 'complete' | 'failed';
+
+export interface EnrichmentPlaceDetails {
+  displayName?: string;
+  primaryType?: string;
+  primaryTypeDisplayName?: string;
+  editorialSummary?: string;
+  weekdayDescriptions?: string[];
+  internationalPhoneNumber?: string;
+  websiteUri?: string;
+  googleMapsUri?: string;
+  formattedAddress?: string;
+}
+
+export interface EnrichmentStepEvent {
+  step: EnrichmentStep;
+  status: 'started' | 'completed' | 'failed';
+  startedAt: string;
+  finishedAt?: string;
+  durationMs?: number;
+  costUsd?: number;
+  note?: string;
+  error?: string;
+}
+
+export interface EnrichmentDto {
+  id: string;
+  placeId: string;
+  status: EnrichmentStatus;
+  currentStep: EnrichmentStep | 'done';
+  placeDetails?: EnrichmentPlaceDetails;
+  ownerName?: string;
+  services?: string[];
+  description?: string;
+  events: EnrichmentStepEvent[];
+  totalCostUsd?: number;
+  error?: { step: string; message: string };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const ENRICHMENT_STEP_LABELS: Record<EnrichmentStep, string> = {
+  fetch_details: 'Fetch Place Details',
+  fetch_site: 'Read Website',
+  extract_info: 'Extract with AI',
+};
+
+export const ENRICHMENT_STEPS_ORDERED: EnrichmentStep[] = [
+  'fetch_details',
+  'fetch_site',
+  'extract_info',
+];

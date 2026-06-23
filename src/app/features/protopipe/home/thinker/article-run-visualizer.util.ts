@@ -42,6 +42,8 @@ export interface LeadTableRow {
   address?: string;
   mapsUrl?: string;
   factors?: string[];
+  /** True when this lead's domain appears in paid Google Ads for the category search. */
+  runsAds?: boolean;
 }
 
 export type ContextPanelTone = 'neutral' | 'strategy' | 'verified' | 'warning' | 'style';

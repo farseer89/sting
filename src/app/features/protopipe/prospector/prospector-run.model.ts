@@ -1,4 +1,4 @@
-export type ProspectorStep = 'places_search' | 'score_leads';
+export type ProspectorStep = 'places_search' | 'score_leads' | 'check_ads';
 export type ProspectorStatus = 'pending' | 'running' | 'complete' | 'failed';
 export type ProspectorWebsiteQuality = 'none' | 'present';
 export type ProspectorPriority = 'critical' | 'high' | 'medium' | 'monitor';
@@ -27,6 +27,7 @@ export interface ProspectorScoredLead {
   googleRank: number;
   areaBestRating: number;
   reviewGap: number;
+  runsAds?: boolean;
 }
 
 export interface ProspectorStepEvent {
@@ -58,6 +59,11 @@ export interface ProspectorRunDto {
       userRatingCount?: number;
     }[];
     scoredLeads?: ProspectorScoredLead[];
+    serpResult?: {
+      query: string;
+      totalAdsCount: number;
+      adDomains: string[];
+    };
   };
   events: ProspectorStepEvent[];
   totalCostUsd?: number;
@@ -69,6 +75,7 @@ export interface ProspectorRunDto {
 export const PROSPECTOR_STEP_LABELS: Record<ProspectorStep, string> = {
   places_search: 'Google Places search',
   score_leads: 'Score leads',
+  check_ads: 'Check paid ads',
 };
 
-export const PROSPECTOR_STEPS_ORDERED: ProspectorStep[] = ['places_search', 'score_leads'];
+export const PROSPECTOR_STEPS_ORDERED: ProspectorStep[] = ['places_search', 'score_leads', 'check_ads'];

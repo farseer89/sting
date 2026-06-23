@@ -587,6 +587,27 @@ $lt-bg-subtle: #fafafa;
   &--no  { color: #dc2626; }
 }
 
+.viz__lt-ads {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+
+  &--yes {
+    color: #f59e0b;
+    background: #fef3c7;
+    border: 0.5px solid #fcd34d;
+    border-radius: 0.25rem;
+    padding: 0.1em 0.4em;
+  }
+  &--no {
+    color: #16a34a;
+    background: #dcfce7;
+    border: 0.5px solid #86efac;
+    border-radius: 0.25rem;
+    padding: 0.1em 0.4em;
+  }
+}
+
 .viz__lt-factors {
   font-size: 0.5875rem;
   color: #71717a;

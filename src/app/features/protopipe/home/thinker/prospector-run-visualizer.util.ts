@@ -30,6 +30,7 @@ function toLeadTableRow(lead: ProspectorScoredLead): LeadTableRow {
     websiteQuality: lead.websiteQuality,
     address: lead.formattedAddress ?? undefined,
     factors: factors?.length ? factors : undefined,
+    runsAds: lead.runsAds,
   };
 }
 
@@ -136,6 +137,43 @@ export function buildProspectorStepVisualizer(
       emptyMessage: scored.length === 0
         ? 'Scores appear after the step completes.'
         : undefined,
+    };
+  }
+
+  if (stepId === 'check_ads') {
+    if (stepStatus === 'pending') return pendingView('Check Paid Ads');
+    const sr = run.artifacts.serpResult;
+    const scored = run.artifacts.scoredLeads ?? [];
+    const spending = scored.filter((l) => l.runsAds).length;
+    const gap = scored.filter((l) => !l.runsAds).length;
+
+    const summaryBlocks: VisualizerBlock[] = sr
+      ? [
+          { kind: 'meta-row', label: 'Category query', value: sr.query },
+          { kind: 'meta-row', label: 'Ads found', value: `${sr.totalAdsCount}` },
+          {
+            kind: 'meta-row',
+            label: 'Leads spending',
+            value: `${spending}`,
+            hint: 'domain matched in paid ads — harder cold sell',
+          },
+          {
+            kind: 'meta-row',
+            label: 'Leads in gap',
+            value: `${gap}`,
+            hint: sr.totalAdsCount > 0 ? 'competitors are spending, they\'re not — pitch angle' : 'no ads in this market yet',
+          },
+          ...(sr.adDomains.length > 0
+            ? [{ kind: 'meta-row' as const, label: 'Ad domains', value: sr.adDomains.join(', ') }]
+            : []),
+        ]
+      : [];
+
+    return {
+      title: 'Check Paid Ads',
+      subtitle: sr ? `DataForSEO SERP · "${sr.query}"` : undefined,
+      blocks: [...summaryBlocks, ...(scored.length > 0 ? [leadTableBlock(scored)] : [])],
+      emptyMessage: !sr ? 'Ads check will appear here once the step completes.' : undefined,
     };
   }
 

@@ -32,9 +32,10 @@ function resultStatus(run: ProspectorRunDto): BinderStepStatus {
 const PROSPECTOR_API_PROVIDERS: Record<ProspectorStep, string> = {
   places_search: 'Google Places',
   score_leads: 'OpenAI',
+  check_ads: 'DataForSEO',
 };
 
-const PROSPECTOR_API_STEP: Set<ProspectorStep> = new Set(['places_search']);
+const PROSPECTOR_API_STEP: Set<ProspectorStep> = new Set(['places_search', 'check_ads']);
 
 export function buildProspectorApiQueryBlocks(
   run: ProspectorRunDto,
@@ -54,10 +55,27 @@ export function buildProspectorApiQueryBlocks(
   }
   if (step === 'score_leads') {
     return [
-      { label: 'API', value: 'OpenAI Chat Completions' },
+      { label: 'Model', value: 'Deterministic scoring (no LLM)' },
       { label: 'Input', value: `${run.artifacts.placesSearch?.length ?? 0} business records from Places search` },
       { label: 'Scoring factors', value: 'review gap, website quality, Google rank, review count' },
-      { label: 'Output', value: 'Priority (critical / high / medium / monitor) + score 0–100 + rationale' },
+      { label: 'Output', value: 'Priority (critical / high / medium / monitor) + score 0–100' },
+    ];
+  }
+  if (step === 'check_ads') {
+    const sr = run.artifacts.serpResult;
+    return [
+      { label: 'API', value: 'DataForSEO — serp/google/organic/live/advanced' },
+      { label: 'Query', value: sr?.query ?? `${run.input.category} ${run.input.location}` },
+      { label: 'Depth', value: '20 results' },
+      { label: 'Signal', value: 'Paid ads block — match ad URLs against lead domains' },
+      ...(sr
+        ? [
+            { label: 'Ads found', value: String(sr.totalAdsCount) },
+            ...(sr.adDomains.length > 0
+              ? [{ label: 'Ad domains', value: sr.adDomains.join(', '), hint: 'Businesses confirmed running Google Ads' }]
+              : []),
+          ]
+        : []),
     ];
   }
   return undefined;

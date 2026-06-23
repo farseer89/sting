@@ -15,7 +15,7 @@ import type {
 export const PROSPECTOR_RESULT_STEP_ID = 'prospector_result' as const;
 export type ProspectorResultStepId = typeof PROSPECTOR_RESULT_STEP_ID;
 
-export const PROSPECTOR_STEP_ORDER: ProspectorStep[] = ['places_search', 'score_leads'];
+export const PROSPECTOR_STEP_ORDER: ProspectorStep[] = ['places_search', 'score_leads', 'check_ads'];
 
 const STEP_META: Record<ProspectorStep, { label: string; summary: string }> = {
   places_search: {
@@ -25,6 +25,10 @@ const STEP_META: Record<ProspectorStep, { label: string; summary: string }> = {
   score_leads: {
     label: 'Score Leads',
     summary: 'Score each business by review gap, website presence, and Google rank.',
+  },
+  check_ads: {
+    label: 'Check Paid Ads',
+    summary: 'Run a DataForSEO SERP for the category keyword and detect which businesses are running Google Ads.',
   },
 };
 
@@ -63,6 +67,22 @@ function stepOutput(step: ProspectorStep, run: ProspectorRunDto): ThoughtArtifac
           kind: 'metric',
           summary: `${a.scoredLeads.length} scored · ${critical} critical · ${high} high`,
           data: { value: a.scoredLeads.length, unit: 'leads', delta: `${critical} critical` },
+        },
+      ];
+    }
+    case 'check_ads': {
+      if (!a.serpResult) return [];
+      const spending = a.scoredLeads?.filter((l) => l.runsAds).length ?? 0;
+      const gap = (a.scoredLeads?.length ?? 0) - spending;
+      return [
+        {
+          id: 'ads',
+          label: 'Ads detected',
+          kind: 'metric',
+          summary: a.serpResult.totalAdsCount === 0
+            ? `No ads for "${a.serpResult.query}"`
+            : `${a.serpResult.totalAdsCount} ads · ${spending} lead${spending === 1 ? '' : 's'} spending · ${gap} in the gap`,
+          data: { value: a.serpResult.totalAdsCount, unit: 'ads' },
         },
       ];
     }

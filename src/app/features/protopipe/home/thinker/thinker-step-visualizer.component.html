@@ -166,6 +166,7 @@
                   <th class="viz__lt-th viz__lt-th--priority">Priority</th>
                   <th class="viz__lt-th viz__lt-th--rating">Rating</th>
                   <th class="viz__lt-th viz__lt-th--web">Site</th>
+                  <th class="viz__lt-th viz__lt-th--ads">Ads</th>
                   <th class="viz__lt-th viz__lt-th--factors">Factors</th>
                 </tr>
               </thead>
@@ -199,6 +200,15 @@
                         <span class="viz__lt-web viz__lt-web--yes">yes</span>
                       } @else {
                         <span class="viz__lt-web viz__lt-web--no">no</span>
+                      }
+                    </td>
+                    <td class="viz__lt-td viz__lt-td--ads">
+                      @if (lead.runsAds === true) {
+                        <span class="viz__lt-ads viz__lt-ads--yes" title="Running Google Ads">spending</span>
+                      } @else if (lead.runsAds === false) {
+                        <span class="viz__lt-ads viz__lt-ads--no" title="Not running Google Ads">gap</span>
+                      } @else {
+                        <span class="viz__lt-dim">—</span>
                       }
                     </td>
                     <td class="viz__lt-td viz__lt-td--factors">

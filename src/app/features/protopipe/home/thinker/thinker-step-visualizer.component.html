@@ -158,9 +158,21 @@
       @case ('lead-table') {
         @if (block.leads?.length) {
           <div class="viz__lead-wrap">
+
+            @if (selectedCount() > 0) {
+              <div class="viz__lt-bar">
+                <span class="viz__lt-bar__count">{{ selectedCount() }} selected</span>
+                <button type="button" class="viz__lt-bar__action" (click)="copySelected()">Copy</button>
+                <button type="button" class="viz__lt-bar__action viz__lt-bar__action--muted" (click)="clearSelection()">Clear</button>
+              </div>
+            }
+
             <table class="viz__lead-table">
               <thead>
                 <tr>
+                  <th class="viz__lt-th viz__lt-th--check">
+                    <input type="checkbox" class="viz__lt-check" [checked]="allSelected()" (change)="toggleAll()" />
+                  </th>
                   <th class="viz__lt-th viz__lt-th--name">Business</th>
                   <th class="viz__lt-th viz__lt-th--score">Score</th>
                   <th class="viz__lt-th viz__lt-th--priority">Priority</th>
@@ -172,7 +184,14 @@
               </thead>
               <tbody>
                 @for (lead of block.leads; track lead.name) {
-                  <tr class="viz__lt-row viz__lt-row--{{ lead.priority }}">
+                  <tr
+                    class="viz__lt-row viz__lt-row--{{ lead.priority }}"
+                    [class.viz__lt-row--selected]="isLeadSelected(lead.name)"
+                    (click)="toggleLead(lead.name)"
+                  >
+                    <td class="viz__lt-td viz__lt-td--check" (click)="$event.stopPropagation()">
+                      <input type="checkbox" class="viz__lt-check" [checked]="isLeadSelected(lead.name)" (change)="toggleLead(lead.name)" />
+                    </td>
                     <td class="viz__lt-td viz__lt-td--name">
                       <span class="viz__lt-name">{{ lead.name }}</span>
                       @if (lead.address) {
@@ -195,7 +214,7 @@
                         <span class="viz__lt-dim">—</span>
                       }
                     </td>
-                    <td class="viz__lt-td viz__lt-td--web">
+                    <td class="viz__lt-td viz__lt-td--web" (click)="$event.stopPropagation()">
                       @if (lead.websiteUri) {
                         <a class="viz__lt-site-link" [href]="lead.websiteUri" target="_blank" rel="noopener noreferrer">visit ↗</a>
                       } @else {

@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import type { StepVisualizerView, VisualizerBlock, VisualizerTab } from './article-run-visualizer.util';
+import type { LeadTableRow, StepVisualizerView, VisualizerBlock, VisualizerTab } from './article-run-visualizer.util';
 
 @Component({
   selector: 'app-thinker-step-visualizer',
@@ -26,6 +26,9 @@ export class ThinkerStepVisualizerComponent {
 
   readonly activeTabId = signal<string>('thesis');
   private tabKey = '';
+
+  /** Names of selected leads. Resets when the view title changes (step navigation). */
+  readonly selectedLeadNames = signal<Set<string>>(new Set());
 
   readonly effectiveTabId = computed(() => this.selectedTabId() ?? this.activeTabId());
 
@@ -47,15 +50,30 @@ export class ThinkerStepVisualizerComponent {
     return tab.emptyMessage;
   });
 
+  readonly allLeads = computed((): LeadTableRow[] =>
+    this.bodyBlocks().flatMap((b) => b.leads ?? []),
+  );
+
+  readonly selectedCount = computed(() => this.selectedLeadNames().size);
+
+  readonly allSelected = computed(() => {
+    const all = this.allLeads();
+    if (!all.length) return false;
+    const sel = this.selectedLeadNames();
+    return all.every((l) => sel.has(l.name));
+  });
+
   constructor() {
     effect(() => {
       const v = this.view();
       const tabs = v.tabs;
-      if (!tabs?.length) return;
 
+      // Reset selection whenever the step view changes.
+      this.selectedLeadNames.set(new Set());
+
+      if (!tabs?.length) return;
       const key = tabs.map((t) => t.id).join('|');
       if (key === this.tabKey) return;
-
       this.tabKey = key;
       const defaultId = v.defaultTabId ?? tabs[0]?.id ?? 'thesis';
       this.activeTabId.set(defaultId);
@@ -64,6 +82,42 @@ export class ThinkerStepVisualizerComponent {
 
   selectTab(id: string): void {
     this.activeTabId.set(id);
+  }
+
+  toggleLead(name: string): void {
+    this.selectedLeadNames.update((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  }
+
+  toggleAll(): void {
+    if (this.allSelected()) {
+      this.selectedLeadNames.set(new Set());
+    } else {
+      this.selectedLeadNames.set(new Set(this.allLeads().map((l) => l.name)));
+    }
+  }
+
+  clearSelection(): void {
+    this.selectedLeadNames.set(new Set());
+  }
+
+  copySelected(): void {
+    const leads = this.allLeads().filter((l) => this.selectedLeadNames().has(l.name));
+    const lines = leads.map((l) => {
+      const parts = [l.name];
+      if (l.address) parts.push(l.address);
+      if (l.websiteUri) parts.push(l.websiteUri);
+      return parts.join('\t');
+    });
+    void navigator.clipboard.writeText(lines.join('\n'));
+  }
+
+  isLeadSelected(name: string): boolean {
+    return this.selectedLeadNames().has(name);
   }
 
   scoreWidth(score?: number): string {

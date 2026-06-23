@@ -46,8 +46,8 @@
           <button
             type="button"
             class="pb-binder-nav__item pb-binder-nav__item--run"
-            [class.is-active]="activeSection() === 'leads' && thinkerView.prospectorRun()?.id === run.id"
-            (click)="openRunEmbedded(run)"
+            [class.is-active]="(activeSection() === 'leads' || activeSection() === 'run-pipeline') && selectedRun()?.id === run.id"
+            (click)="openRunLeads(run)"
           >
             <span class="pb-run-row">
               <span class="pb-run-dot pb-run-dot--{{ runStatusClass(run) }}">
@@ -83,7 +83,8 @@
 
     </nav>
 
-    <!-- Right panel -->
+    <!-- Right panels -->
+
     @if (activeSection() === 'new-search') {
       <div class="pb-panel">
         <div class="pb-panel__head">
@@ -93,7 +94,6 @@
             Enter a business category and location. The pipeline will search Google Places and score each lead by review gap, website presence, and ranking opportunity.
           </p>
         </div>
-
         <div class="pb-panel__body">
           <app-protopipe-prospector-avatar-form
             [loading]="launching()"
@@ -105,6 +105,126 @@
     }
 
     @if (activeSection() === 'leads') {
+      @let run = selectedRun();
+      @if (run) {
+        <div class="pb-panel pb-panel--leads">
+
+          <!-- Panel header -->
+          <div class="pb-leads-head">
+            <div class="pb-leads-head__info">
+              <div class="pb-leads-head__title">{{ run.input.category }}</div>
+              <div class="pb-leads-head__meta">{{ run.input.location }} · {{ relativeTime(run.createdAt) }}</div>
+            </div>
+            <div class="pb-leads-head__actions">
+              @if (formatCost(run.totalCostUsd)) {
+                <span class="pb-leads-cost">{{ formatCost(run.totalCostUsd) }}</span>
+              }
+              <button type="button" class="pb-leads-btn pb-leads-btn--ghost" (click)="openRunPipeline()">
+                Pipeline →
+              </button>
+            </div>
+          </div>
+
+          <!-- Selection bar -->
+          @if (selectedCount() > 0) {
+            <div class="pb-leads-bar">
+              <span class="pb-leads-bar__count">{{ selectedCount() }} selected</span>
+              <button type="button" class="pb-leads-bar__action" (click)="copySelected()">Copy</button>
+              <button type="button" class="pb-leads-bar__action pb-leads-bar__action--muted" (click)="clearSelection()">Clear</button>
+            </div>
+          }
+
+          <!-- Leads table -->
+          @let leads = run.artifacts.scoredLeads ?? [];
+          @if (leads.length > 0) {
+            <div class="pb-leads-wrap">
+              <table class="pb-lt">
+                <thead>
+                  <tr>
+                    <th class="pb-lt-th pb-lt-th--check">
+                      <input type="checkbox" class="pb-lt-check" [checked]="allSelected()" (change)="toggleAll()" />
+                    </th>
+                    <th class="pb-lt-th pb-lt-th--name">Business</th>
+                    <th class="pb-lt-th pb-lt-th--priority">Priority</th>
+                    <th class="pb-lt-th pb-lt-th--score">Score</th>
+                    <th class="pb-lt-th pb-lt-th--rating">Rating</th>
+                    <th class="pb-lt-th pb-lt-th--web">Website</th>
+                    <th class="pb-lt-th pb-lt-th--ads">Ads</th>
+                    <th class="pb-lt-th pb-lt-th--factors">Signals</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (lead of leads; track lead.placeId) {
+                    <tr
+                      class="pb-lt-row pb-lt-row--{{ lead.priority }}"
+                      [class.pb-lt-row--selected]="isLeadSelected(lead.displayName)"
+                      (click)="toggleLead(lead.displayName)"
+                    >
+                      <td class="pb-lt-td pb-lt-td--check" (click)="$event.stopPropagation()">
+                        <input type="checkbox" class="pb-lt-check" [checked]="isLeadSelected(lead.displayName)" (change)="toggleLead(lead.displayName)" />
+                      </td>
+                      <td class="pb-lt-td pb-lt-td--name">
+                        <span class="pb-lt-name">{{ lead.displayName ?? '—' }}</span>
+                        @if (lead.formattedAddress) {
+                          <span class="pb-lt-addr">{{ lead.formattedAddress }}</span>
+                        }
+                      </td>
+                      <td class="pb-lt-td pb-lt-td--priority">
+                        <span class="pb-lt-pill pb-lt-pill--{{ lead.priority }}">{{ priorityLabel(lead.priority) }}</span>
+                      </td>
+                      <td class="pb-lt-td pb-lt-td--score">
+                        <span class="pb-lt-score">{{ lead.score }}</span>
+                      </td>
+                      <td class="pb-lt-td pb-lt-td--rating">
+                        @if (lead.rating != null) {
+                          <span class="pb-lt-rating">{{ lead.rating.toFixed(1) }}</span>
+                          @if (lead.userRatingCount) {
+                            <span class="pb-lt-rating-ct">({{ lead.userRatingCount }})</span>
+                          }
+                        } @else {
+                          <span class="pb-lt-dim">—</span>
+                        }
+                      </td>
+                      <td class="pb-lt-td pb-lt-td--web" (click)="$event.stopPropagation()">
+                        @if (lead.websiteUri) {
+                          <a class="pb-lt-link" [href]="lead.websiteUri" target="_blank" rel="noopener noreferrer">visit ↗</a>
+                        } @else {
+                          <span class="pb-lt-none">none</span>
+                        }
+                      </td>
+                      <td class="pb-lt-td pb-lt-td--ads">
+                        @if (lead.runsAds === true) {
+                          <span class="pb-lt-ads pb-lt-ads--spending">spending</span>
+                        } @else if (lead.runsAds === false) {
+                          <span class="pb-lt-ads pb-lt-ads--gap">gap</span>
+                        } @else {
+                          <span class="pb-lt-dim">—</span>
+                        }
+                      </td>
+                      <td class="pb-lt-td pb-lt-td--factors">
+                        <span class="pb-lt-factors">{{ factors(lead) }}</span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else if (run.status === 'failed') {
+            <div class="pb-leads-empty">
+              <span class="pb-leads-empty__icon">✕</span>
+              <p class="pb-leads-empty__msg">This search failed. {{ run.error?.message }}</p>
+            </div>
+          } @else {
+            <div class="pb-leads-empty">
+              <p class="pb-leads-empty__msg">No leads found for this search.</p>
+            </div>
+          }
+
+        </div>
+      }
+    }
+
+    @if (activeSection() === 'run-pipeline') {
       <div class="pb-panel pb-panel--runner">
         <app-protopipe-home-thinker-binder [embedded]="true" />
       </div>

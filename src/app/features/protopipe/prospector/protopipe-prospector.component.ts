@@ -10,9 +10,9 @@ import { ProtopipeProspectorService } from './protopipe-prospector.service';
 import { ProtopipeProspectorAvatarFormComponent } from './protopipe-prospector-avatar-form.component';
 import { ProtopipeHomeThinkerViewState } from '../home/protopipe-home-thinker-view.state';
 import { ProtopipeHomeThinkerBinderComponent } from '../home/thinker/protopipe-home-thinker-binder.component';
-import type { ProspectorRunDto } from './prospector-run.model';
+import type { ProspectorRunDto, ProspectorScoredLead } from './prospector-run.model';
 
-export type ProspectorSection = 'new-search' | 'leads';
+export type ProspectorSection = 'new-search' | 'leads' | 'run-pipeline';
 
 function relativeTime(iso: string | undefined): string {
   if (!iso) return '';
@@ -43,11 +43,34 @@ export class ProtopipeProspectorComponent implements OnInit {
   readonly thinkerView = inject(ProtopipeHomeThinkerViewState);
 
   readonly activeSection = signal<ProspectorSection>('new-search');
+  readonly selectedRun = signal<ProspectorRunDto | null>(null);
   readonly runs = signal<ProspectorRunDto[]>([]);
   readonly runsLoading = signal(true);
   readonly runsError = signal<string | null>(null);
   readonly launching = signal(false);
   readonly launchError = signal<string | null>(null);
+
+  // ── Lead selection ────────────────────────────────────────────────────────
+
+  readonly selectedLeadNames = signal<Set<string>>(new Set());
+
+  readonly selectedLeads = computed((): ProspectorScoredLead[] => {
+    const run = this.selectedRun();
+    const leads = run?.artifacts.scoredLeads ?? [];
+    const sel = this.selectedLeadNames();
+    return leads.filter((l) => l.displayName && sel.has(l.displayName));
+  });
+
+  readonly selectedCount = computed(() => this.selectedLeadNames().size);
+
+  readonly allSelected = computed(() => {
+    const leads = this.selectedRun()?.artifacts.scoredLeads ?? [];
+    if (!leads.length) return false;
+    const sel = this.selectedLeadNames();
+    return leads.every((l) => l.displayName && sel.has(l.displayName));
+  });
+
+  // ── Run stats ─────────────────────────────────────────────────────────────
 
   readonly totalLeads = computed(() =>
     this.runs().reduce((acc, r) => acc + (r.artifacts.scoredLeads?.length ?? 0), 0),
@@ -58,8 +81,8 @@ export class ProtopipeProspectorComponent implements OnInit {
   );
 
   constructor() {
-    this.thinkerView.setFocusBackLabel('Back to searches');
-    this.thinkerView.setExitHandler(() => this.activeSection.set('new-search'));
+    this.thinkerView.setFocusBackLabel('Back to leads');
+    this.thinkerView.setExitHandler(() => this.activeSection.set('leads'));
   }
 
   async ngOnInit(): Promise<void> {
@@ -73,6 +96,8 @@ export class ProtopipeProspectorComponent implements OnInit {
     }
   }
 
+  // ── Navigation ────────────────────────────────────────────────────────────
+
   async onSearch(input: { category: string; location: string }): Promise<void> {
     this.launching.set(true);
     this.launchError.set(null);
@@ -80,7 +105,8 @@ export class ProtopipeProspectorComponent implements OnInit {
     try {
       const run = await this.service.createRun(input.category, input.location);
       this.runs.update((prev) => [run, ...prev]);
-      this.openRunEmbedded(run);
+      // New runs go straight to pipeline view since there are no leads yet.
+      this.openRunPipeline(run);
     } catch {
       this.launchError.set('Failed to start search. Please try again.');
     } finally {
@@ -88,10 +114,71 @@ export class ProtopipeProspectorComponent implements OnInit {
     }
   }
 
-  openRunEmbedded(run: ProspectorRunDto): void {
-    this.thinkerView.setProspectorRunEmbedded(run);
+  openRunLeads(run: ProspectorRunDto): void {
+    // Still running — send to pipeline view.
+    if (run.status === 'running' || run.status === 'pending') {
+      this.openRunPipeline(run);
+      return;
+    }
+    this.selectedRun.set(run);
+    this.selectedLeadNames.set(new Set());
     this.activeSection.set('leads');
   }
+
+  openRunPipeline(run?: ProspectorRunDto): void {
+    const target = run ?? this.selectedRun();
+    if (!target) return;
+    this.selectedRun.set(target);
+    this.thinkerView.setProspectorRunEmbedded(target);
+    this.activeSection.set('run-pipeline');
+  }
+
+  backToLeads(): void {
+    this.activeSection.set('leads');
+  }
+
+  // ── Selection ─────────────────────────────────────────────────────────────
+
+  toggleLead(name: string | undefined): void {
+    if (!name) return;
+    this.selectedLeadNames.update((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  }
+
+  toggleAll(): void {
+    const leads = this.selectedRun()?.artifacts.scoredLeads ?? [];
+    if (this.allSelected()) {
+      this.selectedLeadNames.set(new Set());
+    } else {
+      this.selectedLeadNames.set(new Set(leads.map((l) => l.displayName ?? '')));
+    }
+  }
+
+  clearSelection(): void {
+    this.selectedLeadNames.set(new Set());
+  }
+
+  copySelected(): void {
+    const leads = this.selectedLeads();
+    const lines = leads.map((l) => {
+      const parts: string[] = [l.displayName ?? ''];
+      if (l.formattedAddress) parts.push(l.formattedAddress);
+      if (l.websiteUri) parts.push(l.websiteUri);
+      if (l.internationalPhoneNumber) parts.push(l.internationalPhoneNumber);
+      return parts.join('\t');
+    });
+    void navigator.clipboard.writeText(lines.join('\n'));
+  }
+
+  isLeadSelected(name: string | undefined): boolean {
+    return Boolean(name && this.selectedLeadNames().has(name));
+  }
+
+  // ── Display helpers ───────────────────────────────────────────────────────
 
   runStatusClass(run: ProspectorRunDto): string {
     switch (run.status) {
@@ -101,6 +188,10 @@ export class ProtopipeProspectorComponent implements OnInit {
       case 'pending': return 'running';
       default: return 'pending';
     }
+  }
+
+  priorityLabel(p: string): string {
+    return p.charAt(0).toUpperCase() + p.slice(1);
   }
 
   relativeTime = relativeTime;
@@ -116,5 +207,12 @@ export class ProtopipeProspectorComponent implements OnInit {
 
   criticalCount(run: ProspectorRunDto): number {
     return run.artifacts.scoredLeads?.filter((l) => l.priority === 'critical').length ?? 0;
+  }
+
+  factors(lead: ProspectorScoredLead): string {
+    return lead.scoreBreakdown
+      .filter((b) => b.pts > 0)
+      .map((b) => b.label)
+      .join(' · ');
   }
 }

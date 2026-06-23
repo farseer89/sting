@@ -66,7 +66,7 @@ import {
 } from './thinker-binder.mapper';
 import { ThinkerStepVisualizerComponent } from './thinker-step-visualizer.component';
 
-type ThinkerTab = 'visualizer' | 'output' | 'steps' | 'prompt' | 'events' | 'raw';
+type ThinkerTab = 'visualizer' | 'output' | 'steps' | 'prompt' | 'query' | 'events' | 'raw';
 
 export interface BinderAspectNavItem {
   id: string;

@@ -26,7 +26,23 @@ export type VisualizerBlockKind =
   | 'score-bar'
   | 'notice'
   | 'image'
-  | 'context-panel';
+  | 'context-panel'
+  | 'lead-table';
+
+export type LeadPriority = 'critical' | 'high' | 'medium' | 'monitor';
+
+export interface LeadTableRow {
+  name: string;
+  score: number;
+  priority: LeadPriority;
+  rating?: number;
+  ratingCount?: number;
+  hasWebsite: boolean;
+  websiteQuality?: string;
+  address?: string;
+  mapsUrl?: string;
+  factors?: string[];
+}
 
 export type ContextPanelTone = 'neutral' | 'strategy' | 'verified' | 'warning' | 'style';
 
@@ -43,6 +59,8 @@ export interface VisualizerBlock {
   imageUrl?: string;
   imageAlt?: string;
   tone?: ContextPanelTone;
+  /** Rows for lead-table blocks */
+  leads?: LeadTableRow[];
 }
 
 export interface StepVisualizerView {

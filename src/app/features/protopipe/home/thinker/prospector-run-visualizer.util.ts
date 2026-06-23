@@ -1,14 +1,11 @@
 import { PROSPECTOR_RESULT_STEP_ID } from '../../lab/prospector/prospector-run-to-thought';
 import type { ProspectorRunDto, ProspectorScoredLead } from '../../prospector/prospector-run.model';
 import type { BinderStepStatus } from './thinker-binder.mapper';
-import type { StepVisualizerView, VisualizerBlock } from './article-run-visualizer.util';
-
-const PRIORITY_LABELS: Record<string, string> = {
-  critical: '🔴 Critical',
-  high: '🟠 High',
-  medium: '🔵 Medium',
-  monitor: '⚪ Monitor',
-};
+import type {
+  LeadTableRow,
+  StepVisualizerView,
+  VisualizerBlock,
+} from './article-run-visualizer.util';
 
 function pendingView(title: string): StepVisualizerView {
   return {
@@ -18,32 +15,34 @@ function pendingView(title: string): StepVisualizerView {
   };
 }
 
-function leadBlocks(leads: ProspectorScoredLead[], limit = 20): VisualizerBlock[] {
-  return leads.slice(0, limit).map((lead) => {
-    const ratingStr =
-      lead.rating != null
-        ? `★ ${lead.rating.toFixed(1)}${lead.userRatingCount ? ` (${lead.userRatingCount})` : ''}`
-        : null;
-    const websiteStr = lead.websiteQuality === 'none' ? 'No website' : null;
-    const hintParts = [
-      PRIORITY_LABELS[lead.priority] ?? lead.priority,
-      websiteStr,
-      ratingStr,
-      lead.formattedAddress,
-    ].filter(Boolean);
+function toLeadTableRow(lead: ProspectorScoredLead): LeadTableRow {
+  const factors = lead.scoreBreakdown
+    ?.filter((b) => b.pts !== 0)
+    .map((b) => `${b.label}${b.pts > 0 ? ` +${b.pts}` : ` ${b.pts}`}`);
 
-    return {
-      kind: 'meta-row' as const,
-      label: lead.displayName ?? '—',
-      value: String(lead.score),
-      hint: hintParts.join(' · ') || undefined,
-    };
-  });
+  return {
+    name: lead.displayName ?? '—',
+    score: lead.score,
+    priority: lead.priority,
+    rating: lead.rating ?? undefined,
+    ratingCount: lead.userRatingCount ?? undefined,
+    hasWebsite: lead.websiteQuality !== 'none',
+    websiteQuality: lead.websiteQuality,
+    address: lead.formattedAddress ?? undefined,
+    factors: factors?.length ? factors : undefined,
+  };
+}
+
+function leadTableBlock(leads: ProspectorScoredLead[]): VisualizerBlock {
+  return {
+    kind: 'lead-table',
+    leads: [...leads].sort((a, b) => b.score - a.score).map(toLeadTableRow),
+  };
 }
 
 function buildPlacesSearchBlocks(run: ProspectorRunDto): VisualizerBlock[] {
   const places = run.artifacts.placesSearch ?? [];
-  const blocks: VisualizerBlock[] = [
+  const summaryBlocks: VisualizerBlock[] = [
     {
       kind: 'meta-row',
       label: 'Query',
@@ -57,20 +56,28 @@ function buildPlacesSearchBlocks(run: ProspectorRunDto): VisualizerBlock[] {
     },
   ];
 
-  for (const p of places.slice(0, 8)) {
-    blocks.push({
-      kind: 'meta-row',
-      label: p.displayName ?? '—',
-      value: p.rating != null ? `★ ${p.rating.toFixed(1)}` : '—',
-      hint: p.formattedAddress ?? undefined,
-    });
-  }
+  if (places.length === 0) return summaryBlocks;
 
-  return blocks;
+  const tableBlock: VisualizerBlock = {
+    kind: 'lead-table',
+    leads: places.slice(0, 20).map((p) => ({
+      name: p.displayName ?? '—',
+      score: 0,
+      priority: 'monitor' as const,
+      rating: p.rating ?? undefined,
+      ratingCount: p.userRatingCount ?? undefined,
+      hasWebsite: Boolean(p.websiteUri),
+      address: p.formattedAddress ?? undefined,
+    })),
+  };
+
+  return [...summaryBlocks, tableBlock];
 }
 
 function buildScoreLeadsBlocks(run: ProspectorRunDto): VisualizerBlock[] {
   const scored = run.artifacts.scoredLeads ?? [];
+  if (scored.length === 0) return [];
+
   const critical = scored.filter((l) => l.priority === 'critical').length;
   const high = scored.filter((l) => l.priority === 'high').length;
   const medium = scored.filter((l) => l.priority === 'medium').length;
@@ -84,13 +91,7 @@ function buildScoreLeadsBlocks(run: ProspectorRunDto): VisualizerBlock[] {
     { kind: 'meta-row', label: 'Monitor', value: `${monitor}` },
   ];
 
-  const top = [...scored].sort((a, b) => b.score - a.score);
-  return [...summary, ...leadBlocks(top)];
-}
-
-function buildResultBlocks(run: ProspectorRunDto): VisualizerBlock[] {
-  const scored = [...(run.artifacts.scoredLeads ?? [])].sort((a, b) => b.score - a.score);
-  return leadBlocks(scored);
+  return [...summary, leadTableBlock(scored)];
 }
 
 export function buildProspectorStepVisualizer(
@@ -99,22 +100,27 @@ export function buildProspectorStepVisualizer(
   stepStatus: BinderStepStatus,
 ): StepVisualizerView {
   if (stepId === PROSPECTOR_RESULT_STEP_ID) {
-    const leads = run.artifacts.scoredLeads?.length ?? 0;
+    const scored = run.artifacts.scoredLeads ?? [];
     return {
       title: 'Leads',
-      subtitle: leads > 0 ? `${leads} businesses scored · sorted by opportunity` : undefined,
-      emptyMessage: leads === 0 ? 'Scored leads appear after the pipeline completes.' : undefined,
-      blocks: buildResultBlocks(run),
+      subtitle: scored.length > 0
+        ? `${scored.length} businesses scored · sorted by opportunity`
+        : undefined,
+      emptyMessage: scored.length === 0
+        ? 'Scored leads appear after the pipeline completes.'
+        : undefined,
+      blocks: scored.length > 0 ? [leadTableBlock(scored)] : [],
     };
   }
 
   if (stepId === 'places_search') {
     if (stepStatus === 'pending') return pendingView('Places Search');
+    const places = run.artifacts.placesSearch ?? [];
     return {
       title: 'Google Places Search',
       subtitle: `${run.input.category} · ${run.input.location}`,
       blocks: buildPlacesSearchBlocks(run),
-      emptyMessage: (run.artifacts.placesSearch?.length ?? 0) === 0
+      emptyMessage: places.length === 0
         ? 'Search results will appear here once the step completes.'
         : undefined,
     };

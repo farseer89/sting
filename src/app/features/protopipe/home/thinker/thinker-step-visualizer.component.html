@@ -155,6 +155,65 @@
           }
         </section>
       }
+      @case ('lead-table') {
+        @if (block.leads?.length) {
+          <div class="viz__lead-wrap">
+            <table class="viz__lead-table">
+              <thead>
+                <tr>
+                  <th class="viz__lt-th viz__lt-th--name">Business</th>
+                  <th class="viz__lt-th viz__lt-th--score">Score</th>
+                  <th class="viz__lt-th viz__lt-th--priority">Priority</th>
+                  <th class="viz__lt-th viz__lt-th--rating">Rating</th>
+                  <th class="viz__lt-th viz__lt-th--web">Site</th>
+                  <th class="viz__lt-th viz__lt-th--factors">Factors</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (lead of block.leads; track lead.name) {
+                  <tr class="viz__lt-row viz__lt-row--{{ lead.priority }}">
+                    <td class="viz__lt-td viz__lt-td--name">
+                      <span class="viz__lt-name">{{ lead.name }}</span>
+                      @if (lead.address) {
+                        <span class="viz__lt-addr">{{ lead.address }}</span>
+                      }
+                    </td>
+                    <td class="viz__lt-td viz__lt-td--score">
+                      <span class="viz__lt-score">{{ lead.score }}</span>
+                    </td>
+                    <td class="viz__lt-td viz__lt-td--priority">
+                      <span class="viz__lt-pill viz__lt-pill--{{ lead.priority }}">{{ lead.priority }}</span>
+                    </td>
+                    <td class="viz__lt-td viz__lt-td--rating">
+                      @if (lead.rating != null) {
+                        <span class="viz__lt-rating">{{ lead.rating.toFixed(1) }}</span>
+                        @if (lead.ratingCount) {
+                          <span class="viz__lt-rating-ct">({{ lead.ratingCount }})</span>
+                        }
+                      } @else {
+                        <span class="viz__lt-dim">—</span>
+                      }
+                    </td>
+                    <td class="viz__lt-td viz__lt-td--web">
+                      @if (lead.hasWebsite) {
+                        <span class="viz__lt-web viz__lt-web--yes">yes</span>
+                      } @else {
+                        <span class="viz__lt-web viz__lt-web--no">no</span>
+                      }
+                    </td>
+                    <td class="viz__lt-td viz__lt-td--factors">
+                      @if (lead.factors?.length) {
+                        <span class="viz__lt-factors">{{ lead.factors!.join(' · ') }}</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+
       @case ('image') {
         <figure class="viz__figure">
           <figcaption class="viz__figure-cap">

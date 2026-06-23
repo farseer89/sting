@@ -42,6 +42,7 @@ import {
   resolveDiscoveryBinderNavStepId,
 } from './discovery-binder.util';
 import {
+  annotateProspectorApiMeta,
   isProspectorResultStepId,
   mapProspectorResultNavStep,
   resolveProspectorBinderNavStepId,
@@ -127,7 +128,12 @@ export class ProtopipeHomeThinkerBinderComponent {
   readonly steps = computed((): BinderStepView[] => {
     const t = this.thought();
     if (!t) return [];
-    return t.steps.map((step, index) => mapThoughtStep(step, index));
+    const mapped = t.steps.map((step, index) => mapThoughtStep(step, index));
+    if (this.runKind() === 'prospector') {
+      const run = this.thinkerView.prospectorRun();
+      if (run) return annotateProspectorApiMeta(mapped, run);
+    }
+    return mapped;
   });
 
   readonly foundationSteps = computed(() => mapFoundationSteps(this.steps()));

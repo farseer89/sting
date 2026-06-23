@@ -433,6 +433,12 @@ $tb-red: #dc2626;
     color: $tb-muted;
     border: 1px solid $tb-border;
   }
+
+  &--api {
+    background: transparent;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+  }
 }
 
 .tb-rail__meta {
@@ -605,6 +611,13 @@ $tb-red: #dc2626;
     background: $tb-bg-panel;
     color: $tb-muted;
     border-color: $tb-border;
+    font-weight: 500;
+  }
+
+  &--api {
+    background: #f0f9ff;
+    color: #0369a1;
+    border-color: #bae6fd;
     font-weight: 500;
   }
 }
@@ -921,6 +934,66 @@ $tb-red: #dc2626;
   margin: 0;
   color: #94a3b8;
   max-width: 36rem;
+}
+
+// ── API Query tab
+
+.tb-api-query {
+  padding: 0.75rem 1rem;
+}
+
+.tb-api-query__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.tb-api-query__provider {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0369a1;
+  letter-spacing: 0.01em;
+}
+
+.tb-api-query__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.tb-api-query__row {
+  border-top: 1px solid $tb-border;
+
+  &:first-child {
+    border-top: none;
+  }
+}
+
+.tb-api-query__key {
+  padding: 0.45rem 0.75rem 0.45rem 0;
+  width: 9rem;
+  vertical-align: top;
+  color: $tb-muted;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tb-api-query__val {
+  padding: 0.45rem 0;
+  color: $tb-body;
+  font-family: $tb-mono;
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+.tb-api-query__hint {
+  display: block;
+  font-family: inherit;
+  font-size: 0.625rem;
+  color: $tb-dim;
+  margin-top: 0.1rem;
 }
 
 // ── Raw JSON view

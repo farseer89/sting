@@ -135,6 +135,9 @@
                 @if (step.isLlmStep) {
                   <span class="tb-rail__tag tb-rail__tag--llm">LLM</span>
                 }
+                @if (step.isApiStep) {
+                  <span class="tb-rail__tag tb-rail__tag--api">API</span>
+                }
               </span>
               @if (step.status === 'done' || step.status === 'failed') {
                 <span class="tb-rail__meta">
@@ -436,6 +439,9 @@
             @if (step.isLlmStep) {
               <span class="tb-chip tb-chip--llm">LLM step</span>
             }
+            @if (step.isApiStep) {
+              <span class="tb-chip tb-chip--api">{{ step.apiProvider ?? 'API call' }}</span>
+            }
             @if (step.status === 'done') {
               <span class="tb-chip tb-chip--done">
                 <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -476,6 +482,9 @@
           <button type="button" class="tb-tab" [class.is-active]="activeTab() === 'steps'" (click)="activeTab.set('steps')">steps</button>
           @if (step.isLlmStep) {
             <button type="button" class="tb-tab" [class.is-active]="activeTab() === 'prompt'" (click)="activeTab.set('prompt')">prompt</button>
+          }
+          @if (step.isApiStep) {
+            <button type="button" class="tb-tab" [class.is-active]="activeTab() === 'query'" (click)="activeTab.set('query')">query</button>
           }
           <button type="button" class="tb-tab" [class.is-active]="activeTab() === 'events'" (click)="activeTab.set('events')">events</button>
           <button type="button" class="tb-tab" [class.is-active]="activeTab() === 'raw'" (click)="activeTab.set('raw')">raw</button>
@@ -686,6 +695,37 @@
                     </div>
                   </section>
                 }
+              </div>
+            }
+          }
+
+          @case ('query') {
+            @if (step.apiQueryBlocks?.length) {
+              <div class="tb-api-query">
+                <div class="tb-api-query__header">
+                  <span class="tb-api-query__provider">{{ step.apiProvider ?? 'External API' }}</span>
+                  <span class="tb-chip tb-chip--api">API call</span>
+                </div>
+                <table class="tb-api-query__table">
+                  <tbody>
+                    @for (row of step.apiQueryBlocks; track row.label) {
+                      <tr class="tb-api-query__row">
+                        <td class="tb-api-query__key">{{ row.label }}</td>
+                        <td class="tb-api-query__val">
+                          {{ row.value }}
+                          @if (row.hint) {
+                            <span class="tb-api-query__hint">{{ row.hint }}</span>
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="tb-pending">
+                <span class="tb-pending__icon">○</span>
+                <p>Query details appear after the step runs.</p>
               </div>
             }
           }

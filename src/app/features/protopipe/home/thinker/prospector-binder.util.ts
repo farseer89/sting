@@ -3,8 +3,8 @@ import {
   PROSPECTOR_STEP_ORDER,
   type ProspectorResultStepId,
 } from '../../lab/prospector/prospector-run-to-thought';
-import type { ProspectorRunDto } from '../../prospector/prospector-run.model';
-import type { BinderStepStatus, BinderStepView } from './thinker-binder.mapper';
+import type { ProspectorRunDto, ProspectorStep } from '../../prospector/prospector-run.model';
+import type { BinderApiQueryBlock, BinderStepStatus, BinderStepView } from './thinker-binder.mapper';
 
 export { PROSPECTOR_RESULT_STEP_ID };
 
@@ -27,6 +27,57 @@ function resultStatus(run: ProspectorRunDto): BinderStepStatus {
   const hasLeads = (run.artifacts.scoredLeads?.length ?? 0) > 0;
   if (hasLeads) return 'running';
   return 'pending';
+}
+
+const PROSPECTOR_API_PROVIDERS: Record<ProspectorStep, string> = {
+  places_search: 'Google Places',
+  score_leads: 'OpenAI',
+};
+
+const PROSPECTOR_API_STEP: Set<ProspectorStep> = new Set(['places_search']);
+
+export function buildProspectorApiQueryBlocks(
+  run: ProspectorRunDto,
+  step: ProspectorStep,
+): BinderApiQueryBlock[] | undefined {
+  if (step === 'places_search') {
+    return [
+      { label: 'API', value: 'Google Places (Text Search)' },
+      { label: 'Query', value: `${run.input.category} in ${run.input.location}` },
+      { label: 'Endpoint', value: 'places.googleapis.com/v1/places:searchText' },
+      { label: 'Fields', value: 'id, displayName, formattedAddress, rating, userRatingCount, websiteUri, nationalPhoneNumber, regularOpeningHours' },
+      { label: 'Max results', value: '20' },
+      ...(run.artifacts.placesSearch?.length != null
+        ? [{ label: 'Results returned', value: String(run.artifacts.placesSearch.length) }]
+        : []),
+    ];
+  }
+  if (step === 'score_leads') {
+    return [
+      { label: 'API', value: 'OpenAI Chat Completions' },
+      { label: 'Input', value: `${run.artifacts.placesSearch?.length ?? 0} business records from Places search` },
+      { label: 'Scoring factors', value: 'review gap, website quality, Google rank, review count' },
+      { label: 'Output', value: 'Priority (critical / high / medium / monitor) + score 0–100 + rationale' },
+    ];
+  }
+  return undefined;
+}
+
+export function annotateProspectorApiMeta(
+  steps: BinderStepView[],
+  run: ProspectorRunDto,
+): BinderStepView[] {
+  return steps.map((s) => {
+    const prospectorStep = s.id as ProspectorStep;
+    if (!PROSPECTOR_STEP_ORDER.includes(prospectorStep)) return s;
+    const isApi = PROSPECTOR_API_STEP.has(prospectorStep);
+    return {
+      ...s,
+      isApiStep: isApi,
+      apiProvider: PROSPECTOR_API_PROVIDERS[prospectorStep],
+      apiQueryBlocks: buildProspectorApiQueryBlocks(run, prospectorStep),
+    };
+  });
 }
 
 export function mapProspectorResultNavStep(

@@ -30,6 +30,12 @@ export interface BinderLlmCallView {
   tokenSummary?: string;
 }
 
+export interface BinderApiQueryBlock {
+  label: string;
+  value: string;
+  hint?: string;
+}
+
 export interface BinderStepView {
   id: string;
   num: string;
@@ -43,6 +49,12 @@ export interface BinderStepView {
   summary?: string;
   /** True when this step invokes an LLM (even before traces are persisted). */
   isLlmStep?: boolean;
+  /** True when this step calls an external API (non-LLM). */
+  isApiStep?: boolean;
+  /** Short label for the external API provider, e.g. "Google Places". */
+  apiProvider?: string;
+  /** Rows shown in the "query" inspector tab. */
+  apiQueryBlocks?: BinderApiQueryBlock[];
   llmCalls: BinderLlmCallView[];
   inputArtifact?: { label: string; kind: string; preview: string };
   outputArtifact?: { label: string; kind: string; preview: string };
@@ -196,6 +208,7 @@ function isLlmPipelineStep(step: ThoughtStep): boolean {
     'review',
     'metadata',
     'cognitive_pass',
+    'score_leads',
   ].includes(step.id);
 }
 

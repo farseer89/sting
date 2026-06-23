@@ -1,44 +1,65 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  OnInit,
   inject,
   signal,
+  computed,
 } from '@angular/core';
 import { ProtopipeProspectorService } from './protopipe-prospector.service';
 import { ProtopipeProspectorAvatarFormComponent } from './protopipe-prospector-avatar-form.component';
 import { ProtopipeHomeThinkerViewState } from '../home/protopipe-home-thinker-view.state';
+import type { ProspectorRunDto } from './prospector-run.model';
+
+function relativeTime(iso: string | undefined): string {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  const s = Math.floor(diff / 1000);
+  if (s < 60) return 'just now';
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  if (h < 48) return 'yesterday';
+  return `${Math.floor(h / 24)}d ago`;
+}
 
 @Component({
   selector: 'app-protopipe-prospector',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ProtopipeProspectorAvatarFormComponent],
-  template: `
-    <div class="psp-shell">
-      <div class="psp-masthead">
-        <div>
-          <h1 class="psp-masthead__title">Prospector</h1>
-          <p class="psp-masthead__deck">Find and score local businesses for outbound pitch.</p>
-        </div>
-      </div>
-
-      <div class="psp-body">
-        <app-protopipe-prospector-avatar-form
-          [loading]="launching()"
-          [error]="launchError()"
-          (search)="onSearch($event)"
-        />
-      </div>
-    </div>
-  `,
+  templateUrl: './protopipe-prospector.component.html',
   styleUrl: './protopipe-prospector.component.scss',
 })
-export class ProtopipeProspectorComponent {
+export class ProtopipeProspectorComponent implements OnInit {
   private readonly service = inject(ProtopipeProspectorService);
   private readonly thinkerView = inject(ProtopipeHomeThinkerViewState);
 
+  readonly runs = signal<ProspectorRunDto[]>([]);
+  readonly runsLoading = signal(true);
+  readonly runsError = signal<string | null>(null);
   readonly launching = signal(false);
   readonly launchError = signal<string | null>(null);
+
+  readonly totalLeads = computed(() =>
+    this.runs().reduce((acc, r) => acc + (r.artifacts.scoredLeads?.length ?? 0), 0),
+  );
+
+  readonly totalCost = computed(() =>
+    this.runs().reduce((acc, r) => acc + (r.totalCostUsd ?? 0), 0),
+  );
+
+  async ngOnInit(): Promise<void> {
+    try {
+      const list = await this.service.listRuns();
+      this.runs.set(list);
+    } catch {
+      this.runsError.set('Could not load recent searches.');
+    } finally {
+      this.runsLoading.set(false);
+    }
+  }
 
   async onSearch(input: { category: string; location: string }): Promise<void> {
     this.launching.set(true);
@@ -46,11 +67,51 @@ export class ProtopipeProspectorComponent {
 
     try {
       const run = await this.service.createRun(input.category, input.location);
+      this.runs.update((prev) => [run, ...prev]);
       this.thinkerView.openProspectorRun(run);
     } catch {
       this.launchError.set('Failed to start search. Please try again.');
     } finally {
       this.launching.set(false);
     }
+  }
+
+  openRun(run: ProspectorRunDto): void {
+    this.thinkerView.openProspectorRun(run);
+  }
+
+  runStatusClass(run: ProspectorRunDto): string {
+    switch (run.status) {
+      case 'complete': return 'complete';
+      case 'failed': return 'failed';
+      case 'running':
+      case 'pending': return 'running';
+      default: return 'pending';
+    }
+  }
+
+  runStatusLabel(run: ProspectorRunDto): string {
+    switch (run.status) {
+      case 'complete': return 'complete';
+      case 'failed': return 'failed';
+      case 'running': return 'running';
+      case 'pending': return 'queued';
+      default: return run.status;
+    }
+  }
+
+  relativeTime = relativeTime;
+
+  formatCost(usd: number | undefined): string {
+    if (!usd) return '';
+    return `$${usd.toFixed(4)}`;
+  }
+
+  leadCount(run: ProspectorRunDto): number {
+    return run.artifacts.scoredLeads?.length ?? 0;
+  }
+
+  criticalCount(run: ProspectorRunDto): number {
+    return run.artifacts.scoredLeads?.filter((l) => l.priority === 'critical').length ?? 0;
   }
 }

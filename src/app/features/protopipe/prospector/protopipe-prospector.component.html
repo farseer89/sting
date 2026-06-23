@@ -1,0 +1,107 @@
+<div class="pb-shell">
+
+  <header class="pb-masthead">
+    <div class="pb-masthead__left">
+      <h1 class="pb-masthead__title">Prospector</h1>
+      <p class="pb-masthead__deck">Find and score local businesses for outbound pitch.</p>
+    </div>
+    <div class="pb-masthead__stats">
+      <div class="pb-stat">
+        <span class="pb-stat__val">{{ runs().length }}</span>
+        <span class="pb-stat__lbl">Searches</span>
+      </div>
+      <div class="pb-stat">
+        <span class="pb-stat__val">{{ totalLeads() }}</span>
+        <span class="pb-stat__lbl">Leads</span>
+      </div>
+      @if (totalCost()) {
+        <div class="pb-stat">
+          <span class="pb-stat__val pb-stat__val--cost">{{ formatCost(totalCost()) }}</span>
+          <span class="pb-stat__lbl">Total cost</span>
+        </div>
+      }
+    </div>
+  </header>
+
+  <div class="pb-binder">
+
+    <!-- Left nav -->
+    <nav class="pb-binder-nav" aria-label="Prospector sections">
+
+      <div class="pb-binder-nav__label">New search</div>
+
+      <button
+        type="button"
+        class="pb-binder-nav__item pb-binder-nav__item--new is-active"
+        disabled
+      >
+        Search leads
+      </button>
+
+      @if (!runsLoading() && runs().length > 0) {
+        <div class="pb-binder-nav__label pb-binder-nav__label--recent">Recent</div>
+
+        @for (run of runs(); track run.id) {
+          <button
+            type="button"
+            class="pb-binder-nav__item pb-binder-nav__item--run"
+            [class.pb-binder-nav__item--complete]="run.status === 'complete'"
+            [class.pb-binder-nav__item--failed]="run.status === 'failed'"
+            [class.pb-binder-nav__item--running]="run.status === 'running' || run.status === 'pending'"
+            (click)="openRun(run)"
+          >
+            <span class="pb-run-row">
+              <span class="pb-run-dot pb-run-dot--{{ runStatusClass(run) }}">
+                @if (run.status === 'running' || run.status === 'pending') {
+                  <span class="pb-run-dot__pulse"></span>
+                }
+              </span>
+              <span class="pb-run-body">
+                <span class="pb-run-title">{{ run.input.category }}</span>
+                <span class="pb-run-meta">
+                  {{ run.input.location }}
+                  @if (leadCount(run) > 0) {
+                    · {{ leadCount(run) }} leads
+                    @if (criticalCount(run) > 0) {
+                      · <span class="pb-run-critical">{{ criticalCount(run) }} critical</span>
+                    }
+                  }
+                </span>
+                <span class="pb-run-time">{{ relativeTime(run.createdAt) }}</span>
+              </span>
+            </span>
+          </button>
+        }
+      }
+
+      @if (runsLoading()) {
+        <div class="pb-binder-nav__loading">Loading…</div>
+      }
+
+      @if (runsError()) {
+        <div class="pb-binder-nav__error">{{ runsError() }}</div>
+      }
+
+    </nav>
+
+    <!-- Right panel -->
+    <div class="pb-panel">
+      <div class="pb-panel__head">
+        <span class="pb-panel-kicker">New search</span>
+        <h2 class="pb-panel-title">Who are you prospecting?</h2>
+        <p class="pb-panel-deck">
+          Enter a business category and location. The pipeline will search Google Places and score each lead by review gap, website presence, and ranking opportunity.
+        </p>
+      </div>
+
+      <div class="pb-panel__body">
+        <app-protopipe-prospector-avatar-form
+          [loading]="launching()"
+          [error]="launchError()"
+          (search)="onSearch($event)"
+        />
+      </div>
+    </div>
+
+  </div>
+</div>

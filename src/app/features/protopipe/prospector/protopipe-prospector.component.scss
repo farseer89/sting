@@ -351,6 +351,27 @@ $lt-row-h: 2.5rem;
   &--ghost {
     border-color: transparent;
   }
+
+  &--expand {
+    background: #1e1b4b;
+    border-color: #3730a3;
+    color: #c7d2fe;
+
+    &:hover:not(:disabled) {
+      background: #312e81;
+      color: #e0e7ff;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.pb-leads-expand-error {
+  font-size: 0.72rem;
+  color: #fca5a5;
 }
 
 // ── Selection bar

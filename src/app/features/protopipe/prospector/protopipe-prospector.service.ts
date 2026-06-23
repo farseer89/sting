@@ -38,6 +38,16 @@ export class ProtopipeProspectorService {
     return res.data;
   }
 
+  async expandRun(runId: string): Promise<ProspectorRunDto> {
+    const res = await firstValueFrom(
+      this.http.post<{ ok: boolean; data: ProspectorRunDto }>(
+        `${API}/api/v2/protopipe/prospector/runs/${runId}/expand`,
+        {},
+      ),
+    );
+    return res.data;
+  }
+
   async triggerEnrichment(placeId: string, websiteUri?: string): Promise<EnrichmentDto> {
     const res = await firstValueFrom(
       this.http.post<{ ok: boolean; data: EnrichmentDto }>(

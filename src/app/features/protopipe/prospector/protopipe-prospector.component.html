@@ -113,11 +113,24 @@
           <div class="pb-leads-head">
             <div class="pb-leads-head__info">
               <div class="pb-leads-head__title">{{ run.input.category }}</div>
-              <div class="pb-leads-head__meta">{{ run.input.location }} · {{ relativeTime(run.createdAt) }}</div>
+              <div class="pb-leads-head__meta">{{ run.input.location }} · {{ relativeTime(run.createdAt) }} · {{ leadCount(run) }} leads</div>
             </div>
             <div class="pb-leads-head__actions">
               @if (formatCost(run.totalCostUsd)) {
                 <span class="pb-leads-cost">{{ formatCost(run.totalCostUsd) }}</span>
+              }
+              @if (run.artifacts.nextPageToken) {
+                <button
+                  type="button"
+                  class="pb-leads-btn pb-leads-btn--expand"
+                  [disabled]="expanding()"
+                  (click)="expandSearch()"
+                >
+                  @if (expanding()) { Loading… } @else { Expand area → }
+                </button>
+              }
+              @if (expandError()) {
+                <span class="pb-leads-expand-error">{{ expandError() }}</span>
               }
               <button type="button" class="pb-leads-btn pb-leads-btn--ghost" (click)="openRunPipeline()">
                 Pipeline →

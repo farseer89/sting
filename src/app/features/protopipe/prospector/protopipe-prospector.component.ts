@@ -51,6 +51,8 @@ export class ProtopipeProspectorComponent implements OnInit {
   readonly runsError = signal<string | null>(null);
   readonly launching = signal(false);
   readonly launchError = signal<string | null>(null);
+  readonly expanding = signal(false);
+  readonly expandError = signal<string | null>(null);
 
   // ── Lead drawer ───────────────────────────────────────────────────────────
 
@@ -147,6 +149,24 @@ export class ProtopipeProspectorComponent implements OnInit {
 
   backToLeads(): void {
     this.activeSection.set('leads');
+  }
+
+  async expandSearch(): Promise<void> {
+    const run = this.selectedRun();
+    if (!run || this.expanding()) return;
+
+    this.expanding.set(true);
+    this.expandError.set(null);
+    try {
+      const updated = await this.service.expandRun(run.id);
+      // Update both the selectedRun and the run in the list
+      this.selectedRun.set(updated);
+      this.runs.update((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+    } catch {
+      this.expandError.set('Could not expand — please try again.');
+    } finally {
+      this.expanding.set(false);
+    }
   }
 
   // ── Selection ─────────────────────────────────────────────────────────────

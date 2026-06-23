@@ -64,6 +64,8 @@ export interface ProspectorRunDto {
       totalAdsCount: number;
       adDomains: string[];
     };
+    /** Present when Google has more results available for this search. */
+    nextPageToken?: string;
   };
   events: ProspectorStepEvent[];
   totalCostUsd?: number;

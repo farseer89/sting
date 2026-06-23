@@ -9,7 +9,10 @@ import {
 import { ProtopipeProspectorService } from './protopipe-prospector.service';
 import { ProtopipeProspectorAvatarFormComponent } from './protopipe-prospector-avatar-form.component';
 import { ProtopipeHomeThinkerViewState } from '../home/protopipe-home-thinker-view.state';
+import { ProtopipeHomeThinkerBinderComponent } from '../home/thinker/protopipe-home-thinker-binder.component';
 import type { ProspectorRunDto } from './prospector-run.model';
+
+export type ProspectorSection = 'new-search' | 'leads';
 
 function relativeTime(iso: string | undefined): string {
   if (!iso) return '';
@@ -28,14 +31,18 @@ function relativeTime(iso: string | undefined): string {
   selector: 'app-protopipe-prospector',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ProtopipeProspectorAvatarFormComponent],
+  imports: [
+    ProtopipeProspectorAvatarFormComponent,
+    ProtopipeHomeThinkerBinderComponent,
+  ],
   templateUrl: './protopipe-prospector.component.html',
   styleUrl: './protopipe-prospector.component.scss',
 })
 export class ProtopipeProspectorComponent implements OnInit {
   private readonly service = inject(ProtopipeProspectorService);
-  private readonly thinkerView = inject(ProtopipeHomeThinkerViewState);
+  readonly thinkerView = inject(ProtopipeHomeThinkerViewState);
 
+  readonly activeSection = signal<ProspectorSection>('new-search');
   readonly runs = signal<ProspectorRunDto[]>([]);
   readonly runsLoading = signal(true);
   readonly runsError = signal<string | null>(null);
@@ -49,6 +56,11 @@ export class ProtopipeProspectorComponent implements OnInit {
   readonly totalCost = computed(() =>
     this.runs().reduce((acc, r) => acc + (r.totalCostUsd ?? 0), 0),
   );
+
+  constructor() {
+    this.thinkerView.setFocusBackLabel('Back to searches');
+    this.thinkerView.setExitHandler(() => this.activeSection.set('new-search'));
+  }
 
   async ngOnInit(): Promise<void> {
     try {
@@ -68,7 +80,7 @@ export class ProtopipeProspectorComponent implements OnInit {
     try {
       const run = await this.service.createRun(input.category, input.location);
       this.runs.update((prev) => [run, ...prev]);
-      this.thinkerView.openProspectorRun(run);
+      this.openRunEmbedded(run);
     } catch {
       this.launchError.set('Failed to start search. Please try again.');
     } finally {
@@ -76,8 +88,9 @@ export class ProtopipeProspectorComponent implements OnInit {
     }
   }
 
-  openRun(run: ProspectorRunDto): void {
-    this.thinkerView.openProspectorRun(run);
+  openRunEmbedded(run: ProspectorRunDto): void {
+    this.thinkerView.setProspectorRunEmbedded(run);
+    this.activeSection.set('leads');
   }
 
   runStatusClass(run: ProspectorRunDto): string {
@@ -87,16 +100,6 @@ export class ProtopipeProspectorComponent implements OnInit {
       case 'running':
       case 'pending': return 'running';
       default: return 'pending';
-    }
-  }
-
-  runStatusLabel(run: ProspectorRunDto): string {
-    switch (run.status) {
-      case 'complete': return 'complete';
-      case 'failed': return 'failed';
-      case 'running': return 'running';
-      case 'pending': return 'queued';
-      default: return run.status;
     }
   }
 

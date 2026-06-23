@@ -96,6 +96,7 @@ export class ProtopipeHomeThinkerBinderComponent {
   readonly activeStepId = signal<string | null>(null);
   readonly activeAspectId = signal<string | null>(null);
   readonly activeTab = signal<ThinkerTab>('visualizer');
+  private readonly _lastThoughtId = signal<string | null>(null);
   readonly exportingRunbook = signal(false);
   readonly exportError = signal<string | null>(null);
   readonly rerunning = signal(false);
@@ -434,7 +435,21 @@ export class ProtopipeHomeThinkerBinderComponent {
   constructor() {
     effect(() => {
       const t = this.thought();
-      if (!t) return;
+      if (!t) {
+        this._lastThoughtId.set(null);
+        return;
+      }
+
+      // Reset active step whenever the run itself changes (same step IDs across runs).
+      const prevId = this._lastThoughtId();
+      if (prevId !== null && prevId !== t.id) {
+        this._lastThoughtId.set(t.id);
+        this.activeStepId.set(null);
+        this.activeTab.set('visualizer');
+        return;
+      }
+      this._lastThoughtId.set(t.id);
+
       const current = this.activeStepId();
       const validIds = new Set([
         ...this.foundationSteps().map((s) => s.id),

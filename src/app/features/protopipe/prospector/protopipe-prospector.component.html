@@ -32,8 +32,9 @@
 
       <button
         type="button"
-        class="pb-binder-nav__item pb-binder-nav__item--new is-active"
-        disabled
+        class="pb-binder-nav__item"
+        [class.is-active]="activeSection() === 'new-search'"
+        (click)="activeSection.set('new-search')"
       >
         Search leads
       </button>
@@ -45,10 +46,8 @@
           <button
             type="button"
             class="pb-binder-nav__item pb-binder-nav__item--run"
-            [class.pb-binder-nav__item--complete]="run.status === 'complete'"
-            [class.pb-binder-nav__item--failed]="run.status === 'failed'"
-            [class.pb-binder-nav__item--running]="run.status === 'running' || run.status === 'pending'"
-            (click)="openRun(run)"
+            [class.is-active]="activeSection() === 'leads' && thinkerView.prospectorRun()?.id === run.id"
+            (click)="openRunEmbedded(run)"
           >
             <span class="pb-run-row">
               <span class="pb-run-dot pb-run-dot--{{ runStatusClass(run) }}">
@@ -85,23 +84,31 @@
     </nav>
 
     <!-- Right panel -->
-    <div class="pb-panel">
-      <div class="pb-panel__head">
-        <span class="pb-panel-kicker">New search</span>
-        <h2 class="pb-panel-title">Who are you prospecting?</h2>
-        <p class="pb-panel-deck">
-          Enter a business category and location. The pipeline will search Google Places and score each lead by review gap, website presence, and ranking opportunity.
-        </p>
-      </div>
+    @if (activeSection() === 'new-search') {
+      <div class="pb-panel">
+        <div class="pb-panel__head">
+          <span class="pb-panel-kicker">New search</span>
+          <h2 class="pb-panel-title">Who are you prospecting?</h2>
+          <p class="pb-panel-deck">
+            Enter a business category and location. The pipeline will search Google Places and score each lead by review gap, website presence, and ranking opportunity.
+          </p>
+        </div>
 
-      <div class="pb-panel__body">
-        <app-protopipe-prospector-avatar-form
-          [loading]="launching()"
-          [error]="launchError()"
-          (search)="onSearch($event)"
-        />
+        <div class="pb-panel__body">
+          <app-protopipe-prospector-avatar-form
+            [loading]="launching()"
+            [error]="launchError()"
+            (search)="onSearch($event)"
+          />
+        </div>
       </div>
-    </div>
+    }
+
+    @if (activeSection() === 'leads') {
+      <div class="pb-panel pb-panel--runner">
+        <app-protopipe-home-thinker-binder [embedded]="true" />
+      </div>
+    }
 
   </div>
 </div>

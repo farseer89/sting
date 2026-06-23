@@ -264,6 +264,17 @@ export class ProtopipeHomeThinkerViewState {
 
   /** Open a prospector run in the thinker binder (fullscreen immersive). */
   openProspectorRun(run: ProspectorRunDto): void {
+    this._loadProspectorRun(run);
+    this.enterThinkerFocus?.();
+  }
+
+  /** Load a prospector run into the thinker state without triggering a focus takeover.
+   *  Used by the embedded binder inside the Prospector book. */
+  setProspectorRunEmbedded(run: ProspectorRunDto): void {
+    this._loadProspectorRun(run);
+  }
+
+  private _loadProspectorRun(run: ProspectorRunDto): void {
     this.clearArticleSession();
     this.clearContentPlanSession();
     this.clearDiscoverySession();
@@ -275,7 +286,6 @@ export class ProtopipeHomeThinkerViewState {
     this._prospectorLoadError.set(null);
     this._prospectorRun.set(run);
     this.maybePollProspector(run);
-    this.enterThinkerFocus?.();
   }
 
   clearSession(): void {

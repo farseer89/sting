@@ -4,6 +4,9 @@
       <div class="centerText">
         <h1>{{ product.auth.loginHeroTitle }}</h1>
         <p>{{ product.auth.loginHeroSubtitle }}</p>
+        @if (product.auth.loginHeroDetail) {
+          <p class="centerText__detail">{{ product.auth.loginHeroDetail }}</p>
+        }
       </div>
     </div>
 

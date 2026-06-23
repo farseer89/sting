@@ -42,6 +42,13 @@ import {
   resolveDiscoveryBinderNavStepId,
 } from './discovery-binder.util';
 import {
+  isProspectorResultStepId,
+  mapProspectorResultNavStep,
+  resolveProspectorBinderNavStepId,
+} from './prospector-binder.util';
+import { prospectorRunToThought, formatProspectorMastheadDeck } from '../../lab/prospector/prospector-run-to-thought';
+import { buildProspectorStepVisualizer } from './prospector-run-visualizer.util';
+import {
   isStrategyIntelNavStepId,
   isStrategyResultStepId,
   mapFoundationSteps,
@@ -109,6 +116,10 @@ export class ProtopipeHomeThinkerBinderComponent {
       const run = this.thinkerView.discoveryRun();
       return run ? discoveryRunToThought(run as never) : null;
     }
+    if (this.runKind() === 'prospector') {
+      const run = this.thinkerView.prospectorRun();
+      return run ? prospectorRunToThought(run) : null;
+    }
     const r = this.run();
     return r ? articleRunToThought(r) : null;
   });
@@ -151,6 +162,13 @@ export class ProtopipeHomeThinkerBinderComponent {
     return mapDiscoveryResultNavStep(run, this.steps());
   });
 
+  readonly prospectorResultStep = computed((): BinderStepView | undefined => {
+    if (this.runKind() !== 'prospector') return undefined;
+    const run = this.thinkerView.prospectorRun();
+    if (!run) return undefined;
+    return mapProspectorResultNavStep(run, this.steps());
+  });
+
   readonly railSteps = computed(() => {
     if (this.runKind() === 'content-plan') return this.foundationSteps();
     if (this.runKind() === 'keyword-discovery') return [];
@@ -175,6 +193,10 @@ export class ProtopipeHomeThinkerBinderComponent {
 
     if (this.runKind() === 'keyword-discovery' && isDiscoveryResultStepId(id)) {
       return this.discoveryResultStep();
+    }
+
+    if (this.runKind() === 'prospector' && isProspectorResultStepId(id)) {
+      return this.prospectorResultStep();
     }
 
     return this.railSteps().find((s) => s.id === id) ?? this.steps().find((s) => s.id === id);
@@ -208,6 +230,14 @@ export class ProtopipeHomeThinkerBinderComponent {
         step.id as DiscoveryVisualizerStep,
         step.status,
       );
+    }
+
+    if (this.runKind() === 'prospector') {
+      const run = this.thinkerView.prospectorRun();
+      if (!run) {
+        return { title: 'Visualizer', emptyMessage: 'Select a pipeline step.', blocks: [] };
+      }
+      return buildProspectorStepVisualizer(run, step.id, step.status);
     }
 
     const run = this.run();
@@ -278,6 +308,14 @@ export class ProtopipeHomeThinkerBinderComponent {
       const done = all.filter((s) => s.status === 'done').length;
       return Math.round((done / all.length) * 100);
     }
+    if (this.runKind() === 'prospector') {
+      const steps = this.steps();
+      const result = this.prospectorResultStep();
+      const all = [...steps, ...(result ? [result] : [])];
+      if (all.length === 0) return 0;
+      const done = all.filter((s) => s.status === 'done').length;
+      return Math.round((done / all.length) * 100);
+    }
     const steps = this.steps();
     if (steps.length === 0) return 0;
     const done = steps.filter((s) => s.status === 'done').length;
@@ -296,6 +334,9 @@ export class ProtopipeHomeThinkerBinderComponent {
     if (this.runKind() === 'keyword-discovery') {
       return runStatusLabel(this.thinkerView.discoveryRun()?.status);
     }
+    if (this.runKind() === 'prospector') {
+      return runStatusLabel(this.thinkerView.prospectorRun()?.status);
+    }
     return runStatusLabel(this.run()?.status);
   });
   readonly statusClass = computed(() => {
@@ -304,6 +345,9 @@ export class ProtopipeHomeThinkerBinderComponent {
     }
     if (this.runKind() === 'keyword-discovery') {
       return runStatusClass(this.thinkerView.discoveryRun()?.status);
+    }
+    if (this.runKind() === 'prospector') {
+      return runStatusClass(this.thinkerView.prospectorRun()?.status);
     }
     return runStatusClass(this.run()?.status);
   });
@@ -322,6 +366,12 @@ export class ProtopipeHomeThinkerBinderComponent {
       const run = this.thinkerView.discoveryRun();
       if (!run) return `Keyword discovery · ${label}`;
       return formatDiscoveryMastheadDeck(run as never, label);
+    }
+
+    if (this.runKind() === 'prospector') {
+      const run = this.thinkerView.prospectorRun();
+      if (!run) return 'Prospector';
+      return formatProspectorMastheadDeck(run);
     }
 
     const started = this.run()?.createdAt;
@@ -367,6 +417,9 @@ export class ProtopipeHomeThinkerBinderComponent {
     if (this.runKind() === 'keyword-discovery') {
       return Boolean(this.thinkerView.discoveryRun());
     }
+    if (this.runKind() === 'prospector') {
+      return Boolean(this.thinkerView.prospectorRun());
+    }
     return Boolean(this.thinkerView.runId()) || Boolean(this.run());
   });
 
@@ -383,6 +436,7 @@ export class ProtopipeHomeThinkerBinderComponent {
         ...(this.strategyResultStep() ? [this.strategyResultStep()!.id] : []),
         ...this.discoveryNavPhases().map((s) => s.id),
         ...(this.discoveryResultStep() ? [this.discoveryResultStep()!.id] : []),
+        ...(this.prospectorResultStep() ? [this.prospectorResultStep()!.id] : []),
         ...this.steps().map((s) => s.id),
       ]);
       if (current && validIds.has(current)) return;
@@ -519,6 +573,13 @@ export class ProtopipeHomeThinkerBinderComponent {
       const thought = this.thought();
       if (run && thought) {
         return resolveDiscoveryBinderNavStepId(run, thought.currentStepId);
+      }
+    }
+
+    if (this.runKind() === 'prospector') {
+      const run = this.thinkerView.prospectorRun();
+      if (run) {
+        return resolveProspectorBinderNavStepId(run);
       }
     }
 

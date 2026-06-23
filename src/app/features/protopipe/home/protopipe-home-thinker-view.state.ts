@@ -15,8 +15,10 @@ import { ContentPlanService } from '../content-plan/content-plan.service';
 import { parseProtopipeApiError } from '../protopipe-http.util';
 import { ProtopipeApiService } from '../protopipe-api.service';
 import { ProtopipeContentService } from '../protopipe-content.service';
+import { ProtopipeProspectorService } from '../prospector/protopipe-prospector.service';
+import type { ProspectorRunDto } from '../prospector/prospector-run.model';
 
-export type ThinkerRunKind = 'article' | 'content-plan' | 'keyword-discovery';
+export type ThinkerRunKind = 'article' | 'content-plan' | 'keyword-discovery' | 'prospector';
 
 const CONTENT_PLAN_POLL_MS = ARTICLE_RUN_POLL_MS;
 const DISCOVERY_POLL_MS = 1800;
@@ -33,12 +35,15 @@ export interface OpenDiscoveryRunOptions {
   enterFocus?: boolean;
 }
 
+const PROSPECTOR_POLL_MS = 1500;
+
 @Injectable()
 export class ProtopipeHomeThinkerViewState {
   private readonly session = inject(ArticleGenerationRunSession);
   private readonly contentPlanApi = inject(ContentPlanService);
   private readonly content = inject(ProtopipeContentService);
   private readonly api = inject(ProtopipeApiService);
+  private readonly prospectorApi = inject(ProtopipeProspectorService);
 
   private enterThinkerFocus: (() => void) | null = null;
   private enterWriterFocus: (() => void) | null = null;
@@ -58,9 +63,13 @@ export class ProtopipeHomeThinkerViewState {
   private readonly _discoveryRun = signal<ProtopipeKeywordDiscoveryRunDto | null>(null);
   private readonly _discoveryLoadError = signal<string | null>(null);
   private readonly _discoveryConnection = signal<ArticleRunConnection>('idle');
+  private readonly _prospectorRun = signal<ProspectorRunDto | null>(null);
+  private readonly _prospectorLoadError = signal<string | null>(null);
+  private readonly _prospectorConnection = signal<ArticleRunConnection>('idle');
 
   private contentPlanPollTimer: ReturnType<typeof setTimeout> | null = null;
   private discoveryPollTimer: ReturnType<typeof setTimeout> | null = null;
+  private prospectorPollTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly runKind = this._runKind.asReadonly();
   readonly siteId = this._siteId.asReadonly();
@@ -69,15 +78,18 @@ export class ProtopipeHomeThinkerViewState {
   readonly workingTitle = this._workingTitle.asReadonly();
   readonly contentPlanRun = this._contentPlanRun.asReadonly();
   readonly discoveryRun = this._discoveryRun.asReadonly();
+  readonly prospectorRun = this._prospectorRun.asReadonly();
   readonly run = this.session.run;
   readonly loadError = computed(() => {
     if (this._runKind() === 'content-plan') return this._contentPlanLoadError();
     if (this._runKind() === 'keyword-discovery') return this._discoveryLoadError();
+    if (this._runKind() === 'prospector') return this._prospectorLoadError();
     return this.session.loadError();
   });
   readonly connection = computed(() => {
     if (this._runKind() === 'content-plan') return this._contentPlanConnection();
     if (this._runKind() === 'keyword-discovery') return this._discoveryConnection();
+    if (this._runKind() === 'prospector') return this._prospectorConnection();
     return this.session.connection();
   });
   readonly isActive = computed(() => {
@@ -88,6 +100,10 @@ export class ProtopipeHomeThinkerViewState {
     if (this._runKind() === 'keyword-discovery') {
       const run = this._discoveryRun();
       return run?.status === 'pending' || run?.status === 'discovering';
+    }
+    if (this._runKind() === 'prospector') {
+      const run = this._prospectorRun();
+      return run?.status === 'pending' || run?.status === 'running';
     }
     return this.session.isActive();
   });
@@ -246,10 +262,27 @@ export class ProtopipeHomeThinkerViewState {
     }
   }
 
+  /** Open a prospector run in the thinker binder (fullscreen immersive). */
+  openProspectorRun(run: ProspectorRunDto): void {
+    this.clearArticleSession();
+    this.clearContentPlanSession();
+    this.clearDiscoverySession();
+    this._runKind.set('prospector');
+    this._siteId.set(null);
+    this._postId.set(null);
+    this._runId.set(run.id);
+    this._workingTitle.set(`${run.input.category} · ${run.input.location}`);
+    this._prospectorLoadError.set(null);
+    this._prospectorRun.set(run);
+    this.maybePollProspector(run);
+    this.enterThinkerFocus?.();
+  }
+
   clearSession(): void {
     this.clearArticleSession();
     this.clearContentPlanSession();
     this.clearDiscoverySession();
+    this.clearProspectorSession();
     this._runKind.set('article');
   }
 
@@ -264,6 +297,10 @@ export class ProtopipeHomeThinkerViewState {
     }
     if (this._runKind() === 'keyword-discovery') {
       void this.reloadDiscoveryRun();
+      return;
+    }
+    if (this._runKind() === 'prospector') {
+      void this.reloadProspectorRun();
       return;
     }
     this.session.retryPoll();
@@ -386,6 +423,53 @@ export class ProtopipeHomeThinkerViewState {
     if (this.discoveryPollTimer) {
       clearTimeout(this.discoveryPollTimer);
       this.discoveryPollTimer = null;
+    }
+  }
+
+  private clearProspectorSession(): void {
+    this.stopProspectorPolling();
+    this._prospectorRun.set(null);
+    this._prospectorLoadError.set(null);
+    this._prospectorConnection.set('idle');
+  }
+
+  private maybePollProspector(run: ProspectorRunDto): void {
+    if (run.status === 'pending' || run.status === 'running') {
+      this._prospectorConnection.set('live');
+      this.scheduleProspectorPoll(PROSPECTOR_POLL_MS);
+    } else {
+      this._prospectorConnection.set('idle');
+      this.stopProspectorPolling();
+    }
+  }
+
+  private scheduleProspectorPoll(delayMs: number): void {
+    this.stopProspectorPolling();
+    this.prospectorPollTimer = setTimeout(() => {
+      void this.reloadProspectorRun();
+    }, delayMs);
+  }
+
+  private async reloadProspectorRun(): Promise<void> {
+    const runId = this._runId();
+    if (!runId || this._runKind() !== 'prospector') return;
+
+    try {
+      const run = await this.prospectorApi.getRun(runId);
+      this._prospectorLoadError.set(null);
+      this._prospectorRun.set(run);
+      this.maybePollProspector(run);
+    } catch (err) {
+      this._prospectorConnection.set('idle');
+      this._prospectorLoadError.set(parseProtopipeApiError(err, 'Could not load prospector run.'));
+      this.stopProspectorPolling();
+    }
+  }
+
+  private stopProspectorPolling(): void {
+    if (this.prospectorPollTimer) {
+      clearTimeout(this.prospectorPollTimer);
+      this.prospectorPollTimer = null;
     }
   }
 }

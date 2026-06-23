@@ -6,6 +6,8 @@ export interface ProductAuthConfig {
   signupCta: string;
   loginHeroTitle: string;
   loginHeroSubtitle: string;
+  /** Optional third hero line below subtitle (login/signup left panel). */
+  loginHeroDetail?: string;
   loginImageUrl: string;
   supportEmail: string;
 }

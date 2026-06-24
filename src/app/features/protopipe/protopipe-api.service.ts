@@ -171,6 +171,11 @@ import type {
   PatchMerchBookLogoConceptRequest,
   PatchMerchBookLogoConceptResponse,
   GenerateMerchBookMockupsResponse,
+  ListPrintfulCatalogCategoriesResponse,
+  ListPrintfulCatalogProductsResponse,
+  GetPrintfulCatalogProductResponse,
+  ProtopipePrintfulCatalogProductSummary,
+  ProtopipePrintfulCatalogProductDetail,
 } from '@hive/contracts';
 import { Observable, firstValueFrom, shareReplay } from 'rxjs';
 import { protopipeApiUrl } from './protopipe-http.util';
@@ -1543,6 +1548,47 @@ export class ProtopipeApiService {
         protopipeApiUrl(ProtopipeEndpoints.merchBookGenerateMockups.path, { siteId, runId }),
         {},
       ),
+    );
+  }
+
+  listPrintfulCatalogCategories(siteId: string): Promise<ListPrintfulCatalogCategoriesResponse> {
+    return firstValueFrom(
+      this.http.get<ListPrintfulCatalogCategoriesResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.merchBookListPrintfulCategories.path, { siteId }),
+      ),
+    );
+  }
+
+  listPrintfulCatalogProducts(
+    siteId: string,
+    params?: { limit?: number; offset?: number; categoryId?: number },
+  ): Promise<ListPrintfulCatalogProductsResponse> {
+    const query = new URLSearchParams();
+    if (params?.limit != null) query.set('limit', String(params.limit));
+    if (params?.offset != null) query.set('offset', String(params.offset));
+    if (params?.categoryId != null) query.set('categoryId', String(params.categoryId));
+    const qs = query.toString();
+    const path = protopipeApiUrl(ProtopipeEndpoints.merchBookListPrintfulProducts.path, { siteId });
+    return firstValueFrom(
+      this.http.get<ListPrintfulCatalogProductsResponse>(qs ? `${path}?${qs}` : path),
+    );
+  }
+
+  getPrintfulCatalogProduct(
+    siteId: string,
+    catalogProductId: number,
+    params?: { variantLimit?: number; variantOffset?: number },
+  ): Promise<GetPrintfulCatalogProductResponse> {
+    const query = new URLSearchParams();
+    if (params?.variantLimit != null) query.set('variantLimit', String(params.variantLimit));
+    if (params?.variantOffset != null) query.set('variantOffset', String(params.variantOffset));
+    const qs = query.toString();
+    const path = protopipeApiUrl(ProtopipeEndpoints.merchBookGetPrintfulProduct.path, {
+      siteId,
+      catalogProductId: String(catalogProductId),
+    });
+    return firstValueFrom(
+      this.http.get<GetPrintfulCatalogProductResponse>(qs ? `${path}?${qs}` : path),
     );
   }
 }

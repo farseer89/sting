@@ -1,10 +1,18 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import type { ProtopipeMerchBookCatalogProduct, ProtopipeMerchBookRunDto } from '@hive/contracts';
+import type {
+  ProtopipeMerchBookCatalogProduct,
+  ProtopipeMerchBookRunDto,
+  ProtopipePrintfulCatalogCategory,
+  ProtopipePrintfulCatalogProductDetail,
+  ProtopipePrintfulCatalogProductSummary,
+} from '@hive/contracts';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 import { ProtopipeApiService } from '../../protopipe-api.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 
-export type MerchBookSection = 'new' | 'runs' | 'logo' | 'products' | 'mockups' | 'order';
+export type MerchBookSection = 'new' | 'browse' | 'runs' | 'logo' | 'products' | 'mockups' | 'order';
+
+const PRINTFUL_BROWSE_PAGE_SIZE = 24;
 
 const MOCKUP_POLL_MS = 3_000;
 const MOCKUP_POLL_MAX_ATTEMPTS = 30;
@@ -21,11 +29,23 @@ export class ProtopipeMerchBookStore {
   private readonly _error = signal<string | null>(null);
   private readonly _runs = signal<ProtopipeMerchBookRunDto[]>([]);
   private readonly _catalog = signal<ProtopipeMerchBookCatalogProduct[]>([]);
+  private readonly _printfulLive = signal(false);
   private readonly _selectedProductIds = signal<string[]>([]);
+  private readonly _mockupStyleIds = signal<Record<string, number>>({});
   private readonly _activeRunId = signal<string | null>(null);
   private readonly _section = signal<MerchBookSection>('new');
   private readonly _label = signal('');
   private readonly _logoPrompt = signal('');
+
+  private readonly _printfulBrowseLoading = signal(false);
+  private readonly _printfulCategories = signal<ProtopipePrintfulCatalogCategory[]>([]);
+  private readonly _printfulProducts = signal<ProtopipePrintfulCatalogProductSummary[]>([]);
+  private readonly _printfulPaging = signal({ total: 0, limit: PRINTFUL_BROWSE_PAGE_SIZE, offset: 0 });
+  private readonly _printfulCategoryId = signal<number | null>(null);
+  private readonly _printfulBrowseLive = signal(false);
+  private readonly _printfulProductDetail = signal<ProtopipePrintfulCatalogProductDetail | null>(null);
+  private readonly _printfulProductLoading = signal(false);
+  private readonly _printfulBrowseLoaded = signal(false);
 
   readonly loading = this._loading.asReadonly();
   readonly catalogLoading = this._catalogLoading.asReadonly();
@@ -34,11 +54,36 @@ export class ProtopipeMerchBookStore {
   readonly error = this._error.asReadonly();
   readonly runs = this._runs.asReadonly();
   readonly catalog = this._catalog.asReadonly();
+  readonly printfulLive = this._printfulLive.asReadonly();
   readonly selectedProductIds = this._selectedProductIds.asReadonly();
   readonly activeRunId = this._activeRunId.asReadonly();
   readonly section = this._section.asReadonly();
   readonly label = this._label.asReadonly();
   readonly logoPrompt = this._logoPrompt.asReadonly();
+
+  readonly printfulBrowseLoading = this._printfulBrowseLoading.asReadonly();
+  readonly printfulCategories = this._printfulCategories.asReadonly();
+  readonly printfulProducts = this._printfulProducts.asReadonly();
+  readonly printfulPaging = this._printfulPaging.asReadonly();
+  readonly printfulCategoryId = this._printfulCategoryId.asReadonly();
+  readonly printfulBrowseLive = this._printfulBrowseLive.asReadonly();
+  readonly printfulProductDetail = this._printfulProductDetail.asReadonly();
+  readonly printfulProductLoading = this._printfulProductLoading.asReadonly();
+
+  readonly printfulBrowsePage = computed(() => {
+    const { offset, limit, total } = this._printfulPaging();
+    if (!total) return 1;
+    return Math.floor(offset / limit) + 1;
+  });
+
+  readonly printfulBrowsePageCount = computed(() => {
+    const { total, limit } = this._printfulPaging();
+    return total ? Math.ceil(total / limit) : 1;
+  });
+
+  readonly sortedPrintfulCategories = computed(() =>
+    [...this._printfulCategories()].sort((a, b) => a.title.localeCompare(b.title)),
+  );
 
   readonly selectedProductCount = computed(() => this._selectedProductIds().length);
 
@@ -62,6 +107,9 @@ export class ProtopipeMerchBookStore {
 
   setSection(section: MerchBookSection): void {
     this._section.set(section);
+    if (section === 'browse' && !this._printfulBrowseLoaded()) {
+      void this.loadPrintfulBrowse();
+    }
   }
 
   setLabel(value: string): void {
@@ -82,6 +130,37 @@ export class ProtopipeMerchBookStore {
     );
   }
 
+  mockupStyleId(productId: string): number | undefined {
+    return this._mockupStyleIds()[productId];
+  }
+
+  selectMockupStyle(productId: string, styleId: number): void {
+    this._mockupStyleIds.update((map) => ({ ...map, [productId]: styleId }));
+    if (!this.isProductSelected(productId)) {
+      this._selectedProductIds.update((ids) => [...ids, productId]);
+    }
+  }
+
+  mockupStyleFilter(productId: string): string {
+    return this._mockupStyleFilter()[productId] ?? 'all';
+  }
+
+  private readonly _mockupStyleFilter = signal<Record<string, string>>({});
+
+  setMockupStyleFilter(productId: string, category: string): void {
+    this._mockupStyleFilter.update((map) => ({ ...map, [productId]: category }));
+  }
+
+  filteredMockupStyles(product: ProtopipeMerchBookCatalogProduct): ProtopipeMerchBookCatalogProduct['mockupStyles'] {
+    const filter = this.mockupStyleFilter(product.id);
+    if (filter === 'all') return product.mockupStyles;
+    return product.mockupStyles.filter((s) => s.category === filter);
+  }
+
+  mockupStyleCategories(product: ProtopipeMerchBookCatalogProduct): string[] {
+    return [...new Set(product.mockupStyles.map((s) => s.category))].sort();
+  }
+
   selectRun(runId: string): void {
     this._activeRunId.set(runId);
     this._section.set('runs');
@@ -92,6 +171,105 @@ export class ProtopipeMerchBookStore {
     await Promise.all([this.loadCatalog(), this.loadRuns()]);
   }
 
+  async loadPrintfulBrowse(): Promise<void> {
+    const siteId = this.strategy.siteId();
+    if (!siteId) return;
+
+    this._printfulBrowseLoading.set(true);
+    this._error.set(null);
+    try {
+      const [categoriesRes, productsRes] = await Promise.all([
+        this.api.listPrintfulCatalogCategories(siteId),
+        this.api.listPrintfulCatalogProducts(siteId, {
+          limit: PRINTFUL_BROWSE_PAGE_SIZE,
+          offset: 0,
+          categoryId: this._printfulCategoryId() ?? undefined,
+        }),
+      ]);
+      this._printfulCategories.set(categoriesRes.categories);
+      this._printfulBrowseLive.set(categoriesRes.printfulLive && productsRes.printfulLive);
+      this._printfulProducts.set(productsRes.products);
+      this._printfulPaging.set(productsRes.paging);
+      this._printfulBrowseLoaded.set(true);
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Could not load Printful catalog'));
+    } finally {
+      this._printfulBrowseLoading.set(false);
+    }
+  }
+
+  async setPrintfulCategoryFilter(categoryId: number | null): Promise<void> {
+    this._printfulCategoryId.set(categoryId);
+    this._printfulProductDetail.set(null);
+    await this.loadPrintfulProductsPage(0);
+  }
+
+  async loadPrintfulProductsPage(offset: number): Promise<void> {
+    const siteId = this.strategy.siteId();
+    if (!siteId) return;
+
+    this._printfulBrowseLoading.set(true);
+    try {
+      const res = await this.api.listPrintfulCatalogProducts(siteId, {
+        limit: PRINTFUL_BROWSE_PAGE_SIZE,
+        offset,
+        categoryId: this._printfulCategoryId() ?? undefined,
+      });
+      this._printfulProducts.set(res.products);
+      this._printfulPaging.set(res.paging);
+      this._printfulBrowseLive.set(res.printfulLive);
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Could not load Printful products'));
+    } finally {
+      this._printfulBrowseLoading.set(false);
+    }
+  }
+
+  async openPrintfulProduct(catalogProductId: number): Promise<void> {
+    const siteId = this.strategy.siteId();
+    if (!siteId) return;
+
+    this._printfulProductLoading.set(true);
+    this._error.set(null);
+    try {
+      const res = await this.api.getPrintfulCatalogProduct(siteId, catalogProductId, {
+        variantLimit: 48,
+        variantOffset: 0,
+      });
+      this._printfulProductDetail.set(res.product);
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Could not load product details'));
+    } finally {
+      this._printfulProductLoading.set(false);
+    }
+  }
+
+  closePrintfulProductDetail(): void {
+    this._printfulProductDetail.set(null);
+  }
+
+  async loadMorePrintfulVariants(): Promise<void> {
+    const siteId = this.strategy.siteId();
+    const detail = this._printfulProductDetail();
+    if (!siteId || !detail) return;
+
+    this._printfulProductLoading.set(true);
+    try {
+      const res = await this.api.getPrintfulCatalogProduct(siteId, detail.id, {
+        variantLimit: 48,
+        variantOffset: detail.variants.length,
+      });
+      this._printfulProductDetail.set({
+        ...res.product,
+        variants: [...detail.variants, ...res.product.variants],
+      });
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Could not load more variants'));
+    } finally {
+      this._printfulProductLoading.set(false);
+    }
+  }
+
   async loadCatalog(): Promise<void> {
     const siteId = this.strategy.siteId();
     if (!siteId) return;
@@ -99,6 +277,14 @@ export class ProtopipeMerchBookStore {
     try {
       const res = await this.api.getMerchBookCatalog(siteId);
       this._catalog.set(res.products);
+      this._printfulLive.set(res.printfulLive);
+      const defaultStyles: Record<string, number> = {};
+      for (const product of res.products) {
+        if (product.defaultMockupStyleId != null) {
+          defaultStyles[product.id] = product.defaultMockupStyleId;
+        }
+      }
+      this._mockupStyleIds.set(defaultStyles);
       if (!this._selectedProductIds().length && res.products.length) {
         this._selectedProductIds.set(res.products.map((p) => p.id));
       }
@@ -181,11 +367,18 @@ export class ProtopipeMerchBookStore {
     this._running.set(true);
     this._error.set(null);
     try {
+      const mockupStyleIds: Record<string, number> = {};
+      for (const id of productIds) {
+        const styleId = this._mockupStyleIds()[id];
+        if (styleId != null) mockupStyleIds[id] = styleId;
+      }
+
       const res = await this.api.createMerchBookRun(siteId, {
         label: this._label().trim() || undefined,
         recipe: 'starter_pack',
         logoPrompt: this._logoPrompt().trim() || undefined,
         productIds,
+        mockupStyleIds,
       });
       this._runs.update((list) => [res.run, ...list.filter((r) => r.id !== res.run.id)]);
       this._activeRunId.set(res.run.id);

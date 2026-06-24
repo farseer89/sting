@@ -28,6 +28,14 @@
       <button
         type="button"
         class="mb-binder-nav__item"
+        [class.mb-binder-nav__item--active]="store.section() === 'browse'"
+        (click)="selectSection('browse')"
+      >
+        Printful catalog
+      </button>
+      <button
+        type="button"
+        class="mb-binder-nav__item"
         [class.mb-binder-nav__item--active]="store.section() === 'runs'"
         (click)="selectSection('runs')"
       >
@@ -88,10 +96,19 @@
             </p>
 
             <h3 class="mb-subhead">Printful starter catalog</h3>
+            @if (store.printfulLive()) {
+              <p class="mb-section__hint mb-catalog-live">
+                Loaded live from Printful — pick a product, then choose any mockup style below.
+              </p>
+            } @else if (!store.catalogLoading()) {
+              <p class="mb-muted mb-catalog-live">
+                Printful is not configured on the server — product photos and mockup styles are unavailable.
+              </p>
+            }
             @if (store.catalogLoading()) {
               <div class="mb-running mb-running--shop">
                 <p-progressSpinner strokeWidth="4" [style]="{ width: '28px', height: '28px' }" />
-                <span>Loading catalog…</span>
+                <span>Loading Printful catalog and mockup styles…</span>
               </div>
             } @else if (!store.catalog().length) {
               <p class="mb-muted">No catalog products configured.</p>
@@ -102,44 +119,106 @@
                     class="mb-shop-card mb-shop-card--catalog"
                     [class.mb-shop-card--selected]="store.isProductSelected(product.id)"
                   >
-                    <label class="mb-catalog-card">
-                      <input
-                        type="checkbox"
-                        class="mb-catalog-card__check"
-                        [checked]="store.isProductSelected(product.id)"
-                        (change)="store.toggleProduct(product.id)"
-                      />
-                      <div class="mb-catalog-card__body">
-                        <div class="mb-catalog-card__head">
-                          <h4 class="mb-shop-card__title">{{ product.name }}</h4>
-                          @if (product.unitPriceUsd != null) {
-                            <span class="mb-shop-card__price">{{ formatPrice(product.unitPriceUsd) }}</span>
+                    <div class="mb-catalog-card">
+                      <label class="mb-catalog-card__select">
+                        <input
+                          type="checkbox"
+                          class="mb-catalog-card__check"
+                          [checked]="store.isProductSelected(product.id)"
+                          (change)="store.toggleProduct(product.id)"
+                        />
+                        <span>Include in pack</span>
+                      </label>
+
+                      <div class="mb-catalog-card__row">
+                        <div class="mb-catalog-card__media">
+                          @if (product.imageUrl) {
+                            <img
+                              [src]="product.imageUrl"
+                              [alt]="product.name"
+                              class="mb-catalog-card__img"
+                              loading="lazy"
+                            />
+                          } @else {
+                            <div class="mb-catalog-card__img-placeholder">No photo</div>
                           }
                         </div>
-                        <p class="mb-catalog-card__printful">{{ product.printfulProductName }}</p>
-                        <p class="mb-catalog-card__desc">{{ product.description }}</p>
-                        <div class="mb-catalog-card__meta">
-                          @if (product.color) {
-                            <span class="mb-shop-card__swatch" [attr.data-color]="product.color"></span>
-                            <span>{{ product.color }}</span>
-                          }
-                          <span>{{ product.decoration }}</span>
+
+                        <div class="mb-catalog-card__body">
+                          <div class="mb-catalog-card__head">
+                            <h4 class="mb-shop-card__title">{{ product.name }}</h4>
+                            @if (product.unitPriceUsd != null) {
+                              <span class="mb-shop-card__price">{{ formatPrice(product.unitPriceUsd) }}</span>
+                            }
+                          </div>
+                          <p class="mb-catalog-card__printful">{{ product.printfulProductName }}</p>
+                          <p class="mb-catalog-card__desc">{{ product.description }}</p>
+                          <div class="mb-catalog-card__meta">
+                            @if (product.color) {
+                              <span class="mb-shop-card__swatch" [attr.data-color]="product.color"></span>
+                              <span>{{ product.color }}</span>
+                            }
+                            <span>{{ product.decoration }}</span>
+                            <span>{{ product.placement }}</span>
+                          </div>
                         </div>
-                        <p class="mb-catalog-card__mockup">
-                          Preview: <strong>{{ product.defaultMockupView }}</strong>
-                        </p>
-                        <ul class="mb-catalog-card__styles">
-                          @for (style of product.mockupStyleOptions; track style) {
-                            <li>{{ style }}</li>
-                          }
-                        </ul>
                       </div>
-                    </label>
+
+                      @if (store.isProductSelected(product.id)) {
+                        <div class="mb-mockup-picker">
+                          <div class="mb-mockup-picker__head">
+                            <h5 class="mb-mockup-picker__title">
+                              Printful mockup styles
+                              <span class="mb-mockup-picker__count">({{ product.mockupStyles.length }})</span>
+                            </h5>
+                            @if (store.mockupStyleCategories(product).length > 1) {
+                              <select
+                                class="mb-mockup-picker__filter"
+                                [value]="store.mockupStyleFilter(product.id)"
+                                (change)="store.setMockupStyleFilter(product.id, $any($event.target).value)"
+                              >
+                                <option value="all">All categories</option>
+                                @for (cat of store.mockupStyleCategories(product); track cat) {
+                                  <option [value]="cat">{{ cat }}</option>
+                                }
+                              </select>
+                            }
+                          </div>
+
+                          @if (!product.mockupStyles.length) {
+                            <p class="mb-muted">No mockup styles returned from Printful for this SKU.</p>
+                          } @else {
+                            <ul class="mb-mockup-picker__grid">
+                              @for (style of store.filteredMockupStyles(product); track style.id) {
+                                <li>
+                                  <button
+                                    type="button"
+                                    class="mb-mockup-picker__tile"
+                                    [class.mb-mockup-picker__tile--active]="store.mockupStyleId(product.id) === style.id"
+                                    (click)="store.selectMockupStyle(product.id, style.id)"
+                                  >
+                                    @if (style.previewImageUrl) {
+                                      <img
+                                        [src]="style.previewImageUrl"
+                                        [alt]="style.label"
+                                        class="mb-mockup-picker__img"
+                                        loading="lazy"
+                                      />
+                                    }
+                                    <span class="mb-mockup-picker__label">{{ style.label }}</span>
+                                  </button>
+                                </li>
+                              }
+                            </ul>
+                          }
+                        </div>
+                      }
+                    </div>
                   </li>
                 }
               </ul>
               <p class="mb-muted mb-catalog-summary">
-                {{ store.selectedProductCount() }} of {{ store.catalog().length }} selected for mockup preview
+                {{ store.selectedProductCount() }} of {{ store.catalog().length }} selected · mockup style picks apply after logo selection
               </p>
             }
 
@@ -184,6 +263,209 @@
               <div class="mb-running">
                 <p-progressSpinner strokeWidth="4" [style]="{ width: '28px', height: '28px' }" />
                 <span>Generating logo concepts via fal.ai (Ideogram + background removal)…</span>
+              </div>
+            }
+          </section>
+        }
+
+        @case ('browse') {
+          <section class="mb-section mb-section--browse">
+            <div class="mb-browse-header">
+              <div>
+                <h2 class="mb-section__title">Printful catalog</h2>
+                <p class="mb-section__hint">
+                  Browse every product Printful offers in North America — photos, variants, and specs only. No logos applied here.
+                </p>
+              </div>
+              @if (store.printfulBrowseLive()) {
+                <span class="mb-browse-header__count">
+                  {{ store.printfulPaging().total }} products
+                </span>
+              }
+            </div>
+
+            <div class="mb-browse-toolbar">
+              <label class="mb-browse-filter">
+                <span class="mb-browse-filter__label">Category</span>
+                <select
+                  class="mb-browse-filter__select"
+                  [value]="store.printfulCategoryId() ?? ''"
+                  (change)="store.setPrintfulCategoryFilter($any($event.target).value ? +$any($event.target).value : null)"
+                >
+                  <option value="">All categories</option>
+                  @for (cat of store.sortedPrintfulCategories(); track cat.id) {
+                    <option [value]="cat.id">{{ cat.title }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+
+            @if (store.printfulBrowseLoading() && !store.printfulProducts().length) {
+              <div class="mb-running mb-running--shop">
+                <p-progressSpinner strokeWidth="4" [style]="{ width: '28px', height: '28px' }" />
+                <span>Loading Printful catalog…</span>
+              </div>
+            } @else if (!store.printfulBrowseLive() && !store.printfulBrowseLoading()) {
+              <p class="mb-muted">Printful is not configured on the server — catalog browse is unavailable.</p>
+            } @else {
+              <div class="mb-browse-layout" [class.mb-browse-layout--detail]="store.printfulProductDetail()">
+                <div class="mb-browse-grid-wrap">
+                  <ul class="mb-shop-grid mb-shop-grid--browse">
+                    @for (product of store.printfulProducts(); track product.id) {
+                      <li>
+                        <button
+                          type="button"
+                          class="mb-shop-card mb-shop-card--browse"
+                          [class.mb-shop-card--active]="store.printfulProductDetail()?.id === product.id"
+                          (click)="store.openPrintfulProduct(product.id)"
+                        >
+                          <div class="mb-shop-card__media">
+                            @if (product.imageUrl) {
+                              <img
+                                [src]="product.imageUrl"
+                                [alt]="product.name"
+                                class="mb-shop-card__img"
+                                loading="lazy"
+                              />
+                            } @else {
+                              <div class="mb-shop-card__placeholder">No photo</div>
+                            }
+                          </div>
+                          <div class="mb-shop-card__body">
+                            <h4 class="mb-shop-card__title">{{ product.name }}</h4>
+                            <p class="mb-shop-card__meta">
+                              @if (product.brand) {
+                                <span>{{ product.brand }}</span>
+                              }
+                              <span>{{ product.type }}</span>
+                              <span>{{ product.variantCount }} variants</span>
+                            </p>
+                          </div>
+                        </button>
+                      </li>
+                    }
+                  </ul>
+
+                  @if (store.printfulBrowsePageCount() > 1) {
+                    <div class="mb-browse-pager">
+                      <p-button
+                        label="Previous"
+                        icon="pi pi-chevron-left"
+                        [text]="true"
+                        [disabled]="store.printfulBrowseLoading() || store.printfulPaging().offset === 0"
+                        (onClick)="store.loadPrintfulProductsPage(store.printfulPaging().offset - store.printfulPaging().limit)"
+                      />
+                      <span class="mb-browse-pager__label">
+                        Page {{ store.printfulBrowsePage() }} of {{ store.printfulBrowsePageCount() }}
+                      </span>
+                      <p-button
+                        label="Next"
+                        icon="pi pi-chevron-right"
+                        iconPos="right"
+                        [text]="true"
+                        [disabled]="store.printfulBrowseLoading() || store.printfulBrowsePage() >= store.printfulBrowsePageCount()"
+                        (onClick)="store.loadPrintfulProductsPage(store.printfulPaging().offset + store.printfulPaging().limit)"
+                      />
+                    </div>
+                  }
+                </div>
+
+                @if (store.printfulProductDetail(); as detail) {
+                  <aside class="mb-browse-detail">
+                    <div class="mb-browse-detail__head">
+                      <h3 class="mb-browse-detail__title">{{ detail.name }}</h3>
+                      <button type="button" class="mb-link" (click)="store.closePrintfulProductDetail()">Close</button>
+                    </div>
+
+                    @if (store.printfulProductLoading() && !detail.variants.length) {
+                      <div class="mb-running">
+                        <p-progressSpinner strokeWidth="4" [style]="{ width: '24px', height: '24px' }" />
+                      </div>
+                    } @else {
+                      <div class="mb-browse-detail__hero">
+                        @if (detail.imageUrl) {
+                          <img [src]="detail.imageUrl" [alt]="detail.name" class="mb-browse-detail__img" />
+                        }
+                        <div class="mb-browse-detail__facts">
+                          <p><strong>Printful ID</strong> {{ detail.id }}</p>
+                          @if (detail.brand) {
+                            <p><strong>Brand</strong> {{ detail.brand }}</p>
+                          }
+                          @if (detail.model) {
+                            <p><strong>Model</strong> {{ detail.model }}</p>
+                          }
+                          <p><strong>Type</strong> {{ detail.type }}</p>
+                          <p><strong>Variants</strong> {{ detail.variantCount }}</p>
+                          @if (detail.techniques.length) {
+                            <p><strong>Techniques</strong> {{ detail.techniques.join(', ') }}</p>
+                          }
+                          @if (detail.placements.length) {
+                            <p><strong>Placements</strong> {{ detail.placements.join(', ') }}</p>
+                          }
+                        </div>
+                      </div>
+
+                      @if (detail.description) {
+                        <p class="mb-browse-detail__desc">{{ detail.description }}</p>
+                      }
+
+                      @if (detail.colors.length) {
+                        <div class="mb-browse-detail__chips">
+                          <span class="mb-browse-detail__chips-label">Colors</span>
+                          @for (color of detail.colors; track color) {
+                            <span class="mb-browse-chip">{{ color }}</span>
+                          }
+                        </div>
+                      }
+
+                      @if (detail.sizes.length) {
+                        <div class="mb-browse-detail__chips">
+                          <span class="mb-browse-detail__chips-label">Sizes</span>
+                          @for (size of detail.sizes; track size) {
+                            <span class="mb-browse-chip">{{ size }}</span>
+                          }
+                        </div>
+                      }
+
+                      <h4 class="mb-subhead">Variants ({{ detail.variantsTotal }})</h4>
+                      <ul class="mb-browse-variants">
+                        @for (variant of detail.variants; track variant.id) {
+                          <li class="mb-browse-variant">
+                            @if (variant.imageUrl) {
+                              <img [src]="variant.imageUrl" [alt]="variant.name" class="mb-browse-variant__img" loading="lazy" />
+                            }
+                            <div class="mb-browse-variant__body">
+                              <p class="mb-browse-variant__name">{{ variant.name }}</p>
+                              <p class="mb-browse-variant__meta">
+                                @if (variant.color) {
+                                  <span
+                                    class="mb-shop-card__swatch"
+                                    [style.background]="variant.colorCode || undefined"
+                                    [attr.data-color]="variant.color"
+                                  ></span>
+                                  <span>{{ variant.color }}</span>
+                                }
+                                @if (variant.size) {
+                                  <span>{{ variant.size }}</span>
+                                }
+                                <span>ID {{ variant.id }}</span>
+                              </p>
+                            </div>
+                          </li>
+                        }
+                      </ul>
+
+                      @if (detail.variants.length < detail.variantsTotal) {
+                        <p-button
+                          label="Load more variants"
+                          [loading]="store.printfulProductLoading()"
+                          [text]="true"
+                          (onClick)="store.loadMorePrintfulVariants()"
+                        />
+                      }
+                    }
+                  </aside>
+                }
               </div>
             }
           </section>

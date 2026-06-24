@@ -612,7 +612,7 @@
                     <div class="mb-mockup-picker__head">
                       <h5 class="mb-mockup-picker__title">
                         Printful mockup styles
-                        <span class="mb-mockup-picker__count">({{ previewItem.mockupStyles.length }})</span>
+                        <span class="mb-mockup-picker__count">({{ previewItem.mockupStyles?.length ?? 0 }})</span>
                       </h5>
                       @if (store.stationeryPreviewStyleCategories().length > 1) {
                         <select
@@ -628,7 +628,7 @@
                       }
                     </div>
 
-                    @if (!previewItem.mockupStyles.length) {
+                    @if (!(previewItem.mockupStyles?.length ?? 0)) {
                       <p class="mb-muted">No mockup styles returned from Printful for this size.</p>
                     } @else {
                       <ul class="mb-mockup-picker__grid mb-mockup-picker__grid--dialog">

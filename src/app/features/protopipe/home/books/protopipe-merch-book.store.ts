@@ -181,8 +181,14 @@ export class ProtopipeMerchBookStore {
     if (section === 'browse' && !this._printfulBrowseLoaded()) {
       void this.loadPrintfulBrowse();
     }
-    if (section === 'stationery' && !this._stationeryLoaded()) {
-      void this.loadStationery();
+    if (section === 'stationery') {
+      const stale =
+        this._stationeryLive() &&
+        this._stationeryItems().some((item) => item.mockupStyles == null);
+      if (!this._stationeryLoaded() || stale) {
+        if (stale) this._stationeryLoaded.set(false);
+        void this.loadStationery();
+      }
     }
   }
 
@@ -352,7 +358,12 @@ export class ProtopipeMerchBookStore {
     this._error.set(null);
     try {
       const res = await this.api.listMerchBookStationery(siteId);
-      this._stationeryItems.set(res.items);
+      this._stationeryItems.set(
+        res.items.map((item) => ({
+          ...item,
+          mockupStyles: item.mockupStyles ?? [],
+        })),
+      );
       this._stationerySubcategories.set(res.subcategories);
       this._stationeryLive.set(res.printfulLive);
       this._stationeryLoaded.set(true);
@@ -367,9 +378,10 @@ export class ProtopipeMerchBookStore {
     this._stationerySubcategoryFilter.set(value);
   }
 
-  private stationeryMockupCacheKey(itemId: string, styleId: number): string {
+  private stationeryMockupCacheKey(itemId: string, styleId?: number): string {
     const publicUrl = this._stationeryArtworkPublicUrl();
-    return publicUrl ? `${itemId}:${styleId}:${publicUrl}` : `${itemId}:${styleId}`;
+    const stylePart = styleId != null ? String(styleId) : 'default';
+    return publicUrl ? `${itemId}:${stylePart}:${publicUrl}` : `${itemId}:${stylePart}`;
   }
 
   isStationeryPreviewLoading(itemId: string): boolean {
@@ -399,7 +411,7 @@ export class ProtopipeMerchBookStore {
 
   private async loadStationeryMockupPreview(
     item: ProtopipeMerchBookStationeryItem,
-    styleId: number,
+    styleId?: number,
   ): Promise<void> {
     const siteId = this.strategy.siteId();
     const artworkUrl = this._stationeryArtworkPublicUrl();
@@ -427,7 +439,7 @@ export class ProtopipeMerchBookStore {
         artworkUrl,
         placement: item.placement,
         techniqueKey: item.techniqueKey,
-        mockupStyleId: styleId,
+        ...(styleId != null ? { mockupStyleId: styleId } : {}),
       });
       this._stationeryMockupCache.update((cache) => ({ ...cache, [cacheKey]: res.mockupUrl }));
       this._stationeryPreviewMockupUrl.set(res.mockupUrl);
@@ -444,17 +456,35 @@ export class ProtopipeMerchBookStore {
     const artworkUrl = this._stationeryArtworkPublicUrl();
     if (!this.strategy.siteId() || !artworkUrl) return;
 
-    const styleId = item.defaultMockupStyleId ?? item.mockupStyles[0]?.id;
-    if (styleId == null) {
-      this._error.set('No Printful mockup styles available for this size');
+    let resolvedItem = {
+      ...item,
+      mockupStyles: item.mockupStyles ?? [],
+    };
+
+    if (!resolvedItem.mockupStyles.length) {
+      this._stationeryLoaded.set(false);
+      await this.loadStationery();
+      const refreshed = this._stationeryItems().find((row) => row.id === item.id);
+      if (refreshed) {
+        resolvedItem = { ...refreshed, mockupStyles: refreshed.mockupStyles ?? [] };
+      }
+    }
+
+    const styleId = resolvedItem.defaultMockupStyleId ?? resolvedItem.mockupStyles?.[0]?.id;
+
+    this._stationeryPreviewItem.set(resolvedItem);
+    this._stationeryPreviewOpen.set(true);
+    this._stationeryPreviewStyleFilter.set('all');
+    this._stationeryPreviewStyleId.set(styleId ?? null);
+
+    if (styleId == null && !resolvedItem.mockupStyles.length) {
+      this._stationeryPreviewError.set(
+        'Mockup styles are still loading — try again in a moment.',
+      );
       return;
     }
 
-    this._stationeryPreviewItem.set(item);
-    this._stationeryPreviewOpen.set(true);
-    this._stationeryPreviewStyleFilter.set('all');
-    this._stationeryPreviewStyleId.set(styleId);
-    await this.loadStationeryMockupPreview(item, styleId);
+    await this.loadStationeryMockupPreview(resolvedItem, styleId);
   }
 
   clearStationeryArtwork(): void {

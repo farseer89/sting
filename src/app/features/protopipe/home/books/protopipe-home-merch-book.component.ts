@@ -54,6 +54,14 @@ export class ProtopipeHomeMerchBookComponent implements OnInit {
     return `${(ms / 1000).toFixed(1)}s`;
   }
 
+  onStationeryArtworkSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    void this.store.uploadStationeryArtwork(file);
+    input.value = '';
+  }
+
   statusSeverity(status: string): 'success' | 'warn' | 'danger' | 'secondary' {
     if (status === 'complete' || status === 'ready' || status === 'selected') return 'success';
     if (status === 'failed') return 'danger';

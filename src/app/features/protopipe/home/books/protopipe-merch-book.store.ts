@@ -5,12 +5,21 @@ import type {
   ProtopipePrintfulCatalogCategory,
   ProtopipePrintfulCatalogProductDetail,
   ProtopipePrintfulCatalogProductSummary,
+  ProtopipeMerchBookStationeryItem,
 } from '@hive/contracts';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 import { ProtopipeApiService } from '../../protopipe-api.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 
-export type MerchBookSection = 'new' | 'browse' | 'runs' | 'logo' | 'products' | 'mockups' | 'order';
+export type MerchBookSection =
+  | 'new'
+  | 'browse'
+  | 'stationery'
+  | 'runs'
+  | 'logo'
+  | 'products'
+  | 'mockups'
+  | 'order';
 
 const PRINTFUL_BROWSE_PAGE_SIZE = 24;
 
@@ -47,6 +56,16 @@ export class ProtopipeMerchBookStore {
   private readonly _printfulProductLoading = signal(false);
   private readonly _printfulBrowseLoaded = signal(false);
 
+  private readonly _stationeryLoading = signal(false);
+  private readonly _stationeryUploading = signal(false);
+  private readonly _stationeryItems = signal<ProtopipeMerchBookStationeryItem[]>([]);
+  private readonly _stationerySubcategories = signal<string[]>([]);
+  private readonly _stationeryLive = signal(false);
+  private readonly _stationerySubcategoryFilter = signal<string>('all');
+  private readonly _selectedStationeryIds = signal<string[]>([]);
+  private readonly _stationeryArtworkUrl = signal<string | null>(null);
+  private readonly _stationeryLoaded = signal(false);
+
   readonly loading = this._loading.asReadonly();
   readonly catalogLoading = this._catalogLoading.asReadonly();
   readonly running = this._running.asReadonly();
@@ -69,6 +88,24 @@ export class ProtopipeMerchBookStore {
   readonly printfulBrowseLive = this._printfulBrowseLive.asReadonly();
   readonly printfulProductDetail = this._printfulProductDetail.asReadonly();
   readonly printfulProductLoading = this._printfulProductLoading.asReadonly();
+
+  readonly stationeryLoading = this._stationeryLoading.asReadonly();
+  readonly stationeryUploading = this._stationeryUploading.asReadonly();
+  readonly stationeryItems = this._stationeryItems.asReadonly();
+  readonly stationerySubcategories = this._stationerySubcategories.asReadonly();
+  readonly stationeryLive = this._stationeryLive.asReadonly();
+  readonly stationerySubcategoryFilter = this._stationerySubcategoryFilter.asReadonly();
+  readonly selectedStationeryIds = this._selectedStationeryIds.asReadonly();
+  readonly stationeryArtworkUrl = this._stationeryArtworkUrl.asReadonly();
+
+  readonly filteredStationeryItems = computed(() => {
+    const filter = this._stationerySubcategoryFilter();
+    const items = this._stationeryItems();
+    if (filter === 'all') return items;
+    return items.filter((item) => item.subcategory === filter);
+  });
+
+  readonly selectedStationeryCount = computed(() => this._selectedStationeryIds().length);
 
   readonly printfulBrowsePage = computed(() => {
     const { offset, limit, total } = this._printfulPaging();
@@ -109,6 +146,9 @@ export class ProtopipeMerchBookStore {
     this._section.set(section);
     if (section === 'browse' && !this._printfulBrowseLoaded()) {
       void this.loadPrintfulBrowse();
+    }
+    if (section === 'stationery' && !this._stationeryLoaded()) {
+      void this.loadStationery();
     }
   }
 
@@ -267,6 +307,95 @@ export class ProtopipeMerchBookStore {
       this._error.set(parseProtopipeApiError(err, 'Could not load more variants'));
     } finally {
       this._printfulProductLoading.set(false);
+    }
+  }
+
+  async loadStationery(): Promise<void> {
+    const siteId = this.strategy.siteId();
+    if (!siteId) return;
+
+    this._stationeryLoading.set(true);
+    this._error.set(null);
+    try {
+      const res = await this.api.listMerchBookStationery(siteId);
+      this._stationeryItems.set(res.items);
+      this._stationerySubcategories.set(res.subcategories);
+      this._stationeryLive.set(res.printfulLive);
+      this._stationeryLoaded.set(true);
+      if (!this._selectedStationeryIds().length && res.items.length) {
+        this._selectedStationeryIds.set(res.items.map((item) => item.id));
+      }
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Could not load stationery catalog'));
+    } finally {
+      this._stationeryLoading.set(false);
+    }
+  }
+
+  setStationerySubcategoryFilter(value: string): void {
+    this._stationerySubcategoryFilter.set(value);
+  }
+
+  isStationerySelected(itemId: string): boolean {
+    return this._selectedStationeryIds().includes(itemId);
+  }
+
+  toggleStationeryItem(itemId: string): void {
+    this._selectedStationeryIds.update((ids) =>
+      ids.includes(itemId) ? ids.filter((id) => id !== itemId) : [...ids, itemId],
+    );
+  }
+
+  selectAllStationery(): void {
+    const visible = this.filteredStationeryItems().map((item) => item.id);
+    this._selectedStationeryIds.set(visible);
+  }
+
+  clearStationerySelection(): void {
+    this._selectedStationeryIds.set([]);
+  }
+
+  clearStationeryArtwork(): void {
+    const url = this._stationeryArtworkUrl();
+    if (url?.startsWith('blob:')) {
+      URL.revokeObjectURL(url);
+    }
+    this._stationeryArtworkUrl.set(null);
+  }
+
+  async uploadStationeryArtwork(file: File): Promise<void> {
+    const siteId = this.strategy.siteId();
+    if (!siteId) return;
+
+    this._stationeryUploading.set(true);
+    this._error.set(null);
+    try {
+      const previewUrl = URL.createObjectURL(file);
+      this.clearStationeryArtwork();
+      this._stationeryArtworkUrl.set(previewUrl);
+
+      try {
+        const presign = await this.api.presignMerchBookStationeryArtwork(siteId, {
+          fileName: file.name,
+          mimeType: file.type,
+          fileSize: file.size,
+        });
+        const uploadRes = await fetch(presign.uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': file.type },
+          body: file,
+        });
+        if (uploadRes.ok) {
+          URL.revokeObjectURL(previewUrl);
+          this._stationeryArtworkUrl.set(presign.publicUrl);
+        }
+      } catch {
+        // Keep local blob preview when S3 presign is unavailable.
+      }
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Could not upload artwork'));
+    } finally {
+      this._stationeryUploading.set(false);
     }
   }
 

@@ -176,6 +176,10 @@ import type {
   GetPrintfulCatalogProductResponse,
   ProtopipePrintfulCatalogProductSummary,
   ProtopipePrintfulCatalogProductDetail,
+  ListMerchBookStationeryResponse,
+  PresignMerchBookArtworkRequest,
+  PresignMerchBookArtworkResponse,
+  ProtopipeMerchBookStationeryItem,
 } from '@hive/contracts';
 import { Observable, firstValueFrom, shareReplay } from 'rxjs';
 import { protopipeApiUrl } from './protopipe-http.util';
@@ -1589,6 +1593,26 @@ export class ProtopipeApiService {
     });
     return firstValueFrom(
       this.http.get<GetPrintfulCatalogProductResponse>(qs ? `${path}?${qs}` : path),
+    );
+  }
+
+  listMerchBookStationery(siteId: string): Promise<ListMerchBookStationeryResponse> {
+    return firstValueFrom(
+      this.http.get<ListMerchBookStationeryResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.merchBookListStationery.path, { siteId }),
+      ),
+    );
+  }
+
+  presignMerchBookStationeryArtwork(
+    siteId: string,
+    body: PresignMerchBookArtworkRequest,
+  ): Promise<PresignMerchBookArtworkResponse> {
+    return firstValueFrom(
+      this.http.post<PresignMerchBookArtworkResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.merchBookPresignStationeryArtwork.path, { siteId }),
+        body,
+      ),
     );
   }
 }

@@ -36,6 +36,14 @@
       <button
         type="button"
         class="mb-binder-nav__item"
+        [class.mb-binder-nav__item--active]="store.section() === 'stationery'"
+        (click)="selectSection('stationery')"
+      >
+        Stationery
+      </button>
+      <button
+        type="button"
+        class="mb-binder-nav__item"
         [class.mb-binder-nav__item--active]="store.section() === 'runs'"
         (click)="selectSection('runs')"
       >
@@ -467,6 +475,129 @@
                   </aside>
                 }
               </div>
+            }
+          </section>
+        }
+
+        @case ('stationery') {
+          <section class="mb-section mb-section--stationery">
+            <div class="mb-browse-header">
+              <div>
+                <h2 class="mb-section__title">Stationery</h2>
+                <p class="mb-section__hint">
+                  Upload your artwork, pick Printful stationery items, and preview your design on each blank. Prices are live from Printful (fulfillment cost, not retail).
+                </p>
+              </div>
+              @if (store.stationeryLive()) {
+                <span class="mb-browse-header__count">{{ store.stationeryItems().length }} items</span>
+              }
+            </div>
+
+            <div class="mb-stationery-upload">
+              <label class="mb-stationery-upload__drop">
+                <input
+                  type="file"
+                  class="mb-stationery-upload__input"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  (change)="onStationeryArtworkSelected($event)"
+                  [disabled]="store.stationeryUploading()"
+                />
+                @if (store.stationeryArtworkUrl(); as artworkUrl) {
+                  <img [src]="artworkUrl" alt="Uploaded artwork" class="mb-stationery-upload__preview" />
+                  <span class="mb-stationery-upload__label">Replace artwork</span>
+                } @else {
+                  <span class="mb-stationery-upload__label">
+                    @if (store.stationeryUploading()) {
+                      Uploading…
+                    } @else {
+                      Upload logo or artwork (PNG, JPG, WebP)
+                    }
+                  </span>
+                }
+              </label>
+              @if (store.stationeryArtworkUrl()) {
+                <button type="button" class="mb-link" (click)="store.clearStationeryArtwork()">Remove artwork</button>
+              }
+            </div>
+
+            <div class="mb-stationery-toolbar">
+              <label class="mb-browse-filter">
+                <span class="mb-browse-filter__label">Category</span>
+                <select
+                  class="mb-browse-filter__select"
+                  [value]="store.stationerySubcategoryFilter()"
+                  (change)="store.setStationerySubcategoryFilter($any($event.target).value)"
+                >
+                  <option value="all">All stationery</option>
+                  @for (sub of store.stationerySubcategories(); track sub) {
+                    <option [value]="sub">{{ sub }}</option>
+                  }
+                </select>
+              </label>
+              <div class="mb-stationery-toolbar__actions">
+                <button type="button" class="mb-link" (click)="store.selectAllStationery()">Select all</button>
+                <button type="button" class="mb-link" (click)="store.clearStationerySelection()">Clear</button>
+                <span class="mb-muted">{{ store.selectedStationeryCount() }} selected</span>
+              </div>
+            </div>
+
+            @if (store.stationeryLoading() && !store.stationeryItems().length) {
+              <div class="mb-running mb-running--shop">
+                <p-progressSpinner strokeWidth="4" [style]="{ width: '28px', height: '28px' }" />
+                <span>Loading stationery catalog and Printful prices…</span>
+              </div>
+            } @else if (!store.stationeryLive() && !store.stationeryLoading()) {
+              <p class="mb-muted">Printful is not configured — stationery catalog unavailable.</p>
+            } @else {
+              <ul class="mb-shop-grid mb-shop-grid--stationery">
+                @for (item of store.filteredStationeryItems(); track item.id) {
+                  <li
+                    class="mb-shop-card mb-shop-card--stationery"
+                    [class.mb-shop-card--selected]="store.isStationerySelected(item.id)"
+                  >
+                    <label class="mb-stationery-card__check">
+                      <input
+                        type="checkbox"
+                        [checked]="store.isStationerySelected(item.id)"
+                        (change)="store.toggleStationeryItem(item.id)"
+                      />
+                      <span>Include</span>
+                    </label>
+
+                    <div
+                      class="mb-stationery-preview"
+                      [class.mb-stationery-preview--has-art]="store.stationeryArtworkUrl() && store.isStationerySelected(item.id)"
+                      [attr.data-type]="item.type"
+                    >
+                      @if (item.imageUrl) {
+                        <img [src]="item.imageUrl" [alt]="item.name" class="mb-stationery-preview__blank" loading="lazy" />
+                      } @else {
+                        <div class="mb-stationery-preview__placeholder">No photo</div>
+                      }
+                      @if (store.stationeryArtworkUrl(); as artUrl) {
+                        @if (store.isStationerySelected(item.id)) {
+                          <img [src]="artUrl" alt="" class="mb-stationery-preview__art" />
+                        }
+                      }
+                    </div>
+
+                    <div class="mb-stationery-card__body">
+                      <span class="mb-stationery-card__sub">{{ item.subcategory }}</span>
+                      <h4 class="mb-shop-card__title">{{ item.name }}</h4>
+                      @if (item.variantLabel) {
+                        <p class="mb-stationery-card__variant">{{ item.variantLabel }}</p>
+                      }
+                      <p class="mb-stationery-card__price">
+                        <strong>{{ formatPrice(item.unitPriceUsd) }}</strong>
+                        <span>{{ item.currency }} · {{ item.technique }}</span>
+                      </p>
+                      @if (item.placement) {
+                        <p class="mb-stationery-card__meta">{{ item.placement }}</p>
+                      }
+                    </div>
+                  </li>
+                }
+              </ul>
             }
           </section>
         }

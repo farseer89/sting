@@ -16,6 +16,8 @@ export function protopipeApiUrl(pathTemplate: string, params?: Record<string, st
 }
 
 const PROTOPIPE_API_ERROR_MESSAGES: Record<string, string> = {
+  site_not_found:
+    'This workspace site could not be found. Refresh the page — if it persists, contact support.',
   run_not_ready:
     'Keyword discovery is still running. Wait for it to finish, then try building your plan again.',
   run_not_found:

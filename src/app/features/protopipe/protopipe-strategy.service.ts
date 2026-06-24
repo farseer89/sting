@@ -92,13 +92,44 @@ export class ProtopipeStrategyService {
     this._error.set(null);
     try {
       const boot = await this.api.bootstrap();
-      const activeSiteId = resolveBootstrapSiteId(boot);
-      if (!activeSiteId) {
+      const siteIds = boot.sites.map((s) => s.id);
+      if (siteIds.length === 0) {
         throw new Error('No site available for this account');
       }
-      this._siteId.set(activeSiteId);
-      const plan = await this.api.getPlan(activeSiteId);
-      this.applyPlan(plan);
+
+      const preferredId = resolveBootstrapSiteId(boot);
+      const orderedSiteIds = [
+        ...new Set([preferredId, ...siteIds].filter((id): id is string => Boolean(id))),
+      ];
+
+      let fallbackPlan: ProtopipeStrategySummary | null = null;
+      let fallbackSiteId: string | null = null;
+
+      for (const siteId of orderedSiteIds) {
+        try {
+          const plan = await this.api.getPlan(siteId);
+          if (plan.onboardingProfile) {
+            this._siteId.set(siteId);
+            this.applyPlan(plan);
+            this._initialized.set(true);
+            this._dirty.set(false);
+            return;
+          }
+          if (!fallbackPlan) {
+            fallbackPlan = plan;
+            fallbackSiteId = siteId;
+          }
+        } catch {
+          // Owner may not have access to a stale bootstrap site id — try the rest.
+        }
+      }
+
+      if (!fallbackPlan || !fallbackSiteId) {
+        throw new Error('No site available for this account');
+      }
+
+      this._siteId.set(fallbackSiteId);
+      this.applyPlan(fallbackPlan);
       this._initialized.set(true);
       this._dirty.set(false);
     } catch (err) {

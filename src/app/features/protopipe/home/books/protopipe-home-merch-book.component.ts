@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import type { ProtopipeMerchBookProduct, ProtopipeMerchBookRun } from '@hive/contracts';
+import type { ProtopipeMerchBookProduct, ProtopipeMerchBookRunDto } from '@hive/contracts';
 import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
 import { ProgressSpinner } from 'primeng/progressspinner';
@@ -38,7 +38,7 @@ export class ProtopipeHomeMerchBookComponent implements OnInit {
     return `$${usd.toFixed(2)}`;
   }
 
-  productFor(run: ProtopipeMerchBookRun, productId: string): ProtopipeMerchBookProduct | undefined {
+  productFor(run: ProtopipeMerchBookRunDto, productId: string): ProtopipeMerchBookProduct | undefined {
     return run.products.find((p) => p.id === productId);
   }
 

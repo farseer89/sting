@@ -8,7 +8,9 @@
       </p>
     </div>
     <div class="mb-masthead__meta">
-      <span class="mb-masthead__cost">Total spend {{ formatCost(store.totalCostUsd()) }}</span>
+      <span class="mb-masthead__cost" title="fal.ai logo generation only — Printful mockups are free">
+        Logo gen {{ formatCost(store.totalCostUsd()) }}
+      </span>
       <span class="mb-masthead__recipe">Recipe: starter_pack</span>
     </div>
   </header>
@@ -271,46 +273,93 @@
         }
 
         @case ('mockups') {
-          <section class="mb-section">
+          <section class="mb-section mb-section--shop">
             @if (store.activeRun(); as run) {
-              <h2 class="mb-section__title">Mockups</h2>
-              <p class="mb-section__hint">
-                Printful mockups generate after you select a logo with an image URL.
-              </p>
-              @if (store.mockupsGenerating()) {
-                <div class="mb-running">
-                  <p-progressSpinner strokeWidth="4" [style]="{ width: '28px', height: '28px' }" />
-                  <span>Generating Printful mockups…</span>
+              <header class="mb-shop-header">
+                <div>
+                  <h2 class="mb-section__title">Store preview</h2>
+                  <p class="mb-section__hint">
+                    How your crew gear looks with the selected logo — Printful product mockups.
+                  </p>
                 </div>
-              }
-              @if (store.selectedLogo(); as logo) {
-                <div class="mb-actions">
+                @if (store.selectedLogo(); as logo) {
                   <p-button
-                    label="Regenerate mockups"
+                    label="Refresh mockups"
                     icon="pi pi-refresh"
                     [outlined]="true"
+                    size="small"
                     [loading]="store.mockupsGenerating()"
                     [disabled]="store.mockupsGenerating() || !logo.imageUrl"
                     (onClick)="store.regenerateMockups()"
                   />
+                }
+              </header>
+
+              @if (store.mockupsGenerating()) {
+                <div class="mb-running mb-running--shop">
+                  <p-progressSpinner strokeWidth="4" [style]="{ width: '28px', height: '28px' }" />
+                  <span>Rendering product mockups…</span>
                 </div>
               }
+
+              @if (run.error) {
+                <p class="mb-run-detail__error">{{ run.error }}</p>
+              }
+
               @if (!run.mockups.length) {
-                <p class="mb-muted">No mockups yet.</p>
+                <p class="mb-muted">No mockups yet — select a logo concept to generate previews.</p>
               } @else {
-                <ul class="mb-mockups">
+                <ul class="mb-shop-grid">
                   @for (mockup of run.mockups; track mockup.id) {
-                    <li class="mb-mockup">
-                      <p-tag [value]="mockup.status" [severity]="statusSeverity(mockup.status)" />
-                      @if (mockup.style) {
-                        <span class="mb-mockup__style">{{ mockup.style }}</span>
-                      }
-                      @if (mockup.imageUrl) {
-                        <img [src]="mockup.imageUrl" alt="Product mockup" class="mb-mockup__img" />
-                      } @else {
-                        <span class="mb-muted">Pending</span>
-                      }
-                    </li>
+                    @if (productFor(run, mockup.productId); as product) {
+                      <li class="mb-shop-card" [class.mb-shop-card--ready]="mockup.status === 'ready'">
+                        <div class="mb-shop-card__media">
+                          @if (mockup.imageUrl) {
+                            <img
+                              [src]="mockup.imageUrl"
+                              [alt]="product.name + ' mockup'"
+                              class="mb-shop-card__img"
+                              loading="lazy"
+                            />
+                          } @else if (mockup.status === 'pending' || store.mockupsGenerating()) {
+                            <div class="mb-shop-card__skeleton" aria-hidden="true">
+                              <p-progressSpinner strokeWidth="3" [style]="{ width: '32px', height: '32px' }" />
+                            </div>
+                          } @else {
+                            <div class="mb-shop-card__placeholder">
+                              <i class="pi pi-image" aria-hidden="true"></i>
+                              <span>Preview unavailable</span>
+                            </div>
+                          }
+
+                          @if (mockup.status !== 'ready') {
+                            <span
+                              class="mb-shop-card__badge"
+                              [class.mb-shop-card__badge--warn]="mockup.status === 'pending'"
+                              [class.mb-shop-card__badge--danger]="mockup.status === 'failed'"
+                            >
+                              {{ mockup.status === 'pending' ? 'Rendering' : 'Failed' }}
+                            </span>
+                          }
+                        </div>
+
+                        <div class="mb-shop-card__body">
+                          <h3 class="mb-shop-card__title">{{ product.name }}</h3>
+                          <div class="mb-shop-card__meta">
+                            @if (product.color) {
+                              <span class="mb-shop-card__swatch" [attr.data-color]="product.color"></span>
+                              <span class="mb-shop-card__color">{{ product.color }}</span>
+                            }
+                            @if (mockup.style) {
+                              <span class="mb-shop-card__view">{{ mockupViewLabel(mockup.style) }}</span>
+                            }
+                          </div>
+                          @if (product.unitPriceUsd != null) {
+                            <p class="mb-shop-card__price">{{ formatPrice(product.unitPriceUsd) }}</p>
+                          }
+                        </div>
+                      </li>
+                    }
                   }
                 </ul>
               }

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import type { ProtopipeMerchBookProduct, ProtopipeMerchBookRun } from '@hive/contracts';
 import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
 import { ProgressSpinner } from 'primeng/progressspinner';
@@ -30,6 +31,21 @@ export class ProtopipeHomeMerchBookComponent implements OnInit {
   formatCost(usd?: number): string {
     if (usd == null) return '—';
     return `$${usd.toFixed(3)}`;
+  }
+
+  formatPrice(usd?: number): string {
+    if (usd == null) return '—';
+    return `$${usd.toFixed(2)}`;
+  }
+
+  productFor(run: ProtopipeMerchBookRun, productId: string): ProtopipeMerchBookProduct | undefined {
+    return run.products.find((p) => p.id === productId);
+  }
+
+  mockupViewLabel(style: string): string {
+    if (style.includes('Model')) return 'On model';
+    if (style.includes('Flat')) return 'Flat lay';
+    return style.replace(/\s*\(Printful\)\s*/i, '').trim();
   }
 
   formatDuration(ms?: number): string {

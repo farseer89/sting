@@ -586,22 +586,79 @@
               [modal]="true"
               [draggable]="false"
               [resizable]="false"
-              [style]="{ width: 'min(720px, 94vw)' }"
+              [style]="{ width: 'min(960px, 96vw)' }"
               [header]="store.stationeryPreviewItem()?.size ? store.stationeryPreviewItem()!.size + ' mockup' : 'Greeting card mockup'"
             >
-              @if (store.stationeryPreviewLoading()) {
-                <div class="mb-stationery-dialog__loading">
-                  <p-progressSpinner strokeWidth="4" [style]="{ width: '36px', height: '36px' }" />
-                  <p>Generating Printful mockup… this usually takes 10–20 seconds.</p>
+              @if (store.stationeryPreviewItem(); as previewItem) {
+                <div class="mb-stationery-dialog">
+                  <div class="mb-stationery-dialog__result">
+                    @if (store.stationeryPreviewLoading()) {
+                      <div class="mb-stationery-dialog__loading">
+                        <p-progressSpinner strokeWidth="4" [style]="{ width: '36px', height: '36px' }" />
+                        <p>Generating Printful mockup… this usually takes 10–20 seconds.</p>
+                      </div>
+                    } @else if (store.stationeryPreviewError(); as previewError) {
+                      <p class="mb-stationery-dialog__error">{{ previewError }}</p>
+                    } @else if (store.stationeryPreviewMockupUrl(); as mockupUrl) {
+                      <img
+                        [src]="mockupUrl"
+                        [alt]="previewItem.name"
+                        class="mb-stationery-dialog__mockup"
+                      />
+                    }
+                  </div>
+
+                  <div class="mb-mockup-picker mb-mockup-picker--dialog">
+                    <div class="mb-mockup-picker__head">
+                      <h5 class="mb-mockup-picker__title">
+                        Printful mockup styles
+                        <span class="mb-mockup-picker__count">({{ previewItem.mockupStyles.length }})</span>
+                      </h5>
+                      @if (store.stationeryPreviewStyleCategories().length > 1) {
+                        <select
+                          class="mb-mockup-picker__filter"
+                          [value]="store.stationeryPreviewStyleFilter()"
+                          (change)="store.setStationeryPreviewStyleFilter($any($event.target).value)"
+                        >
+                          <option value="all">All categories</option>
+                          @for (cat of store.stationeryPreviewStyleCategories(); track cat) {
+                            <option [value]="cat">{{ cat }}</option>
+                          }
+                        </select>
+                      }
+                    </div>
+
+                    @if (!previewItem.mockupStyles.length) {
+                      <p class="mb-muted">No mockup styles returned from Printful for this size.</p>
+                    } @else {
+                      <ul class="mb-mockup-picker__grid mb-mockup-picker__grid--dialog">
+                        @for (style of store.filteredStationeryPreviewStyles(); track style.id) {
+                          <li>
+                            <button
+                              type="button"
+                              class="mb-mockup-picker__tile"
+                              [class.mb-mockup-picker__tile--active]="store.stationeryPreviewStyleId() === style.id"
+                              [disabled]="store.stationeryPreviewLoading()"
+                              (click)="selectStationeryPreviewStyle(style.id)"
+                            >
+                              @if (style.previewImageUrl) {
+                                <img
+                                  [src]="style.previewImageUrl"
+                                  [alt]="style.label"
+                                  class="mb-mockup-picker__img"
+                                  loading="lazy"
+                                />
+                              } @else {
+                                <div class="mb-mockup-picker__img mb-mockup-picker__img--placeholder">No preview</div>
+                              }
+                              <span class="mb-mockup-picker__label">{{ style.label }}</span>
+                            </button>
+                          </li>
+                        }
+                      </ul>
+                    }
+                  </div>
                 </div>
-              } @else if (store.stationeryPreviewError(); as previewError) {
-                <p class="mb-stationery-dialog__error">{{ previewError }}</p>
-              } @else if (store.stationeryPreviewMockupUrl(); as mockupUrl) {
-                <img
-                  [src]="mockupUrl"
-                  [alt]="store.stationeryPreviewItem()?.name ?? 'Printful mockup'"
-                  class="mb-stationery-dialog__mockup"
-                />
               }
             </p-dialog>
           </section>

@@ -77,6 +77,10 @@ export class ProtopipeHomeMerchBookComponent implements OnInit {
     }
   }
 
+  selectStationeryPreviewStyle(styleId: number): void {
+    void this.store.selectStationeryPreviewStyle(styleId);
+  }
+
   statusSeverity(status: string): 'success' | 'warn' | 'danger' | 'secondary' {
     if (status === 'complete' || status === 'ready' || status === 'selected') return 'success';
     if (status === 'failed') return 'danger';

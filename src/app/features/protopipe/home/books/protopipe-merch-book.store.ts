@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import type { ProtopipeMerchBookRunDto } from '@hive/contracts';
+import type { ProtopipeMerchBookCatalogProduct, ProtopipeMerchBookRunDto } from '@hive/contracts';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 import { ProtopipeApiService } from '../../protopipe-api.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
@@ -15,24 +15,36 @@ export class ProtopipeMerchBookStore {
   private readonly strategy = inject(ProtopipeStrategyService);
 
   private readonly _loading = signal(false);
+  private readonly _catalogLoading = signal(false);
   private readonly _running = signal(false);
   private readonly _mockupsGenerating = signal(false);
   private readonly _error = signal<string | null>(null);
   private readonly _runs = signal<ProtopipeMerchBookRunDto[]>([]);
+  private readonly _catalog = signal<ProtopipeMerchBookCatalogProduct[]>([]);
+  private readonly _selectedProductIds = signal<string[]>([]);
   private readonly _activeRunId = signal<string | null>(null);
   private readonly _section = signal<MerchBookSection>('new');
   private readonly _label = signal('');
   private readonly _logoPrompt = signal('');
 
   readonly loading = this._loading.asReadonly();
+  readonly catalogLoading = this._catalogLoading.asReadonly();
   readonly running = this._running.asReadonly();
   readonly mockupsGenerating = this._mockupsGenerating.asReadonly();
   readonly error = this._error.asReadonly();
   readonly runs = this._runs.asReadonly();
+  readonly catalog = this._catalog.asReadonly();
+  readonly selectedProductIds = this._selectedProductIds.asReadonly();
   readonly activeRunId = this._activeRunId.asReadonly();
   readonly section = this._section.asReadonly();
   readonly label = this._label.asReadonly();
   readonly logoPrompt = this._logoPrompt.asReadonly();
+
+  readonly selectedProductCount = computed(() => this._selectedProductIds().length);
+
+  readonly canCreateRun = computed(
+    () => this._selectedProductIds().length > 0 && !this._running(),
+  );
 
   readonly activeRun = computed(() => {
     const id = this._activeRunId();
@@ -60,6 +72,16 @@ export class ProtopipeMerchBookStore {
     this._logoPrompt.set(value);
   }
 
+  isProductSelected(productId: string): boolean {
+    return this._selectedProductIds().includes(productId);
+  }
+
+  toggleProduct(productId: string): void {
+    this._selectedProductIds.update((ids) =>
+      ids.includes(productId) ? ids.filter((id) => id !== productId) : [...ids, productId],
+    );
+  }
+
   selectRun(runId: string): void {
     this._activeRunId.set(runId);
     this._section.set('runs');
@@ -67,7 +89,24 @@ export class ProtopipeMerchBookStore {
 
   async ensureContext(): Promise<void> {
     await this.strategy.ensureLoaded();
-    await this.loadRuns();
+    await Promise.all([this.loadCatalog(), this.loadRuns()]);
+  }
+
+  async loadCatalog(): Promise<void> {
+    const siteId = this.strategy.siteId();
+    if (!siteId) return;
+    this._catalogLoading.set(true);
+    try {
+      const res = await this.api.getMerchBookCatalog(siteId);
+      this._catalog.set(res.products);
+      if (!this._selectedProductIds().length && res.products.length) {
+        this._selectedProductIds.set(res.products.map((p) => p.id));
+      }
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Could not load merch catalog'));
+    } finally {
+      this._catalogLoading.set(false);
+    }
   }
 
   async loadRuns(): Promise<void> {
@@ -133,6 +172,12 @@ export class ProtopipeMerchBookStore {
       return false;
     }
 
+    const productIds = this._selectedProductIds();
+    if (!productIds.length) {
+      this._error.set('Select at least one product for this pack');
+      return false;
+    }
+
     this._running.set(true);
     this._error.set(null);
     try {
@@ -140,6 +185,7 @@ export class ProtopipeMerchBookStore {
         label: this._label().trim() || undefined,
         recipe: 'starter_pack',
         logoPrompt: this._logoPrompt().trim() || undefined,
+        productIds,
       });
       this._runs.update((list) => [res.run, ...list.filter((r) => r.id !== res.run.id)]);
       this._activeRunId.set(res.run.id);

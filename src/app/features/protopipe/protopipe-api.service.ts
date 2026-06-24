@@ -165,6 +165,7 @@ import type {
   PatchResearchBookFactResponse,
   CreateMerchBookRunRequest,
   CreateMerchBookRunResponse,
+  GetMerchBookCatalogResponse,
   ListMerchBookRunsResponse,
   GetMerchBookRunResponse,
   PatchMerchBookLogoConceptRequest,
@@ -1475,6 +1476,14 @@ export class ProtopipeApiService {
           factId,
         }),
         body,
+      ),
+    );
+  }
+
+  getMerchBookCatalog(siteId: string): Promise<GetMerchBookCatalogResponse> {
+    return firstValueFrom(
+      this.http.get<GetMerchBookCatalogResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.merchBookGetCatalog.path, { siteId }),
       ),
     );
   }

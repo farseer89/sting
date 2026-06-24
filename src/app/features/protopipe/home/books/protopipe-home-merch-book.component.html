@@ -81,11 +81,69 @@
 
       @switch (store.section()) {
         @case ('new') {
-          <section class="mb-section">
+          <section class="mb-section mb-section--shop">
             <h2 class="mb-section__title">Create crew merch pack</h2>
             <p class="mb-section__hint">
-              Runs fal.ai Ideogram logo generation with BiRefNet background removal when FAL_KEY is set.
+              Pick Printful products for your store preview, then generate logo concepts (Ideogram + background removal when FAL_KEY is set).
             </p>
+
+            <h3 class="mb-subhead">Printful starter catalog</h3>
+            @if (store.catalogLoading()) {
+              <div class="mb-running mb-running--shop">
+                <p-progressSpinner strokeWidth="4" [style]="{ width: '28px', height: '28px' }" />
+                <span>Loading catalog…</span>
+              </div>
+            } @else if (!store.catalog().length) {
+              <p class="mb-muted">No catalog products configured.</p>
+            } @else {
+              <ul class="mb-shop-grid mb-shop-grid--catalog">
+                @for (product of store.catalog(); track product.id) {
+                  <li
+                    class="mb-shop-card mb-shop-card--catalog"
+                    [class.mb-shop-card--selected]="store.isProductSelected(product.id)"
+                  >
+                    <label class="mb-catalog-card">
+                      <input
+                        type="checkbox"
+                        class="mb-catalog-card__check"
+                        [checked]="store.isProductSelected(product.id)"
+                        (change)="store.toggleProduct(product.id)"
+                      />
+                      <div class="mb-catalog-card__body">
+                        <div class="mb-catalog-card__head">
+                          <h4 class="mb-shop-card__title">{{ product.name }}</h4>
+                          @if (product.unitPriceUsd != null) {
+                            <span class="mb-shop-card__price">{{ formatPrice(product.unitPriceUsd) }}</span>
+                          }
+                        </div>
+                        <p class="mb-catalog-card__printful">{{ product.printfulProductName }}</p>
+                        <p class="mb-catalog-card__desc">{{ product.description }}</p>
+                        <div class="mb-catalog-card__meta">
+                          @if (product.color) {
+                            <span class="mb-shop-card__swatch" [attr.data-color]="product.color"></span>
+                            <span>{{ product.color }}</span>
+                          }
+                          <span>{{ product.decoration }}</span>
+                        </div>
+                        <p class="mb-catalog-card__mockup">
+                          Preview: <strong>{{ product.defaultMockupView }}</strong>
+                        </p>
+                        <ul class="mb-catalog-card__styles">
+                          @for (style of product.mockupStyleOptions; track style) {
+                            <li>{{ style }}</li>
+                          }
+                        </ul>
+                      </div>
+                    </label>
+                  </li>
+                }
+              </ul>
+              <p class="mb-muted mb-catalog-summary">
+                {{ store.selectedProductCount() }} of {{ store.catalog().length }} selected for mockup preview
+              </p>
+            }
+
+            <h3 class="mb-subhead">Pack details</h3>
 
             <label class="mb-field">
               <span class="mb-field__label">Pack label</span>
@@ -117,7 +175,7 @@
                 label="Create pack"
                 icon="pi pi-shopping-bag"
                 [loading]="store.running()"
-                [disabled]="store.running()"
+                [disabled]="!store.canCreateRun()"
                 (onClick)="store.createRun()"
               />
             </div>

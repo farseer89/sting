@@ -45,6 +45,7 @@ import { ProtopipeHomeBusinessDetailsComponent } from './books/protopipe-home-bu
 import { ProtopipeHomeGoalsComponent } from './books/protopipe-home-goals.component';
 import { ProtopipeHomeAdsBookComponent } from './books/protopipe-home-ads-book.component';
 import { ProtopipeHomeResearchBookComponent } from './books/protopipe-home-research-book.component';
+import { ProtopipeHomeMerchBookComponent } from './books/protopipe-home-merch-book.component';
 import { ProtopipePitchProspectBoardComponent } from '../pitch-prep/protopipe-pitch-prospect-board.component';
 import { ProtopipePitchPrepWizardComponent } from '../pitch-prep/protopipe-pitch-prep-wizard.component';
 import { ProtopipeLeadsListComponent } from '../leads/protopipe-leads-list.component';
@@ -76,6 +77,7 @@ export type ProtopipeHomeView =
   | 'build-book'
   | 'ads-book'
   | 'research-book'
+  | 'merch-book'
   | 'business-details'
   | 'goals'
   | 'intake'
@@ -131,6 +133,7 @@ type HomeFocusHistoryKind = 'thinker' | 'writer';
     ProtopipeHomeGoalsComponent,
     ProtopipeHomeAdsBookComponent,
     ProtopipeHomeResearchBookComponent,
+    ProtopipeHomeMerchBookComponent,
     ProtopipePitchProspectBoardComponent,
     ProtopipePitchPrepWizardComponent,
     ProtopipeLeadsListComponent,
@@ -342,6 +345,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.openAdsBookView();
     } else if (item.id === 'books-research') {
       this.openResearchBookView();
+    } else if (item.id === 'books-merch') {
+      this.openMerchBookView();
     } else if (item.id === 'books-business') {
       this.openBusinessDetailsView();
     } else if (item.id === 'books-goals') {
@@ -566,6 +571,13 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.sidePanel.setOpen(false);
     this.activeNavId.set('books-research');
     this.activeView.set('research-book');
+  }
+
+  openMerchBookView(): void {
+    this.leaveWriterFocus();
+    this.sidePanel.setOpen(false);
+    this.activeNavId.set('books-merch');
+    this.activeView.set('merch-book');
   }
 
   openBusinessDetailsView(): void {

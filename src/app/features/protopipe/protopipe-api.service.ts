@@ -163,6 +163,13 @@ import type {
   GetResearchBookRunResponse,
   PatchResearchBookFactRequest,
   PatchResearchBookFactResponse,
+  CreateMerchBookRunRequest,
+  CreateMerchBookRunResponse,
+  ListMerchBookRunsResponse,
+  GetMerchBookRunResponse,
+  PatchMerchBookLogoConceptRequest,
+  PatchMerchBookLogoConceptResponse,
+  GenerateMerchBookMockupsResponse,
 } from '@hive/contracts';
 import { Observable, firstValueFrom, shareReplay } from 'rxjs';
 import { protopipeApiUrl } from './protopipe-http.util';
@@ -1468,6 +1475,64 @@ export class ProtopipeApiService {
           factId,
         }),
         body,
+      ),
+    );
+  }
+
+  createMerchBookRun(
+    siteId: string,
+    body: CreateMerchBookRunRequest,
+  ): Promise<CreateMerchBookRunResponse> {
+    return firstValueFrom(
+      this.http.post<CreateMerchBookRunResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.merchBookCreateRun.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  listMerchBookRuns(siteId: string): Promise<ListMerchBookRunsResponse> {
+    return firstValueFrom(
+      this.http.get<ListMerchBookRunsResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.merchBookListRuns.path, { siteId }),
+      ),
+    );
+  }
+
+  getMerchBookRun(siteId: string, runId: string): Promise<GetMerchBookRunResponse> {
+    return firstValueFrom(
+      this.http.get<GetMerchBookRunResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.merchBookGetRun.path, { siteId, runId }),
+      ),
+    );
+  }
+
+  patchMerchBookLogoConcept(
+    siteId: string,
+    runId: string,
+    conceptId: string,
+    body: PatchMerchBookLogoConceptRequest,
+  ): Promise<PatchMerchBookLogoConceptResponse> {
+    return firstValueFrom(
+      this.http.patch<PatchMerchBookLogoConceptResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.merchBookPatchLogoConcept.path, {
+          siteId,
+          runId,
+          conceptId,
+        }),
+        body,
+      ),
+    );
+  }
+
+  generateMerchBookMockups(
+    siteId: string,
+    runId: string,
+  ): Promise<GenerateMerchBookMockupsResponse> {
+    return firstValueFrom(
+      this.http.post<GenerateMerchBookMockupsResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.merchBookGenerateMockups.path, { siteId, runId }),
+        {},
       ),
     );
   }

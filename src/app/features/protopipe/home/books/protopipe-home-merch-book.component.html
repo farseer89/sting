@@ -1,0 +1,345 @@
+<div class="mb-shell">
+
+  <header class="mb-masthead">
+    <div class="mb-masthead__left">
+      <h1 class="mb-masthead__title">Merch book</h1>
+      <p class="mb-masthead__deck">
+        Crew merch starter packs — logo concepts, product picks, and mockups. Printful ordering comes in a later phase.
+      </p>
+    </div>
+    <div class="mb-masthead__meta">
+      <span class="mb-masthead__cost">Total spend {{ formatCost(store.totalCostUsd()) }}</span>
+      <span class="mb-masthead__recipe">Recipe: starter_pack</span>
+    </div>
+  </header>
+
+  <div class="mb-binder">
+    <nav class="mb-binder-nav" aria-label="Merch book sections">
+      <button
+        type="button"
+        class="mb-binder-nav__item"
+        [class.mb-binder-nav__item--active]="store.section() === 'new'"
+        (click)="selectSection('new')"
+      >
+        New pack
+      </button>
+      <button
+        type="button"
+        class="mb-binder-nav__item"
+        [class.mb-binder-nav__item--active]="store.section() === 'runs'"
+        (click)="selectSection('runs')"
+      >
+        Saved runs
+        @if (store.runs().length) {
+          <span class="mb-binder-nav__count">{{ store.runs().length }}</span>
+        }
+      </button>
+      <button
+        type="button"
+        class="mb-binder-nav__item"
+        [class.mb-binder-nav__item--active]="store.section() === 'logo'"
+        (click)="selectSection('logo')"
+        [disabled]="!store.activeRun()"
+      >
+        Logo
+      </button>
+      <button
+        type="button"
+        class="mb-binder-nav__item"
+        [class.mb-binder-nav__item--active]="store.section() === 'products'"
+        (click)="selectSection('products')"
+        [disabled]="!store.activeRun()"
+      >
+        Products
+      </button>
+      <button
+        type="button"
+        class="mb-binder-nav__item"
+        [class.mb-binder-nav__item--active]="store.section() === 'mockups'"
+        (click)="selectSection('mockups')"
+        [disabled]="!store.activeRun()"
+      >
+        Mockups
+      </button>
+      <button
+        type="button"
+        class="mb-binder-nav__item"
+        [class.mb-binder-nav__item--active]="store.section() === 'order'"
+        (click)="selectSection('order')"
+        [disabled]="!store.activeRun()"
+      >
+        Order
+      </button>
+    </nav>
+
+    <div class="mb-panel">
+      @if (store.error(); as err) {
+        <p class="mb-error" role="alert">{{ err }}</p>
+      }
+
+      @switch (store.section()) {
+        @case ('new') {
+          <section class="mb-section">
+            <h2 class="mb-section__title">Create crew merch pack</h2>
+            <p class="mb-section__hint">
+              Runs fal.ai Ideogram logo generation with BiRefNet background removal when FAL_KEY is set.
+            </p>
+
+            <label class="mb-field">
+              <span class="mb-field__label">Pack label</span>
+              <input
+                pInputText
+                class="mb-field__input"
+                [ngModel]="store.label()"
+                (ngModelChange)="store.setLabel($event)"
+                placeholder="e.g. Spring crew pack"
+                maxlength="120"
+              />
+            </label>
+
+            <label class="mb-field">
+              <span class="mb-field__label">Logo prompt (optional)</span>
+              <textarea
+                pTextarea
+                class="mb-field__input"
+                [ngModel]="store.logoPrompt()"
+                (ngModelChange)="store.setLogoPrompt($event)"
+                placeholder="e.g. Lightning bolt icon, teal and amber, transparent background"
+                maxlength="500"
+                rows="3"
+              ></textarea>
+            </label>
+
+            <div class="mb-actions">
+              <p-button
+                label="Create pack"
+                icon="pi pi-shopping-bag"
+                [loading]="store.running()"
+                [disabled]="store.running()"
+                (onClick)="store.createRun()"
+              />
+            </div>
+
+            @if (store.running()) {
+              <div class="mb-running">
+                <p-progressSpinner strokeWidth="4" [style]="{ width: '28px', height: '28px' }" />
+                <span>Generating logo concepts via fal.ai (Ideogram + background removal)…</span>
+              </div>
+            }
+          </section>
+        }
+
+        @case ('runs') {
+          <section class="mb-section mb-section--split">
+            @if (store.loading() && !store.runs().length) {
+              <div class="mb-empty">
+                <p-progressSpinner strokeWidth="4" [style]="{ width: '32px', height: '32px' }" />
+              </div>
+            } @else if (!store.runs().length) {
+              <p class="mb-empty">No runs yet — start with <button type="button" class="mb-link" (click)="selectSection('new')">New pack</button>.</p>
+            } @else {
+              <aside class="mb-run-list">
+                <h2 class="mb-run-list__title">Runs</h2>
+                @for (run of store.runs(); track run.id) {
+                  <button
+                    type="button"
+                    class="mb-run-card"
+                    [class.mb-run-card--active]="store.activeRun()?.id === run.id"
+                    (click)="store.selectRun(run.id)"
+                  >
+                    <span class="mb-run-card__label">{{ run.label }}</span>
+                    <span class="mb-run-card__meta">
+                      {{ formatCost(run.costUsd) }} · {{ formatDuration(run.durationMs) }} · {{ run.products.length }} products
+                    </span>
+                  </button>
+                }
+              </aside>
+
+              @if (store.activeRun(); as run) {
+                <div class="mb-run-detail">
+                  <header class="mb-run-detail__head">
+                    <h2 class="mb-run-detail__title">{{ run.label }}</h2>
+                    <div class="mb-run-detail__chips">
+                      <p-tag [value]="run.status" [severity]="statusSeverity(run.status)" />
+                      <span class="mb-chip">{{ formatCost(run.costUsd) }}</span>
+                      <span class="mb-chip">{{ formatDuration(run.durationMs) }}</span>
+                    </div>
+                    @if (run.error) {
+                      <p class="mb-run-detail__error">{{ run.error }}</p>
+                    }
+                  </header>
+
+                  @if (run.thinkerRun; as thinker) {
+                    <h3 class="mb-subhead">Thinker ({{ thinker.mode }})</h3>
+                    <p class="mb-muted">{{ thinker.synthesis.summary }}</p>
+                    <ul class="mb-trains">
+                      @for (train of thinker.trains; track train.slug) {
+                        <li class="mb-train">
+                          <span class="mb-train__label">{{ train.label }}</span>
+                          <p-tag [value]="train.status" [severity]="trainSeverity(train.status)" />
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+              }
+            }
+          </section>
+        }
+
+        @case ('logo') {
+          <section class="mb-section">
+            @if (!store.activeRun()) {
+              <p class="mb-empty">Create a pack first.</p>
+            } @else if (store.activeRun(); as run) {
+              <h2 class="mb-section__title">Logo concepts</h2>
+              @if (!run.logoConcepts.length) {
+                <p class="mb-muted">No logo concepts yet.</p>
+              } @else {
+                <ul class="mb-logo-grid">
+                  @for (concept of run.logoConcepts; track concept.id) {
+                    <li
+                      class="mb-logo-card"
+                      [class.mb-logo-card--selected]="concept.status === 'selected'"
+                      [class.mb-logo-card--rejected]="concept.status === 'rejected'"
+                    >
+                      <div class="mb-logo-card__preview">
+                        @if (concept.imageUrl) {
+                          <img [src]="concept.imageUrl" [alt]="concept.label" />
+                        } @else {
+                          <span class="mb-logo-card__placeholder">{{ concept.label }}</span>
+                        }
+                      </div>
+                      <p class="mb-logo-card__label">{{ concept.label }}</p>
+                      @if (concept.prompt) {
+                        <p class="mb-logo-card__prompt">{{ concept.prompt }}</p>
+                      }
+                      <div class="mb-logo-card__actions">
+                        @if (concept.status !== 'selected') {
+                          <p-button
+                            label="Select"
+                            size="small"
+                            severity="success"
+                            [outlined]="true"
+                            (onClick)="store.setLogoConceptStatus(run.id, concept.id, 'selected')"
+                          />
+                        }
+                        @if (concept.status !== 'rejected') {
+                          <p-button
+                            label="Reject"
+                            size="small"
+                            severity="secondary"
+                            [outlined]="true"
+                            (onClick)="store.setLogoConceptStatus(run.id, concept.id, 'rejected')"
+                          />
+                        }
+                      </div>
+                    </li>
+                  }
+                </ul>
+              }
+            }
+          </section>
+        }
+
+        @case ('products') {
+          <section class="mb-section">
+            @if (store.activeRun(); as run) {
+              <h2 class="mb-section__title">Starter products</h2>
+              @if (!run.products.length) {
+                <p class="mb-muted">No products in this run.</p>
+              } @else {
+                <ul class="mb-products">
+                  @for (product of run.products; track product.id) {
+                    <li class="mb-product">
+                      <span class="mb-product__name">{{ product.name }}</span>
+                      @if (product.color) {
+                        <span class="mb-product__meta">{{ product.color }}</span>
+                      }
+                      <span class="mb-product__qty">Qty {{ product.quantity }}</span>
+                      @if (product.unitPriceUsd != null) {
+                        <span class="mb-product__price">${{ product.unitPriceUsd.toFixed(2) }}</span>
+                      }
+                    </li>
+                  }
+                </ul>
+              }
+            } @else {
+              <p class="mb-empty">Create a pack first.</p>
+            }
+          </section>
+        }
+
+        @case ('mockups') {
+          <section class="mb-section">
+            @if (store.activeRun(); as run) {
+              <h2 class="mb-section__title">Mockups</h2>
+              <p class="mb-section__hint">
+                Printful mockups generate after you select a logo with an image URL.
+              </p>
+              @if (store.mockupsGenerating()) {
+                <div class="mb-running">
+                  <p-progressSpinner strokeWidth="4" [style]="{ width: '28px', height: '28px' }" />
+                  <span>Generating Printful mockups…</span>
+                </div>
+              }
+              @if (store.selectedLogo(); as logo) {
+                <div class="mb-actions">
+                  <p-button
+                    label="Regenerate mockups"
+                    icon="pi pi-refresh"
+                    [outlined]="true"
+                    [loading]="store.mockupsGenerating()"
+                    [disabled]="store.mockupsGenerating() || !logo.imageUrl"
+                    (onClick)="store.regenerateMockups()"
+                  />
+                </div>
+              }
+              @if (!run.mockups.length) {
+                <p class="mb-muted">No mockups yet.</p>
+              } @else {
+                <ul class="mb-mockups">
+                  @for (mockup of run.mockups; track mockup.id) {
+                    <li class="mb-mockup">
+                      <p-tag [value]="mockup.status" [severity]="statusSeverity(mockup.status)" />
+                      @if (mockup.style) {
+                        <span class="mb-mockup__style">{{ mockup.style }}</span>
+                      }
+                      @if (mockup.imageUrl) {
+                        <img [src]="mockup.imageUrl" alt="Product mockup" class="mb-mockup__img" />
+                      } @else {
+                        <span class="mb-muted">Pending</span>
+                      }
+                    </li>
+                  }
+                </ul>
+              }
+            } @else {
+              <p class="mb-empty">Create a pack first.</p>
+            }
+          </section>
+        }
+
+        @case ('order') {
+          <section class="mb-section">
+            @if (store.activeRun(); as run) {
+              <h2 class="mb-section__title">Order</h2>
+              <p class="mb-section__hint">
+                Printful checkout is not wired yet. Select a logo and review products/mockups first.
+              </p>
+              @if (store.selectedLogo(); as logo) {
+                <p class="mb-order-summary">Selected logo: <strong>{{ logo.label }}</strong></p>
+              } @else {
+                <p class="mb-muted">Select a logo concept before ordering.</p>
+              }
+              <p class="mb-muted">{{ run.products.length }} products · {{ run.mockups.length }} mockups</p>
+              <p-button label="Order on Printful (coming soon)" [disabled]="true" icon="pi pi-external-link" />
+            } @else {
+              <p class="mb-empty">Create a pack first.</p>
+            }
+          </section>
+        }
+      }
+    </div>
+  </div>
+</div>

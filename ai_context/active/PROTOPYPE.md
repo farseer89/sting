@@ -24,6 +24,8 @@ Append one line per session (step 7):
 | 2026-06-09 | CP2 GEO discovery (Gemini gap audit, Sharpen AI search); CP3 agent handoff in [CONTENT_INTELLIGENCE_CP3.md](./CONTENT_INTELLIGENCE_CP3.md) | — |
 | 2026-06-15 | Goal 1 PoC: 16 trains + Thinker + writer fixes; ArticlePackage handoff in [TRAINS_ARTICLE_PACKAGE_HANDOFF.md](./TRAINS_ARTICLE_PACKAGE_HANDOFF.md) | — |
 | 2026-06-15 | Goal 1 PoC: 16 trains + Thinker + writer fixes; [ArticlePackage handoff](./TRAINS_ARTICLE_PACKAGE_HANDOFF.md) for quality wiring | — |
+| 2026-06-23 | Merch book scaffold (run archetype, stub thinker, starter products, home nav `books-merch`) | — |
+| 2026-06-23 | Merch book fal.ai logos (Ideogram + BiRefNet) + Printful mockup generation on logo select | — |
 
 ## Do not merge to sting `main`
 

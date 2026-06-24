@@ -1102,6 +1102,11 @@ $mb-success: #15803d;
   grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
 }
 
+.mb-shop-grid--greeting-cards {
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  max-width: 48rem;
+}
+
 .mb-shop-card--stationery {
   display: flex;
   flex-direction: column;
@@ -1117,18 +1122,54 @@ $mb-success: #15803d;
   }
 }
 
-.mb-stationery-card__check {
+.mb-stationery-upload__hint {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+}
+
+.mb-stationery-card__preview {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.78rem;
-  font-weight: 600;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid $mb-border;
+  border-radius: 6px;
+  background: #fff;
   color: $mb-text;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
   cursor: pointer;
 
-  input {
-    accent-color: $mb-accent;
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
   }
+}
+
+.mb-stationery-dialog__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: $mb-muted;
+}
+
+.mb-stationery-dialog__error {
+  margin: 0;
+  padding: 1rem;
+  color: #b91c1c;
+}
+
+.mb-stationery-dialog__mockup {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
 }
 
 .mb-stationery-preview {
@@ -1155,47 +1196,22 @@ $mb-success: #15803d;
   color: $mb-muted;
 }
 
-.mb-stationery-preview__art {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  max-width: 52%;
-  max-height: 42%;
-  object-fit: contain;
-  pointer-events: none;
-}
-
-.mb-stationery-preview[data-type='POSTCARD'] .mb-stationery-preview__art,
-.mb-stationery-preview[data-type='GREETING_CARD'] .mb-stationery-preview__art {
-  max-width: 62%;
-  max-height: 48%;
-}
-
-.mb-stationery-preview[data-type='STICKER'] .mb-stationery-preview__art,
-.mb-stationery-preview[data-type='SUBLIMATION'] .mb-stationery-preview__art {
-  max-width: 58%;
-  max-height: 58%;
-}
-
 .mb-stationery-card__body {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
 
-.mb-stationery-card__sub {
-  font-size: 0.68rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: $mb-muted;
+.mb-stationery-card__size {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: $mb-ink;
 }
 
-.mb-stationery-card__variant {
+.mb-stationery-card__name {
   margin: 0;
-  font-size: 0.72rem;
-  line-height: 1.35;
+  font-size: 0.78rem;
   color: $mb-muted;
 }
 

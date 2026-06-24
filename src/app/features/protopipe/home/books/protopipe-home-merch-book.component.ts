@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import type { ProtopipeMerchBookProduct, ProtopipeMerchBookRunDto } from '@hive/contracts';
+import type { ProtopipeMerchBookProduct, ProtopipeMerchBookRunDto, ProtopipeMerchBookStationeryItem } from '@hive/contracts';
 import { Button } from 'primeng/button';
+import { Dialog } from 'primeng/dialog';
 import { InputText } from 'primeng/inputtext';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { Tag } from 'primeng/tag';
@@ -13,7 +14,7 @@ import { ProtopipeMerchBookStore, type MerchBookSection } from './protopipe-merc
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ProtopipeMerchBookStore],
-  imports: [FormsModule, Button, InputText, Textarea, Tag, ProgressSpinner],
+  imports: [FormsModule, Button, Dialog, InputText, Textarea, Tag, ProgressSpinner],
   templateUrl: './protopipe-home-merch-book.component.html',
   styleUrl: './protopipe-home-merch-book.component.scss',
 })
@@ -60,6 +61,20 @@ export class ProtopipeHomeMerchBookComponent implements OnInit {
     if (!file) return;
     void this.store.uploadStationeryArtwork(file);
     input.value = '';
+  }
+
+  openStationeryPreview(item: ProtopipeMerchBookStationeryItem): void {
+    void this.store.openStationeryPreview(item);
+  }
+
+  closeStationeryPreview(): void {
+    this.store.closeStationeryPreview();
+  }
+
+  onStationeryPreviewDialogChange(visible: boolean): void {
+    if (!visible) {
+      this.closeStationeryPreview();
+    }
   }
 
   statusSeverity(status: string): 'success' | 'warn' | 'danger' | 'secondary' {

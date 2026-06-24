@@ -39,7 +39,7 @@
         [class.mb-binder-nav__item--active]="store.section() === 'stationery'"
         (click)="selectSection('stationery')"
       >
-        Stationery
+        Greeting cards
       </button>
       <button
         type="button"
@@ -483,13 +483,13 @@
           <section class="mb-section mb-section--stationery">
             <div class="mb-browse-header">
               <div>
-                <h2 class="mb-section__title">Stationery</h2>
+                <h2 class="mb-section__title">Greeting cards</h2>
                 <p class="mb-section__hint">
-                  Upload your artwork, pick Printful stationery items, and preview your design on each blank. Prices are live from Printful (fulfillment cost, not retail).
+                  Upload your artwork, then use Preview on each size to see a Printful mockup with your image applied. Prices are live fulfillment cost from Printful (not retail).
                 </p>
               </div>
               @if (store.stationeryLive()) {
-                <span class="mb-browse-header__count">{{ store.stationeryItems().length }} items</span>
+                <span class="mb-browse-header__count">{{ store.stationeryItems().length }} sizes</span>
               }
             </div>
 
@@ -502,7 +502,7 @@
                   (change)="onStationeryArtworkSelected($event)"
                   [disabled]="store.stationeryUploading()"
                 />
-                @if (store.stationeryArtworkUrl(); as artworkUrl) {
+                @if (store.stationeryArtworkDisplayUrl(); as artworkUrl) {
                   <img [src]="artworkUrl" alt="Uploaded artwork" class="mb-stationery-upload__preview" />
                   <span class="mb-stationery-upload__label">Replace artwork</span>
                 } @else {
@@ -515,90 +515,95 @@
                   </span>
                 }
               </label>
-              @if (store.stationeryArtworkUrl()) {
+              @if (store.stationeryArtworkDisplayUrl()) {
                 <button type="button" class="mb-link" (click)="store.clearStationeryArtwork()">Remove artwork</button>
               }
             </div>
 
-            <div class="mb-stationery-toolbar">
-              <label class="mb-browse-filter">
-                <span class="mb-browse-filter__label">Category</span>
-                <select
-                  class="mb-browse-filter__select"
-                  [value]="store.stationerySubcategoryFilter()"
-                  (change)="store.setStationerySubcategoryFilter($any($event.target).value)"
-                >
-                  <option value="all">All stationery</option>
-                  @for (sub of store.stationerySubcategories(); track sub) {
-                    <option [value]="sub">{{ sub }}</option>
-                  }
-                </select>
-              </label>
-              <div class="mb-stationery-toolbar__actions">
-                <button type="button" class="mb-link" (click)="store.selectAllStationery()">Select all</button>
-                <button type="button" class="mb-link" (click)="store.clearStationerySelection()">Clear</button>
-                <span class="mb-muted">{{ store.selectedStationeryCount() }} selected</span>
-              </div>
-            </div>
+            @if (store.stationeryArtworkDisplayUrl() && !store.stationeryCanPreview()) {
+              <p class="mb-stationery-upload__hint mb-muted">
+                @if (store.stationeryUploading()) {
+                  Uploading artwork…
+                } @else {
+                  Waiting for cloud upload — Printful mockup previews need a public image URL.
+                }
+              </p>
+            }
 
             @if (store.stationeryLoading() && !store.stationeryItems().length) {
               <div class="mb-running mb-running--shop">
                 <p-progressSpinner strokeWidth="4" [style]="{ width: '28px', height: '28px' }" />
-                <span>Loading stationery catalog and Printful prices…</span>
+                <span>Loading greeting card sizes and Printful prices…</span>
               </div>
             } @else if (!store.stationeryLive() && !store.stationeryLoading()) {
-              <p class="mb-muted">Printful is not configured — stationery catalog unavailable.</p>
+              <p class="mb-muted">Printful is not configured — greeting card catalog unavailable.</p>
             } @else {
-              <ul class="mb-shop-grid mb-shop-grid--stationery">
-                @for (item of store.filteredStationeryItems(); track item.id) {
-                  <li
-                    class="mb-shop-card mb-shop-card--stationery"
-                    [class.mb-shop-card--selected]="store.isStationerySelected(item.id)"
-                  >
-                    <label class="mb-stationery-card__check">
-                      <input
-                        type="checkbox"
-                        [checked]="store.isStationerySelected(item.id)"
-                        (change)="store.toggleStationeryItem(item.id)"
-                      />
-                      <span>Include</span>
-                    </label>
-
-                    <div
-                      class="mb-stationery-preview"
-                      [class.mb-stationery-preview--has-art]="store.stationeryArtworkUrl() && store.isStationerySelected(item.id)"
-                      [attr.data-type]="item.type"
-                    >
+              <ul class="mb-shop-grid mb-shop-grid--stationery mb-shop-grid--greeting-cards">
+                @for (item of store.stationeryItems(); track item.id) {
+                  <li class="mb-shop-card mb-shop-card--stationery">
+                    <div class="mb-stationery-preview" [attr.data-type]="item.type">
                       @if (item.imageUrl) {
                         <img [src]="item.imageUrl" [alt]="item.name" class="mb-stationery-preview__blank" loading="lazy" />
                       } @else {
                         <div class="mb-stationery-preview__placeholder">No photo</div>
                       }
-                      @if (store.stationeryArtworkUrl(); as artUrl) {
-                        @if (store.isStationerySelected(item.id)) {
-                          <img [src]="artUrl" alt="" class="mb-stationery-preview__art" />
-                        }
-                      }
                     </div>
 
                     <div class="mb-stationery-card__body">
-                      <span class="mb-stationery-card__sub">{{ item.subcategory }}</span>
-                      <h4 class="mb-shop-card__title">{{ item.name }}</h4>
-                      @if (item.variantLabel) {
-                        <p class="mb-stationery-card__variant">{{ item.variantLabel }}</p>
+                      @if (item.size) {
+                        <h4 class="mb-stationery-card__size">{{ item.size }}</h4>
                       }
+                      <p class="mb-stationery-card__name">{{ item.name }}</p>
                       <p class="mb-stationery-card__price">
                         <strong>{{ formatPrice(item.unitPriceUsd) }}</strong>
                         <span>{{ item.currency }} · {{ item.technique }}</span>
                       </p>
                       @if (item.placement) {
-                        <p class="mb-stationery-card__meta">{{ item.placement }}</p>
+                        <p class="mb-stationery-card__meta">{{ item.placement }} · variant {{ item.variantId }}</p>
                       }
+                      <button
+                        type="button"
+                        class="mb-stationery-card__preview"
+                        [disabled]="!store.stationeryCanPreview() || store.isStationeryPreviewLoading(item.id)"
+                        (click)="openStationeryPreview(item)"
+                      >
+                        @if (store.isStationeryPreviewLoading(item.id)) {
+                          <p-progressSpinner strokeWidth="4" [style]="{ width: '16px', height: '16px' }" />
+                          <span>Generating…</span>
+                        } @else {
+                          Preview mockup
+                        }
+                      </button>
                     </div>
                   </li>
                 }
               </ul>
             }
+
+            <p-dialog
+              [visible]="store.stationeryPreviewOpen()"
+              (visibleChange)="onStationeryPreviewDialogChange($event)"
+              [modal]="true"
+              [draggable]="false"
+              [resizable]="false"
+              [style]="{ width: 'min(720px, 94vw)' }"
+              [header]="store.stationeryPreviewItem()?.size ? store.stationeryPreviewItem()!.size + ' mockup' : 'Greeting card mockup'"
+            >
+              @if (store.stationeryPreviewLoading()) {
+                <div class="mb-stationery-dialog__loading">
+                  <p-progressSpinner strokeWidth="4" [style]="{ width: '36px', height: '36px' }" />
+                  <p>Generating Printful mockup… this usually takes 10–20 seconds.</p>
+                </div>
+              } @else if (store.stationeryPreviewError(); as previewError) {
+                <p class="mb-stationery-dialog__error">{{ previewError }}</p>
+              } @else if (store.stationeryPreviewMockupUrl(); as mockupUrl) {
+                <img
+                  [src]="mockupUrl"
+                  [alt]="store.stationeryPreviewItem()?.name ?? 'Printful mockup'"
+                  class="mb-stationery-dialog__mockup"
+                />
+              }
+            </p-dialog>
           </section>
         }
 

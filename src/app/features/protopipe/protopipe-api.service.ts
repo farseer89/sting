@@ -179,6 +179,8 @@ import type {
   ListMerchBookStationeryResponse,
   PresignMerchBookArtworkRequest,
   PresignMerchBookArtworkResponse,
+  PreviewMerchBookStationeryRequest,
+  PreviewMerchBookStationeryResponse,
   ProtopipeMerchBookStationeryItem,
 } from '@hive/contracts';
 import { Observable, firstValueFrom, shareReplay } from 'rxjs';
@@ -1611,6 +1613,18 @@ export class ProtopipeApiService {
     return firstValueFrom(
       this.http.post<PresignMerchBookArtworkResponse>(
         protopipeApiUrl(ProtopipeEndpoints.merchBookPresignStationeryArtwork.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  previewMerchBookStationery(
+    siteId: string,
+    body: PreviewMerchBookStationeryRequest,
+  ): Promise<PreviewMerchBookStationeryResponse> {
+    return firstValueFrom(
+      this.http.post<PreviewMerchBookStationeryResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.merchBookPreviewStationery.path, { siteId }),
         body,
       ),
     );

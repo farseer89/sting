@@ -19,6 +19,7 @@ import {
   draftFingerprint,
   draftFromStrategy,
   draftToOnboardingRequest,
+  isPendingSiteHostname,
   type DiscoveryBookOnboardingDraft,
 } from './discovery-book-onboarding.draft';
 
@@ -647,7 +648,10 @@ export class DiscoveryBookOnboardingStore {
     const d = this.draft();
     switch (stepId) {
       case 'onboarding:getting-started':
-        if (d.onboardingMode === 'existing_site' && !d.websiteUrl.trim()) {
+        if (
+          d.onboardingMode === 'existing_site' &&
+          (!d.websiteUrl.trim() || isPendingSiteHostname(d.websiteUrl))
+        ) {
           return 'Add your website to continue.';
         }
         return null;

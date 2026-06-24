@@ -11,6 +11,8 @@ import {
   type OnboardingModeId,
 } from '../../onboarding/onboarding-market.constants';
 
+const PENDING_SITE_HOSTNAME = 'pending.local';
+
 export interface DiscoveryBookOnboardingDraft {
   onboardingMode: OnboardingModeId;
   websiteUrl: string;
@@ -32,10 +34,11 @@ export function draftFromStrategy(
   site: ProtopipeSite | null,
 ): DiscoveryBookOnboardingDraft {
   const mode = profile?.onboardingMode ?? 'existing_site';
-  const websiteUrl = site?.url?.trim() || site?.hostname?.trim() || '';
+  const rawWebsite = site?.url?.trim() || site?.hostname?.trim() || '';
+  const websiteUrl = isPendingSiteHostname(rawWebsite) ? '' : stripUrlProtocol(rawWebsite);
   return {
     onboardingMode: mode,
-    websiteUrl: stripUrlProtocol(websiteUrl),
+    websiteUrl,
     businessName: site?.displayName?.trim() ?? '',
     services: [...(profile?.services ?? [])],
     customerAvatars: profile?.customerAvatars?.length
@@ -109,6 +112,11 @@ export function locationFromDraft(
 
 export function stripUrlProtocol(raw: string): string {
   return raw.replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
+}
+
+export function isPendingSiteHostname(raw: string): boolean {
+  const host = stripUrlProtocol(raw.trim()).replace(/^www\./i, '').toLowerCase();
+  return host === PENDING_SITE_HOSTNAME;
 }
 
 export function normalizeUrl(raw: string): string {

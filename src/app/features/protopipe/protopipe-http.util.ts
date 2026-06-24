@@ -30,8 +30,9 @@ const PROTOPIPE_API_ERROR_MESSAGES: Record<string, string> = {
 export function parseProtopipeApiError(err: unknown, fallback: string): string {
   if (err instanceof HttpErrorResponse) {
     const body = err.error as ApiErrorBody | null;
-    if (body?.errors?.[0]?.message) {
-      return body.errors[0].message;
+    const validationMessage = firstValidationMessage(body?.errors);
+    if (validationMessage) {
+      return validationMessage;
     }
     if (typeof body?.message === 'string' && body.message.length > 0) {
       return PROTOPIPE_API_ERROR_MESSAGES[body.message] ?? body.message;
@@ -65,4 +66,22 @@ export function parseProtopipeApiError(err: unknown, fallback: string): string {
     return err.message;
   }
   return fallback;
+}
+
+function firstValidationMessage(
+  errors: ApiErrorBody['errors'] | undefined,
+): string | null {
+  const first = errors?.[0];
+  if (!first) return null;
+  if (typeof first.message === 'string' && first.message.length > 0) {
+    return first.message;
+  }
+  const legacyMsg = (first as { msg?: string }).msg;
+  if (typeof legacyMsg === 'string' && legacyMsg.length > 0 && legacyMsg !== 'Invalid value') {
+    return legacyMsg;
+  }
+  if (typeof first.field === 'string' && first.field.length > 0) {
+    return `Invalid ${first.field}`;
+  }
+  return null;
 }

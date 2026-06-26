@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { ProtopipeAdminEndpoints, ProtopipeEndpoints } from '@hive/contracts';
+import { ProtopipeAdminEndpoints, ProtopipeEndpoints, ShireEndpoints } from '@hive/contracts';
 import type {
   ProtopipeAccountGoogleDisconnectResponse,
   ProtopipeAccountGoogleStartResponse,
@@ -185,6 +185,7 @@ import type {
 } from '@hive/contracts';
 import { Observable, firstValueFrom, shareReplay } from 'rxjs';
 import { protopipeApiUrl } from './protopipe-http.util';
+import { isShirePrimary, shireApiUrl } from './shire/shire-http.util';
 
 @Injectable({ providedIn: 'root' })
 export class ProtopipeApiService {
@@ -195,8 +196,11 @@ export class ProtopipeApiService {
 
   bootstrap$(): Observable<ProtopipeBootstrapResponse> {
     if (!this.cachedBootstrap$) {
+      const url = isShirePrimary()
+        ? shireApiUrl(ShireEndpoints.bootstrap)
+        : protopipeApiUrl(ProtopipeEndpoints.bootstrap.path);
       this.cachedBootstrap$ = this.http
-        .get<ProtopipeBootstrapResponse>(protopipeApiUrl(ProtopipeEndpoints.bootstrap.path))
+        .get<ProtopipeBootstrapResponse>(url)
         .pipe(shareReplay({ bufferSize: 1, refCount: false }));
     }
     return this.cachedBootstrap$;
@@ -212,9 +216,10 @@ export class ProtopipeApiService {
   }
 
   getPlan$(siteId: string): Observable<ProtopipePlan> {
-    return this.http.get<ProtopipePlan>(
-      protopipeApiUrl(ProtopipeEndpoints.getPlan.path, { siteId }),
-    );
+    const url = isShirePrimary()
+      ? shireApiUrl(ShireEndpoints.sites.plan(siteId))
+      : protopipeApiUrl(ProtopipeEndpoints.getPlan.path, { siteId });
+    return this.http.get<ProtopipePlan>(url);
   }
 
   getPlan(siteId: string): Promise<ProtopipePlan> {

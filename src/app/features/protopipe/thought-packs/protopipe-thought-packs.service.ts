@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import type { CognitivePackCatalogItem } from '@hive/contracts';
 import { parseProtopipeApiError } from '../protopipe-http.util';
+import { isShirePrimary } from '../shire/shire-http.util';
 import { ProtopipeStrategyService } from '../protopipe-strategy.service';
 import { ProtopipeThoughtPacksApiService } from './protopipe-thought-packs-api.service';
 
@@ -39,6 +40,7 @@ export class ProtopipeThoughtPacksService {
   }
 
   async loadCatalog(): Promise<void> {
+    if (isShirePrimary()) return;
     this._loading.set(true);
     this._error.set(null);
     try {

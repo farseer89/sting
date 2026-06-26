@@ -438,6 +438,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/dev-ui/dev-ui.component').then((m) => m.DevUiComponent),
       },
+      {
+        path: 'dev/auth',
+        canMatch: [devRoutesGuard],
+        loadComponent: () =>
+          import('./features/dev-auth/dev-auth.component').then((m) => m.DevAuthComponent),
+      },
     ],
   },
   { path: '**', redirectTo: '/home' },

@@ -19,6 +19,7 @@ import { articleRunToThought } from '../../lab/thinker/article-run-to-thought';
 import { formatThinkerCostUsd, sumCosts } from '../../lab/thinker/thinker-cost';
 import { exportThoughtRunbookPdf } from '../../lab/thinker/thought-runbook-pdf';
 import { ProtopipeHomeThinkerViewState } from '../protopipe-home-thinker-view.state';
+import { isShireRunsEnabled } from '../../shire/shire-http.util';
 import { ProtopipeHomeWriterViewState } from '../protopipe-home-writer-view.state';
 import {
   canRerunArticleRun,
@@ -110,6 +111,9 @@ export class ProtopipeHomeThinkerBinderComponent {
   readonly isActive = this.thinkerView.isActive;
 
   readonly thought = computed(() => {
+    if (isShireRunsEnabled() && this.runKind() !== 'prospector') {
+      return this.thinkerView.shireThought();
+    }
     if (this.runKind() === 'content-plan') {
       const plan = this.thinkerView.contentPlanRun();
       return plan ? contentPlanRunToThought(plan) : null;

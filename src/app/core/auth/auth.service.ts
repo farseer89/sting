@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import type {
   RefreshResponseV2,
@@ -8,11 +8,12 @@ import type {
   StoredUserProfile,
   UserPublic,
 } from '@hive/contracts';
-import { AuthV2Endpoints } from '@hive/contracts';
+import { AuthV2Endpoints, ShireEndpoints } from '@hive/contracts';
 import { BehaviorSubject, Observable, firstValueFrom, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { environment } from '@env/environment';
 import { isAccessTokenValid } from './jwt.util';
+import { isShirePrimary, shireApiUrl } from '../../features/protopipe/shire/shire-http.util';
 
 /** UI-facing subset derived from {@link UserPublic}. */
 export interface AuthUserInfo {
@@ -23,16 +24,28 @@ export interface AuthUserInfo {
   userAccountType?: string;
 }
 
+interface ShireAuthResponse {
+  accessToken: string;
+  user: { id: string; email: string; accountId: string };
+}
+
 const PROFILE_STORAGE_KEY = 'stingUserProfile';
+const SHIRE_CSRF_HEADER = 'x-shire-auth';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
 
-  private readonly signInUrl = environment.MICRO_USER_SIGNIN;
-  private readonly refreshUrl = `${environment.MICRO_BASE_URL}${AuthV2Endpoints.refresh.path}`;
-  private readonly logoutUrl = `${environment.MICRO_BASE_URL}${AuthV2Endpoints.logout.path}`;
+  private readonly signInUrl = isShirePrimary()
+    ? shireApiUrl(ShireEndpoints.auth.login)
+    : environment.MICRO_USER_SIGNIN;
+  private readonly refreshUrl = isShirePrimary()
+    ? shireApiUrl(ShireEndpoints.auth.refresh)
+    : `${environment.MICRO_BASE_URL}${AuthV2Endpoints.refresh.path}`;
+  private readonly logoutUrl = isShirePrimary()
+    ? shireApiUrl(ShireEndpoints.auth.logout)
+    : `${environment.MICRO_BASE_URL}${AuthV2Endpoints.logout.path}`;
 
   /** Short-lived access JWT — memory only, never persisted. */
   private accessToken: string | null = null;
@@ -50,6 +63,9 @@ export class AuthService {
   private readonly sessionExpiredSubject = new BehaviorSubject<boolean>(false);
   readonly sessionExpired$ = this.sessionExpiredSubject.asObservable();
 
+  private readonly refreshingSubject = new BehaviorSubject<boolean>(false);
+  readonly refreshing$ = this.refreshingSubject.asObservable();
+
   constructor() {
     if (this.hasStoredProfile()) {
       this.loadProfileFromStorage();
@@ -60,12 +76,12 @@ export class AuthService {
     const body: SignInRequest = { email, password };
     return new Promise((resolve, reject) => {
       this.http
-        .post<SignInResponseV2>(this.signInUrl, body, { withCredentials: true })
+        .post<SignInResponseV2 | ShireAuthResponse>(this.signInUrl, body, { withCredentials: true })
         .subscribe({
           next: (data) => {
-            this.applySession(data, rememberMe);
+            this.applySession(this.normalizeAuthResponse(data), rememberMe);
             this.authStateSubject.next(true);
-            resolve(this.buildUserInfo(data));
+            resolve(this.buildUserInfo(this.normalizeAuthResponse(data)));
           },
           error: (err) => {
             const message =
@@ -80,7 +96,10 @@ export class AuthService {
   }
 
   logout(): void {
-    this.http.post(this.logoutUrl, {}, { withCredentials: true }).subscribe({
+    const options = isShirePrimary()
+      ? { withCredentials: true, headers: new HttpHeaders({ [SHIRE_CSRF_HEADER]: '1' }) }
+      : { withCredentials: true };
+    this.http.post(this.logoutUrl, {}, options).subscribe({
       error: () => {
         /* clear local state even if network fails */
       },
@@ -89,7 +108,6 @@ export class AuthService {
     this.router.navigate(['/login']);
   }
 
-  /** True when a user profile is persisted (may still need silent refresh). */
   hasStoredProfile(): boolean {
     return !!this.readProfileRaw('local') || !!this.readProfileRaw('session');
   }
@@ -106,6 +124,11 @@ export class AuthService {
     return this.hasValidAccessToken() ? this.accessToken : null;
   }
 
+  /** Dev-only: drop in-memory access JWT to exercise refresh / expired dialog flows. */
+  clearAccessToken(): void {
+    this.accessToken = null;
+  }
+
   getStoredProfile(): StoredUserProfile | null {
     const raw = this.readProfileRaw('local') || this.readProfileRaw('session');
     if (!raw) return null;
@@ -116,7 +139,6 @@ export class AuthService {
     }
   }
 
-  /** Restore access token from httpOnly refresh cookie on app boot. */
   bootstrapSession(): Promise<boolean> {
     if (this.sessionBootstrapped) {
       return Promise.resolve(this.hasValidAccessToken());
@@ -131,11 +153,11 @@ export class AuthService {
       this.authStateSubject.next(true);
       return Promise.resolve(true);
     }
+    this.refreshingSubject.next(true);
     return firstValueFrom(
       this.refreshAccessToken({ silent: true }).pipe(
         tap(() => this.authStateSubject.next(true)),
         catchError(() => {
-          // Keep stored profile so login can prefill; access token stays cleared.
           this.accessToken = null;
           this.authStateSubject.next(false);
           return throwError(() => new Error('Session expired'));
@@ -143,25 +165,41 @@ export class AuthService {
       ),
     )
       .then(() => true)
-      .catch(() => false);
+      .catch(() => false)
+      .finally(() => this.refreshingSubject.next(false));
   }
 
   refreshAccessToken(options?: { silent?: boolean }): Observable<RefreshResponseV2> {
-    return this.http
-      .post<RefreshResponseV2>(this.refreshUrl, {}, { withCredentials: true })
-      .pipe(
-        tap((response) => {
-          if (response?.accessToken) {
-            this.accessToken = response.accessToken;
-          }
-        }),
-        catchError((err) => {
-          if (!options?.silent) {
+    if (!options?.silent) {
+      this.refreshingSubject.next(true);
+    }
+    const httpOptions = isShirePrimary()
+      ? {
+          withCredentials: true,
+          headers: new HttpHeaders({ [SHIRE_CSRF_HEADER]: '1' }),
+        }
+      : { withCredentials: true };
+
+    return this.http.post<RefreshResponseV2>(this.refreshUrl, {}, httpOptions).pipe(
+      tap((response) => {
+        if (response?.accessToken) {
+          this.accessToken = response.accessToken;
+        }
+        this.refreshingSubject.next(false);
+      }),
+      catchError((err) => {
+        this.refreshingSubject.next(false);
+        if (!options?.silent) {
+          const code = err?.error?.code;
+          if (code === 'SESSION_REVOKED') {
+            this.emitSessionRevoked();
+          } else {
             this.emitSessionExpired();
           }
-          return throwError(() => err);
-        }),
-      );
+        }
+        return throwError(() => err);
+      }),
+    );
   }
 
   emitSessionExpired(): void {
@@ -170,6 +208,17 @@ export class AuthService {
 
   dismissSessionExpired(): void {
     this.sessionExpiredSubject.next(false);
+  }
+
+  private readonly sessionRevokedSubject = new BehaviorSubject<boolean>(false);
+  readonly sessionRevoked$ = this.sessionRevokedSubject.asObservable();
+
+  emitSessionRevoked(): void {
+    this.sessionRevokedSubject.next(true);
+  }
+
+  dismissSessionRevoked(): void {
+    this.sessionRevokedSubject.next(false);
   }
 
   getCurrentUserId(): string {
@@ -184,11 +233,27 @@ export class AuthService {
     return this.currentUserPhoto || 'assets/images/blocks/avatars/circle/avatar-f-1.png';
   }
 
+  private normalizeAuthResponse(data: SignInResponseV2 | ShireAuthResponse): SignInResponseV2 {
+    if ('user' in data && data.user && !('firstName' in data)) {
+      const shire = data as ShireAuthResponse;
+      return {
+        id: shire.user.id,
+        email: shire.user.email,
+        accessToken: shire.accessToken,
+        authProvider: 'email',
+        firstName: '',
+        lastName: '',
+        userPhoto: '',
+      };
+    }
+    return data as SignInResponseV2;
+  }
+
   private applySession(data: SignInResponseV2, rememberMe: boolean): void {
     const { accessToken, authProvider, ...user } = data;
     this.accessToken = accessToken;
     this.applyUserFields(user);
-    const profile: StoredUserProfile = { ...user, authProvider };
+    const profile: StoredUserProfile = { ...user, authProvider: authProvider ?? 'email' };
     const store = rememberMe ? localStorage : sessionStorage;
     store.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
     store.setItem('userId', this.currentUserId);
@@ -223,9 +288,9 @@ export class AuthService {
     localStorage.removeItem('userId');
     sessionStorage.removeItem('userId');
     this.authStateSubject.next(false);
+    this.refreshingSubject.next(false);
   }
 
-  /** Drop legacy v1 `currentUserData` after successful v2 login. */
   private migrateLegacySession(rememberMe: boolean): void {
     const legacyStore = rememberMe ? localStorage : sessionStorage;
     legacyStore.removeItem('currentUserData');

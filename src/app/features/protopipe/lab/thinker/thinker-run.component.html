@@ -33,7 +33,7 @@
   </header>
 
   @if (statusLabel(); as status) {
-    <div class="statusbar" [class]="'is-' + (run()?.status ?? 'idle')">
+    <div class="statusbar" [class]="'is-' + runStatus()">
       <span class="statusbar__chip">{{ status }}</span>
 
       @if (currentStepLabel(); as stepLabel) {

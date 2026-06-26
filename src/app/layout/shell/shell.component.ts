@@ -18,7 +18,6 @@ import {
 import { THEME_GROUPS } from '../../core/theme/theme.types';
 import { ProtopipeContentService } from '../../features/protopipe/protopipe-content.service';
 import { ProtopipeWritingToolsComponent } from '../../features/protopipe/content/protopipe-writing-tools.component';
-import { SessionExpiredDialogComponent } from '../../shared/session-expired-dialog/session-expired-dialog.component';
 
 export interface ShellBreadcrumb {
   label: string;
@@ -38,7 +37,6 @@ export interface ShellBreadcrumb {
     StyleClass,
     Toast,
     Tooltip,
-    SessionExpiredDialogComponent,
     ProtopipeWritingToolsComponent,
   ],
   providers: [MessageService],

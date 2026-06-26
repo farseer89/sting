@@ -5,28 +5,58 @@ import { catchError, filter, switchMap, take } from 'rxjs/operators';
 import { ClientAuthService } from '../../features/client-portal/client-auth.service';
 import { AuthService } from '../auth/auth.service';
 import { environment } from '@env/environment';
-
-let isRefreshing = false;
-const refreshTokenSubject = new BehaviorSubject<string | null>(null);
+import { isShirePrimary } from '../../features/protopipe/shire/shire-http.util';
 
 function isClientPortalApi(url: string): boolean {
   return url.includes('/api/v2/client/');
 }
 
-/** Never retry refresh/sign-in/logout — avoids a 401 refresh loop in the console. */
 function isAuthV2Endpoint(url: string): boolean {
   return /\/api\/v2\/auth\/(refresh|signin|logout)(?:\?|$)/.test(url);
 }
+
+function isShireAuthEndpoint(url: string): boolean {
+  if (!isShirePrimary()) return false;
+  return (
+    url.includes('/api/auth/login') ||
+    url.includes('/api/auth/register') ||
+    url.includes('/api/auth/refresh') ||
+    url.includes('/api/auth/logout')
+  );
+}
+
+function reqUrlStartsWith(url: string, base: string): boolean {
+  return url.startsWith(base);
+}
+
+let isRefreshing = false;
+const refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const clientAuth = inject(ClientAuthService);
   const apiBase = environment.MICRO_SOCKET_ENDPOINT || environment.MICRO_BASE_URL || '';
-  const isApi = !!apiBase && req.url.startsWith(apiBase);
-  const isClientApi = isApi && isClientPortalApi(req.url);
-  const token = isClientApi ? clientAuth.getToken() : auth.getToken();
+  const shireBase = isShirePrimary() ? environment.SHIRE_BASE_URL!.replace(/\/$/, '') : '';
+  const isShireApi = !!shireBase && reqUrlStartsWith(req.url, shireBase);
+  const isBagendApi = !!apiBase && reqUrlStartsWith(req.url, apiBase);
+  const isApi = isBagendApi || isShireApi;
+  const isClientApi = isBagendApi && isClientPortalApi(req.url);
+  const isPublicShireAuth = isShireAuthEndpoint(req.url);
 
-  if (isApi && !token && !isClientApi && auth.hasStoredProfile() && !isAuthV2Endpoint(req.url)) {
+  const token = isPublicShireAuth
+    ? null
+    : isClientApi
+      ? clientAuth.getToken()
+      : auth.getToken();
+
+  const shouldProactiveRefresh =
+    auth.hasStoredProfile() &&
+    !token &&
+    !isPublicShireAuth &&
+    !isAuthV2Endpoint(req.url) &&
+    ((isShireApi && isShirePrimary()) || (isBagendApi && !isClientApi));
+
+  if (shouldProactiveRefresh) {
     return auth.refreshAccessToken({ silent: true }).pipe(
       switchMap((response) => {
         const newToken = response?.accessToken;
@@ -48,7 +78,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       if (!(error instanceof HttpErrorResponse) || error.status !== 401 || !isApi) {
         return throwError(() => error);
       }
-      if (isAuthV2Endpoint(req.url)) {
+      if (isPublicShireAuth || isAuthV2Endpoint(req.url)) {
         return throwError(() => error);
       }
       if (isClientApi) {
@@ -75,7 +105,12 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           }),
           catchError((err) => {
             isRefreshing = false;
-            auth.emitSessionExpired();
+            const code = err?.error?.code;
+            if (code === 'SESSION_REVOKED') {
+              auth.emitSessionRevoked();
+            } else {
+              auth.emitSessionExpired();
+            }
             return throwError(() => err);
           }),
         );

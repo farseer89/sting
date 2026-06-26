@@ -11,12 +11,16 @@ import { ActivatedRoute, Router } from '@angular/router';
 import type { ArticleGenerationRunDto, ArticleGenerationStep } from '@hive/contracts';
 import { ProtopipeApiService } from '../../protopipe-api.service';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
+import { ThoughtRunSession } from '../../runs/thought-run-session.service';
+import { canRerunShireThought } from '../../runs/thought-rerun.util';
+import { isShireRunsEnabled } from '../../shire/shire-http.util';
+import { shireThoughtToUi } from '../../shire/shire-thought.adapter';
+import { canRerunArticleRun } from '../../article/article-run-rerun.util';
 import { articleRunToThought } from './article-run-to-thought';
 import { exportThoughtRunbookPdf } from './thought-runbook-pdf';
 import { ThinkerComponent, type ThinkerMode } from './thinker.component';
+import type { ThoughtStatus } from './thought.model';
 
-/** Matches the backend orphan-takeover window for stuck "running" runs. */
-const STALE_RUNNING_MS = 4 * 60 * 1000;
 /** Base interval between status polls while a run is active. */
 const POLL_MS = 1800;
 /** Consecutive poll failures tolerated before we declare the link lost. */
@@ -25,15 +29,15 @@ const MAX_POLL_FAILURES = 6;
 type Connection = 'idle' | 'live' | 'reconnecting' | 'lost';
 
 /**
- * Live Thinker run view. Loads a real ArticleGenerationRun by id and renders it
- * in the generic Thought stepper (via articleRunToThought), polling while the
- * run is active. Wrapped in void-white chrome to match the Thinker lab.
+ * Live Thinker run view. Polls bagend ArticleGenerationRun or Shire Thought
+ * (when `SHIRE_BASE_URL` is set) and renders via the generic Thought stepper.
  */
 @Component({
   selector: 'app-thinker-run',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ThinkerComponent],
+  providers: [ThoughtRunSession],
   templateUrl: './thinker-run.component.html',
   styleUrl: './thinker-run.component.scss',
 })
@@ -41,27 +45,47 @@ export class ThinkerRunComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly api = inject(ProtopipeApiService);
+  private readonly shireSession = inject(ThoughtRunSession);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly useShire = isShireRunsEnabled();
 
   readonly mode = signal<ThinkerMode>('calm');
   readonly run = signal<ArticleGenerationRunDto | null>(null);
-  readonly loadError = signal<string | null>(null);
+  readonly bagendLoadError = signal<string | null>(null);
+  readonly bagendConnection = signal<Connection>('idle');
   readonly actionError = signal<string | null>(null);
   readonly rerunning = signal(false);
   readonly exportingRunbook = signal(false);
-  /** Live link health for the polling loop, surfaced in the status strip. */
-  readonly connection = signal<Connection>('idle');
+
+  readonly loadError = computed(() => {
+    const local = this.bagendLoadError();
+    if (local) return local;
+    return this.useShire ? this.shireSession.loadError() : null;
+  });
+  readonly connection = computed(() =>
+    this.useShire ? this.shireSession.connection() : this.bagendConnection(),
+  );
 
   readonly thought = computed(() => {
+    if (this.useShire) {
+      const t = this.shireSession.thought();
+      return t ? shireThoughtToUi(t) : null;
+    }
     const r = this.run();
     return r ? articleRunToThought(r) : null;
   });
 
-  /** Run-level status for the status strip (queued / running / failed / done). */
+  readonly runStatus = computed((): ThoughtStatus | ArticleGenerationRunDto['status'] | 'idle' => {
+    if (this.useShire) {
+      return this.shireSession.thought()?.status ?? 'idle';
+    }
+    return this.run()?.status ?? 'idle';
+  });
+
   readonly statusLabel = computed(() => {
-    const r = this.run();
-    if (!r) return null;
-    switch (r.status) {
+    const status = this.runStatus();
+    if (status === 'idle') return null;
+    switch (status) {
       case 'pending':
         return 'Queued';
       case 'running':
@@ -71,42 +95,44 @@ export class ThinkerRunComponent implements OnInit {
       case 'failed':
         return 'Failed';
       default:
-        return r.status;
+        return String(status);
     }
   });
 
-  /** Whether the run is still progressing (drives the live pulse + polling). */
   readonly isActive = computed(() => {
+    if (this.useShire) return this.shireSession.isActive();
     const r = this.run();
     return r?.status === 'running' || r?.status === 'pending';
   });
 
-  /** Human label for the step currently in flight (or the failed step). */
   readonly currentStepLabel = computed(() => {
     const t = this.thought();
     if (!t) return null;
-    const active = t.steps.find((s) => s.id === t.currentStepId) ?? t.steps.find((s) => s.status === 'running');
+    const active =
+      t.steps.find((s) => s.id === t.currentStepId) ?? t.steps.find((s) => s.status === 'running');
     return active?.label ?? null;
   });
 
-  /** Message + step for a failed run, surfaced prominently in the strip. */
   readonly failure = computed(() => {
+    if (this.useShire) {
+      const t = this.shireSession.thought();
+      if (!t || t.status !== 'failed') return null;
+      const failedStep = t.steps.find((s) => s.status === 'failed');
+      return {
+        step: failedStep?.id ?? t.currentStepId ?? null,
+        message: failedStep?.error?.message ?? 'The run failed.',
+      };
+    }
     const r = this.run();
     if (!r || r.status !== 'failed') return null;
     return { step: r.error?.step ?? null, message: r.error?.message ?? 'The run failed.' };
   });
 
-  /**
-   * Allow rerun when the run is finished/failed, or when it is "running" but
-   * has made no progress within the orphan window (matches the backend's
-   * staleness takeover). Polling keeps run() fresh so this re-evaluates.
-   */
   readonly canRerun = computed(() => {
-    const r = this.run();
-    if (!r) return false;
-    if (r.status !== 'running' && r.status !== 'pending') return true;
-    const updatedMs = new Date(r.updatedAt).getTime();
-    return Number.isFinite(updatedMs) && Date.now() - updatedMs > STALE_RUNNING_MS;
+    if (this.useShire) {
+      return canRerunShireThought(this.shireSession.thought());
+    }
+    return canRerunArticleRun(this.run());
   });
 
   private siteId = '';
@@ -118,7 +144,11 @@ export class ThinkerRunComponent implements OnInit {
   constructor() {
     document.documentElement.classList.add('void-lab', 'void-white');
     this.destroyRef.onDestroy(() => {
-      this.stopPolling();
+      if (this.useShire) {
+        this.shireSession.stop();
+      } else {
+        this.stopPolling();
+      }
       document.documentElement.classList.remove('void-lab', 'void-white');
     });
   }
@@ -129,10 +159,14 @@ export class ThinkerRunComponent implements OnInit {
     this.runId = pm.get('runId') ?? '';
     this.postId = this.route.snapshot.queryParamMap.get('postId');
     if (!this.siteId || !this.runId) {
-      this.loadError.set('Missing run reference.');
+      this.bagendLoadError.set('Missing run reference.');
       return;
     }
-    this.load();
+    if (this.useShire) {
+      void this.shireSession.loadRun(this.siteId, this.runId);
+    } else {
+      this.loadBagend();
+    }
   }
 
   toggleMode(): void {
@@ -162,16 +196,27 @@ export class ThinkerRunComponent implements OnInit {
   }
 
   onRerunStep(stepId: string): void {
-    const step = stepId as ArticleGenerationStep;
     if (this.rerunning()) return;
     this.actionError.set(null);
     this.rerunning.set(true);
+
+    if (this.useShire) {
+      void this.shireSession.rerunStep(stepId).then((result) => {
+        this.rerunning.set(false);
+        if (!result.ok) {
+          this.actionError.set(result.message);
+        }
+      });
+      return;
+    }
+
+    const step = stepId as ArticleGenerationStep;
     this.stopPolling();
     this.api.rerunArticleStep$(this.siteId, this.runId, step).subscribe({
       next: ({ run }) => {
         this.run.set(run);
         this.rerunning.set(false);
-        this.maybePoll(run);
+        this.maybePollBagend(run);
       },
       error: (err) => {
         this.rerunning.set(false);
@@ -180,61 +225,62 @@ export class ThinkerRunComponent implements OnInit {
     });
   }
 
-  /** Manual reconnect after the link was declared lost. */
   retry(): void {
-    this.loadError.set(null);
+    if (this.useShire) {
+      this.shireSession.retryPoll();
+      return;
+    }
+    this.bagendLoadError.set(null);
     this.pollFailures = 0;
-    this.connection.set('reconnecting');
-    this.load();
+    this.bagendConnection.set('reconnecting');
+    this.loadBagend();
   }
 
-  private load(): void {
+  private loadBagend(): void {
     this.api.getArticleRun$(this.siteId, this.runId).subscribe({
       next: ({ run }) => {
-        this.loadError.set(null);
+        this.bagendLoadError.set(null);
         this.pollFailures = 0;
         this.run.set(run);
-        this.maybePoll(run);
+        this.maybePollBagend(run);
       },
       error: (err) => {
-        this.connection.set('idle');
-        this.loadError.set(parseProtopipeApiError(err, 'Could not load run.'));
+        this.bagendConnection.set('idle');
+        this.bagendLoadError.set(parseProtopipeApiError(err, 'Could not load run.'));
       },
     });
   }
 
-  private maybePoll(run: ArticleGenerationRunDto): void {
+  private maybePollBagend(run: ArticleGenerationRunDto): void {
     if (run.status === 'running' || run.status === 'pending') {
-      this.connection.set('live');
+      this.bagendConnection.set('live');
       this.schedulePoll(POLL_MS);
     } else {
-      this.connection.set('idle');
+      this.bagendConnection.set('idle');
       this.stopPolling();
     }
   }
 
   private schedulePoll(delayMs: number): void {
     this.stopPolling();
-    this.pollTimer = setTimeout(() => this.poll(), delayMs);
+    this.pollTimer = setTimeout(() => this.pollBagend(), delayMs);
   }
 
-  private poll(): void {
+  private pollBagend(): void {
     this.api.getArticleRun$(this.siteId, this.runId).subscribe({
       next: ({ run }) => {
         this.pollFailures = 0;
         this.run.set(run);
-        this.maybePoll(run);
+        this.maybePollBagend(run);
       },
       error: () => {
-        // Transient errors (token refresh boundary, backend restart, blips)
-        // shouldn't permanently freeze the view: back off and keep trying.
         this.pollFailures += 1;
         if (this.pollFailures >= MAX_POLL_FAILURES) {
-          this.connection.set('lost');
+          this.bagendConnection.set('lost');
           this.stopPolling();
           return;
         }
-        this.connection.set('reconnecting');
+        this.bagendConnection.set('reconnecting');
         const backoff = POLL_MS * Math.min(this.pollFailures + 1, 5);
         this.schedulePoll(backoff);
       },

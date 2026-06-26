@@ -34,6 +34,7 @@ import { ProtopipeHomeWriterComponent } from './protopipe-home-writer.component'
 import { ProtopipeHomeWriterViewState } from './protopipe-home-writer-view.state';
 import { ProtopipeHomeThinkerViewState } from './protopipe-home-thinker-view.state';
 import { ArticleGenerationRunSession } from '../article/article-generation-run-session.service';
+import { ThoughtRunSession } from '../runs/thought-run-session.service';
 import { ProtopipeHomeKeywordBookComponent } from './books/protopipe-home-keyword-book.component';
 import { ProtopipeHomeRunbooksComponent } from './runbooks/protopipe-home-runbooks.component';
 import { ProtopipeHomeIntakeDemoComponent } from './intake-demo/protopipe-home-intake-demo.component';
@@ -114,6 +115,7 @@ type HomeFocusHistoryKind = 'thinker' | 'writer';
     ProtopipeHomeWriterViewState,
     ProtopipeHomeThinkerViewState,
     ArticleGenerationRunSession,
+    ThoughtRunSession,
   ],
   imports: [
     ProtopipeHomeKeywordBookComponent,

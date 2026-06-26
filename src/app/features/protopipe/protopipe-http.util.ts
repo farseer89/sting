@@ -1,10 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import type { ApiErrorBody, SeoValidationResult } from '@hive/contracts';
-import { environment } from '../../../environments/environment';
+import { protopipeApiBase } from './shire/shire-http.util';
 
-const API_BASE = environment.MICRO_BASE_URL;
-
-/** Build absolute v2 Protopipe URL; encodes path params safely. */
+/** Build absolute Protopipe URL; encodes path params safely. */
 export function protopipeApiUrl(pathTemplate: string, params?: Record<string, string>): string {
   let path = pathTemplate;
   if (params) {
@@ -12,7 +10,7 @@ export function protopipeApiUrl(pathTemplate: string, params?: Record<string, st
       path = path.replace(`:${key}`, encodeURIComponent(value));
     }
   }
-  return `${API_BASE}${path}`;
+  return `${protopipeApiBase()}${path}`;
 }
 
 const PROTOPIPE_API_ERROR_MESSAGES: Record<string, string> = {

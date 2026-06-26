@@ -8,13 +8,17 @@
 |-------|-----------|-------------------|
 | **bagend** | Route prefix `/api/v2/protopipe/*` + `mongoModels/protopipe/` + DB `protopipe` | Single Digital Ocean app — `https://droppin.shop` |
 | **FieldWave (etc.)** | `/api/tenants/:tenantKey/*` + `fieldwave` DB | Same bagend host |
-| **Sting UI** | `protopipe` git branch + **dedicated Firebase** (not `stingbase`) | Firebase Hosting |
+| **Sting UI** | `protopipe` git branch + **dedicated Firebase** (not `stingbase`) | Firebase Hosting → auth via **Shire** (`shire.droppin.shop`) |
 | **hive-contracts** | `src/protopipe/*` types | Published / `file:../` with bagend & sting |
 
 ```text
-droppin.shop (one bagend process)
-├── /api/v2/auth/*           → shared users
-├── /api/v2/protopipe/*      → Protopipe (ownerUserId, protopipe DB)
+sting-protopipe.web.app  ──►  shire.droppin.shop (auth + migrated Protopipe API)
+                                    │
+                               nginx → 127.0.0.1:3001
+
+droppin.shop (bagend — unmigrated features only)
+├── /api/v2/auth/*           → legacy (Sting slice 1 uses Shire)
+├── /api/v2/protopipe/*      → legacy Protopipe routes still on bagend for unmigrated UI
 ├── /api/tenants/:key/*      → FieldWave (tenantKey, fieldwave DB)
 └── …
 ```
@@ -74,13 +78,22 @@ Wire aliases (optional, in local `.firebaserc` — gitignored):
 }
 ```
 
-Deploy Protopipe hosting:
+Deploy Protopipe hosting (bagend API only — legacy):
 
 ```bash
 firebase use sting-protopipe
 STING_MICRO_URL="https://droppin.shop" npm run configure-env
 npm run deploy:firebase
 ```
+
+**Shire auth cutover (slice 1 — current prod):**
+
+```bash
+firebase use sting-protopipe
+npm run deploy:shire
+```
+
+`deploy:shire` sets `STING_SHIRE_URL=https://shire.droppin.shop` and `STING_MICRO_URL=https://droppin.shop` before `build:prod`, then deploys `hosting:sting` only (avoids broken `client-portal` target).
 
 **Live URL:** https://sting-protopipe.web.app
 

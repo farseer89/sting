@@ -62,10 +62,15 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
   );
   private readonly didAutoLeaveDiscovery = signal(false);
   private readonly didResolveInitialSection = signal(false);
+  private readonly didLoadKeywordStore = signal(false);
 
   readonly discoveryRun = this.thinkerView.discoveryRun;
 
   readonly hasDiscoveryRun = computed(() => Boolean(this.discoveryRun()));
+  readonly hasOnboardingProfile = computed(() => Boolean(this.strategy.onboardingProfile()));
+  readonly canUseDiscoveryPipeline = computed(
+    () => this.hasOnboardingProfile() || this.hasDiscoveryRun(),
+  );
 
   readonly discoveryStatusLabel = computed(() => {
     const status = this.discoveryRun()?.status;
@@ -95,12 +100,17 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
   });
 
   readonly showDiscoveryNav = computed(() => this.hasDiscoveryRun());
+  readonly showKeywordNav = computed(() => this.canUseDiscoveryPipeline());
 
   readonly showAudiencesNav = computed(
-    () => this.store.wizardEnabled() || this.store.wizardStep() !== 'keywords',
+    () =>
+      this.canUseDiscoveryPipeline() &&
+      (this.store.wizardEnabled() || this.store.wizardStep() !== 'keywords'),
   );
 
-  readonly showBuildNav = computed(() => this.store.wizardStep() === 'build');
+  readonly showBuildNav = computed(
+    () => this.canUseDiscoveryPipeline() && this.store.wizardStep() === 'build',
+  );
 
   readonly activeOnboardingMeta = computed(() => {
     const section = this.activeSection();
@@ -118,11 +128,12 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
       if (this.strategy.loading()) return;
 
       this.onboardingStore.syncFromStrategy();
+      this.loadKeywordStoreWhenReady();
 
       if (this.didResolveInitialSection()) return;
       this.didResolveInitialSection.set(true);
 
-      if (!this.strategy.onboardingProfile()) {
+      if (!this.canUseDiscoveryPipeline()) {
         this.activeSection.set(DISCOVERY_BOOK_ONBOARDING_STEPS[0].id);
         return;
       }
@@ -155,11 +166,14 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    void this.store.load();
     this.onboardingStore.syncFromStrategy();
   }
 
   selectSection(section: DiscoveryBookSection): void {
+    if (!isOnboardingSection(section) && !this.canUseDiscoveryPipeline()) {
+      this.activeSection.set(DISCOVERY_BOOK_ONBOARDING_STEPS[0].id);
+      return;
+    }
     this.activeSection.set(section);
     if (section === 'onboarding:offer') {
       void this.onboardingStore.ensureOfferScan();
@@ -197,5 +211,11 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
     if (step) {
       this.store.setWizardStep(step);
     }
+  }
+
+  private loadKeywordStoreWhenReady(): void {
+    if (this.didLoadKeywordStore() || !this.canUseDiscoveryPipeline()) return;
+    this.didLoadKeywordStore.set(true);
+    void this.store.load();
   }
 }

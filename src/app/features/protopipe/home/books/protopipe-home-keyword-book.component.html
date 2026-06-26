@@ -76,14 +76,16 @@
           </button>
         }
 
-        <button
-          type="button"
-          class="kb-binder-nav__item"
-          [class.is-active]="isPipelineSectionActive('keywords')"
-          (click)="selectSection('keywords')"
-        >
-          Keywords
-        </button>
+        @if (showKeywordNav()) {
+          <button
+            type="button"
+            class="kb-binder-nav__item"
+            [class.is-active]="isPipelineSectionActive('keywords')"
+            (click)="selectSection('keywords')"
+          >
+            Keywords
+          </button>
+        }
 
         @if (showAudiencesNav()) {
           <button

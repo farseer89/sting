@@ -13,7 +13,6 @@ import type {
 import { discoveryProgressPercent, discoveryStepLabel } from './discovery-progress';
 import { ContentPlanStore } from '../../content-plan/content-plan.store';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
-import { isShirePrimary } from '../../shire/shire-http.util';
 import { ProtopipeApiService } from '../../protopipe-api.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { ProtopipeHomeThinkerViewState } from '../protopipe-home-thinker-view.state';
@@ -154,10 +153,6 @@ export class ProtopipeKeywordPickerStore {
   private loadTask: Promise<void> | null = null;
 
   private async performLoad(): Promise<void> {
-    if (isShirePrimary()) {
-      this._loading.set(false);
-      return;
-    }
     this._loading.set(true);
     this._error.set(null);
     this._discoveryNote.set(null);

@@ -1,6 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import type { ApiErrorBody, SeoValidationResult } from '@hive/contracts';
-import { protopipeApiBase } from './shire/shire-http.util';
+import { isShirePrimary, protopipeApiBase } from './shire/shire-http.util';
+
+const LEGACY_PROTOPIPE_PREFIX = '/api/v2/protopipe';
 
 /** Build absolute Protopipe URL; encodes path params safely. */
 export function protopipeApiUrl(pathTemplate: string, params?: Record<string, string>): string {
@@ -9,6 +11,10 @@ export function protopipeApiUrl(pathTemplate: string, params?: Record<string, st
     for (const [key, value] of Object.entries(params)) {
       path = path.replace(`:${key}`, encodeURIComponent(value));
     }
+  }
+  if (isShirePrimary() && path.startsWith(LEGACY_PROTOPIPE_PREFIX)) {
+    path = `/api${path.slice(LEGACY_PROTOPIPE_PREFIX.length)}`;
+    path = path.replace(/(\/api\/sites\/[^/]+)\/content(?=\/|$)/, '$1/content-posts');
   }
   return `${protopipeApiBase()}${path}`;
 }

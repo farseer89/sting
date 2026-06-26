@@ -6,7 +6,6 @@ import type {
   ProtopipeSiteContentPlan,
 } from '@hive/contracts';
 import { AuthService } from '../../../core/auth/auth.service';
-import { isShirePrimary } from '../shire/shire-http.util';
 import { parseProtopipeApiError } from '../protopipe-http.util';
 import { ContentPlanService } from './content-plan.service';
 
@@ -88,7 +87,6 @@ export class ContentPlanStore {
   async loadLatest(): Promise<void> {
     const siteId = this._siteId();
     if (!siteId) return;
-    if (isShirePrimary()) return;
     this._loading.set(true);
     this._error.set(null);
     this._selectedRunId.set(null);
@@ -112,7 +110,6 @@ export class ContentPlanStore {
       this._error.set('No site selected');
       return;
     }
-    if (isShirePrimary()) return;
     this._starting.set(true);
     this._error.set(null);
     this._selectedRunId.set(null);
@@ -144,7 +141,6 @@ export class ContentPlanStore {
   ): Promise<{ contentPostId: string; created: boolean } | null> {
     const siteId = this._siteId();
     if (!siteId) return null;
-    if (isShirePrimary()) return null;
     this._error.set(null);
     try {
       const res = await this.api.confirmItem(siteId, item);
@@ -159,7 +155,6 @@ export class ContentPlanStore {
   async confirm(): Promise<{ createdCount: number; skippedCount: number } | null> {
     const siteId = this._siteId();
     if (!siteId) return null;
-    if (isShirePrimary()) return null;
     this._confirming.set(true);
     this._error.set(null);
     try {
@@ -177,7 +172,6 @@ export class ContentPlanStore {
   async loadRuns(): Promise<void> {
     const siteId = this._siteId();
     if (!siteId) return;
-    if (isShirePrimary()) return;
     try {
       const res = await this.api.listRuns(siteId);
       this._runs.set(res.runs);
@@ -190,7 +184,6 @@ export class ContentPlanStore {
   async selectRun(planId: string | null): Promise<void> {
     const siteId = this._siteId();
     if (!siteId) return;
-    if (isShirePrimary()) return;
     this.stopPolling();
     this._selectedRunId.set(planId);
     if (planId === null) {

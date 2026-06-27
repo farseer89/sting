@@ -22,7 +22,9 @@ import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import {
   DISCOVERY_BOOK_ONBOARDING_STEPS,
   isOnboardingSection,
+  nextOnboardingStepId,
   onboardingStepMeta,
+  previousOnboardingStepId,
   type DiscoveryBookOnboardingStepId,
   type DiscoveryBookPipelineSection,
   type DiscoveryBookSection,
@@ -72,7 +74,7 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
   readonly hasOnboardingProfile = computed(() => Boolean(this.strategy.onboardingProfile()));
   readonly canUseDiscoveryPipeline = computed(
     () =>
-      this.onboardingState.onboardingCompleted() &&
+      (this.onboardingState.onboardingCompleted() || this.hasOnboardingProfile()) &&
       (this.hasOnboardingProfile() || this.hasDiscoveryRun()),
   );
 
@@ -177,9 +179,15 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
   }
 
   selectSection(section: DiscoveryBookSection): void {
-    if (!isOnboardingSection(section) && !this.canUseDiscoveryPipeline()) {
+    const pipelineAllowed =
+      this.canUseDiscoveryPipeline() ||
+      (section === 'discovery' && this.hasDiscoveryRun());
+    if (!isOnboardingSection(section) && !pipelineAllowed) {
       this.activeSection.set(DISCOVERY_BOOK_ONBOARDING_STEPS[0].id);
       return;
+    }
+    if (section === 'discovery') {
+      this.didAutoLeaveDiscovery.set(true);
     }
     this.activeSection.set(section);
     if (section === 'onboarding:offer') {
@@ -198,6 +206,26 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
     this.didAutoLeaveDiscovery.set(false);
     this.activeSection.set('discovery');
   }
+
+  goToNextOnboardingStep(): void {
+    const current = this.activeSection();
+    if (!isOnboardingSection(current)) return;
+    const next = nextOnboardingStepId(current);
+    if (next) {
+      this.selectSection(next);
+    }
+  }
+
+  goToPreviousOnboardingStep(): void {
+    const current = this.activeSection();
+    if (!isOnboardingSection(current)) return;
+    const prev = previousOnboardingStepId(current);
+    if (prev) {
+      this.selectSection(prev);
+    }
+  }
+
+  readonly onboardingCompleted = this.onboardingState.onboardingCompleted;
 
   isOnboardingStepActive(id: DiscoveryBookOnboardingStepId): boolean {
     return this.activeSection() === id;

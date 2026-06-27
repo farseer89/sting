@@ -36,6 +36,14 @@ export class ProtopipeOnboardingStateService {
     this._onboardingCompletedAt.set(undefined);
   }
 
+  /** Keep bootstrap cache in sync after complete-onboarding without a full refetch. */
+  applyOnboardingCompleted(at: string | null): void {
+    this._onboardingCompletedAt.set(at);
+    if (this.cached) {
+      this.cached = { ...this.cached, onboardingCompletedAt: at };
+    }
+  }
+
   /** Synchronous read for components that have already triggered load(). */
   peek(): ProtopipeBootstrapResponse | null {
     return this.cached;

@@ -101,3 +101,31 @@ export function onboardingStepMeta(
   }
   return meta;
 }
+
+export function nextOnboardingStepId(
+  id: DiscoveryBookOnboardingStepId,
+): DiscoveryBookOnboardingStepId | null {
+  const index = DISCOVERY_BOOK_ONBOARDING_STEPS.findIndex((s) => s.id === id);
+  if (index < 0 || index >= DISCOVERY_BOOK_ONBOARDING_STEPS.length - 1) {
+    return null;
+  }
+  return DISCOVERY_BOOK_ONBOARDING_STEPS[index + 1].id;
+}
+
+export function previousOnboardingStepId(
+  id: DiscoveryBookOnboardingStepId,
+): DiscoveryBookOnboardingStepId | null {
+  const index = DISCOVERY_BOOK_ONBOARDING_STEPS.findIndex((s) => s.id === id);
+  if (index <= 0) {
+    return null;
+  }
+  return DISCOVERY_BOOK_ONBOARDING_STEPS[index - 1].id;
+}
+
+export function isFirstOnboardingStep(id: DiscoveryBookOnboardingStepId): boolean {
+  return DISCOVERY_BOOK_ONBOARDING_STEPS[0]?.id === id;
+}
+
+export function isLastOnboardingStep(id: DiscoveryBookOnboardingStepId): boolean {
+  return DISCOVERY_BOOK_ONBOARDING_STEPS.at(-1)?.id === id;
+}

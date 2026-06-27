@@ -25,7 +25,11 @@ import {
   customerProfileTitle,
 } from './discovery-book-customer-profile.util';
 import { DiscoveryBookOnboardingStore } from './discovery-book-onboarding.store';
-import type { DiscoveryBookOnboardingStepId } from './discovery-book-onboarding.steps';
+import {
+  isFirstOnboardingStep,
+  isLastOnboardingStep,
+  type DiscoveryBookOnboardingStepId,
+} from './discovery-book-onboarding.steps';
 
 @Component({
   selector: 'app-protopipe-discovery-book-onboarding-panel',
@@ -39,7 +43,10 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
   readonly store = inject(DiscoveryBookOnboardingStore);
 
   readonly stepId = input.required<DiscoveryBookOnboardingStepId>();
+  readonly onboardingCompleted = input(false);
   readonly discoveryStarted = output<string>();
+  readonly stepAdvance = output<void>();
+  readonly stepBack = output<void>();
 
   readonly onboardingModeOptions = ONBOARDING_MODE_OPTIONS;
   readonly marketScopeOptions = MARKET_SCOPE_OPTIONS;
@@ -52,6 +59,19 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
         void this.store.ensureOfferScan();
       }
     });
+
+    effect(() => {
+      this.stepId();
+      this.store.clearStepError();
+    });
+  }
+
+  isFirstStep(): boolean {
+    return isFirstOnboardingStep(this.stepId());
+  }
+
+  isLastStep(): boolean {
+    return isLastOnboardingStep(this.stepId());
   }
 
   otherServices(): string[] {
@@ -109,10 +129,46 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
     return customerProfileSubtitle(this.customerText(slot), slot);
   }
 
-  async save(): Promise<void> {
-    const runId = await this.store.save(this.stepId());
+  continue(): void {
+    if (!this.store.tryContinue(this.stepId())) {
+      return;
+    }
+    this.stepAdvance.emit();
+  }
+
+  back(): void {
+    this.stepBack.emit();
+  }
+
+  async finish(): Promise<void> {
+    const runId = await this.store.save();
     if (runId) {
       this.discoveryStarted.emit(runId);
+    }
+  }
+
+  async saveEdits(): Promise<void> {
+    const runId = await this.store.save();
+    if (runId) {
+      this.discoveryStarted.emit(runId);
+    }
+  }
+
+  onPrimaryKeydown(event: Event): void {
+    if (!(event instanceof KeyboardEvent) || event.key !== 'Enter') return;
+    event.preventDefault();
+    if (!this.onboardingCompleted()) {
+      if (this.isLastStep()) {
+        void this.finish();
+      } else {
+        this.continue();
+      }
+      return;
+    }
+    if (!this.isLastStep()) {
+      this.continue();
+    } else if (this.store.canSaveEdits()) {
+      void this.saveEdits();
     }
   }
 

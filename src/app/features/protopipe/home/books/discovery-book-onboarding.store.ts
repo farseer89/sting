@@ -46,6 +46,7 @@ export class DiscoveryBookOnboardingStore {
   readonly saving = signal(false);
   readonly saveError = signal<string | null>(null);
   readonly saveStatus = signal<string | null>(null);
+  readonly stepError = signal<string | null>(null);
   readonly locationSuggestions = signal<ProtopipeSerpLocationOption[]>([]);
   readonly countrySuggestions = signal<MarketCountryOption[]>([]);
   readonly isSearchingLocations = signal(false);
@@ -687,14 +688,33 @@ export class DiscoveryBookOnboardingStore {
     }
   }
 
-  canSave(stepId: DiscoveryBookOnboardingStepId): boolean {
-    const firstSave = !this.strategy.onboardingProfile();
-    const dirtyOk = this.isDirty() || firstSave;
-    return (
-      dirtyOk &&
-      this.stepValidationError(stepId) == null &&
-      this.fullValidationError() == null
-    );
+  clearStepError(): void {
+    this.stepError.set(null);
+  }
+
+  canContinue(stepId: DiscoveryBookOnboardingStepId): boolean {
+    return !this.saving() && this.stepValidationError(stepId) == null;
+  }
+
+  /** First-time setup — submit on the last step only. */
+  canFinishOnboarding(stepId: DiscoveryBookOnboardingStepId): boolean {
+    return !this.saving() && stepId === 'onboarding:business-name' && this.fullValidationError() == null;
+  }
+
+  /** Re-open onboarding after activation — save when profile changed. */
+  canSaveEdits(): boolean {
+    return this.isDirty() && !this.saving() && this.fullValidationError() == null;
+  }
+
+  tryContinue(stepId: DiscoveryBookOnboardingStepId): boolean {
+    this.flushDraftInputs();
+    const err = this.stepValidationError(stepId);
+    if (err) {
+      this.stepError.set(err);
+      return false;
+    }
+    this.stepError.set(null);
+    return true;
   }
 
   fullValidationError(): string | null {
@@ -712,16 +732,14 @@ export class DiscoveryBookOnboardingStore {
     return null;
   }
 
-  async save(stepId: DiscoveryBookOnboardingStepId): Promise<string | null> {
-    const validation = this.stepValidationError(stepId) ?? this.fullValidationError();
+  async save(): Promise<string | null> {
+    const validation = this.fullValidationError();
     if (validation) {
       this.saveError.set(validation);
       return null;
     }
 
-    this.addService();
-    this.addTargetCustomer();
-    this.addCompetitor();
+    this.flushDraftInputs();
 
     const siteId = this.strategy.siteId();
     if (!siteId) {
@@ -736,7 +754,7 @@ export class DiscoveryBookOnboardingStore {
     try {
       const body = draftToOnboardingRequest(this.draft());
       const res = await this.api.completeOnboarding(siteId, body);
-      this.onboardingState.invalidate();
+      this.onboardingState.applyOnboardingCompleted(res.onboardingCompletedAt);
       await this.strategy.refreshPlan();
       this.syncFromStrategy();
 
@@ -762,6 +780,12 @@ export class DiscoveryBookOnboardingStore {
     } finally {
       this.saving.set(false);
     }
+  }
+
+  private flushDraftInputs(): void {
+    this.addService();
+    this.addTargetCustomer();
+    this.addCompetitor();
   }
 
   private commitDraft(

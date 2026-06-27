@@ -502,6 +502,7 @@
           pInputText
           [ngModel]="draft().businessName"
           (ngModelChange)="store.setBusinessName($event)"
+          (keydown.enter)="onPrimaryKeydown($event)"
           placeholder="Maui Electric"
           autocomplete="organization"
         />
@@ -510,21 +511,73 @@
   }
 
   <div class="kb-onboarding-actions">
+    @if (store.stepError(); as err) {
+      <p class="kb-onboarding-error">{{ err }}</p>
+    }
     @if (store.saveError(); as err) {
       <p class="kb-onboarding-error">{{ err }}</p>
     }
     @if (store.saveStatus(); as status) {
       <p class="kb-onboarding-status">{{ status }}</p>
     }
-    <p-button
-      type="button"
-      [label]="store.saving() ? 'Saving…' : store.isDirty() ? 'Save & rerun discovery' : 'Saved'"
-      [disabled]="!store.canSave(stepId()) || store.saving()"
-      icon="pi pi-refresh"
-      (onClick)="save()"
-    />
-    @if (store.isDirty()) {
-      <span class="kb-onboarding-dirty">Unsaved changes</span>
+
+    @if (!isFirstStep()) {
+      <p-button
+        type="button"
+        label="Back"
+        severity="secondary"
+        [text]="true"
+        icon="pi pi-arrow-left"
+        (onClick)="back()"
+      />
     }
+
+    <div class="kb-onboarding-actions__primary">
+      @if (!onboardingCompleted()) {
+        @if (isLastStep()) {
+          <span class="kb-onboarding-enter-hint">press Enter ↵</span>
+          <p-button
+            type="button"
+            [label]="store.saving() ? 'Saving…' : 'Finish & start discovery'"
+            [disabled]="!store.canFinishOnboarding(stepId()) || store.saving()"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            (onClick)="finish()"
+          />
+        } @else {
+          <span class="kb-onboarding-enter-hint">press Enter ↵</span>
+          <p-button
+            type="button"
+            label="Continue"
+            [disabled]="!store.canContinue(stepId())"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            (onClick)="continue()"
+          />
+        }
+      } @else {
+        @if (!isLastStep()) {
+          <p-button
+            type="button"
+            label="Continue"
+            [disabled]="!store.canContinue(stepId())"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            (onClick)="continue()"
+          />
+        }
+        @if (store.isDirty()) {
+          <p-button
+            type="button"
+            [label]="store.saving() ? 'Saving…' : 'Save & rerun discovery'"
+            [disabled]="!store.canSaveEdits() || store.saving()"
+            icon="pi pi-refresh"
+            (onClick)="saveEdits()"
+          />
+        } @else if (store.saveStatus() == null) {
+          <span class="kb-onboarding-dirty">No unsaved changes</span>
+        }
+      }
+    </div>
   </div>
 </div>

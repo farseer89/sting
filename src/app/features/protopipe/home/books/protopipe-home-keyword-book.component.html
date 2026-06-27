@@ -181,7 +181,10 @@
 
               <app-protopipe-discovery-book-onboarding-panel
                 [stepId]="meta.id"
+                [onboardingCompleted]="onboardingCompleted()"
                 (discoveryStarted)="onDiscoveryStarted()"
+                (stepAdvance)="goToNextOnboardingStep()"
+                (stepBack)="goToPreviousOnboardingStep()"
               />
             }
           }

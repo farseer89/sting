@@ -35,6 +35,7 @@ import type {
   ProtopipeGoogleIntegrationStatusResponse,
   ProtopipeGoogleOAuthConfigResponse,
   ProtopipeGoogleOAuthStartResponse,
+  ProtopipeGooglePlatformOAuthStatusResponse,
   ProtopipeKeywordDiscoveryResponse,
   ProtopipeGetDiscoveryRunResponse,
   ProtopipeGetLatestDiscoveryRunResponse,
@@ -424,6 +425,14 @@ export class ProtopipeApiService {
     return firstValueFrom(
       this.http.get<ProtopipeGoogleOAuthStartResponse>(
         protopipeApiUrl(ProtopipeAdminEndpoints.googleOAuthStart.path),
+      ),
+    );
+  }
+
+  googlePlatformOAuthStatus(): Promise<ProtopipeGooglePlatformOAuthStatusResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeGooglePlatformOAuthStatusResponse>(
+        protopipeApiUrl(ProtopipeAdminEndpoints.googleOAuthStatus.path),
       ),
     );
   }

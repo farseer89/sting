@@ -5,14 +5,18 @@ import { Textarea } from 'primeng/textarea';
 import { Select } from 'primeng/select';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { Message } from 'primeng/message';
+import { Tag } from 'primeng/tag';
+import type { ProtopipeGooglePlatformOAuthStatusResponse } from '@hive/contracts';
 import { ProtopipeAdminAgentService } from '../protopipe-admin-agent.service';
 import { ProtopipeApiService } from '../protopipe-api.service';
+import { parseProtopipeApiError } from '../protopipe-http.util';
+import { isShirePrimary } from '../shire/shire-http.util';
 
 @Component({
   selector: 'app-protopipe-agent-control',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, Button, Textarea, Select, ProgressSpinner, Message],
+  imports: [FormsModule, Button, Textarea, Select, ProgressSpinner, Message, Tag],
   templateUrl: './protopipe-agent-control.component.html',
   styleUrl: './protopipe-agent-control.component.scss',
 })
@@ -20,7 +24,11 @@ export class ProtopipeAgentControlComponent implements OnInit {
   protected readonly admin = inject(ProtopipeAdminAgentService);
   private readonly api = inject(ProtopipeApiService);
 
+  readonly shirePrimary = isShirePrimary();
   readonly googleOAuthHint = signal<string | null>(null);
+  readonly googleStatusLoading = signal(false);
+  readonly googleStatus = signal<ProtopipeGooglePlatformOAuthStatusResponse | null>(null);
+  readonly googleStatusError = signal<string | null>(null);
 
   readonly loading = this.admin.loading;
   readonly saving = this.admin.saving;
@@ -38,11 +46,14 @@ export class ProtopipeAgentControlComponent implements OnInit {
       const parts = [
         `Callback URL (add in Google Console): ${cfg.redirectUri}`,
         cfg.oauthClientIdSuffix ? `OAuth client: ${cfg.oauthClientIdSuffix}` : null,
-        `Env: ${cfg.publicUrlSource}`,
+        'publicUrlSource' in cfg && cfg.publicUrlSource ? `Env: ${cfg.publicUrlSource}` : null,
       ].filter(Boolean);
       this.googleOAuthHint.set(parts.join(' · '));
     } catch {
       this.googleOAuthHint.set(null);
+    }
+    if (this.shirePrimary) {
+      await this.checkGooglePlatformStatus();
     }
   }
 
@@ -68,6 +79,21 @@ export class ProtopipeAgentControlComponent implements OnInit {
       this.googleOAuthHint.set(`Callback URL (add in Google Console): ${redirectUri}`);
     }
     window.open(authorizationUrl, '_blank', 'noopener');
+  }
+
+  async checkGooglePlatformStatus(): Promise<void> {
+    if (!this.shirePrimary) return;
+    this.googleStatusLoading.set(true);
+    this.googleStatusError.set(null);
+    try {
+      const status = await this.api.googlePlatformOAuthStatus();
+      this.googleStatus.set(status);
+    } catch (err) {
+      this.googleStatus.set(null);
+      this.googleStatusError.set(parseProtopipeApiError(err, 'Could not load Google platform status.'));
+    } finally {
+      this.googleStatusLoading.set(false);
+    }
   }
 
   async onSiteChange(siteId: string): Promise<void> {

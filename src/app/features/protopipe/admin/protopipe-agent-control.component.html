@@ -5,7 +5,49 @@
     @if (googleOAuthHint(); as hint) {
       <p class="hint agent-control__oauth-hint">{{ hint }}</p>
     }
-    <p-button label="Connect Google" icon="pi pi-google" (onClick)="connectGoogle()" />
+    <div class="flex gap-2 flex-wrap mb-3">
+      <p-button label="Connect Google" icon="pi pi-google" (onClick)="connectGoogle()" />
+      @if (shirePrimary) {
+        <p-button
+          label="{{ googleStatusLoading() ? 'Checking…' : 'Check platform status' }}"
+          icon="pi pi-refresh"
+          severity="secondary"
+          [loading]="googleStatusLoading()"
+          (onClick)="checkGooglePlatformStatus()"
+        />
+      }
+    </div>
+    @if (googleStatusError(); as err) {
+      <p-message severity="error" [text]="err" styleClass="w-full mb-3" />
+    }
+    @if (googleStatus(); as status) {
+      <div class="agent-control__oauth-status">
+        <div class="flex gap-2 flex-wrap mb-2">
+          <p-tag
+            [severity]="status.oauthConfigured ? 'success' : 'warn'"
+            [value]="'OAuth configured: ' + (status.oauthConfigured ? 'yes' : 'no')"
+          />
+          <p-tag
+            [severity]="status.adsConfigured ? 'success' : 'warn'"
+            [value]="'Ads configured: ' + (status.adsConfigured ? 'yes' : 'no')"
+          />
+          <p-tag
+            [severity]="status.connected ? 'success' : 'warn'"
+            [value]="'Connected: ' + (status.connected ? 'yes' : 'no')"
+          />
+          <p-tag
+            [severity]="status.adsAccessOk ? 'success' : 'danger'"
+            [value]="'Ads access: ' + (status.adsAccessOk ? 'ok' : 'blocked')"
+          />
+        </div>
+        @if (status.accountEmail) {
+          <p class="hint mb-2">Account: {{ status.accountEmail }}</p>
+        }
+        @if (status.lastError) {
+          <p-message severity="warn" [text]="status.lastError" styleClass="w-full" />
+        }
+      </div>
+    }
   </section>
 
 <header class="agent-control__header">

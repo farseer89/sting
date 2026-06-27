@@ -15,6 +15,8 @@ export function protopipeApiUrl(pathTemplate: string, params?: Record<string, st
   if (isShirePrimary() && path.startsWith(LEGACY_PROTOPIPE_PREFIX)) {
     path = `/api${path.slice(LEGACY_PROTOPIPE_PREFIX.length)}`;
     path = path.replace(/(\/api\/sites\/[^/]+)\/content(?=\/|$)/, '$1/content-posts');
+    // Shire platform Google OAuth lives under /api/integrations/google, not /api/admin/…
+    path = path.replace('/api/admin/integrations/google/oauth/', '/api/integrations/google/oauth/');
   }
   return `${protopipeApiBase()}${path}`;
 }

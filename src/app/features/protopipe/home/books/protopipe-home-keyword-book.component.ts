@@ -29,6 +29,7 @@ import {
 } from './discovery-book-onboarding.steps';
 import { DiscoveryBookOnboardingStore } from './discovery-book-onboarding.store';
 import { ProtopipeDiscoveryBookOnboardingPanelComponent } from './protopipe-discovery-book-onboarding-panel.component';
+import { ProtopipeOnboardingStateService } from '../../onboarding/protopipe-onboarding-state.service';
 
 export type { DiscoveryBookSection };
 
@@ -51,6 +52,7 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
   readonly store = inject(ProtopipeKeywordPickerStore);
   readonly onboardingStore = inject(DiscoveryBookOnboardingStore);
   private readonly thinkerView = inject(ProtopipeHomeThinkerViewState);
+  private readonly onboardingState = inject(ProtopipeOnboardingStateService);
   readonly strategy = inject(ProtopipeStrategyService);
 
   readonly siteLabel = input('');
@@ -69,7 +71,9 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
   readonly hasDiscoveryRun = computed(() => Boolean(this.discoveryRun()));
   readonly hasOnboardingProfile = computed(() => Boolean(this.strategy.onboardingProfile()));
   readonly canUseDiscoveryPipeline = computed(
-    () => this.hasOnboardingProfile() || this.hasDiscoveryRun(),
+    () =>
+      this.onboardingState.onboardingCompleted() &&
+      (this.hasOnboardingProfile() || this.hasDiscoveryRun()),
   );
 
   readonly discoveryStatusLabel = computed(() => {
@@ -125,7 +129,10 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
     effect(() => {
       this.strategy.onboardingProfile();
       this.strategy.site();
+      this.onboardingState.onboardingCompletionKnown();
+      this.onboardingState.onboardingCompleted();
       if (this.strategy.loading()) return;
+      if (!this.onboardingState.onboardingCompletionKnown()) return;
 
       this.onboardingStore.syncFromStrategy();
       this.loadKeywordStoreWhenReady();
@@ -133,7 +140,7 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
       if (this.didResolveInitialSection()) return;
       this.didResolveInitialSection.set(true);
 
-      if (!this.canUseDiscoveryPipeline()) {
+      if (!this.onboardingState.onboardingCompleted()) {
         this.activeSection.set(DISCOVERY_BOOK_ONBOARDING_STEPS[0].id);
         return;
       }

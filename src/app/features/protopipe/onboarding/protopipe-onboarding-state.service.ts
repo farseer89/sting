@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import type { ProtopipeBootstrapResponse } from '@hive/contracts';
 import { ProtopipeApiService } from '../protopipe-api.service';
 
@@ -11,12 +11,18 @@ export class ProtopipeOnboardingStateService {
   private readonly api = inject(ProtopipeApiService);
   private pending: Promise<ProtopipeBootstrapResponse> | null = null;
   private cached: ProtopipeBootstrapResponse | null = null;
+  private readonly _onboardingCompletedAt = signal<string | null | undefined>(undefined);
+
+  readonly onboardingCompletedAt = this._onboardingCompletedAt.asReadonly();
+  readonly onboardingCompletionKnown = computed(() => this._onboardingCompletedAt() !== undefined);
+  readonly onboardingCompleted = computed(() => Boolean(this._onboardingCompletedAt()));
 
   async load(): Promise<ProtopipeBootstrapResponse> {
     if (this.cached) return this.cached;
     if (!this.pending) {
       this.pending = this.api.bootstrap().then((res) => {
         this.cached = res;
+        this._onboardingCompletedAt.set(res.onboardingCompletedAt);
         this.pending = null;
         return res;
       });
@@ -27,6 +33,7 @@ export class ProtopipeOnboardingStateService {
   invalidate(): void {
     this.cached = null;
     this.pending = null;
+    this._onboardingCompletedAt.set(undefined);
   }
 
   /** Synchronous read for components that have already triggered load(). */

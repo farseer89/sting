@@ -36,6 +36,7 @@ import type {
   ProtopipeGoogleOAuthConfigResponse,
   ProtopipeGoogleOAuthStartResponse,
   ProtopipeGooglePlatformOAuthStatusResponse,
+  ProtopipeGooglePlatformOAuthAdsProbeResponse,
   ProtopipeKeywordDiscoveryResponse,
   ProtopipeGetDiscoveryRunResponse,
   ProtopipeGetLatestDiscoveryRunResponse,
@@ -443,6 +444,22 @@ export class ProtopipeApiService {
 
   googlePlatformOAuthStatusContractPath(): string {
     return ProtopipeAdminEndpoints.googleOAuthStatus.path;
+  }
+
+  googlePlatformOAuthAdsProbe(): Promise<ProtopipeGooglePlatformOAuthAdsProbeResponse> {
+    return firstValueFrom(
+      this.http.get<ProtopipeGooglePlatformOAuthAdsProbeResponse>(
+        protopipeApiUrl(ProtopipeAdminEndpoints.googleOAuthAdsProbe.path),
+      ),
+    );
+  }
+
+  googlePlatformOAuthAdsProbeUrl(): string {
+    return protopipeApiUrl(ProtopipeAdminEndpoints.googleOAuthAdsProbe.path);
+  }
+
+  googlePlatformOAuthAdsProbeContractPath(): string {
+    return ProtopipeAdminEndpoints.googleOAuthAdsProbe.path;
   }
 
     enrichMarket(siteId: string): Promise<ProtopipeMarketEnrichResponse> {

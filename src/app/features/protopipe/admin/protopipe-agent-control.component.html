@@ -15,9 +15,19 @@
           [loading]="googleStatusLoading()"
           (onClick)="checkGooglePlatformStatus()"
         />
+        <p-button
+          label="{{ googleAdsProbeLoading() ? 'Probing…' : 'Probe Google Ads (temp)' }}"
+          icon="pi pi-search"
+          severity="secondary"
+          [loading]="googleAdsProbeLoading()"
+          (onClick)="probeGoogleAds()"
+        />
       }
     </div>
     @if (googleStatusError(); as err) {
+      <p-message severity="error" [text]="err" styleClass="w-full mb-3" />
+    }
+    @if (googleAdsProbeError(); as err) {
       <p-message severity="error" [text]="err" styleClass="w-full mb-3" />
     }
     @if (googleStatus(); as status) {
@@ -36,17 +46,131 @@
             [value]="'Connected: ' + (status.connected ? 'yes' : 'no')"
           />
           <p-tag
-            [severity]="status.adsAccessOk ? 'success' : 'danger'"
-            [value]="'Ads access: ' + (status.adsAccessOk ? 'ok' : 'blocked')"
+            [severity]="status.adsAccessOk ? 'success' : 'warn'"
+            [value]="'OAuth refresh: ' + (status.adsAccessOk ? 'ok' : 'blocked')"
           />
+          @if (googleAdsProbe(); as probe) {
+            <p-tag
+              [severity]="probe.probeOk ? 'success' : 'danger'"
+              [value]="'Ads probe: ' + (probe.probeOk ? 'ok' : 'blocked')"
+            />
+          }
         </div>
         @if (status.accountEmail) {
-          <p class="hint mb-2">Account: {{ status.accountEmail }}</p>
+          <p class="hint mb-2">Mongo account label: {{ status.accountEmail }}</p>
         }
-        <p class="hint mb-2">{{ googleStatusDiagnosis(status) }}</p>
         @if (status.lastError) {
-          <p-message severity="warn" [text]="status.lastError" styleClass="w-full" />
+          <p-message severity="warn" [text]="status.lastError" styleClass="w-full mb-3" />
         }
+      </div>
+    }
+    @if (googleAdsProbe(); as probe) {
+      <div class="agent-control__debug">
+        <h3>Google Ads probe</h3>
+        <dl>
+          <div>
+            <dt>Checked at</dt>
+            <dd>{{ probe.checkedAt }}</dd>
+          </div>
+          <div>
+            <dt>App origin</dt>
+            <dd>{{ appOrigin || '—' }}</dd>
+          </div>
+          <div>
+            <dt>CORS allows app</dt>
+            <dd>{{ corsAllowsAppOrigin(probe) }}</dd>
+          </div>
+          <div>
+            <dt>Shire public URL</dt>
+            <dd>{{ probe.shirePublicUrl }}</dd>
+          </div>
+          <div>
+            <dt>OAuth redirect URI</dt>
+            <dd>{{ probe.oauthRedirectUri }}</dd>
+          </div>
+          <div>
+            <dt>Refresh token source</dt>
+            <dd>{{ probe.refreshTokenSource }}</dd>
+          </div>
+          <div>
+            <dt>Env token set</dt>
+            <dd>{{ yesNo(probe.envRefreshTokenSet) }}</dd>
+          </div>
+          <div>
+            <dt>Mongo token set</dt>
+            <dd>{{ yesNo(probe.mongoRefreshTokenSet) }}</dd>
+          </div>
+          <div>
+            <dt>Env overrides Mongo</dt>
+            <dd>{{ yesNo(probe.envTokenOverridesMongo) }}</dd>
+          </div>
+          <div>
+            <dt>Mongo account email</dt>
+            <dd>{{ probe.mongoAccountEmail ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Token user email</dt>
+            <dd>{{ probe.tokenUserEmail ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Emails match</dt>
+            <dd>{{ yesNo(probe.tokenEmailMatchesMongo) }}</dd>
+          </div>
+          <div>
+            <dt>Access token ok</dt>
+            <dd>{{ yesNo(probe.accessTokenOk) }}</dd>
+          </div>
+          <div>
+            <dt>Customer ID</dt>
+            <dd>{{ probe.adsCustomerId ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Login customer ID</dt>
+            <dd>{{ probe.adsLoginCustomerId ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Login header sent</dt>
+            <dd>{{ yesNo(probe.loginCustomerIdHeaderSent) }}</dd>
+          </div>
+          <div>
+            <dt>Ads API version</dt>
+            <dd>{{ probe.adsApiVersion }}</dd>
+          </div>
+          <div>
+            <dt>Probe method</dt>
+            <dd>{{ probe.probeMethod }}</dd>
+          </div>
+          <div>
+            <dt>Probe URL</dt>
+            <dd>{{ probe.probeUrl ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Probe HTTP status</dt>
+            <dd>{{ probe.probeHttpStatus ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Probe error code</dt>
+            <dd>{{ probe.probeErrorCode ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Probe error message</dt>
+            <dd>{{ probe.probeErrorMessage ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Probe result count</dt>
+            <dd>{{ probe.probeResultCount ?? '—' }}</dd>
+          </div>
+          @if (probe.probeRawBody) {
+            <div>
+              <dt>Probe raw body</dt>
+              <dd>{{ probe.probeRawBody }}</dd>
+            </div>
+          }
+          <div>
+            <dt>CORS allowed origins</dt>
+            <dd>{{ probe.corsAllowedOrigins.join(', ') || '—' }}</dd>
+          </div>
+        </dl>
       </div>
     }
     <div class="agent-control__debug">
@@ -68,6 +192,14 @@
           <dt>Effective status URL</dt>
           <dd>{{ googleStatusUrl }}</dd>
         </div>
+        <div>
+          <dt>Contract probe path</dt>
+          <dd>{{ googleAdsProbeContractPath }}</dd>
+        </div>
+        <div>
+          <dt>Effective probe URL</dt>
+          <dd>{{ googleAdsProbeUrl }}</dd>
+        </div>
         @if (googleStatusCheckedAt(); as checkedAt) {
           <div>
             <dt>Last checked</dt>
@@ -76,13 +208,13 @@
         }
       </dl>
       <p class="hint mb-0">
-        In Shire mode, the frontend rewrites the legacy admin path to
-        <code>/api/integrations/google/oauth/status</code>. Secrets stay server-side.
+        App runs on {{ appOrigin || 'unknown origin' }}; API calls go to Shire. OAuth callback must
+        match Shire's redirect URI, not the app hostname.
       </p>
     </div>
   </section>
 
-<header class="agent-control__header">
+  <header class="agent-control__header">
     <h1>Agent Control</h1>
     <p class="agent-control__lead">Platform rules and per-site knowledge used by the writing agent.</p>
   </header>

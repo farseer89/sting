@@ -90,12 +90,6 @@ export function buildDiscoveryBookOnboardingReadout(
         ? { fields: [], chips: avatarChips }
         : { fields: [field('Customer profiles', '')] };
     }
-    case 'onboarding:ideal-customers': {
-      const targetChips = chips(p?.targetCustomerSites);
-      return targetChips.length > 0
-        ? { fields: [], chips: targetChips }
-        : { fields: [field('Target examples', '')] };
-    }
     case 'onboarding:competition': {
       const competitorChips = chips(p?.competitors);
       return competitorChips.length > 0

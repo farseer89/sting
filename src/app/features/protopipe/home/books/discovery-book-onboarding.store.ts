@@ -666,8 +666,6 @@ export class DiscoveryBookOnboardingStore {
           return 'Describe what at least one customer wants (5+ characters).';
         }
         return null;
-      case 'onboarding:ideal-customers':
-        return null;
       case 'onboarding:competition':
         if (d.onboardingMode === 'strategy_only' && d.competitors.length === 0) {
           return 'Add at least one competitor.';

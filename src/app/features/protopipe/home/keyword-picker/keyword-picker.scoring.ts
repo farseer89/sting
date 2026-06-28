@@ -70,6 +70,16 @@ export interface ScoreKeywordOptionsConfig {
   strategyOnly?: boolean;
 }
 
+function hasDiscoverySignal(option: KeywordPickerOption): boolean {
+  return (
+    option.discoverySource != null ||
+    option.intent != null ||
+    option.funnelStage != null ||
+    option.avatarId != null ||
+    option.serpFeatures != null
+  );
+}
+
 export function scoreKeywordOptions(
   options: KeywordPickerOption[],
   ctx?: KeywordRelevanceContext,
@@ -87,7 +97,8 @@ export function scoreKeywordOptions(
         vol >= minVolume ||
         o.keywordDifficulty != null ||
         o.source === 'gsc' ||
-        o.source === 'custom'
+        o.source === 'custom' ||
+        (hasDiscoverySignal(o) && (o.relevanceScore ?? 0) >= 15)
       );
     })
     .map((o) => ({ ...o, opportunityScore: computeOpportunityScore(o) }))

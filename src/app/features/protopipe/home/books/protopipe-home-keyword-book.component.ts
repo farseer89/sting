@@ -207,6 +207,14 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
     this.activeSection.set('discovery');
   }
 
+  onRerunDiscovery(): void {
+    void this.store.rerunDiscovery().then((runId) => {
+      if (runId) {
+        this.onDiscoveryStarted();
+      }
+    });
+  }
+
   goToNextOnboardingStep(): void {
     const current = this.activeSection();
     if (!isOnboardingSection(current)) return;

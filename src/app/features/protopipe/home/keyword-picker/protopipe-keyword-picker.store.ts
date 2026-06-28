@@ -85,6 +85,7 @@ export class ProtopipeKeywordPickerStore {
   private readonly _searchRelated = signal<KeywordPickerOption[]>([]);
   private readonly _searchPrimary = signal<KeywordPickerOption | null>(null);
   private readonly _confirming = signal(false);
+  private readonly _rerunningDiscovery = signal(false);
   private readonly _discoveryNote = signal<string | null>(null);
   private readonly _discoveryProgress = signal<string | null>(null);
   private readonly _discoveryProgressPercent = signal(0);
@@ -105,6 +106,7 @@ export class ProtopipeKeywordPickerStore {
   readonly searchRelated = this._searchRelated.asReadonly();
   readonly searchPrimary = this._searchPrimary.asReadonly();
   readonly confirming = this._confirming.asReadonly();
+  readonly rerunningDiscovery = this._rerunningDiscovery.asReadonly();
   readonly discoveryNote = this._discoveryNote.asReadonly();
   readonly discoveryProgress = this._discoveryProgress.asReadonly();
   readonly discoveryProgressPercent = this._discoveryProgressPercent.asReadonly();
@@ -270,6 +272,31 @@ export class ProtopipeKeywordPickerStore {
   setWizardStep(step: KeywordPickerWizardStep): void {
     this._wizardStep.set(step);
     this._error.set(null);
+  }
+
+  /** Temporary QA hook — enqueue a fresh keyword discovery run for the current site. */
+  async rerunDiscovery(): Promise<string | null> {
+    await this.strategy.ensureLoaded();
+    const siteId = this.strategy.siteId();
+    if (!siteId) {
+      this._error.set('No site loaded for this account');
+      return null;
+    }
+
+    this._rerunningDiscovery.set(true);
+    this._error.set(null);
+    this._discoveryNote.set(null);
+
+    try {
+      const { run } = await this.api.startKeywordDiscoveryRun(siteId);
+      await this.followDiscoveryRun(siteId, run.id);
+      return run.id;
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Could not restart keyword discovery'));
+      return null;
+    } finally {
+      this._rerunningDiscovery.set(false);
+    }
   }
 
   /** Attach and poll a discovery run started after onboarding profile changes. */
@@ -566,8 +593,16 @@ export class ProtopipeKeywordPickerStore {
     map: Map<string, KeywordPickerOption>,
   ): void {
     const notes: string[] = [];
-    const failed = run.events.filter((e) => e.status === 'failed');
-    for (const ev of failed) {
+    const notableEvents = run.events.filter((e) => {
+      if (e.status === 'failed') return true;
+      const text = `${e.note ?? ''} ${e.error ?? ''}`.toLowerCase();
+      return (
+        text.includes('google ads api') ||
+        text.includes('permission_denied') ||
+        text.includes('unavailable')
+      );
+    });
+    for (const ev of notableEvents) {
       if (ev.note || ev.error) {
         notes.push(ev.note ?? ev.error ?? `${ev.step} failed`);
       }

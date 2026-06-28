@@ -2,7 +2,8 @@
   class="kb-onboarding-form"
   [class.kb-onboarding-form--people]="stepId() === 'onboarding:customers'"
 >
-  @switch (stepId()) {
+  <div class="kb-onboarding-body">
+    @switch (stepId()) {
     @case ('onboarding:getting-started') {
       <div class="kb-scope-picker" role="radiogroup" aria-label="Onboarding path">
         @for (option of onboardingModeOptions; track option.id) {
@@ -37,143 +38,150 @@
     }
 
     @case ('onboarding:offer') {
-      @if (store.offerScanning()) {
-        <p class="kb-offer-scan" aria-live="polite">Scanning your website…</p>
-      } @else if (store.offerScanError(); as scanErr) {
-        <p class="kb-offer-scan kb-offer-scan--error">{{ scanErr }}</p>
-      }
+      <div class="kb-offer-board">
+        <section class="kb-offer-card kb-offer-card--primary" aria-labelledby="kb-offer-selected-heading">
+          <div class="kb-offer-card__head">
+            <div>
+              <h3 id="kb-offer-selected-heading" class="kb-offer-card__title">Services to research</h3>
+              <p class="kb-offer-card__deck">Keep this focused. Discovery works best with the offers you actually want to sell.</p>
+            </div>
+            <span class="kb-offer-count">{{ draft().services.length }}/8</span>
+          </div>
 
-      @if (store.siteFoundInServices().length > 0) {
-        <section class="kb-offer-section" aria-labelledby="kb-offer-found-heading">
-          <h3 id="kb-offer-found-heading" class="kb-offer-section__title">Found on your site</h3>
-          <ul class="kb-onboarding-chips" aria-label="Services found on your site">
-            @for (svc of store.siteFoundInServices(); track svc) {
-              <li class="kb-onboarding-chip">
-                <span class="kb-onboarding-chip__label">{{ svc }}</span>
-                <button
-                  type="button"
-                  class="kb-chip-remove"
-                  (click)="removeServiceByName(svc)"
-                  [attr.aria-label]="'Remove ' + svc"
-                >
-                  <i class="pi pi-times" aria-hidden="true"></i>
-                </button>
-              </li>
-            }
-          </ul>
-        </section>
-      }
+          @if (store.offerScanning()) {
+            <p class="kb-offer-scan" aria-live="polite">
+              <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+              Scanning your website for services…
+            </p>
+          } @else if (store.offerScanError(); as scanErr) {
+            <p class="kb-offer-scan kb-offer-scan--error">{{ scanErr }}</p>
+          }
 
-      @if (store.tradeLabel(); as trade) {
-        @if (store.availableTradeSuggestions().length > 0) {
-          <section class="kb-offer-section" aria-labelledby="kb-offer-trade-heading">
-            <h3 id="kb-offer-trade-heading" class="kb-offer-section__title">
-              Suggested for {{ trade }} — tap to add
-            </h3>
-            <ul class="kb-offer-suggestions" aria-label="Suggested services for your trade">
-              @for (svc of store.availableTradeSuggestions(); track svc) {
-                <li>
+          @if (draft().services.length > 0) {
+            <ul class="kb-service-list" aria-label="Selected services">
+              @for (svc of draft().services; track svc) {
+                <li class="kb-service-row">
+                  <span class="kb-service-row__name">{{ svc }}</span>
+                  @if (store.siteFoundInServices().includes(svc)) {
+                    <span class="kb-service-row__source">site</span>
+                  }
                   <button
                     type="button"
-                    class="kb-offer-suggestion"
-                    (click)="store.addSuggestedService(svc)"
-                    [disabled]="draft().services.length >= 8"
+                    class="kb-service-row__remove"
+                    (click)="removeServiceByName(svc)"
+                    [attr.aria-label]="'Remove ' + svc"
                   >
-                    <i class="pi pi-plus" aria-hidden="true"></i>
-                    {{ svc }}
+                    <i class="pi pi-times" aria-hidden="true"></i>
                   </button>
                 </li>
               }
             </ul>
-          </section>
-        }
-      }
+          } @else {
+            <div class="kb-offer-empty">
+              <p class="kb-offer-empty__title">No services selected yet</p>
+              <p class="kb-offer-empty__body">Add one manually or tap a suggestion to start shaping the discovery run.</p>
+            </div>
+          }
 
-      @if (draft().services.length > 0 && draft().services.length < 8) {
-        <div class="kb-offer-expand">
-          <button
-            type="button"
-            class="kb-offer-expand__btn"
-            (click)="store.expandServices()"
-            [disabled]="!store.canExpandServices()"
-          >
-            @if (store.offerExpanding()) {
-              <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
-              Expanding…
-            } @else {
-              <i class="pi pi-arrow-right-arrow-left" aria-hidden="true"></i>
-              Expand related services
-            }
-          </button>
-          <p class="kb-offer-expand__hint">
-            Interpret what you've selected and suggest more offerings you may sell.
-          </p>
-        </div>
-        @if (store.offerExpandError(); as expandErr) {
-          <p class="kb-offer-scan kb-offer-scan--error">{{ expandErr }}</p>
-        }
-      }
-
-      @if (store.availableExpandedSuggestions().length > 0) {
-        <section class="kb-offer-section" aria-labelledby="kb-offer-expanded-heading">
-          <h3 id="kb-offer-expanded-heading" class="kb-offer-section__title">
-            Related to your selections — tap to add
-          </h3>
-          <ul class="kb-offer-suggestions" aria-label="Expanded service suggestions">
-            @for (svc of store.availableExpandedSuggestions(); track svc) {
-              <li>
-                <button
-                  type="button"
-                  class="kb-offer-suggestion"
-                  (click)="store.addSuggestedService(svc)"
-                  [disabled]="draft().services.length >= 8"
-                >
-                  <i class="pi pi-plus" aria-hidden="true"></i>
-                  {{ svc }}
-                </button>
-              </li>
-            }
-          </ul>
+          <div class="kb-offer-add">
+            <label class="kb-field__label" for="discoveryBookServiceDraft">Add service</label>
+            <div class="kb-chip-input">
+              <input
+                id="discoveryBookServiceDraft"
+                type="text"
+                pInputText
+                [ngModel]="store.serviceDraft()"
+                (ngModelChange)="store.onServiceDraftInput($event)"
+                (keydown.enter)="store.addService(); $event.preventDefault()"
+                placeholder="e.g. emergency call-outs"
+              />
+              <button type="button" class="kb-chip-add" (click)="store.addService()">
+                Add
+              </button>
+            </div>
+          </div>
         </section>
-      }
 
-      <section class="kb-offer-section" aria-labelledby="kb-offer-manual-heading">
-        <h3 id="kb-offer-manual-heading" class="kb-offer-section__title">Add another service</h3>
-        <div class="kb-chip-input">
-          <input
-            type="text"
-            pInputText
-            [ngModel]="store.serviceDraft()"
-            (ngModelChange)="store.onServiceDraftInput($event)"
-            (keydown.enter)="store.addService(); $event.preventDefault()"
-            placeholder="e.g. emergency call-outs"
-          />
-          <button type="button" class="kb-chip-add" (click)="store.addService()">
-            Add
-          </button>
-        </div>
-      </section>
+        <aside class="kb-offer-card kb-offer-card--assist" aria-labelledby="kb-offer-assist-heading">
+          <div class="kb-offer-card__head">
+            <div>
+              <h3 id="kb-offer-assist-heading" class="kb-offer-card__title">Suggestions</h3>
+              <p class="kb-offer-card__deck">Use these to round out the offer list without making it noisy.</p>
+            </div>
+          </div>
 
-      @if (otherServices().length > 0) {
-        <section class="kb-offer-section" aria-labelledby="kb-offer-other-heading">
-          <h3 id="kb-offer-other-heading" class="kb-offer-section__title">Also selling</h3>
-          <ul class="kb-onboarding-chips" aria-label="Other services added">
-            @for (svc of otherServices(); track svc) {
-              <li class="kb-onboarding-chip">
-                <span class="kb-onboarding-chip__label">{{ svc }}</span>
-                <button
-                  type="button"
-                  class="kb-chip-remove"
-                  (click)="removeServiceByName(svc)"
-                  [attr.aria-label]="'Remove ' + svc"
-                >
-                  <i class="pi pi-times" aria-hidden="true"></i>
-                </button>
-              </li>
+          @if (store.tradeLabel(); as trade) {
+            <p class="kb-offer-context">Detected trade: <strong>{{ trade }}</strong></p>
+          }
+
+          @if (store.availableTradeSuggestions().length > 0) {
+            <section class="kb-offer-section" aria-labelledby="kb-offer-trade-heading">
+              <h4 id="kb-offer-trade-heading" class="kb-offer-section__title">From your site and trade</h4>
+              <ul class="kb-offer-suggestions" aria-label="Suggested services for your trade">
+                @for (svc of store.availableTradeSuggestions(); track svc) {
+                  <li>
+                    <button
+                      type="button"
+                      class="kb-offer-suggestion"
+                      (click)="store.addSuggestedService(svc)"
+                      [disabled]="draft().services.length >= 8"
+                    >
+                      <i class="pi pi-plus" aria-hidden="true"></i>
+                      {{ svc }}
+                    </button>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+
+          @if (draft().services.length > 0 && draft().services.length < 8) {
+            <div class="kb-offer-expand">
+              <button
+                type="button"
+                class="kb-offer-expand__btn"
+                (click)="store.expandServices()"
+                [disabled]="!store.canExpandServices()"
+              >
+                @if (store.offerExpanding()) {
+                  <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                  Expanding…
+                } @else {
+                  <i class="pi pi-sparkles" aria-hidden="true"></i>
+                  Expand related services
+                }
+              </button>
+              <p class="kb-offer-expand__hint">
+                Interpret selected services and suggest adjacent offers.
+              </p>
+            </div>
+            @if (store.offerExpandError(); as expandErr) {
+              <p class="kb-offer-scan kb-offer-scan--error">{{ expandErr }}</p>
             }
-          </ul>
-        </section>
-      }
+          }
+
+          @if (store.availableExpandedSuggestions().length > 0) {
+            <section class="kb-offer-section" aria-labelledby="kb-offer-expanded-heading">
+              <h4 id="kb-offer-expanded-heading" class="kb-offer-section__title">Related offers</h4>
+              <ul class="kb-offer-suggestions" aria-label="Expanded service suggestions">
+                @for (svc of store.availableExpandedSuggestions(); track svc) {
+                  <li>
+                    <button
+                      type="button"
+                      class="kb-offer-suggestion"
+                      (click)="store.addSuggestedService(svc)"
+                      [disabled]="draft().services.length >= 8"
+                    >
+                      <i class="pi pi-plus" aria-hidden="true"></i>
+                      {{ svc }}
+                    </button>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+        </aside>
+      </div>
     }
 
     @case ('onboarding:customers') {
@@ -205,7 +213,6 @@
             class="kb-person-card"
             [class.kb-person-card--filled]="isCustomerCardFilled(slot)"
             [class.kb-person-card--primary]="slot === 0"
-            [style]="profileStyle(slot)"
           >
             <header class="kb-person-card__profile">
               <span class="kb-person-card__portrait" aria-hidden="true">
@@ -312,123 +319,189 @@
           <p class="kb-customer-add__hint">Describe your primary customer first (5+ characters).</p>
         }
       </div>
-    }
 
-    @case ('onboarding:ideal-customers') {
-      <div class="kb-chip-input">
-        <input
-          type="text"
-          pInputText
-          [ngModel]="store.targetCustomerDraft()"
-          (ngModelChange)="store.onTargetCustomerDraftInput($event)"
-          (keydown.enter)="store.addTargetCustomer(); $event.preventDefault()"
-          placeholder="e.g. acme-engineering.com"
-        />
-        <button type="button" class="kb-chip-add" (click)="store.addTargetCustomer()">
-          Add
-        </button>
-      </div>
-      @if (draft().targetCustomerSites.length > 0) {
-        <ul class="kb-onboarding-chips" aria-label="Target customer examples">
-          @for (site of draft().targetCustomerSites; track site; let i = $index) {
-            <li class="kb-onboarding-chip">
-              <span class="kb-onboarding-chip__label">{{ site }}</span>
-              <button
-                type="button"
-                class="kb-chip-remove"
-                (click)="store.removeTargetCustomer(i)"
-                [attr.aria-label]="'Remove ' + site"
-              >
-                <i class="pi pi-times" aria-hidden="true"></i>
-              </button>
-            </li>
-          }
-        </ul>
-      }
-    }
-
-    @case ('onboarding:competition') {
-      <div class="kb-chip-input">
-        <input
-          type="text"
-          pInputText
-          [ngModel]="store.competitorDraft()"
-          (ngModelChange)="store.onCompetitorDraftInput($event)"
-          (keydown.enter)="store.addCompetitor(); $event.preventDefault()"
-          placeholder="e.g. competitorelectric.com"
-        />
-        <button type="button" class="kb-chip-add" (click)="store.addCompetitor()">
-          Add
-        </button>
-      </div>
-      @if (draft().competitors.length > 0) {
-        <ul class="kb-onboarding-chips" aria-label="Competitors added">
-          @for (comp of draft().competitors; track comp; let i = $index) {
-            <li class="kb-onboarding-chip">
-              <span class="kb-onboarding-chip__label">{{ comp }}</span>
-              <button
-                type="button"
-                class="kb-chip-remove"
-                (click)="store.removeCompetitor(i)"
-                [attr.aria-label]="'Remove ' + comp"
-              >
-                <i class="pi pi-times" aria-hidden="true"></i>
-              </button>
-            </li>
-          }
-        </ul>
-      }
-
-      @if (draft().competitors.length > 0 && draft().competitors.length < 3) {
-        <div class="kb-offer-expand">
-          <button
-            type="button"
-            class="kb-offer-expand__btn"
-            (click)="store.fanOutCompetition()"
-            [disabled]="!store.canFanOutCompetition()"
-          >
-            @if (store.competitionFanningOut()) {
-              <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
-              Finding…
-            } @else {
-              <i class="pi pi-share-alt" aria-hidden="true"></i>
-              Fan out competitors
-            }
-          </button>
-          <p class="kb-offer-expand__hint">
-            Look up sites actually ranking alongside yours in search.
-          </p>
+      <section class="kb-customer-url-card" aria-labelledby="kb-customer-url-heading">
+        <div class="kb-customer-url-card__head">
+          <span class="kb-customer-url-card__icon" aria-hidden="true">
+            <i class="pi pi-link"></i>
+          </span>
+          <div>
+            <h3 id="kb-customer-url-heading" class="kb-customer-url-card__title">Example customers to learn from</h3>
+            <p class="kb-customer-url-card__deck">
+              Optional, but useful. Add websites for customers you want more of and discovery will use them as extra context.
+            </p>
+          </div>
+          <span class="kb-customer-url-card__badge">Optional</span>
         </div>
-        @if (store.competitionFanOutError(); as fanOutErr) {
-          <p class="kb-offer-scan kb-offer-scan--error">{{ fanOutErr }}</p>
-        }
-      }
 
-      @if (store.availableCompetitorFanOutSuggestions().length > 0) {
-        <section class="kb-offer-section" aria-labelledby="kb-competition-fanout-heading">
-          <h3 id="kb-competition-fanout-heading" class="kb-offer-section__title">
-            Also ranking in your market — tap to add
-          </h3>
-          <ul class="kb-offer-suggestions" aria-label="Suggested competitor sites">
-            @for (suggestion of store.availableCompetitorFanOutSuggestions(); track suggestion.domain) {
-              <li>
+        <div class="kb-url-example-strip" aria-label="Example customer URL formats">
+          <span>customer-site.com</span>
+          <span>directory profile</span>
+          <span>company page</span>
+        </div>
+
+        <label class="kb-field__label" for="discoveryBookTargetCustomerDraft">Add a customer example</label>
+        <div class="kb-chip-input kb-chip-input--wide">
+          <input
+            id="discoveryBookTargetCustomerDraft"
+            type="text"
+            pInputText
+            [ngModel]="store.targetCustomerDraft()"
+            (ngModelChange)="store.onTargetCustomerDraftInput($event)"
+            (keydown.enter)="store.addTargetCustomer(); $event.preventDefault()"
+            placeholder="Paste a customer website or profile URL"
+          />
+          <button type="button" class="kb-chip-add" (click)="store.addTargetCustomer()">
+            Add example
+          </button>
+        </div>
+
+        @if (draft().targetCustomerSites.length > 0) {
+          <ul class="kb-onboarding-chips" aria-label="Target customer examples">
+            @for (site of draft().targetCustomerSites; track site; let i = $index) {
+              <li class="kb-onboarding-chip">
+                <span class="kb-onboarding-chip__label">{{ site }}</span>
                 <button
                   type="button"
-                  class="kb-offer-suggestion kb-offer-suggestion--ranked"
-                  (click)="store.addSuggestedCompetitor(suggestion.domain)"
-                  [disabled]="draft().competitors.length >= 3"
+                  class="kb-chip-remove"
+                  (click)="store.removeTargetCustomer(i)"
+                  [attr.aria-label]="'Remove ' + site"
                 >
-                  <i class="pi pi-plus" aria-hidden="true"></i>
-                  <span class="kb-offer-suggestion__copy">
-                    <span class="kb-offer-suggestion__title">{{ suggestion.domain }}</span>
-                    <span class="kb-offer-suggestion__meta">{{ suggestion.label }}</span>
-                  </span>
+                  <i class="pi pi-times" aria-hidden="true"></i>
                 </button>
               </li>
             }
           </ul>
+        }
+      </section>
+    }
+
+    @case ('onboarding:competition') {
+      <div class="kb-competition-layout">
+        <section class="kb-competition-card" aria-labelledby="kb-competition-selected-heading">
+          <div class="kb-competition-card__head">
+            <div>
+              <h3 id="kb-competition-selected-heading" class="kb-competition-card__title">Competitors to compare</h3>
+              <p class="kb-competition-card__deck">Add up to three businesses that show up near you, sell similar services, or win work you want.</p>
+            </div>
+            <span class="kb-offer-count">{{ draft().competitors.length }}/3</span>
+          </div>
+
+          <div class="kb-competitor-row" role="list" aria-label="Competitor examples">
+            @for (comp of draft().competitors; track comp; let i = $index) {
+              <article class="kb-competitor-card kb-competitor-card--filled" role="listitem">
+                <header class="kb-competitor-card__head">
+                  <span class="kb-competitor-card__icon" aria-hidden="true">
+                    <i class="pi pi-building"></i>
+                  </span>
+                  <div class="kb-competitor-card__identity">
+                    <h4 class="kb-competitor-card__name">{{ comp }}</h4>
+                    <p class="kb-competitor-card__meta">Competitor {{ i + 1 }}</p>
+                  </div>
+                  <button
+                    type="button"
+                    class="kb-person-card__remove"
+                    (click)="store.removeCompetitor(i)"
+                    [attr.aria-label]="'Remove ' + comp"
+                  >
+                    <i class="pi pi-times" aria-hidden="true"></i>
+                  </button>
+                </header>
+              </article>
+            }
+
+            @if (draft().competitors.length < 3) {
+              <article class="kb-competitor-card kb-competitor-card--empty" role="listitem">
+                <span class="kb-competitor-card__icon" aria-hidden="true">
+                  <i class="pi pi-plus"></i>
+                </span>
+                <p class="kb-competitor-card__empty-title">Add competitor</p>
+                <p class="kb-competitor-card__empty-body">A domain is enough.</p>
+              </article>
+            }
+          </div>
+
+          <div class="kb-competition-add">
+            <label class="kb-field__label" for="discoveryBookCompetitorDraft">Competitor URL</label>
+            <div class="kb-chip-input kb-chip-input--wide">
+              <input
+                id="discoveryBookCompetitorDraft"
+                type="text"
+                pInputText
+                [ngModel]="store.competitorDraft()"
+                (ngModelChange)="store.onCompetitorDraftInput($event)"
+                (keydown.enter)="store.addCompetitor(); $event.preventDefault()"
+                placeholder="e.g. competitorelectric.com"
+              />
+              <button type="button" class="kb-chip-add" (click)="store.addCompetitor()">
+                Add URL
+              </button>
+            </div>
+          </div>
         </section>
-      }
+
+        <aside class="kb-customer-url-card" aria-labelledby="kb-competition-fanout-heading">
+          <div class="kb-customer-url-card__head">
+            <div>
+              <h3 id="kb-competition-fanout-heading" class="kb-customer-url-card__title">Find more competitors</h3>
+              <p class="kb-customer-url-card__deck">
+                Optional. Fan out from your examples to find sites actually ranking in your market.
+              </p>
+            </div>
+            <span class="kb-customer-url-card__badge">Enrich</span>
+          </div>
+
+          @if (draft().competitors.length > 0 && draft().competitors.length < 3) {
+            <div class="kb-offer-expand">
+              <button
+                type="button"
+                class="kb-offer-expand__btn"
+                (click)="store.fanOutCompetition()"
+                [disabled]="!store.canFanOutCompetition()"
+              >
+                @if (store.competitionFanningOut()) {
+                  <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                  Finding…
+                } @else {
+                  <i class="pi pi-share-alt" aria-hidden="true"></i>
+                  Fan out competitors
+                }
+              </button>
+              <p class="kb-offer-expand__hint">
+                Look up related sites ranking alongside yours in search.
+              </p>
+            </div>
+            @if (store.competitionFanOutError(); as fanOutErr) {
+              <p class="kb-offer-scan kb-offer-scan--error">{{ fanOutErr }}</p>
+            }
+          } @else if (draft().competitors.length === 0) {
+            <p class="kb-competition-note">Add one competitor URL first, then fan out from there.</p>
+          } @else {
+            <p class="kb-competition-note">You have the maximum number of competitors for this discovery run.</p>
+          }
+
+          @if (store.availableCompetitorFanOutSuggestions().length > 0) {
+            <ul class="kb-offer-suggestions" aria-label="Suggested competitor sites">
+              @for (suggestion of store.availableCompetitorFanOutSuggestions(); track suggestion.domain) {
+                <li>
+                  <button
+                    type="button"
+                    class="kb-offer-suggestion kb-offer-suggestion--ranked"
+                    (click)="store.addSuggestedCompetitor(suggestion.domain)"
+                    [disabled]="draft().competitors.length >= 3"
+                  >
+                    <i class="pi pi-plus" aria-hidden="true"></i>
+                    <span class="kb-offer-suggestion__copy">
+                      <span class="kb-offer-suggestion__title">{{ suggestion.domain }}</span>
+                      <span class="kb-offer-suggestion__meta">{{ suggestion.label }}</span>
+                    </span>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </aside>
+      </div>
     }
 
     @case ('onboarding:market') {
@@ -450,12 +523,13 @@
       </div>
 
       @if (draft().marketScope === 'local') {
-        <label class="kb-field">
-          <span class="kb-field__label">Your town or city</span>
+        <div class="kb-field">
+          <label class="kb-field__label" for="discoveryBookLocationSearch">Your town or city</label>
           @if (draft().serpLocationName; as locationName) {
             <p class="kb-field__selected">Selected: {{ locationName }}</p>
           }
           <p-autocomplete
+            inputId="discoveryBookLocationSearch"
             [suggestions]="store.locationSuggestions()"
             (completeMethod)="searchLocations($event)"
             (onSelect)="onLocationSelected($event)"
@@ -468,16 +542,17 @@
             [delay]="250"
             appendTo="body"
           />
-        </label>
+        </div>
       }
 
       @if (draft().marketScope === 'national') {
-        <label class="kb-field">
-          <span class="kb-field__label">Country</span>
+        <div class="kb-field">
+          <label class="kb-field__label" for="discoveryBookCountrySearch">Country</label>
           @if (draft().serpLocationName; as countryName) {
             <p class="kb-field__selected">Selected: {{ countryName }}</p>
           }
           <p-autocomplete
+            inputId="discoveryBookCountrySearch"
             [suggestions]="store.countrySuggestions()"
             (completeMethod)="searchCountries($event)"
             (onSelect)="onCountrySelected($event)"
@@ -490,7 +565,7 @@
             [delay]="0"
             appendTo="body"
           />
-        </label>
+        </div>
       }
     }
 
@@ -508,7 +583,8 @@
         />
       </label>
     }
-  }
+    }
+  </div>
 
   <div class="kb-onboarding-actions">
     @if (store.stepError(); as err) {
@@ -574,7 +650,7 @@
             icon="pi pi-refresh"
             (onClick)="saveEdits()"
           />
-        } @else if (store.saveStatus() == null) {
+        } @else if (store.saveStatus() === null) {
           <span class="kb-onboarding-dirty">No unsaved changes</span>
         }
       }

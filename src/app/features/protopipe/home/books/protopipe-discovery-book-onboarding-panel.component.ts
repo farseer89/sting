@@ -20,7 +20,6 @@ import {
 } from '../../onboarding/onboarding-market.constants';
 import {
   customerProfileInitials,
-  customerProfileStyle,
   customerProfileSubtitle,
   customerProfileTitle,
 } from './discovery-book-customer-profile.util';
@@ -111,10 +110,6 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
 
   customerText(slot: number): string {
     return this.draft().customerAvatars[slot] ?? '';
-  }
-
-  profileStyle(slot: number): Record<string, string> {
-    return customerProfileStyle(slot);
   }
 
   profileInitials(slot: number): string {

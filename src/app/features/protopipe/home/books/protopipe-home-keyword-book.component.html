@@ -17,6 +17,16 @@
       }
     </div>
     <div class="kb-masthead__stats">
+      @if (canUseDiscoveryPipeline()) {
+        <button
+          type="button"
+          class="kb-debug-rerun"
+          [disabled]="store.rerunningDiscovery() || store.loading()"
+          (click)="onRerunDiscovery()"
+        >
+          {{ store.rerunningDiscovery() ? 'Re-running discovery…' : 'Re-run discovery (temp)' }}
+        </button>
+      }
       <div class="kb-stat">
         <span class="kb-stat__val">{{ store.selectedCount() }}</span>
         <span class="kb-stat__lbl">Selected</span>

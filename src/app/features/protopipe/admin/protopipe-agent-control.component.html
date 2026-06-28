@@ -43,11 +43,43 @@
         @if (status.accountEmail) {
           <p class="hint mb-2">Account: {{ status.accountEmail }}</p>
         }
+        <p class="hint mb-2">{{ googleStatusDiagnosis(status) }}</p>
         @if (status.lastError) {
           <p-message severity="warn" [text]="status.lastError" styleClass="w-full" />
         }
       </div>
     }
+    <div class="agent-control__debug">
+      <h3>Debug routing</h3>
+      <dl>
+        <div>
+          <dt>Runtime API base</dt>
+          <dd>{{ protopipeApiBase }}</dd>
+        </div>
+        <div>
+          <dt>Shire primary</dt>
+          <dd>{{ shirePrimary ? 'yes' : 'no' }}</dd>
+        </div>
+        <div>
+          <dt>Contract status path</dt>
+          <dd>{{ googleStatusContractPath }}</dd>
+        </div>
+        <div>
+          <dt>Effective status URL</dt>
+          <dd>{{ googleStatusUrl }}</dd>
+        </div>
+        @if (googleStatusCheckedAt(); as checkedAt) {
+          <div>
+            <dt>Last checked</dt>
+            <dd>{{ checkedAt }}</dd>
+          </div>
+        }
+      </dl>
+      <p class="hint mb-0">
+        In Shire mode, the frontend rewrites the legacy admin path to
+        <code>/api/integrations/google/oauth/status</code>. Secrets stay server-side.
+      </p>
+    </div>
   </section>
 
 <header class="agent-control__header">

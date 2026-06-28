@@ -437,6 +437,14 @@ export class ProtopipeApiService {
     );
   }
 
+  googlePlatformOAuthStatusUrl(): string {
+    return protopipeApiUrl(ProtopipeAdminEndpoints.googleOAuthStatus.path);
+  }
+
+  googlePlatformOAuthStatusContractPath(): string {
+    return ProtopipeAdminEndpoints.googleOAuthStatus.path;
+  }
+
     enrichMarket(siteId: string): Promise<ProtopipeMarketEnrichResponse> {
     return firstValueFrom(
       this.http.post<ProtopipeMarketEnrichResponse>(

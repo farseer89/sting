@@ -14,12 +14,24 @@
         <span class="pb-stat__val">{{ totalLeads() }}</span>
         <span class="pb-stat__lbl">Leads</span>
       </div>
+      <div class="pb-stat">
+        <span class="pb-stat__val">{{ store.prospectCount() }}</span>
+        <span class="pb-stat__lbl">Prospects</span>
+      </div>
       @if (totalCost()) {
         <div class="pb-stat">
           <span class="pb-stat__val pb-stat__val--cost">{{ formatCost(totalCost()) }}</span>
           <span class="pb-stat__lbl">Total cost</span>
         </div>
       }
+      <button
+        type="button"
+        class="pb-save"
+        [disabled]="!store.dirty() || store.saving()"
+        (click)="saveProspects()"
+      >
+        @if (store.saving()) { Saving... } @else { Save prospects }
+      </button>
     </div>
   </header>
 
@@ -37,6 +49,18 @@
         (click)="activeSection.set('new-search')"
       >
         Search leads
+      </button>
+
+      <button
+        type="button"
+        class="pb-binder-nav__item"
+        [class.is-active]="activeSection() === 'prospects'"
+        (click)="activeSection.set('prospects')"
+      >
+        Prospects
+        @if (store.prospectCount() > 0) {
+          <span class="pb-nav-count">{{ store.prospectCount() }}</span>
+        }
       </button>
 
       @if (!runsLoading() && runs().length > 0) {
@@ -84,6 +108,14 @@
     </nav>
 
     <!-- Right panels -->
+
+    @if (store.error()) {
+      <div class="pb-banner pb-banner--error">{{ store.error() }}</div>
+    }
+
+    @if (store.message()) {
+      <div class="pb-banner">{{ store.message() }}</div>
+    }
 
     @if (activeSection() === 'new-search') {
       <div class="pb-panel">
@@ -142,6 +174,7 @@
           @if (selectedCount() > 0) {
             <div class="pb-leads-bar">
               <span class="pb-leads-bar__count">{{ selectedCount() }} selected</span>
+              <button type="button" class="pb-leads-bar__action" (click)="stageSelectedAsProspects()">Save as prospects</button>
               <button type="button" class="pb-leads-bar__action" (click)="copySelected()">Copy</button>
               <button type="button" class="pb-leads-bar__action pb-leads-bar__action--muted" (click)="clearSelection()">Clear</button>
             </div>
@@ -189,7 +222,7 @@
                         <span class="pb-lt-score">{{ lead.score }}</span>
                       </td>
                       <td class="pb-lt-td pb-lt-td--rating">
-                        @if (lead.rating != null) {
+                        @if (lead.rating !== undefined && lead.rating !== null) {
                           <span class="pb-lt-rating">{{ lead.rating.toFixed(1) }}</span>
                           @if (lead.userRatingCount) {
                             <span class="pb-lt-rating-ct">({{ lead.userRatingCount }})</span>
@@ -235,6 +268,95 @@
 
         </div>
       }
+    }
+
+    @if (activeSection() === 'prospects') {
+      <div class="pb-panel pb-panel--prospects">
+        <div class="pb-panel__head">
+          <span class="pb-panel-kicker">Prospects</span>
+          <h2 class="pb-panel-title">Cold-call prep and demo promotion</h2>
+          <p class="pb-panel-deck">
+            These are the canonical opportunities saved from campaign candidates. Edit call state, save the book, then promote qualified prospects into Build Book.
+          </p>
+        </div>
+
+        @if (store.loading()) {
+          <div class="pb-prospects-empty">Loading prospects...</div>
+        } @else if (store.prospects().length === 0) {
+          <div class="pb-prospects-empty">
+            Select leads from a completed search and save them as prospects.
+          </div>
+        } @else {
+          <div class="pb-prospect-grid">
+            @for (prospect of store.prospects(); track prospect.id) {
+              <article class="pb-prospect-card pb-prospect-card--{{ prospect.priority }}">
+                <div class="pb-prospect-card__head">
+                  <div>
+                    <h3>{{ prospect.businessName }}</h3>
+                    <p>
+                      {{ prospect.category || 'Local business' }}
+                      @if (prospect.market) { · {{ prospect.market }} }
+                    </p>
+                  </div>
+                  @if (prospect.score !== undefined && prospect.score !== null) {
+                    <span class="pb-prospect-score">{{ prospect.score }}</span>
+                  }
+                </div>
+
+                @if (prospect.topSignal) {
+                  <p class="pb-prospect-signal">{{ prospect.topSignal }}</p>
+                }
+
+                <div class="pb-prospect-fields">
+                  <label>
+                    Status
+                    <select [ngModel]="prospect.status" (ngModelChange)="updateProspectStatus(prospect, $event)">
+                      @for (status of prospectStatuses; track status) {
+                        <option [value]="status">{{ status.replace('_', ' ') }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label>
+                    Priority
+                    <select [ngModel]="prospect.priority" (ngModelChange)="updateProspectPriority(prospect, $event)">
+                      @for (priority of prospectPriorities; track priority) {
+                        <option [value]="priority">{{ priority }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label>
+                    Website
+                    <select [ngModel]="prospect.websiteStatus" (ngModelChange)="updateProspectWebsiteStatus(prospect, $event)">
+                      @for (status of websiteStatuses; track status) {
+                        <option [value]="status">{{ status }}</option>
+                      }
+                    </select>
+                  </label>
+                </div>
+
+                <textarea
+                  class="pb-prospect-notes"
+                  placeholder="Cold-call notes, objections, or next step..."
+                  [ngModel]="prospect.notes"
+                  (ngModelChange)="updateProspectNotes(prospect, $event)"
+                ></textarea>
+
+                <div class="pb-prospect-card__actions">
+                  @if (prospect.phone) {
+                    <a [href]="'tel:' + prospect.phone" class="pb-prospect-link">{{ prospect.phone }}</a>
+                  }
+                  @if (prospect.website) {
+                    <a [href]="prospect.website" target="_blank" rel="noopener noreferrer" class="pb-prospect-link">Website</a>
+                  }
+                  <button type="button" class="pb-leads-btn pb-leads-btn--expand" (click)="promoteProspect(prospect)">
+                    Promote to Build Book
+                  </button>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </div>
     }
 
     @if (activeSection() === 'run-pipeline') {

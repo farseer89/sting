@@ -285,7 +285,7 @@
                 }
                 @case ('prospector') {
                   <section class="glass glass--full glass--premiere" aria-label="Prospector">
-                    <app-protopipe-prospector />
+                    <app-protopipe-prospector (buildDemo)="openBuildBookForProspect($event)" />
                   </section>
                 }
                 @case ('thinker') {

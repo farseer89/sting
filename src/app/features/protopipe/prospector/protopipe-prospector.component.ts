@@ -2,18 +2,23 @@ import {
   ChangeDetectionStrategy,
   Component,
   OnInit,
-  inject,
-  signal,
   computed,
+  inject,
+  output,
+  signal,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import type { Prospect, ProspectPriority, ProspectStatus, ProspectWebsiteStatus } from '@hive/contracts';
 import { ProtopipeProspectorService } from './protopipe-prospector.service';
 import { ProtopipeProspectorAvatarFormComponent } from './protopipe-prospector-avatar-form.component';
 import { ProtopipeHomeThinkerViewState } from '../home/protopipe-home-thinker-view.state';
 import { ProtopipeHomeThinkerBinderComponent } from '../home/thinker/protopipe-home-thinker-binder.component';
 import { ProtopipeProspectorLeadDrawerComponent } from './protopipe-prospector-lead-drawer.component';
 import type { ProspectorRunDto, ProspectorScoredLead } from './prospector-run.model';
+import type { BuildBookProspectContext } from '../build-book/build-book-context';
+import { ProtopipeProspectorStore } from './protopipe-prospector.store';
 
-export type ProspectorSection = 'new-search' | 'leads' | 'run-pipeline';
+export type ProspectorSection = 'new-search' | 'leads' | 'prospects' | 'run-pipeline';
 
 function relativeTime(iso: string | undefined): string {
   if (!iso) return '';
@@ -32,7 +37,9 @@ function relativeTime(iso: string | undefined): string {
   selector: 'app-protopipe-prospector',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [ProtopipeProspectorStore],
   imports: [
+    FormsModule,
     ProtopipeProspectorAvatarFormComponent,
     ProtopipeHomeThinkerBinderComponent,
     ProtopipeProspectorLeadDrawerComponent,
@@ -42,7 +49,9 @@ function relativeTime(iso: string | undefined): string {
 })
 export class ProtopipeProspectorComponent implements OnInit {
   private readonly service = inject(ProtopipeProspectorService);
+  readonly store = inject(ProtopipeProspectorStore);
   readonly thinkerView = inject(ProtopipeHomeThinkerViewState);
+  readonly buildDemo = output<BuildBookProspectContext>();
 
   readonly activeSection = signal<ProspectorSection>('new-search');
   readonly selectedRun = signal<ProspectorRunDto | null>(null);
@@ -53,6 +62,17 @@ export class ProtopipeProspectorComponent implements OnInit {
   readonly launchError = signal<string | null>(null);
   readonly expanding = signal(false);
   readonly expandError = signal<string | null>(null);
+
+  readonly prospectStatuses: ProspectStatus[] = [
+    'new',
+    'call_ready',
+    'contacted',
+    'qualified',
+    'promoted',
+    'archived',
+  ];
+  readonly prospectPriorities: ProspectPriority[] = ['critical', 'high', 'medium', 'monitor'];
+  readonly websiteStatuses: ProspectWebsiteStatus[] = ['none', 'poor', 'fair', 'good', 'unknown'];
 
   // ── Lead drawer ───────────────────────────────────────────────────────────
 
@@ -100,6 +120,7 @@ export class ProtopipeProspectorComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
+    void this.store.load();
     try {
       const list = await this.service.listRuns();
       this.runs.set(list);
@@ -119,6 +140,7 @@ export class ProtopipeProspectorComponent implements OnInit {
     try {
       const run = await this.service.createRun(input.category, input.location);
       this.runs.update((prev) => [run, ...prev]);
+      void this.store.syncCampaignFromRun(run);
       // New runs go straight to pipeline view since there are no leads yet.
       this.openRunPipeline(run);
     } catch {
@@ -135,6 +157,7 @@ export class ProtopipeProspectorComponent implements OnInit {
       return;
     }
     this.selectedRun.set(run);
+    void this.store.syncCampaignFromRun(run);
     this.selectedLeadNames.set(new Set());
     this.activeSection.set('leads');
   }
@@ -162,6 +185,7 @@ export class ProtopipeProspectorComponent implements OnInit {
       // Update both the selectedRun and the run in the list
       this.selectedRun.set(updated);
       this.runs.update((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+      void this.store.syncCampaignFromRun(updated);
     } catch {
       this.expandError.set('Could not expand — please try again.');
     } finally {
@@ -204,6 +228,38 @@ export class ProtopipeProspectorComponent implements OnInit {
       return parts.join('\t');
     });
     void navigator.clipboard.writeText(lines.join('\n'));
+  }
+
+  stageSelectedAsProspects(): void {
+    const run = this.selectedRun();
+    if (!run) return;
+    this.store.addLeadsAsProspects(this.selectedLeads(), run);
+    this.clearSelection();
+    this.activeSection.set('prospects');
+  }
+
+  saveProspects(): void {
+    void this.store.saveProspects();
+  }
+
+  updateProspectStatus(prospect: Prospect, status: string): void {
+    this.store.updateProspect(prospect.id, { status: status as ProspectStatus });
+  }
+
+  updateProspectPriority(prospect: Prospect, priority: string): void {
+    this.store.updateProspect(prospect.id, { priority: priority as ProspectPriority });
+  }
+
+  updateProspectWebsiteStatus(prospect: Prospect, websiteStatus: string): void {
+    this.store.updateProspect(prospect.id, { websiteStatus: websiteStatus as ProspectWebsiteStatus });
+  }
+
+  updateProspectNotes(prospect: Prospect, notes: string): void {
+    this.store.updateProspect(prospect.id, { notes });
+  }
+
+  promoteProspect(prospect: Prospect): void {
+    this.buildDemo.emit(this.store.promoteToBuildBook(prospect));
   }
 
   isLeadSelected(name: string | undefined): boolean {

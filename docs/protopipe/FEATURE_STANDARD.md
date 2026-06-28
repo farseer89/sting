@@ -93,6 +93,8 @@ features/protopipe/
   <area>/                         # Smart components (dashboard, keywords, …)
 ```
 
+Book-style workspaces must also follow [BOOK_UI_STANDARD.md](./BOOK_UI_STANDARD.md). Shire books own persisted state; Sting book UIs own the operator workflow, draft state, and explicit Save.
+
 **Injection rule:** Components inject `ProtopipeStrategyService` only — never `ProtopipeApiService` (keeps agent UI and human UI on the same boundary).
 
 ### Angular conventions

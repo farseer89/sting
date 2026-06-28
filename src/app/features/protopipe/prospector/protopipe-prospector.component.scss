@@ -100,6 +100,26 @@ $pb-amber: #d97706;
   color: $pb-dim;
 }
 
+.pb-save {
+  align-self: center;
+  border: 1px solid $pb-ink;
+  border-radius: 999px;
+  background: $pb-ink;
+  color: #fff;
+  font-family: $pb-sans;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.5rem 0.8rem;
+  cursor: pointer;
+
+  &:disabled {
+    border-color: $pb-border;
+    background: $pb-bg-panel;
+    color: $pb-dim;
+    cursor: default;
+  }
+}
+
 // ── Binder layout
 
 .pb-binder {
@@ -181,6 +201,36 @@ $pb-amber: #d97706;
 
   &--run {
     padding: 0.375rem 0.5rem;
+  }
+}
+
+.pb-nav-count {
+  margin-left: auto;
+  min-width: 1.25rem;
+  border-radius: 999px;
+  background: $pb-border;
+  color: $pb-muted;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 0.05rem 0.35rem;
+}
+
+.pb-banner {
+  grid-column: 2;
+  margin: 0.75rem 1rem 0;
+  border: 1px solid rgb(37 99 235 / 0.18);
+  border-radius: 0.625rem;
+  background: rgb(37 99 235 / 0.06);
+  color: $pb-accent;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.6rem 0.75rem;
+
+  &--error {
+    border-color: rgb(220 38 38 / 0.2);
+    background: rgb(220 38 38 / 0.06);
+    color: $pb-red;
   }
 }
 
@@ -649,4 +699,148 @@ $lt-row-h: 2.5rem;
 .pb-panel__body {
   flex: 1;
   min-height: 0;
+}
+
+// ── Saved prospects
+
+.pb-panel--prospects {
+  overflow-y: auto;
+}
+
+.pb-prospects-empty {
+  margin: 1rem;
+  border: 1px dashed $pb-border;
+  border-radius: 0.75rem;
+  background: $pb-bg-subtle;
+  color: $pb-muted;
+  font-size: 0.8125rem;
+  padding: 1rem;
+}
+
+.pb-prospect-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr));
+  gap: 0.875rem;
+  padding: 1rem;
+}
+
+.pb-prospect-card {
+  border: 1px solid $pb-border;
+  border-radius: 0.875rem;
+  background: $pb-bg;
+  box-shadow: 0 10px 30px rgb(9 9 11 / 0.05);
+  padding: 1rem;
+
+  &--critical {
+    border-color: rgb(220 38 38 / 0.35);
+  }
+
+  &--high {
+    border-color: rgb(217 119 6 / 0.35);
+  }
+}
+
+.pb-prospect-card__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+
+  h3 {
+    margin: 0 0 0.2rem;
+    color: $pb-ink;
+    font-size: 0.95rem;
+    letter-spacing: -0.02em;
+  }
+
+  p {
+    margin: 0;
+    color: $pb-muted;
+    font-size: 0.75rem;
+  }
+}
+
+.pb-prospect-score {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  background: $pb-bg-panel;
+  color: $pb-ink;
+  font-size: 0.875rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.pb-prospect-signal {
+  border-left: 3px solid $pb-accent;
+  margin: 0.8rem 0;
+  padding-left: 0.625rem;
+  color: $pb-text;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.pb-prospect-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.875rem;
+
+  label {
+    display: grid;
+    gap: 0.25rem;
+    color: $pb-dim;
+    font-size: 0.5625rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  select {
+    border: 1px solid $pb-border;
+    border-radius: 0.5rem;
+    background: $pb-bg;
+    color: $pb-text;
+    font-family: $pb-sans;
+    font-size: 0.75rem;
+    padding: 0.45rem 0.5rem;
+    text-transform: none;
+  }
+}
+
+.pb-prospect-notes {
+  width: 100%;
+  min-height: 5.5rem;
+  resize: vertical;
+  border: 1px solid $pb-border;
+  border-radius: 0.625rem;
+  background: $pb-bg-subtle;
+  color: $pb-text;
+  font-family: $pb-sans;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  margin-top: 0.75rem;
+  padding: 0.65rem;
+}
+
+.pb-prospect-card__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.pb-prospect-link {
+  color: $pb-accent;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
 }

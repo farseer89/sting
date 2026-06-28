@@ -8,7 +8,13 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import type { Prospect, ProspectPriority, ProspectStatus, ProspectWebsiteStatus } from '@hive/contracts';
+import type {
+  Prospect,
+  ProspectingCampaign,
+  ProspectPriority,
+  ProspectStatus,
+  ProspectWebsiteStatus,
+} from '@hive/contracts';
 import { ProtopipeProspectorService } from './protopipe-prospector.service';
 import { ProtopipeProspectorAvatarFormComponent } from './protopipe-prospector-avatar-form.component';
 import { ProtopipeHomeThinkerViewState } from '../home/protopipe-home-thinker-view.state';
@@ -19,7 +25,7 @@ import type { BuildBookProspectContext } from '../build-book/build-book-context'
 import { isShirePrimary } from '../shire/shire-http.util';
 import { ProtopipeProspectorStore } from './protopipe-prospector.store';
 
-export type ProspectorSection = 'new-search' | 'leads' | 'prospects' | 'run-pipeline';
+export type ProspectorSection = 'new-search' | 'campaigns' | 'leads' | 'prospects' | 'run-pipeline';
 
 function relativeTime(iso: string | undefined): string {
   if (!iso) return '';
@@ -145,8 +151,11 @@ export class ProtopipeProspectorComponent implements OnInit {
 
     try {
       if (this.shirePrimary) {
-        await this.store.createCampaign(input.category, input.location);
-        this.activeSection.set('prospects');
+        const campaign = await this.store.createCampaign(input.category, input.location);
+        this.activeSection.set('campaigns');
+        if (campaign) {
+          void this.store.runGoogleMapsSource(campaign);
+        }
         return;
       }
       const run = await this.service.createRun(input.category, input.location);
@@ -251,6 +260,20 @@ export class ProtopipeProspectorComponent implements OnInit {
 
   saveProspects(): void {
     void this.store.saveProspects();
+  }
+
+  runGoogleMaps(campaign: ProspectingCampaign): void {
+    void this.store.runGoogleMapsSource(campaign);
+  }
+
+  stageCampaignCandidates(campaign: ProspectingCampaign): void {
+    this.store.addCampaignCandidatesAsProspects(campaign);
+    this.activeSection.set('prospects');
+  }
+
+  selectCampaign(campaign: ProspectingCampaign): void {
+    this.store.selectCampaign(campaign.id);
+    this.activeSection.set('campaigns');
   }
 
   updateProspectStatus(prospect: Prospect, status: string): void {

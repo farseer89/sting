@@ -7,12 +7,12 @@
     </div>
     <div class="pb-masthead__stats">
       <div class="pb-stat">
-        <span class="pb-stat__val">{{ runs().length }}</span>
-        <span class="pb-stat__lbl">Searches</span>
+        <span class="pb-stat__val">{{ shirePrimary ? store.campaignCount() : runs().length }}</span>
+        <span class="pb-stat__lbl">Campaigns</span>
       </div>
       <div class="pb-stat">
-        <span class="pb-stat__val">{{ totalLeads() }}</span>
-        <span class="pb-stat__lbl">Leads</span>
+        <span class="pb-stat__val">{{ shirePrimary ? store.candidateCount() : totalLeads() }}</span>
+        <span class="pb-stat__lbl">Candidates</span>
       </div>
       <div class="pb-stat">
         <span class="pb-stat__val">{{ store.prospectCount() }}</span>
@@ -50,6 +50,20 @@
       >
         Search leads
       </button>
+
+      @if (shirePrimary) {
+        <button
+          type="button"
+          class="pb-binder-nav__item"
+          [class.is-active]="activeSection() === 'campaigns'"
+          (click)="activeSection.set('campaigns')"
+        >
+          Campaigns
+          @if (store.campaignCount() > 0) {
+            <span class="pb-nav-count">{{ store.campaignCount() }}</span>
+          }
+        </button>
+      }
 
       <button
         type="button"
@@ -126,7 +140,7 @@
           <h2 class="pb-panel-title">Who are you prospecting?</h2>
           <p class="pb-panel-deck">
             @if (shirePrimary) {
-              Enter a category and location to save a Shire campaign workbench. Google Maps source runs will attach here as the Shire runner comes online.
+              Enter a category and choose a Google-backed location. Shire will run Google Maps and attach candidates to the campaign.
             } @else {
               Enter a business category and location. The pipeline will search Google Places and score each lead by review gap, website presence, and ranking opportunity.
             }
@@ -136,9 +150,113 @@
           <app-protopipe-prospector-avatar-form
             [loading]="launching()"
             [error]="launchError()"
-            (search)="onSearch($event)"
+            (searchRequested)="onSearch($event)"
           />
         </div>
+      </div>
+    }
+
+    @if (activeSection() === 'campaigns') {
+      <div class="pb-panel pb-panel--campaigns">
+        <div class="pb-panel__head">
+          <span class="pb-panel-kicker">Campaign workbench</span>
+          <h2 class="pb-panel-title">Google Maps candidates</h2>
+          <p class="pb-panel-deck">
+            Campaigns collect source candidates first. Review the Google Maps results, then stage them as prospects for cold-call prep.
+          </p>
+        </div>
+
+        @if (store.loading()) {
+          <div class="pb-prospects-empty">Loading campaigns...</div>
+        } @else if (store.campaigns().length === 0) {
+          <div class="pb-prospects-empty">Start a search to create your first prospecting campaign.</div>
+        } @else {
+          <div class="pb-campaign-layout">
+            <div class="pb-campaign-list">
+              @for (campaign of store.campaigns(); track campaign.id) {
+                <button
+                  type="button"
+                  class="pb-campaign-list__item"
+                  [class.is-active]="store.selectedCampaignId() === campaign.id"
+                  (click)="selectCampaign(campaign)"
+                >
+                  <span>{{ campaign.name }}</span>
+                  <small>{{ campaign.status }} · {{ campaign.candidates.length }} candidates</small>
+                </button>
+              }
+            </div>
+
+            @let campaign = store.selectedCampaign();
+            @if (campaign) {
+              <article class="pb-campaign-card">
+                <header class="pb-campaign-card__head">
+                  <div>
+                    <h3>{{ campaign.name }}</h3>
+                    <p>{{ campaign.category }} · {{ campaign.location }}</p>
+                  </div>
+                  <div class="pb-campaign-card__actions">
+                    <button
+                      type="button"
+                      class="pb-leads-btn pb-leads-btn--expand"
+                      [disabled]="store.sourceRunLoading()"
+                      (click)="runGoogleMaps(campaign)"
+                    >
+                      @if (store.sourceRunLoading()) { Running Google Maps... } @else { Run Google Maps }
+                    </button>
+                    <button
+                      type="button"
+                      class="pb-leads-btn"
+                      [disabled]="campaign.candidates.length === 0"
+                      (click)="stageCampaignCandidates(campaign)"
+                    >
+                      Save as prospects
+                    </button>
+                  </div>
+                </header>
+
+                @if (campaign.sourceRuns.length > 0) {
+                  <div class="pb-source-runs">
+                    @for (sourceRun of campaign.sourceRuns; track sourceRun.runId) {
+                      <span>{{ sourceRun.source }} · {{ sourceRun.status }} · {{ sourceRun.candidateCount }} candidates</span>
+                    }
+                  </div>
+                }
+
+                @if (campaign.candidates.length === 0) {
+                  <div class="pb-prospects-empty">No candidates yet. Run Google Maps to fill this campaign.</div>
+                } @else {
+                  <div class="pb-candidate-list">
+                    @for (candidate of campaign.candidates; track candidate.source + ':' + candidate.sourceId) {
+                      <div class="pb-candidate-row">
+                        <div>
+                          <strong>{{ candidate.name }}</strong>
+                          <span>
+                            {{ candidate.category || campaign.category }}
+                            @if (candidate.area) { · {{ candidate.area }} }
+                          </span>
+                          @if (candidate.topSignal) {
+                            <small>{{ candidate.topSignal }}</small>
+                          }
+                        </div>
+                        <div class="pb-candidate-row__meta">
+                          @if (candidate.rating !== undefined && candidate.rating !== null) {
+                            <span>{{ candidate.rating.toFixed(1) }}★</span>
+                          }
+                          @if (candidate.website) {
+                            <a [href]="candidate.website" target="_blank" rel="noopener noreferrer">Website</a>
+                          }
+                          @if (candidate.sourceUrl) {
+                            <a [href]="candidate.sourceUrl" target="_blank" rel="noopener noreferrer">Maps</a>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </article>
+            }
+          </div>
+        }
       </div>
     }
 

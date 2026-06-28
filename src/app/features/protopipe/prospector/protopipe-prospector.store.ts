@@ -5,15 +5,33 @@ import type {
   ProspectingCandidateSummary,
   ProspectWebsiteStatus,
   SaveProspectsRequest,
+  Thought,
 } from '@hive/contracts';
+import { RUN_POLL_INTERVAL_MS, isTerminalRunStatus } from '@hive/contracts';
+import { firstValueFrom } from 'rxjs';
 import { parseProtopipeApiError } from '../protopipe-http.util';
 import { ProtopipeStrategyService } from '../protopipe-strategy.service';
 import { isShirePrimary } from '../shire/shire-http.util';
+import { ShireApiService } from '../shire/shire-api.service';
 import type { BuildBookProspectContext } from '../build-book/build-book-context';
 import type { ProspectorRunDto, ProspectorScoredLead } from './prospector-run.model';
 import { ProtopipeProspectorShireApiService } from './protopipe-prospector-shire-api.service';
 
 type ProspectDraft = Prospect & { id: string };
+
+type CampaignSaveRow = Omit<ProspectingCampaign, 'id' | 'createdAt' | 'updatedAt'> & { id?: string };
+
+interface GoogleMapsCandidatesOutput {
+  campaignId?: string;
+  sourceRun?: {
+    source: 'google_maps';
+    runId: string;
+    status: 'complete';
+    candidateCount: number;
+    completedAt: string;
+  };
+  candidates?: ProspectingCandidateSummary[];
+}
 
 function cloneProspects(prospects: Prospect[]): ProspectDraft[] {
   return prospects.map((prospect) => ({ ...prospect, sourceCandidateRefs: [...prospect.sourceCandidateRefs] }));
@@ -26,6 +44,7 @@ function stringify(value: unknown): string {
 @Injectable()
 export class ProtopipeProspectorStore {
   private readonly api = inject(ProtopipeProspectorShireApiService);
+  private readonly shireApi = inject(ShireApiService);
   private readonly strategy = inject(ProtopipeStrategyService);
 
   private readonly _campaigns = signal<ProspectingCampaign[]>([]);
@@ -34,6 +53,8 @@ export class ProtopipeProspectorStore {
   private readonly _loading = signal(false);
   private readonly _saving = signal(false);
   private readonly _campaignSaving = signal(false);
+  private readonly _sourceRunLoading = signal(false);
+  private readonly _selectedCampaignId = signal<string | null>(null);
   private readonly _error = signal<string | null>(null);
   private readonly _message = signal<string | null>(null);
 
@@ -42,10 +63,20 @@ export class ProtopipeProspectorStore {
   readonly loading = this._loading.asReadonly();
   readonly saving = this._saving.asReadonly();
   readonly campaignSaving = this._campaignSaving.asReadonly();
+  readonly sourceRunLoading = this._sourceRunLoading.asReadonly();
+  readonly selectedCampaignId = this._selectedCampaignId.asReadonly();
   readonly error = this._error.asReadonly();
   readonly message = this._message.asReadonly();
 
   readonly dirty = computed(() => stringify(this._prospects()) !== stringify(this._snapshot()));
+  readonly campaignCount = computed(() => this._campaigns().length);
+  readonly candidateCount = computed(() =>
+    this._campaigns().reduce((count, campaign) => count + campaign.candidates.length, 0),
+  );
+  readonly selectedCampaign = computed(() => {
+    const selectedId = this._selectedCampaignId();
+    return this._campaigns().find((campaign) => campaign.id === selectedId) ?? this._campaigns()[0] ?? null;
+  });
   readonly prospectCount = computed(() => this._prospects().length);
   readonly callReadyCount = computed(
     () => this._prospects().filter((prospect) => prospect.status === 'call_ready').length,
@@ -70,6 +101,7 @@ export class ProtopipeProspectorStore {
         this.api.listProspects(siteId),
       ]);
       this._campaigns.set(campaigns.campaigns);
+      this._selectedCampaignId.set(campaigns.campaigns[0]?.id ?? null);
       const rows = cloneProspects(prospects.prospects);
       this._prospects.set(rows);
       this._snapshot.set(cloneProspects(rows));
@@ -100,16 +132,16 @@ export class ProtopipeProspectorStore {
     }
   }
 
-  async createCampaign(category: string, location: string): Promise<boolean> {
+  async createCampaign(category: string, location: string): Promise<ProspectingCampaign | null> {
     const trimmedCategory = category.trim();
     const trimmedLocation = location.trim();
-    if (!trimmedCategory || !trimmedLocation) return false;
+    if (!trimmedCategory || !trimmedLocation) return null;
 
     this._campaignSaving.set(true);
     this._error.set(null);
     this._message.set(null);
     try {
-      const next = [
+      const next: CampaignSaveRow[] = [
         {
           name: `${trimmedCategory} in ${trimmedLocation}`,
           category: trimmedCategory,
@@ -125,20 +157,86 @@ export class ProtopipeProspectorStore {
           ],
           sourceRuns: [],
           candidates: [],
-          notes: 'Google Maps source configured. Shire source runner pending.',
+          notes: 'Google Maps source configured.',
         },
-        ...this._campaigns(),
+        ...this.toCampaignSaveRows(this._campaigns()),
       ];
       const response = await this.api.saveCampaigns(this.requireSiteId(), { campaigns: next });
       this._campaigns.set(response.campaigns);
-      this._message.set('Campaign saved. Shire Google Maps runner is next.');
-      return true;
+      const created = response.campaigns.find(
+        (campaign) => campaign.category === trimmedCategory && campaign.location === trimmedLocation,
+      ) ?? response.campaigns[0] ?? null;
+      this._selectedCampaignId.set(created?.id ?? null);
+      this._message.set('Campaign saved. Starting Google Maps source run.');
+      return created;
     } catch (err) {
       this._error.set(parseProtopipeApiError(err, 'Could not save campaign.'));
-      return false;
+      return null;
     } finally {
       this._campaignSaving.set(false);
     }
+  }
+
+  async runGoogleMapsSource(campaign: ProspectingCampaign): Promise<boolean> {
+    if (this._sourceRunLoading()) return false;
+
+    this._sourceRunLoading.set(true);
+    this._error.set(null);
+    this._message.set(null);
+    try {
+      const siteId = this.requireSiteId();
+      const { run } = await firstValueFrom(
+        this.shireApi.enqueueRun$(siteId, {
+          thinkerKind: 'lead_source_google_maps',
+          params: {
+            campaignId: campaign.id,
+            category: campaign.category,
+            location: campaign.location,
+            maxResults: 20,
+          },
+        }),
+      );
+      this.markCampaignSourceRun(campaign.id, run, 'running');
+      const finished = await this.pollRun(siteId, run);
+      if (finished.status !== 'complete') {
+        this.markCampaignSourceRun(campaign.id, finished, 'failed');
+        this._message.set('Google Maps source run did not complete.');
+        return false;
+      }
+      const output = this.googleMapsOutput(finished);
+      const candidates = output?.candidates ?? [];
+      await this.mergeCampaignCandidates(campaign.id, candidates, finished, output);
+      this._message.set(`${candidates.length} Google Maps candidate${candidates.length === 1 ? '' : 's'} added.`);
+      return true;
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Could not run Google Maps source.'));
+      return false;
+    } finally {
+      this._sourceRunLoading.set(false);
+    }
+  }
+
+  selectCampaign(campaignId: string): void {
+    this._selectedCampaignId.set(campaignId);
+  }
+
+  addCampaignCandidatesAsProspects(campaign: ProspectingCampaign): void {
+    const existingKeys = new Set(
+      this._prospects().flatMap((prospect) =>
+        prospect.sourceCandidateRefs.map((ref) => `${ref.source}:${ref.sourceId}`),
+      ),
+    );
+    const additions = campaign.candidates
+      .filter((candidate) => !existingKeys.has(`${candidate.source}:${candidate.sourceId}`))
+      .map((candidate) => this.prospectFromCandidate(candidate, campaign));
+
+    if (additions.length === 0) {
+      this._message.set('Campaign candidates are already staged as prospects.');
+      return;
+    }
+
+    this._prospects.update((prospects) => [...additions, ...prospects]);
+    this._message.set(`${additions.length} prospect${additions.length === 1 ? '' : 's'} staged from campaign.`);
   }
 
   async syncCampaignFromRun(run: ProspectorRunDto): Promise<void> {
@@ -211,6 +309,103 @@ export class ProtopipeProspectorStore {
     };
   }
 
+  private async mergeCampaignCandidates(
+    campaignId: string,
+    candidates: ProspectingCandidateSummary[],
+    run: Thought,
+    output: GoogleMapsCandidatesOutput | null,
+  ): Promise<void> {
+    const next = this._campaigns().map((campaign) => {
+      if (campaign.id !== campaignId) return campaign;
+      const seen = new Map<string, ProspectingCandidateSummary>();
+      for (const candidate of campaign.candidates) {
+        seen.set(`${candidate.source}:${candidate.sourceId}`, candidate);
+      }
+      for (const candidate of candidates) {
+        seen.set(`${candidate.source}:${candidate.sourceId}`, candidate);
+      }
+      return {
+        ...campaign,
+        status: 'reviewing' as const,
+        sourceRuns: [
+          ...(campaign.sourceRuns ?? []).filter((ref) => ref.runId !== run.id),
+          output?.sourceRun ?? {
+            source: 'google_maps' as const,
+            runId: run.id,
+            status: 'complete' as const,
+            candidateCount: candidates.length,
+            completedAt: new Date().toISOString(),
+          },
+        ],
+        candidates: Array.from(seen.values()).slice(0, 250),
+      };
+    });
+    const response = await this.api.saveCampaigns(this.requireSiteId(), {
+      campaigns: this.toCampaignSaveRows(next),
+    });
+    this._campaigns.set(response.campaigns);
+    this._selectedCampaignId.set(campaignId);
+  }
+
+  private markCampaignSourceRun(
+    campaignId: string,
+    run: Thought,
+    status: 'running' | 'failed',
+  ): void {
+    this._campaigns.update((campaigns) =>
+      campaigns.map((campaign) => {
+        if (campaign.id !== campaignId) return campaign;
+        return {
+          ...campaign,
+          status: status === 'running' ? 'running' : campaign.status,
+          sourceRuns: [
+            ...(campaign.sourceRuns ?? []).filter((ref) => ref.runId !== run.id),
+            {
+              source: 'google_maps' as const,
+              runId: run.id,
+              status,
+              candidateCount: 0,
+              startedAt: run.startedAt,
+              completedAt: status === 'failed' ? run.finishedAt : undefined,
+            },
+          ],
+        };
+      }),
+    );
+  }
+
+  private async pollRun(siteId: string, initial: Thought): Promise<Thought> {
+    let current = initial;
+    while (!isTerminalRunStatus(current.status)) {
+      await new Promise((resolve) => setTimeout(resolve, RUN_POLL_INTERVAL_MS));
+      const response = await firstValueFrom(this.shireApi.getRun$(siteId, current.id));
+      current = response.run;
+    }
+    return current;
+  }
+
+  private googleMapsOutput(run: Thought): GoogleMapsCandidatesOutput | null {
+    const port = run.outputs.find((output) => output.portId === 'google_maps_candidates');
+    const data = port?.artifact?.data;
+    if (!data || typeof data !== 'object') return null;
+    return data as GoogleMapsCandidatesOutput;
+  }
+
+  private toCampaignSaveRows(campaigns: ProspectingCampaign[]): CampaignSaveRow[] {
+    return campaigns.map((campaign) => ({
+      id: campaign.id,
+      name: campaign.name,
+      category: campaign.category,
+      location: campaign.location,
+      status: campaign.status,
+      sources: campaign.sources,
+      sourceRuns: campaign.sourceRuns,
+      candidates: campaign.candidates,
+      consolidationRunId: campaign.consolidationRunId,
+      notes: campaign.notes,
+    }));
+  }
+
   private buildCampaignFromRun(run: ProspectorRunDto): ProspectingCampaign {
     const existing = this._campaigns().find(
       (campaign) => campaign.sourceRuns.some((ref) => ref.runId === run.id) || campaign.id === run.id,
@@ -265,6 +460,30 @@ export class ProtopipeProspectorStore {
       status: 'call_ready',
       sourceCampaignId: run.id,
       sourceCandidateRefs: [{ source: 'google_maps', sourceId: lead.placeId, campaignId: run.id }],
+      notes: '',
+    };
+  }
+
+  private prospectFromCandidate(
+    candidate: ProspectingCandidateSummary,
+    campaign: ProspectingCampaign,
+  ): ProspectDraft {
+    return {
+      id: `temp-${crypto.randomUUID()}`,
+      businessName: candidate.name,
+      category: candidate.category ?? campaign.category,
+      market: campaign.location,
+      phone: candidate.phone,
+      website: candidate.website,
+      websiteStatus: candidate.website ? 'unknown' : 'none',
+      priority: 'medium',
+      score: undefined,
+      topSignal: candidate.topSignal,
+      status: 'call_ready',
+      sourceCampaignId: campaign.id,
+      sourceCandidateRefs: [
+        { source: candidate.source, sourceId: candidate.sourceId, campaignId: campaign.id },
+      ],
       notes: '',
     };
   }

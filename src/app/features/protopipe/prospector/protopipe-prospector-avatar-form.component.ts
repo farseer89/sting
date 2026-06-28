@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DoCheck,
   inject,
   input,
   output,
@@ -12,8 +13,12 @@ import {
   type AutoCompleteCompleteEvent,
   type AutoCompleteSelectEvent,
 } from 'primeng/autocomplete';
-import type { ProtopipeSerpLocationOption } from '@hive/contracts';
+import type { GooglePlaceLocationOption, ProtopipeSerpLocationOption } from '@hive/contracts';
 import { ProtopipeApiService } from '../protopipe-api.service';
+import { isShirePrimary } from '../shire/shire-http.util';
+import { ProtopipeProspectorShireApiService } from './protopipe-prospector-shire-api.service';
+
+type ProspectorLocationOption = GooglePlaceLocationOption | ProtopipeSerpLocationOption;
 
 @Component({
   selector: 'app-protopipe-prospector-avatar-form',
@@ -49,6 +54,8 @@ import { ProtopipeApiService } from '../protopipe-api.service';
               inputId="pp-location"
               styleClass="af-location-ac"
               [suggestions]="locationSuggestions()"
+              [(ngModel)]="locationText"
+              name="location"
               (completeMethod)="searchLocations($event)"
               (onSelect)="onLocationSelected($event)"
               (onClear)="onLocationCleared()"
@@ -93,18 +100,20 @@ import { ProtopipeApiService } from '../protopipe-api.service';
   `,
   styleUrl: './protopipe-prospector-avatar-form.component.scss',
 })
-export class ProtopipeProspectorAvatarFormComponent {
+export class ProtopipeProspectorAvatarFormComponent implements DoCheck {
   private readonly api = inject(ProtopipeApiService);
+  private readonly shireApi = inject(ProtopipeProspectorShireApiService);
+  private readonly shirePrimary = isShirePrimary();
 
   readonly loading = input(false);
   readonly error = input<string | null>(null);
-  readonly search = output<{ category: string; location: string }>();
+  readonly searchRequested = output<{ category: string; location: string }>();
 
   category = '';
   locationText = '';
-  private selectedLocation: ProtopipeSerpLocationOption | null = null;
+  private selectedLocation: ProspectorLocationOption | null = null;
 
-  readonly locationSuggestions = signal<ProtopipeSerpLocationOption[]>([]);
+  readonly locationSuggestions = signal<ProspectorLocationOption[]>([]);
   readonly canSubmit = signal(false);
 
   ngDoCheck(): void {
@@ -120,7 +129,9 @@ export class ProtopipeProspectorAvatarFormComponent {
       return;
     }
     try {
-      const res = await this.api.searchSerpLocations(q, 8);
+      const res = this.shirePrimary
+        ? await this.shireApi.searchPlaceLocations(q, 8)
+        : await this.api.searchSerpLocations(q, 8);
       this.locationSuggestions.set(res.locations);
     } catch {
       this.locationSuggestions.set([]);
@@ -128,7 +139,7 @@ export class ProtopipeProspectorAvatarFormComponent {
   }
 
   onLocationSelected(event: AutoCompleteSelectEvent): void {
-    const opt = event.value as ProtopipeSerpLocationOption | null;
+    const opt = event.value as ProspectorLocationOption | null;
     this.selectedLocation = opt ?? null;
     this.locationText = opt?.name ?? '';
   }
@@ -141,6 +152,6 @@ export class ProtopipeProspectorAvatarFormComponent {
   onSubmit(): void {
     if (!this.canSubmit() || this.loading()) return;
     const location = this.selectedLocation?.name ?? this.locationText.trim();
-    this.search.emit({ category: this.category.trim(), location });
+    this.searchRequested.emit({ category: this.category.trim(), location });
   }
 }

@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
   ShireEndpoints,
+  type GooglePlaceLocationsResponse,
   type ProspectingCampaignsListResponse,
   type ProspectsListResponse,
   type SaveProspectingCampaignsRequest,
@@ -45,6 +46,15 @@ export class ProtopipeProspectorShireApiService {
       this.http.put<ProspectsListResponse>(
         shireApiUrl(ShireEndpoints.sites.prospects(siteId)),
         body,
+      ),
+    );
+  }
+
+  searchPlaceLocations(q: string, limit = 8): Promise<GooglePlaceLocationsResponse> {
+    const params = new URLSearchParams({ q, limit: String(limit) });
+    return firstValueFrom(
+      this.http.get<GooglePlaceLocationsResponse>(
+        shireApiUrl(`${ShireEndpoints.integrations.googlePlaces.locations}?${params.toString()}`),
       ),
     );
   }

@@ -41,6 +41,15 @@ function stringify(value: unknown): string {
   return JSON.stringify(value);
 }
 
+function optionalString(value: string | null | undefined): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function optionalNumber(value: number | null | undefined): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
 @Injectable()
 export class ProtopipeProspectorStore {
   private readonly api = inject(ProtopipeProspectorShireApiService);
@@ -303,8 +312,26 @@ export class ProtopipeProspectorStore {
   private toSaveProspectsRequest(): SaveProspectsRequest {
     return {
       prospects: this._prospects().map((prospect) => ({
-        ...prospect,
-        id: prospect.id.startsWith('temp-') ? undefined : prospect.id,
+        id: prospect.id.startsWith('temp-') ? undefined : optionalString(prospect.id),
+        businessName: prospect.businessName,
+        category: optionalString(prospect.category),
+        market: optionalString(prospect.market),
+        phone: optionalString(prospect.phone),
+        website: optionalString(prospect.website),
+        websiteStatus: prospect.websiteStatus,
+        priority: prospect.priority,
+        score: optionalNumber(prospect.score),
+        topSignal: optionalString(prospect.topSignal),
+        status: prospect.status,
+        sourceCampaignId: optionalString(prospect.sourceCampaignId),
+        sourceCandidateRefs: prospect.sourceCandidateRefs.map((ref) => ({
+          source: ref.source,
+          sourceId: ref.sourceId,
+          campaignId: optionalString(ref.campaignId),
+        })),
+        lastPitchSessionId: optionalString(prospect.lastPitchSessionId),
+        buildBookId: optionalString(prospect.buildBookId),
+        notes: prospect.notes ?? '',
       })),
     };
   }
@@ -393,16 +420,42 @@ export class ProtopipeProspectorStore {
 
   private toCampaignSaveRows(campaigns: ProspectingCampaign[]): CampaignSaveRow[] {
     return campaigns.map((campaign) => ({
-      id: campaign.id,
+      id: optionalString(campaign.id),
       name: campaign.name,
       category: campaign.category,
       location: campaign.location,
       status: campaign.status,
-      sources: campaign.sources,
-      sourceRuns: campaign.sourceRuns,
-      candidates: campaign.candidates,
-      consolidationRunId: campaign.consolidationRunId,
-      notes: campaign.notes,
+      sources: campaign.sources.map((source) => ({
+        source: source.source,
+        enabled: source.enabled,
+        query: optionalString(source.query),
+        location: optionalString(source.location),
+        notes: optionalString(source.notes),
+      })),
+      sourceRuns: campaign.sourceRuns.map((sourceRun) => ({
+        source: sourceRun.source,
+        runId: sourceRun.runId,
+        status: sourceRun.status,
+        candidateCount: sourceRun.candidateCount,
+        startedAt: optionalString(sourceRun.startedAt),
+        completedAt: optionalString(sourceRun.completedAt),
+      })),
+      candidates: campaign.candidates.map((candidate) => ({
+        source: candidate.source,
+        sourceId: candidate.sourceId,
+        name: candidate.name,
+        category: optionalString(candidate.category),
+        area: optionalString(candidate.area),
+        phone: optionalString(candidate.phone),
+        website: optionalString(candidate.website),
+        rating: optionalNumber(candidate.rating),
+        reviewCount: optionalNumber(candidate.reviewCount),
+        rank: optionalNumber(candidate.rank),
+        topSignal: optionalString(candidate.topSignal),
+        sourceUrl: optionalString(candidate.sourceUrl),
+      })),
+      consolidationRunId: optionalString(campaign.consolidationRunId),
+      notes: campaign.notes ?? '',
     }));
   }
 

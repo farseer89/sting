@@ -45,7 +45,6 @@ import type {
   ProtopipeStrategyConfirmResponse,
   ProtopipeResearchQueryRequest,
   ProtopipeResearchResponse,
-  ProtopipeGeoTargetOption,
   ProtopipeGeoTargetsSearchResponse,
   ProtopipeKeywordMetricHistoryResponse,
   ProtopipeMarketEnrichResponse,
@@ -73,7 +72,6 @@ import type {
   ProtopipeContentMediaPresignRequest,
   ProtopipeContentMediaPresignResponse,
   ArticleGenerationGetResponse,
-  ArticleGenerationRunSummary,
   ProtopipeListArticleGenerationRunsResponse,
   ArticleGenerationRerunStepResponse,
   ArticleGenerationStep,
@@ -176,17 +174,14 @@ import type {
   ListPrintfulCatalogCategoriesResponse,
   ListPrintfulCatalogProductsResponse,
   GetPrintfulCatalogProductResponse,
-  ProtopipePrintfulCatalogProductSummary,
-  ProtopipePrintfulCatalogProductDetail,
   ListMerchBookStationeryResponse,
   PresignMerchBookArtworkRequest,
   PresignMerchBookArtworkResponse,
   PreviewMerchBookStationeryRequest,
   PreviewMerchBookStationeryResponse,
-  ProtopipeMerchBookStationeryItem,
 } from '@hive/contracts';
 import { Observable, firstValueFrom, shareReplay } from 'rxjs';
-import { protopipeApiUrl } from './protopipe-http.util';
+import { legacyProtopipeApiUrl, protopipeApiUrl } from './protopipe-http.util';
 import { isShirePrimary, shireApiUrl } from './shire/shire-http.util';
 
 @Injectable({ providedIn: 'root' })
@@ -1092,10 +1087,30 @@ export class ProtopipeApiService {
     );
   }
 
+  getLegacySitePage(siteId: string): Promise<SitePageResponse> {
+    return firstValueFrom(
+      this.http.get<SitePageResponse>(
+        legacyProtopipeApiUrl(ProtopipeEndpoints.getSitePage.path, { siteId }),
+      ),
+    );
+  }
+
   updateSitePage(siteId: string, body: UpdateSitePageRequest): Promise<UpdateSitePageResponse> {
     return firstValueFrom(
       this.http.put<UpdateSitePageResponse>(
         protopipeApiUrl(ProtopipeEndpoints.updateSitePage.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  updateLegacySitePage(
+    siteId: string,
+    body: UpdateSitePageRequest,
+  ): Promise<UpdateSitePageResponse> {
+    return firstValueFrom(
+      this.http.put<UpdateSitePageResponse>(
+        legacyProtopipeApiUrl(ProtopipeEndpoints.updateSitePage.path, { siteId }),
         body,
       ),
     );

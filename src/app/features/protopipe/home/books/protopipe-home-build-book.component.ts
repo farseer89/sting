@@ -4,19 +4,18 @@ import {
   OnInit,
   computed,
   inject,
+  input,
   output,
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Message } from 'primeng/message';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { ProtopipeBuildBookService, findDraftSectionForSlot } from '../../build-book/protopipe-build-book.service';
 import { ProtopipeSiteBuilderService } from '../../site-builder/protopipe-site-builder.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
-import { ProtopipeApiService } from '../../protopipe-api.service';
-import { parseProtopipeApiError } from '../../protopipe-http.util';
 import {
   BUILD_BOOK_OPTIONS,
   buildBookSectionLabel,
@@ -40,6 +39,7 @@ import {
   DEFAULT_HERO_PREVIEW_COPY,
   type BuildHeroPreviewCopy,
 } from '../../build-book/build-hero-preview.types';
+import type { BuildBookProspectContext } from '../../build-book/build-book-context';
 
 const SECTION_DECK: Record<BuildBookSection, string> = {
   hero: 'Pick a hero layout, then open Hero images & copy to generate photos and set headline text — same live preview as pitch prep.',
@@ -50,12 +50,62 @@ const SECTION_DECK: Record<BuildBookSection, string> = {
   close: 'Final conversion — CTA banner or lead capture form.',
 };
 
+type BuildBookEntryMode = 'template' | 'blocks';
+
+interface BuildBookStarterTemplate {
+  id: string;
+  label: string;
+  category: string;
+  bestFor: string;
+  stack: string;
+  theme: string;
+  accent: string;
+}
+
+const STARTER_TEMPLATES: BuildBookStarterTemplate[] = [
+  {
+    id: 'service-business-landing-v1',
+    label: 'Local Service Landing',
+    category: 'Service business',
+    bestFor: 'No-site or weak-site local businesses that need a fast conversion page.',
+    stack: 'Hero, proof, services, FAQ, lead capture',
+    theme: 'Ocean',
+    accent: '#0d9488',
+  },
+  {
+    id: 'construction-trades-v1',
+    label: 'Trades Authority',
+    category: 'Construction & trades',
+    bestFor: 'Contractors and trades with proof, service areas, and urgent quote intent.',
+    stack: 'Full-bleed hero, stats, services, project proof',
+    theme: 'Construction bold',
+    accent: '#d97706',
+  },
+  {
+    id: 'artist-landing-v1',
+    label: 'Creative / Artist',
+    category: 'Creative service',
+    bestFor: 'Visual businesses where portfolio, story, and inquiry flow sell the work.',
+    stack: 'Editorial hero, gallery, story, testimonials',
+    theme: 'Classic gold',
+    accent: '#b45309',
+  },
+  {
+    id: 'starter-minimal-v1',
+    label: 'Minimal Starter',
+    category: 'Quick start',
+    bestFor: 'Prospects that need a clean first web presence before full strategy.',
+    stack: 'Hero, benefits, FAQ, close',
+    theme: 'Ink cream',
+    accent: '#52525b',
+  },
+];
+
 @Component({
   selector: 'app-protopipe-home-build-book',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    RouterLink,
     FormsModule,
     Button,
     Message,
@@ -67,15 +117,16 @@ const SECTION_DECK: Record<BuildBookSection, string> = {
   styleUrl: './protopipe-home-build-book.component.scss',
 })
 export class ProtopipeHomeBuildBookComponent implements OnInit {
+  readonly prospectContext = input<BuildBookProspectContext | null>(null);
   readonly exit = output<void>();
 
   readonly buildBook = inject(ProtopipeBuildBookService);
   readonly strategy = inject(ProtopipeStrategyService);
   readonly siteBuilder = inject(ProtopipeSiteBuilderService);
-  private readonly api = inject(ProtopipeApiService);
   private readonly router = inject(Router);
 
   readonly section = signal<BuildBookSection>('hero');
+  readonly entryMode = signal<BuildBookEntryMode>('template');
   readonly demoBrand = signal<BuildBookDemoBrand>('sparky');
   readonly previewOpen = signal(false);
   readonly previewWidth = signal(480);
@@ -108,6 +159,32 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
     this.navSlots.filter((slot) => Boolean(this.selectedId(slot))).length,
   );
 
+  readonly starterTemplates = STARTER_TEMPLATES;
+
+  readonly activeProspectContext = computed(
+    () => this.prospectContext() ?? this.buildBook.prospectContext(),
+  );
+
+  readonly title = computed(() => {
+    const prospect = this.activeProspectContext();
+    return prospect ? `Build demo for ${prospect.name}` : 'Build book';
+  });
+
+  readonly deck = computed(() => {
+    const prospect = this.activeProspectContext();
+    if (!prospect) {
+      return 'Shire-ready site design workspace — start from a template, refine blocks, and prepare the homepage stack.';
+    }
+    const area = prospect.area ? ` in ${prospect.area}` : '';
+    return `Create a tailored demo page for this ${prospect.category ?? 'business'}${area}, using template structure now and Shire build-book state later.`;
+  });
+
+  readonly contextSignal = computed(() => {
+    const prospect = this.activeProspectContext();
+    if (!prospect) return this.siteLabel();
+    return prospect.topSignal ?? this.websiteStatusLabel(prospect.websiteStatus);
+  });
+
   ngOnInit(): void {
     void this.init();
   }
@@ -116,6 +193,9 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
     await this.strategy.ensureLoaded();
     await this.siteBuilder.ensureLoaded();
     await this.buildBook.load();
+    this.entryMode.set(this.buildBook.entryMode());
+    const prospect = this.prospectContext();
+    if (prospect) this.buildBook.setProspectContext(prospect);
     const draft = this.buildBook.draft();
     if (draft) this.loadHeroStateFromDraft(draft);
     const site = this.strategy.site();
@@ -177,6 +257,11 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
 
   closePreview(): void {
     this.previewOpen.set(false);
+  }
+
+  setEntryMode(mode: BuildBookEntryMode): void {
+    this.entryMode.set(mode);
+    this.buildBook.setEntryMode(mode);
   }
 
   openImageStudio(): void {
@@ -317,6 +402,19 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
     if (ok) await this.save();
   }
 
+  async useStarterTemplate(template: BuildBookStarterTemplate): Promise<void> {
+    this.setEntryMode('template');
+    this.buildBook.setSelectedTemplateId(template.id);
+    await this.initializeDraft();
+    if (template.id === 'construction-trades-v1') {
+      await this.selectOption('hero', 'sp-callout');
+    } else if (template.id === 'artist-landing-v1') {
+      await this.selectOption('hero', 'co-split');
+    } else if (template.id === 'starter-minimal-v1') {
+      await this.selectOption('hero', 'sp-teal');
+    }
+  }
+
   openVisualEditor(): void {
     const siteId = this.strategy.siteId();
     if (!siteId) return;
@@ -336,7 +434,37 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
   }
 
   siteLabel(): string {
-    return this.strategy.site()?.displayName || 'Your site';
+    return this.activeProspectContext()?.name || this.strategy.site()?.displayName || 'Your site';
+  }
+
+  websiteStatusLabel(status: BuildBookProspectContext['websiteStatus']): string {
+    switch (status) {
+      case 'none':
+        return 'No website';
+      case 'poor':
+        return 'Weak website';
+      case 'fair':
+        return 'Existing site';
+      case 'good':
+        return 'Good site';
+      default:
+        return 'Website unknown';
+    }
+  }
+
+  priorityLabel(priority: BuildBookProspectContext['priority']): string {
+    switch (priority) {
+      case 'critical':
+        return 'Critical';
+      case 'high':
+        return 'High';
+      case 'medium':
+        return 'Medium';
+      case 'monitor':
+        return 'Monitor';
+      default:
+        return 'Demo';
+    }
   }
 
   private patchHeroDraftProps(copy: BuildHeroPreviewCopy): void {

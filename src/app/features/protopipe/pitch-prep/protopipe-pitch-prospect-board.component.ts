@@ -18,6 +18,7 @@ import { ProgressSpinner } from 'primeng/progressspinner';
 import type { PitchProspectStatus } from '@hive/contracts';
 import { ProtopipePitchProspectService } from './protopipe-pitch-prospect.service';
 import { ProtopipePitchBuildDemoComponent } from './protopipe-pitch-build-demo.component';
+import type { BuildBookProspectContext } from '../build-book/build-book-context';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -331,6 +332,7 @@ export class ProtopipePitchProspectBoardComponent implements OnInit {
 
   readonly embedded = input(false, { transform: booleanAttribute });
   readonly openProspect = output<string>();
+  readonly buildDemo = output<BuildBookProspectContext>();
 
   // ── Existing prospect add dialog
   readonly showAdd = signal(false);
@@ -423,9 +425,14 @@ export class ProtopipePitchProspectBoardComponent implements OnInit {
   }
 
   openBuildDemo(lead: PitchLead): void {
+    this.closeDrawer();
+    const context = this.toBuildBookContext(lead);
+    if (this.embedded()) {
+      this.buildDemo.emit(context);
+      return;
+    }
     this.activeBuildLead.set(lead);
     this.pitchSection.set('build-demo');
-    this.closeDrawer();
   }
 
   openDrawer(lead: PitchLead, event: MouseEvent): void {
@@ -520,5 +527,19 @@ export class ProtopipePitchProspectBoardComponent implements OnInit {
       return;
     }
     void this.router.navigate(['/home/pitch-prep', prospectId, 'wizard']);
+  }
+
+  private toBuildBookContext(lead: PitchLead): BuildBookProspectContext {
+    return {
+      name: lead.name,
+      category: lead.category,
+      area: lead.area,
+      phone: lead.phone,
+      websiteStatus: lead.website,
+      score: lead.score,
+      priority: lead.priority,
+      topSignal: lead.scoreBreakdown[0]?.label,
+      source: 'prospector',
+    };
   }
 }

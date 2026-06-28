@@ -263,6 +263,7 @@
                       <app-protopipe-pitch-prospect-board
                         [embedded]="true"
                         (openProspect)="openPitchPrepWizard($event)"
+                        (buildDemo)="openBuildBookForProspect($event)"
                       />
                     }
                   </section>
@@ -304,7 +305,10 @@
                 }
                 @case ('build-book') {
                   <section class="glass glass--full glass--premiere glass--writer" aria-label="Build book">
-                    <app-protopipe-home-build-book (exit)="leaveBuildBookFocus()" />
+                    <app-protopipe-home-build-book
+                      [prospectContext]="buildBookProspectContext()"
+                      (exit)="leaveBuildBookFocus()"
+                    />
                   </section>
                 }
                 @case ('ads-book') {

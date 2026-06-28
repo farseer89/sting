@@ -20,10 +20,15 @@ export function shireApiUrl(path: string): string {
   return `${normalized}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
+/** Build absolute bagend URL for legacy adapters that are not ported to Shire. */
+export function legacyProtopipeApiBase(): string {
+  return environment.MICRO_BASE_URL.replace(/\/$/, '');
+}
+
 /** API base for Protopipe HTTP when Shire is primary, else bagend. */
 export function protopipeApiBase(): string {
   if (isShirePrimary()) {
     return environment.SHIRE_BASE_URL!.replace(/\/$/, '');
   }
-  return environment.MICRO_BASE_URL.replace(/\/$/, '');
+  return legacyProtopipeApiBase();
 }

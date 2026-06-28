@@ -3,6 +3,8 @@ import type { SitePageDraft, SitePageSectionDraft } from '@hive/contracts';
 import { parseProtopipeApiError } from '../protopipe-http.util';
 import { ProtopipeApiService } from '../protopipe-api.service';
 import { ProtopipeStrategyService } from '../protopipe-strategy.service';
+import { isShirePrimary } from '../shire/shire-http.util';
+import type { BuildBookProspectContext } from './build-book-context';
 import {
   BUILD_BOOK_COMPONENT_DEFAULTS,
   type BuildBookComponentDefaults,
@@ -16,6 +18,12 @@ import {
   type BuildBookSection,
 } from './build-book.constants';
 import type { BuildBookOption } from './build-book.types';
+import {
+  ProtopipeBuildBookShireApiService,
+  type BuildBookEntryMode,
+  type BuildBookShireDto,
+  type SaveBuildBookDto,
+} from './protopipe-build-book-shire-api.service';
 
 const COPY_FIELDS = [
   'heading',
@@ -104,7 +112,7 @@ export function findDraftSectionForSlot(
   return page.sections.find((s) => componentIds.has(s.componentId)) ?? null;
 }
 
-function buildStarterDraft(displayName: string): SitePageDraft {
+function buildStarterDraft(): SitePageDraft {
   const now = new Date().toISOString();
   const mk = (id: string, label: string, componentId: string): SitePageSectionDraft => {
     const defaults = BUILD_BOOK_COMPONENT_DEFAULTS[componentId];
@@ -141,6 +149,7 @@ function buildStarterDraft(displayName: string): SitePageDraft {
 @Injectable({ providedIn: 'root' })
 export class ProtopipeBuildBookService {
   private readonly api = inject(ProtopipeApiService);
+  private readonly shireApi = inject(ProtopipeBuildBookShireApiService);
   private readonly strategy = inject(ProtopipeStrategyService);
 
   private readonly _loading = signal(false);
@@ -151,6 +160,10 @@ export class ProtopipeBuildBookService {
   private readonly _draft = signal<SitePageDraft | null>(null);
   private readonly _dirty = signal(false);
   private readonly _selections = signal<Partial<Record<BuildBookSection, string>>>({});
+  private readonly _prospectContext = signal<BuildBookProspectContext | null>(null);
+  private readonly _entryMode = signal<BuildBookEntryMode>('template');
+  private readonly _selectedTemplateId = signal<string | null>(null);
+  private readonly _strategyNotes = signal('');
 
   readonly loading = this._loading.asReadonly();
   readonly saving = this._saving.asReadonly();
@@ -159,6 +172,10 @@ export class ProtopipeBuildBookService {
   readonly draft = this._draft.asReadonly();
   readonly dirty = this._dirty.asReadonly();
   readonly selections = this._selections.asReadonly();
+  readonly prospectContext = this._prospectContext.asReadonly();
+  readonly entryMode = this._entryMode.asReadonly();
+  readonly selectedTemplateId = this._selectedTemplateId.asReadonly();
+  readonly strategyNotes = this._strategyNotes.asReadonly();
 
   readonly hasDraft = () => Boolean(this._draft());
 
@@ -169,7 +186,10 @@ export class ProtopipeBuildBookService {
     this._loading.set(true);
     this._error.set(null);
     try {
-      const res = await this.api.getSitePage(siteId);
+      if (isShirePrimary()) {
+        await this.loadShireBook(siteId);
+      }
+      const res = await this.api.getLegacySitePage(siteId);
       if (res.pageDraft) {
         this._saved.set(structuredClone(res.pageDraft));
         this._draft.set(structuredClone(res.pageDraft));
@@ -181,7 +201,7 @@ export class ProtopipeBuildBookService {
         this._selections.set({});
       }
     } catch (err) {
-      this._error.set(parseProtopipeApiError(err, 'Could not load site page'));
+      this._error.set(parseProtopipeApiError(err, 'Could not load build book'));
       this._saved.set(null);
       this._draft.set(null);
     } finally {
@@ -193,17 +213,19 @@ export class ProtopipeBuildBookService {
     const siteId = this.strategy.siteId();
     if (!siteId) return false;
 
-    const displayName = this.strategy.site()?.displayName || 'Your business';
-    const draft = buildStarterDraft(displayName);
+    const draft = buildStarterDraft();
 
     this._initializing.set(true);
     this._error.set(null);
     try {
-      const res = await this.api.updateSitePage(siteId, { pageDraft: draft });
+      const res = await this.api.updateLegacySitePage(siteId, { pageDraft: draft });
       this._saved.set(structuredClone(res.pageDraft));
       this._draft.set(structuredClone(res.pageDraft));
       this._dirty.set(false);
       this.syncSelectionsFromDraft(res.pageDraft);
+      if (isShirePrimary()) {
+        await this.saveShireBook(siteId, res.pageDraft);
+      }
       return true;
     } catch (err) {
       this._error.set(parseProtopipeApiError(err, 'Could not create homepage draft'));
@@ -239,6 +261,30 @@ export class ProtopipeBuildBookService {
     this._dirty.set(true);
   }
 
+  setProspectContext(context: BuildBookProspectContext | null): void {
+    if (this.contextsEqual(this._prospectContext(), context)) return;
+    this._prospectContext.set(context ? { ...context } : null);
+    this._dirty.set(true);
+  }
+
+  setEntryMode(mode: BuildBookEntryMode): void {
+    if (this._entryMode() === mode) return;
+    this._entryMode.set(mode);
+    this._dirty.set(true);
+  }
+
+  setSelectedTemplateId(templateId: string | null): void {
+    if (this._selectedTemplateId() === templateId) return;
+    this._selectedTemplateId.set(templateId);
+    this._dirty.set(true);
+  }
+
+  setStrategyNotes(notes: string): void {
+    if (this._strategyNotes() === notes) return;
+    this._strategyNotes.set(notes);
+    this._dirty.set(true);
+  }
+
   isSectionConfigured(section: BuildBookSection): boolean {
     const draft = this._draft();
     if (!draft) return false;
@@ -253,11 +299,14 @@ export class ProtopipeBuildBookService {
     this._saving.set(true);
     this._error.set(null);
     try {
-      const res = await this.api.updateSitePage(siteId, { pageDraft: draft });
+      const res = await this.api.updateLegacySitePage(siteId, { pageDraft: draft });
       this._saved.set(structuredClone(res.pageDraft));
       this._draft.set(structuredClone(res.pageDraft));
-      this._dirty.set(false);
       this.syncSelectionsFromDraft(res.pageDraft);
+      if (isShirePrimary()) {
+        await this.saveShireBook(siteId, res.pageDraft);
+      }
+      this._dirty.set(false);
       return true;
     } catch (err) {
       this._error.set(parseProtopipeApiError(err, 'Could not save build book'));
@@ -279,5 +328,64 @@ export class ProtopipeBuildBookService {
       if (option) next[slot] = option.id;
     }
     this._selections.set(next);
+  }
+
+  private async loadShireBook(siteId: string): Promise<void> {
+    const res = await this.shireApi.get(siteId);
+    if (!res.buildBook) return;
+    this.applyShireBook(res.buildBook);
+  }
+
+  private applyShireBook(book: BuildBookShireDto): void {
+    this._prospectContext.set(book.prospectContext ? { ...book.prospectContext } : null);
+    this._entryMode.set(book.entryMode);
+    this._selectedTemplateId.set(book.selectedTemplateId ?? null);
+    this._strategyNotes.set(book.strategyNotes ?? '');
+    if (book.sectionSelections.length > 0) {
+      this._selections.set(
+        Object.fromEntries(
+          book.sectionSelections.map((selection) => [selection.section, selection.optionId]),
+        ) as Partial<Record<BuildBookSection, string>>,
+      );
+    }
+  }
+
+  private async saveShireBook(siteId: string, draft: SitePageDraft): Promise<void> {
+    const res = await this.shireApi.save(siteId, this.buildShirePayload(draft));
+    if (res.buildBook) {
+      this.applyShireBook(res.buildBook);
+    }
+  }
+
+  private buildShirePayload(draft: SitePageDraft): SaveBuildBookDto {
+    const sections = Object.keys(BUILD_BOOK_SECTION_SLOTS) as BuildBookSection[];
+    const homepageStack = sections.filter((section) => Boolean(findDraftSectionForSlot(draft, section)));
+    const selections = this._selections();
+    return {
+      prospectContext: this._prospectContext() ?? undefined,
+      entryMode: this._entryMode(),
+      selectedTemplateId: this._selectedTemplateId() ?? undefined,
+      homepageStack,
+      sectionSelections: sections
+        .map((section) => {
+          const optionId = selections[section];
+          if (!optionId) return null;
+          const option = findBuildBookOption(section, optionId);
+          return {
+            section,
+            optionId,
+            label: option?.label,
+          };
+        })
+        .filter((selection) => selection != null),
+      strategyNotes: this._strategyNotes(),
+    };
+  }
+
+  private contextsEqual(
+    current: BuildBookProspectContext | null,
+    next: BuildBookProspectContext | null,
+  ): boolean {
+    return JSON.stringify(current ?? null) === JSON.stringify(next ?? null);
   }
 }

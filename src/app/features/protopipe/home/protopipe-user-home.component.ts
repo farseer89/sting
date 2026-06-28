@@ -62,6 +62,7 @@ import {
 import { resolveBootstrapSiteId } from '../resolve-bootstrap-site-id';
 import { calendarItemKey } from './strategy/strategy.helpers';
 import type { StrategyVisualView } from './strategy/strategy-visual-view';
+import type { BuildBookProspectContext } from '../build-book/build-book-context';
 
 export type ProtopipeHomeView =
   | 'keywords'
@@ -168,6 +169,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   private focusReturnContext: HomeFocusReturnContext | null = null;
   private focusHistoryEntry: HomeFocusHistoryKind | null = null;
   private suppressFocusPopState = false;
+  readonly buildBookProspectContext = signal<BuildBookProspectContext | null>(null);
 
   readonly showSidePanel = computed(() => {
     if (!this.sidePanel.open()) {
@@ -428,9 +430,10 @@ export class ProtopipeUserHomeComponent implements OnInit {
   leaveThinkerFocus(options: { syncHistory?: boolean } = {}): void {
     const syncHistory = options.syncHistory !== false;
     const wasThinker = this.activeView() === 'thinker';
+    const runKind = this.thinkerViewState.runKind();
     this.thinkerViewState.clearSession();
     if (wasThinker) {
-      this.restoreFocusReturnContext();
+      this.restoreFocusReturnContext(runKind);
     }
     this.clearFocusHistory(syncHistory);
   }
@@ -443,9 +446,10 @@ export class ProtopipeUserHomeComponent implements OnInit {
     }
   }
 
-  enterBuildBookFocus(): void {
+  enterBuildBookFocus(context: BuildBookProspectContext | null = null): void {
     this.leaveWriterFocus();
     this.sidePanel.setOpen(false);
+    this.buildBookProspectContext.set(context);
     this.activeNavId.set('books-build');
     this.activeView.set('build-book');
   }
@@ -557,8 +561,13 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.activeView.set('audience-book');
   }
 
-  openBuildBookView(): void {
-    this.enterBuildBookFocus();
+  openBuildBookView(clearContext = true): void {
+    this.enterBuildBookFocus(clearContext ? null : this.buildBookProspectContext());
+  }
+
+  openBuildBookForProspect(context: BuildBookProspectContext): void {
+    this.enterBuildBookFocus(context);
+    void this.router.navigate(['/home'], { queryParams: { view: 'build-book' } });
   }
 
   openAdsBookView(): void {
@@ -616,6 +625,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.openBrandBookView();
     } else if (view === 'audience-book') {
       this.openAudienceBookView();
+    } else if (view === 'build-book') {
+      this.openBuildBookView(false);
     } else if (view === 'intake') {
       this.openIntakeDemoView();
     }
@@ -677,11 +688,11 @@ export class ProtopipeUserHomeComponent implements OnInit {
     });
   }
 
-  private restoreFocusReturnContext(): void {
+  private restoreFocusReturnContext(runKind?: string): void {
     const ctx = this.focusReturnContext;
     this.focusReturnContext = null;
 
-    if (!ctx) {
+    if (!ctx || runKind === 'content-plan') {
       this.activeView.set('strategy');
       this.activeNavId.set('start-strategy');
       this.sidePanel.setOpen(false);

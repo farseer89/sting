@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import type { ApiErrorBody, SeoValidationResult } from '@hive/contracts';
-import { isShirePrimary, protopipeApiBase } from './shire/shire-http.util';
+import { isShirePrimary, legacyProtopipeApiBase, protopipeApiBase } from './shire/shire-http.util';
 
 const LEGACY_PROTOPIPE_PREFIX = '/api/v2/protopipe';
 
@@ -19,6 +19,20 @@ export function protopipeApiUrl(pathTemplate: string, params?: Record<string, st
     path = path.replace('/api/admin/integrations/google/oauth/', '/api/integrations/google/oauth/');
   }
   return `${protopipeApiBase()}${path}`;
+}
+
+/** Build a bagend Protopipe URL even when Shire is primary. Use only for unported adapters. */
+export function legacyProtopipeApiUrl(
+  pathTemplate: string,
+  params?: Record<string, string>,
+): string {
+  let path = pathTemplate;
+  if (params) {
+    for (const [key, value] of Object.entries(params)) {
+      path = path.replace(`:${key}`, encodeURIComponent(value));
+    }
+  }
+  return `${legacyProtopipeApiBase()}${path}`;
 }
 
 const PROTOPIPE_API_ERROR_MESSAGES: Record<string, string> = {

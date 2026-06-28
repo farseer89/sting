@@ -123,7 +123,11 @@
           <span class="pb-panel-kicker">New search</span>
           <h2 class="pb-panel-title">Who are you prospecting?</h2>
           <p class="pb-panel-deck">
-            Enter a business category and location. The pipeline will search Google Places and score each lead by review gap, website presence, and ranking opportunity.
+            @if (shirePrimary) {
+              Enter a category and location to save a Shire campaign workbench. Google Maps source runs will attach here as the Shire runner comes online.
+            } @else {
+              Enter a business category and location. The pipeline will search Google Places and score each lead by review gap, website presence, and ranking opportunity.
+            }
           </p>
         </div>
         <div class="pb-panel__body">

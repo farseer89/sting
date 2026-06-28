@@ -16,6 +16,7 @@ import { ProtopipeHomeThinkerBinderComponent } from '../home/thinker/protopipe-h
 import { ProtopipeProspectorLeadDrawerComponent } from './protopipe-prospector-lead-drawer.component';
 import type { ProspectorRunDto, ProspectorScoredLead } from './prospector-run.model';
 import type { BuildBookProspectContext } from '../build-book/build-book-context';
+import { isShirePrimary } from '../shire/shire-http.util';
 import { ProtopipeProspectorStore } from './protopipe-prospector.store';
 
 export type ProspectorSection = 'new-search' | 'leads' | 'prospects' | 'run-pipeline';
@@ -52,6 +53,7 @@ export class ProtopipeProspectorComponent implements OnInit {
   readonly store = inject(ProtopipeProspectorStore);
   readonly thinkerView = inject(ProtopipeHomeThinkerViewState);
   readonly buildDemo = output<BuildBookProspectContext>();
+  readonly shirePrimary = isShirePrimary();
 
   readonly activeSection = signal<ProspectorSection>('new-search');
   readonly selectedRun = signal<ProspectorRunDto | null>(null);
@@ -121,6 +123,10 @@ export class ProtopipeProspectorComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     void this.store.load();
+    if (this.shirePrimary) {
+      this.runsLoading.set(false);
+      return;
+    }
     try {
       const list = await this.service.listRuns();
       this.runs.set(list);
@@ -138,6 +144,11 @@ export class ProtopipeProspectorComponent implements OnInit {
     this.launchError.set(null);
 
     try {
+      if (this.shirePrimary) {
+        await this.store.createCampaign(input.category, input.location);
+        this.activeSection.set('prospects');
+        return;
+      }
       const run = await this.service.createRun(input.category, input.location);
       this.runs.update((prev) => [run, ...prev]);
       void this.store.syncCampaignFromRun(run);

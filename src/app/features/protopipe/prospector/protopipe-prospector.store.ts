@@ -100,6 +100,47 @@ export class ProtopipeProspectorStore {
     }
   }
 
+  async createCampaign(category: string, location: string): Promise<boolean> {
+    const trimmedCategory = category.trim();
+    const trimmedLocation = location.trim();
+    if (!trimmedCategory || !trimmedLocation) return false;
+
+    this._campaignSaving.set(true);
+    this._error.set(null);
+    this._message.set(null);
+    try {
+      const next = [
+        {
+          name: `${trimmedCategory} in ${trimmedLocation}`,
+          category: trimmedCategory,
+          location: trimmedLocation,
+          status: 'draft' as const,
+          sources: [
+            {
+              source: 'google_maps' as const,
+              enabled: true,
+              query: trimmedCategory,
+              location: trimmedLocation,
+            },
+          ],
+          sourceRuns: [],
+          candidates: [],
+          notes: 'Google Maps source configured. Shire source runner pending.',
+        },
+        ...this._campaigns(),
+      ];
+      const response = await this.api.saveCampaigns(this.requireSiteId(), { campaigns: next });
+      this._campaigns.set(response.campaigns);
+      this._message.set('Campaign saved. Shire Google Maps runner is next.');
+      return true;
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Could not save campaign.'));
+      return false;
+    } finally {
+      this._campaignSaving.set(false);
+    }
+  }
+
   async syncCampaignFromRun(run: ProspectorRunDto): Promise<void> {
     if (!isShirePrimary()) return;
 

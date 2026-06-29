@@ -6,8 +6,13 @@ import {
   input,
   signal,
 } from '@angular/core';
-import type { ProtopipeContentPlanCalendarItem, ProtopipeSiteContentPlan } from '@hive/contracts';
+import type {
+  ProtopipeContentPlanCalendarItem,
+  ProtopipeContentPost,
+  ProtopipeSiteContentPlan,
+} from '@hive/contracts';
 import { ContentPlanStore } from '../../content-plan/content-plan.store';
+import { ProtopipeContentService } from '../../protopipe-content.service';
 import { ProtopipeHomeStrategyViewState } from '../strategy/protopipe-home-strategy-view.state';
 import {
   mapStrategyBinderView,
@@ -26,6 +31,7 @@ export type StrategySection = 'overview' | 'pillars' | 'calendar' | 'backlog' | 
 export class ProtopipeHomeStrategyBinderComponent {
   private readonly viewState = inject(ProtopipeHomeStrategyViewState);
   private readonly contentPlan = inject(ContentPlanStore);
+  private readonly content = inject(ProtopipeContentService);
 
   readonly plan = input.required<ProtopipeSiteContentPlan>();
   readonly siteLabel = input('');
@@ -56,6 +62,10 @@ export class ProtopipeHomeStrategyBinderComponent {
   readonly showRestartBuild = this.contentPlan.needsBuildRestart;
   readonly restartingBuild = this.contentPlan.starting;
 
+  constructor() {
+    this.content.ensureCatalogLoaded();
+  }
+
   openCalendarItem(item: ProtopipeContentPlanCalendarItem): void {
     this.viewState.selectArticle(item);
   }
@@ -73,6 +83,52 @@ export class ProtopipeHomeStrategyBinderComponent {
   viewArticleRun(item: ProtopipeContentPlanCalendarItem, event: Event): void {
     event.stopPropagation();
     void this.viewState.openInThinker(item);
+  }
+
+  postForItem(item: ProtopipeContentPlanCalendarItem): ProtopipeContentPost | undefined {
+    const posts = this.content.posts();
+    if (item.contentPostId) {
+      const byId = posts.find((post) => post.id === item.contentPostId);
+      if (byId) return byId;
+    }
+
+    const title = this.normalizeTitle(item.workingTitle);
+    if (!title) return undefined;
+    const itemDate = this.dateKey(item.proposedPublishAt);
+
+    return posts.find((post) => {
+      if (this.normalizeTitle(post.title) !== title) return false;
+      const postDate = this.dateKey(post.publishAt);
+      return !itemDate || !postDate || itemDate === postDate;
+    });
+  }
+
+  calendarActionLabel(item: ProtopipeContentPlanCalendarItem): string {
+    const post = this.postForItem(item);
+    if (post?.articleGenerationRunId && (post.template || post.bodyMarkdown.trim())) {
+      return 'View article';
+    }
+    if (post?.articleGenerationRunId) {
+      return 'View run';
+    }
+    if (post) {
+      return 'Open';
+    }
+    return 'Write';
+  }
+
+  runCalendarAction(item: ProtopipeContentPlanCalendarItem, event: Event): void {
+    event.stopPropagation();
+    const post = this.postForItem(item);
+    if (post?.articleGenerationRunId) {
+      void this.viewState.openInThinker({ ...item, contentPostId: post.id });
+      return;
+    }
+    if (post) {
+      void this.viewState.openArticleInWriter({ ...item, contentPostId: post.id });
+      return;
+    }
+    void this.viewState.openInWriter(item);
   }
 
   openKeyword(kw: StrategyBinderKeyword): void {
@@ -103,5 +159,16 @@ export class ProtopipeHomeStrategyBinderComponent {
   formatVolume(n: number): string {
     if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
     return String(n);
+  }
+
+  private normalizeTitle(value: string | null | undefined): string {
+    return (value ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+  }
+
+  private dateKey(value: string | null | undefined): string | null {
+    if (!value) return null;
+    const ms = new Date(value).getTime();
+    if (!Number.isFinite(ms)) return null;
+    return new Date(ms).toISOString().slice(0, 10);
   }
 }

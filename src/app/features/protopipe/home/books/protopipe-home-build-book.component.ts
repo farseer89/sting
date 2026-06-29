@@ -33,7 +33,7 @@ import {
 } from '../../build-book/build-book-demo.catalog';
 import type { BuildBookDemoBrand, BuildBookTemplateDefinition } from '../../build-book/build-book.types';
 import { ProtopipeBuildHeroPreviewComponent } from '../../build-book/build-hero-preview/protopipe-build-hero-preview.component';
-import { ProtopipeBuildImageStudioDialogComponent } from '../../build-book/build-image-studio/protopipe-build-image-studio-dialog.component';
+import { ProtopipeBuildSiteImagesPanelComponent } from '../../build-book/build-site-images-panel/protopipe-build-site-images-panel.component';
 import {
   DEFAULT_HERO_PREVIEW_COPY,
   type BuildHeroPreviewCopy,
@@ -41,7 +41,6 @@ import {
 import type { BuildBookProspectContext } from '../../build-book/build-book-context';
 import { BUILD_BOOK_TEMPLATE_DEFINITIONS } from '../../build-book/build-book-template.catalog';
 import { hasBuildBookBaselineAssembly } from '../../build-book/build-book-baseline-assemblies';
-import { ProtopipeMediaStudioService } from '../../protopipe-media-studio.service';
 
 const SECTION_DECK: Record<BuildBookSection, string> = {
   hero: 'Pick a hero layout, then open Hero images & copy to generate photos and set headline text — same live preview as pitch prep.',
@@ -80,7 +79,7 @@ interface BuildBookChapterItem {
     Message,
     ProgressSpinner,
     ProtopipeBuildHeroPreviewComponent,
-    ProtopipeBuildImageStudioDialogComponent,
+    ProtopipeBuildSiteImagesPanelComponent,
   ],
   templateUrl: './protopipe-home-build-book.component.html',
   styleUrl: './protopipe-home-build-book.component.scss',
@@ -91,7 +90,6 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
 
   readonly buildBook = inject(ProtopipeBuildBookService);
   readonly strategy = inject(ProtopipeStrategyService);
-  readonly mediaStudio = inject(ProtopipeMediaStudioService);
   private readonly sanitizer = inject(DomSanitizer);
 
   readonly section = signal<BuildBookSection>('hero');
@@ -100,7 +98,6 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
   readonly demoBrand = signal<BuildBookDemoBrand>('sparky');
   readonly previewOpen = signal(false);
   readonly previewWidth = signal(480);
-  readonly imageStudioOpen = signal(false);
 
   readonly heroImageUrl = signal<string | null>(null);
   readonly heroCopy = signal<BuildHeroPreviewCopy>(DEFAULT_HERO_PREVIEW_COPY);
@@ -183,7 +180,6 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
   readonly blockAssemblyCount = computed(
     () => this.buildBook.pages().find((page) => page.kind === 'homepage')?.blocks.length ?? 0,
   );
-  readonly siteImageAssets = computed(() => this.mediaStudio.assets());
 
   ngOnInit(): void {
     void this.init();
@@ -204,8 +200,6 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
         eyebrow: c.eyebrow === DEFAULT_HERO_PREVIEW_COPY.eyebrow ? `${site.displayName}` : c.eyebrow,
       }));
     }
-    await this.mediaStudio.loadConfig();
-    await this.mediaStudio.loadAssets();
     this.restoreWorkflowFromUrl();
   }
 
@@ -268,40 +262,26 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
     this.buildBook.setEntryMode(mode);
   }
 
-  openImageStudio(): void {
-    this.imageStudioOpen.set(true);
-  }
-
   openSiteInfoImages(): void {
     this.chapter.set('site-info-images');
     this.syncWorkflowToUrl();
-    this.openPreview();
-  }
-
-  closeImageStudio(): void {
-    this.imageStudioOpen.set(false);
+    this.closePreview();
   }
 
   onHeroCopyChange(copy: BuildHeroPreviewCopy): void {
     this.heroCopy.set(copy);
+    if (!this.buildBook.draft()) return;
     this.patchHeroDraftProps(copy);
     this.buildBook.markDirty();
   }
 
   async onHeroImageSelected(url: string): Promise<void> {
     this.heroImageUrl.set(url);
+    if (!this.buildBook.draft()) return;
     this.patchHeroImage(url);
     this.buildBook.markDirty();
     await this.save();
     this.openPreview();
-  }
-
-  async onSiteImageUpload(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    await this.mediaStudio.upload(file);
-    input.value = '';
   }
 
   onPreviewLayoutFromStudio(layoutId: string): void {

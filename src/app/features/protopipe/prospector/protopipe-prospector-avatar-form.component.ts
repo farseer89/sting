@@ -48,6 +48,8 @@ type ProspectorLocationOption = GooglePlaceLocationOption | ProtopipeSerpLocatio
             />
           </div>
 
+          <span class="af-flow-arrow" aria-hidden="true">→</span>
+
           <div class="af-field">
             <label class="af-label" for="pp-location">Location</label>
             <p-autocomplete
@@ -70,9 +72,7 @@ type ProspectorLocationOption = GooglePlaceLocationOption | ProtopipeSerpLocatio
             />
           </div>
 
-          @if (error()) {
-            <p class="af-error">{{ error() }}</p>
-          }
+          <span class="af-flow-arrow" aria-hidden="true">→</span>
 
           <button
             type="submit"
@@ -81,20 +81,16 @@ type ProspectorLocationOption = GooglePlaceLocationOption | ProtopipeSerpLocatio
           >
             @if (loading()) {
               <span class="af-submit__spinner"></span>
-              Searching…
+              Searching
             } @else {
-              Find businesses
+              Search
             }
           </button>
         </form>
 
-        <div class="af-hints">
-          <span class="af-hint">Google Places API</span>
-          <span class="af-hint-sep">·</span>
-          <span class="af-hint">~$0.032 per search</span>
-          <span class="af-hint-sep">·</span>
-          <span class="af-hint">Up to 20 results</span>
-        </div>
+        @if (error()) {
+          <p class="af-error af-error--below">{{ error() }}</p>
+        }
       </div>
     </div>
   `,

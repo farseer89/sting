@@ -145,11 +145,25 @@
               </div>
             </div>
           }
+        } @else if (chapter() === 'site-info-images') {
+          <app-protopipe-build-site-images-panel
+            [heroLayout]="heroLayoutId()"
+            [heroBrand]="heroPreviewBrand()"
+            [heroLabel]="heroPreviewMeta().label"
+            [siteUrl]="heroPreviewMeta().url"
+            [copy]="heroCopy()"
+            [selectedImageUrl]="heroImageUrl()"
+            [canUseHeroImage]="buildBook.hasDraft()"
+            (copyChange)="onHeroCopyChange($event)"
+            (imageSelected)="onHeroImageSelected($event)"
+            (previewLayoutChange)="onPreviewLayoutFromStudio($event)"
+            (previewBrandChange)="onPreviewBrandFromStudio($event)"
+          />
         } @else {
           <div class="bk-book-placeholder">
             <div class="bk-stage-kicker">Build book · {{ activeChapterMeta().label }}</div>
             <h2>{{ activeChapterMeta().label }}</h2>
-            <p>This chapter is part of the demo package roadmap. Start with Templates, then Build Book will unlock image tone, pages, posts, review gate, and lead form as Shire-backed sections.</p>
+            <p>This chapter is part of the demo package roadmap. Start with Templates, then Build Book will unlock pages, posts, review gate, and lead form as Shire-backed sections.</p>
           </div>
         }
 
@@ -268,7 +282,7 @@
           </div>
           @if (section() === 'hero') {
             <div class="bk-stage-actions">
-              <button type="button" class="bk-hero-images-btn" (click)="openImageStudio()">
+              <button type="button" class="bk-hero-images-btn" (click)="openSiteInfoImages()">
                 <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2l1.4 4.2L14 8l-4.6 1.8L8 14l-1.4-4.2L2 8l4.6-1.8z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
                 Site Info &amp; Images
               </button>
@@ -465,44 +479,19 @@
               }
             </div>
           } @else if (chapter() === 'site-info-images') {
-            <section class="bk-site-images">
-              <header class="bk-site-images__head">
-                <div>
-                  <div class="bk-stage-kicker">Site setup · Image library</div>
-                  <h3>Approved images for this demo</h3>
-                  <p>Generated and uploaded images live here first. Homepage blocks can choose from this set when block editing is enabled.</p>
-                </div>
-                <div class="bk-site-images__actions">
-                  <button type="button" class="bk-hero-images-btn" (click)="openImageStudio()">Generate images</button>
-                  <label class="bk-site-images__upload">
-                    Upload image
-                    <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" (change)="onSiteImageUpload($event)" />
-                  </label>
-                </div>
-              </header>
-
-              @if (mediaStudio.error(); as err) {
-                <p-message severity="error" [text]="err" styleClass="w-full bk-message" />
-              }
-
-              @if (siteImageAssets().length) {
-                <div class="bk-site-images__grid">
-                  @for (asset of siteImageAssets(); track asset.id) {
-                    <article class="bk-site-image-card" [class.is-selected]="asset.selected">
-                      <img [src]="asset.url" [alt]="asset.label || asset.originalFilename || 'Site image'" loading="lazy" />
-                      <div class="bk-site-image-card__meta">
-                        <strong>{{ asset.label || asset.originalFilename || (asset.source === 'generated' ? 'Generated image' : 'Uploaded image') }}</strong>
-                        <span>{{ asset.source === 'generated' ? 'AI generated' : 'Uploaded' }}</span>
-                      </div>
-                    </article>
-                  }
-                </div>
-              } @else {
-                <div class="bk-site-images__empty">
-                  <p>No site images yet. Generate a set or upload customer photography to make it available for hero and section blocks.</p>
-                </div>
-              }
-            </section>
+            <app-protopipe-build-site-images-panel
+              [heroLayout]="heroLayoutId()"
+              [heroBrand]="heroPreviewBrand()"
+              [heroLabel]="heroPreviewMeta().label"
+              [siteUrl]="heroPreviewMeta().url"
+              [copy]="heroCopy()"
+              [selectedImageUrl]="heroImageUrl()"
+              [canUseHeroImage]="buildBook.hasDraft()"
+              (copyChange)="onHeroCopyChange($event)"
+              (imageSelected)="onHeroImageSelected($event)"
+              (previewLayoutChange)="onPreviewLayoutFromStudio($event)"
+              (previewBrandChange)="onPreviewBrandFromStudio($event)"
+            />
           }
         </div>
       }
@@ -562,7 +551,7 @@
               } @else {
                 <div class="bk-hero-preview-empty">
                   <p>Pick a layout, then open <strong>Site Info &amp; Images</strong> to generate or upload photos for the site image library.</p>
-                  <button type="button" class="bk-hero-images-btn bk-hero-images-btn--block" (click)="openImageStudio()">
+                  <button type="button" class="bk-hero-images-btn bk-hero-images-btn--block" (click)="openSiteInfoImages()">
                     Generate images
                   </button>
                 </div>
@@ -593,20 +582,5 @@
       </nav>
     </div>
   }
-
-  <app-protopipe-build-image-studio-dialog
-    [open]="imageStudioOpen()"
-    [heroLayout]="heroLayoutId()"
-    [heroBrand]="heroPreviewBrand()"
-    [heroLabel]="heroPreviewMeta().label"
-    [siteUrl]="heroPreviewMeta().url"
-    [copy]="heroCopy()"
-    [selectedImageUrl]="heroImageUrl()"
-    (closed)="closeImageStudio()"
-    (copyChange)="onHeroCopyChange($event)"
-    (imageSelected)="onHeroImageSelected($event)"
-    (previewLayoutChange)="onPreviewLayoutFromStudio($event)"
-    (previewBrandChange)="onPreviewBrandFromStudio($event)"
-  />
 
 </div>

@@ -594,9 +594,9 @@
       <div class="pb-panel pb-panel--prospects">
         <div class="pb-panel__head">
           <span class="pb-panel-kicker">Prospects</span>
-          <h2 class="pb-panel-title">Cold-call prep and demo promotion</h2>
+          <h2 class="pb-panel-title">Saved opportunities</h2>
           <p class="pb-panel-deck">
-            These are the canonical opportunities saved from campaign candidates. Edit call state, save the book, then promote qualified prospects into Build Book.
+            These are the canonical opportunities saved from campaign candidates. Work the call queue in Cold Caller.
           </p>
         </div>
 
@@ -607,42 +607,25 @@
             Select leads from a completed search and save them as prospects.
           </div>
         } @else {
-          <div class="pb-call-station">
-            <div class="pb-call-queue">
-              <div class="pb-call-queue__head">
-                <span>Call queue</span>
-                <small>{{ store.prospectCount() }} prospects</small>
-              </div>
-              @for (prospect of store.prospects(); track prospect.id) {
-                <button
-                  type="button"
-                  class="pb-call-row pb-call-row--{{ prospect.priority }}"
-                  [class.is-active]="activeProspect()?.id === prospect.id"
-                  (click)="selectProspect(prospect)"
-                >
-                  <span class="pb-call-row__main">
-                    <strong>{{ prospect.businessName }}</strong>
-                    <small>
-                      {{ prospect.category || 'Local business' }}
-                      @if (prospect.market) { · {{ prospect.market }} }
-                    </small>
-                  </span>
-                  <span class="pb-call-row__meta">
-                    <span>{{ label(prospect.salesStage || prospect.status) }}</span>
-                    @if (prospect.lastSalesInteractionOutcome) {
-                      <span>{{ label(prospect.lastSalesInteractionOutcome) }}</span>
-                    }
-                  </span>
-                </button>
-              }
+          <div class="pb-prospect-handoff">
+            <div>
+              <span class="pb-panel-kicker">Cold Caller</span>
+              <h3>{{ store.prospectCount() }} saved prospect{{ store.prospectCount() === 1 ? '' : 's' }}</h3>
+              <p>
+                Prospector now handles search and candidate review. Cold Caller owns the full call queue, past calls,
+                scripts, offers, research, and saved outcomes.
+              </p>
             </div>
+            <button type="button" class="pb-leads-btn pb-leads-btn--expand" (click)="openColdCaller()">
+              Open Cold Caller
+            </button>
+          </div>
 
-            @let prospect = activeProspect();
-            @if (prospect) {
-              <aside class="pb-call-drawer">
-                <header class="pb-call-drawer__head">
+          <div class="pb-prospect-grid">
+            @for (prospect of store.prospects(); track prospect.id) {
+              <article class="pb-prospect-card pb-prospect-card--{{ prospect.priority }}">
+                <div class="pb-prospect-card__head">
                   <div>
-                    <span class="pb-panel-kicker">Call station</span>
                     <h3>{{ prospect.businessName }}</h3>
                     <p>
                       {{ prospect.category || 'Local business' }}
@@ -652,127 +635,11 @@
                   @if (prospect.score !== undefined && prospect.score !== null) {
                     <span class="pb-prospect-score">{{ prospect.score }}</span>
                   }
-                </header>
-
-                <div class="pb-call-drawer__quick">
-                  @if (prospect.phone) {
-                    <a [href]="'tel:' + prospect.phone" class="pb-prospect-link">{{ prospect.phone }}</a>
-                  }
-                  @if (prospect.website) {
-                    <a [href]="prospect.website" target="_blank" rel="noopener noreferrer" class="pb-prospect-link">Website</a>
-                  }
-                  <button type="button" class="pb-leads-btn pb-leads-btn--expand" (click)="promoteProspect(prospect)">
-                    Promote to Build Book
-                  </button>
                 </div>
-
                 @if (prospect.topSignal) {
                   <p class="pb-prospect-signal">{{ prospect.topSignal }}</p>
                 }
-
-                <div class="pb-call-controls">
-                  <label>
-                    Phase
-                    <select [ngModel]="interactionPhase()" (ngModelChange)="interactionPhase.set($event)">
-                      @for (phase of interactionPhases; track phase) {
-                        <option [value]="phase">{{ label(phase) }}</option>
-                      }
-                    </select>
-                  </label>
-                  <label>
-                    Channel
-                    <select [ngModel]="interactionChannel()" (ngModelChange)="interactionChannel.set($event)">
-                      @for (channel of interactionChannels; track channel) {
-                        <option [value]="channel">{{ label(channel) }}</option>
-                      }
-                    </select>
-                  </label>
-                  <label>
-                    Outcome
-                    <select [ngModel]="interactionOutcome()" (ngModelChange)="interactionOutcome.set($event)">
-                      @for (outcome of interactionOutcomes; track outcome) {
-                        <option [value]="outcome">{{ label(outcome) }}</option>
-                      }
-                    </select>
-                  </label>
-                  <label>
-                    Sentiment
-                    <select [ngModel]="interactionSentiment()" (ngModelChange)="interactionSentiment.set($event)">
-                      @for (sentiment of interactionSentiments; track sentiment) {
-                        <option [value]="sentiment">{{ label(sentiment) }}</option>
-                      }
-                    </select>
-                  </label>
-                </div>
-
-                <div class="pb-call-fields">
-                  <label>
-                    Script
-                    <textarea [ngModel]="interactionScript()" (ngModelChange)="interactionScript.set($event)"></textarea>
-                  </label>
-                  <label>
-                    Offer
-                    <textarea [ngModel]="interactionOffer()" (ngModelChange)="interactionOffer.set($event)"></textarea>
-                  </label>
-                  <label>
-                    Extended research
-                    <textarea
-                      placeholder="Low reviews, no website, broken site, ads gap, notable services..."
-                      [ngModel]="interactionResearch()"
-                      (ngModelChange)="interactionResearch.set($event)"
-                    ></textarea>
-                  </label>
-                  <label>
-                    Call notes
-                    <textarea
-                      placeholder="What happened, objection, buyer language, useful details..."
-                      [ngModel]="interactionNotes()"
-                      (ngModelChange)="interactionNotes.set($event)"
-                    ></textarea>
-                  </label>
-                  <label>
-                    Reason tags
-                    <input
-                      type="text"
-                      placeholder="no answer, gatekeeper, price objection"
-                      [ngModel]="interactionReasonTags()"
-                      (ngModelChange)="interactionReasonTags.set($event)"
-                    />
-                  </label>
-                  <label>
-                    Next step
-                    <input
-                      type="text"
-                      placeholder="Call back Tuesday, send demo, qualify owner..."
-                      [ngModel]="interactionNextStep()"
-                      (ngModelChange)="interactionNextStep.set($event)"
-                    />
-                  </label>
-                </div>
-
-                <div class="pb-call-actions">
-                  <button type="button" class="pb-save" [disabled]="store.saving()" (click)="saveInteraction(prospect)">
-                    @if (store.saving()) { Saving... } @else { Save interaction }
-                  </button>
-                </div>
-
-                <div class="pb-call-history">
-                  <h4>History</h4>
-                  @if (activeProspectInteractions().length === 0) {
-                    <p>No saved interactions yet.</p>
-                  } @else {
-                    @for (interaction of activeProspectInteractions(); track interaction.id) {
-                      <article>
-                        <strong>{{ label(interaction.outcome) }}</strong>
-                        <span>{{ label(interaction.phase) }} · {{ label(interaction.channel) }}</span>
-                        @if (interaction.notes) {
-                          <p>{{ interaction.notes }}</p>
-                        }
-                      </article>
-                    }
-                  }
-                </div>
-              </aside>
+              </article>
             }
           </div>
         }

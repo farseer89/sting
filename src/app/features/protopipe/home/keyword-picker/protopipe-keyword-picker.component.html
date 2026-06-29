@@ -440,7 +440,7 @@
       @switch (activeWizardStep()) {
         @case ('avatars') {
           <div class="kwpick__footer-actions">
-            <button type="button" class="kwpick__back" (click)="store.backWizardStep()">Back</button>
+            <button type="button" class="kwpick__back" (click)="backFromAvatars()">Back</button>
             @if (store.selectedAvatarCount() > 0) {
               <button type="button" class="kwpick__continue" (click)="continueFromAvatars()">
                 Continue to review
@@ -452,7 +452,7 @@
         }
         @case ('build') {
           <div class="kwpick__footer-actions">
-            <button type="button" class="kwpick__back" (click)="store.backWizardStep()">Back</button>
+            <button type="button" class="kwpick__back" (click)="backFromBuild()">Back</button>
             <button
               type="button"
               class="kwpick__continue"

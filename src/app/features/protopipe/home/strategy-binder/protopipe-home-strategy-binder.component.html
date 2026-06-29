@@ -246,12 +246,13 @@
                   </div>
                 </div>
                 <div class="sb-cal-row__actions">
-                  @if (item.source.contentPostId) {
-                    <button type="button" class="sb-btn sb-btn--primary sb-btn--xs" (click)="openArticleInWriter(item.source, $event)">Open</button>
-                    <button type="button" class="sb-btn sb-btn--ghost sb-btn--xs" (click)="viewArticleRun(item.source, $event)">View run</button>
-                  } @else {
-                    <button type="button" class="sb-btn sb-btn--ghost sb-btn--xs" (click)="writeCalendarItem(item.source, $event)">Write</button>
-                  }
+                  <button
+                    type="button"
+                    class="sb-btn sb-btn--primary sb-btn--xs"
+                    (click)="runCalendarAction(item.source, $event)"
+                  >
+                    {{ calendarActionLabel(item.source) }}
+                  </button>
                 </div>
               </div>
             }

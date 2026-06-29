@@ -1,11 +1,11 @@
-<!-- Same panel shell as Brief; selectedArticle() switches this from brief → article detail -->
+<!-- Same panel shell as Brief; selectedArticle() switches this from brief -> article detail -->
 <header class="stratctx__head">
-  @if (view.selectedArticle(); as article) {
+  @if (view.selectedArticle()) {
     <button type="button" class="stratctx__back" (click)="view.clearArticle()">
       <span aria-hidden="true">←</span>
-      Back to brief
+      Strategy brief
     </button>
-    <span class="stratctx__label">Article</span>
+    <span class="stratctx__label">Article card</span>
   } @else {
     <span class="stratctx__label">Strategy brief</span>
     @if (view.siteLabel(); as site) {
@@ -17,7 +17,7 @@
 <div class="stratctx__scroll">
   @if (view.selectedArticle(); as article) {
     @if (articleContext(); as ctx) {
-      <section class="stratctx__block stratctx__block--article">
+      <section class="stratctx__hero stratctx__hero--article">
         <span class="stratctx__status stratctx__status--{{ articleStatus(article) }}">
           {{ articleStatusLabel(article) }}
         </span>
@@ -25,256 +25,184 @@
         <p class="stratctx__lede">
           {{ article.rationale ?? ctx.focusIdea?.rationale ?? 'Scheduled from your content strategy.' }}
         </p>
+      </section>
 
+      <dl class="stratctx__stat-strip" aria-label="Article strategy facts">
+        <div>
+          <dt>Target</dt>
+          <dd>{{ article.suggestedKeyword }}</dd>
+        </div>
+        <div>
+          <dt>Volume</dt>
+          <dd>{{ formatMetric(ctx.scoredKeyword?.searchVolume) }}</dd>
+        </div>
+        <div>
+          <dt>Difficulty</dt>
+          <dd>{{ formatMetric(ctx.scoredKeyword?.difficulty) }}</dd>
+        </div>
+        <div>
+          <dt>Audience</dt>
+          <dd>{{ ctx.audienceLabel ?? '—' }}</dd>
+        </div>
+      </dl>
+
+      <section class="stratctx__page">
+        <div class="stratctx__page-head">
+          <span class="stratctx__page-kicker">Page 01</span>
+          <h3 class="stratctx__h3">Creative brief</h3>
+        </div>
         @if (ctx.focusStrategy?.positioningSummary) {
-          <section class="stratctx__block">
-            <h3 class="stratctx__h3">Why this idea</h3>
-            <p class="stratctx__body">{{ ctx.focusStrategy!.positioningSummary }}</p>
-          </section>
+          <p class="stratctx__body">{{ ctx.focusStrategy!.positioningSummary }}</p>
+        } @else if (article.strategyNarrative) {
+          <p class="stratctx__body">{{ article.strategyNarrative }}</p>
+        } @else {
+          <p class="stratctx__body">Use this article to support the strategy theme and move the selected audience forward.</p>
         }
-
-        <section class="stratctx__block">
-          <h3 class="stratctx__h3">Keyword metrics</h3>
-          <dl class="stratctx__facts">
-            <div class="stratctx__fact">
-              <dt>Target keyword</dt>
-              <dd>{{ article.suggestedKeyword }}</dd>
-            </div>
-            <div class="stratctx__fact">
-              <dt>Opportunity</dt>
-              <dd>{{ formatMetric(ctx.scoredKeyword?.opportunityScore) }}</dd>
-            </div>
-            <div class="stratctx__fact">
-              <dt>Search volume</dt>
-              <dd>{{ formatMetric(ctx.scoredKeyword?.searchVolume) }}</dd>
-            </div>
-            <div class="stratctx__fact">
-              <dt>Difficulty</dt>
-              <dd>{{ formatMetric(ctx.scoredKeyword?.difficulty) }}</dd>
-            </div>
-            <div class="stratctx__fact">
-              <dt>Tier</dt>
-              <dd>{{ ctx.scoredKeyword?.tier ?? '—' }}</dd>
-            </div>
-            <div class="stratctx__fact">
-              <dt>Audience</dt>
-              <dd>{{ ctx.audienceLabel ?? '—' }}</dd>
-            </div>
-            <div class="stratctx__fact">
-              <dt>Funnel</dt>
-              <dd>{{ article.funnelStage ?? ctx.scoredKeyword?.funnelStage ?? '—' }}</dd>
-            </div>
-            <div class="stratctx__fact">
-              <dt>Competitor gap</dt>
-              <dd>{{ article.isGap || ctx.scoredKeyword?.isGap ? 'Yes — rivals rank, you do not' : 'No' }}</dd>
-            </div>
-            @if (ctx.scoredKeyword?.serpFeatures?.length || article.discoverySource) {
-              <div class="stratctx__fact">
-                <dt>SERP signals</dt>
-                <dd>
-                  @if (ctx.scoredKeyword?.serpFeatures?.length) {
-                    {{ ctx.scoredKeyword!.serpFeatures!.join(', ') }}
-                  } @else {
-                    —
-                  }
-                </dd>
-              </div>
-            }
-            @if (ctx.scoredKeyword?.discoverySource ?? article.discoverySource) {
-              <div class="stratctx__fact">
-                <dt>Discovery source</dt>
-                <dd>{{ article.discoverySource ?? ctx.scoredKeyword?.discoverySource }}</dd>
-              </div>
-            }
-          </dl>
-        </section>
-
-        <section class="stratctx__block">
-          <h3 class="stratctx__h3">Pillar & cluster</h3>
-          <dl class="stratctx__facts">
-            <div class="stratctx__fact">
-              <dt>Pillar theme</dt>
-              <dd>{{ article.clusterName ?? 'Unassigned' }}</dd>
-            </div>
-            <div class="stratctx__fact">
-              <dt>Role</dt>
-              <dd>{{ article.clusterRole === 'pillar' ? 'Pillar article' : 'Supporting article' }}</dd>
-            </div>
-            @if (ctx.pillar?.pillarKeyword) {
-              <div class="stratctx__fact">
-                <dt>Head term</dt>
-                <dd>{{ ctx.pillar!.pillarKeyword }}</dd>
-              </div>
-            }
-            @if (ctx.pillar?.angle) {
-              <div class="stratctx__fact">
-                <dt>Pillar angle</dt>
-                <dd>{{ ctx.pillar!.angle }}</dd>
-              </div>
-            }
-            @if (ctx.cluster?.subtopic) {
-              <div class="stratctx__fact">
-                <dt>Subtopic</dt>
-                <dd>{{ ctx.cluster!.subtopic }}</dd>
-              </div>
-            }
-            @if (ctx.cluster) {
-              <div class="stratctx__fact">
-                <dt>Cluster intent</dt>
-                <dd>{{ ctx.cluster!.dominantIntent }}</dd>
-              </div>
-              <div class="stratctx__fact">
-                <dt>Cluster keywords</dt>
-                <dd>{{ ctx.cluster!.members.length }} phrases in this theme</dd>
-              </div>
-            }
-            @if (ctx.pillar?.supportingCount) {
-              <div class="stratctx__fact">
-                <dt>Supporting posts</dt>
-                <dd>{{ ctx.pillar!.supportingCount }} planned around this pillar</dd>
-              </div>
-            }
-          </dl>
-        </section>
-
-        <section class="stratctx__block">
-          <h3 class="stratctx__h3">Publish plan</h3>
-          <dl class="stratctx__facts">
-            <div class="stratctx__fact">
-              <dt>Publish date</dt>
-              <dd>{{ formatDate(article.proposedPublishAt) }}</dd>
-            </div>
-            <div class="stratctx__fact">
-              <dt>Intent</dt>
-              <dd>{{ article.intent }} · {{ article.priority }} priority</dd>
-            </div>
-            <div class="stratctx__fact">
-              <dt>Article type</dt>
-              <dd>{{ article.articleType }}</dd>
-            </div>
-            <div class="stratctx__fact">
-              <dt>Kind</dt>
-              <dd>{{ article.kind === 'refresh-existing' ? 'Refresh existing page' : 'New article' }}</dd>
-            </div>
-            @if (article.existingUrl) {
-              <div class="stratctx__fact">
-                <dt>Existing URL</dt>
-                <dd class="stratctx__url">{{ article.existingUrl }}</dd>
-              </div>
-            }
-            @if (ctx.focusIdea?.mandatorySections?.length) {
-              <div class="stratctx__fact">
-                <dt>Must cover</dt>
-                <dd>{{ ctx.focusIdea!.mandatorySections!.join(' · ') }}</dd>
-              </div>
-            }
-          </dl>
-        </section>
-
-        @if (ctx.focusStrategy?.topicGaps?.length) {
-          <section class="stratctx__block">
-            <h3 class="stratctx__h3">Topic gaps</h3>
-            <ul class="stratctx__list stratctx__list--compact">
-              @for (gap of ctx.focusStrategy!.topicGaps.slice(0, 4); track gap.topic) {
-                <li class="stratctx__list-note">{{ gap.topic }}</li>
-              }
-            </ul>
-          </section>
-        }
-
-        @if (article.strategyNarrative || article.journeyStage || article.keyQuestionToAnswer) {
-          <section class="stratctx__block">
-            <h3 class="stratctx__h3">Strategy intel</h3>
-            @if (article.journeyStage) {
-              <p class="stratctx__body"><strong>Journey stage:</strong> {{ article.journeyStage }}</p>
-            }
-            @if (article.keyQuestionToAnswer) {
-              <p class="stratctx__body"><strong>Key question:</strong> {{ article.keyQuestionToAnswer }}</p>
-            }
-            @if (article.strategyNarrative) {
-              <p class="stratctx__body">{{ article.strategyNarrative }}</p>
-            }
-          </section>
-        }
-
-        @if (view.writerError(); as writerErr) {
-          <p class="stratctx__error" role="alert">{{ writerErr }}</p>
-        }
-
-        <footer class="stratctx__actions">
-          @if (article.contentPostId) {
-            <button
-              type="button"
-              class="stratctx__writer-btn"
-              [disabled]="view.openingWriter() || !view.canWriteArticle()"
-              (click)="openArticleInWriter(article)"
-            >
-              @if (view.openingWriter()) {
-                Opening…
-              } @else {
-                Open in writer
-              }
-            </button>
-            <button
-              type="button"
-              class="stratctx__writer-btn stratctx__writer-btn--secondary"
-              [disabled]="view.openingWriter() || !view.canWriteArticle()"
-              (click)="openInThinker(article)"
-            >
-              View run
-            </button>
-          } @else {
-            <button
-              type="button"
-              class="stratctx__writer-btn"
-              [disabled]="view.openingWriter() || !view.canWriteArticle()"
-              (click)="openInWriter(article)"
-            >
-              @if (view.openingWriter()) {
-                Opening…
-              } @else {
-                Write article
-              }
-            </button>
-          }
-        </footer>
-        @if (article.contentPostId) {
-          <p class="stratctx__action-hint">
-            <button
-              type="button"
-              class="stratctx__link-btn"
-              [disabled]="view.openingWriter() || !view.canWriteArticle()"
-              (click)="openInWriter(article)"
-            >
-              Run generation pipeline
-            </button>
-          </p>
+        @if (article.keyQuestionToAnswer) {
+          <p class="stratctx__callout">{{ article.keyQuestionToAnswer }}</p>
         }
       </section>
+
+      <section class="stratctx__page">
+        <div class="stratctx__page-head">
+          <span class="stratctx__page-kicker">Page 02</span>
+          <h3 class="stratctx__h3">Plan placement</h3>
+        </div>
+        <dl class="stratctx__facts stratctx__facts--compact">
+          <div class="stratctx__fact">
+            <dt>Pillar</dt>
+            <dd>{{ article.clusterName ?? 'Unassigned' }}</dd>
+          </div>
+          <div class="stratctx__fact">
+            <dt>Role</dt>
+            <dd>{{ article.clusterRole === 'pillar' ? 'Pillar article' : 'Supporting article' }}</dd>
+          </div>
+          <div class="stratctx__fact">
+            <dt>Publish</dt>
+            <dd>{{ formatDate(article.proposedPublishAt) }}</dd>
+          </div>
+          <div class="stratctx__fact">
+            <dt>Intent</dt>
+            <dd>{{ article.intent }} · {{ article.priority }}</dd>
+          </div>
+          @if (ctx.pillar?.angle) {
+            <div class="stratctx__fact stratctx__fact--wide">
+              <dt>Angle</dt>
+              <dd>{{ ctx.pillar!.angle }}</dd>
+            </div>
+          }
+        </dl>
+      </section>
+
+      @if (ctx.focusStrategy?.topicGaps?.length || ctx.focusIdea?.mandatorySections?.length) {
+        <section class="stratctx__page">
+          <div class="stratctx__page-head">
+            <span class="stratctx__page-kicker">Page 03</span>
+            <h3 class="stratctx__h3">Must cover</h3>
+          </div>
+          <ul class="stratctx__list stratctx__list--compact">
+            @for (section of ctx.focusIdea?.mandatorySections ?? []; track section) {
+              <li class="stratctx__list-note">{{ section }}</li>
+            }
+            @for (gap of ctx.focusStrategy?.topicGaps?.slice(0, 4) ?? []; track gap.topic) {
+              <li class="stratctx__list-note">{{ gap.topic }}</li>
+            }
+          </ul>
+        </section>
+      }
+
+      @if (view.writerError(); as writerErr) {
+        <p class="stratctx__error" role="alert">{{ writerErr }}</p>
+      }
+
+      <footer class="stratctx__actions">
+        @if (article.contentPostId) {
+          <button
+            type="button"
+            class="stratctx__writer-btn"
+            [disabled]="view.openingWriter() || !view.canWriteArticle()"
+            (click)="openArticleInWriter(article)"
+          >
+            {{ view.openingWriter() ? 'Opening…' : 'Open writer' }}
+          </button>
+          <button
+            type="button"
+            class="stratctx__writer-btn stratctx__writer-btn--secondary"
+            [disabled]="view.openingWriter() || !view.canWriteArticle()"
+            (click)="openInThinker(article)"
+          >
+            View run
+          </button>
+        } @else {
+          <button
+            type="button"
+            class="stratctx__writer-btn"
+            [disabled]="view.openingWriter() || !view.canWriteArticle()"
+            (click)="openInWriter(article)"
+          >
+            {{ view.openingWriter() ? 'Opening…' : 'Write article' }}
+          </button>
+        }
+      </footer>
+      @if (article.contentPostId) {
+        <button
+          type="button"
+          class="stratctx__link-btn"
+          [disabled]="view.openingWriter() || !view.canWriteArticle()"
+          (click)="openInWriter(article)"
+        >
+          Run generation pipeline
+        </button>
+      }
     }
   } @else if (view.plan(); as plan) {
-    @if (plan.narrative; as n) {
-      <section class="stratctx__block">
+    <section class="stratctx__hero">
+      <span class="stratctx__bookmark">Strategy book</span>
+      @if (plan.narrative; as n) {
         <h2 class="stratctx__title">{{ n.headline }}</h2>
         <p class="stratctx__lede">{{ n.why }}</p>
-      </section>
-    }
+      } @else {
+        <h2 class="stratctx__title">Your content strategy</h2>
+        <p class="stratctx__lede">A focused plan built from discovery, audience fit, and content gaps.</p>
+      }
+    </section>
+
+    <dl class="stratctx__stat-strip" aria-label="Strategy summary">
+      <div>
+        <dt>Pillars</dt>
+        <dd>{{ plan.pillars.length }}</dd>
+      </div>
+      <div>
+        <dt>Scheduled</dt>
+        <dd>{{ plan.calendar.length }}</dd>
+      </div>
+      <div>
+        <dt>Backlog</dt>
+        <dd>{{ plan.backlog?.length ?? 0 }}</dd>
+      </div>
+      <div>
+        <dt>Wins</dt>
+        <dd>{{ plan.existingContent?.alreadyRanking?.length ?? 0 }}</dd>
+      </div>
+    </dl>
 
     @if (view.strategySummary(); as summary) {
-      <section class="stratctx__block">
-        <h3 class="stratctx__h3">Your business</h3>
+      <section class="stratctx__page">
+        <div class="stratctx__page-head">
+          <span class="stratctx__page-kicker">Page 01</span>
+          <h3 class="stratctx__h3">Business lens</h3>
+        </div>
         <p class="stratctx__body">{{ summary }}</p>
       </section>
     }
 
-    <section class="stratctx__block">
-      <h3 class="stratctx__h3">Topic pillars</h3>
-      <p class="stratctx__body">
-        Keywords grouped into {{ plan.pillars.length }} themes. Each pillar gets one lead article
-        plus supporting posts that build topical authority.
-      </p>
+    <section class="stratctx__page">
+      <div class="stratctx__page-head">
+        <span class="stratctx__page-kicker">Page 02</span>
+        <h3 class="stratctx__h3">Pillar map</h3>
+      </div>
       <ul class="stratctx__list">
-        @for (pillar of plan.pillars; track pillar.clusterName) {
+        @for (pillar of plan.pillars.slice(0, 4); track pillar.clusterName) {
           <li class="stratctx__list-item">
             <span class="stratctx__list-title">{{ pillar.clusterName }}</span>
             <span class="stratctx__list-kw">{{ pillar.pillarKeyword }}</span>
@@ -286,44 +214,21 @@
       </ul>
     </section>
 
-    <section class="stratctx__block">
-      <h3 class="stratctx__h3">Content calendar</h3>
+    <section class="stratctx__page stratctx__page--quiet">
+      <div class="stratctx__page-head">
+        <span class="stratctx__page-kicker">Page 03</span>
+        <h3 class="stratctx__h3">Next move</h3>
+      </div>
       <p class="stratctx__body">
-        {{ plan.calendar.length }} articles scheduled from your highest-opportunity keywords —
-        pillars first, then supporting pieces, with refresh items woven in where you already have thin pages.
+        {{ plan.calendar.length }} article(s) are sequenced from the highest-opportunity keywords.
+        Open any calendar item to see its article card.
       </p>
+      @if (plan.backlog?.length) {
+        <p class="stratctx__body stratctx__body--muted">
+          {{ plan.backlog!.length }} extra ideas are waiting in the backlog.
+        </p>
+      }
     </section>
-
-    @if (plan.backlog?.length) {
-      <section class="stratctx__block">
-        <h3 class="stratctx__h3">Topic backlog</h3>
-        <p class="stratctx__body">
-          {{ plan.backlog!.length }} unscheduled ideas from unanswered-question harvest. Open the Backlog tab to review them.
-        </p>
-      </section>
-    }
-
-    @if (plan.existingContent; as audit) {
-      <section class="stratctx__block">
-        <h3 class="stratctx__h3">Site wins</h3>
-        <p class="stratctx__body">
-          You're already ranking for {{ audit.alreadyRanking.length }} keywords.
-          @if (audit.refreshCandidates.length) {
-            We flagged {{ audit.refreshCandidates.length }} existing pages worth refreshing.
-          }
-        </p>
-        @if (audit.alreadyRanking.length) {
-          <ul class="stratctx__list stratctx__list--compact">
-            @for (r of audit.alreadyRanking.slice(0, 5); track r.phrase) {
-              <li class="stratctx__rank-row">
-                <span class="stratctx__rank-pos">#{{ r.position }}</span>
-                <span>{{ r.phrase }}</span>
-              </li>
-            }
-          </ul>
-        }
-      </section>
-    }
   } @else {
     <p class="stratctx__empty">Strategy details will appear here once your plan is ready.</p>
   }

@@ -288,6 +288,11 @@
                     <app-protopipe-prospector (buildDemo)="openBuildBookForProspect($event)" />
                   </section>
                 }
+                @case ('cold-caller') {
+                  <section class="glass glass--full glass--premiere" aria-label="Cold Caller">
+                    <app-protopipe-cold-caller (buildDemo)="openBuildBookForProspect($event)" />
+                  </section>
+                }
                 @case ('thinker') {
                   <section class="glass glass--full glass--premiere" aria-label="Thinker">
                     <app-protopipe-home-thinker-binder />

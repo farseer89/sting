@@ -478,6 +478,9 @@
         <!-- Inspector tabs -->
         <div class="tb-tabs">
           <button type="button" class="tb-tab" [class.is-active]="activeTab() === 'visualizer'" (click)="activeTab.set('visualizer')">visualizer</button>
+          @if (runKind() === 'article') {
+            <button type="button" class="tb-tab" [class.is-active]="activeTab() === 'article'" (click)="activeTab.set('article')">article</button>
+          }
           <button type="button" class="tb-tab" [class.is-active]="activeTab() === 'output'" (click)="activeTab.set('output')">output</button>
           <button type="button" class="tb-tab" [class.is-active]="activeTab() === 'steps'" (click)="activeTab.set('steps')">steps</button>
           @if (step.isLlmStep) {
@@ -499,6 +502,10 @@
               [selectedTabId]="visualizerTabId()"
               [hideTabNav]="showAspectNav()"
             />
+          }
+
+          @case ('article') {
+            <app-thinker-step-visualizer [view]="articlePreview()" />
           }
 
           @case ('output') {

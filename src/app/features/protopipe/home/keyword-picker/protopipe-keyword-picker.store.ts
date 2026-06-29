@@ -42,6 +42,21 @@ const MAX_AVATARS = 3;
 
 export type KeywordPickerWizardStep = 'keywords' | 'avatars' | 'build';
 
+function optionalNumber(value: number | null | undefined): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function optionalRatio(value: number | null | undefined): number | undefined {
+  const n = optionalNumber(value);
+  if (n == null) return undefined;
+  return n > 1 ? n / 100 : n;
+}
+
+function optionalString(value: string | null | undefined): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -460,17 +475,17 @@ export class ProtopipeKeywordPickerStore {
 
       const confirmedKeywords = [...this._selected().values()].map((o) => ({
         phrase: o.phrase,
-        searchVolume: o.searchVolume,
-        difficulty: o.keywordDifficulty,
-        cpc: o.cpc,
-        fit: o.relevanceScore,
-        opportunity: o.opportunityScore,
+        searchVolume: optionalNumber(o.searchVolume),
+        difficulty: optionalNumber(o.keywordDifficulty),
+        cpc: optionalNumber(o.cpc),
+        fit: optionalRatio(o.relevanceScore),
+        opportunity: optionalNumber(o.opportunityScore),
         intent: o.intent,
         funnelStage: o.funnelStage,
         source: o.discoverySource,
         isGap: o.isGap,
         serpFeatures: o.serpFeatures,
-        avatarId: o.avatarId ?? null,
+        avatarId: optionalString(o.avatarId),
       }));
 
       await this.api.confirmKeywordStrategy(siteId, {

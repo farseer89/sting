@@ -138,6 +138,7 @@
                 <app-protopipe-keyword-picker
                   [bookMode]="true"
                   [bookSection]="'keywords'"
+                  (bookSectionChange)="onBookSectionChange($event)"
                   (confirmed)="onKeywordsConfirmed()"
                 />
               </div>
@@ -158,6 +159,7 @@
             <app-protopipe-keyword-picker
               [bookMode]="true"
               [bookSection]="'avatars'"
+              (bookSectionChange)="onBookSectionChange($event)"
               (confirmed)="onKeywordsConfirmed()"
             />
             </div>
@@ -174,6 +176,7 @@
             <app-protopipe-keyword-picker
               [bookMode]="true"
               [bookSection]="'build'"
+              (bookSectionChange)="onBookSectionChange($event)"
               (confirmed)="onKeywordsConfirmed()"
             />
             </div>

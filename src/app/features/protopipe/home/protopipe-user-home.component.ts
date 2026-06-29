@@ -53,6 +53,7 @@ import { ProtopipeLeadsListComponent } from '../leads/protopipe-leads-list.compo
 import { ProtopipeHomeThinkerBinderComponent } from './thinker/protopipe-home-thinker-binder.component';
 import { ProtopipeHomeAnalyticsBinderComponent } from './analytics-binder/protopipe-home-analytics-binder.component';
 import { ProtopipeProspectorComponent } from '../prospector/protopipe-prospector.component';
+import { ProtopipeColdCallerComponent } from '../cold-caller/protopipe-cold-caller.component';
 import { ProtopipeHomeSidePanelService } from './protopipe-home-side-panel.service';
 import {
   PROTOPIPE_HOME_NAV,
@@ -86,7 +87,8 @@ export type ProtopipeHomeView =
   | 'thinker'
   | 'strategy-binder'
   | 'analytics-binder'
-  | 'prospector';
+  | 'prospector'
+  | 'cold-caller';
 
 function initialsFromName(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -143,6 +145,7 @@ type HomeFocusHistoryKind = 'thinker' | 'writer';
     ProtopipeHomeThinkerBinderComponent,
     ProtopipeHomeAnalyticsBinderComponent,
     ProtopipeProspectorComponent,
+    ProtopipeColdCallerComponent,
   ],
   templateUrl: './protopipe-user-home.component.html',
   styleUrl: './protopipe-user-home.component.scss',
@@ -259,6 +262,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.syncPitchPrepFromRoute();
     this.syncLeadsFromRoute();
     this.syncProspectorFromRoute();
+    this.syncColdCallerFromRoute();
     this.syncViewFromQuery();
     this.router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
@@ -267,6 +271,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
         this.syncPitchPrepFromRoute();
         this.syncLeadsFromRoute();
         this.syncProspectorFromRoute();
+        this.syncColdCallerFromRoute();
         this.syncViewFromQuery();
       });
     void this.loadBootstrap();
@@ -302,11 +307,13 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.leaveWriterFocus();
       this.activeNavId.set(item.id);
       this.activeView.set('keywords');
+      this.navigateHomeRoot();
     } else if (item.id === 'start-strategy') {
       this.leaveWriterFocus();
       this.leaveThinkerFocus();
       this.activeNavId.set(item.id);
       this.activeView.set('strategy');
+      this.navigateHomeRoot();
     } else if (item.id === 'start-sharpen') {
       this.leaveWriterFocus();
       this.sidePanel.setOpen(false);
@@ -334,6 +341,12 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.activeNavId.set(item.id);
       this.activeView.set('prospector');
       void this.router.navigate(['/home/prospector']);
+    } else if (item.id === 'cold-caller') {
+      this.leaveWriterFocus();
+      this.sidePanel.setOpen(false);
+      this.activeNavId.set(item.id);
+      this.activeView.set('cold-caller');
+      void this.router.navigate(['/home/cold-caller']);
     } else if (item.id === 'dev-runbooks') {
       this.leaveWriterFocus();
       this.sidePanel.setOpen(false);
@@ -561,8 +574,11 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.activeView.set('audience-book');
   }
 
-  openBuildBookView(clearContext = true): void {
+  openBuildBookView(clearContext = true, syncRoute = true): void {
     this.enterBuildBookFocus(clearContext ? null : this.buildBookProspectContext());
+    if (syncRoute) {
+      void this.router.navigate(['/home'], { queryParams: { view: 'build-book' } });
+    }
   }
 
   openBuildBookForProspect(context: BuildBookProspectContext): void {
@@ -620,13 +636,13 @@ export class ProtopipeUserHomeComponent implements OnInit {
   }
 
   private syncViewFromQuery(): void {
-    const view = this.route.snapshot.queryParamMap.get('view');
+    const view = this.currentHomeViewParam();
     if (view === 'brand-book') {
       this.openBrandBookView();
     } else if (view === 'audience-book') {
       this.openAudienceBookView();
     } else if (view === 'build-book') {
-      this.openBuildBookView(false);
+      this.openBuildBookView(false, false);
     } else if (view === 'intake') {
       this.openIntakeDemoView();
     }
@@ -637,6 +653,17 @@ export class ProtopipeUserHomeComponent implements OnInit {
     if (path === '/home/leads' || path.startsWith('/home/leads')) {
       this.showLeadsView();
     }
+  }
+
+  private navigateHomeRoot(): void {
+    if ((this.router.url.split('?')[0] ?? '') === '/home') {
+      void this.router.navigate(['/home']);
+    }
+  }
+
+  private currentHomeViewParam(): string | null {
+    const query = this.router.url.split('?')[1] ?? '';
+    return new URLSearchParams(query).get('view');
   }
 
   private captureFocusReturnContext(): HomeFocusReturnContext {
@@ -726,6 +753,16 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.sidePanel.setOpen(false);
       this.activeView.set('prospector');
       this.activeNavId.set('prospector');
+    }
+  }
+
+  private syncColdCallerFromRoute(): void {
+    const path = this.router.url.split('?')[0] ?? '';
+    if (path === '/home/cold-caller' || path.startsWith('/home/cold-caller')) {
+      this.leaveWriterFocus();
+      this.sidePanel.setOpen(false);
+      this.activeView.set('cold-caller');
+      this.activeNavId.set('cold-caller');
     }
   }
 
@@ -828,10 +865,22 @@ export class ProtopipeUserHomeComponent implements OnInit {
           '/home/pitch-prep',
         );
         const onLeadsRoute = (this.router.url.split('?')[0] ?? '').startsWith('/home/leads');
+        const currentPath = this.router.url.split('?')[0] ?? '';
+        const onProspectorRoute = currentPath.startsWith('/home/prospector');
+        const onColdCallerRoute = currentPath.startsWith('/home/cold-caller');
+        const explicitView = this.currentHomeViewParam();
+        const hasExplicitHomeView =
+          explicitView === 'brand-book' ||
+          explicitView === 'audience-book' ||
+          explicitView === 'build-book' ||
+          explicitView === 'intake';
         if (
           !onPacksRoute &&
           !onPitchPrepRoute &&
           !onLeadsRoute &&
+          !onProspectorRoute &&
+          !onColdCallerRoute &&
+          !hasExplicitHomeView &&
           (planStatus === 'running' || planStatus === 'pending' || planStatus === 'complete')
         ) {
           this.activeView.set('strategy');
@@ -842,6 +891,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.siteDisplayName.set('Your workspace');
       this.siteHostname.set('');
     } finally {
+      this.syncViewFromQuery();
       this.loading.set(false);
     }
   }

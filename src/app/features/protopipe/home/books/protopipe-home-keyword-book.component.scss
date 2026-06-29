@@ -486,7 +486,8 @@ $kb-row-h: 1.75rem;
     line-height: 1.2;
     max-width: none;
     padding-right: 0.5rem;
-    display: block;
+    display: table-cell;
+    vertical-align: middle;
     -webkit-line-clamp: unset;
     -webkit-box-orient: unset;
   }

@@ -1,0 +1,343 @@
+<div class="cc-shell">
+  <header class="cc-masthead">
+    <div>
+      <h1>Cold Caller</h1>
+      <p>Work saved prospects, capture outcomes, and learn from every sales interaction.</p>
+    </div>
+    <div class="cc-stats">
+      <span><strong>{{ store.prospectCount() }}</strong> prospects</span>
+      <span><strong>{{ store.callReadyCount() }}</strong> call ready</span>
+      <span><strong>{{ store.interactions().length }}</strong> past calls</span>
+    </div>
+  </header>
+
+  @if (store.error()) {
+    <div class="cc-banner cc-banner--error">{{ store.error() }}</div>
+  }
+  @if (store.message()) {
+    <div class="cc-banner">{{ store.message() }}</div>
+  }
+
+  <div class="cc-workspace">
+    <nav class="cc-rail" aria-label="Cold Caller navigation">
+      <section class="cc-rail-section">
+        <div class="cc-rail-label">Call Queue</div>
+        @if (store.loading()) {
+          <div class="cc-rail-empty">Loading prospects...</div>
+        } @else if (callQueue().length === 0) {
+          <div class="cc-rail-empty">No prospects yet. Add candidates from Prospector.</div>
+        } @else {
+          @for (prospect of callQueue(); track prospect.id) {
+            <button
+              type="button"
+              class="cc-queue-row cc-queue-row--{{ prospect.priority }}"
+              [class.is-active]="activeProspect()?.id === prospect.id"
+              (click)="selectProspect(prospect)"
+            >
+              <span>
+                <strong>{{ prospect.businessName }}</strong>
+                <small>
+                  {{ prospect.category || 'Local business' }}
+                  @if (prospect.market) { · {{ prospect.market }} }
+                </small>
+              </span>
+              <em>{{ label(prospect.salesStage || prospect.status) }}</em>
+            </button>
+          }
+        }
+      </section>
+
+      <div class="cc-rail-divider"></div>
+
+      <section class="cc-rail-section">
+        <div class="cc-rail-label">Past calls</div>
+        @if (pastCalls().length === 0) {
+          <div class="cc-rail-empty">No saved calls yet.</div>
+        } @else {
+          @for (call of pastCalls(); track call.id) {
+            @let prospect = prospectForInteraction(call);
+            <button type="button" class="cc-call-row" (click)="selectPastCall(call)">
+              <strong>{{ label(call.outcome) }}</strong>
+              <span>{{ prospect?.businessName || 'Unknown prospect' }}</span>
+              <small>{{ relativeTime(call.occurredAt) }}</small>
+            </button>
+          }
+        }
+      </section>
+    </nav>
+
+    <main class="cc-main">
+      @let prospect = activeProspect();
+      @if (!prospect) {
+        <div class="cc-empty">
+          <span>Cold Caller</span>
+          <h2>No prospect selected</h2>
+          <p>Add prospects from Prospector, then work them here.</p>
+        </div>
+      } @else {
+        <section class="cc-card cc-card--hero">
+          <div>
+            <span class="cc-kicker">Current caller</span>
+            <h2>{{ prospect.businessName }}</h2>
+            <p>
+              {{ prospect.category || 'Local business' }}
+              @if (prospect.market) { · {{ prospect.market }} }
+            </p>
+          </div>
+          <div class="cc-actions">
+            @if (prospect.phone) {
+              <a [href]="'tel:' + prospect.phone">{{ prospect.phone }}</a>
+            }
+            @if (prospect.website) {
+              <a [href]="prospect.website" target="_blank" rel="noopener noreferrer">Website</a>
+            }
+            <button type="button" class="is-muted" (click)="openMeetingDialog()">Log meeting</button>
+            <button type="button" (click)="promoteProspect(prospect)">Promote to Build Book</button>
+          </div>
+        </section>
+
+        @if (meetingDialogOpen()) {
+          <div class="cc-modal-backdrop" role="presentation" (click)="closeMeetingDialog()">
+            <section
+              class="cc-card cc-meeting-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="cc-meeting-dialog-title"
+              (click)="$event.stopPropagation()"
+            >
+              <div class="cc-dialog-head">
+                <div class="cc-section-head">
+                  <span class="cc-kicker">Meeting action</span>
+                  <h3 id="cc-meeting-dialog-title">Log a meeting action</h3>
+                  <p>Records the link or booked time in Shire. Google Calendar is not connected yet.</p>
+                </div>
+                <button type="button" class="cc-dialog-close" aria-label="Close meeting scheduler" (click)="closeMeetingDialog()">Close</button>
+              </div>
+              <div class="cc-integration-note">
+                <strong>Calendar status</strong>
+                <span>Not connected to Google Calendar. This saves a sales interaction only.</span>
+              </div>
+              <div class="cc-meeting-grid">
+                <label>
+                  Contact / email
+                  <input
+                    type="text"
+                    placeholder="owner@example.com or best contact"
+                    [ngModel]="meetingContact()"
+                    (ngModelChange)="meetingContact.set($event)"
+                  />
+                </label>
+                <label>
+                  Scheduling link
+                  <input
+                    type="url"
+                    placeholder="Calendly or booking link"
+                    [ngModel]="schedulingLink()"
+                    (ngModelChange)="schedulingLink.set($event)"
+                  />
+                </label>
+                <label>
+                  Meeting day
+                  <select [ngModel]="meetingDate()" (ngModelChange)="meetingDate.set($event)">
+                    @for (option of meetingDateOptions(); track option.value) {
+                      <option [value]="option.value">{{ option.label }} · {{ option.deck }}</option>
+                    }
+                  </select>
+                </label>
+                <label>
+                  Meeting time
+                  <select [ngModel]="meetingTime()" (ngModelChange)="meetingTime.set($event)">
+                    <option value="">Select time</option>
+                    @for (option of meetingTimeOptions; track option.value) {
+                      <option [value]="option.value">{{ option.label }}</option>
+                    }
+                  </select>
+                </label>
+                <label class="cc-meeting-note-field">
+                  Meeting note
+                  <input
+                    type="text"
+                    placeholder="Demo, strategy review, follow-up call..."
+                    [ngModel]="meetingNotes()"
+                    (ngModelChange)="meetingNotes.set($event)"
+                  />
+                </label>
+              </div>
+              <div class="cc-meeting-actions">
+                <button type="button" class="is-muted" [disabled]="store.saving()" (click)="markSchedulingLinkSent(prospect)">
+                  Mark scheduling link sent
+                </button>
+                <button type="button" [disabled]="store.saving() || !meetingDate() || !meetingTime()" (click)="saveBookedMeeting(prospect)">
+                  Save booked meeting
+                </button>
+              </div>
+            </section>
+          </div>
+        }
+
+        <section class="cc-card cc-tabs-card">
+          <nav class="cc-tabs" role="tablist" aria-label="Cold Caller workflow">
+            @for (tab of tabs; track tab.id) {
+              <button
+                type="button"
+                role="tab"
+                class="cc-tab"
+                [class.is-active]="activeTab() === tab.id"
+                [attr.aria-selected]="activeTab() === tab.id"
+                (click)="selectTab(tab.id)"
+              >
+                <span>{{ tab.label }}</span>
+                <small>{{ tab.deck }}</small>
+              </button>
+            }
+          </nav>
+
+          @if (activeTab() === 'pre-call') {
+            <div class="cc-tab-panel cc-tab-panel--pre">
+              <div class="cc-section-head">
+                <span class="cc-kicker">Pre call</span>
+                <h3>Research before dialing</h3>
+                <p>Collect the specific reason this caller should care before you start the pitch.</p>
+              </div>
+              <div class="cc-pre-grid">
+                <div class="cc-research-card">
+                  <strong>Known signal</strong>
+                  @if (prospect.topSignal) {
+                    <p>{{ prospect.topSignal }}</p>
+                  } @else {
+                    <p>No signal captured yet. Check the website, reviews, and source notes.</p>
+                  }
+                </div>
+                <div class="cc-research-card">
+                  <strong>Prospect facts</strong>
+                  <p>Website: {{ label(prospect.websiteStatus) }}</p>
+                  @if (prospect.phone) { <p>Phone: {{ prospect.phone }}</p> }
+                  @if (prospect.website) { <p>Website: {{ prospect.website }}</p> }
+                </div>
+              </div>
+              <label>
+                Extended research
+                <textarea
+                  placeholder="Low reviews, no website, broken site, ads gap, notable services..."
+                  [ngModel]="interactionResearch()"
+                  (ngModelChange)="interactionResearch.set($event)"
+                ></textarea>
+              </label>
+            </div>
+          } @else if (activeTab() === 'on-call') {
+            <div class="cc-tab-panel cc-tab-panel--on">
+              <div class="cc-section-head">
+                <span class="cc-kicker">On call</span>
+                <h3>Script and pitch</h3>
+                <p>Large readable text for the live call. Keep the offer crisp and the next question obvious.</p>
+              </div>
+              <label class="cc-readable-field">
+                Script
+                <textarea [ngModel]="interactionScript()" (ngModelChange)="interactionScript.set($event)"></textarea>
+              </label>
+              <label class="cc-readable-field cc-readable-field--offer">
+                Pitch / offer
+                <textarea [ngModel]="interactionOffer()" (ngModelChange)="interactionOffer.set($event)"></textarea>
+              </label>
+            </div>
+          } @else {
+            <div class="cc-tab-panel cc-tab-panel--post">
+              <div class="cc-section-head">
+                <span class="cc-kicker">Post call</span>
+                <h3>Review and results</h3>
+                <p>Save the outcome, notes, tags, and next step so this becomes useful for future analysis.</p>
+              </div>
+              <div class="cc-controls">
+                <label>
+                  Phase
+                  <select [ngModel]="interactionPhase()" (ngModelChange)="interactionPhase.set($event)">
+                    @for (phase of interactionPhases; track phase) {
+                      <option [value]="phase">{{ label(phase) }}</option>
+                    }
+                  </select>
+                </label>
+                <label>
+                  Channel
+                  <select [ngModel]="interactionChannel()" (ngModelChange)="interactionChannel.set($event)">
+                    @for (channel of interactionChannels; track channel) {
+                      <option [value]="channel">{{ label(channel) }}</option>
+                    }
+                  </select>
+                </label>
+                <label>
+                  Outcome
+                  <select [ngModel]="interactionOutcome()" (ngModelChange)="interactionOutcome.set($event)">
+                    @for (outcome of interactionOutcomes; track outcome) {
+                      <option [value]="outcome">{{ label(outcome) }}</option>
+                    }
+                  </select>
+                </label>
+                <label>
+                  Sentiment
+                  <select [ngModel]="interactionSentiment()" (ngModelChange)="interactionSentiment.set($event)">
+                    @for (sentiment of interactionSentiments; track sentiment) {
+                      <option [value]="sentiment">{{ label(sentiment) }}</option>
+                    }
+                  </select>
+                </label>
+              </div>
+
+              <label>
+                Notes
+                <textarea
+                  placeholder="What happened, objection, buyer language, useful details..."
+                  [ngModel]="interactionNotes()"
+                  (ngModelChange)="interactionNotes.set($event)"
+                ></textarea>
+              </label>
+              <label>
+                Reason tags
+                <input
+                  type="text"
+                  placeholder="no answer, gatekeeper, price objection"
+                  [ngModel]="interactionReasonTags()"
+                  (ngModelChange)="interactionReasonTags.set($event)"
+                />
+              </label>
+              <label>
+                Next step
+                <input
+                  type="text"
+                  placeholder="Call back Tuesday, send demo, qualify owner..."
+                  [ngModel]="interactionNextStep()"
+                  (ngModelChange)="interactionNextStep.set($event)"
+                />
+              </label>
+
+              <div class="cc-save-row">
+                <button type="button" [disabled]="store.saving()" (click)="saveInteraction(prospect)">
+                  @if (store.saving()) { Saving... } @else { Save interaction }
+                </button>
+                <button type="button" class="is-muted" (click)="nextProspect()">Next prospect</button>
+              </div>
+            </div>
+          }
+        </section>
+
+        @if (activeTab() === 'post-call') {
+          <section class="cc-card cc-history">
+            <span class="cc-kicker">Interaction history</span>
+            @if (activeProspectInteractions().length === 0) {
+              <p>No saved interactions for this prospect yet.</p>
+            } @else {
+              @for (interaction of activeProspectInteractions(); track interaction.id) {
+                <article>
+                  <strong>{{ label(interaction.outcome) }}</strong>
+                  <span>{{ label(interaction.phase) }} · {{ label(interaction.channel) }} · {{ relativeTime(interaction.occurredAt) }}</span>
+                  @if (interaction.notes) {
+                    <p>{{ interaction.notes }}</p>
+                  }
+                </article>
+              }
+            }
+          </section>
+        }
+      }
+    </main>
+  </div>
+</div>

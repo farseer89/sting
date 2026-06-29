@@ -4,8 +4,6 @@ import type {
   ProspectingCampaign,
   ProspectingCandidateSummary,
   ProspectWebsiteStatus,
-  SalesInteraction,
-  SaveSalesInteractionRequest,
   SaveProspectsRequest,
   Thought,
 } from '@hive/contracts';
@@ -60,7 +58,6 @@ export class ProtopipeProspectorStore {
 
   private readonly _campaigns = signal<ProspectingCampaign[]>([]);
   private readonly _prospects = signal<ProspectDraft[]>([]);
-  private readonly _interactions = signal<SalesInteraction[]>([]);
   private readonly _snapshot = signal<ProspectDraft[]>([]);
   private readonly _loading = signal(false);
   private readonly _saving = signal(false);
@@ -73,7 +70,6 @@ export class ProtopipeProspectorStore {
 
   readonly campaigns = this._campaigns.asReadonly();
   readonly prospects = this._prospects.asReadonly();
-  readonly interactions = this._interactions.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly saving = this._saving.asReadonly();
   readonly campaignSaving = this._campaignSaving.asReadonly();
@@ -120,16 +116,14 @@ export class ProtopipeProspectorStore {
     try {
       await this.strategy.ensureLoaded();
       const siteId = this.requireSiteId();
-      const [campaigns, prospects, interactions] = await Promise.all([
+      const [campaigns, prospects] = await Promise.all([
         this.api.listCampaigns(siteId),
         this.api.listProspects(siteId),
-        this.api.listSalesInteractions(siteId),
       ]);
       this._campaigns.set(campaigns.campaigns);
       this._selectedCampaignId.set(campaigns.campaigns[0]?.id ?? null);
       const rows = cloneProspects(prospects.prospects);
       this._prospects.set(rows);
-      this._interactions.set(interactions.interactions);
       this._snapshot.set(cloneProspects(rows));
     } catch (err) {
       this._error.set(parseProtopipeApiError(err, 'Could not load Prospector books.'));
@@ -156,35 +150,6 @@ export class ProtopipeProspectorStore {
     } finally {
       this._saving.set(false);
     }
-  }
-
-  async recordSalesInteraction(body: SaveSalesInteractionRequest): Promise<boolean> {
-    const siteId = this.requireSiteId();
-    this._saving.set(true);
-    this._error.set(null);
-    this._message.set(null);
-    try {
-      const response = await this.api.createSalesInteraction(siteId, this.toSaveSalesInteractionRequest(body));
-      this._interactions.update((interactions) => [
-        response.interaction,
-        ...interactions.filter((interaction) => interaction.id !== response.interaction.id),
-      ]);
-      const prospects = await this.api.listProspects(siteId);
-      const rows = cloneProspects(prospects.prospects);
-      this._prospects.set(rows);
-      this._snapshot.set(cloneProspects(rows));
-      this._message.set('Sales interaction saved.');
-      return true;
-    } catch (err) {
-      this._error.set(parseProtopipeApiError(err, 'Could not save sales interaction.'));
-      return false;
-    } finally {
-      this._saving.set(false);
-    }
-  }
-
-  interactionsForProspect(prospectId: string): SalesInteraction[] {
-    return this._interactions().filter((interaction) => interaction.prospectId === prospectId);
   }
 
   async createCampaign(category: string, location: string): Promise<ProspectingCampaign | null> {
@@ -401,37 +366,6 @@ export class ProtopipeProspectorStore {
         buildBookId: optionalString(prospect.buildBookId),
         notes: prospect.notes ?? '',
       })),
-    };
-  }
-
-  private toSaveSalesInteractionRequest(
-    body: SaveSalesInteractionRequest,
-  ): SaveSalesInteractionRequest {
-    return {
-      prospectId: body.prospectId,
-      phase: body.phase,
-      channel: body.channel,
-      outcome: body.outcome,
-      sentiment: body.sentiment,
-      occurredAt: optionalString(body.occurredAt),
-      durationSeconds: optionalNumber(body.durationSeconds),
-      operatorName: optionalString(body.operatorName),
-      scriptVariant: optionalString(body.scriptVariant),
-      scriptBody: optionalString(body.scriptBody),
-      offerSummary: optionalString(body.offerSummary),
-      researchBrief: body.researchBrief
-        ? {
-            summary: optionalString(body.researchBrief.summary),
-            signals: body.researchBrief.signals?.filter(Boolean) ?? [],
-            objections: body.researchBrief.objections?.filter(Boolean) ?? [],
-            opportunities: body.researchBrief.opportunities?.filter(Boolean) ?? [],
-          }
-        : undefined,
-      notes: body.notes ?? '',
-      outcomeReasonTags: body.outcomeReasonTags?.filter(Boolean) ?? [],
-      nextStep: optionalString(body.nextStep),
-      nextStepAt: optionalString(body.nextStepAt),
-      mediaRefs: body.mediaRefs,
     };
   }
 

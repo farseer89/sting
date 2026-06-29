@@ -26,7 +26,11 @@ import {
   rerunBlockedReason,
 } from '../../article/article-run-rerun.util';
 import type { ArticleGenerationStep } from '@hive/contracts';
-import { buildArticleStepVisualizer } from './article-run-visualizer.util';
+import {
+  buildArticlePreviewVisualizer,
+  buildArticleStepVisualizer,
+  buildThoughtStepVisualizer,
+} from './article-run-visualizer.util';
 import {
   buildContentPlanStepVisualizer,
   type ContentPlanVisualizerStep,
@@ -67,7 +71,26 @@ import {
 } from './thinker-binder.mapper';
 import { ThinkerStepVisualizerComponent } from './thinker-step-visualizer.component';
 
-type ThinkerTab = 'visualizer' | 'output' | 'steps' | 'prompt' | 'query' | 'events' | 'raw';
+type ThinkerTab = 'visualizer' | 'article' | 'output' | 'steps' | 'prompt' | 'query' | 'events' | 'raw';
+
+const ARTICLE_PIPELINE_STEP_IDS = new Set<string>([
+  'infer_type',
+  'analyse_competition',
+  'content_plan',
+  'research',
+  'build_brief',
+  'compile_context',
+  'cognitive_pass',
+  'outline',
+  'draft',
+  'audience_review',
+  'draft_faq',
+  'layout_plan',
+  'review',
+  'metadata',
+  'assemble',
+  'generate_images',
+]);
 
 export interface BinderAspectNavItem {
   id: string;
@@ -252,11 +275,18 @@ export class ProtopipeHomeThinkerBinderComponent {
     }
 
     const run = this.run();
-    if (!run) {
-      return { title: 'Visualizer', emptyMessage: 'Select a pipeline step.', blocks: [] };
+    const thoughtStep = this.thought()?.steps.find((s) => s.id === step.id);
+    if (!run || !ARTICLE_PIPELINE_STEP_IDS.has(step.id)) {
+      return thoughtStep
+        ? buildThoughtStepVisualizer(thoughtStep)
+        : { title: 'Visualizer', emptyMessage: 'Select a pipeline step.', blocks: [] };
     }
     return buildArticleStepVisualizer(run, step.id as ArticleGenerationStep, step.status);
   });
+
+  readonly articlePreview = computed(() =>
+    buildArticlePreviewVisualizer({ run: this.run(), thought: this.thought() }),
+  );
 
   /** Article compile-context tabs only — not used for strategy builds. */
   readonly aspectNav = computed((): BinderAspectNavItem[] => {
@@ -446,10 +476,10 @@ export class ProtopipeHomeThinkerBinderComponent {
 
       // Reset active step whenever the run itself changes (same step IDs across runs).
       const prevId = this._lastThoughtId();
-      if (prevId !== null && prevId !== t.id) {
+      if (prevId !== t.id) {
         this._lastThoughtId.set(t.id);
         this.activeStepId.set(null);
-        this.activeTab.set('visualizer');
+        this.activeTab.set(this.defaultActiveTab(t.status));
         return;
       }
       this._lastThoughtId.set(t.id);
@@ -615,5 +645,9 @@ export class ProtopipeHomeThinkerBinderComponent {
     if (running) return running.id;
     const lastDone = [...t.steps].reverse().find((s) => s.status !== 'pending');
     return lastDone?.id ?? t.steps[0]?.id;
+  }
+
+  private defaultActiveTab(status: string): ThinkerTab {
+    return this.runKind() === 'article' && status === 'complete' ? 'article' : 'visualizer';
   }
 }

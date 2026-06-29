@@ -8,15 +8,12 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import type {
   Prospect,
   ProspectingCampaign,
   ProspectingCandidateSummary,
   ProspectPriority,
-  SalesInteractionChannel,
-  SalesInteractionOutcome,
-  SalesInteractionPhase,
-  SalesInteractionSentiment,
   ProspectStatus,
   ProspectWebsiteStatus,
 } from '@hive/contracts';
@@ -69,6 +66,7 @@ function relativeTime(iso: string | undefined): string {
 })
 export class ProtopipeProspectorComponent implements OnInit {
   private readonly service = inject(ProtopipeProspectorService);
+  private readonly router = inject(Router);
   readonly store = inject(ProtopipeProspectorStore);
   readonly thinkerView = inject(ProtopipeHomeThinkerViewState);
   readonly buildDemo = output<BuildBookProspectContext>();
@@ -142,32 +140,7 @@ export class ProtopipeProspectorComponent implements OnInit {
   );
 
   readonly activeCampaign = computed(() => this.store.selectedCampaign());
-  readonly selectedProspectId = signal<string | null>(null);
-  readonly activeProspect = computed(() => {
-    const selectedId = this.selectedProspectId();
-    return this.store.prospects().find((prospect) => prospect.id === selectedId)
-      ?? this.store.prospects()[0]
-      ?? null;
-  });
-  readonly activeProspectInteractions = computed(() => {
-    const prospect = this.activeProspect();
-    return prospect ? this.store.interactionsForProspect(prospect.id) : [];
-  });
   readonly selectedCandidateCount = computed(() => this.selectedCandidateKeys().size);
-  readonly interactionPhase = signal<SalesInteractionPhase>('cold_call');
-  readonly interactionChannel = signal<SalesInteractionChannel>('phone');
-  readonly interactionOutcome = signal<SalesInteractionOutcome>('no_answer');
-  readonly interactionSentiment = signal<SalesInteractionSentiment>('unknown');
-  readonly interactionScript = signal(
-    'Quick opener: I was looking at your local search presence and saw a few places where a stronger site and content system could turn more searchers into booked work.',
-  );
-  readonly interactionOffer = signal(
-    'Offer a fast demo: a build-book prototype showing the site, offer, and content plan we would launch for them.',
-  );
-  readonly interactionResearch = signal('');
-  readonly interactionNotes = signal('');
-  readonly interactionNextStep = signal('');
-  readonly interactionReasonTags = signal('');
 
   readonly allCampaignCandidatesSelected = computed(() => {
     const candidates = this.activeCampaign()?.candidates ?? [];
@@ -175,48 +148,6 @@ export class ProtopipeProspectorComponent implements OnInit {
     const selected = this.selectedCandidateKeys();
     return candidates.every((candidate) => selected.has(this.candidateKey(candidate)));
   });
-
-  readonly interactionPhases: SalesInteractionPhase[] = [
-    'cold_call',
-    'follow_up',
-    'meeting',
-    'demo',
-    'proposal',
-    'nurture',
-  ];
-  readonly interactionChannels: SalesInteractionChannel[] = [
-    'phone',
-    'email',
-    'sms',
-    'video',
-    'in_person',
-    'referral',
-    'manual',
-  ];
-  readonly interactionOutcomes: SalesInteractionOutcome[] = [
-    'no_answer',
-    'left_voicemail',
-    'connected',
-    'not_interested',
-    'gatekeeper',
-    'call_back',
-    'meeting_booked',
-    'qualified',
-    'unqualified',
-    'email_sent',
-    'email_replied',
-    'demo_booked',
-    'proposal_sent',
-    'won',
-    'lost',
-  ];
-  readonly interactionSentiments: SalesInteractionSentiment[] = [
-    'unknown',
-    'cold',
-    'neutral',
-    'warm',
-    'hot',
-  ];
 
   constructor() {
     this.thinkerView.setFocusBackLabel('Back to leads');
@@ -386,11 +317,6 @@ export class ProtopipeProspectorComponent implements OnInit {
     this.activeSection.set('new-search');
   }
 
-  selectProspect(prospect: Prospect): void {
-    this.selectedProspectId.set(prospect.id);
-    this.activeSection.set('prospects');
-  }
-
   toggleCandidate(candidate: ProspectingCandidateSummary): void {
     const key = this.candidateKey(candidate);
     this.selectedCandidateKeys.update((selected) => {
@@ -434,40 +360,12 @@ export class ProtopipeProspectorComponent implements OnInit {
     this.store.updateProspect(prospect.id, { notes });
   }
 
-  async saveInteraction(prospect: Prospect): Promise<void> {
-    const tags = this.interactionReasonTags()
-      .split(',')
-      .map((tag) => tag.trim())
-      .filter(Boolean);
-    const researchSummary = this.interactionResearch().trim();
-    const saved = await this.store.recordSalesInteraction({
-      prospectId: prospect.id,
-      phase: this.interactionPhase(),
-      channel: this.interactionChannel(),
-      outcome: this.interactionOutcome(),
-      sentiment: this.interactionSentiment(),
-      scriptBody: this.interactionScript(),
-      offerSummary: this.interactionOffer(),
-      researchBrief: {
-        summary: researchSummary || prospect.topSignal,
-        signals: [prospect.topSignal, researchSummary].filter((signal): signal is string => Boolean(signal)),
-        objections: [],
-        opportunities: prospect.websiteStatus === 'none' ? ['No website listed'] : [],
-      },
-      notes: this.interactionNotes(),
-      outcomeReasonTags: tags,
-      nextStep: this.interactionNextStep(),
-    });
-    if (saved) {
-      this.selectedProspectId.set(prospect.id);
-      this.interactionNotes.set('');
-      this.interactionNextStep.set('');
-      this.interactionReasonTags.set('');
-    }
-  }
-
   promoteProspect(prospect: Prospect): void {
     this.buildDemo.emit(this.store.promoteToBuildBook(prospect));
+  }
+
+  openColdCaller(): void {
+    void this.router.navigate(['/home/cold-caller']);
   }
 
   isLeadSelected(name: string | undefined): boolean {
@@ -488,10 +386,6 @@ export class ProtopipeProspectorComponent implements OnInit {
 
   priorityLabel(p: string): string {
     return p.charAt(0).toUpperCase() + p.slice(1);
-  }
-
-  label(value: string | undefined): string {
-    return value ? value.replaceAll('_', ' ') : 'none';
   }
 
   relativeTime = relativeTime;

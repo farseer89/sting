@@ -54,6 +54,7 @@ export class ProtopipeKeywordPickerComponent implements OnInit {
   readonly siteLabel = input('');
   readonly bookMode = input(false);
   readonly bookSection = input<KeywordPickerWizardStep | null>(null);
+  readonly bookSectionChange = output<KeywordPickerWizardStep>();
   readonly confirmed = output<void>();
 
   readonly formatCompetitionCell = formatCompetitionCell;
@@ -244,14 +245,28 @@ export class ProtopipeKeywordPickerComponent implements OnInit {
 
   continueFromKeywords(): void {
     if (this.store.wizardEnabled()) {
-      this.store.confirmKeywordSelection();
+      if (this.store.confirmKeywordSelection()) {
+        this.bookSectionChange.emit('avatars');
+      }
       return;
     }
     void this.confirm();
   }
 
   continueFromAvatars(): void {
-    this.store.goToBuildStep();
+    if (this.store.goToBuildStep()) {
+      this.bookSectionChange.emit('build');
+    }
+  }
+
+  backFromAvatars(): void {
+    this.store.backWizardStep();
+    this.bookSectionChange.emit('keywords');
+  }
+
+  backFromBuild(): void {
+    this.store.backWizardStep();
+    this.bookSectionChange.emit('avatars');
   }
 
   async confirm(): Promise<void> {

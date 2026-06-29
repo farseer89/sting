@@ -202,6 +202,15 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
     this.confirmed.emit();
   }
 
+  onBookSectionChange(step: KeywordPickerWizardStep): void {
+    const sectionByStep: Record<KeywordPickerWizardStep, DiscoveryBookPipelineSection> = {
+      keywords: 'keywords',
+      avatars: 'audiences',
+      build: 'build',
+    };
+    this.selectSection(sectionByStep[step]);
+  }
+
   onDiscoveryStarted(): void {
     this.didAutoLeaveDiscovery.set(false);
     this.activeSection.set('discovery');

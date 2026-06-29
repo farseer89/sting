@@ -12,6 +12,7 @@ import type {
   ProtopipeContentTemplate,
   ProtopipeArticleBlock,
 } from '@hive/contracts';
+import type { Thought, ThoughtArtifact, ThoughtStep } from '../../lab/thinker/thought.model';
 import type { BinderStepStatus } from './thinker-binder.mapper';
 
 export type VisualizerBlockKind =
@@ -133,6 +134,214 @@ export function buildArticleStepVisualizer(
         blocks: [],
       };
   }
+}
+
+export function buildArticlePreviewVisualizer(
+  options: { run?: ArticleGenerationRunDto | null; thought?: Thought | null },
+): StepVisualizerView {
+  if (options.run?.artifacts.template) {
+    return templateVisualizer(options.run.artifacts.template, options.run.artifacts.imageGeneration);
+  }
+
+  const artifact = findArticleArtifact(options.thought);
+  if (!artifact) {
+    return {
+      title: 'Article preview',
+      emptyMessage:
+        'The article will appear here once the assemble step creates a template. Draft sections are visible on the Draft step.',
+      blocks: [],
+    };
+  }
+
+  const template = templateFromArtifact(artifact);
+  if (template) {
+    return templateVisualizer(template);
+  }
+
+  const blocks = artifactBlocks(artifact);
+  return {
+    title: artifact.label || 'Article preview',
+    subtitle: artifact.summary,
+    emptyMessage: 'No article preview is available yet.',
+    blocks,
+  };
+}
+
+function findArticleArtifact(thought: Thought | null | undefined): ThoughtArtifact | undefined {
+  const portArtifact = thought?.outputs
+    .map((port) => port.artifact)
+    .find((artifact): artifact is ThoughtArtifact => Boolean(artifact));
+  if (isArticleLikeArtifact(portArtifact)) return portArtifact;
+
+  const steps = [...(thought?.steps ?? [])].reverse();
+  for (const step of steps) {
+    const artifact = step.output?.find(isArticleLikeArtifact);
+    if (artifact) return artifact;
+  }
+
+  return undefined;
+}
+
+function isArticleLikeArtifact(artifact: ThoughtArtifact | undefined): artifact is ThoughtArtifact {
+  if (!artifact) return false;
+  const key = `${artifact.id} ${artifact.label} ${artifact.kind}`.toLowerCase();
+  if (key.includes('article') || key.includes('template') || key.includes('draft')) {
+    return true;
+  }
+  return Boolean(templateFromArtifact(artifact));
+}
+
+function templateFromArtifact(artifact: ThoughtArtifact | undefined): ProtopipeContentTemplate | undefined {
+  const data = artifact?.data;
+  if (isContentTemplate(data)) return data;
+  if (data && typeof data === 'object') {
+    const record = data as Record<string, unknown>;
+    if (isContentTemplate(record['template'])) return record['template'];
+    if (isContentTemplate(record['article'])) return record['article'];
+  }
+  return undefined;
+}
+
+function isContentTemplate(value: unknown): value is ProtopipeContentTemplate {
+  if (!value || typeof value !== 'object') return false;
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record['title'] === 'string' &&
+    typeof record['h1'] === 'string' &&
+    (Array.isArray(record['blocks']) || Array.isArray(record['sections']) || typeof record['intro'] === 'string')
+  );
+}
+
+export function buildThoughtStepVisualizer(step: ThoughtStep): StepVisualizerView {
+  if (step.status === 'pending') {
+    return {
+      title: step.label,
+      subtitle: step.summary,
+      emptyMessage: 'This step has not run yet. The preview will appear here as artifacts land.',
+      blocks: [],
+    };
+  }
+
+  const blocks: VisualizerBlock[] = [];
+
+  for (const artifact of step.output ?? []) {
+    blocks.push(...artifactBlocks(artifact));
+  }
+
+  if (!blocks.length && step.llmCalls?.length) {
+    blocks.push(
+      ...step.llmCalls.map((call) => ({
+        kind: 'context-panel' as const,
+        tone: 'strategy' as const,
+        label: call.label,
+        text: call.response,
+        hint: call.model,
+      })),
+    );
+  }
+
+  if (!blocks.length && step.subSteps?.length) {
+    blocks.push({
+      kind: 'kicker',
+      text: 'Step work',
+    });
+    blocks.push({
+      kind: 'list',
+      items: step.subSteps.map((sub) =>
+        [sub.label, sub.detail, sub.status].filter(Boolean).join(' — '),
+      ),
+    });
+  }
+
+  if (!blocks.length && step.events.length) {
+    blocks.push({
+      kind: 'kicker',
+      text: 'Events',
+    });
+    blocks.push({
+      kind: 'list',
+      items: step.events.map((event) => event.message),
+    });
+  }
+
+  return {
+    title: step.label,
+    subtitle: step.summary,
+    emptyMessage: 'No visual preview is available for this step yet. Check the output or raw tab for details.',
+    blocks,
+  };
+}
+
+function artifactBlocks(artifact: ThoughtArtifact): VisualizerBlock[] {
+  const labelBlock: VisualizerBlock = { kind: 'kicker', text: artifact.label };
+  if (artifact.kind === 'image') {
+    const image = imageArtifactData(artifact.data);
+    if (image.url) {
+      return [
+        labelBlock,
+        {
+          kind: 'image',
+          label: artifact.label,
+          imageUrl: image.url,
+          imageAlt: image.alt ?? artifact.label,
+          text: image.prompt,
+        },
+      ];
+    }
+  }
+
+  const text = artifactText(artifact);
+  if (!text.trim()) {
+    return [];
+  }
+
+  if (artifact.kind === 'markdown' || artifact.kind === 'text') {
+    return [
+      labelBlock,
+      {
+        kind: 'context-panel',
+        tone: 'neutral',
+        label: artifact.summary ?? artifact.label,
+        text,
+      },
+    ];
+  }
+
+  return [
+    labelBlock,
+    {
+      kind: 'context-panel',
+      tone: 'neutral',
+      label: artifact.summary ?? artifact.kind,
+      text,
+    },
+  ];
+}
+
+function artifactText(artifact: ThoughtArtifact): string {
+  if (typeof artifact.data === 'string') {
+    return artifact.data;
+  }
+  try {
+    return JSON.stringify(artifact.data, null, 2);
+  } catch {
+    return String(artifact.data ?? '');
+  }
+}
+
+function imageArtifactData(data: unknown): { url?: string; alt?: string; prompt?: string } {
+  if (typeof data === 'string') {
+    return { url: data };
+  }
+  if (!data || typeof data !== 'object') {
+    return {};
+  }
+  const record = data as Record<string, unknown>;
+  return {
+    url: typeof record['url'] === 'string' ? record['url'] : undefined,
+    alt: typeof record['alt'] === 'string' ? record['alt'] : undefined,
+    prompt: typeof record['prompt'] === 'string' ? record['prompt'] : undefined,
+  };
 }
 
 /** Extra fields persisted on brief / writingContext beyond hive-contracts base types. */

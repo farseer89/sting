@@ -1,0 +1,23 @@
+<header id="site-header-consult" class="site-header site-header--landing site-header--consult">
+  <div class="container">
+    <a class="site-logo" href="#" [attr.aria-label]="chrome.companyName" (click)="onNavClick($event)">
+      <span class="site-logo__full">{{ chrome.companyName }}</span>
+    </a>
+    <div class="site-nav-wrap">
+      <nav class="site-nav site-nav--dropdown" aria-label="Main">
+        <ul class="site-nav__list">
+          @for (item of chrome.nav; track item.href) {
+            <li>
+              <a [href]="item.href" (click)="onNavClick($event)">{{ item.label }}</a>
+            </li>
+          }
+          <li class="site-nav__cta-item">
+            <a class="site-nav__cta" [href]="chrome.phoneHref" (click)="onNavClick($event)">
+              {{ chrome.headerCtaLabel }}
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</header>

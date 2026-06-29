@@ -1,0 +1,79 @@
+<div class="bbp" [class]="'bbp bbp--' + layout()">
+  @if (layout() === 'reviews') {
+    <app-protopipe-build-inline-text
+      [editable]="editable()"
+      [value]="heading()"
+      hostClass="bbp__heading"
+      ariaLabel="Proof heading"
+      (valueChange)="patchProp('heading', $event)"
+    />
+    <div class="bbp__reviews">
+      @for (item of cards(); track $index) {
+        <article class="bbp__review">
+          <app-protopipe-build-inline-text
+            [editable]="editable()"
+            [value]="cardQuote(item)"
+            hostClass="bbp__quote"
+            [multiline]="true"
+            ariaLabel="Review quote"
+            (valueChange)="patchPath('testimonials.' + $index + '.quote', $event)"
+          />
+          <app-protopipe-build-inline-text
+            [editable]="editable()"
+            [value]="cardName(item)"
+            hostClass="bbp__name"
+            ariaLabel="Reviewer name"
+            (valueChange)="patchPath('testimonials.' + $index + '.name', $event)"
+          />
+        </article>
+      }
+    </div>
+  } @else if (layout() === 'stats') {
+    <app-protopipe-build-inline-text
+      [editable]="editable()"
+      [value]="heading()"
+      hostClass="bbp__heading"
+      ariaLabel="Outcomes heading"
+      (valueChange)="patchProp('heading', $event)"
+    />
+    <div class="bbp__metrics">
+      @for (item of cards(); track $index) {
+        <app-protopipe-build-inline-stat
+          [editable]="editable()"
+          [value]="cardMetric(item)"
+          [label]="cardDetail(item)"
+          hostClass="bbp__metric"
+          (valueChange)="patchPath('cards.' + $index + '.metric', $event)"
+          (labelChange)="patchPath('cards.' + $index + '.detail', $event)"
+        />
+      }
+    </div>
+  } @else {
+    <blockquote class="bbp__highlight">
+      <app-protopipe-build-inline-text
+        [editable]="editable()"
+        [value]="quote()"
+        hostClass="bbp__quote"
+        [multiline]="true"
+        ariaLabel="Quote"
+        (valueChange)="patchProp('quote', $event)"
+      />
+      <footer class="bbp__cite">
+        <app-protopipe-build-inline-text
+          [editable]="editable()"
+          [value]="attribution()"
+          hostClass="bbp__name"
+          ariaLabel="Attribution"
+          (valueChange)="patchProp('attribution', $event)"
+        />
+        <app-protopipe-build-inline-text
+          [editable]="editable()"
+          [value]="role()"
+          hostClass="bbp__role"
+          ariaLabel="Role"
+          (valueChange)="patchProp('role', $event)"
+        />
+      </footer>
+    </blockquote>
+  }
+</div>

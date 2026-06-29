@@ -1,0 +1,110 @@
+.bb-img-picker-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgb(15 23 42 / 0.45);
+}
+
+.bb-img-picker {
+  width: min(42rem, 100%);
+  max-height: min(80vh, 36rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 0.85rem;
+  background: #fff;
+  box-shadow: 0 24px 60px rgb(15 23 42 / 0.22);
+}
+
+.bb-img-picker__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.bb-img-picker__head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.bb-img-picker__head p {
+  margin: 0.25rem 0 0;
+  font-size: 0.82rem;
+  color: #71717a;
+}
+
+.bb-img-picker__close {
+  border: none;
+  background: transparent;
+  color: #71717a;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.bb-img-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+  gap: 0.65rem;
+  overflow: auto;
+  padding: 0.1rem;
+}
+
+.bb-img-picker__tile {
+  position: relative;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 0.55rem;
+  overflow: hidden;
+  background: #f4f4f5;
+  cursor: pointer;
+  aspect-ratio: 4 / 3;
+}
+
+.bb-img-picker__tile.is-selected {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.18);
+}
+
+.bb-img-picker__tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.bb-img-picker__empty {
+  padding: 1.5rem;
+  border: 1px dashed #d4d4d8;
+  border-radius: 0.65rem;
+  text-align: center;
+  color: #71717a;
+  font-size: 0.875rem;
+}
+
+.bb-img-picker__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.bb-img-picker__btn {
+  padding: 0.5rem 0.85rem;
+  border-radius: 0.5rem;
+  border: 1px solid #d4d4d8;
+  background: #fff;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.bb-img-picker__btn--primary {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #fff;
+}

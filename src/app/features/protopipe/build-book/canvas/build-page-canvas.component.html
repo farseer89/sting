@@ -1,0 +1,180 @@
+<div
+  class="bb-page-canvas"
+  [class.bb-page-canvas--baseline]="baselineMode()"
+  [class.bb-page-canvas--sparky]="baselineSiteRenderer() === 'sparky-site'"
+  [class.bb-page-canvas--wilco]="baselineSiteRenderer() === 'wilco-site'"
+>
+  @if (baselineMode()) {
+    @if (baselineSiteRenderer() === 'sparky-site') {
+      <div class="sparky-page sparky-page--site bb-page-canvas__sparky-shell">
+        <div class="sparky-site">
+          <app-protopipe-build-sparky-site-header [editable]="editable()" />
+
+          @for (segment of baselineRenderSegments(); track segment.key) {
+            @if (segment.type === 'single') {
+              @for (block of segment.blocks; track block.id) {
+                <app-protopipe-build-block-section
+                  [attr.data-block-id]="block.id"
+                  [section]="block.section"
+                  [blockInstanceId]="block.id"
+                  [baselineBlockId]="block.blockId"
+                  [blockId]="block.blockId"
+                  [layout]="block.layout"
+                  [props]="block.props"
+                  [configured]="block.configured"
+                  [editable]="editable()"
+                  [active]="activeBlockId() === block.id"
+                  [heroLayoutId]="heroLayoutId()"
+                  [heroImageUrl]="heroImageUrl()"
+                  (sectionClick)="onBlockClick(block.id)"
+                  (propPathChange)="onBlockPropPathChange(block.id, $event.path, $event.value)"
+              (propsChange)="onBlockPropsChange(block.id, $event)"
+                  (propsChange)="onBlockPropsChange(block.id, $event)"
+                  (copyChange)="copyChange.emit($event)"
+                  (imageEdit)="onBlockImageEdit(block.id, $event)"
+                />
+              }
+            } @else {
+              <div class="sp-fold-stack">
+                @for (block of segment.blocks; track block.id) {
+                  <app-protopipe-build-block-section
+                    [attr.data-block-id]="block.id"
+                    [section]="block.section"
+                    [blockInstanceId]="block.id"
+                    [baselineBlockId]="block.blockId"
+                    [blockId]="block.blockId"
+                    [layout]="block.layout"
+                    [props]="block.props"
+                    [configured]="block.configured"
+                    [editable]="editable()"
+                    [active]="activeBlockId() === block.id"
+                    [heroLayoutId]="heroLayoutId()"
+                    [heroImageUrl]="heroImageUrl()"
+                    (sectionClick)="onBlockClick(block.id)"
+                    (propPathChange)="onBlockPropPathChange(block.id, $event.path, $event.value)"
+              (propsChange)="onBlockPropsChange(block.id, $event)"
+                  (propsChange)="onBlockPropsChange(block.id, $event)"
+                    (copyChange)="copyChange.emit($event)"
+                    (imageEdit)="onBlockImageEdit(block.id, $event)"
+                  />
+                }
+              </div>
+            }
+          }
+
+          <app-protopipe-build-sparky-site-footer [editable]="editable()" />
+        </div>
+      </div>
+    } @else if (baselineSiteRenderer() === 'wilco-site') {
+      <div class="page-landing page-consult bb-page-canvas__wilco-shell" data-theme="consult-minimal">
+        <app-protopipe-build-wilco-site-header [editable]="editable()" />
+        <main>
+          @for (block of blocks(); track block.id) {
+            <app-protopipe-build-block-section
+              [attr.data-block-id]="block.id"
+              [section]="block.section"
+              [blockInstanceId]="block.id"
+              [baselineBlockId]="block.blockId"
+              [blockId]="block.blockId"
+              [layout]="block.layout"
+              [props]="block.props"
+              [configured]="block.configured"
+              [editable]="editable()"
+              [active]="activeBlockId() === block.id"
+              [heroLayoutId]="heroLayoutId()"
+              [heroImageUrl]="heroImageUrl()"
+              (sectionClick)="onBlockClick(block.id)"
+              (propPathChange)="onBlockPropPathChange(block.id, $event.path, $event.value)"
+              (propsChange)="onBlockPropsChange(block.id, $event)"
+              (copyChange)="copyChange.emit($event)"
+              (imageEdit)="onBlockImageEdit(block.id, $event)"
+            />
+          }
+        </main>
+        <app-protopipe-build-wilco-site-footer [editable]="editable()" />
+      </div>
+    } @else {
+      <div class="wri-page wri-page--site bb-page-canvas__wri-shell">
+        <div class="wri-site">
+          <app-protopipe-build-wri-site-header [editable]="editable()" />
+
+          @for (segment of baselineRenderSegments(); track segment.key) {
+            @if (segment.type === 'hero-unit') {
+              <div class="wri-hero-unit wri-hero-unit--trust">
+                @for (block of segment.blocks; track block.id) {
+                  <app-protopipe-build-block-section
+                    [attr.data-block-id]="block.id"
+                    [section]="block.section"
+                    [blockInstanceId]="block.id"
+                    [baselineBlockId]="block.blockId"
+                    [blockId]="block.blockId"
+                    [layout]="block.layout"
+                    [props]="block.props"
+                    [configured]="block.configured"
+                    [editable]="editable()"
+                    [active]="activeBlockId() === block.id"
+                    [heroLayoutId]="heroLayoutId()"
+                    [heroImageUrl]="heroImageUrl()"
+                    (sectionClick)="onBlockClick(block.id)"
+                    (propPathChange)="onBlockPropPathChange(block.id, $event.path, $event.value)"
+              (propsChange)="onBlockPropsChange(block.id, $event)"
+                  (propsChange)="onBlockPropsChange(block.id, $event)"
+                    (copyChange)="copyChange.emit($event)"
+                    (imageEdit)="onBlockImageEdit(block.id, $event)"
+                  />
+                }
+              </div>
+            } @else {
+              <div class="wri-fold-stack">
+                @for (block of segment.blocks; track block.id) {
+                  <app-protopipe-build-block-section
+                    [attr.data-block-id]="block.id"
+                    [section]="block.section"
+                    [blockInstanceId]="block.id"
+                    [baselineBlockId]="block.blockId"
+                    [blockId]="block.blockId"
+                    [layout]="block.layout"
+                    [props]="block.props"
+                    [configured]="block.configured"
+                    [editable]="editable()"
+                    [active]="activeBlockId() === block.id"
+                    [heroLayoutId]="heroLayoutId()"
+                    [heroImageUrl]="heroImageUrl()"
+                    (sectionClick)="onBlockClick(block.id)"
+                    (propPathChange)="onBlockPropPathChange(block.id, $event.path, $event.value)"
+              (propsChange)="onBlockPropsChange(block.id, $event)"
+                  (propsChange)="onBlockPropsChange(block.id, $event)"
+                    (copyChange)="copyChange.emit($event)"
+                    (imageEdit)="onBlockImageEdit(block.id, $event)"
+                  />
+                }
+              </div>
+            }
+          }
+
+          <app-protopipe-build-wri-site-footer [editable]="editable()" />
+        </div>
+      </div>
+    }
+  } @else {
+    @for (slot of sectionSlots; track slot) {
+      @let state = stateFor(slot);
+      <app-protopipe-build-block-section
+        [section]="slot"
+        [blockId]="state.blockId"
+        [layout]="state.layout"
+        [props]="state.props"
+        [configured]="state.configured"
+        [editable]="editable()"
+        [active]="activeSection() === slot"
+        [heroLayoutId]="heroLayoutId()"
+        [heroImageUrl]="heroImageUrl()"
+        (sectionClick)="onSectionClick($event)"
+        (propsChange)="onPropsChange(slot, $event)"
+        (propPathChange)="onPropPathChange(slot, $event.path, $event.value)"
+        (copyChange)="copyChange.emit($event)"
+        (imageEdit)="imageEdit.emit({})"
+      />
+    }
+  }
+</div>

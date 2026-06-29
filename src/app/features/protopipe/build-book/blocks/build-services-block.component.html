@@ -1,0 +1,53 @@
+<div class="bbs" [class]="'bbs bbs--' + layout()">
+  <div class="bbs__head">
+    <app-protopipe-build-inline-text
+      [editable]="editable()"
+      [value]="heading()"
+      hostClass="bbs__heading"
+      ariaLabel="Services heading"
+      (valueChange)="patchProp('heading', $event)"
+    />
+    @if (layout() === 'tabs') {
+      <app-protopipe-build-inline-text
+        [editable]="editable()"
+        [value]="intro()"
+        hostClass="bbs__intro"
+        [multiline]="true"
+        ariaLabel="Services intro"
+        (valueChange)="patchProp('intro', $event)"
+      />
+    }
+  </div>
+
+  <div class="bbs__items" [class.bbs__items--grid]="layout() === 'grid' || layout() === 'cards'" [class.bbs__items--list]="layout() === 'list' || layout() === 'tabs'">
+    @for (item of items(); track $index) {
+      <article class="bbs__item">
+        @if (typeof item === 'string') {
+          <app-protopipe-build-inline-text
+            [editable]="editable()"
+            [value]="item"
+            hostClass="bbs__item-title"
+            ariaLabel="Service line"
+            (valueChange)="patchPath(listKey() + '.' + $index, $event)"
+          />
+        } @else {
+          <app-protopipe-build-inline-text
+            [editable]="editable()"
+            [value]="itemTitle(item)"
+            hostClass="bbs__item-title"
+            ariaLabel="Service title"
+            (valueChange)="patchPath(listKey() + '.' + $index + '.title', $event)"
+          />
+          <app-protopipe-build-inline-text
+            [editable]="editable()"
+            [value]="itemBody(item)"
+            hostClass="bbs__item-body"
+            [multiline]="true"
+            ariaLabel="Service description"
+            (valueChange)="patchPath(listKey() + '.' + $index + '.body', $event)"
+          />
+        }
+      </article>
+    }
+  </div>
+</div>

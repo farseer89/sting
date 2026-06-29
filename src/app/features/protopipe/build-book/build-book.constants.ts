@@ -28,6 +28,8 @@ export type {
 
 import type { BuildBookOption } from './build-book.types';
 
+import { BASELINE_APPROVED_HERO_LIBRARY } from './build-book-baseline-hero.catalog';
+import { BASELINE_APPROVED_FOLD_LIBRARY } from './build-book-baseline-fold.catalog';
 import {
   BUILD_BOOK_DEMO_FOLD_OPTIONS,
   BUILD_BOOK_DEMO_HERO_OPTIONS,
@@ -163,19 +165,55 @@ export function findBuildBookOption(
   section: BuildBookSection,
   optionId: string,
 ): BuildBookOption | undefined {
+  if (section === 'hero') {
+    return (
+      BASELINE_APPROVED_HERO_LIBRARY.find((o) => o.id === optionId) ??
+      BUILD_BOOK_OPTIONS.hero.find((o) => o.id === optionId)
+    );
+  }
+  if (section === 'fold') {
+    return (
+      BASELINE_APPROVED_FOLD_LIBRARY.find((o) => o.id === optionId) ??
+      BUILD_BOOK_OPTIONS.fold.find((o) => o.id === optionId)
+    );
+  }
   return BUILD_BOOK_OPTIONS[section].find((o) => o.id === optionId);
 }
 
 export function findBuildBookOptionByComponentId(
   section: BuildBookSection,
   componentId: string,
+  labLayout?: string,
 ): BuildBookOption | undefined {
-  return BUILD_BOOK_OPTIONS[section].find((o) => o.componentId === componentId);
+  const matches = BUILD_BOOK_OPTIONS[section].filter((o) => o.componentId === componentId);
+  if (matches.length === 0) return undefined;
+  if (labLayout) {
+    const byLab = matches.find((o) => o.id === labLayout);
+    if (byLab) return byLab;
+  }
+  return matches[0];
 }
 
 export function findBuildBookOptionByLabLayout(
   section: BuildBookSection,
   labLayout: string,
 ): BuildBookOption | undefined {
-  return BUILD_BOOK_OPTIONS[section].find((o) => o.id === labLayout);
+  if (section === 'hero') {
+    return (
+      BASELINE_APPROVED_HERO_LIBRARY.find((o) => o.id === labLayout) ??
+      BUILD_BOOK_OPTIONS.hero.find((o) => o.id === labLayout) ??
+      BUILD_BOOK_OPTIONS.hero.find((o) => o.demo?.labId === labLayout)
+    );
+  }
+  if (section === 'fold') {
+    return (
+      BASELINE_APPROVED_FOLD_LIBRARY.find((o) => o.id === labLayout) ??
+      BUILD_BOOK_OPTIONS.fold.find((o) => o.id === labLayout) ??
+      BUILD_BOOK_OPTIONS.fold.find((o) => o.demo?.labId === labLayout)
+    );
+  }
+  return (
+    BUILD_BOOK_OPTIONS[section].find((o) => o.id === labLayout) ??
+    BUILD_BOOK_OPTIONS[section].find((o) => o.demo?.labId === labLayout)
+  );
 }

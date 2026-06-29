@@ -1,0 +1,117 @@
+<section
+  class="bb-section"
+  [class.is-active]="active()"
+  [class.is-empty]="!configured()"
+  [class.is-baseline]="isBaselineRenderer()"
+  [attr.data-section]="section()"
+  (click)="onSectionClick($event)"
+>
+  @if (!configured()) {
+    <div class="bb-section__placeholder">
+      <span class="bb-section__label">{{ sectionLabel() }}</span>
+      <p>Choose a layout in the options panel for this {{ sectionLabel() }} block.</p>
+    </div>
+  } @else if (isBaselineHeroLabPreview()) {
+    <app-protopipe-build-hero-preview
+      [imageUrl]="heroPreviewImageUrl()"
+      [layout]="resolvedHeroLayoutId()"
+      [copy]="heroCopy()"
+      [editable]="editable()"
+      (copyChange)="onCopyChange($event)"
+      (imageEdit)="imageEdit.emit({})"
+    />
+  } @else if (isBaselineFoldLabPreview()) {
+    <app-protopipe-build-fold-block
+      [layout]="resolvedFoldWireLayout()"
+      [layoutId]="resolvedFoldLayoutId()"
+      [props]="foldLabPreviewProps()"
+      [editable]="false"
+      (propsChange)="onPropsChange($event)"
+      (propPathChange)="onPropPath($event.path, $event.value)"
+    />
+  } @else if (isBaselineRenderer()) {
+    @if (baselineRenderer() === 'sparky-site') {
+      <app-protopipe-build-sparky-baseline-block
+        [blockId]="resolvedBaselineBlockId()"
+        [props]="props()"
+        [editable]="editable()"
+        (propPathChange)="onPropPath($event.path, $event.value)"
+        (imageEdit)="onBaselineImageEdit($event)"
+      />
+    } @else if (baselineRenderer() === 'wilco-site') {
+      <app-protopipe-build-wilco-baseline-block
+        [blockId]="resolvedBaselineBlockId()"
+        [props]="props()"
+        [editable]="editable()"
+        (propPathChange)="onPropPath($event.path, $event.value)"
+        (imageEdit)="onBaselineImageEdit($event)"
+      />
+    } @else {
+      <app-protopipe-build-wri-baseline-block
+        [blockId]="resolvedBaselineBlockId()"
+        [props]="props()"
+        [editable]="editable()"
+        (propPathChange)="onPropPath($event.path, $event.value)"
+        (imageEdit)="onBaselineImageEdit($event)"
+      />
+    }
+  } @else {
+    @switch (section()) {
+      @case ('hero') {
+        <app-protopipe-build-hero-preview
+          [imageUrl]="heroPreviewImageUrl()"
+          [layout]="heroLayoutId()"
+          [copy]="heroCopy()"
+          [editable]="editable()"
+          (copyChange)="onCopyChange($event)"
+          (imageEdit)="imageEdit.emit({})"
+        />
+      }
+      @case ('fold') {
+        <app-protopipe-build-fold-block
+          [layout]="layout()"
+          [props]="props()"
+          [editable]="editable()"
+          (propsChange)="onPropsChange($event)"
+          (propPathChange)="onPropPath($event.path, $event.value)"
+        />
+      }
+      @case ('services') {
+        <app-protopipe-build-services-block
+          [layout]="layout()"
+          [props]="props()"
+          [editable]="editable()"
+          (propsChange)="onPropsChange($event)"
+          (propPathChange)="onPropPath($event.path, $event.value)"
+        />
+      }
+      @case ('proof') {
+        <app-protopipe-build-proof-block
+          [layout]="layout()"
+          [props]="props()"
+          [editable]="editable()"
+          (propsChange)="onPropsChange($event)"
+          (propPathChange)="onPropPath($event.path, $event.value)"
+        />
+      }
+      @case ('areas') {
+        <app-protopipe-build-areas-block
+          [layout]="layout()"
+          [props]="props()"
+          [editable]="editable()"
+          (propsChange)="onPropsChange($event)"
+          (propPathChange)="onPropPath($event.path, $event.value)"
+        />
+      }
+      @case ('close') {
+        <app-protopipe-build-close-block
+          [layout]="layout()"
+          [props]="props()"
+          [editable]="editable()"
+          (propsChange)="onPropsChange($event)"
+          (propPathChange)="onPropPath($event.path, $event.value)"
+        />
+      }
+    }
+  }
+</section>

@@ -95,14 +95,24 @@ export class ProtopipeBuildSiteImagesPanelComponent implements OnInit {
     () => this.previewImageUrl() ?? this.selectedImageUrl() ?? this.siteImageAssets()[0]?.url ?? '',
   );
 
-  readonly previewLayout = computed(() => this.currentHero()?.layout ?? this.heroLayout());
-  readonly previewHeroLabel = computed(() => this.currentHero()?.label ?? this.heroLabel());
-  readonly previewSiteUrl = computed(() => this.currentHero()?.url ?? this.siteUrl());
+  readonly previewLayout = computed(() => this.heroLayout());
+
+  readonly previewHeroLabel = computed(() => {
+    const hero = BUILD_DEMO_HERO_VARIANTS.find((h) => h.id === this.heroLayout());
+    return hero?.label ?? this.currentHero()?.label ?? this.heroLabel();
+  });
+
+  readonly previewSiteUrl = computed(() => {
+    const hero = BUILD_DEMO_HERO_VARIANTS.find((h) => h.id === this.heroLayout());
+    return hero?.url ?? this.currentHero()?.url ?? this.siteUrl();
+  });
 
   constructor() {
     effect(() => {
       this.localCopy.set({ ...this.copy() });
-      const idx = BUILD_DEMO_HERO_VARIANTS.findIndex((h) => h.id === this.heroLayout());
+      const layoutId = this.heroLayout();
+      const heroes = this.brandHeroes();
+      const idx = heroes.findIndex((h) => h.id === layoutId);
       if (idx >= 0) this.previewHeroIdx.set(idx);
     });
   }

@@ -1,0 +1,17 @@
+<header class="sparky-header">
+  <div class="sparky-wrap sparky-header__inner">
+    <a class="sparky-logo" href="#" [attr.aria-label]="chrome.companyName" (click)="onNavClick($event)">
+      <img class="sparky-logo__mark" [src]="chrome.logoMarkSrc" alt="" width="606" height="619" decoding="async" />
+      <span class="sparky-logo__text">
+        <span class="sparky-logo__line">Sparky</span>
+        <span class="sparky-logo__line">Electric</span>
+      </span>
+    </a>
+    <nav class="sparky-nav" aria-label="Site">
+      @for (item of chrome.nav; track item.href) {
+        <a [href]="item.href" (click)="onNavClick($event)">{{ item.label }}</a>
+      }
+    </nav>
+    <a class="sparky-header__cta" [href]="chrome.phoneHref" (click)="onNavClick($event)">Call now</a>
+  </div>
+</header>

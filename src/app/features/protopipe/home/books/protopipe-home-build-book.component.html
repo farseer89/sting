@@ -24,8 +24,8 @@
         (onClick)="save()"
       />
       <p-button
-        label="Preview panel"
-        icon="pi pi-eye"
+        label="Options panel"
+        icon="pi pi-sliders-h"
         severity="secondary"
         size="small"
         [disabled]="!buildBook.hasDraft()"
@@ -56,6 +56,26 @@
 
   @if (buildBook.error(); as err) {
     <p-message severity="error" [text]="err" styleClass="w-full bk-message" />
+  }
+
+  @if (buildBook.hasDraft() && chapter() === 'homepage' && isBaselineMode() && selectedTemplate(); as template) {
+    <section class="bk-template-bar" aria-label="Active template baseline">
+      <div class="bk-template-bar__main">
+        <span class="bk-template-bar__eyebrow">Editing approved baseline</span>
+        <strong>{{ template.label }}</strong>
+        @if (baselineVariantLabel(); as variant) {
+          <span class="bk-template-bar__variant">{{ variant }}</span>
+        }
+        <span class="bk-template-bar__count">{{ blockAssemblyCount() }} blocks from approved baseline</span>
+      </div>
+      <div class="bk-template-bar__actions">
+        @if (blockAssemblyPreviewUrl(); as previewUrl) {
+          <a class="bk-template-bar__link" [href]="previewUrl" target="_blank" rel="noopener noreferrer">
+            Open reference site
+          </a>
+        }
+      </div>
+    </section>
   }
 
   @if (buildBook.loading()) {
@@ -152,9 +172,8 @@
             [heroLabel]="heroPreviewMeta().label"
             [siteUrl]="heroPreviewMeta().url"
             [copy]="heroCopy()"
-            [selectedImageUrl]="heroImageUrl()"
+            [selectedImageUrl]="activeImageEditUrl()"
             [canUseHeroImage]="buildBook.hasDraft()"
-            (copyChange)="onHeroCopyChange($event)"
             (imageSelected)="onHeroImageSelected($event)"
             (previewLayoutChange)="onPreviewLayoutFromStudio($event)"
             (previewBrandChange)="onPreviewBrandFromStudio($event)"
@@ -212,6 +231,84 @@
         </div>
         <div class="bk-section-nav__label">Homepage stack</div>
 
+        @if (isBaselineMode()) {
+          <div
+            class="bk-section-nav__list"
+            cdkDropList
+            cdkDropListOrientation="vertical"
+            (cdkDropListDropped)="onBaselineBlockDrop($event)"
+          >
+            @for (entry of baselineNavEntries(); track entry.key; let idx = $index) {
+              <div class="bk-section-nav__row" cdkDrag [cdkDragData]="entry">
+                <span class="bk-section-nav__drag" cdkDragHandle aria-hidden="true">⋮⋮</span>
+                @if (entry.type === 'hero-unit') {
+                  <div class="bk-section-nav__hero-unit">
+                    @for (block of entry.blocks; track block.id; let sub = $index) {
+                      <button
+                        type="button"
+                        class="bk-section-nav__item bk-section-nav__item--nested"
+                        [class.is-active]="activeBlockId() === block.id"
+                        (click)="selectBlock(block.id)"
+                      >
+                        <app-protopipe-build-block-nav-thumb [blockId]="block.blockId" />
+                        <div class="bk-section-nav__meta">
+                          <span class="bk-section-nav__num">{{ idx + 1 }}{{ sub === 0 ? 'a' : 'b' }}</span>
+                          <span class="bk-section-nav__name">{{ block.label }}</span>
+                          <span class="bk-section-nav__check">✓</span>
+                        </div>
+                      </button>
+                    }
+                  </div>
+                } @else {
+                  @for (block of entry.blocks; track block.id) {
+                    <button
+                      type="button"
+                      class="bk-section-nav__item"
+                      [class.is-active]="activeBlockId() === block.id"
+                      (click)="selectBlock(block.id)"
+                    >
+                      <app-protopipe-build-block-nav-thumb [blockId]="block.blockId" />
+                      <div class="bk-section-nav__meta">
+                        <span class="bk-section-nav__num">{{ idx + 1 }}</span>
+                        <span class="bk-section-nav__name">{{ block.label }}</span>
+                        <span class="bk-section-nav__check">✓</span>
+                      </div>
+                    </button>
+                  }
+                }
+                @if (!isPinnedBaselineEntry(entry)) {
+                  <button
+                    type="button"
+                    class="bk-section-nav__remove"
+                    aria-label="Remove block"
+                    (click)="removeBaselineBlock(entry.blocks[0].id, $event)"
+                  >
+                    ×
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          <button type="button" class="bk-section-nav__add" (click)="openAddBlockDialog()">+ Add block</button>
+
+          @if (addBlockDialogOpen()) {
+            <div class="bk-add-block-dialog" role="dialog" aria-label="Add homepage block">
+              <div class="bk-add-block-dialog__head">
+                <strong>Add block</strong>
+                <button type="button" class="bk-add-block-dialog__close" (click)="closeAddBlockDialog()" aria-label="Close">×</button>
+              </div>
+              <div class="bk-add-block-dialog__grid">
+                @for (def of baselineCatalogBlocks(); track def.id) {
+                  <button type="button" class="bk-add-block-dialog__item" (click)="addBaselineBlockFromCatalog(def.id)">
+                    <app-protopipe-build-block-nav-thumb [blockId]="def.id" />
+                    <span>{{ def.label }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        } @else {
         @for (slot of navSlots; track slot) {
           <button
             type="button"
@@ -259,6 +356,7 @@
             </div>
           </button>
         }
+        }
 
         <div class="bk-section-nav__foot">
           <div class="bk-section-nav__foot-label">Visual system</div>
@@ -269,157 +367,29 @@
         </div>
       </nav>
 
-      <div class="bk-stage">
+      <div class="bk-stage bk-stage--preview">
 
-        <div class="bk-stage-head">
-          <div class="bk-stage-kicker">{{ entryMode() === 'template' ? 'Template-backed demo' : 'Block composer' }} · Section {{ sectionNum(section()) }}</div>
-          <h2 class="bk-stage-title">{{ sectionLabel(section()) }}</h2>
-          <p class="bk-stage-deck">{{ sectionDeck(section()) }}</p>
-          <div class="bk-stage-summary">
-            <span>{{ configuredStackCount() }} / {{ navSlots.length }} sections selected</span>
-            <span>{{ contextSignal() }}</span>
-            <span>SEO visibility + conversion first</span>
-          </div>
-          @if (section() === 'hero') {
-            <div class="bk-stage-actions">
-              <button type="button" class="bk-hero-images-btn" (click)="openSiteInfoImages()">
-                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2l1.4 4.2L14 8l-4.6 1.8L8 14l-1.4-4.2L2 8l4.6-1.8z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
-                Site Info &amp; Images
-              </button>
-            </div>
-          }
-        </div>
-
-        @if (sectionUsesDemoCatalog(section())) {
-          <div class="bk-demo-tabs" role="tablist" [attr.aria-label]="sectionLabel(section()) + ' brands'">
-            @for (brand of demoBrandsForSection(section()); track brand) {
-              <button
-                type="button"
-                class="bk-demo-tabs__item"
-                role="tab"
-                [class.is-active]="demoBrand() === brand"
-                [attr.aria-selected]="demoBrand() === brand"
-                (click)="selectDemoBrand(brand)"
-              >
-                <span class="bk-demo-tabs__dot" [style.background]="demoBrandDot(brand)"></span>
-                {{ demoBrandLabel(brand) }}
-              </button>
-            }
-          </div>
-        }
-
-        <div class="bk-option-grid" [class.bk-option-grid--heroes]="section() === 'hero'">
-          @for (opt of optionsForSection(section()); track opt.id) {
-            <button
-              type="button"
-              [class]="section() === 'hero' ? 'bk-hero-card' : 'bk-fold-card'"
-              [class.is-selected]="selectedId(section()) === opt.id"
-              [disabled]="buildBook.saving()"
-              (click)="selectOption(section(), opt.id)"
-            >
-              <div [class]="section() === 'hero' ? 'bk-hero-card__preview' : 'bk-fold-card__preview'">
-                @if (section() === 'hero') {
-                  <div class="bk-prev bkh" [class]="'bk-prev bkh bkh--' + opt.layout">
-                    @switch (opt.layout) {
-                      @case ('fullbleed') {
-                        <div class="bkh__scrim"></div>
-                        <div class="bkh__copy">
-                          <span class="bkh__eye"></span>
-                          <span class="bkh__h"></span>
-                          <span class="bkh__sub"></span>
-                          <span class="bkh__btns"><span></span><span></span></span>
-                        </div>
-                      }
-                      @case ('split') {
-                        <div class="bkh__photo"></div>
-                        <div class="bkh__copy bkh__copy--right">
-                          <span class="bkh__eye"></span>
-                          <span class="bkh__h bkh__h--short"></span>
-                          <span class="bkh__btns"><span></span></span>
-                        </div>
-                      }
-                      @case ('bento') {
-                        <div class="bkh__copy bkh__copy--left">
-                          <span class="bkh__h bkh__h--short"></span>
-                          <span class="bkh__sub"></span>
-                        </div>
-                        <div class="bkh__mosaic"><span></span><span></span><span></span><span></span></div>
-                      }
-                      @case ('dual-path') {
-                        <span class="bkh__h bkh__h--center"></span>
-                        <div class="bkh__paths">
-                          <span class="bkh__path bkh__path--urgent"></span>
-                          <span class="bkh__path"></span>
-                        </div>
-                      }
-                      @case ('metrics') {
-                        <div class="bkh__copy bkh__copy--left">
-                          <span class="bkh__h"></span>
-                          <span class="bkh__sub"></span>
-                        </div>
-                        <div class="bkh__stats"><span></span><span></span><span></span></div>
-                      }
-                      @case ('band') {
-                        <div class="bkh__top">
-                          <span class="bkh__h bkh__h--short"></span>
-                          <span class="bkh__btns"><span></span></span>
-                        </div>
-                        <div class="bkh__band"></div>
-                      }
-                    }
-                  </div>
-                } @else {
-                  <div class="bkf" [class]="'bkf bkf--' + opt.layout">
-                    @switch (opt.layout) {
-                      @case ('contract-bar') {
-                        <span></span><span></span><span></span><span></span><span></span>
-                      }
-                      @case ('capabilities') {
-                        <span><i></i><em></em></span><span><i></i><em></em></span><span><i></i><em></em></span>
-                      }
-                      @case ('featured') {
-                        <span class="bkf__photo"></span><span class="bkf__copy"><em></em><i></i></span>
-                      }
-                      @case ('stats') {
-                        <span><strong></strong><i></i></span><span><strong></strong><i></i></span><span><strong></strong><i></i></span>
-                      }
-                      @case ('grid') {
-                        <span></span><span></span><span></span><span></span>
-                      }
-                      @case ('list') {
-                        <span></span><span></span><span></span><span></span>
-                      }
-                      @case ('cards') {
-                        <span><i></i></span><span><i></i></span>
-                      }
-                      @case ('tabs') {
-                        <span class="bkf__tabrow"><i class="is-on"></i><i></i><i></i></span><span class="bkf__panel"></span>
-                      }
-                      @default {
-                        <span class="bkf__panel"></span>
-                      }
-                    }
-                  </div>
-                }
-              </div>
-              <div [class]="section() === 'hero' ? 'bk-hero-card__meta' : 'bk-fold-card__meta'">
-                @if (opt.tag) {
-                  <span class="bk-hero-card__tag">{{ opt.tag }}</span>
-                }
-                @if (opt.demo) {
-                  <span class="bk-hero-card__tag bk-hero-card__tag--demo">Lab demo</span>
-                }
-                <span [class]="section() === 'hero' ? 'bk-hero-card__name' : 'bk-fold-card__name'">{{ opt.label }}</span>
-                <span [class]="section() === 'hero' ? 'bk-hero-card__desc' : 'bk-fold-card__desc'">{{ opt.desc }}</span>
-                @if (selectedId(section()) === opt.id) {
-                  <span class="bk-hero-card__selected">
-                    <svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    On site
-                  </span>
-                }
-              </div>
-            </button>
-          }
+        <div class="bk-main-preview" aria-label="Live site preview">
+          <app-protopipe-build-page-canvas
+            [baselineMode]="isBaselineMode()"
+            [sections]="pageSectionStates()"
+            [blocks]="pageBlockStates()"
+            [activeSection]="section()"
+            [activeBlockId]="activeBlockId()"
+            [editable]="true"
+            [heroLayoutId]="heroLayoutId()"
+            [heroImageUrl]="activeHeroImageUrl()"
+            [scrollToSection]="scrollToSection()"
+            [scrollToBlockId]="scrollToBlockId()"
+            (sectionClick)="onCanvasSectionClick($event)"
+            (blockClick)="onCanvasBlockClick($event)"
+            (propsChange)="onCanvasPropsChange($event)"
+            (propPathChange)="onCanvasPropPathChange($event)"
+            (blockPropPathChange)="onCanvasBlockPropPathChange($event)"
+            (blockPropsChange)="onCanvasBlockPropsChange($event)"
+            (copyChange)="onHeroCopyChange($event)"
+            (imageEdit)="onCanvasImageEdit($event)"
+          />
         </div>
 
       </div>
@@ -484,9 +454,8 @@
               [heroLabel]="heroPreviewMeta().label"
               [siteUrl]="heroPreviewMeta().url"
               [copy]="heroCopy()"
-              [selectedImageUrl]="heroImageUrl()"
+              [selectedImageUrl]="activeImageEditUrl()"
               [canUseHeroImage]="buildBook.hasDraft()"
-              (copyChange)="onHeroCopyChange($event)"
               (imageSelected)="onHeroImageSelected($event)"
               (previewLayoutChange)="onPreviewLayoutFromStudio($event)"
               (previewBrandChange)="onPreviewBrandFromStudio($event)"
@@ -496,25 +465,30 @@
       }
 
       <div class="bk-preview-shell" [class.is-open]="previewOpen()" [style.width.px]="previewOpen() ? previewWidth() : 0">
-        <aside class="bk-stack-rail" aria-label="Live preview">
+        <aside class="bk-stack-rail" aria-label="Block options">
           <div
             class="bk-stack-rail__resize"
             role="separator"
             aria-orientation="vertical"
-            aria-label="Resize preview panel"
+            aria-label="Resize options panel"
             (pointerdown)="startPreviewResize($event)"
           ></div>
 
           <header class="bk-stack-rail__head">
             <div class="bk-stack-rail__head-top">
               <span class="bk-stack-rail__title">
-                Live preview
-                @if (blockAssemblyCount() > 0) {
-                  <small>Saved block assembly · {{ blockAssemblyCount() }} sections</small>
+                Block options
+                @if (isBaselineMode()) {
+                  <small>{{ activeBlock()?.label ?? 'Baseline block' }}</small>
+                } @else {
+                  <small>Section {{ sectionNum(section()) }} · {{ sectionLabel(section()) }}</small>
                 }
               </span>
               <div class="bk-stack-rail__head-actions">
-                @if (section() === 'hero') {
+                @if (!isBaselineMode() && section() === 'hero') {
+                  <button type="button" class="bk-stack-rail__studio-link" (click)="openSiteInfoImages()">Site Info &amp; Images</button>
+                }
+                @if (isBaselineMode() && activeBlock()?.section === 'hero') {
                   <button type="button" class="bk-stack-rail__studio-link" (click)="openSiteInfoImages()">Site Info &amp; Images</button>
                 }
                 <button type="button" class="bk-stack-rail__close" (click)="closePreview()" aria-label="Close preview panel">
@@ -524,42 +498,430 @@
             </div>
           </header>
 
-          <div class="bk-stack-rail__body bk-stack-rail__body--hero">
-            @if (selectedTemplatePreviewUrl(); as previewUrl) {
-              <div class="bk-template-live-preview">
-                <iframe
-                  class="bk-template-live-preview__frame"
-                  [src]="previewUrl"
-                  [title]="(selectedTemplate()?.label || 'Selected template') + ' preview'"
-                  loading="lazy"
-                ></iframe>
-              </div>
-            } @else if (section() === 'hero') {
-              @if (heroImageUrl(); as url) {
-                <app-protopipe-build-hero-preview
-                  [imageUrl]="url"
-                  [layout]="heroLayoutId()"
-                  [copy]="heroCopy()"
-                  [brand]="heroPreviewBrand()"
-                  [heroLabel]="heroPreviewMeta().label"
-                  [siteUrl]="heroPreviewMeta().url"
-                  [heroIndex]="heroPreviewIndex()"
-                  (brandChange)="onHeroPreviewBrandChange($event)"
-                  (heroIndexChange)="onHeroPreviewIndexChange($event)"
-                />
-              } @else {
-                <div class="bk-hero-preview-empty">
-                  <p>Pick a layout, then open <strong>Site Info &amp; Images</strong> to generate or upload photos for the site image library.</p>
-                  <button type="button" class="bk-hero-images-btn bk-hero-images-btn--block" (click)="openSiteInfoImages()">
-                    Generate images
+          <div class="bk-stack-rail__body bk-stack-rail__body--options">
+            @if (isBaselineMode()) {
+              @if (baselineLayoutOptionsVisible()) {
+                <div class="bk-inline-hint">{{ baselineStructuralHint() }}</div>
+                @if (activeBlock()?.section === 'hero' && baselineHeroPhotoDrifted()) {
+                  <button type="button" class="bk-struct-panel__action" (click)="resetBaselineHeroPhoto()">
+                    Reset hero photo to template default
                   </button>
-                </div>
+                }
+                @if (hrefPanelVisible()) {
+                  <div class="bk-href-panel" aria-label="CTA links">
+                    <div class="bk-href-panel__label">CTA links</div>
+                    @for (field of activeHrefFields(); track field.key) {
+                      <label class="bk-href-panel__field">
+                        <span>{{ field.label }}</span>
+                        <input
+                          type="text"
+                          [ngModel]="field.value"
+                          (ngModelChange)="updateActiveHref(field.key, $event)"
+                          placeholder="#quote or tel:+18085318422"
+                        />
+                      </label>
+                    }
+                  </div>
+                }
+
+                @if (altPanelVisible()) {
+                  <div class="bk-href-panel" aria-label="Image alt text">
+                    <div class="bk-href-panel__label">Image alt text</div>
+                    @for (field of activeAltFields(); track field.key) {
+                      <label class="bk-href-panel__field">
+                        <span>{{ field.label }}</span>
+                        <input
+                          type="text"
+                          [ngModel]="field.value"
+                          (ngModelChange)="updateActiveAlt(field.key, $event)"
+                          placeholder="Describe the image for accessibility"
+                        />
+                      </label>
+                    }
+                  </div>
+                }
+
+                @if (structuralPanelVisible()) {
+                  <div class="bk-struct-panel" aria-label="Block structure">
+                    @if (activeBlock()?.blockId === 'wri-baseline-contract-bar') {
+                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineBlockStat()">+ Add stat</button>
+                    }
+                  </div>
+                }
+              } @else {
+                <div class="bk-inline-hint">{{ baselineStructuralHint() }}</div>
+                @if (activeBlockDefinition(); as def) {
+                  <div class="bk-baseline-panel">
+                    <div class="bk-baseline-panel__label">Approved baseline block</div>
+                    <strong>{{ def.label }}</strong>
+                    <p>{{ def.description }}</p>
+                  </div>
+                }
+                @if (hrefPanelVisible()) {
+                  <div class="bk-href-panel" aria-label="CTA links">
+                    <div class="bk-href-panel__label">CTA links</div>
+                    @for (field of activeHrefFields(); track field.key) {
+                      <label class="bk-href-panel__field">
+                        <span>{{ field.label }}</span>
+                        <input
+                          type="text"
+                          [ngModel]="field.value"
+                          (ngModelChange)="updateActiveHref(field.key, $event)"
+                          placeholder="#quote or tel:+18085318422"
+                        />
+                      </label>
+                    }
+                  </div>
+                }
+
+                @if (altPanelVisible()) {
+                  <div class="bk-href-panel" aria-label="Image alt text">
+                    <div class="bk-href-panel__label">Image alt text</div>
+                    @for (field of activeAltFields(); track field.key) {
+                      <label class="bk-href-panel__field">
+                        <span>{{ field.label }}</span>
+                        <input
+                          type="text"
+                          [ngModel]="field.value"
+                          (ngModelChange)="updateActiveAlt(field.key, $event)"
+                          placeholder="Describe the image for accessibility"
+                        />
+                      </label>
+                    }
+                  </div>
+                }
+
+                @if (structuralPanelVisible()) {
+                  <div class="bk-struct-panel" aria-label="Block structure">
+                    @if (activeBlock()?.blockId === 'wri-baseline-contract-bar') {
+                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineBlockStat()">+ Add stat</button>
+                    }
+                    @if (activeBlock()?.blockId === 'wri-baseline-capabilities-grid') {
+                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineCapability()">+ Add capability</button>
+                    }
+                    @if (activeBlock()?.blockId === 'wri-baseline-life-proof-split') {
+                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineBullet()">+ Add bullet</button>
+                    }
+                    @if (activeBlock()?.blockId === 'wri-baseline-project-lifecycle') {
+                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineLifecycleStep()">+ Add step</button>
+                    }
+                    @if (activeBlock()?.blockId === 'wri-baseline-regulatory-trust') {
+                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineCredential()">+ Add credential</button>
+                    }
+                    @if (activeBlock()?.blockId === 'wri-baseline-featured-well') {
+                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineFeaturedMetric()">+ Add metric</button>
+                    }
+                    @if (activeBlock()?.blockId === 'wri-baseline-sidebar-facts') {
+                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineFact()">+ Add fact</button>
+                    }
+                    @if (activeBlock()?.blockId === 'wri-baseline-island-coverage') {
+                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineOffice()">+ Add office</button>
+                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineIsland()">+ Add island</button>
+                    }
+                    @if (activeBlock()?.blockId === 'wri-baseline-rig-gallery-cta') {
+                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineGalleryItem()">+ Add gallery item</button>
+                    }
+                  </div>
+                }
               }
             } @else {
-              <div class="bk-hero-preview-empty">
-                <p>Hero live preview is available on the Hero section. Switch sections in the left stack to keep building.</p>
+            @if (hrefPanelVisible()) {
+              <div class="bk-href-panel" aria-label="CTA links">
+                <div class="bk-href-panel__label">CTA links</div>
+                @for (field of activeHrefFields(); track field.key) {
+                  <label class="bk-href-panel__field">
+                    <span>{{ field.label }}</span>
+                    <input
+                      type="text"
+                      [ngModel]="field.value"
+                      (ngModelChange)="updateActiveHref(field.key, $event)"
+                      placeholder="#quote or tel:+18085318422"
+                    />
+                  </label>
+                }
               </div>
             }
+
+            @if (structuralPanelVisible()) {
+              <div class="bk-struct-panel" aria-label="Block structure">
+                @if (section() === 'fold') {
+                  <button type="button" class="bk-struct-panel__action" (click)="addSectionStat()">+ Add stat</button>
+                }
+                @if (section() === 'services') {
+                  <button type="button" class="bk-struct-panel__action" (click)="addSectionListItem('services')">+ Add service</button>
+                }
+                @if (section() === 'proof' && selectedId('proof') === 'proof-reviews') {
+                  <button type="button" class="bk-struct-panel__action" (click)="addSectionListItem('testimonials')">+ Add review</button>
+                }
+                @if (section() === 'areas') {
+                  <button type="button" class="bk-struct-panel__action" (click)="addSectionListItem('items')">+ Add FAQ item</button>
+                }
+              </div>
+            }
+
+            @if (section() === 'hero') {
+              <div class="bk-inline-hint">
+                Click text in the page preview to edit copy inline. Use Site Info &amp; Images for hero photos.
+              </div>
+            }
+
+            @if (sectionShowsDemoBrandTabs(section())) {
+              <div class="bk-demo-tabs" role="tablist" [attr.aria-label]="sectionLabel(section()) + ' brands'">
+                @for (brand of demoBrandsForSection(section()); track brand) {
+                  <button
+                    type="button"
+                    class="bk-demo-tabs__item"
+                    role="tab"
+                    [class.is-active]="demoBrand() === brand"
+                    [attr.aria-selected]="demoBrand() === brand"
+                    (click)="selectDemoBrand(brand)"
+                  >
+                    <span class="bk-demo-tabs__dot" [style.background]="demoBrandDot(brand)"></span>
+                    {{ demoBrandLabel(brand) }}
+                  </button>
+                }
+              </div>
+            }
+            }
+
+            @if (!isBaselineMode() || baselineLayoutOptionsVisible()) {
+            @if (isBaselineMode() && baselineLayoutOptionsVisible()) {
+              <div class="bk-option-grid__section-label">Approved baseline</div>
+              <div class="bk-option-grid bk-option-grid--rail" [class.bk-option-grid--heroes]="heroPanelSection() === 'hero'">
+                @for (opt of heroPanelApprovedOptions(); track opt.id) {
+                  <ng-container *ngTemplateOutlet="heroOptionCard; context: { $implicit: opt }" />
+                }
+              </div>
+              <div class="bk-option-grid__section-label">Lab layouts</div>
+              <div class="bk-option-grid bk-option-grid--rail" [class.bk-option-grid--heroes]="heroPanelSection() === 'hero'">
+                @for (opt of heroPanelLabOptions(); track opt.id) {
+                  <ng-container *ngTemplateOutlet="heroOptionCard; context: { $implicit: opt }" />
+                }
+              </div>
+            } @else {
+            <div class="bk-option-grid bk-option-grid--rail" [class.bk-option-grid--heroes]="heroPanelSection() === 'hero'">
+              @for (opt of heroPanelOptions(); track opt.id) {
+                <ng-container *ngTemplateOutlet="heroOptionCard; context: { $implicit: opt }" />
+              }
+            </div>
+            }
+            }
+
+            <ng-template #heroOptionCard let-opt>
+                <button
+                  type="button"
+                  [class]="heroPanelSection() === 'hero' ? 'bk-hero-card' : 'bk-fold-card'"
+                  [class.is-selected]="isOptionSelected(heroPanelSection(), opt.id)"
+                  [disabled]="buildBook.saving()"
+                  (click)="onHeroPanelOptionSelect(opt.id)"
+                >
+                  <div [class]="heroPanelSection() === 'hero' ? 'bk-hero-card__preview' : 'bk-fold-card__preview'">
+                    @if (heroPanelSection() === 'hero') {
+                      <div class="bk-prev bkh" [class]="'bk-prev bkh bkh--' + opt.id">
+                        @switch (opt.id) {
+                          @case ('wri-baseline-life-proof') {
+                            <div class="bkh__overlay bkh__overlay--panel"></div>
+                            <div class="bkh__panel bkh__panel--copy">
+                              <span class="bkh__eye"></span>
+                              <span class="bkh__h bkh__h--short"></span>
+                              <span class="bkh__sub"></span>
+                              <span class="bkh__btns"><span></span><span></span></span>
+                            </div>
+                          }
+                          @case ('sparky-baseline-callout') {
+                            <div class="bkh__overlay"></div>
+                            <div class="bkh__copy bkh__copy--center">
+                              <span class="bkh__eye"></span>
+                              <span class="bkh__h bkh__h--short"></span>
+                              <span class="bkh__sub"></span>
+                              <span class="bkh__btns"><span></span><span></span></span>
+                            </div>
+                            <div class="bkh__proof"><span></span><span></span><span></span></div>
+                          }
+                          @case ('wilco-baseline-split') {
+                            <div class="bkh__photo"></div>
+                            <div class="bkh__copy bkh__copy--right">
+                              <span class="bkh__eye"></span>
+                              <span class="bkh__h bkh__h--short"></span>
+                              <span class="bkh__btns"><span></span></span>
+                            </div>
+                          }
+                          @case ('sp-callout') {
+                            <div class="bkh__overlay"></div>
+                            <div class="bkh__copy bkh__copy--center">
+                              <span class="bkh__eye"></span>
+                              <span class="bkh__h bkh__h--short"></span>
+                              <span class="bkh__sub"></span>
+                              <span class="bkh__btns"><span></span><span></span></span>
+                            </div>
+                            <div class="bkh__proof"><span></span><span></span><span></span></div>
+                          }
+                          @case ('sp-bento') {
+                            <div class="bkh__copy bkh__copy--left">
+                              <span class="bkh__h bkh__h--short"></span>
+                              <span class="bkh__sub"></span>
+                              <span class="bkh__btns"><span></span></span>
+                            </div>
+                            <div class="bkh__photo bkh__photo--bento"></div>
+                            <div class="bkh__statrow"><span></span><span></span><span></span></div>
+                          }
+                          @case ('sp-asymmetric') {
+                            <div class="bkh__copy bkh__copy--left">
+                              <span class="bkh__eye"></span>
+                              <span class="bkh__h"></span>
+                              <span class="bkh__sub"></span>
+                            </div>
+                            <div class="bkh__photo bkh__photo--frame"></div>
+                          }
+                          @case ('sp-horizon') {
+                            <div class="bkh__top">
+                              <span class="bkh__h bkh__h--short"></span>
+                              <span class="bkh__sub"></span>
+                              <span class="bkh__btns"><span></span></span>
+                            </div>
+                            <div class="bkh__band"></div>
+                          }
+                          @case ('sp-teal') {
+                            <div class="bkh__copy bkh__copy--center">
+                              <span class="bkh__eye"></span>
+                              <span class="bkh__h bkh__h--short"></span>
+                              <span class="bkh__sub"></span>
+                              <span class="bkh__btns"><span></span><span></span></span>
+                            </div>
+                          }
+                          @case ('sp-dispatch') {
+                            <span class="bkh__h bkh__h--center"></span>
+                            <div class="bkh__paths">
+                              <span class="bkh__path bkh__path--urgent"></span>
+                              <span class="bkh__path"></span>
+                            </div>
+                          }
+                          @case ('wri-fullbleed') {
+                            <div class="bkh__overlay bkh__overlay--panel"></div>
+                            <div class="bkh__panel bkh__panel--copy">
+                              <span class="bkh__eye"></span>
+                              <span class="bkh__h bkh__h--short"></span>
+                              <span class="bkh__sub"></span>
+                              <span class="bkh__btns"><span></span><span></span></span>
+                            </div>
+                          }
+                          @case ('wri-split') {
+                            <div class="bkh__photo"></div>
+                            <div class="bkh__copy bkh__copy--right">
+                              <span class="bkh__eye"></span>
+                              <span class="bkh__h bkh__h--short"></span>
+                              <span class="bkh__btns"><span></span><span></span></span>
+                            </div>
+                          }
+                          @case ('wri-bento') {
+                            <div class="bkh__copy bkh__copy--left">
+                              <span class="bkh__h bkh__h--short"></span>
+                              <span class="bkh__sub"></span>
+                            </div>
+                            <div class="bkh__mosaic bkh__mosaic--dense"><span></span><span></span><span></span><span></span></div>
+                          }
+                          @case ('wri-metrics') {
+                            <div class="bkh__copy bkh__copy--left">
+                              <span class="bkh__h"></span>
+                              <span class="bkh__sub"></span>
+                            </div>
+                            <div class="bkh__stats"><span></span><span></span><span></span></div>
+                          }
+                          @case ('wri-coastal') {
+                            <div class="bkh__top">
+                              <span class="bkh__h bkh__h--short"></span>
+                              <span class="bkh__btns"><span></span></span>
+                            </div>
+                            <div class="bkh__band bkh__band--wide"></div>
+                          }
+                          @case ('co-split') {
+                            <div class="bkh__photo"></div>
+                            <div class="bkh__copy bkh__copy--right">
+                              <span class="bkh__eye"></span>
+                              <span class="bkh__h bkh__h--short"></span>
+                              <span class="bkh__btns"><span></span></span>
+                            </div>
+                          }
+                          @case ('co-fullbleed') {
+                            <div class="bkh__overlay bkh__overlay--vertical"></div>
+                            <div class="bkh__copy bkh__copy--top">
+                              <span class="bkh__h"></span>
+                            </div>
+                            <div class="bkh__btns bkh__btns--bar"><span></span><span></span></div>
+                          }
+                        }
+                      </div>
+                    } @else {
+                      <div class="bkf" [class]="'bkf bkf--' + opt.layout">
+                        @switch (opt.id) {
+                          @case ('wri-baseline-contract-bar') {
+                            <span></span><span></span><span></span><span></span>
+                          }
+                          @case ('sparky-baseline-trust-stats') {
+                            <span class="bkf__bar"></span><span><strong></strong><i></i></span><span><strong></strong><i></i></span>
+                          }
+                          @case ('wilco-baseline-stats-band') {
+                            <span><strong></strong><i></i></span><span><strong></strong><i></i></span><span><strong></strong><i></i></span>
+                          }
+                          @case ('wilco-baseline-trusted-by') {
+                            <span class="bkf__logo"></span><span class="bkf__logo"></span><span class="bkf__logo"></span>
+                          }
+                          @default {
+                            @switch (opt.layout) {
+                              @case ('contract-bar') {
+                                <span></span><span></span><span></span><span></span><span></span>
+                              }
+                              @case ('capabilities') {
+                                <span><i></i><em></em></span><span><i></i><em></em></span><span><i></i><em></em></span>
+                              }
+                              @case ('featured') {
+                                <span class="bkf__photo"></span><span class="bkf__copy"><em></em><i></i></span>
+                              }
+                              @case ('stats') {
+                                <span><strong></strong><i></i></span><span><strong></strong><i></i></span><span><strong></strong><i></i></span>
+                              }
+                              @case ('grid') {
+                                <span></span><span></span><span></span><span></span>
+                              }
+                              @case ('list') {
+                                <span></span><span></span><span></span><span></span>
+                              }
+                              @case ('band') {
+                                <span class="bkf__logo"></span><span class="bkf__logo"></span><span class="bkf__logo"></span>
+                              }
+                              @case ('reviews') {
+                                <span class="bkf__quote"></span><span class="bkf__quote"></span>
+                              }
+                              @case ('close-form') {
+                                <span class="bkf__panel bkf__panel--dark"></span>
+                              }
+                              @default {
+                                <span class="bkf__panel"></span>
+                              }
+                            }
+                          }
+                        }
+                      </div>
+                    }
+                  </div>
+                  <div [class]="heroPanelSection() === 'hero' ? 'bk-hero-card__meta' : 'bk-fold-card__meta'">
+                    @if (opt.tag) {
+                      <span class="bk-hero-card__tag">{{ opt.tag }}</span>
+                    }
+                    @if (opt.demo && opt.tag !== 'Approved baseline') {
+                      <span class="bk-hero-card__tag bk-hero-card__tag--demo">Lab demo</span>
+                    }
+                    <span [class]="heroPanelSection() === 'hero' ? 'bk-hero-card__name' : 'bk-fold-card__name'">{{ opt.label }}</span>
+                    <span [class]="heroPanelSection() === 'hero' ? 'bk-hero-card__desc' : 'bk-fold-card__desc'">{{ opt.desc }}</span>
+                    @if (isOptionSelected(heroPanelSection(), opt.id)) {
+                      <span class="bk-hero-card__selected">
+                        <svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        On site
+                      </span>
+                    }
+                  </div>
+                </button>
+            </ng-template>
           </div>
         </aside>
       </div>
@@ -571,15 +933,24 @@
           [class.is-active]="previewOpen()"
           [attr.aria-pressed]="previewOpen()"
           [attr.aria-expanded]="previewOpen()"
-          aria-label="Live preview"
-          title="Live preview"
+          aria-label="Block options"
+          title="Block options"
           (click)="togglePreview()"
         >
-          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M1.5 8s2.5-4.5 6.5-4.5S14.5 8 14.5 8s-2.5 4.5-6.5 4.5S1.5 8 1.5 8z" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/></svg>
-          <span class="bk-preview-rail__label">Preview</span>
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 3.5h10M3 8h10M3 12.5h10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M5 2.2v2.6M11 6.7v2.6M8 11.2v2.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          <span class="bk-preview-rail__label">Options</span>
         </button>
       </nav>
     </div>
   }
+
+  <app-protopipe-build-image-quick-picker
+    [open]="imagePickerOpen()"
+    [selectedUrl]="activeImageEditUrl()"
+    [title]="imagePickerTitle()"
+    (closed)="closeImagePicker()"
+    (selected)="onImagePickerSelect($event)"
+    (library)="onImagePickerOpenLibrary()"
+  />
 
 </div>

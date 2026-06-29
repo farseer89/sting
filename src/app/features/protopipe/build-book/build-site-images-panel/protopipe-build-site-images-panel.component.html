@@ -101,44 +101,23 @@
       }
     </section>
   } @else if (activeTab() === 'basic') {
-    <div class="bsi__workspace">
-      <div class="bsi__forms">
-        <section class="bsi-card">
-          <div class="bsi-card__head">
-            <span>Site copy</span>
-            <small>Current hero baseline</small>
-          </div>
-          <div class="bsi-copy-grid">
-            <label class="bsi-field">
-              <span>Eyebrow</span>
-              <input type="text" [ngModel]="localCopy().eyebrow" (ngModelChange)="patchCopy('eyebrow', $event)" />
-            </label>
-            <label class="bsi-field bsi-field--full">
-              <span>Headline</span>
-              <textarea rows="2" [ngModel]="localCopy().headline" (ngModelChange)="patchCopy('headline', $event)"></textarea>
-            </label>
-            <label class="bsi-field bsi-field--full">
-              <span>Subhead</span>
-              <input type="text" [ngModel]="localCopy().subhead" (ngModelChange)="patchCopy('subhead', $event)" />
-            </label>
-            <label class="bsi-field">
-              <span>Primary CTA</span>
-              <input type="text" [ngModel]="localCopy().primaryCta" (ngModelChange)="patchCopy('primaryCta', $event)" />
-            </label>
-            <label class="bsi-field">
-              <span>Secondary CTA</span>
-              <input type="text" [ngModel]="localCopy().secondaryCta" (ngModelChange)="patchCopy('secondaryCta', $event)" />
-            </label>
-          </div>
-        </section>
-      </div>
+    <div class="bsi__workspace bsi__workspace--basic">
+      <section class="bsi-card">
+        <div class="bsi-card__head">
+          <span>Homepage copy</span>
+          <small>Edited inline on the Homepage canvas</small>
+        </div>
+        <p class="bsi-basic-note">
+          Open the Homepage chapter and click directly on hero text in the page stack to edit eyebrow, headline, subhead, and CTAs.
+        </p>
+      </section>
 
       <aside class="bsi-preview">
         @if (activePreviewUrl(); as url) {
           <app-protopipe-build-hero-preview
             [imageUrl]="url"
             [layout]="previewLayout()"
-            [copy]="localCopy()"
+            [copy]="copy()"
             [brand]="previewBrand()"
             [heroLabel]="previewHeroLabel()"
             [siteUrl]="previewSiteUrl()"
@@ -148,7 +127,7 @@
           />
         } @else {
           <div class="bsi-preview__empty">
-            <p>Generate or upload images to preview them against the current hero copy.</p>
+            <p>Generate or upload images to preview them on the current hero layout.</p>
           </div>
         }
       </aside>

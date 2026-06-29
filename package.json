@@ -9,7 +9,7 @@
     "configure-env": "node scripts/replace-env.js",
     "setup:firebase": "bash scripts/setup-firebase.sh",
     "deploy:firebase": "npm run build:prod && firebase deploy --only hosting:sting --project sting-protopipe",
-    "deploy:shire": "STING_SHIRE_URL=https://shire.droppin.shop STING_MICRO_URL=https://droppin.shop STING_APP_NAME=SearchClimber.ai npm run deploy:firebase",
+    "deploy:shire": "npm run deploy:firebase",
     "deploy:shire:app": "STING_SHIRE_URL=https://shire.droppin.shop STING_MICRO_URL=https://droppin.shop STING_APP_NAME=SearchClimber.ai firebase deploy --only hosting:sting --project sting-protopipe",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",

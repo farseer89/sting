@@ -1,0 +1,201 @@
+<div class="bbf" [class]="'bbf bbf--' + wireLayout()">
+  @switch (wireLayout()) {
+    @case ('contract-bar') {
+      <div class="bbf__stats bbf__stats--bar">
+        @for (stat of stats(); track $index) {
+          <app-protopipe-build-inline-stat
+            [editable]="editable()"
+            [value]="stat.value"
+            [label]="stat.label"
+            hostClass="bbf__stat"
+            (valueChange)="patchStat($index, 'value', $event)"
+            (labelChange)="patchStat($index, 'label', $event)"
+          />
+        }
+      </div>
+      @if (sectorsLine()) {
+        <p class="bbf__sectors">{{ sectorsLine() }}</p>
+      }
+    }
+    @case ('stats') {
+      @if (trustItems().length) {
+        <div class="bbf__trust">
+          @for (item of trustItems(); track $index) {
+            <div class="bbf__trust-item">
+              <strong>{{ item.label }}</strong>
+              <span>{{ item.detail }}</span>
+            </div>
+          }
+        </div>
+      }
+      <div class="bbf__stats">
+        @for (stat of stats(); track $index) {
+          <app-protopipe-build-inline-stat
+            [editable]="editable()"
+            [value]="stat.value"
+            [label]="stat.label"
+            hostClass="bbf__stat"
+            (valueChange)="patchStat($index, 'value', $event)"
+            (labelChange)="patchStat($index, 'label', $event)"
+          />
+        }
+      </div>
+    }
+    @case ('band') {
+      <div class="bbf__band">
+        <app-protopipe-build-inline-text
+          [editable]="editable()"
+          [value]="heading()"
+          hostClass="bbf__heading"
+          ariaLabel="Fold heading"
+          (valueChange)="patchProp('heading', $event)"
+        />
+        @if (partners().length) {
+          <div class="bbf__logos">
+            @for (partner of partners(); track $index) {
+              <span class="bbf__logo">{{ partner.name }}</span>
+            }
+          </div>
+        } @else if (trustItems().length) {
+          <div class="bbf__trust bbf__trust--inline">
+            @for (item of trustItems(); track $index) {
+              <span class="bbf__chip">{{ item.label }}</span>
+            }
+          </div>
+        }
+      </div>
+    }
+    @case ('capabilities') {
+      <div class="bbf__capabilities">
+        <app-protopipe-build-inline-text
+          [editable]="editable()"
+          [value]="heading()"
+          hostClass="bbf__heading"
+          ariaLabel="Capabilities heading"
+          (valueChange)="patchProp('heading', $event)"
+        />
+        <div class="bbf__cards">
+          @for (item of cardItems(); track $index) {
+            <div class="bbf__card">
+              <strong>{{ item.title }}</strong>
+              @if (item.body) {
+                <span>{{ item.body }}</span>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+    @case ('grid') {
+      <div class="bbf__capabilities">
+        <app-protopipe-build-inline-text
+          [editable]="editable()"
+          [value]="heading()"
+          hostClass="bbf__heading"
+          ariaLabel="Services heading"
+          (valueChange)="patchProp('heading', $event)"
+        />
+        <div class="bbf__cards bbf__cards--grid">
+          @for (item of cardItems(); track $index) {
+            <div class="bbf__card bbf__card--photo">
+              <strong>{{ item.title }}</strong>
+            </div>
+          }
+        </div>
+      </div>
+    }
+    @case ('featured') {
+      <div class="bbf__featured">
+        <div class="bbf__featured-photo"></div>
+        <div class="bbf__featured-copy">
+          <app-protopipe-build-inline-text
+            [editable]="editable()"
+            [value]="heading()"
+            hostClass="bbf__heading"
+            ariaLabel="Featured project heading"
+            (valueChange)="patchProp('heading', $event)"
+          />
+          <app-protopipe-build-inline-text
+            [editable]="editable()"
+            [value]="body()"
+            hostClass="bbf__body"
+            [multiline]="true"
+            ariaLabel="Featured project body"
+            (valueChange)="patchProp('body', $event)"
+          />
+        </div>
+      </div>
+    }
+    @case ('list') {
+      <div class="bbf__list">
+        <app-protopipe-build-inline-text
+          [editable]="editable()"
+          [value]="heading()"
+          hostClass="bbf__heading"
+          ariaLabel="Process heading"
+          (valueChange)="patchProp('title', $event)"
+        />
+        <ol class="bbf__steps">
+          @for (step of steps(); track $index) {
+            <li>
+              <span class="bbf__step-num">{{ step.step }}</span>
+              <div>
+                <strong>{{ step.title }}</strong>
+                <span>{{ step.body }}</span>
+              </div>
+            </li>
+          }
+        </ol>
+      </div>
+    }
+    @case ('reviews') {
+      <div class="bbf__reviews">
+        @for (review of testimonials(); track $index) {
+          <blockquote class="bbf__review">
+            <p>{{ review.quote }}</p>
+            <footer>{{ review.name }}</footer>
+          </blockquote>
+        }
+      </div>
+    }
+    @case ('close-form') {
+      <div class="bbf__close">
+        <app-protopipe-build-inline-text
+          [editable]="editable()"
+          [value]="heading()"
+          hostClass="bbf__heading"
+          ariaLabel="CTA heading"
+          (valueChange)="patchProp('heading', $event)"
+        />
+        <div class="bbf__close-band">
+          <span class="bbf__close-btn">Request a quote</span>
+        </div>
+      </div>
+    }
+    @default {
+      <div class="bbf__generic">
+        <app-protopipe-build-inline-text
+          [editable]="editable()"
+          [value]="heading()"
+          hostClass="bbf__heading"
+          ariaLabel="Fold heading"
+          (valueChange)="patchProp('heading', $event)"
+        />
+        @if (stats().length) {
+          <div class="bbf__stats">
+            @for (stat of stats(); track $index) {
+              <app-protopipe-build-inline-stat
+                [editable]="editable()"
+                [value]="stat.value"
+                [label]="stat.label"
+                hostClass="bbf__stat"
+                (valueChange)="patchStat($index, 'value', $event)"
+                (labelChange)="patchStat($index, 'label', $event)"
+              />
+            }
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

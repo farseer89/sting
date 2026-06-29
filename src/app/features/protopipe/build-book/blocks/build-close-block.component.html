@@ -1,0 +1,47 @@
+<div class="bbc" [class]="'bbc bbc--' + layout()">
+  <div class="bbc__copy">
+    <app-protopipe-build-inline-text
+      [editable]="editable()"
+      [value]="heading()"
+      hostClass="bbc__heading"
+      ariaLabel="Close heading"
+      (valueChange)="patchProp('heading', $event)"
+    />
+    @if (layout() === 'close-form') {
+      <app-protopipe-build-inline-text
+        [editable]="editable()"
+        [value]="subhead() || body()"
+        hostClass="bbc__subhead"
+        [multiline]="true"
+        ariaLabel="Close subhead"
+        (valueChange)="patchProp('subhead', $event)"
+      />
+    } @else {
+      <app-protopipe-build-inline-text
+        [editable]="editable()"
+        [value]="body()"
+        hostClass="bbc__body"
+        [multiline]="true"
+        ariaLabel="Close body"
+        (valueChange)="patchProp('body', $event)"
+      />
+    }
+  </div>
+
+  <div class="bbc__actions">
+    <app-protopipe-build-inline-cta
+      [editable]="editable()"
+      [value]="layout() === 'close-form' ? submitLabel() : primaryCta()"
+      hostClass="bbc__btn bbc__btn--primary"
+      (valueChange)="patchProp(layout() === 'close-form' ? 'submitLabel' : 'ctaLabel', $event)"
+    />
+    @if (layout() !== 'close-form') {
+      <app-protopipe-build-inline-cta
+        [editable]="editable()"
+        [value]="secondaryCta()"
+        hostClass="bbc__btn bbc__btn--ghost"
+        (valueChange)="patchProp('secondaryCtaLabel', $event)"
+      />
+    }
+  </div>
+</div>

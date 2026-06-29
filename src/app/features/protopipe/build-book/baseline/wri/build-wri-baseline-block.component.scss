@@ -1,0 +1,73 @@
+:host {
+  display: block;
+}
+
+.bb-wri-block {
+  pointer-events: auto;
+}
+
+.bb-wri-block .bb-inline-text:focus-visible {
+  outline: 2px solid var(--wri-flow, #0ea5e9);
+  outline-offset: 2px;
+}
+
+.wri-hero-fb {
+  position: relative;
+}
+
+.bb-wri-image-slot {
+  position: relative;
+}
+
+.wri-fold-fw__media {
+  position: relative;
+}
+
+.bb-wri-photo-edit {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 4;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid rgb(255 255 255 / 0.35);
+  border-radius: 999px;
+  background: rgb(15 23 42 / 0.72);
+  color: #fff;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.wri-hero-fb:hover .bb-wri-photo-edit,
+.wri-fold-fw__media:hover .bb-wri-photo-edit,
+.bb-wri-image-slot:hover .bb-wri-photo-edit {
+  opacity: 1;
+}
+
+.bb-wri-photo-edit:hover {
+  background: rgb(15 23 42 / 0.88);
+}
+
+.bb-wri-photo-edit--cover {
+  inset: 0;
+  top: auto;
+  right: auto;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 0;
+  background: rgb(15 23 42 / 0.28);
+}
+
+.bb-wri-photo-edit--compact {
+  top: 0.35rem;
+  right: 0.35rem;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.625rem;
+}

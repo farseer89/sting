@@ -1,0 +1,234 @@
+<div class="bb-wilco-block">
+  @if (blockId() === 'wilco-baseline-hero-split') {
+    <section [class]="'consult-hero-split ' + heroPositionClass()">
+      <div class="consult-hero-split__blade">
+        <figure class="consult-hero-split__figure">
+          <img [src]="str('imageSrc')" [alt]="str('imageAlt')" width="1200" height="1200" loading="eager" decoding="async" />
+          @if (editable()) {
+            <button type="button" class="bb-wilco-photo-edit" aria-label="Change hero photo" (click)="onPhotoEdit($event, 'imageSrc')">Change photo</button>
+          }
+        </figure>
+        <div class="consult-hero-split__content">
+          <div class="consult-hero-split__content-inner">
+            <h1 class="consult-hero-split__heading">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Hero headline" [multiline]="true" (valueChange)="patch('heading', $event)" />
+            </h1>
+            <p class="consult-hero-split__subhead">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('subhead')" hostClass="" ariaLabel="Hero subhead" [multiline]="true" (valueChange)="patch('subhead', $event)" />
+            </p>
+            <div class="consult-hero-split__actions">
+              <a class="consult-btn consult-btn--primary" [href]="str('primaryCtaHref', chrome.phoneHref)" (click)="onLinkClick($event)">
+                <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('primaryCtaLabel', 'Call now')" hostClass="" (valueChange)="patch('primaryCtaLabel', $event)" />
+              </a>
+              <a class="consult-btn consult-btn--secondary" [href]="str('secondaryCtaHref', '#services')" (click)="onLinkClick($event)">
+                <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('secondaryCtaLabel', 'Learn more')" hostClass="" (valueChange)="patch('secondaryCtaLabel', $event)" />
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  } @else if (blockId() === 'wilco-baseline-stats-band') {
+    <section class="consult-stats-band" aria-label="Company highlights">
+      <ul class="consult-stats-band__grid">
+        @for (stat of stats(); track $index) {
+          <li class="consult-stats-band__item">
+            <span class="consult-stats-band__value">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="stat.value" hostClass="" ariaLabel="Stat value" (valueChange)="patchStat($index, 'value', $event)" />
+            </span>
+            <span class="consult-stats-band__label">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="stat.label" hostClass="" ariaLabel="Stat label" (valueChange)="patchStat($index, 'label', $event)" />
+            </span>
+          </li>
+        }
+      </ul>
+    </section>
+  } @else if (blockId() === 'wilco-baseline-trusted-by') {
+    <section class="consult-trusted-by" [attr.aria-label]="str('heading', 'Trusted by')">
+      <div class="consult-trusted-by__inner">
+        <p class="consult-trusted-by__heading">
+          <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading', 'Trusted by')" hostClass="" ariaLabel="Trusted by heading" (valueChange)="patch('heading', $event)" />
+        </p>
+        <ul class="consult-trusted-by__list">
+          @for (partner of partners(); track $index) {
+            <li class="consult-trusted-by__item">
+              <a class="consult-trusted-by__link" [href]="partner.href || '#'" target="_blank" rel="noopener noreferrer" (click)="onLinkClick($event)">
+                @if (partner.logoSrc) {
+                  <img class="consult-trusted-by__logo" [src]="partner.logoSrc" [alt]="partner.logoAlt || partner.name" width="200" height="80" loading="lazy" decoding="async" />
+                } @else {
+                  <span class="consult-trusted-by__name">{{ partner.name }}</span>
+                }
+              </a>
+            </li>
+          }
+        </ul>
+      </div>
+    </section>
+  } @else if (blockId() === 'wilco-baseline-services-intro') {
+    <section id="services" class="consult-services-intro consult-services-intro--split">
+      <div class="consult-services-intro__split">
+        <div class="consult-services-intro__split-heading">
+          <p class="consult-services-intro__eyebrow">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('eyebrow', 'What we do')" hostClass="" ariaLabel="Services eyebrow" (valueChange)="patch('eyebrow', $event)" />
+          </p>
+          <h2 class="consult-services-intro__heading">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Services heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+        </div>
+        <div class="consult-services-intro__split-body">
+          <p class="consult-services-intro__lead">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('lead')" hostClass="" ariaLabel="Services lead" [multiline]="true" (valueChange)="patch('lead', $event)" />
+          </p>
+          <ul class="consult-services-intro__keywords" aria-label="Service areas">
+            @for (keyword of keywords(); track $index) {
+              <li class="consult-services-intro__keyword">
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="keyword" hostClass="" ariaLabel="Service keyword" (valueChange)="patchKeyword($index, $event)" />
+              </li>
+            }
+          </ul>
+        </div>
+      </div>
+    </section>
+  } @else if (blockId() === 'wilco-baseline-core-services') {
+    <section class="consult-core-services consult-core-services--cards" aria-label="Core services">
+      <div class="consult-core-services__inner">
+        <h2 class="consult-core-services__heading">
+          <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading', 'Core services')" hostClass="" ariaLabel="Core services heading" (valueChange)="patch('heading', $event)" />
+        </h2>
+        <ul class="consult-core-services__grid">
+          @for (service of services(); track $index) {
+            <li class="consult-core-services__item">
+              <a class="consult-core-services__link" [href]="service.href || '#inquiry'" (click)="onLinkClick($event)">
+                <figure class="consult-core-services__media">
+                  <img [src]="service.imageSrc" [alt]="service.imageAlt || service.heading" width="640" height="800" loading="lazy" decoding="async" />
+                  @if (editable()) {
+                    <button type="button" class="bb-wilco-photo-edit bb-wilco-photo-edit--compact" aria-label="Change service photo" (click)="onPhotoEdit($event, 'services.' + $index + '.imageSrc')">Change photo</button>
+                  }
+                </figure>
+                <div class="consult-core-services__overlay">
+                  <h3 class="consult-core-services__title">
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="service.heading" hostClass="" ariaLabel="Service title" (valueChange)="patchService($index, 'heading', $event)" />
+                  </h3>
+                  <p class="consult-core-services__body">
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="service.body" hostClass="" ariaLabel="Service body" [multiline]="true" (valueChange)="patchService($index, 'body', $event)" />
+                  </p>
+                </div>
+              </a>
+            </li>
+          }
+        </ul>
+      </div>
+    </section>
+  } @else if (blockId() === 'wilco-baseline-projects-intro') {
+    <section id="projects" class="consult-services-intro consult-projects-intro">
+      <div class="consult-services-intro__inner">
+        <h2 class="consult-services-intro__heading">
+          <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading', 'Featured projects')" hostClass="" ariaLabel="Projects heading" (valueChange)="patch('heading', $event)" />
+        </h2>
+        <div class="consult-services-intro__body">
+          <p>
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('body')" hostClass="" ariaLabel="Projects body" [multiline]="true" (valueChange)="patch('body', $event)" />
+          </p>
+        </div>
+      </div>
+    </section>
+  } @else if (isProjectSplitBlock()) {
+    <section [class]="'consult-service-split consult-service-split--panel ' + projectPositionClass()">
+      <div class="consult-service-split__blade">
+        <div class="consult-service-split__content">
+          <div class="consult-service-split__content-inner">
+            <p class="consult-service-split__eyebrow">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('eyebrow', 'Project')" hostClass="" ariaLabel="Project eyebrow" (valueChange)="patch('eyebrow', $event)" />
+            </p>
+            <h3 class="consult-service-split__heading">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Project heading" (valueChange)="patch('heading', $event)" />
+            </h3>
+            <div class="consult-service-split__body">
+              @for (paragraph of paragraphs(); track $index) {
+                <p>
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="paragraph" hostClass="" ariaLabel="Project body" [multiline]="true" (valueChange)="patchParagraph($index, $event)" />
+                </p>
+              }
+            </div>
+            <p class="consult-service-split__cta-wrap">
+              <a class="consult-service-split__cta" [href]="str('ctaHref', '#inquiry')" (click)="onLinkClick($event)">
+                <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('ctaLabel', 'Discuss your project')" hostClass="" (valueChange)="patch('ctaLabel', $event)" />
+              </a>
+            </p>
+          </div>
+        </div>
+        <figure class="consult-service-split__figure">
+          <img [src]="str('imageSrc')" [alt]="str('imageAlt')" width="960" height="960" loading="lazy" decoding="async" />
+          @if (editable()) {
+            <button type="button" class="bb-wilco-photo-edit" aria-label="Change project photo" (click)="onPhotoEdit($event, 'imageSrc')">Change photo</button>
+          }
+        </figure>
+      </div>
+    </section>
+  } @else if (blockId() === 'wilco-baseline-testimonials') {
+    <section id="testimonials" class="landing-section landing-section--alt testimonial-grid testimonial-grid--featured">
+      <div class="container">
+        <h2 class="landing-section__heading">
+          <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading', 'Client perspective')" hostClass="" ariaLabel="Testimonials heading" (valueChange)="patch('heading', $event)" />
+        </h2>
+        <div class="testimonial-grid__grid">
+          @for (testimonial of testimonials(); track $index) {
+            <blockquote class="testimonial-card">
+              <p class="testimonial-card__quote">
+                "<app-protopipe-build-inline-text [editable]="editable()" [value]="testimonial.quote" hostClass="" ariaLabel="Testimonial quote" [multiline]="true" (valueChange)="patchTestimonial($index, 'quote', $event)" />"
+              </p>
+              <footer class="testimonial-card__author">
+                <div>
+                  <cite>
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="testimonial.name" hostClass="" ariaLabel="Testimonial name" (valueChange)="patchTestimonial($index, 'name', $event)" />
+                  </cite>
+                  @if (testimonial.role) {
+                    <p class="testimonial-card__role">
+                      <app-protopipe-build-inline-text [editable]="editable()" [value]="testimonial.role" hostClass="" ariaLabel="Testimonial role" (valueChange)="patchTestimonial($index, 'role', $event)" />
+                    </p>
+                  }
+                </div>
+              </footer>
+            </blockquote>
+          }
+        </div>
+      </div>
+    </section>
+  } @else if (blockId() === 'wilco-baseline-faq') {
+    <section id="faq" class="landing-section faq-accordion-section">
+      <div class="container">
+        <h2 class="landing-section__heading">
+          <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading', 'Frequently asked questions')" hostClass="" ariaLabel="FAQ heading" (valueChange)="patch('heading', $event)" />
+        </h2>
+        <div class="faq-accordion" role="region" aria-label="Frequently asked questions">
+          @for (item of faqItems(); track $index) {
+            <div class="faq-accordion__item">
+              <button type="button" class="faq-accordion__trigger" [attr.aria-expanded]="true">
+                <span>
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="item.question" hostClass="" ariaLabel="FAQ question" (valueChange)="patchFaq($index, 'question', $event)" />
+                </span>
+                <span class="faq-accordion__icon" aria-hidden="true">⌄</span>
+              </button>
+              <div class="faq-accordion__panel">
+                <p>
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="item.answer" hostClass="" ariaLabel="FAQ answer" [multiline]="true" (valueChange)="patchFaq($index, 'answer', $event)" />
+                </p>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+  } @else if (blockId() === 'wilco-baseline-call-cta') {
+    <section id="inquiry" class="consult-call-cta">
+      <div class="consult-call-cta__inner">
+        <a class="consult-btn consult-btn--primary consult-call-cta__btn" [href]="str('phoneHref', chrome.phoneHref)" (click)="onLinkClick($event)">
+          <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('ctaLabel', 'Call now')" hostClass="" (valueChange)="patch('ctaLabel', $event)" />
+        </a>
+        <p class="consult-call-cta__phone">
+          <app-protopipe-build-inline-text [editable]="editable()" [value]="str('phone', chrome.phone)" hostClass="" ariaLabel="Phone number" (valueChange)="patch('phone', $event)" />
+        </p>
+      </div>
+    </section>
+  }
+</div>

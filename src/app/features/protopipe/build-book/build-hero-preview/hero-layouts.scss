@@ -301,6 +301,7 @@ $accent: #2563eb;
   background-size: cover;
   background-position: center;
   background-color: #1c1917;
+  min-height: min(70vh, 42rem);
 
   .bdh__scrim { background: linear-gradient(180deg, rgba(0 0 0 / 0.5) 0%, rgba(0 0 0 / 0.7) 100%); }
 }

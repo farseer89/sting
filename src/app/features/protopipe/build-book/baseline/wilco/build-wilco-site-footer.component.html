@@ -1,0 +1,8 @@
+<footer class="site-footer">
+  <div class="container">
+    <p>&copy; {{ year }} {{ chrome.companyName }}. All rights reserved.</p>
+    <p>
+      <a [href]="'mailto:' + chrome.email" (click)="onLinkClick($event)">{{ chrome.email }}</a>
+    </p>
+  </div>
+</footer>

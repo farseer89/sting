@@ -1,5 +1,7 @@
 /** Minimal component defaults for section swaps — keep in sync with bagend componentSectionDefaults. */
 
+import { WRI_BASELINE_BLOCK_DEFINITIONS } from './build-book-baseline-block.catalog';
+
 export interface BuildBookComponentDefaults {
   defaultProps: Record<string, unknown>;
   editableFields: string[];
@@ -10,7 +12,18 @@ const HERO_IMG =
 const GALLERY_IMG =
   'https://images.squarespace-cdn.com/content/v1/69c2330e1cc15834e49a0ad5/cac956ca-c49a-443a-a8c6-6a5c0b06d56a/2a21d9e0-33bb-471e-9ff7-ee6abf47aad9.jpg?format=800w';
 
+const BASELINE_WRI_COMPONENT_DEFAULTS = Object.fromEntries(
+  WRI_BASELINE_BLOCK_DEFINITIONS.map((block) => [
+    block.componentId,
+    {
+      defaultProps: structuredClone(block.defaultProps),
+      editableFields: [...block.editableFields],
+    },
+  ]),
+) as Record<string, BuildBookComponentDefaults>;
+
 export const BUILD_BOOK_COMPONENT_DEFAULTS: Record<string, BuildBookComponentDefaults> = {
+  ...BASELINE_WRI_COMPONENT_DEFAULTS,
   'hero-split': {
     defaultProps: {
       eyebrow: 'Your business',
@@ -25,14 +38,18 @@ export const BUILD_BOOK_COMPONENT_DEFAULTS: Record<string, BuildBookComponentDef
   },
   'hero-overlay': {
     defaultProps: {
+      eyebrow: 'Your business · Your area',
       heading: 'Building excellence',
       subhead: 'Licensed professionals serving your area.',
       backgroundImageSrc: HERO_IMG,
       backgroundImageAlt: 'Hero background',
       ctaLabel: 'Get a quote',
       ctaHref: '#inquiry',
+      secondaryCtaLabel: 'View services',
+      secondaryCtaHref: '#services',
     },
     editableFields: [
+      'eyebrow',
       'heading',
       'subhead',
       'backgroundImageSrc',

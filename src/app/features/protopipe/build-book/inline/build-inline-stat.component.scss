@@ -1,0 +1,19 @@
+:host {
+  display: contents;
+}
+
+.bb-inline-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+:host ::ng-deep .bb-inline-stat__value {
+  font-weight: 700;
+}
+
+:host ::ng-deep .bb-inline-stat__label {
+  opacity: 0.82;
+  font-size: 0.85em;
+}

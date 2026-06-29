@@ -1,64 +1,48 @@
-      <!-- Chrome-style browser window: tab strip + toolbar + viewport -->
-      <div class="bd-browser">
-
-        <!-- Browser tab strip (brand selector) -->
-        <div class="bd-browser__tabstrip">
-          <button type="button" class="bd-browser__tab" [class.is-active]="brand() === 'sparky'" (click)="onSelectBrand('sparky')">
-            <span class="bd-browser__tab-fav" style="background:#f59e0b"></span>
-            <span class="bd-browser__tab-label">Sparky Electric</span>
-          </button>
-          <button type="button" class="bd-browser__tab" [class.is-active]="brand() === 'wri'" (click)="onSelectBrand('wri')">
-            <span class="bd-browser__tab-fav" style="background:#0ea5e9"></span>
-            <span class="bd-browser__tab-label">WRI</span>
-          </button>
-          <button type="button" class="bd-browser__tab" [class.is-active]="brand() === 'consult'" (click)="onSelectBrand('consult')">
-            <span class="bd-browser__tab-fav" style="background:#64748b"></span>
-            <span class="bd-browser__tab-label">Wilco Consulting</span>
-          </button>
-          <div class="bd-browser__tab-rest"></div>
-        </div>
-
-        <!-- Browser toolbar: nav arrows + omnibox + hero indicator + dots -->
-        <div class="bd-browser__toolbar">
-          <div class="bd-browser__navbtns">
-            <button type="button" class="bd-browser__navbtn" (click)="onPrevHero()" title="Previous layout">
-              <svg viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-            <button type="button" class="bd-browser__navbtn" (click)="onNextHero()" title="Next layout">
-              <svg viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-          </div>
-          <div class="bd-browser__omnibox">
-            <svg class="bd-browser__omni-lock" viewBox="0 0 12 12" fill="none">
-              <rect x="2" y="5.5" width="8" height="5.5" rx="1" stroke="currentColor" stroke-width="1"/>
-              <path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" stroke="currentColor" stroke-width="1"/>
-            </svg>
-            <span class="bd-browser__omni-url">{{ siteUrl() }}</span>
-          </div>
-          <div class="bd-browser__omni-trail">
-            <span class="bd-browser__omni-name">{{ heroLabel() }}</span>
-            <div class="bd-browser__omni-dots">
-              @for (hero of brandHeroes(); track hero.id; let i = $index) {
-                <button type="button" class="bd-browser__omni-dot" [class.is-active]="heroIndex() === i" (click)="setHeroIndex(i)"></button>
-              }
-            </div>
-          </div>
-        </div>
-
         <div class="bd-browser__viewport">
 
           <!-- ══ SPARKY CALLOUT: fullbleed photo, dark overlay, centered content ══ -->
           @if (layout() === 'sp-callout') {
-            <div class="bdh bdh--sp-callout" [style.background-image]="'url('+imageUrl()+')'">
+            <div class="bdh bdh--sp-callout" [style.background-image]="backgroundImageStyle()">
               <div class="bdh__scrim"></div>
               <div class="bdh__sp-inner">
                 <svg class="bdh__sp-bolt" viewBox="0 0 24 24"><polygon points="13,2 3,14 12,14 11,22 21,10 12,10" fill="#f59e0b"/></svg>
-                <p class="bdh__sp-eye">{{ copy().eyebrow }}</p>
-                <h2 class="bdh__sp-h" [innerHTML]="headlineHtml()"></h2>
-                <p class="bdh__sp-sub">{{ copy().subhead }}</p>
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().eyebrow"
+                  hostClass="bdh__sp-eye"
+                  ariaLabel="Eyebrow"
+                  (valueChange)="patchCopy('eyebrow', $event)"
+                />
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().headline"
+                  hostClass="bdh__sp-h"
+                  ariaLabel="Headline"
+                  [multiline]="true"
+                  [asHtml]="!editable()"
+                  (valueChange)="patchCopy('headline', $event)"
+                />
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().subhead"
+                  hostClass="bdh__sp-sub"
+                  ariaLabel="Subhead"
+                  [multiline]="true"
+                  (valueChange)="patchCopy('subhead', $event)"
+                />
                 <div class="bdh__acts">
-                  <span class="bdh__btn bdh__btn--y">{{ copy().primaryCta }}</span>
-                  <span class="bdh__btn bdh__btn--ghost">{{ copy().secondaryCta }}</span>
+                  <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().primaryCta"
+                  hostClass="bdh__btn bdh__btn--y"
+                  (valueChange)="patchCopy('primaryCta', $event)"
+                />
+                  <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().secondaryCta"
+                  hostClass="bdh__btn bdh__btn--ghost"
+                  (valueChange)="patchCopy('secondaryCta', $event)"
+                />
                 </div>
               </div>
               <div class="bdh__sp-proof">
@@ -74,12 +58,43 @@
             <div class="bdh bdh--sp-bento">
               <div class="bdh__sp-bento-copy">
                 <svg class="bdh__sp-bolt bdh__sp-bolt--sm" viewBox="0 0 24 24"><polygon points="13,2 3,14 12,14 11,22 21,10 12,10" fill="#f59e0b"/></svg>
-                <p class="bdh__sp-eye">{{ copy().eyebrow }}</p>
-                <h2 class="bdh__sp-bento-h" [innerHTML]="headlineHtml()"></h2>
-                <p class="bdh__sp-sub">{{ copy().subhead }}</p>
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().eyebrow"
+                  hostClass="bdh__sp-eye"
+                  ariaLabel="Eyebrow"
+                  (valueChange)="patchCopy('eyebrow', $event)"
+                />
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().headline"
+                  hostClass="bdh__sp-bento-h"
+                  ariaLabel="Headline"
+                  [multiline]="true"
+                  [asHtml]="!editable()"
+                  (valueChange)="patchCopy('headline', $event)"
+                />
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().subhead"
+                  hostClass="bdh__sp-sub"
+                  ariaLabel="Subhead"
+                  [multiline]="true"
+                  (valueChange)="patchCopy('subhead', $event)"
+                />
                 <div class="bdh__acts">
-                  <span class="bdh__btn bdh__btn--y">{{ copy().primaryCta }}</span>
-                  <span class="bdh__btn bdh__btn--ghost">{{ copy().secondaryCta }}</span>
+                  <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().primaryCta"
+                  hostClass="bdh__btn bdh__btn--y"
+                  (valueChange)="patchCopy('primaryCta', $event)"
+                />
+                  <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().secondaryCta"
+                  hostClass="bdh__btn bdh__btn--ghost"
+                  (valueChange)="patchCopy('secondaryCta', $event)"
+                />
                 </div>
               </div>
               <div class="bdh__sp-bento-photo">
@@ -97,13 +112,44 @@
           @if (layout() === 'sp-asymmetric') {
             <div class="bdh bdh--sp-asym">
               <div class="bdh__sp-asym-copy">
-                <p class="bdh__sp-eye bdh__sp-eye--amber">{{ copy().eyebrow }}</p>
-                <h2 class="bdh__sp-asym-h" [innerHTML]="headlineHtml()"></h2>
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().eyebrow"
+                  hostClass="bdh__sp-eye bdh__sp-eye--amber"
+                  ariaLabel="Eyebrow"
+                  (valueChange)="patchCopy('eyebrow', $event)"
+                />
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().headline"
+                  hostClass="bdh__sp-asym-h"
+                  ariaLabel="Headline"
+                  [multiline]="true"
+                  [asHtml]="!editable()"
+                  (valueChange)="patchCopy('headline', $event)"
+                />
                 <div class="bdh__sp-asym-rule"></div>
-                <p class="bdh__sp-sub bdh__sp-sub--dark">{{ copy().subhead }}</p>
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().subhead"
+                  hostClass="bdh__sp-sub bdh__sp-sub--dark"
+                  ariaLabel="Subhead"
+                  [multiline]="true"
+                  (valueChange)="patchCopy('subhead', $event)"
+                />
                 <div class="bdh__acts">
-                  <span class="bdh__btn bdh__btn--y">{{ copy().primaryCta }}</span>
-                  <span class="bdh__btn bdh__btn--ghost-dark">{{ copy().secondaryCta }}</span>
+                  <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().primaryCta"
+                  hostClass="bdh__btn bdh__btn--y"
+                  (valueChange)="patchCopy('primaryCta', $event)"
+                />
+                  <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().secondaryCta"
+                  hostClass="bdh__btn bdh__btn--ghost-dark"
+                  (valueChange)="patchCopy('secondaryCta', $event)"
+                />
                 </div>
               </div>
               <div class="bdh__sp-asym-frame">
@@ -117,11 +163,35 @@
             <div class="bdh bdh--sp-horizon">
               <div class="bdh__sp-hz-top">
                 <div class="bdh__sp-hz-copy">
-                  <p class="bdh__sp-eye bdh__sp-eye--gray">{{ copy().eyebrow }}</p>
-                  <h2 class="bdh__sp-hz-h" [innerHTML]="headlineHtml()"></h2>
+                  <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().eyebrow"
+                  hostClass="bdh__sp-eye bdh__sp-eye--gray"
+                  ariaLabel="Eyebrow"
+                  (valueChange)="patchCopy('eyebrow', $event)"
+                />
+                  <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().headline"
+                  hostClass="bdh__sp-hz-h"
+                  ariaLabel="Headline"
+                  [multiline]="true"
+                  [asHtml]="!editable()"
+                  (valueChange)="patchCopy('headline', $event)"
+                />
                   <div class="bdh__acts">
-                    <span class="bdh__btn bdh__btn--y">{{ copy().primaryCta }}</span>
-                    <span class="bdh__btn bdh__btn--ghost-dark">{{ copy().secondaryCta }}</span>
+                    <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().primaryCta"
+                  hostClass="bdh__btn bdh__btn--y"
+                  (valueChange)="patchCopy('primaryCta', $event)"
+                />
+                    <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().secondaryCta"
+                  hostClass="bdh__btn bdh__btn--ghost-dark"
+                  (valueChange)="patchCopy('secondaryCta', $event)"
+                />
                   </div>
                 </div>
                 <div class="bdh__sp-hz-stats">
@@ -142,12 +212,43 @@
               <div class="bdh__sp-teal-bg-grid"></div>
               <svg class="bdh__sp-teal-bolt" viewBox="0 0 24 24"><polygon points="13,2 3,14 12,14 11,22 21,10 12,10"/></svg>
               <div class="bdh__sp-teal-inner">
-                <p class="bdh__sp-eye">{{ copy().eyebrow }}</p>
-                <h2 class="bdh__sp-teal-h" [innerHTML]="headlineHtml()"></h2>
-                <p class="bdh__sp-sub">{{ copy().subhead }}</p>
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().eyebrow"
+                  hostClass="bdh__sp-eye"
+                  ariaLabel="Eyebrow"
+                  (valueChange)="patchCopy('eyebrow', $event)"
+                />
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().headline"
+                  hostClass="bdh__sp-teal-h"
+                  ariaLabel="Headline"
+                  [multiline]="true"
+                  [asHtml]="!editable()"
+                  (valueChange)="patchCopy('headline', $event)"
+                />
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().subhead"
+                  hostClass="bdh__sp-sub"
+                  ariaLabel="Subhead"
+                  [multiline]="true"
+                  (valueChange)="patchCopy('subhead', $event)"
+                />
                 <div class="bdh__acts">
-                  <span class="bdh__btn bdh__btn--invert">{{ copy().primaryCta }}</span>
-                  <span class="bdh__btn bdh__btn--ghost">{{ copy().secondaryCta }}</span>
+                  <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().primaryCta"
+                  hostClass="bdh__btn bdh__btn--invert"
+                  (valueChange)="patchCopy('primaryCta', $event)"
+                />
+                  <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().secondaryCta"
+                  hostClass="bdh__btn bdh__btn--ghost"
+                  (valueChange)="patchCopy('secondaryCta', $event)"
+                />
                 </div>
                 <div class="bdh__sp-teal-stats">
                   <div class="bdh__sp-teal-stat"><strong>4.9★</strong><span>Google</span></div>
@@ -162,9 +263,30 @@
           @if (layout() === 'sp-dispatch') {
             <div class="bdh bdh--sp-dispatch">
               <div class="bdh__sp-disp-copy">
-                <p class="bdh__sp-eye">{{ copy().eyebrow }}</p>
-                <h2 class="bdh__sp-disp-h" [innerHTML]="headlineHtml()"></h2>
-                <p class="bdh__sp-sub">{{ copy().subhead }}</p>
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().eyebrow"
+                  hostClass="bdh__sp-eye"
+                  ariaLabel="Eyebrow"
+                  (valueChange)="patchCopy('eyebrow', $event)"
+                />
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().headline"
+                  hostClass="bdh__sp-disp-h"
+                  ariaLabel="Headline"
+                  [multiline]="true"
+                  [asHtml]="!editable()"
+                  (valueChange)="patchCopy('headline', $event)"
+                />
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().subhead"
+                  hostClass="bdh__sp-sub"
+                  ariaLabel="Subhead"
+                  [multiline]="true"
+                  (valueChange)="patchCopy('subhead', $event)"
+                />
               </div>
               <div class="bdh__sp-disp-paths">
                 <div class="bdh__sp-disp-path bdh__sp-disp-path--urgent">
@@ -183,15 +305,46 @@
 
           <!-- ══ WRI FULLBLEED: bg photo + left dark gradient panel ══ -->
           @if (layout() === 'wri-fullbleed') {
-            <div class="bdh bdh--wri-fullbleed" [style.background-image]="'url('+imageUrl()+')'">
-              <div class="bdh__wri-scrim"></div>
+            <div class="bdh bdh--wri-fullbleed" [style.background-image]="backgroundImageStyle()">
+              <div class="bdh__scrim"></div>
               <div class="bdh__wri-panel">
-                <p class="bdh__wri-eye">{{ copy().eyebrow }}</p>
-                <h2 class="bdh__wri-h" [innerHTML]="headlineHtml()"></h2>
-                <p class="bdh__wri-sub">{{ copy().subhead }}</p>
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().eyebrow"
+                  hostClass="bdh__wri-eye"
+                  ariaLabel="Eyebrow"
+                  (valueChange)="patchCopy('eyebrow', $event)"
+                />
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().headline"
+                  hostClass="bdh__wri-h"
+                  ariaLabel="Headline"
+                  [multiline]="true"
+                  [asHtml]="!editable()"
+                  (valueChange)="patchCopy('headline', $event)"
+                />
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().subhead"
+                  hostClass="bdh__wri-sub"
+                  ariaLabel="Subhead"
+                  [multiline]="true"
+                  (valueChange)="patchCopy('subhead', $event)"
+                />
                 <div class="bdh__acts">
-                  <span class="bdh__btn bdh__btn--earth">{{ copy().primaryCta }}</span>
-                  <span class="bdh__btn bdh__btn--ghost">{{ copy().secondaryCta }}</span>
+                  <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().primaryCta"
+                  hostClass="bdh__btn bdh__btn--earth"
+                  (valueChange)="patchCopy('primaryCta', $event)"
+                />
+                  <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().secondaryCta"
+                  hostClass="bdh__btn bdh__btn--ghost"
+                  (valueChange)="patchCopy('secondaryCta', $event)"
+                />
                 </div>
               </div>
             </div>
@@ -205,11 +358,35 @@
                 <span class="bdh__wri-split-tag">Rural field site · well prep</span>
               </div>
               <div class="bdh__wri-split-copy">
-                <p class="bdh__wri-eye">{{ copy().eyebrow }}</p>
-                <h2 class="bdh__wri-split-h" [innerHTML]="headlineHtml()"></h2>
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().eyebrow"
+                  hostClass="bdh__wri-eye"
+                  ariaLabel="Eyebrow"
+                  (valueChange)="patchCopy('eyebrow', $event)"
+                />
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().headline"
+                  hostClass="bdh__wri-split-h"
+                  ariaLabel="Headline"
+                  [multiline]="true"
+                  [asHtml]="!editable()"
+                  (valueChange)="patchCopy('headline', $event)"
+                />
                 <div class="bdh__acts">
-                  <span class="bdh__btn bdh__btn--earth">{{ copy().primaryCta }}</span>
-                  <span class="bdh__btn bdh__btn--ghost-dark">{{ copy().secondaryCta }}</span>
+                  <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().primaryCta"
+                  hostClass="bdh__btn bdh__btn--earth"
+                  (valueChange)="patchCopy('primaryCta', $event)"
+                />
+                  <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().secondaryCta"
+                  hostClass="bdh__btn bdh__btn--ghost-dark"
+                  (valueChange)="patchCopy('secondaryCta', $event)"
+                />
                 </div>
               </div>
             </div>
@@ -219,12 +396,43 @@
           @if (layout() === 'wri-bento') {
             <div class="bdh bdh--wri-bento">
               <div class="bdh__wri-bento-copy">
-                <p class="bdh__wri-eye">{{ copy().eyebrow }}</p>
-                <h2 class="bdh__wri-bento-h" [innerHTML]="headlineHtml()"></h2>
-                <p class="bdh__wri-sub bdh__wri-sub--dark">{{ copy().subhead }}</p>
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().eyebrow"
+                  hostClass="bdh__wri-eye"
+                  ariaLabel="Eyebrow"
+                  (valueChange)="patchCopy('eyebrow', $event)"
+                />
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().headline"
+                  hostClass="bdh__wri-bento-h"
+                  ariaLabel="Headline"
+                  [multiline]="true"
+                  [asHtml]="!editable()"
+                  (valueChange)="patchCopy('headline', $event)"
+                />
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().subhead"
+                  hostClass="bdh__wri-sub bdh__wri-sub--dark"
+                  ariaLabel="Subhead"
+                  [multiline]="true"
+                  (valueChange)="patchCopy('subhead', $event)"
+                />
                 <div class="bdh__acts">
-                  <span class="bdh__btn bdh__btn--earth">{{ copy().primaryCta }}</span>
-                  <span class="bdh__btn bdh__btn--ghost-dark">{{ copy().secondaryCta }}</span>
+                  <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().primaryCta"
+                  hostClass="bdh__btn bdh__btn--earth"
+                  (valueChange)="patchCopy('primaryCta', $event)"
+                />
+                  <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().secondaryCta"
+                  hostClass="bdh__btn bdh__btn--ghost-dark"
+                  (valueChange)="patchCopy('secondaryCta', $event)"
+                />
                 </div>
               </div>
               <div class="bdh__wri-bento-photos">
@@ -240,11 +448,37 @@
           @if (layout() === 'wri-metrics') {
             <div class="bdh bdh--wri-metrics">
               <div class="bdh__wri-mx-copy">
-                <p class="bdh__wri-eye">{{ copy().eyebrow }}</p>
-                <h2 class="bdh__wri-mx-h" [innerHTML]="headlineHtml()"></h2>
-                <p class="bdh__wri-sub bdh__wri-sub--dark">{{ copy().subhead }}</p>
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().eyebrow"
+                  hostClass="bdh__wri-eye"
+                  ariaLabel="Eyebrow"
+                  (valueChange)="patchCopy('eyebrow', $event)"
+                />
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().headline"
+                  hostClass="bdh__wri-mx-h"
+                  ariaLabel="Headline"
+                  [multiline]="true"
+                  [asHtml]="!editable()"
+                  (valueChange)="patchCopy('headline', $event)"
+                />
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().subhead"
+                  hostClass="bdh__wri-sub bdh__wri-sub--dark"
+                  ariaLabel="Subhead"
+                  [multiline]="true"
+                  (valueChange)="patchCopy('subhead', $event)"
+                />
                 <div class="bdh__acts">
-                  <span class="bdh__btn bdh__btn--earth">{{ copy().primaryCta }}</span>
+                  <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().primaryCta"
+                  hostClass="bdh__btn bdh__btn--earth"
+                  (valueChange)="patchCopy('primaryCta', $event)"
+                />
                 </div>
               </div>
               <div class="bdh__wri-mx-tiles">
@@ -268,11 +502,35 @@
           @if (layout() === 'wri-coastal') {
             <div class="bdh bdh--wri-coastal">
               <div class="bdh__wri-coast-copy">
-                <p class="bdh__wri-eye">{{ copy().eyebrow }}</p>
-                <h2 class="bdh__wri-coast-h" [innerHTML]="headlineHtml()"></h2>
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().eyebrow"
+                  hostClass="bdh__wri-eye"
+                  ariaLabel="Eyebrow"
+                  (valueChange)="patchCopy('eyebrow', $event)"
+                />
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().headline"
+                  hostClass="bdh__wri-coast-h"
+                  ariaLabel="Headline"
+                  [multiline]="true"
+                  [asHtml]="!editable()"
+                  (valueChange)="patchCopy('headline', $event)"
+                />
                 <div class="bdh__acts">
-                  <span class="bdh__btn bdh__btn--earth">{{ copy().primaryCta }}</span>
-                  <span class="bdh__btn bdh__btn--ghost-dark">{{ copy().secondaryCta }}</span>
+                  <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().primaryCta"
+                  hostClass="bdh__btn bdh__btn--earth"
+                  (valueChange)="patchCopy('primaryCta', $event)"
+                />
+                  <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().secondaryCta"
+                  hostClass="bdh__btn bdh__btn--ghost-dark"
+                  (valueChange)="patchCopy('secondaryCta', $event)"
+                />
                 </div>
               </div>
               <div class="bdh__wri-coast-band">
@@ -289,12 +547,43 @@
                 <img [src]="imageUrl()" alt="Wilco Consulting" />
               </div>
               <div class="bdh__co-content">
-                <p class="bdh__co-eye">{{ copy().eyebrow }}</p>
-                <h2 class="bdh__co-h" [innerHTML]="headlineHtml()"></h2>
-                <p class="bdh__co-sub">{{ copy().subhead }}</p>
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().eyebrow"
+                  hostClass="bdh__co-eye"
+                  ariaLabel="Eyebrow"
+                  (valueChange)="patchCopy('eyebrow', $event)"
+                />
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().headline"
+                  hostClass="bdh__co-h"
+                  ariaLabel="Headline"
+                  [multiline]="true"
+                  [asHtml]="!editable()"
+                  (valueChange)="patchCopy('headline', $event)"
+                />
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().subhead"
+                  hostClass="bdh__co-sub"
+                  ariaLabel="Subhead"
+                  [multiline]="true"
+                  (valueChange)="patchCopy('subhead', $event)"
+                />
                 <div class="bdh__acts">
-                  <span class="bdh__btn bdh__btn--slate">{{ copy().primaryCta }}</span>
-                  <span class="bdh__btn bdh__btn--ghost-dark">{{ copy().secondaryCta }}</span>
+                  <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().primaryCta"
+                  hostClass="bdh__btn bdh__btn--slate"
+                  (valueChange)="patchCopy('primaryCta', $event)"
+                />
+                  <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().secondaryCta"
+                  hostClass="bdh__btn bdh__btn--ghost-dark"
+                  (valueChange)="patchCopy('secondaryCta', $event)"
+                />
                 </div>
               </div>
             </div>
@@ -302,18 +591,35 @@
 
           <!-- ══ CONSULT FULLBLEED: fullscreen bg + heading top + CTAs bottom ══ -->
           @if (layout() === 'co-fullbleed') {
-            <div class="bdh bdh--co-fullbleed" [style.background-image]="'url('+imageUrl()+')'">
-              <div class="bdh__co-scrim"></div>
+            <div class="bdh bdh--co-fullbleed" [style.background-image]="backgroundImageStyle()">
+              <div class="bdh__scrim"></div>
               <div class="bdh__co-top">
-                <h2 class="bdh__co-fb-h" [innerHTML]="headlineHtml()"></h2>
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="copy().headline"
+                  hostClass="bdh__co-fb-h"
+                  ariaLabel="Headline"
+                  [multiline]="true"
+                  [asHtml]="!editable()"
+                  (valueChange)="patchCopy('headline', $event)"
+                />
                 <p class="bdh__co-fb-org">Wilco Consulting Group</p>
               </div>
               <div class="bdh__co-bottom">
-                <span class="bdh__btn bdh__btn--slate">{{ copy().primaryCta }}</span>
-                <span class="bdh__btn bdh__btn--ghost">{{ copy().secondaryCta }}</span>
+                <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().primaryCta"
+                  hostClass="bdh__btn bdh__btn--slate"
+                  (valueChange)="patchCopy('primaryCta', $event)"
+                />
+                <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="copy().secondaryCta"
+                  hostClass="bdh__btn bdh__btn--ghost"
+                  (valueChange)="patchCopy('secondaryCta', $event)"
+                />
               </div>
             </div>
           }
 
-        </div><!-- /bd-browser__viewport -->
-      </div><!-- /bd-browser -->
+        </div>

@@ -1,0 +1,31 @@
+<div class="bba" [class]="'bba bba--' + layout()">
+  <app-protopipe-build-inline-text
+    [editable]="editable()"
+    [value]="heading()"
+    hostClass="bba__heading"
+    ariaLabel="Areas heading"
+    (valueChange)="patchProp('heading', $event)"
+  />
+
+  <div class="bba__items">
+    @for (item of items(); track $index) {
+      <article class="bba__item">
+        <app-protopipe-build-inline-text
+          [editable]="editable()"
+          [value]="itemQuestion(item)"
+          hostClass="bba__question"
+          ariaLabel="Question or step title"
+          (valueChange)="patchPath(listKey() + '.' + $index + '.' + questionField(item), $event)"
+        />
+        <app-protopipe-build-inline-text
+          [editable]="editable()"
+          [value]="itemAnswer(item)"
+          hostClass="bba__answer"
+          [multiline]="true"
+          ariaLabel="Answer or step body"
+          (valueChange)="patchPath(listKey() + '.' + $index + '.' + answerField(item), $event)"
+        />
+      </article>
+    }
+  </div>
+</div>

@@ -1,0 +1,16 @@
+<footer class="wri-footer" id="about">
+  <div class="wri-wrap">
+    <p class="wri-footer__brand">{{ chrome.companyName }}</p>
+    @for (office of chrome.offices; track office.label) {
+      <p>
+        {{ office.label }}: {{ office.address }}, {{ office.city }} · {{ office.phone }}
+      </p>
+    }
+    <p>
+      <a [href]="chrome.phoneHref" (click)="onLinkClick($event)">{{ chrome.phone }}</a>
+    </p>
+    <p class="wri-footer__fine">
+      © {{ chrome.founded }}–{{ year }} {{ chrome.shortName }}. All rights reserved.
+    </p>
+  </div>
+</footer>

@@ -79,6 +79,24 @@ export interface BuildBookTemplateDefinition {
   defaultHomepageBlocks: BuildBookTemplateBlockRef[];
 }
 
+export interface BuildBookBlockNavThumbAspect {
+  width: number;
+  height: number;
+}
+
+export type BuildBookBlockNavThumbKind =
+  | 'generic'
+  | 'wri-hero-fullbleed'
+  | 'wri-contract-bar'
+  | 'wri-capabilities-grid'
+  | 'wri-copy-split'
+  | 'wri-lifecycle'
+  | 'wri-featured-well'
+  | 'wri-sidebar-facts'
+  | 'wri-regulatory-trust'
+  | 'wri-island-coverage'
+  | 'wri-gallery-cta';
+
 export interface BuildBookBlockDefinition {
   id: string;
   section: BuildBookSection;
@@ -95,6 +113,10 @@ export interface BuildBookBlockDefinition {
   previewPath?: string;
   previewImage?: string;
   demo?: BuildBookDemoMeta;
+  /** Mini wireframe for homepage stack nav — future block library thumbnail key. */
+  navThumbKind?: BuildBookBlockNavThumbKind;
+  /** Relative nav thumbnail proportions vs on-page block height. */
+  navThumbAspect?: BuildBookBlockNavThumbAspect;
 }
 
 export interface BuildBookBlockInstance {

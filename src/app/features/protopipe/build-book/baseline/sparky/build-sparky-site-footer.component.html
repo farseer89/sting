@@ -1,0 +1,14 @@
+<footer class="sparky-footer" id="about">
+  <div class="sparky-wrap">
+    <p class="sparky-footer__brand">{{ chrome.companyName }}</p>
+    <p>{{ chrome.location }}</p>
+    <p>
+      <a [href]="'mailto:' + chrome.email" (click)="onLinkClick($event)">{{ chrome.email }}</a>
+      ·
+      <a [href]="chrome.phoneHref" (click)="onLinkClick($event)">{{ chrome.phone }}</a>
+    </p>
+    <p class="sparky-footer__fine">
+      © {{ chrome.founded }}–{{ year }} {{ chrome.legalName }}. All rights reserved.
+    </p>
+  </div>
+</footer>

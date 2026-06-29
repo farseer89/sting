@@ -222,7 +222,7 @@ export class ProtopipeProspectorStore {
             campaignId: campaign.id,
             category: campaign.category,
             location: campaign.location,
-            maxResults: 20,
+            maxResults: 40,
           },
         }),
       );

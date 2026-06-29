@@ -29,6 +29,7 @@ import { ProtopipeProspectorStore } from './protopipe-prospector.store';
 
 export type ProspectorSection = 'new-search' | 'campaigns' | 'leads' | 'prospects' | 'run-pipeline';
 type ProspectorSearchSource = 'google_maps' | 'yelp';
+type WebsiteSort = 'default' | 'has_website' | 'no_website';
 
 interface ProspectorSourceTab {
   id: ProspectorSearchSource;
@@ -83,6 +84,7 @@ export class ProtopipeProspectorComponent implements OnInit {
   readonly expanding = signal(false);
   readonly expandError = signal<string | null>(null);
   readonly selectedCandidateKeys = signal<Set<string>>(new Set());
+  readonly websiteSort = signal<WebsiteSort>('default');
 
   readonly prospectStatuses: ProspectStatus[] = [
     'new',
@@ -412,5 +414,47 @@ export class ProtopipeProspectorComponent implements OnInit {
 
   candidateKey(candidate: ProspectingCandidateSummary): string {
     return `${candidate.source}:${candidate.sourceId}`;
+  }
+
+  toggleWebsiteSort(): void {
+    this.websiteSort.update((sort) => {
+      if (sort === 'default') return 'has_website';
+      if (sort === 'has_website') return 'no_website';
+      return 'default';
+    });
+  }
+
+  websiteSortLabel(): string {
+    switch (this.websiteSort()) {
+      case 'has_website':
+        return 'Has website first';
+      case 'no_website':
+        return 'No website first';
+      default:
+        return 'Website';
+    }
+  }
+
+  sortCandidates(candidates: ProspectingCandidateSummary[]): ProspectingCandidateSummary[] {
+    return this.sortByWebsite(candidates, (candidate) => candidate.website);
+  }
+
+  sortLeads(leads: ProspectorScoredLead[]): ProspectorScoredLead[] {
+    return this.sortByWebsite(leads, (lead) => lead.websiteUri);
+  }
+
+  private sortByWebsite<T>(
+    items: T[],
+    readWebsite: (item: T) => string | undefined | null,
+  ): T[] {
+    const sort = this.websiteSort();
+    if (sort === 'default') return items;
+    return items.slice().sort((a, b) => {
+      const aHas = Boolean(readWebsite(a)?.trim());
+      const bHas = Boolean(readWebsite(b)?.trim());
+      if (aHas === bHas) return 0;
+      if (sort === 'has_website') return aHas ? -1 : 1;
+      return aHas ? 1 : -1;
+    });
   }
 }

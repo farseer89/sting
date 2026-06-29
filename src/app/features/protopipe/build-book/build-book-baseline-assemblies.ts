@@ -1,4 +1,6 @@
 import { WRI_BASELINE_BLOCK_DEFINITIONS } from './build-book-baseline-block.catalog';
+import { SPARKY_BASELINE_BLOCK_DEFINITIONS } from './build-book-sparky-baseline-block.catalog';
+import { WILCO_BASELINE_BLOCK_DEFINITIONS } from './build-book-wilco-baseline-block.catalog';
 import type { BuildBookBlockDefinition, BuildBookBlockInstance, BuildBookPage } from './build-book.types';
 
 function instanceFromBlock(block: BuildBookBlockDefinition, order: number): BuildBookBlockInstance {
@@ -27,7 +29,38 @@ const WRI_2B_BLOCK_IDS = [
   'wri-baseline-rig-gallery-cta',
 ] as const;
 
+const SPARKY_STACK_BLOCK_IDS = [
+  'sparky-baseline-hero-callout',
+  'sparky-baseline-trust-stats',
+  'sparky-baseline-services-grid',
+  'sparky-baseline-brand-partners',
+  'sparky-baseline-process',
+  'sparky-baseline-reviews',
+  'sparky-baseline-why-evidence',
+  'sparky-baseline-project-feature',
+  'sparky-baseline-areas-map',
+  'sparky-baseline-gallery-cta',
+  'sparky-baseline-field-notes',
+] as const;
+
+const WILCO_STACK_BLOCK_IDS = [
+  'wilco-baseline-hero-split',
+  'wilco-baseline-stats-band',
+  'wilco-baseline-trusted-by',
+  'wilco-baseline-services-intro',
+  'wilco-baseline-core-services',
+  'wilco-baseline-projects-intro',
+  'wilco-baseline-project-awcc',
+  'wilco-baseline-project-seldovia',
+  'wilco-baseline-project-dillingham',
+  'wilco-baseline-testimonials',
+  'wilco-baseline-faq',
+  'wilco-baseline-call-cta',
+] as const;
+
 const WRI_BLOCKS_BY_ID = new Map(WRI_BASELINE_BLOCK_DEFINITIONS.map((block) => [block.id, block]));
+const SPARKY_BLOCKS_BY_ID = new Map(SPARKY_BASELINE_BLOCK_DEFINITIONS.map((block) => [block.id, block]));
+const WILCO_BLOCKS_BY_ID = new Map(WILCO_BASELINE_BLOCK_DEFINITIONS.map((block) => [block.id, block]));
 
 export const BUILD_BOOK_BASELINE_PAGE_ASSEMBLIES: Record<string, BuildBookPage[]> = {
   'wri-field-authority-v1': [
@@ -39,6 +72,32 @@ export const BUILD_BOOK_BASELINE_PAGE_ASSEMBLIES: Record<string, BuildBookPage[]
       blocks: WRI_2B_BLOCK_IDS.map((blockId, order) => {
         const block = WRI_BLOCKS_BY_ID.get(blockId);
         if (!block) throw new Error(`Missing WRI baseline block: ${blockId}`);
+        return instanceFromBlock(block, order);
+      }),
+    },
+  ],
+  'sparky-electric-trades-v1': [
+    {
+      id: 'home',
+      kind: 'homepage',
+      label: 'Home',
+      slug: '/',
+      blocks: SPARKY_STACK_BLOCK_IDS.map((blockId, order) => {
+        const block = SPARKY_BLOCKS_BY_ID.get(blockId);
+        if (!block) throw new Error(`Missing Sparky baseline block: ${blockId}`);
+        return instanceFromBlock(block, order);
+      }),
+    },
+  ],
+  'wilco-consulting-v1': [
+    {
+      id: 'home',
+      kind: 'homepage',
+      label: 'Home',
+      slug: '/',
+      blocks: WILCO_STACK_BLOCK_IDS.map((blockId, order) => {
+        const block = WILCO_BLOCKS_BY_ID.get(blockId);
+        if (!block) throw new Error(`Missing Wilco baseline block: ${blockId}`);
         return instanceFromBlock(block, order);
       }),
     },

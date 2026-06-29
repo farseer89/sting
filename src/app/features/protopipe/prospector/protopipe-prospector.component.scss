@@ -674,6 +674,51 @@ $pb-amber: #d97706;
   }
 }
 
+.pb-candidate-table__sort {
+  padding: 0;
+
+  &.is-sorted .pb-th-sort {
+    color: $pb-accent;
+  }
+}
+
+.pb-th-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  padding: 0.7rem 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    color: $pb-accent;
+  }
+
+  &--lt {
+    padding: 0;
+    width: 100%;
+    justify-content: center;
+    font-size: 0.5rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+}
+
+.pb-th-sort__hint {
+  color: $pb-accent;
+  font-size: 0.5625rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+}
+
 .pb-candidate-dim {
   color: $pb-dim;
 }
@@ -1009,6 +1054,14 @@ $lt-row-h: 2.5rem;
   &--priority,
   &--web,
   &--ads    { text-align: center; }
+
+  &--sortable {
+    padding: 0;
+
+    &.is-sorted .pb-th-sort {
+      color: $pb-accent;
+    }
+  }
 }
 
 .pb-lt-check {

@@ -1,0 +1,32 @@
+:host {
+  display: contents;
+}
+
+// Zero-specificity so layout hostClass tokens (.bdh__h, .bdh__btn, etc.) always win.
+:where(.bb-inline-text) {
+  min-width: 0;
+  margin: 0;
+  cursor: text;
+  outline: none;
+}
+
+:where(.bb-inline-text--multiline) {
+  white-space: pre-wrap;
+  display: block;
+  width: 100%;
+}
+
+:where(.bb-inline-text:empty)::before {
+  content: attr(data-placeholder);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.bb-inline-text:focus-visible {
+  outline: 2px solid rgb(59 130 246 / 0.55);
+  outline-offset: 2px;
+}
+
+:where(.bb-inline-text--button):focus-visible {
+  outline-offset: 3px;
+}

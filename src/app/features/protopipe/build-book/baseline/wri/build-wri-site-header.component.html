@@ -1,0 +1,19 @@
+<header class="wri-header">
+  <div class="wri-wrap wri-header__inner">
+    <a class="wri-logo" href="#" aria-label="{{ chrome.companyName }}" (click)="onNavClick($event)">
+      <span class="wri-logo__mark wri-logo__mark--image">
+        <img [src]="chrome.logoSrc" alt="" width="40" height="40" loading="eager" />
+      </span>
+      <span class="wri-logo__text">
+        <span class="wri-logo__line">Water Resources</span>
+        <span class="wri-logo__line wri-logo__line--sub">International</span>
+      </span>
+    </a>
+    <nav class="wri-nav" aria-label="Site">
+      @for (item of chrome.nav; track item.href) {
+        <a [href]="item.href" (click)="onNavClick($event)">{{ item.label }}</a>
+      }
+    </nav>
+    <a class="wri-header__cta" [href]="chrome.phoneHref" (click)="onNavClick($event)">Get a quote</a>
+  </div>
+</header>

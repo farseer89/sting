@@ -1,0 +1,649 @@
+<div class="bb-wri-block">
+  @switch (blockId()) {
+    @case ('wri-baseline-hero-life-proof') {
+      <section class="wri-hero-fb">
+        <img
+          class="wri-hero-fb__bg"
+          [src]="str('backgroundImageSrc')"
+          [alt]="str('backgroundImageAlt')"
+          width="1920"
+          height="1080"
+          loading="eager"
+        />
+        <div class="wri-hero-fb__scrim" aria-hidden="true"></div>
+        <div class="wri-wrap wri-hero-fb__layout">
+          <div class="wri-hero-fb__panel">
+            <p class="wri-section-kicker" style="color: var(--wri-flow);">
+              <app-protopipe-build-inline-text
+                [editable]="editable()"
+                [value]="str('eyebrow')"
+                hostClass=""
+                ariaLabel="Hero eyebrow"
+                (valueChange)="patch('eyebrow', $event)"
+              />
+            </p>
+            <h1 class="wri-hero-fb__title">
+              <app-protopipe-build-inline-text
+                [editable]="editable()"
+                [value]="str('heading')"
+                hostClass=""
+                ariaLabel="Hero headline"
+                [multiline]="true"
+                (valueChange)="patch('heading', $event)"
+              />
+            </h1>
+            <p class="wri-hero-fb__sub">
+              <app-protopipe-build-inline-text
+                [editable]="editable()"
+                [value]="str('subhead')"
+                hostClass=""
+                ariaLabel="Hero subhead"
+                [multiline]="true"
+                (valueChange)="patch('subhead', $event)"
+              />
+            </p>
+            <div class="wri-hero-fb__actions">
+              <a class="wri-btn wri-btn--earth" [href]="str('primaryCtaHref', '#quote')" (click)="$event.preventDefault()">
+                <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="str('primaryCtaLabel', 'Request a quote')"
+                  hostClass=""
+                  (valueChange)="patch('primaryCtaLabel', $event)"
+                />
+              </a>
+              <a class="wri-btn wri-btn--ghost-light" [href]="str('secondaryCtaHref', 'tel:+18085318422')" (click)="$event.preventDefault()">
+                <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="str('secondaryCtaLabel', 'Call (808) 531-8422')"
+                  hostClass=""
+                  (valueChange)="patch('secondaryCtaLabel', $event)"
+                />
+              </a>
+            </div>
+          </div>
+        </div>
+        @if (editable()) {
+          <button
+            type="button"
+            class="bb-wri-photo-edit"
+            aria-label="Change hero background image"
+            (click)="onPhotoEdit($event, 'backgroundImageSrc')"
+          >
+            Change photo
+          </button>
+        }
+      </section>
+    }
+
+    @case ('wri-baseline-contract-bar') {
+      <section class="wri-fold-cb">
+        <ul class="wri-fold-cb__stats wri-wrap">
+          @for (stat of stats(); track $index) {
+            <li class="wri-fold-cb__stat">
+              <span class="wri-fold-cb__value">
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="stat.value"
+                  hostClass=""
+                  ariaLabel="Stat value"
+                  (valueChange)="patchStat($index, 'value', $event)"
+                />
+              </span>
+              <span class="wri-fold-cb__label">
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="stat.label"
+                  hostClass=""
+                  ariaLabel="Stat label"
+                  (valueChange)="patchStat($index, 'label', $event)"
+                />
+              </span>
+            </li>
+          }
+        </ul>
+        <div class="wri-fold-cb__sectors wri-wrap">
+          <app-protopipe-build-inline-text
+            [editable]="editable()"
+            [value]="str('sectorsLine')"
+            hostClass=""
+            ariaLabel="Contract sectors line"
+            (valueChange)="patch('sectorsLine', $event)"
+          />
+        </div>
+      </section>
+    }
+
+    @case ('wri-baseline-capabilities-grid') {
+      <section class="wri-fold-cg" id="services">
+        <div class="wri-wrap">
+          <div class="wri-fold-cg__head">
+            <p class="wri-fold__kicker">
+              <app-protopipe-build-inline-text
+                [editable]="editable()"
+                [value]="str('kicker', 'Capabilities')"
+                hostClass=""
+                ariaLabel="Capabilities kicker"
+                (valueChange)="patch('kicker', $event)"
+              />
+            </p>
+            <h2 class="wri-fold-cg__title">
+              <app-protopipe-build-inline-text
+                [editable]="editable()"
+                [value]="str('heading')"
+                hostClass=""
+                ariaLabel="Capabilities heading"
+                (valueChange)="patch('heading', $event)"
+              />
+            </h2>
+            <p class="wri-fold__lede">
+              <app-protopipe-build-inline-text
+                [editable]="editable()"
+                [value]="str('lede')"
+                hostClass=""
+                ariaLabel="Capabilities lede"
+                [multiline]="true"
+                (valueChange)="patch('lede', $event)"
+              />
+            </p>
+          </div>
+          <div class="wri-fold-cg__grid">
+            @for (cap of capabilities(); track $index) {
+              <a class="wri-fold-cg__card" [href]="cap.href || '#services'" (click)="onCapabilityLinkClick($event)">
+                <div class="bb-wri-image-slot">
+                  <img [src]="cap.image" [alt]="cap.title" width="400" height="240" loading="lazy" />
+                  @if (editable()) {
+                    <button
+                      type="button"
+                      class="bb-wri-photo-edit bb-wri-photo-edit--compact"
+                      aria-label="Change capability photo"
+                      (click)="onPhotoEdit($event, 'capabilities.' + $index + '.image')"
+                    >
+                      Change photo
+                    </button>
+                  }
+                </div>
+                <div class="wri-fold-cg__card-body">
+                  <h3>
+                    <app-protopipe-build-inline-text
+                      [editable]="editable()"
+                      [value]="cap.title"
+                      hostClass=""
+                      ariaLabel="Capability title"
+                      (valueChange)="patchCapability($index, 'title', $event)"
+                    />
+                  </h3>
+                  <p>
+                    <app-protopipe-build-inline-text
+                      [editable]="editable()"
+                      [value]="cap.body"
+                      hostClass=""
+                      ariaLabel="Capability body"
+                      [multiline]="true"
+                      (valueChange)="patchCapability($index, 'body', $event)"
+                    />
+                  </p>
+                </div>
+              </a>
+            }
+          </div>
+        </div>
+      </section>
+    }
+
+    @case ('wri-baseline-life-proof-split') {
+      <section class="wri-seo-band wri-copy-split">
+        <div class="wri-wrap wri-copy-split__grid">
+          <div>
+            <p class="wri-fold__kicker">
+              <app-protopipe-build-inline-text
+                [editable]="editable()"
+                [value]="str('kicker')"
+                hostClass=""
+                ariaLabel="Split intro kicker"
+                (valueChange)="patch('kicker', $event)"
+              />
+            </p>
+            <h2 class="wri-copy-split__title">
+              <app-protopipe-build-inline-text
+                [editable]="editable()"
+                [value]="str('heading')"
+                hostClass=""
+                ariaLabel="Split intro heading"
+                (valueChange)="patch('heading', $event)"
+              />
+            </h2>
+            <p class="wri-copy-split__lede">
+              <app-protopipe-build-inline-text
+                [editable]="editable()"
+                [value]="str('lede')"
+                hostClass=""
+                ariaLabel="Split intro lede"
+                [multiline]="true"
+                (valueChange)="patch('lede', $event)"
+              />
+            </p>
+          </div>
+          <ul class="wri-copy-split__list">
+            @for (bullet of bullets(); track $index) {
+              <li>
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="bullet"
+                  hostClass=""
+                  ariaLabel="Split intro bullet"
+                  (valueChange)="patchBullet($index, $event)"
+                />
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+    }
+
+    @case ('wri-baseline-project-lifecycle') {
+      <section class="wri-fold-pl">
+        <div class="wri-wrap">
+          <h2 class="wri-fold-pl__title">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('title', 'From exploration to production')"
+              hostClass=""
+              ariaLabel="Process title"
+              (valueChange)="patch('title', $event)"
+            />
+          </h2>
+          <ol class="wri-fold-pl__steps">
+            @for (step of lifecycleSteps(); track $index) {
+              <li class="wri-fold-pl__step">
+                <span class="wri-fold-pl__num">
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="step.step"
+                    hostClass=""
+                    ariaLabel="Process step number"
+                    (valueChange)="patchLifecycle($index, 'step', $event)"
+                  />
+                </span>
+                <h3>
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="step.title"
+                    hostClass=""
+                    ariaLabel="Process step title"
+                    (valueChange)="patchLifecycle($index, 'title', $event)"
+                  />
+                </h3>
+                <p>
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="step.body"
+                    hostClass=""
+                    ariaLabel="Process step body"
+                    [multiline]="true"
+                    (valueChange)="patchLifecycle($index, 'body', $event)"
+                  />
+                </p>
+              </li>
+            }
+          </ol>
+        </div>
+      </section>
+    }
+
+    @case ('wri-baseline-featured-well') {
+      <section class="wri-fold-fw" id="projects">
+        <figure class="wri-fold-fw__media">
+          <img [src]="str('imageSrc')" [alt]="str('imageAlt')" width="1200" height="800" loading="lazy" />
+          @if (editable()) {
+            <button
+              type="button"
+              class="bb-wri-photo-edit bb-wri-photo-edit--cover"
+              aria-label="Change featured well photo"
+              (click)="onPhotoEdit($event, 'imageSrc')"
+            >
+              Change photo
+            </button>
+          }
+        </figure>
+        <div class="wri-wrap wri-fold-fw__body">
+          <p class="wri-fold__kicker">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('kicker', 'Featured well')"
+              hostClass=""
+              ariaLabel="Featured well kicker"
+              (valueChange)="patch('kicker', $event)"
+            />
+          </p>
+          <h2 class="wri-fold-fw__title">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('heading')"
+              hostClass=""
+              ariaLabel="Featured well title"
+              (valueChange)="patch('heading', $event)"
+            />
+          </h2>
+          <p class="wri-fold-fw__caption">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('caption')"
+              hostClass=""
+              ariaLabel="Featured well caption"
+              (valueChange)="patch('caption', $event)"
+            />
+          </p>
+          <ul class="wri-fold-fw__metrics">
+            @for (metric of featuredMetrics(); track $index) {
+              <li>
+                <span>
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="metric.label"
+                    hostClass=""
+                    ariaLabel="Featured metric label"
+                    (valueChange)="patchFeaturedMetric($index, 'label', $event)"
+                  />
+                </span>
+                <strong>
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="metric.value"
+                    hostClass=""
+                    ariaLabel="Featured metric value"
+                    (valueChange)="patchFeaturedMetric($index, 'value', $event)"
+                  />
+                </strong>
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+    }
+
+    @case ('wri-baseline-sidebar-facts') {
+      <section class="wri-seo-band wri-copy-sidebar">
+        <div class="wri-wrap wri-copy-sidebar__grid">
+          <div class="wri-copy-sidebar__prose">
+            <h2>
+              <app-protopipe-build-inline-text
+                [editable]="editable()"
+                [value]="str('heading')"
+                hostClass=""
+                ariaLabel="Sidebar facts heading"
+                (valueChange)="patch('heading', $event)"
+              />
+            </h2>
+            <p class="wri-copy-sidebar__lede">
+              <app-protopipe-build-inline-text
+                [editable]="editable()"
+                [value]="str('lede')"
+                hostClass=""
+                ariaLabel="Sidebar facts lede"
+                [multiline]="true"
+                (valueChange)="patch('lede', $event)"
+              />
+            </p>
+          </div>
+          <dl class="wri-copy-sidebar__facts">
+            @for (fact of facts(); track $index) {
+              <div>
+                <dt>
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="fact.label"
+                    hostClass=""
+                    ariaLabel="Fact label"
+                    (valueChange)="patchFact($index, 'label', $event)"
+                  />
+                </dt>
+                <dd>
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="fact.value"
+                    hostClass=""
+                    ariaLabel="Fact value"
+                    (valueChange)="patchFact($index, 'value', $event)"
+                  />
+                </dd>
+              </div>
+            }
+          </dl>
+        </div>
+      </section>
+    }
+
+    @case ('wri-baseline-regulatory-trust') {
+      <section class="wri-fold-rt">
+        <div class="wri-wrap">
+          <p class="wri-fold__kicker">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('kicker', 'Compliance & credentials')"
+              hostClass=""
+              ariaLabel="Regulatory kicker"
+              (valueChange)="patch('kicker', $event)"
+            />
+          </p>
+          <h2 class="wri-fold__title">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('heading')"
+              hostClass=""
+              ariaLabel="Regulatory heading"
+              (valueChange)="patch('heading', $event)"
+            />
+          </h2>
+          <ul class="wri-fold-rt__list">
+            @for (item of credentials(); track $index) {
+              <li>
+                <span class="wri-fold-rt__claim">
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="item.claim"
+                    hostClass=""
+                    ariaLabel="Credential claim"
+                    (valueChange)="patchCredential($index, 'claim', $event)"
+                  />
+                </span>
+                <span class="wri-fold-rt__proof">
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="item.proof"
+                    hostClass=""
+                    ariaLabel="Credential proof"
+                    [multiline]="true"
+                    (valueChange)="patchCredential($index, 'proof', $event)"
+                  />
+                </span>
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+    }
+
+    @case ('wri-baseline-island-coverage') {
+      <section class="wri-fold-ic" id="coverage">
+        <div class="wri-wrap">
+          <p class="wri-fold__kicker">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('kicker', 'Offices & coverage')"
+              hostClass=""
+              ariaLabel="Coverage kicker"
+              (valueChange)="patch('kicker', $event)"
+            />
+          </p>
+          <h2 class="wri-fold__title">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('heading')"
+              hostClass=""
+              ariaLabel="Coverage heading"
+              (valueChange)="patch('heading', $event)"
+            />
+          </h2>
+          <p class="wri-fold__lede">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('lede')"
+              hostClass=""
+              ariaLabel="Coverage lede"
+              [multiline]="true"
+              (valueChange)="patch('lede', $event)"
+            />
+          </p>
+          <div class="wri-fold-ic__grid">
+            @for (office of offices(); track $index) {
+              <article class="wri-fold-ic__office">
+                <h3>
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="office.label + ' office'"
+                    hostClass=""
+                    ariaLabel="Office label"
+                    (valueChange)="patchOfficeLabel($index, $event)"
+                  />
+                </h3>
+                <p>
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="office.address"
+                    hostClass=""
+                    ariaLabel="Office address"
+                    (valueChange)="patchOffice($index, 'address', $event)"
+                  />
+                </p>
+                <p>
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="office.city"
+                    hostClass=""
+                    ariaLabel="Office city"
+                    (valueChange)="patchOffice($index, 'city', $event)"
+                  />
+                </p>
+                <p>
+                  <a class="wri-link" [href]="'tel:' + office.phone.replace(/\D/g, '')" (click)="onCapabilityLinkClick($event)">
+                    <app-protopipe-build-inline-text
+                      [editable]="editable()"
+                      [value]="office.phone"
+                      hostClass=""
+                      ariaLabel="Office phone"
+                      (valueChange)="patchOffice($index, 'phone', $event)"
+                    />
+                  </a>
+                </p>
+              </article>
+            }
+          </div>
+          <div class="wri-fold-ic__map-band">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('mapCaption')"
+              hostClass=""
+              ariaLabel="Coverage map caption"
+              (valueChange)="patch('mapCaption', $event)"
+            />
+          </div>
+          <div class="wri-hero-bm__islands" style="margin-top: 1rem;">
+            @for (island of islands(); track $index) {
+              <span>
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="island"
+                  hostClass=""
+                  ariaLabel="Island name"
+                  (valueChange)="patchIsland($index, $event)"
+                />
+              </span>
+            }
+          </div>
+        </div>
+      </section>
+    }
+
+    @case ('wri-baseline-rig-gallery-cta') {
+      <section class="wri-fold-rg" id="quote">
+        <div class="wri-fold-rg__gallery">
+          @for (item of gallery(); track $index) {
+            <figure class="wri-fold-rg__tile">
+              <div class="bb-wri-image-slot">
+                <img [src]="item.image" [alt]="item.label" width="400" height="320" loading="lazy" />
+                @if (editable()) {
+                  <button
+                    type="button"
+                    class="bb-wri-photo-edit bb-wri-photo-edit--cover"
+                    aria-label="Change gallery photo"
+                    (click)="onPhotoEdit($event, 'gallery.' + $index + '.image')"
+                  >
+                    Change photo
+                  </button>
+                }
+              </div>
+              <figcaption>
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="item.label"
+                  hostClass=""
+                  ariaLabel="Gallery label"
+                  (valueChange)="patchGallery($index, 'label', $event)"
+                />
+                ·
+                <app-protopipe-build-inline-text
+                  [editable]="editable()"
+                  [value]="item.location"
+                  hostClass=""
+                  ariaLabel="Gallery location"
+                  (valueChange)="patchGallery($index, 'location', $event)"
+                />
+              </figcaption>
+            </figure>
+          }
+        </div>
+        <div class="wri-fold-rg__cta">
+          <div class="wri-wrap">
+            <h2>
+              <app-protopipe-build-inline-text
+                [editable]="editable()"
+                [value]="str('heading')"
+                hostClass=""
+                ariaLabel="Close heading"
+                (valueChange)="patch('heading', $event)"
+              />
+            </h2>
+            <p>
+              <app-protopipe-build-inline-text
+                [editable]="editable()"
+                [value]="str('body')"
+                hostClass=""
+                ariaLabel="Close body"
+                [multiline]="true"
+                (valueChange)="patch('body', $event)"
+              />
+            </p>
+            <div class="wri-fold-rg__actions">
+              <a class="wri-btn wri-btn--earth" [href]="str('primaryCtaHref', '#quote')" (click)="$event.preventDefault()">
+                <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="str('primaryCtaLabel', 'Submit project brief')"
+                  hostClass=""
+                  (valueChange)="patch('primaryCtaLabel', $event)"
+                />
+              </a>
+              <a class="wri-btn wri-btn--ghost-light" [href]="str('secondaryCtaHref', 'tel:+18085318422')" (click)="$event.preventDefault()">
+                <app-protopipe-build-inline-cta
+                  [editable]="editable()"
+                  [value]="str('secondaryCtaLabel', 'Call (808) 531-8422')"
+                  hostClass=""
+                  (valueChange)="patch('secondaryCtaLabel', $event)"
+                />
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    }
+  }
+</div>

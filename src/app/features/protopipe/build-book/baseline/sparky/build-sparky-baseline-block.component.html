@@ -1,0 +1,369 @@
+<div class="bb-sparky-block">
+  @switch (blockId()) {
+    @case ('sparky-baseline-hero-callout') {
+      <section class="sp-hero-p">
+        <figure class="sp-hero-p__photo" aria-hidden="true">
+          <img [src]="str('backgroundImageSrc')" alt="" width="1600" height="1000" loading="eager" />
+        </figure>
+        <div class="sp-hero-p__scrim" aria-hidden="true"></div>
+        <div class="sp-hero-p__stage">
+          <div class="sp-hero-p__center">
+            <img class="sp-hero-p__mark" [src]="chrome.logoMarkSrc" alt="" width="606" height="619" />
+            <p class="sp-hero-p__eyebrow">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('eyebrow')" hostClass="" ariaLabel="Hero eyebrow" (valueChange)="patch('eyebrow', $event)" />
+            </p>
+            <h1 class="sp-hero-p__title">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Hero headline" [multiline]="true" (valueChange)="patch('heading', $event)" />
+            </h1>
+            <p class="sp-hero-p__sub">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('subhead')" hostClass="" ariaLabel="Hero subhead" [multiline]="true" (valueChange)="patch('subhead', $event)" />
+            </p>
+            <div class="sp-hero-p__actions">
+              <a class="sp-btn sp-btn--primary" [href]="str('primaryCtaHref', chrome.phoneHref)" (click)="onLinkClick($event)">
+                <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('primaryCtaLabel', 'Call now')" hostClass="" (valueChange)="patch('primaryCtaLabel', $event)" />
+              </a>
+              <a class="sp-btn sp-btn--secondary" [href]="str('secondaryCtaHref', '#services')" (click)="onLinkClick($event)">
+                <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('secondaryCtaLabel', 'View services')" hostClass="" (valueChange)="patch('secondaryCtaLabel', $event)" />
+              </a>
+            </div>
+          </div>
+        </div>
+        @if (editable()) {
+          <button type="button" class="bb-sparky-photo-edit" aria-label="Change hero background" (click)="onPhotoEdit($event, 'backgroundImageSrc')">Change photo</button>
+        }
+      </section>
+    }
+    @case ('sparky-baseline-trust-stats') {
+      <section class="sp-fold sp-fold-trust-stats">
+        <div class="sp-fold-trust">
+          <div class="sparky-wrap">
+            <ul class="sp-fold-trust__list" aria-label="Credentials">
+              @for (item of trust(); track $index) {
+                <li>
+                  <span class="sp-fold-trust__label">
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="item.label" hostClass="" ariaLabel="Trust label" (valueChange)="patchTrust($index, 'label', $event)" />
+                  </span>
+                  <span class="sp-fold-trust__detail">
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="item.detail" hostClass="" ariaLabel="Trust detail" (valueChange)="patchTrust($index, 'detail', $event)" />
+                  </span>
+                </li>
+              }
+            </ul>
+          </div>
+        </div>
+        <div class="sp-fold-stats">
+          <div class="sparky-wrap">
+            <ul class="sp-fold-stats__grid" aria-label="Company highlights">
+              @for (stat of stats(); track $index) {
+                <li>
+                  <span class="sp-fold-stats__value">
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="stat.value" hostClass="" ariaLabel="Stat value" (valueChange)="patchStat($index, 'value', $event)" />
+                  </span>
+                  <span class="sp-fold-stats__label">
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="stat.label" hostClass="" ariaLabel="Stat label" (valueChange)="patchStat($index, 'label', $event)" />
+                  </span>
+                </li>
+              }
+            </ul>
+          </div>
+        </div>
+      </section>
+    }
+    @case ('sparky-baseline-services-grid') {
+      <section class="sp-fold sp-fold-services" id="services">
+        <div class="sparky-wrap">
+          <p class="sp-section-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker', 'Services')" hostClass="" ariaLabel="Services kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="sp-section-title">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Services heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <p class="sp-section-lede">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('lede')" hostClass="" ariaLabel="Services lede" [multiline]="true" (valueChange)="patch('lede', $event)" />
+          </p>
+          <ul class="sp-fold-services__grid">
+            @for (service of services(); track $index) {
+              <li>
+                <a class="sp-fold-services__card" [href]="service.href || '#services'" (click)="onLinkClick($event)">
+                  <img [src]="service.image" [alt]="service.title" loading="lazy" />
+                  @if (editable()) {
+                    <button type="button" class="bb-sparky-photo-edit bb-sparky-photo-edit--compact" aria-label="Change service photo" (click)="onPhotoEdit($event, 'services.' + $index + '.image')">Change photo</button>
+                  }
+                  <div class="sp-fold-services__overlay">
+                    <h3>
+                      <app-protopipe-build-inline-text [editable]="editable()" [value]="service.title" hostClass="" ariaLabel="Service title" (valueChange)="patchService($index, 'title', $event)" />
+                    </h3>
+                    <p>
+                      <app-protopipe-build-inline-text [editable]="editable()" [value]="service.body" hostClass="" ariaLabel="Service body" [multiline]="true" (valueChange)="patchService($index, 'body', $event)" />
+                    </p>
+                  </div>
+                </a>
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+    }
+    @case ('sparky-baseline-brand-partners') {
+      <section class="sp-fold sp-fold-brands" aria-label="Partner brands">
+        <div class="sparky-wrap sp-fold-brands__inner">
+          <h2 class="sp-fold-brands__title">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('title')" hostClass="" ariaLabel="Brand partners title" (valueChange)="patch('title', $event)" />
+          </h2>
+          <ul class="sp-fold-brands__logos">
+            @for (brand of brands(); track $index) {
+              <li><img [src]="brand.src" [alt]="brand.name" loading="lazy" /></li>
+            }
+          </ul>
+        </div>
+      </section>
+    }
+    @case ('sparky-baseline-process') {
+      <section class="sp-fold sp-fold-process">
+        <div class="sparky-wrap">
+          <p class="sp-section-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker', 'How it works')" hostClass="" ariaLabel="Process kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="sp-section-title">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('title')" hostClass="" ariaLabel="Process title" (valueChange)="patch('title', $event)" />
+          </h2>
+          <ol class="sp-fold-process__list">
+            @for (step of steps(); track $index) {
+              <li>
+                <span class="sp-fold-process__step">{{ step.step }}</span>
+                <div>
+                  <h3>
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="step.title" hostClass="" ariaLabel="Process step title" (valueChange)="patchStep($index, 'title', $event)" />
+                  </h3>
+                  <p>
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="step.body" hostClass="" ariaLabel="Process step body" [multiline]="true" (valueChange)="patchStep($index, 'body', $event)" />
+                  </p>
+                </div>
+              </li>
+            }
+          </ol>
+        </div>
+      </section>
+    }
+    @case ('sparky-baseline-reviews') {
+      <section class="sp-fold sp-fold-reviews">
+        <div class="sparky-wrap">
+          <div class="sp-fold-reviews__head">
+            <div>
+              <p class="sp-section-kicker">
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Reviews kicker" (valueChange)="patch('kicker', $event)" />
+              </p>
+              <h2 class="sp-section-title">
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Reviews heading" (valueChange)="patch('heading', $event)" />
+              </h2>
+            </div>
+            <span class="sp-fold-reviews__source">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('source')" hostClass="" ariaLabel="Reviews source" (valueChange)="patch('source', $event)" />
+            </span>
+          </div>
+          <ul class="sp-fold-reviews__grid">
+            @for (review of reviews(); track $index) {
+              <li>
+                <article class="sp-fold-reviews__card">
+                  <p>
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="review.text" hostClass="" ariaLabel="Review text" [multiline]="true" (valueChange)="patchReview($index, 'text', $event)" />
+                  </p>
+                  <footer>
+                    <strong>
+                      <app-protopipe-build-inline-text [editable]="editable()" [value]="review.name" hostClass="" ariaLabel="Review name" (valueChange)="patchReview($index, 'name', $event)" />
+                    </strong>
+                    <span>
+                      <app-protopipe-build-inline-text [editable]="editable()" [value]="review.area" hostClass="" ariaLabel="Review area" (valueChange)="patchReview($index, 'area', $event)" />
+                    </span>
+                  </footer>
+                </article>
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+    }
+    @case ('sparky-baseline-why-evidence') {
+      <section class="sp-fold sp-fold-why">
+        <div class="sparky-wrap">
+          <p class="sp-section-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker', 'Why Sparky')" hostClass="" ariaLabel="Why kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="sp-section-title">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Why heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <ul class="sp-fold-why__grid">
+            @for (item of credentials(); track $index) {
+              <li>
+                <h3>
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="item.claim" hostClass="" ariaLabel="Claim" (valueChange)="patchCredential($index, 'claim', $event)" />
+                </h3>
+                <p>
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="item.proof" hostClass="" ariaLabel="Proof" [multiline]="true" (valueChange)="patchCredential($index, 'proof', $event)" />
+                </p>
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+    }
+    @case ('sparky-baseline-project-feature') {
+      <section class="sp-fold sp-fold-feature">
+        <div class="sparky-wrap sp-fold-feature__grid">
+          <figure class="sp-fold-feature__media">
+            <img [src]="str('imageSrc')" [alt]="str('imageAlt')" loading="lazy" />
+            <figcaption>
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('caption')" hostClass="" ariaLabel="Feature caption" (valueChange)="patch('caption', $event)" />
+            </figcaption>
+            @if (editable()) {
+              <button type="button" class="bb-sparky-photo-edit bb-sparky-photo-edit--cover" aria-label="Change project photo" (click)="onPhotoEdit($event, 'imageSrc')">Change photo</button>
+            }
+          </figure>
+          <div class="sp-fold-feature__copy">
+            <p class="sp-section-kicker">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Feature kicker" (valueChange)="patch('kicker', $event)" />
+            </p>
+            <h2 class="sp-section-title">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Feature heading" (valueChange)="patch('heading', $event)" />
+            </h2>
+            <dl class="sp-fold-feature__metrics">
+              @for (metric of metrics(); track $index) {
+                <div>
+                  <dt>{{ metric.label }}</dt>
+                  <dd>
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="metric.value" hostClass="" ariaLabel="Metric value" (valueChange)="patchMetric($index, 'value', $event)" />
+                  </dd>
+                </div>
+              }
+            </dl>
+          </div>
+        </div>
+      </section>
+    }
+    @case ('sparky-baseline-areas-map') {
+      <section class="sp-fold sp-fold-areas" id="areas">
+        <div class="sparky-wrap sp-fold-areas__grid">
+          <div class="sp-fold-areas__copy">
+            <p class="sp-section-kicker">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Areas kicker" (valueChange)="patch('kicker', $event)" />
+            </p>
+            <h2 class="sp-section-title">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Areas heading" (valueChange)="patch('heading', $event)" />
+            </h2>
+            <p class="sp-section-lede">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('lede')" hostClass="" ariaLabel="Areas lede" [multiline]="true" (valueChange)="patch('lede', $event)" />
+            </p>
+            <ul class="sp-fold-areas__list">
+              @for (area of areas(); track $index) {
+                <li>
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="area" hostClass="" ariaLabel="Service area" (valueChange)="patchArea($index, $event)" />
+                </li>
+              }
+            </ul>
+          </div>
+          <figure class="sp-fold-areas__map">
+            <img [src]="str('mapImageSrc')" alt="Aerial view of Maui neighborhood" loading="lazy" />
+            <figcaption>
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('mapCaption')" hostClass="" ariaLabel="Map caption" (valueChange)="patch('mapCaption', $event)" />
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+    }
+    @case ('sparky-baseline-gallery-cta') {
+      <section class="sp-fold sp-fold-gallery-cta">
+        <div class="sparky-wrap">
+          <p class="sp-section-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Gallery kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="sp-section-title">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Gallery heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <ul class="sp-fold-gallery__grid">
+            @for (item of gallery(); track $index) {
+              <li>
+                <figure class="sp-fold-gallery__item">
+                  <div class="bb-sparky-image-slot">
+                    <img [src]="item.image" [alt]="item.label" loading="lazy" />
+                    @if (editable()) {
+                      <button type="button" class="bb-sparky-photo-edit bb-sparky-photo-edit--compact" aria-label="Change gallery photo" (click)="onPhotoEdit($event, 'gallery.' + $index + '.image')">Change photo</button>
+                    }
+                  </div>
+                  <figcaption>
+                    <strong>
+                      <app-protopipe-build-inline-text [editable]="editable()" [value]="item.label" hostClass="" ariaLabel="Gallery label" (valueChange)="patchGallery($index, 'label', $event)" />
+                    </strong>
+                    <span>
+                      <app-protopipe-build-inline-text [editable]="editable()" [value]="item.location" hostClass="" ariaLabel="Gallery location" (valueChange)="patchGallery($index, 'location', $event)" />
+                    </span>
+                  </figcaption>
+                </figure>
+              </li>
+            }
+          </ul>
+        </div>
+        <div class="sp-fold-gallery-cta__band">
+          <div class="sparky-wrap sp-fold-gallery-cta__inner">
+            <div>
+              <h2>Ready for a quote?</h2>
+              <p>
+                All work guaranteed ·
+                <a [href]="str('phoneHref', chrome.phoneHref)" (click)="onLinkClick($event)">
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="str('phone', chrome.phone)" hostClass="" ariaLabel="Phone" (valueChange)="patch('phone', $event)" />
+                </a>
+                ·
+                <a [href]="'mailto:' + str('email', chrome.email)" (click)="onLinkClick($event)">
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="str('email', chrome.email)" hostClass="" ariaLabel="Email" (valueChange)="patch('email', $event)" />
+                </a>
+              </p>
+            </div>
+            <a class="sp-btn sp-btn--invert" [href]="str('phoneHref', chrome.phoneHref)" (click)="onLinkClick($event)">Call now</a>
+          </div>
+        </div>
+      </section>
+    }
+    @case ('sparky-baseline-field-notes') {
+      <section class="sp-notes">
+        <div class="sparky-wrap">
+          <div class="sp-notes__head">
+            <div>
+              <p class="sp-section-kicker">
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Field notes kicker" (valueChange)="patch('kicker', $event)" />
+              </p>
+              <h2 class="sp-section-title">
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Field notes heading" (valueChange)="patch('heading', $event)" />
+              </h2>
+              <p class="sp-section-lede sp-section-lede--tight">
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('lede')" hostClass="" ariaLabel="Field notes lede" [multiline]="true" (valueChange)="patch('lede', $event)" />
+              </p>
+            </div>
+          </div>
+          <ul class="sp-notes__grid">
+            @for (article of articles(); track $index) {
+              <li>
+                <a class="sp-notes__card" href="#" (click)="onLinkClick($event)">
+                  <img [src]="article.image" alt="" loading="lazy" />
+                  <span class="sp-notes__cat">
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="article.category" hostClass="" ariaLabel="Article category" (valueChange)="patchArticle($index, 'category', $event)" />
+                  </span>
+                  <span class="sp-notes__title">
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="article.title" hostClass="" ariaLabel="Article title" (valueChange)="patchArticle($index, 'title', $event)" />
+                  </span>
+                </a>
+              </li>
+            }
+          </ul>
+          <p class="sp-areas">
+            <strong>Serving</strong>
+            @for (area of areas(); track $index) {
+              <span>
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="area" hostClass="" ariaLabel="Serving area" (valueChange)="patchArea($index, $event)" />
+              </span>
+              @if ($index < areas().length - 1) { · }
+            }
+          </p>
+        </div>
+      </section>
+    }
+  }
+</div>

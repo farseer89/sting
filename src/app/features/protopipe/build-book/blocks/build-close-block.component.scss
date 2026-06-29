@@ -1,0 +1,53 @@
+:host {
+  display: block;
+}
+
+.bbc {
+  display: grid;
+  gap: 1rem;
+  padding: 2rem 1.75rem;
+  background: linear-gradient(180deg, #0f172a, #1e293b);
+  color: #fff;
+}
+
+.bbc__copy {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.bbc__heading {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.bbc__body,
+.bbc__subhead {
+  color: rgb(255 255 255 / 0.82);
+  line-height: 1.5;
+}
+
+.bbc__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+:host ::ng-deep .bbc__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 8rem;
+  padding: 0.65rem 1rem;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+:host ::ng-deep .bbc__btn--primary {
+  background: #f59e0b;
+  color: #111827;
+}
+
+:host ::ng-deep .bbc__btn--ghost {
+  border: 1px solid rgb(255 255 255 / 0.35);
+  color: #fff;
+}

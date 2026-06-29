@@ -1,0 +1,30 @@
+:host {
+  display: contents;
+}
+
+:where(.bb-inline-text) {
+  min-width: 0;
+  margin: 0;
+  cursor: text;
+  outline: none;
+}
+
+:where(.bb-inline-text:empty)::before {
+  content: attr(data-placeholder);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.bb-inline-text:focus-visible {
+  outline: 2px solid rgb(59 130 246 / 0.55);
+  outline-offset: 3px;
+}
+
+a:has(> .bb-inline-text--button) .bb-inline-text:focus-visible {
+  outline: none;
+}
+
+a:has(> .bb-inline-text--button):focus-within {
+  outline: 2px solid rgb(59 130 246 / 0.55);
+  outline-offset: 2px;
+}

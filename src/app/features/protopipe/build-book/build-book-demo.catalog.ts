@@ -13,6 +13,7 @@ const HERO_PREVIEW_IMAGES: Record<string, string> = {
   'sp-bento': `${SPARKY_ASSETS}/service-solar.jpg`,
   'sp-asymmetric': `${SPARKY_ASSETS}/about-jake.jpg`,
   'sp-horizon': `${SPARKY_ASSETS}/project-commercial.jpg`,
+  'sp-teal': `${SPARKY_ASSETS}/about-team.jpg`,
   'sp-dispatch': `${SPARKY_ASSETS}/service-residential.jpg`,
   'wri-fullbleed': `${WRI_GENERATED}/hero-drill-fullbleed.jpg`,
   'wri-split': `${WRI_GENERATED}/hero-life-fields.jpg`,
@@ -23,7 +24,7 @@ const HERO_PREVIEW_IMAGES: Record<string, string> = {
   'co-fullbleed': `${WRI_GENERATED}/hero-life-valley.jpg`,
 };
 
-const FOLD_PREVIEW_IMAGES: Record<string, string> = {
+export const FOLD_PREVIEW_IMAGES: Record<string, string> = {
   'sp-fold-trust-stats': `${SPARKY_ASSETS}/project-panel.jpg`,
   'sp-fold-services-grid': `${SPARKY_ASSETS}/service-solar.jpg`,
   'sp-fold-process': `${SPARKY_ASSETS}/project-residential.jpg`,

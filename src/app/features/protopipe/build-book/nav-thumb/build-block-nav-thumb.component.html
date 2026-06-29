@@ -1,0 +1,76 @@
+<div
+  [class]="'bk-bt bk-bt--' + kind()"
+  [style.aspect-ratio]="aspectRatio()"
+  aria-hidden="true"
+>
+  @switch (kind()) {
+    @case ('wri-hero-fullbleed') {
+      <span class="bk-bt__photo"></span>
+      <span class="bk-bt__line bk-bt__line--lg"></span>
+      <span class="bk-bt__line"></span>
+      <span class="bk-bt__cta-row"><span></span><span></span></span>
+    }
+    @case ('wri-contract-bar') {
+      <span class="bk-bt__bar bk-bt__bar--dark"></span>
+      <span class="bk-bt__fold-icons"><span></span><span></span><span></span><span></span></span>
+    }
+    @case ('wri-capabilities-grid') {
+      <span class="bk-bt__line bk-bt__line--sm"></span>
+      <span class="bk-bt__grid bk-bt__grid--4">
+        <span></span><span></span><span></span><span></span>
+      </span>
+    }
+    @case ('wri-copy-split') {
+      <span class="bk-bt__split">
+        <span class="bk-bt__col">
+          <span class="bk-bt__line bk-bt__line--md"></span>
+          <span class="bk-bt__line"></span>
+        </span>
+        <span class="bk-bt__col bk-bt__col--rail"><span></span><span></span><span></span></span>
+      </span>
+    }
+    @case ('wri-lifecycle') {
+      <span class="bk-bt__line bk-bt__line--md"></span>
+      <span class="bk-bt__steps"><span></span><span></span><span></span><span></span><span></span></span>
+    }
+    @case ('wri-featured-well') {
+      <span class="bk-bt__split bk-bt__split--even">
+        <span class="bk-bt__photo bk-bt__photo--side"></span>
+        <span class="bk-bt__col">
+          <span class="bk-bt__line bk-bt__line--sm"></span>
+          <span class="bk-bt__mini-grid"><span></span><span></span></span>
+        </span>
+      </span>
+    }
+    @case ('wri-sidebar-facts') {
+      <span class="bk-bt__split">
+        <span class="bk-bt__col">
+          <span class="bk-bt__line bk-bt__line--md"></span>
+          <span class="bk-bt__line"></span>
+        </span>
+        <span class="bk-bt__col bk-bt__col--stack"><span></span><span></span><span></span></span>
+      </span>
+    }
+    @case ('wri-regulatory-trust') {
+      <span class="bk-bt__line bk-bt__line--sm"></span>
+      <span class="bk-bt__grid bk-bt__grid--3"><span></span><span></span><span></span></span>
+    }
+    @case ('wri-island-coverage') {
+      <span class="bk-bt__line bk-bt__line--sm"></span>
+      <span class="bk-bt__map"></span>
+      <span class="bk-bt__pill-row"><span></span><span></span><span></span></span>
+    }
+    @case ('wri-gallery-cta') {
+      <span class="bk-bt__grid bk-bt__grid--2x2"><span></span><span></span><span></span><span></span></span>
+      <span class="bk-bt__band">
+        <span class="bk-bt__line bk-bt__line--center"></span>
+        <span class="bk-bt__cta bk-bt__cta--wide"></span>
+      </span>
+    }
+    @default {
+      <span class="bk-bt__line bk-bt__line--md"></span>
+      <span class="bk-bt__line"></span>
+      <span class="bk-bt__fill"></span>
+    }
+  }
+</div>

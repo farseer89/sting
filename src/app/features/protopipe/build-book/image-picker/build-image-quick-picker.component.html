@@ -1,0 +1,45 @@
+@if (open()) {
+  <div class="bb-img-picker-backdrop" (click)="close()">
+    <div
+      class="bb-img-picker"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="title()"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="bb-img-picker__head">
+        <div>
+          <h3>{{ title() }}</h3>
+          <p>Pick from images already generated for this site.</p>
+        </div>
+        <button type="button" class="bb-img-picker__close" (click)="close()" aria-label="Close">×</button>
+      </div>
+
+      @if (loading()) {
+        <div class="bb-img-picker__empty">Loading image library…</div>
+      } @else if (assets().length) {
+        <div class="bb-img-picker__grid">
+          @for (asset of assets(); track asset.id) {
+            <button
+              type="button"
+              class="bb-img-picker__tile"
+              [class.is-selected]="selectedUrl() === asset.url"
+              (click)="select(asset.url)"
+            >
+              <img [src]="asset.url" [alt]="asset.label || asset.originalFilename || 'Site image'" loading="lazy" />
+            </button>
+          }
+        </div>
+      } @else {
+        <div class="bb-img-picker__empty">No generated images yet. Open the library to create or upload photos.</div>
+      }
+
+      <div class="bb-img-picker__actions">
+        <button type="button" class="bb-img-picker__btn" (click)="close()">Cancel</button>
+        <button type="button" class="bb-img-picker__btn bb-img-picker__btn--primary" (click)="openLibrary()">
+          Add more in library
+        </button>
+      </div>
+    </div>
+  </div>
+}

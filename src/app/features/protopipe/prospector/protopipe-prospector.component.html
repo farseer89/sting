@@ -256,12 +256,26 @@
                           <th>Category</th>
                           <th>Rating</th>
                           <th>Phone</th>
-                          <th>Links</th>
+                          <th class="pb-candidate-table__sort" [class.is-sorted]="websiteSort() !== 'default'">
+                            <button
+                              type="button"
+                              class="pb-th-sort"
+                              (click)="toggleWebsiteSort()"
+                              [title]="websiteSortLabel()"
+                            >
+                              Website
+                              @if (websiteSort() === 'has_website') {
+                                <span class="pb-th-sort__hint">yes first</span>
+                              } @else if (websiteSort() === 'no_website') {
+                                <span class="pb-th-sort__hint">none first</span>
+                              }
+                            </button>
+                          </th>
                           <th>Signal</th>
                         </tr>
                       </thead>
                       <tbody>
-                        @for (candidate of campaign.candidates; track candidate.source + ':' + candidate.sourceId) {
+                        @for (candidate of sortCandidates(campaign.candidates); track candidate.source + ':' + candidate.sourceId) {
                           <tr [class.is-selected]="isCandidateSelected(candidate)" (click)="toggleCandidate(candidate)">
                             <td class="pb-candidate-table__check" (click)="$event.stopPropagation()">
                               <input type="checkbox" class="pb-lt-check" [checked]="isCandidateSelected(candidate)" (change)="toggleCandidate(candidate)" />
@@ -287,6 +301,8 @@
                             <td class="pb-candidate-links" (click)="$event.stopPropagation()">
                               @if (candidate.website) {
                                 <a [href]="candidate.website" target="_blank" rel="noopener noreferrer">Website</a>
+                              } @else {
+                                <span class="pb-candidate-dim">No website</span>
                               }
                               @if (candidate.sourceUrl) {
                                 <a [href]="candidate.sourceUrl" target="_blank" rel="noopener noreferrer">Maps</a>
@@ -400,12 +416,26 @@
                           <th>Category</th>
                           <th>Rating</th>
                           <th>Phone</th>
-                          <th>Links</th>
+                          <th class="pb-candidate-table__sort" [class.is-sorted]="websiteSort() !== 'default'">
+                            <button
+                              type="button"
+                              class="pb-th-sort"
+                              (click)="toggleWebsiteSort()"
+                              [title]="websiteSortLabel()"
+                            >
+                              Website
+                              @if (websiteSort() === 'has_website') {
+                                <span class="pb-th-sort__hint">yes first</span>
+                              } @else if (websiteSort() === 'no_website') {
+                                <span class="pb-th-sort__hint">none first</span>
+                              }
+                            </button>
+                          </th>
                           <th>Signal</th>
                         </tr>
                       </thead>
                       <tbody>
-                        @for (candidate of campaign.candidates; track candidate.source + ':' + candidate.sourceId) {
+                        @for (candidate of sortCandidates(campaign.candidates); track candidate.source + ':' + candidate.sourceId) {
                           <tr [class.is-selected]="isCandidateSelected(candidate)" (click)="toggleCandidate(candidate)">
                             <td class="pb-candidate-table__check" (click)="$event.stopPropagation()">
                               <input type="checkbox" class="pb-lt-check" [checked]="isCandidateSelected(candidate)" (change)="toggleCandidate(candidate)" />
@@ -431,6 +461,8 @@
                             <td class="pb-candidate-links" (click)="$event.stopPropagation()">
                               @if (candidate.website) {
                                 <a [href]="candidate.website" target="_blank" rel="noopener noreferrer">Website</a>
+                              } @else {
+                                <span class="pb-candidate-dim">No website</span>
                               }
                               @if (candidate.sourceUrl) {
                                 <a [href]="candidate.sourceUrl" target="_blank" rel="noopener noreferrer">Maps</a>
@@ -514,13 +546,27 @@
                     <th class="pb-lt-th pb-lt-th--priority">Priority</th>
                     <th class="pb-lt-th pb-lt-th--score">Score</th>
                     <th class="pb-lt-th pb-lt-th--rating">Rating</th>
-                    <th class="pb-lt-th pb-lt-th--web">Website</th>
+                    <th class="pb-lt-th pb-lt-th--web pb-lt-th--sortable" [class.is-sorted]="websiteSort() !== 'default'">
+                      <button
+                        type="button"
+                        class="pb-th-sort pb-th-sort--lt"
+                        (click)="toggleWebsiteSort()"
+                        [title]="websiteSortLabel()"
+                      >
+                        Website
+                        @if (websiteSort() === 'has_website') {
+                          <span class="pb-th-sort__hint">yes first</span>
+                        } @else if (websiteSort() === 'no_website') {
+                          <span class="pb-th-sort__hint">none first</span>
+                        }
+                      </button>
+                    </th>
                     <th class="pb-lt-th pb-lt-th--ads">Ads</th>
                     <th class="pb-lt-th pb-lt-th--factors">Signals</th>
                   </tr>
                 </thead>
                 <tbody>
-                  @for (lead of leads; track lead.placeId) {
+                  @for (lead of sortLeads(leads); track lead.placeId) {
                     <tr
                       class="pb-lt-row pb-lt-row--{{ lead.priority }}"
                       [class.pb-lt-row--selected]="isLeadSelected(lead.displayName)"

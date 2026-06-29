@@ -3,7 +3,7 @@ const path = require('path');
 
 const appName = process.env.STING_APP_NAME || 'SearchClimber.ai';
 const microUrl = process.env.STING_MICRO_URL || 'https://droppin.shop';
-const shireUrl = process.env.STING_SHIRE_URL || '';
+const shireUrl = process.env.STING_SHIRE_URL || 'https://shire.droppin.shop';
 
 const templatePath = path.join(__dirname, '../src/environments/environment.template.ts');
 const outputPath = path.join(__dirname, '../src/environments/environment.prod.ts');
@@ -14,7 +14,7 @@ content = content.replace(/REPLACE_WITH_MICROSERVICE_URL/g, microUrl);
 // Only replace the const assignment — not the sentinel check in SHIRE_BASE_URL ternary.
 content = content.replace(
   /const shireBaseUrl = 'REPLACE_WITH_SHIRE_URL';/,
-  `const shireBaseUrl = '${shireUrl || 'REPLACE_WITH_SHIRE_URL'}';`,
+  `const shireBaseUrl = '${shireUrl}';`,
 );
 
 fs.writeFileSync(outputPath, content);

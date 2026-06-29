@@ -21,7 +21,29 @@ import {
   findBuildBookBlockDefinition,
   findBuildBookBlockDefinitionForSection,
 } from './build-book-block.catalog';
+import {
+  findBaselineApprovedHeroOption,
+  isBaselineApprovedHeroLayout,
+  resolveBaselineHeroLayoutId,
+} from './build-book-baseline-hero.catalog';
+import {
+  findBaselineApprovedFoldOption,
+  isBaselineApprovedFoldLayout,
+  resolveBaselineFoldLayoutId,
+} from './build-book-baseline-fold.catalog';
 import { findBuildBookBaselineAssembly } from './build-book-baseline-assemblies';
+import {
+  blocksFromBaselineNavEntries,
+  baselineNavEntriesFromBlocks,
+  normalizeHeroContractPair,
+} from './build-book-baseline-nav.util';
+import {
+  findDraftSectionForBlock,
+  findPageBlockById,
+  homepageBlocksFromPages,
+  isBaselineBlockProps,
+  isBaselineHomepage,
+} from './build-book-baseline.util';
 import { findBuildBookTemplate } from './build-book-template.catalog';
 import type {
   BuildBookBlockDefinition,
@@ -29,6 +51,21 @@ import type {
   BuildBookOption,
   BuildBookPage,
 } from './build-book.types';
+import {
+  clearHeroImageProps,
+  heroCopyToProps,
+  heroImageToProps,
+  readHeroImageUrl,
+} from './build-hero-block.util';
+import {
+  appendArrayItem,
+  patchProp,
+  removeArrayItem,
+} from './fields/build-field.util';
+import {
+  DEFAULT_HERO_PREVIEW_COPY,
+  type BuildHeroPreviewCopy,
+} from './build-hero-preview.types';
 import {
   ProtopipeBuildBookShireApiService,
   type BuildBookEntryMode,
@@ -58,6 +95,36 @@ const COPY_FIELDS = [
   'intro',
 ] as const;
 
+const HERO_IMAGE_PROP_KEYS = ['imageSrc', 'backgroundImageSrc', 'visualSrc'] as const;
+
+function templateDefaultBlockProps(blockId: string): Record<string, unknown> | null {
+  const def = findBuildBookBlockDefinition(blockId);
+  if (!def) return null;
+
+  const patch: Record<string, unknown> = {};
+  for (const key of def.editableFields) {
+    if (def.defaultProps[key] !== undefined) {
+      patch[key] = structuredClone(def.defaultProps[key]);
+    }
+  }
+  return Object.keys(patch).length ? patch : null;
+}
+
+function templateDefaultHeroImageProps(blockId: string): Record<string, unknown> | null {
+  const def = findBuildBookBlockDefinition(blockId);
+  if (!def) return null;
+
+  const url = readHeroImageUrl(def.defaultProps);
+  if (!url) return null;
+
+  const patch: Record<string, unknown> = { ...heroImageToProps(url) };
+  const backgroundImageAlt = def.defaultProps['backgroundImageAlt'];
+  const imageAlt = def.defaultProps['imageAlt'];
+  if (typeof backgroundImageAlt === 'string') patch['backgroundImageAlt'] = backgroundImageAlt;
+  if (typeof imageAlt === 'string') patch['imageAlt'] = imageAlt;
+  return patch;
+}
+
 function mergePropsOnSwap(
   oldProps: Record<string, unknown>,
   defaults: BuildBookComponentDefaults,
@@ -68,18 +135,16 @@ function mergePropsOnSwap(
       next[key] = oldProps[key];
     }
   }
-  if (oldProps['imageSrc'] && defaults.editableFields.includes('backgroundImageSrc')) {
-    next['backgroundImageSrc'] = oldProps['imageSrc'];
+
+  const heroImageUrl = readHeroImageUrl(oldProps);
+  if (heroImageUrl) {
+    for (const key of HERO_IMAGE_PROP_KEYS) {
+      if (defaults.editableFields.includes(key)) {
+        next[key] = heroImageUrl;
+      }
+    }
   }
-  if (oldProps['backgroundImageSrc'] && defaults.editableFields.includes('imageSrc')) {
-    next['imageSrc'] = oldProps['backgroundImageSrc'];
-  }
-  if (oldProps['backgroundImageSrc'] && defaults.editableFields.includes('visualSrc')) {
-    next['visualSrc'] = oldProps['backgroundImageSrc'];
-  }
-  if (oldProps['imageSrc'] && defaults.editableFields.includes('visualSrc')) {
-    next['visualSrc'] = oldProps['imageSrc'];
-  }
+
   if (oldProps['heading'] && defaults.editableFields.includes('titleLines') && !next['titleLines']) {
     next['titleLines'] = [String(oldProps['heading'])];
   }
@@ -183,10 +248,15 @@ function draftFromBuildBookPages(templateId: string, pages: BuildBookPage[]): Si
           .sort((a, b) => a.order - b.order)
           .map((block): SitePageSectionDraft => {
             const defaults = BUILD_BOOK_COMPONENT_DEFAULTS[block.componentId];
+            const isBaseline = isBaselineBlockProps(block.props);
             const firstForSection = !seenSections.has(block.section);
             seenSections.add(block.section);
             return {
-              id: firstForSection ? BUILD_BOOK_SECTION_SLOTS[block.section] : block.id,
+              id: isBaseline
+                ? block.id
+                : firstForSection
+                  ? BUILD_BOOK_SECTION_SLOTS[block.section]
+                  : block.id,
               label: block.label ?? buildBookSectionLabel(block.section),
               componentId: block.componentId,
               props: structuredClone(block.props ?? defaults?.defaultProps ?? {}),
@@ -198,6 +268,38 @@ function draftFromBuildBookPages(templateId: string, pages: BuildBookPage[]): Si
     updatedAt: now,
   };
 }
+
+function resolveBuildBookOptionId(
+  section: BuildBookSection,
+  draftSection: SitePageSectionDraft | null,
+  block?: BuildBookBlockInstance,
+): string | null {
+  if (block?.blockId && findBuildBookBlockDefinition(block.blockId)) {
+    return block.blockId;
+  }
+
+  const labLayout =
+    (typeof block?.props['labLayout'] === 'string' ? block.props['labLayout'] : undefined) ??
+    (typeof draftSection?.props['labLayout'] === 'string' ? draftSection.props['labLayout'] : undefined);
+  if (labLayout) {
+    const byLab = findBuildBookOptionByLabLayout(section, labLayout);
+    if (byLab) return byLab.id;
+  }
+
+  if (block?.blockId && findBuildBookOption(section, block.blockId)) {
+    return block.blockId;
+  }
+
+  const componentId = block?.componentId ?? draftSection?.componentId;
+  if (componentId) {
+    const byComponent = findBuildBookOptionByComponentId(section, componentId, labLayout);
+    if (byComponent) return byComponent.id;
+  }
+
+  return block?.blockId ?? null;
+}
+
+export { findDraftSectionForBlock } from './build-book-baseline.util';
 
 export function findDraftSectionForSlot(
   draft: SitePageDraft,
@@ -359,6 +461,346 @@ export class ProtopipeBuildBookService {
     this._dirty.set(true);
   }
 
+  updateSectionProps(section: BuildBookSection, patch: Record<string, unknown>): void {
+    const draft = this._draft();
+    if (!draft) return;
+
+    const target = findDraftSectionForSlot(draft, section);
+    if (!target) return;
+
+    const nextDraft = structuredClone(draft);
+    const nextTarget = findDraftSectionForSlot(nextDraft, section)!;
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === null || value === undefined) {
+        delete nextTarget.props[key];
+      } else {
+        nextTarget.props[key] = value;
+      }
+    }
+    this.commitSectionDraft(nextDraft);
+  }
+
+  updateSectionPropPath(section: BuildBookSection, path: string, value: unknown): void {
+    const draft = this._draft();
+    if (!draft) return;
+
+    const target = findDraftSectionForSlot(draft, section);
+    if (!target) return;
+
+    const nextDraft = structuredClone(draft);
+    const nextTarget = findDraftSectionForSlot(nextDraft, section)!;
+    nextTarget.props = patchProp(nextTarget.props, path, value);
+    this.commitSectionDraft(nextDraft);
+  }
+
+  updateSectionArray(section: BuildBookSection, key: string, items: unknown[]): void {
+    this.updateSectionProps(section, { [key]: items });
+  }
+
+  appendSectionArrayItem(section: BuildBookSection, key: string, item: unknown): void {
+    const draft = this._draft();
+    if (!draft) return;
+    const target = findDraftSectionForSlot(draft, section);
+    if (!target) return;
+    const nextDraft = structuredClone(draft);
+    const nextTarget = findDraftSectionForSlot(nextDraft, section)!;
+    nextTarget.props = appendArrayItem(nextTarget.props, key, item);
+    this.commitSectionDraft(nextDraft);
+  }
+
+  removeSectionArrayItem(section: BuildBookSection, key: string, index: number): void {
+    const draft = this._draft();
+    if (!draft) return;
+    const target = findDraftSectionForSlot(draft, section);
+    if (!target) return;
+    const nextDraft = structuredClone(draft);
+    const nextTarget = findDraftSectionForSlot(nextDraft, section)!;
+    nextTarget.props = removeArrayItem(nextTarget.props, key, index);
+    this.commitSectionDraft(nextDraft);
+  }
+
+  sectionProps(section: BuildBookSection): Record<string, unknown> | null {
+    const draft = this._draft();
+    if (!draft) return null;
+    return findDraftSectionForSlot(draft, section)?.props ?? null;
+  }
+
+  setSectionProps(section: BuildBookSection, props: Record<string, unknown>): void {
+    const draft = this._draft();
+    if (!draft) return;
+
+    const target = findDraftSectionForSlot(draft, section);
+    if (!target) return;
+
+    const nextDraft = structuredClone(draft);
+    const nextTarget = findDraftSectionForSlot(nextDraft, section)!;
+    nextTarget.props = structuredClone(props);
+    this.commitSectionDraft(nextDraft);
+  }
+
+  private commitSectionDraft(nextDraft: SitePageDraft): void {
+    nextDraft.updatedAt = new Date().toISOString();
+    this._draft.set(nextDraft);
+    if (isBaselineHomepage(this._pages())) {
+      this.syncBaselinePagesFromDraft(nextDraft);
+    } else {
+      this._pages.set(this.pagesFromDraft(nextDraft));
+    }
+    this._dirty.set(true);
+  }
+
+  private syncBaselinePagesFromDraft(draft: SitePageDraft): void {
+    const pages = structuredClone(this._pages());
+    const homepage = pages.find((page) => page.kind === 'homepage');
+    if (!homepage) return;
+
+    for (const block of homepage.blocks) {
+      const section = findDraftSectionForBlock(draft, block);
+      if (!section) continue;
+      block.props = structuredClone(section.props);
+      if (section.label) block.label = section.label;
+    }
+
+    this._pages.set(pages);
+  }
+
+  private findPageBlock(blockInstanceId: string): BuildBookBlockInstance | null {
+    return findPageBlockById(this._pages(), blockInstanceId);
+  }
+
+  updateBlockPropPath(blockInstanceId: string, path: string, value: unknown): void {
+    const draft = this._draft();
+    const block = this.findPageBlock(blockInstanceId);
+    if (!draft || !block) return;
+
+    const nextDraft = structuredClone(draft);
+    const target = findDraftSectionForBlock(nextDraft, block);
+    if (!target) return;
+
+    target.props = patchProp(target.props, path, value);
+    this.commitSectionDraft(nextDraft);
+  }
+
+  updateBlockProps(blockInstanceId: string, patch: Record<string, unknown>): void {
+    const draft = this._draft();
+    const block = this.findPageBlock(blockInstanceId);
+    if (!draft || !block) return;
+
+    const nextDraft = structuredClone(draft);
+    const target = findDraftSectionForBlock(nextDraft, block);
+    if (!target) return;
+
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === null || value === undefined) {
+        delete target.props[key];
+      } else {
+        target.props[key] = value;
+      }
+    }
+    this.commitSectionDraft(nextDraft);
+  }
+
+  setBlockProps(blockInstanceId: string, props: Record<string, unknown>): void {
+    const draft = this._draft();
+    const block = this.findPageBlock(blockInstanceId);
+    if (!draft || !block) return;
+
+    const nextDraft = structuredClone(draft);
+    const target = findDraftSectionForBlock(nextDraft, block);
+    if (!target) return;
+
+    target.props = structuredClone(props);
+    this.commitSectionDraft(nextDraft);
+  }
+
+  selectBaselineLayoutOption(blockInstanceId: string, optionId: string): void {
+    const block = this.findPageBlock(blockInstanceId);
+    if (!block || (block.section !== 'hero' && block.section !== 'fold')) return;
+
+    const section = block.section;
+    const option =
+      findBuildBookOption(section, optionId) ??
+      (section === 'hero'
+        ? findBaselineApprovedHeroOption(optionId)
+        : findBaselineApprovedFoldOption(optionId));
+    if (!option) return;
+
+    const previousLayout =
+      section === 'hero'
+        ? resolveBaselineHeroLayoutId(block.blockId, block.props)
+        : resolveBaselineFoldLayoutId(block.blockId, block.props);
+
+    const patch: Record<string, unknown> = {
+      labLayout: option.id,
+    };
+
+    if (option.demo) {
+      patch['labUnit'] = option.demo.astroUnit;
+      patch['labCatalog'] = option.demo.catalog;
+    }
+
+    if (section === 'hero') {
+      if (
+        isBaselineApprovedHeroLayout(option.id) &&
+        !isBaselineApprovedHeroLayout(previousLayout)
+      ) {
+        Object.assign(patch, templateDefaultHeroImageProps(block.blockId) ?? {});
+      }
+    } else if (
+      isBaselineApprovedFoldLayout(option.id) &&
+      !isBaselineApprovedFoldLayout(previousLayout)
+    ) {
+      Object.assign(patch, templateDefaultBlockProps(block.blockId) ?? {});
+    }
+
+    this.updateBlockProps(blockInstanceId, patch);
+  }
+
+  selectBaselineHeroOption(blockInstanceId: string, optionId: string): void {
+    this.selectBaselineLayoutOption(blockInstanceId, optionId);
+  }
+
+  resetBaselineHeroImageToTemplateDefault(blockInstanceId: string): void {
+    const block = this.findPageBlock(blockInstanceId);
+    if (!block || block.section !== 'hero') return;
+
+    const patch = templateDefaultHeroImageProps(block.blockId);
+    if (!patch) return;
+
+    this.updateBlockProps(blockInstanceId, patch);
+  }
+
+  blockProps(blockInstanceId: string): Record<string, unknown> | null {
+    const block = this.findPageBlock(blockInstanceId);
+    return block ? structuredClone(block.props) : null;
+  }
+
+  isBaselineTemplateActive(): boolean {
+    return isBaselineHomepage(this._pages());
+  }
+
+  homepageBlocks(): BuildBookBlockInstance[] {
+    return homepageBlocksFromPages(this._pages());
+  }
+
+  reorderHomepageBlocks(fromIndex: number, toIndex: number): void {
+    this.reorderHomepageNavEntries(fromIndex, toIndex);
+  }
+
+  reorderHomepageNavEntries(fromEntryIndex: number, toEntryIndex: number): void {
+    if (fromEntryIndex === toEntryIndex) return;
+
+    const pages = structuredClone(this._pages());
+    const homepage = pages.find((page) => page.kind === 'homepage');
+    if (!homepage) return;
+
+    const blocks = homepageBlocksFromPages(pages);
+    const entries = baselineNavEntriesFromBlocks(blocks);
+    if (
+      fromEntryIndex < 0 ||
+      toEntryIndex < 0 ||
+      fromEntryIndex >= entries.length ||
+      toEntryIndex >= entries.length
+    ) {
+      return;
+    }
+
+    const [moved] = entries.splice(fromEntryIndex, 1);
+    entries.splice(toEntryIndex, 0, moved);
+    const flattened = normalizeHeroContractPair(blocksFromBaselineNavEntries(entries));
+    homepage.blocks = flattened;
+    this.commitHomepageStructure(pages);
+  }
+
+  addHomepageBlock(blockId: string, insertAfterIndex?: number): void {
+    const definition = findBuildBookBlockDefinition(blockId);
+    if (!definition) return;
+
+    const pages = structuredClone(this._pages());
+    const homepage = pages.find((page) => page.kind === 'homepage');
+    if (!homepage) return;
+
+    const blocks = [...homepage.blocks].sort((a, b) => a.order - b.order);
+    const existingCount = blocks.filter((block) => block.blockId === blockId).length;
+    const nextBlock: BuildBookBlockInstance = {
+      id: `home-${blockId}-${existingCount + 1}`,
+      blockId,
+      section: definition.section,
+      componentId: definition.componentId,
+      label: definition.label,
+      order: blocks.length,
+      props: structuredClone(definition.defaultProps),
+      sourceTemplateId: definition.sourceTemplateId ?? this._selectedTemplateId() ?? undefined,
+    };
+
+    const insertAt =
+      insertAfterIndex == null || insertAfterIndex < 0
+        ? blocks.length
+        : Math.min(insertAfterIndex + 1, blocks.length);
+    blocks.splice(insertAt, 0, nextBlock);
+    homepage.blocks = blocks.map((block, order) => ({ ...block, order }));
+    this.commitHomepageStructure(pages);
+  }
+
+  removeHomepageBlock(blockInstanceId: string): void {
+    const block = this.findPageBlock(blockInstanceId);
+    if (!block) return;
+    if (
+      block.blockId === 'wri-baseline-hero-life-proof' ||
+      block.blockId === 'wri-baseline-contract-bar' ||
+      block.blockId === 'sparky-baseline-hero-callout' ||
+      block.blockId === 'wilco-baseline-hero-split'
+    ) {
+      return;
+    }
+
+    const pages = structuredClone(this._pages());
+    const homepage = pages.find((page) => page.kind === 'homepage');
+    if (!homepage) return;
+
+    homepage.blocks = homepage.blocks
+      .filter((item) => item.id !== blockInstanceId)
+      .sort((a, b) => a.order - b.order)
+      .map((item, order) => ({ ...item, order }));
+    this.commitHomepageStructure(pages);
+  }
+
+  private commitHomepageStructure(nextPages: BuildBookPage[]): void {
+    const templateId = this._selectedTemplateId() ?? 'wri-field-authority-v1';
+    const draft = draftFromBuildBookPages(templateId, nextPages);
+    this._pages.set(structuredClone(nextPages));
+    this._draft.set(draft);
+    this._dirty.set(true);
+  }
+
+  updateHeroCopy(copy: BuildHeroPreviewCopy): void {
+    this.updateSectionProps('hero', heroCopyToProps(copy));
+  }
+
+  updateHeroImage(url: string): void {
+    this.updateSectionProps('hero', heroImageToProps(url));
+  }
+
+  clearHeroImage(): void {
+    this.updateSectionProps('hero', clearHeroImageProps());
+  }
+
+  seedHeroEyebrow(siteName: string): void {
+    const draft = this._draft();
+    if (!draft) return;
+
+    const hero = findDraftSectionForSlot(draft, 'hero');
+    if (!hero) return;
+
+    const eyebrow = hero.props['eyebrow'];
+    if (typeof eyebrow !== 'string' || eyebrow !== DEFAULT_HERO_PREVIEW_COPY.eyebrow) return;
+
+    const nextDraft = structuredClone(draft);
+    const nextHero = findDraftSectionForSlot(nextDraft, 'hero')!;
+    nextHero.props['eyebrow'] = siteName;
+    this._draft.set(nextDraft);
+  }
+
   setProspectContext(context: BuildBookProspectContext | null): void {
     if (this.contextsEqual(this._prospectContext(), context)) return;
     this._prospectContext.set(context ? { ...context } : null);
@@ -397,11 +839,19 @@ export class ProtopipeBuildBookService {
     this._saving.set(true);
     this._error.set(null);
     try {
-      const pages = this.pagesFromDraft(draft);
-      this._pages.set(structuredClone(pages));
-      await this.saveShireBook(siteId, draft, pages);
-      this._saved.set(structuredClone(draft));
-      this._draft.set(structuredClone(draft));
+      let draftToSave = draft;
+      let pages: BuildBookPage[];
+      if (isBaselineHomepage(this._pages())) {
+        pages = structuredClone(this._pages());
+        draftToSave = draftFromBuildBookPages(this._selectedTemplateId() ?? '', pages);
+        this._draft.set(structuredClone(draftToSave));
+      } else {
+        pages = this.pagesFromDraft(draft);
+        this._pages.set(structuredClone(pages));
+      }
+      await this.saveShireBook(siteId, draftToSave, pages);
+      this._saved.set(structuredClone(draftToSave));
+      this._draft.set(structuredClone(draftToSave));
       this._dirty.set(false);
       return true;
     } catch (err) {
@@ -413,15 +863,14 @@ export class ProtopipeBuildBookService {
   }
 
   private syncSelectionsFromDraft(draft: SitePageDraft): void {
+    const homepage = this._pages().find((page) => page.kind === 'homepage');
     const next: Partial<Record<BuildBookSection, string>> = {};
     for (const slot of Object.keys(BUILD_BOOK_SECTION_SLOTS) as BuildBookSection[]) {
       const section = findDraftSectionForSlot(draft, slot);
       if (!section) continue;
-      const labLayout = section.props['labLayout'];
-      const option =
-        (typeof labLayout === 'string' ? findBuildBookOptionByLabLayout(slot, labLayout) : undefined) ??
-        findBuildBookOptionByComponentId(slot, section.componentId);
-      if (option) next[slot] = option.id;
+      const block = homepage?.blocks.find((item) => item.section === slot);
+      const optionId = resolveBuildBookOptionId(slot, section, block);
+      if (optionId) next[slot] = optionId;
     }
     this._selections.set(next);
   }
@@ -449,12 +898,11 @@ export class ProtopipeBuildBookService {
     }
     this._saved.set(structuredClone(draft));
     this._draft.set(structuredClone(draft));
-    this._pages.set(
-      baselinePages ??
-        (res.buildBook.pages?.length ? structuredClone(res.buildBook.pages) : this.pagesFromDraft(draft)),
-    );
+    this.syncSelectionsFromDraft(draft);
+    const savedPages = res.buildBook.pages?.length ? structuredClone(res.buildBook.pages) : null;
+    this._pages.set(baselinePages ?? savedPages ?? this.pagesFromDraft(draft));
     if (baselinePages) {
-      await this.saveShireBook(siteId, draft, baselinePages);
+      await this.saveShireBook(siteId, draft, this.pagesFromDraft(draft));
     }
   }
 
@@ -485,6 +933,20 @@ export class ProtopipeBuildBookService {
     const res = await this.shireApi.save(siteId, this.buildShirePayload(draft, pages));
     if (res.buildBook) {
       this.applyShireBook(res.buildBook);
+      if (isBaselineHomepage(this._pages())) {
+        const syncedDraft = draftFromBuildBookPages(
+          this._selectedTemplateId() ?? '',
+          this._pages(),
+        );
+        this._draft.set(syncedDraft);
+        this._saved.set(structuredClone(syncedDraft));
+      } else {
+        const draft = this._draft();
+        if (draft) {
+          this.syncSelectionsFromDraft(draft);
+          this._pages.set(this.pagesFromDraft(draft));
+        }
+      }
     }
   }
 
@@ -529,11 +991,12 @@ export class ProtopipeBuildBookService {
       const draftSection = findDraftSectionForSlot(draft, section);
       if (!draftSection) return null;
 
-      const labLayout = draftSection.props['labLayout'];
+      const labLayout =
+        typeof draftSection.props['labLayout'] === 'string' ? draftSection.props['labLayout'] : undefined;
       const option =
-        (selections[section] ? findBuildBookOption(section, selections[section]!) : undefined) ??
         (typeof labLayout === 'string' ? findBuildBookOptionByLabLayout(section, labLayout) : undefined) ??
-        findBuildBookOptionByComponentId(section, draftSection.componentId);
+        (selections[section] ? findBuildBookOption(section, selections[section]!) : undefined) ??
+        findBuildBookOptionByComponentId(section, draftSection.componentId, labLayout);
       if (!option) return null;
 
       const existingBlock = existingHomepage?.blocks.find((block) => block.section === section);
@@ -566,9 +1029,12 @@ export class ProtopipeBuildBookService {
   private selectionsFromPages(pages: BuildBookPage[]): Partial<Record<BuildBookSection, string>> {
     const homepage = pages.find((page) => page.kind === 'homepage') ?? pages[0];
     if (!homepage) return {};
-    return Object.fromEntries(
-      homepage.blocks.map((block) => [block.section, block.blockId]),
-    ) as Partial<Record<BuildBookSection, string>>;
+    const next: Partial<Record<BuildBookSection, string>> = {};
+    for (const block of homepage.blocks) {
+      const optionId = resolveBuildBookOptionId(block.section, null, block);
+      if (optionId) next[block.section] = optionId;
+    }
+    return next;
   }
 
   private buildShirePayload(draft: SitePageDraft, pages: BuildBookPage[]): SaveBuildBookDto {

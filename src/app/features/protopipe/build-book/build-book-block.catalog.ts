@@ -4,8 +4,15 @@ import {
   type BuildBookSection,
 } from './build-book.constants';
 import { WRI_BASELINE_BLOCK_DEFINITIONS } from './build-book-baseline-block.catalog';
+import { SPARKY_BASELINE_BLOCK_DEFINITIONS } from './build-book-sparky-baseline-block.catalog';
+import { WILCO_BASELINE_BLOCK_DEFINITIONS } from './build-book-wilco-baseline-block.catalog';
 import { BUILD_BOOK_COMPONENT_DEFAULTS } from './build-book.defaults';
-import type { BuildBookBlockDefinition, BuildBookOption } from './build-book.types';
+import type {
+  BuildBookBlockDefinition,
+  BuildBookBlockNavThumbAspect,
+  BuildBookBlockNavThumbKind,
+  BuildBookOption,
+} from './build-book.types';
 
 const SECTION_ROLES: Record<BuildBookSection, { seoRole: string; conversionRole: string }> = {
   hero: {
@@ -65,10 +72,20 @@ function toBlockDefinition(section: BuildBookSection, option: BuildBookOption): 
 
 export const BUILD_BOOK_BLOCK_DEFINITIONS: BuildBookBlockDefinition[] = BUILD_BOOK_SECTION_ORDER.flatMap(
   (section) => BUILD_BOOK_OPTIONS[section].map((option) => toBlockDefinition(section, option)),
-).concat(WRI_BASELINE_BLOCK_DEFINITIONS);
+).concat(WRI_BASELINE_BLOCK_DEFINITIONS).concat(SPARKY_BASELINE_BLOCK_DEFINITIONS).concat(WILCO_BASELINE_BLOCK_DEFINITIONS);
 
 export function findBuildBookBlockDefinition(blockId: string): BuildBookBlockDefinition | undefined {
   return BUILD_BOOK_BLOCK_DEFINITIONS.find((block) => block.id === blockId);
+}
+
+export function resolveBlockNavThumbKind(blockId: string): BuildBookBlockNavThumbKind {
+  return findBuildBookBlockDefinition(blockId)?.navThumbKind ?? 'generic';
+}
+
+const DEFAULT_NAV_THUMB_ASPECT: BuildBookBlockNavThumbAspect = { width: 16, height: 10 };
+
+export function resolveBlockNavThumbAspect(blockId: string): BuildBookBlockNavThumbAspect {
+  return findBuildBookBlockDefinition(blockId)?.navThumbAspect ?? DEFAULT_NAV_THUMB_ASPECT;
 }
 
 export function findBuildBookBlockDefinitionForSection(

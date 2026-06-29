@@ -1,0 +1,77 @@
+@import '../baseline/sparky/sparky-baseline.css';
+@import '../baseline/wilco/wilco-baseline.css';
+
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
+}
+
+.bb-page-canvas {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  background: #fff;
+}
+
+.bb-page-canvas app-protopipe-build-block-section:not(:last-child) {
+  border-bottom: 1px solid #e4e4e7;
+}
+
+.bb-page-canvas:not(.bb-page-canvas--baseline) app-protopipe-build-block-section[data-section='hero'] {
+  min-height: min(70vh, 42rem);
+}
+
+.bb-page-canvas--baseline {
+  background: var(--wri-mist, #f4f7f6);
+}
+
+.bb-page-canvas--baseline.bb-page-canvas--sparky {
+  background: var(--sp-paper, #faf8f5);
+}
+
+.bb-page-canvas--baseline.bb-page-canvas--wilco {
+  background: var(--color-bg, #ffffff);
+}
+
+.bb-page-canvas--baseline app-protopipe-build-block-section {
+  border-bottom: none;
+  min-height: 0;
+  height: auto;
+  flex: 0 0 auto;
+}
+
+.bb-page-canvas--baseline .wri-hero-unit app-protopipe-build-block-section {
+  display: block;
+}
+
+.bb-page-canvas--baseline app-protopipe-build-fold-block {
+  display: block;
+  width: 100%;
+  font-size: 1rem;
+}
+
+.bb-page-canvas--baseline .wri-hero-unit app-protopipe-build-fold-block,
+.bb-page-canvas--baseline .wri-fold-stack app-protopipe-build-fold-block,
+.bb-page-canvas--baseline .sp-fold-stack app-protopipe-build-fold-block {
+  display: block;
+  width: 100%;
+  font-size: 1rem;
+}
+
+.bb-page-canvas__wri-shell,
+.bb-page-canvas__sparky-shell,
+.bb-page-canvas__wilco-shell {
+  min-height: 0;
+}
+
+.bb-page-canvas--baseline .wri-page--site {
+  min-height: 0;
+}
+
+.bb-page-canvas--baseline .wri-fold-fw__media img {
+  min-height: 10rem;
+}

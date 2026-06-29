@@ -19,6 +19,8 @@ import {
 } from '../build-hero-preview.types';
 import { BUILD_DEMO_HERO_VARIANTS } from '../build-book-demo.catalog';
 
+type SiteInfoTab = 'images' | 'basic' | 'seo';
+
 @Component({
   selector: 'app-protopipe-build-site-images-panel',
   standalone: true,
@@ -49,6 +51,13 @@ export class ProtopipeBuildSiteImagesPanelComponent implements OnInit {
   readonly previewImageUrl = signal<string | null>(null);
   readonly previewHeroIdx = signal(0);
   readonly localCopy = signal<BuildHeroPreviewCopy>(DEFAULT_HERO_PREVIEW_COPY);
+  readonly activeTab = signal<SiteInfoTab>('images');
+
+  readonly tabs: Array<{ id: SiteInfoTab; label: string }> = [
+    { id: 'images', label: 'Images' },
+    { id: 'basic', label: 'Basic Site Info' },
+    { id: 'seo', label: 'SEO Plan' },
+  ];
 
   readonly siteImageAssets = computed(() => this.studio.assets());
 
@@ -115,6 +124,10 @@ export class ProtopipeBuildSiteImagesPanelComponent implements OnInit {
       this.copyChange.emit(next);
       return next;
     });
+  }
+
+  selectTab(tab: SiteInfoTab): void {
+    this.activeTab.set(tab);
   }
 
   async generateSiteImages(): Promise<void> {

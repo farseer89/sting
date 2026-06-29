@@ -425,35 +425,34 @@
       </div>
       } @else {
         <div class="bk-stage bk-stage--chapter">
-          <div class="bk-book-placeholder">
-            <div class="bk-stage-kicker">Build book · {{ activeChapterMeta().group }}</div>
-            <h2>{{ activeChapterMeta().label }}</h2>
-            <p>
-              @switch (chapter()) {
-                @case ('templates') {
-                  Choose another full visual standard below. Switching templates reapplies the recommended hero, fold, and services selections while keeping the book in the Shire save flow.
+          @if (chapter() !== 'site-info-images') {
+            <div class="bk-book-placeholder">
+              <div class="bk-stage-kicker">Build book · {{ activeChapterMeta().group }}</div>
+              <h2>{{ activeChapterMeta().label }}</h2>
+              <p>
+                @switch (chapter()) {
+                  @case ('templates') {
+                    Choose another full visual standard below. Switching templates reapplies the recommended hero, fold, and services selections while keeping the book in the Shire save flow.
+                  }
+                  @case ('landing-pages') {
+                    Landing pages will use the same template/block system with page-specific SEO and conversion goals.
+                  }
+                  @case ('blog-posts') {
+                    Blog posts will use article block templates generated from SEO strategy and editable by the operator.
+                  }
+                  @case ('review-gate') {
+                    The review gate will package Google-review capture into the demo flow.
+                  }
+                  @case ('lead-form') {
+                    The lead form chapter will configure owner-texting capture pages.
+                  }
+                  @default {
+                    The checklist will gather site, review gate, content posts, and lead form readiness before a sales meeting.
+                  }
                 }
-                @case ('site-info-images') {
-                  Generate, upload, and review the actual images that will feed hero and block edits. Block editors will choose from this shared site image library.
-                }
-                @case ('landing-pages') {
-                  Landing pages will use the same template/block system with page-specific SEO and conversion goals.
-                }
-                @case ('blog-posts') {
-                  Blog posts will use article block templates generated from SEO strategy and editable by the operator.
-                }
-                @case ('review-gate') {
-                  The review gate will package Google-review capture into the demo flow.
-                }
-                @case ('lead-form') {
-                  The lead form chapter will configure owner-texting capture pages.
-                }
-                @default {
-                  The checklist will gather site, review gate, content posts, and lead form readiness before a sales meeting.
-                }
-              }
-            </p>
-          </div>
+              </p>
+            </div>
+          }
           @if (chapter() === 'templates') {
             <div class="bk-template-grid bk-template-grid--chapter">
               @for (template of starterTemplates; track template.id) {

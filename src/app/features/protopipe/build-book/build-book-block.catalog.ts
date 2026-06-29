@@ -3,6 +3,7 @@ import {
   BUILD_BOOK_SECTION_ORDER,
   type BuildBookSection,
 } from './build-book.constants';
+import { WRI_BASELINE_BLOCK_DEFINITIONS } from './build-book-baseline-block.catalog';
 import { BUILD_BOOK_COMPONENT_DEFAULTS } from './build-book.defaults';
 import type { BuildBookBlockDefinition, BuildBookOption } from './build-book.types';
 
@@ -64,7 +65,7 @@ function toBlockDefinition(section: BuildBookSection, option: BuildBookOption): 
 
 export const BUILD_BOOK_BLOCK_DEFINITIONS: BuildBookBlockDefinition[] = BUILD_BOOK_SECTION_ORDER.flatMap(
   (section) => BUILD_BOOK_OPTIONS[section].map((option) => toBlockDefinition(section, option)),
-);
+).concat(WRI_BASELINE_BLOCK_DEFINITIONS);
 
 export function findBuildBookBlockDefinition(blockId: string): BuildBookBlockDefinition | undefined {
   return BUILD_BOOK_BLOCK_DEFINITIONS.find((block) => block.id === blockId);

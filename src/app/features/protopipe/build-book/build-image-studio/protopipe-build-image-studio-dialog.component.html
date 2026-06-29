@@ -1,11 +1,11 @@
 @if (open()) {
   <div class="bis-overlay" (click)="close()">
-    <div class="bis-dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Hero images and copy">
+    <div class="bis-dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Site images and hero copy">
 
       <header class="bis-dialog__head">
         <div>
-          <h2 class="bis-dialog__title">Hero images &amp; copy</h2>
-          <p class="bis-dialog__deck">Generate photos, pick one, and set the headline text — preview updates live in the layout you selected.</p>
+          <h2 class="bis-dialog__title">Site images &amp; hero copy</h2>
+          <p class="bis-dialog__deck">Generate photos for the site image library, preview one in the hero layout, and optionally use it for the current hero.</p>
         </div>
         <button type="button" class="bis-dialog__close" (click)="close()" aria-label="Close">
           <svg viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -44,11 +44,11 @@
           <div class="bd-gen-form">
             <div class="bd-gen-form__row">
               <div class="bd-field bd-field--grow">
-                <label class="bd-field__label">Image prompt</label>
+                <label class="bd-field__label">Site image prompt</label>
                 <textarea
                   class="bd-field__textarea"
                   rows="2"
-                  placeholder="Describe the hero photo…"
+                  placeholder="Describe the site photo set…"
                   [ngModel]="imgPrompt()"
                   (ngModelChange)="imgPrompt.set($event)"
                 ></textarea>
@@ -97,7 +97,7 @@
                 <div class="bd-gallery__item" [class.is-selected]="previewImageUrl() === img.url || selectedImageUrl() === img.url">
                   <img [src]="img.url" alt="Generated hero" loading="lazy" (click)="openImagePreview(img.url, $event)" />
                   <button type="button" class="bd-gallery__preview-btn" (click)="openImagePreview(img.url, $event)">Preview</button>
-                  <button type="button" class="bd-gallery__select-btn" (click)="selectImage(img.url)">Use as hero</button>
+                  <button type="button" class="bd-gallery__select-btn" (click)="selectImage(img.url)">Use for hero</button>
                 </div>
               }
             </div>

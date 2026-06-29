@@ -21,8 +21,14 @@ import {
   findBuildBookBlockDefinition,
   findBuildBookBlockDefinitionForSection,
 } from './build-book-block.catalog';
+import { findBuildBookBaselineAssembly } from './build-book-baseline-assemblies';
 import { findBuildBookTemplate } from './build-book-template.catalog';
-import type { BuildBookBlockDefinition, BuildBookBlockInstance, BuildBookOption, BuildBookPage } from './build-book.types';
+import type {
+  BuildBookBlockDefinition,
+  BuildBookBlockInstance,
+  BuildBookOption,
+  BuildBookPage,
+} from './build-book.types';
 import {
   ProtopipeBuildBookShireApiService,
   type BuildBookEntryMode,
@@ -132,6 +138,9 @@ function blockInstanceFromDefinition(
 }
 
 function materializeHomepagePages(templateId: string | null | undefined): BuildBookPage[] {
+  const baselinePages = findBuildBookBaselineAssembly(templateId);
+  if (baselinePages) return baselinePages;
+
   const template = findBuildBookTemplate(templateId);
   const refs =
     template?.defaultHomepageBlocks ??
@@ -161,6 +170,7 @@ function materializeHomepagePages(templateId: string | null | undefined): BuildB
 function draftFromBuildBookPages(templateId: string, pages: BuildBookPage[]): SitePageDraft {
   const now = new Date().toISOString();
   const homepage = pages.find((page) => page.kind === 'homepage') ?? pages[0];
+  const seenSections = new Set<BuildBookSection>();
   return {
     templateId,
     theme: 'ocean',
@@ -173,8 +183,10 @@ function draftFromBuildBookPages(templateId: string, pages: BuildBookPage[]): Si
           .sort((a, b) => a.order - b.order)
           .map((block): SitePageSectionDraft => {
             const defaults = BUILD_BOOK_COMPONENT_DEFAULTS[block.componentId];
+            const firstForSection = !seenSections.has(block.section);
+            seenSections.add(block.section);
             return {
-              id: BUILD_BOOK_SECTION_SLOTS[block.section],
+              id: firstForSection ? BUILD_BOOK_SECTION_SLOTS[block.section] : block.id,
               label: block.label ?? buildBookSectionLabel(block.section),
               componentId: block.componentId,
               props: structuredClone(block.props ?? defaults?.defaultProps ?? {}),
@@ -428,10 +440,22 @@ export class ProtopipeBuildBookService {
       return;
     }
     this.applyShireBook(res.buildBook);
-    const draft = this.draftFromShireBook(res.buildBook);
+    const baselinePages = this.baselinePagesForBook(res.buildBook);
+    const draft = baselinePages
+      ? buildStarterDraft(res.buildBook.selectedTemplateId, baselinePages)
+      : this.draftFromShireBook(res.buildBook);
+    if (baselinePages) {
+      draft.updatedAt = new Date().toISOString();
+    }
     this._saved.set(structuredClone(draft));
     this._draft.set(structuredClone(draft));
-    this._pages.set(res.buildBook.pages?.length ? structuredClone(res.buildBook.pages) : this.pagesFromDraft(draft));
+    this._pages.set(
+      baselinePages ??
+        (res.buildBook.pages?.length ? structuredClone(res.buildBook.pages) : this.pagesFromDraft(draft)),
+    );
+    if (baselinePages) {
+      await this.saveShireBook(siteId, draft, baselinePages);
+    }
   }
 
   private applyShireBook(book: BuildBookShireDto): void {
@@ -484,8 +508,22 @@ export class ProtopipeBuildBookService {
     return draft;
   }
 
+  private baselinePagesForBook(book: BuildBookShireDto): BuildBookPage[] | null {
+    const baselinePages = findBuildBookBaselineAssembly(book.selectedTemplateId);
+    if (!baselinePages) return null;
+
+    const savedHomepage = book.pages.find((page) => page.kind === 'homepage');
+    const alreadyBaseline = savedHomepage?.blocks.some((block) => block.props['baselineRenderer']);
+    if (alreadyBaseline) return null;
+
+    return baselinePages;
+  }
+
   private pagesFromDraft(draft: SitePageDraft): BuildBookPage[] {
     const existingHomepage = this._pages().find((page) => page.kind === 'homepage');
+    if (existingHomepage?.blocks.some((block) => block.props['baselineRenderer'])) {
+      return structuredClone(this._pages());
+    }
     const selections = this._selections();
     const blocks = BUILD_BOOK_SECTION_ORDER.map((section, order) => {
       const draftSection = findDraftSectionForSlot(draft, section);

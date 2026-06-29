@@ -1264,11 +1264,21 @@ $bk-build: #0d9488;
 }
 
 .bk-stack-rail__title {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.15rem;
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: $bk-build;
+
+  small {
+    color: $bk-muted;
+    font-size: 0.5625rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
 }
 
 .bk-stack-rail__count {
@@ -1618,6 +1628,121 @@ $bk-build: #0d9488;
   height: 100%;
   border: 0;
   background: $bk-bg;
+}
+
+.bk-site-images {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.bk-site-images__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid $bk-border;
+  border-radius: 1rem;
+  background: $bk-bg;
+
+  h3 {
+    margin: 0.15rem 0 0.35rem;
+    color: $bk-ink;
+    font-size: 1rem;
+  }
+
+  p {
+    margin: 0;
+    max-width: 42rem;
+    color: $bk-muted;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+}
+
+.bk-site-images__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.bk-site-images__upload {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  border: 1px solid $bk-border;
+  border-radius: 999px;
+  background: $bk-bg-panel;
+  color: $bk-ink;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 700;
+
+  input {
+    display: none;
+  }
+}
+
+.bk-site-images__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 0.85rem;
+}
+
+.bk-site-image-card {
+  overflow: hidden;
+  border: 1px solid $bk-border;
+  border-radius: 1rem;
+  background: $bk-bg;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.05);
+
+  &.is-selected {
+    border-color: rgb(13 148 136 / 0.45);
+    box-shadow: 0 0 0 1px rgb(13 148 136 / 0.12);
+  }
+
+  img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    background: $bk-bg-panel;
+  }
+}
+
+.bk-site-image-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.75rem;
+
+  strong {
+    color: $bk-ink;
+    font-size: 0.8125rem;
+  }
+
+  span {
+    color: $bk-muted;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+}
+
+.bk-site-images__empty {
+  display: grid;
+  min-height: 16rem;
+  place-items: center;
+  border: 1px dashed $bk-border;
+  border-radius: 1rem;
+  background: $bk-bg-panel;
+  color: $bk-muted;
+  text-align: center;
+  padding: 2rem;
 }
 
 .bk-stack-rail__studio-link {

@@ -12,10 +12,18 @@ import type {
 import { parseProtopipeApiError } from './protopipe-http.util';
 import { ProtopipeApiService } from './protopipe-api.service';
 import { MEDIA_STUDIO_FALLBACK_CONFIG } from './media-studio-fallback.config';
+import { ProtopipeStrategyService } from './protopipe-strategy.service';
+import {
+  ProtopipeMediaShireApiService,
+  type ShireMediaAssetDto,
+  type ShireMediaGenerateResponseDto,
+} from './shire/protopipe-media-shire-api.service';
 
 @Injectable({ providedIn: 'root' })
 export class ProtopipeMediaStudioService {
   private readonly api = inject(ProtopipeApiService);
+  private readonly shireApi = inject(ProtopipeMediaShireApiService);
+  private readonly strategy = inject(ProtopipeStrategyService);
 
   private readonly _loadingConfig = signal(false);
   private readonly _loadingHistory = signal(false);
@@ -25,6 +33,7 @@ export class ProtopipeMediaStudioService {
   private readonly _lastResult = signal<AdminMediaStudioGenerateResponse | null>(null);
   private readonly _usingFallbackConfig = signal(false);
   private readonly _history = signal<MediaStudioHistoryResponse | null>(null);
+  private readonly _assets = signal<ShireMediaAssetDto[]>([]);
 
   readonly loadingConfig = this._loadingConfig.asReadonly();
   readonly loadingHistory = this._loadingHistory.asReadonly();
@@ -34,6 +43,7 @@ export class ProtopipeMediaStudioService {
   readonly lastResult = this._lastResult.asReadonly();
   readonly usingFallbackConfig = this._usingFallbackConfig.asReadonly();
   readonly history = this._history.asReadonly();
+  readonly assets = this._assets.asReadonly();
 
   readonly historyItems = computed(() => this._history()?.items ?? []);
   readonly totalCostUsd = computed(() => this._history()?.totalCostUsd ?? 0);
@@ -49,7 +59,10 @@ export class ProtopipeMediaStudioService {
     this._error.set(null);
     this._usingFallbackConfig.set(false);
     try {
-      this._config.set(await this.api.getMediaStudioConfig());
+      const siteId = this.strategy.siteId();
+      this._config.set(
+        siteId ? await this.shireApi.getConfig(siteId) : await this.api.getMediaStudioConfig(),
+      );
     } catch (err) {
       const message = this.describeConfigError(err);
       this._error.set(message);
@@ -63,7 +76,10 @@ export class ProtopipeMediaStudioService {
   async loadHistory(): Promise<void> {
     this._loadingHistory.set(true);
     try {
-      this._history.set(await this.api.getMediaStudioHistory());
+      const siteId = this.strategy.siteId();
+      this._history.set(
+        siteId ? await this.shireApi.getHistory(siteId) : await this.api.getMediaStudioHistory(),
+      );
     } catch (err) {
       this._error.set(parseProtopipeApiError(err, 'Could not load generation history'));
     } finally {
@@ -77,12 +93,22 @@ export class ProtopipeMediaStudioService {
     model?: string;
     imageSize?: MediaStudioImageSize;
     numImages?: number;
-  }): Promise<AdminMediaStudioGenerateResponse | null> {
+  }): Promise<ShireMediaGenerateResponseDto | AdminMediaStudioGenerateResponse | null> {
     this._generating.set(true);
     this._error.set(null);
     try {
-      const result = await this.api.generateMediaStudio(input);
+      const siteId = this.strategy.siteId();
+      const result = siteId
+        ? await this.shireApi.generate(siteId, input)
+        : await this.api.generateMediaStudio(input);
       this._lastResult.set(result);
+      const generatedAssets = this.generatedAssetsFromResult(result);
+      if (generatedAssets.length) {
+        this._assets.update((assets) => [
+          ...generatedAssets,
+          ...assets.filter((asset) => !generatedAssets.some((next) => next.id === asset.id)),
+        ]);
+      }
       this.prependHistoryEntry(result);
       return result;
     } catch (err) {
@@ -123,6 +149,42 @@ export class ProtopipeMediaStudioService {
       totalGenerations: current.totalGenerations + 1,
       totalCostUsd: Math.round((current.totalCostUsd + result.cost.totalUsd) * 10_000) / 10_000,
     });
+  }
+
+  private generatedAssetsFromResult(
+    result: ShireMediaGenerateResponseDto | AdminMediaStudioGenerateResponse,
+  ): ShireMediaAssetDto[] {
+    return 'assets' in result && Array.isArray(result.assets) ? result.assets : [];
+  }
+
+  async loadAssets(): Promise<void> {
+    const siteId = this.strategy.siteId();
+    if (!siteId) return;
+    try {
+      this._assets.set((await this.shireApi.listAssets(siteId)).assets);
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Could not load site image library'));
+    }
+  }
+
+  async upload(file: File): Promise<ShireMediaAssetDto | null> {
+    const siteId = this.strategy.siteId();
+    if (!siteId) {
+      this._error.set('No active site is available for image upload.');
+      return null;
+    }
+    this._error.set(null);
+    try {
+      const result = await this.shireApi.upload(siteId, file);
+      this._assets.update((assets) => [
+        result.asset,
+        ...assets.filter((asset) => asset.id !== result.asset.id),
+      ]);
+      return result.asset;
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Image upload failed'));
+      return null;
+    }
   }
 
   private describeConfigError(err: unknown): string {

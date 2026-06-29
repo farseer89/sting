@@ -187,6 +187,23 @@ export class ProtopipeMediaStudioService {
     }
   }
 
+  async deleteAsset(assetId: string): Promise<boolean> {
+    const siteId = this.strategy.siteId();
+    if (!siteId) {
+      this._error.set('No active site is available for image deletion.');
+      return false;
+    }
+    this._error.set(null);
+    try {
+      await this.shireApi.deleteAsset(siteId, assetId);
+      this._assets.update((assets) => assets.filter((asset) => asset.id !== assetId));
+      return true;
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Could not delete image'));
+      return false;
+    }
+  }
+
   private describeConfigError(err: unknown): string {
     if (err instanceof HttpErrorResponse) {
       if (err.status === 404) {

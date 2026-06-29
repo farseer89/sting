@@ -52,8 +52,9 @@ export class ProtopipeBuildSiteImagesPanelComponent implements OnInit {
   readonly previewHeroIdx = signal(0);
   readonly localCopy = signal<BuildHeroPreviewCopy>(DEFAULT_HERO_PREVIEW_COPY);
   readonly activeTab = signal<SiteInfoTab>('images');
+  readonly deletingAssetId = signal<string | null>(null);
 
-  readonly tabs: Array<{ id: SiteInfoTab; label: string }> = [
+  readonly tabs: { id: SiteInfoTab; label: string }[] = [
     { id: 'images', label: 'Images' },
     { id: 'basic', label: 'Basic Site Info' },
     { id: 'seo', label: 'SEO Plan' },
@@ -171,6 +172,18 @@ export class ProtopipeBuildSiteImagesPanelComponent implements OnInit {
   selectImage(url: string): void {
     if (!this.canUseHeroImage()) return;
     this.imageSelected.emit(url);
+  }
+
+  async deleteSiteImage(assetId: string, imageUrl: string): Promise<void> {
+    const confirmed = window.confirm('Delete this image from the site image library?');
+    if (!confirmed) return;
+
+    this.deletingAssetId.set(assetId);
+    const deleted = await this.studio.deleteAsset(assetId);
+    if (deleted && this.previewImageUrl() === imageUrl) {
+      this.previewImageUrl.set(null);
+    }
+    this.deletingAssetId.set(null);
   }
 
   onPreviewBrandChange(brand: 'sparky' | 'wri' | 'consult'): void {

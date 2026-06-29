@@ -92,4 +92,14 @@ export class ProtopipeMediaShireApiService {
       ),
     );
   }
+
+  deleteAsset(siteId: string, assetId: string): Promise<void> {
+    return firstValueFrom(
+      this.http.delete<void>(
+        shireApiUrl(
+          `/api/sites/${encodeURIComponent(siteId)}/media-assets/${encodeURIComponent(assetId)}`,
+        ),
+      ),
+    );
+  }
 }

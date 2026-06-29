@@ -3,13 +3,14 @@
     <div class="bsi__error">{{ err }}</div>
   }
 
-  <nav class="bsi-tabs" aria-label="Site info sections">
+  <nav class="bsi-tabs" role="tablist" aria-label="Site info sections">
     @for (tab of tabs; track tab.id) {
       <button
         type="button"
+        role="tab"
         class="bsi-tabs__item"
         [class.is-active]="activeTab() === tab.id"
-        [attr.aria-current]="activeTab() === tab.id ? 'page' : null"
+        [attr.aria-selected]="activeTab() === tab.id"
         (click)="selectTab(tab.id)"
       >
         {{ tab.label }}
@@ -77,9 +78,19 @@
                 <strong>{{ asset.label || asset.originalFilename || (asset.source === 'generated' ? 'Generated image' : 'Uploaded image') }}</strong>
                 <span>{{ asset.source === 'generated' ? 'AI generated' : 'Uploaded' }}</span>
               </div>
-              <button type="button" class="bsi-image-card__use" [disabled]="!canUseHeroImage()" (click)="selectImage(asset.url)">
-                {{ canUseHeroImage() ? 'Use for hero' : 'Select template first' }}
-              </button>
+              <div class="bsi-image-card__actions">
+                <button type="button" class="bsi-image-card__use" [disabled]="!canUseHeroImage()" (click)="selectImage(asset.url)">
+                  {{ canUseHeroImage() ? 'Use for hero' : 'Select template first' }}
+                </button>
+                <button
+                  type="button"
+                  class="bsi-image-card__delete"
+                  [disabled]="deletingAssetId() === asset.id"
+                  (click)="deleteSiteImage(asset.id, asset.url)"
+                >
+                  {{ deletingAssetId() === asset.id ? 'Deleting...' : 'Delete' }}
+                </button>
+              </div>
             </article>
           }
         </div>

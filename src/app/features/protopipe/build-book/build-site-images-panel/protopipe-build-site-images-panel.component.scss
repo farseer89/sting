@@ -9,31 +9,39 @@
 }
 
 .bsi-tabs {
-  display: inline-flex;
-  align-self: flex-start;
+  display: flex;
+  flex-wrap: nowrap;
   gap: 0.25rem;
-  border: 1px solid #e4e4e7;
-  border-radius: 0.85rem;
-  background: #fafafa;
-  padding: 0.25rem;
+  border-bottom: 0.5px solid var(--void-tile-border, #e4e4e7);
+  overflow-x: auto;
+  padding: 0.1rem 0 0.55rem;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .bsi-tabs__item {
-  min-height: 2rem;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: 2.25rem;
   border: 0;
-  border-radius: 0.65rem;
+  border-radius: 0.4rem;
   background: transparent;
-  color: #71717a;
+  color: var(--void-ink-muted, #71717a);
   cursor: pointer;
-  font-size: 0.75rem;
-  font-weight: 800;
-  padding: 0 0.85rem;
-  transition: background 0.12s, color 0.12s, box-shadow 0.12s;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.4rem 0.7rem;
+  transition: background 0.12s, color 0.12s;
 
   &.is-active {
-    background: #fff;
-    color: #0d9488;
-    box-shadow: 0 1px 3px rgb(15 23 42 / 0.08);
+    background: var(--void-ocean-fill, rgb(13 148 136 / 0.1));
+    color: var(--void-ocean, #0d9488);
   }
 }
 
@@ -356,14 +364,46 @@
   }
 }
 
+.bsi-image-card__actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  padding: 0 0.7rem 0.7rem;
+}
+
 .bsi-image-card__use {
-  margin: 0 0.7rem 0.7rem;
   min-height: 2rem;
   background: #fff;
   color: #0d9488;
 
   &:disabled {
     color: #71717a;
+  }
+}
+
+.bsi-image-card__delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  border: 1px solid rgb(220 38 38 / 0.18);
+  border-radius: 0.6rem;
+  background: #fff;
+  color: #b91c1c;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0 0.7rem;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+
+  &:hover:not(:disabled) {
+    border-color: rgb(220 38 38 / 0.38);
+    background: #fef2f2;
+  }
+
+  &:disabled {
+    color: #a1a1aa;
+    cursor: not-allowed;
   }
 }
 

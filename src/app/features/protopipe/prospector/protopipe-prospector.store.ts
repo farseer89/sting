@@ -4,6 +4,8 @@ import type {
   ProspectingCampaign,
   ProspectingCandidateSummary,
   ProspectWebsiteStatus,
+  SalesInteraction,
+  SaveSalesInteractionRequest,
   SaveProspectsRequest,
   Thought,
 } from '@hive/contracts';
@@ -58,6 +60,7 @@ export class ProtopipeProspectorStore {
 
   private readonly _campaigns = signal<ProspectingCampaign[]>([]);
   private readonly _prospects = signal<ProspectDraft[]>([]);
+  private readonly _interactions = signal<SalesInteraction[]>([]);
   private readonly _snapshot = signal<ProspectDraft[]>([]);
   private readonly _loading = signal(false);
   private readonly _saving = signal(false);
@@ -66,9 +69,11 @@ export class ProtopipeProspectorStore {
   private readonly _selectedCampaignId = signal<string | null>(null);
   private readonly _error = signal<string | null>(null);
   private readonly _message = signal<string | null>(null);
+  private loadRequest: Promise<void> | null = null;
 
   readonly campaigns = this._campaigns.asReadonly();
   readonly prospects = this._prospects.asReadonly();
+  readonly interactions = this._interactions.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly saving = this._saving.asReadonly();
   readonly campaignSaving = this._campaignSaving.asReadonly();
@@ -95,6 +100,16 @@ export class ProtopipeProspectorStore {
   );
 
   async load(): Promise<void> {
+    if (this.loadRequest) return this.loadRequest;
+    this.loadRequest = this.loadOnce();
+    try {
+      await this.loadRequest;
+    } finally {
+      this.loadRequest = null;
+    }
+  }
+
+  private async loadOnce(): Promise<void> {
     if (!isShirePrimary()) {
       this._error.set('Shire is not configured for this Prospector workspace.');
       return;
@@ -105,14 +120,16 @@ export class ProtopipeProspectorStore {
     try {
       await this.strategy.ensureLoaded();
       const siteId = this.requireSiteId();
-      const [campaigns, prospects] = await Promise.all([
+      const [campaigns, prospects, interactions] = await Promise.all([
         this.api.listCampaigns(siteId),
         this.api.listProspects(siteId),
+        this.api.listSalesInteractions(siteId),
       ]);
       this._campaigns.set(campaigns.campaigns);
       this._selectedCampaignId.set(campaigns.campaigns[0]?.id ?? null);
       const rows = cloneProspects(prospects.prospects);
       this._prospects.set(rows);
+      this._interactions.set(interactions.interactions);
       this._snapshot.set(cloneProspects(rows));
     } catch (err) {
       this._error.set(parseProtopipeApiError(err, 'Could not load Prospector books.'));
@@ -141,7 +158,39 @@ export class ProtopipeProspectorStore {
     }
   }
 
+  async recordSalesInteraction(body: SaveSalesInteractionRequest): Promise<boolean> {
+    const siteId = this.requireSiteId();
+    this._saving.set(true);
+    this._error.set(null);
+    this._message.set(null);
+    try {
+      const response = await this.api.createSalesInteraction(siteId, this.toSaveSalesInteractionRequest(body));
+      this._interactions.update((interactions) => [
+        response.interaction,
+        ...interactions.filter((interaction) => interaction.id !== response.interaction.id),
+      ]);
+      const prospects = await this.api.listProspects(siteId);
+      const rows = cloneProspects(prospects.prospects);
+      this._prospects.set(rows);
+      this._snapshot.set(cloneProspects(rows));
+      this._message.set('Sales interaction saved.');
+      return true;
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Could not save sales interaction.'));
+      return false;
+    } finally {
+      this._saving.set(false);
+    }
+  }
+
+  interactionsForProspect(prospectId: string): SalesInteraction[] {
+    return this._interactions().filter((interaction) => interaction.prospectId === prospectId);
+  }
+
   async createCampaign(category: string, location: string): Promise<ProspectingCampaign | null> {
+    if (this.loadRequest) {
+      await this.loadRequest;
+    }
     const trimmedCategory = category.trim();
     const trimmedLocation = location.trim();
     if (!trimmedCategory || !trimmedLocation) return null;
@@ -162,6 +211,13 @@ export class ProtopipeProspectorStore {
               enabled: true,
               query: trimmedCategory,
               location: trimmedLocation,
+            },
+            {
+              source: 'yelp' as const,
+              enabled: false,
+              query: trimmedCategory,
+              location: trimmedLocation,
+              notes: 'Stubbed for the next source runner.',
             },
           ],
           sourceRuns: [],
@@ -229,13 +285,20 @@ export class ProtopipeProspectorStore {
     this._selectedCampaignId.set(campaignId);
   }
 
-  addCampaignCandidatesAsProspects(campaign: ProspectingCampaign): void {
+  addCampaignCandidatesAsProspects(
+    campaign: ProspectingCampaign,
+    candidates: ProspectingCandidateSummary[],
+  ): void {
+    if (candidates.length === 0) {
+      this._message.set('Select at least one candidate to save as a prospect.');
+      return;
+    }
     const existingKeys = new Set(
       this._prospects().flatMap((prospect) =>
         prospect.sourceCandidateRefs.map((ref) => `${ref.source}:${ref.sourceId}`),
       ),
     );
-    const additions = campaign.candidates
+    const additions = candidates
       .filter((candidate) => !existingKeys.has(`${candidate.source}:${candidate.sourceId}`))
       .map((candidate) => this.prospectFromCandidate(candidate, campaign));
 
@@ -323,6 +386,7 @@ export class ProtopipeProspectorStore {
         score: optionalNumber(prospect.score),
         topSignal: optionalString(prospect.topSignal),
         status: prospect.status,
+        salesStage: prospect.salesStage,
         sourceCampaignId: optionalString(prospect.sourceCampaignId),
         sourceCandidateRefs: prospect.sourceCandidateRefs.map((ref) => ({
           source: ref.source,
@@ -330,9 +394,44 @@ export class ProtopipeProspectorStore {
           campaignId: optionalString(ref.campaignId),
         })),
         lastPitchSessionId: optionalString(prospect.lastPitchSessionId),
+        lastSalesInteractionId: optionalString(prospect.lastSalesInteractionId),
+        lastSalesInteractionOutcome: optionalString(prospect.lastSalesInteractionOutcome),
+        lastSalesInteractionAt: optionalString(prospect.lastSalesInteractionAt),
+        nextSalesInteractionAt: optionalString(prospect.nextSalesInteractionAt),
         buildBookId: optionalString(prospect.buildBookId),
         notes: prospect.notes ?? '',
       })),
+    };
+  }
+
+  private toSaveSalesInteractionRequest(
+    body: SaveSalesInteractionRequest,
+  ): SaveSalesInteractionRequest {
+    return {
+      prospectId: body.prospectId,
+      phase: body.phase,
+      channel: body.channel,
+      outcome: body.outcome,
+      sentiment: body.sentiment,
+      occurredAt: optionalString(body.occurredAt),
+      durationSeconds: optionalNumber(body.durationSeconds),
+      operatorName: optionalString(body.operatorName),
+      scriptVariant: optionalString(body.scriptVariant),
+      scriptBody: optionalString(body.scriptBody),
+      offerSummary: optionalString(body.offerSummary),
+      researchBrief: body.researchBrief
+        ? {
+            summary: optionalString(body.researchBrief.summary),
+            signals: body.researchBrief.signals?.filter(Boolean) ?? [],
+            objections: body.researchBrief.objections?.filter(Boolean) ?? [],
+            opportunities: body.researchBrief.opportunities?.filter(Boolean) ?? [],
+          }
+        : undefined,
+      notes: body.notes ?? '',
+      outcomeReasonTags: body.outcomeReasonTags?.filter(Boolean) ?? [],
+      nextStep: optionalString(body.nextStep),
+      nextStepAt: optionalString(body.nextStepAt),
+      mediaRefs: body.mediaRefs,
     };
   }
 

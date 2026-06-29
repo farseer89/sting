@@ -11,7 +11,12 @@ import { FormsModule } from '@angular/forms';
 import type {
   Prospect,
   ProspectingCampaign,
+  ProspectingCandidateSummary,
   ProspectPriority,
+  SalesInteractionChannel,
+  SalesInteractionOutcome,
+  SalesInteractionPhase,
+  SalesInteractionSentiment,
   ProspectStatus,
   ProspectWebsiteStatus,
 } from '@hive/contracts';
@@ -26,6 +31,14 @@ import { isShirePrimary } from '../shire/shire-http.util';
 import { ProtopipeProspectorStore } from './protopipe-prospector.store';
 
 export type ProspectorSection = 'new-search' | 'campaigns' | 'leads' | 'prospects' | 'run-pipeline';
+type ProspectorSearchSource = 'google_maps' | 'yelp';
+
+interface ProspectorSourceTab {
+  id: ProspectorSearchSource;
+  label: string;
+  status: string;
+  disabled?: boolean;
+}
 
 function relativeTime(iso: string | undefined): string {
   if (!iso) return '';
@@ -62,6 +75,7 @@ export class ProtopipeProspectorComponent implements OnInit {
   readonly shirePrimary = isShirePrimary();
 
   readonly activeSection = signal<ProspectorSection>('new-search');
+  readonly activeSource = signal<ProspectorSearchSource>('google_maps');
   readonly selectedRun = signal<ProspectorRunDto | null>(null);
   readonly runs = signal<ProspectorRunDto[]>([]);
   readonly runsLoading = signal(true);
@@ -70,6 +84,7 @@ export class ProtopipeProspectorComponent implements OnInit {
   readonly launchError = signal<string | null>(null);
   readonly expanding = signal(false);
   readonly expandError = signal<string | null>(null);
+  readonly selectedCandidateKeys = signal<Set<string>>(new Set());
 
   readonly prospectStatuses: ProspectStatus[] = [
     'new',
@@ -81,6 +96,10 @@ export class ProtopipeProspectorComponent implements OnInit {
   ];
   readonly prospectPriorities: ProspectPriority[] = ['critical', 'high', 'medium', 'monitor'];
   readonly websiteStatuses: ProspectWebsiteStatus[] = ['none', 'poor', 'fair', 'good', 'unknown'];
+  readonly sourceTabs: ProspectorSourceTab[] = [
+    { id: 'google_maps', label: 'Google Maps', status: 'Live' },
+    { id: 'yelp', label: 'Yelp', status: 'Next', disabled: true },
+  ];
 
   // ── Lead drawer ───────────────────────────────────────────────────────────
 
@@ -122,6 +141,83 @@ export class ProtopipeProspectorComponent implements OnInit {
     this.runs().reduce((acc, r) => acc + (r.totalCostUsd ?? 0), 0),
   );
 
+  readonly activeCampaign = computed(() => this.store.selectedCampaign());
+  readonly selectedProspectId = signal<string | null>(null);
+  readonly activeProspect = computed(() => {
+    const selectedId = this.selectedProspectId();
+    return this.store.prospects().find((prospect) => prospect.id === selectedId)
+      ?? this.store.prospects()[0]
+      ?? null;
+  });
+  readonly activeProspectInteractions = computed(() => {
+    const prospect = this.activeProspect();
+    return prospect ? this.store.interactionsForProspect(prospect.id) : [];
+  });
+  readonly selectedCandidateCount = computed(() => this.selectedCandidateKeys().size);
+  readonly interactionPhase = signal<SalesInteractionPhase>('cold_call');
+  readonly interactionChannel = signal<SalesInteractionChannel>('phone');
+  readonly interactionOutcome = signal<SalesInteractionOutcome>('no_answer');
+  readonly interactionSentiment = signal<SalesInteractionSentiment>('unknown');
+  readonly interactionScript = signal(
+    'Quick opener: I was looking at your local search presence and saw a few places where a stronger site and content system could turn more searchers into booked work.',
+  );
+  readonly interactionOffer = signal(
+    'Offer a fast demo: a build-book prototype showing the site, offer, and content plan we would launch for them.',
+  );
+  readonly interactionResearch = signal('');
+  readonly interactionNotes = signal('');
+  readonly interactionNextStep = signal('');
+  readonly interactionReasonTags = signal('');
+
+  readonly allCampaignCandidatesSelected = computed(() => {
+    const candidates = this.activeCampaign()?.candidates ?? [];
+    if (candidates.length === 0) return false;
+    const selected = this.selectedCandidateKeys();
+    return candidates.every((candidate) => selected.has(this.candidateKey(candidate)));
+  });
+
+  readonly interactionPhases: SalesInteractionPhase[] = [
+    'cold_call',
+    'follow_up',
+    'meeting',
+    'demo',
+    'proposal',
+    'nurture',
+  ];
+  readonly interactionChannels: SalesInteractionChannel[] = [
+    'phone',
+    'email',
+    'sms',
+    'video',
+    'in_person',
+    'referral',
+    'manual',
+  ];
+  readonly interactionOutcomes: SalesInteractionOutcome[] = [
+    'no_answer',
+    'left_voicemail',
+    'connected',
+    'not_interested',
+    'gatekeeper',
+    'call_back',
+    'meeting_booked',
+    'qualified',
+    'unqualified',
+    'email_sent',
+    'email_replied',
+    'demo_booked',
+    'proposal_sent',
+    'won',
+    'lost',
+  ];
+  readonly interactionSentiments: SalesInteractionSentiment[] = [
+    'unknown',
+    'cold',
+    'neutral',
+    'warm',
+    'hot',
+  ];
+
   constructor() {
     this.thinkerView.setFocusBackLabel('Back to leads');
     this.thinkerView.setExitHandler(() => this.activeSection.set('leads'));
@@ -152,8 +248,10 @@ export class ProtopipeProspectorComponent implements OnInit {
     try {
       if (this.shirePrimary) {
         const campaign = await this.store.createCampaign(input.category, input.location);
-        this.activeSection.set('campaigns');
+        this.activeSection.set('new-search');
         if (campaign) {
+          this.store.selectCampaign(campaign.id);
+          this.clearCandidateSelection();
           void this.store.runGoogleMapsSource(campaign);
         }
         return;
@@ -262,18 +360,62 @@ export class ProtopipeProspectorComponent implements OnInit {
     void this.store.saveProspects();
   }
 
+  selectSource(tab: ProspectorSourceTab): void {
+    if (tab.disabled) return;
+    this.activeSource.set(tab.id);
+  }
+
   runGoogleMaps(campaign: ProspectingCampaign): void {
     void this.store.runGoogleMapsSource(campaign);
   }
 
   stageCampaignCandidates(campaign: ProspectingCampaign): void {
-    this.store.addCampaignCandidatesAsProspects(campaign);
+    const selected = this.selectedCandidateKeys();
+    const candidates = campaign.candidates.filter((candidate) =>
+      selected.has(this.candidateKey(candidate)),
+    );
+    if (candidates.length === 0) return;
+    this.store.addCampaignCandidatesAsProspects(campaign, candidates);
+    this.clearCandidateSelection();
     this.activeSection.set('prospects');
   }
 
   selectCampaign(campaign: ProspectingCampaign): void {
     this.store.selectCampaign(campaign.id);
-    this.activeSection.set('campaigns');
+    this.clearCandidateSelection();
+    this.activeSection.set('new-search');
+  }
+
+  selectProspect(prospect: Prospect): void {
+    this.selectedProspectId.set(prospect.id);
+    this.activeSection.set('prospects');
+  }
+
+  toggleCandidate(candidate: ProspectingCandidateSummary): void {
+    const key = this.candidateKey(candidate);
+    this.selectedCandidateKeys.update((selected) => {
+      const next = new Set(selected);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  toggleAllCampaignCandidates(): void {
+    const candidates = this.activeCampaign()?.candidates ?? [];
+    if (this.allCampaignCandidatesSelected()) {
+      this.clearCandidateSelection();
+      return;
+    }
+    this.selectedCandidateKeys.set(new Set(candidates.map((candidate) => this.candidateKey(candidate))));
+  }
+
+  clearCandidateSelection(): void {
+    this.selectedCandidateKeys.set(new Set());
+  }
+
+  isCandidateSelected(candidate: ProspectingCandidateSummary): boolean {
+    return this.selectedCandidateKeys().has(this.candidateKey(candidate));
   }
 
   updateProspectStatus(prospect: Prospect, status: string): void {
@@ -290,6 +432,38 @@ export class ProtopipeProspectorComponent implements OnInit {
 
   updateProspectNotes(prospect: Prospect, notes: string): void {
     this.store.updateProspect(prospect.id, { notes });
+  }
+
+  async saveInteraction(prospect: Prospect): Promise<void> {
+    const tags = this.interactionReasonTags()
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+    const researchSummary = this.interactionResearch().trim();
+    const saved = await this.store.recordSalesInteraction({
+      prospectId: prospect.id,
+      phase: this.interactionPhase(),
+      channel: this.interactionChannel(),
+      outcome: this.interactionOutcome(),
+      sentiment: this.interactionSentiment(),
+      scriptBody: this.interactionScript(),
+      offerSummary: this.interactionOffer(),
+      researchBrief: {
+        summary: researchSummary || prospect.topSignal,
+        signals: [prospect.topSignal, researchSummary].filter((signal): signal is string => Boolean(signal)),
+        objections: [],
+        opportunities: prospect.websiteStatus === 'none' ? ['No website listed'] : [],
+      },
+      notes: this.interactionNotes(),
+      outcomeReasonTags: tags,
+      nextStep: this.interactionNextStep(),
+    });
+    if (saved) {
+      this.selectedProspectId.set(prospect.id);
+      this.interactionNotes.set('');
+      this.interactionNextStep.set('');
+      this.interactionReasonTags.set('');
+    }
   }
 
   promoteProspect(prospect: Prospect): void {
@@ -316,6 +490,10 @@ export class ProtopipeProspectorComponent implements OnInit {
     return p.charAt(0).toUpperCase() + p.slice(1);
   }
 
+  label(value: string | undefined): string {
+    return value ? value.replaceAll('_', ' ') : 'none';
+  }
+
   relativeTime = relativeTime;
 
   formatCost(usd: number | undefined): string {
@@ -336,5 +514,9 @@ export class ProtopipeProspectorComponent implements OnInit {
       .filter((b) => b.pts > 0)
       .map((b) => b.label)
       .join(' · ');
+  }
+
+  candidateKey(candidate: ProspectingCandidateSummary): string {
+    return `${candidate.source}:${candidate.sourceId}`;
   }
 }

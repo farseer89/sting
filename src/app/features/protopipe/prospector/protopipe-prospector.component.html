@@ -1,5 +1,23 @@
 <div class="pb-shell">
 
+  <nav class="pb-source-tabs" role="tablist" aria-label="Prospecting sources">
+    @for (tab of sourceTabs; track tab.id) {
+      <button
+        type="button"
+        role="tab"
+        class="pb-source-tab"
+        [class.is-active]="activeSource() === tab.id"
+        [class.is-disabled]="tab.disabled"
+        [attr.aria-selected]="activeSource() === tab.id"
+        [attr.aria-disabled]="tab.disabled ? 'true' : null"
+        (click)="selectSource(tab)"
+      >
+        <span>{{ tab.label }}</span>
+        <small>{{ tab.status }}</small>
+      </button>
+    }
+  </nav>
+
   <header class="pb-masthead">
     <div class="pb-masthead__left">
       <h1 class="pb-masthead__title">Prospector</h1>
@@ -51,20 +69,6 @@
         Search leads
       </button>
 
-      @if (shirePrimary) {
-        <button
-          type="button"
-          class="pb-binder-nav__item"
-          [class.is-active]="activeSection() === 'campaigns'"
-          (click)="activeSection.set('campaigns')"
-        >
-          Campaigns
-          @if (store.campaignCount() > 0) {
-            <span class="pb-nav-count">{{ store.campaignCount() }}</span>
-          }
-        </button>
-      }
-
       <button
         type="button"
         class="pb-binder-nav__item"
@@ -77,8 +81,38 @@
         }
       </button>
 
-      @if (!runsLoading() && runs().length > 0) {
-        <div class="pb-binder-nav__label pb-binder-nav__label--recent">Recent</div>
+      <div class="pb-binder-nav__divider"></div>
+      <div class="pb-binder-nav__label pb-binder-nav__label--recent">Past searches</div>
+
+      @if (shirePrimary) {
+        @if (store.campaigns().length > 0) {
+          @for (campaign of store.campaigns(); track campaign.id) {
+            <button
+              type="button"
+              class="pb-binder-nav__item pb-binder-nav__item--run"
+              [class.is-active]="(activeSection() === 'new-search' || activeSection() === 'campaigns') && store.selectedCampaignId() === campaign.id"
+              (click)="selectCampaign(campaign)"
+            >
+              <span class="pb-run-row">
+                <span class="pb-run-dot pb-run-dot--{{ campaign.status === 'running' ? 'running' : campaign.status === 'archived' ? 'pending' : 'complete' }}">
+                  @if (campaign.status === 'running') {
+                    <span class="pb-run-dot__pulse"></span>
+                  }
+                </span>
+                <span class="pb-run-body">
+                  <span class="pb-run-title">{{ campaign.category }}</span>
+                  <span class="pb-run-meta">{{ campaign.location }} · {{ campaign.candidates.length }} candidates</span>
+                  @if (campaign.updatedAt || campaign.createdAt) {
+                    <span class="pb-run-time">{{ relativeTime(campaign.updatedAt || campaign.createdAt) }}</span>
+                  }
+                </span>
+              </span>
+            </button>
+          }
+        } @else if (!store.loading()) {
+          <div class="pb-binder-nav__empty">No past searches yet.</div>
+        }
+      } @else if (!runsLoading() && runs().length > 0) {
 
         @for (run of runs(); track run.id) {
           <button
@@ -109,6 +143,8 @@
             </span>
           </button>
         }
+      } @else if (!runsLoading()) {
+        <div class="pb-binder-nav__empty">No past searches yet.</div>
       }
 
       @if (runsLoading()) {
@@ -134,24 +170,150 @@
     }
 
     @if (activeSection() === 'new-search') {
-      <div class="pb-panel">
-        <div class="pb-panel__head">
-          <span class="pb-panel-kicker">New search</span>
-          <h2 class="pb-panel-title">Who are you prospecting?</h2>
-          <p class="pb-panel-deck">
-            @if (shirePrimary) {
-              Enter a category and choose a Google-backed location. Shire will run Google Maps and attach candidates to the campaign.
-            } @else {
-              Enter a business category and location. The pipeline will search Google Places and score each lead by review gap, website presence, and ranking opportunity.
-            }
-          </p>
-        </div>
-        <div class="pb-panel__body">
+      <div class="pb-panel pb-panel--search-workbench">
+        <div class="pb-search-line" aria-label="Prospector search">
           <app-protopipe-prospector-avatar-form
-            [loading]="launching()"
+            [loading]="launching() || store.loading() || store.campaignSaving()"
             [error]="launchError()"
             (searchRequested)="onSearch($event)"
           />
+        </div>
+
+        <div class="pb-search-results">
+          @if (store.loading()) {
+            <div class="pb-search-results__empty">Loading campaigns...</div>
+          } @else {
+            @let campaign = activeCampaign();
+            @if (campaign) {
+              <article class="pb-campaign-card pb-campaign-card--inline">
+                <header class="pb-campaign-card__head">
+                  <div>
+                    <span class="pb-panel-kicker">Results</span>
+                    <h3>{{ campaign.name }}</h3>
+                    <p>{{ campaign.category }} · {{ campaign.location }}</p>
+                    <div class="pb-campaign-sources" aria-label="Configured sources">
+                      @for (source of campaign.sources; track source.source) {
+                        <span [class.is-disabled]="!source.enabled">
+                          {{ source.source === 'google_maps' ? 'Google Maps' : source.source === 'yelp' ? 'Yelp' : source.source.replace('_', ' ') }}
+                          @if (!source.enabled) { · next }
+                        </span>
+                      }
+                    </div>
+                  </div>
+                  <div class="pb-campaign-card__actions">
+                    <button
+                      type="button"
+                      class="pb-leads-btn pb-leads-btn--expand"
+                      [disabled]="store.sourceRunLoading()"
+                      (click)="runGoogleMaps(campaign)"
+                    >
+                      @if (store.sourceRunLoading()) { Running Google Maps... } @else { Run Google Maps }
+                    </button>
+                    <button
+                      type="button"
+                      class="pb-leads-btn"
+                      [disabled]="selectedCandidateCount() === 0"
+                      (click)="stageCampaignCandidates(campaign)"
+                    >
+                      Add selected to prospects
+                    </button>
+                  </div>
+                </header>
+
+                @if (selectedCandidateCount() > 0) {
+                  <div class="pb-leads-bar">
+                    <span class="pb-leads-bar__count">{{ selectedCandidateCount() }} selected</span>
+                    <button type="button" class="pb-leads-bar__action" (click)="stageCampaignCandidates(campaign)">Add to prospects</button>
+                    <button type="button" class="pb-leads-bar__action pb-leads-bar__action--muted" (click)="clearCandidateSelection()">Clear</button>
+                  </div>
+                }
+
+                @if (campaign.sourceRuns.length > 0) {
+                  <div class="pb-source-runs">
+                    @for (sourceRun of campaign.sourceRuns; track sourceRun.runId) {
+                      <span>{{ sourceRun.source }} · {{ sourceRun.status }} · {{ sourceRun.candidateCount }} candidates</span>
+                    }
+                  </div>
+                }
+
+                @if (campaign.candidates.length === 0) {
+                  <div class="pb-search-results__empty">
+                    @if (store.sourceRunLoading()) {
+                      Running Google Maps. Candidates will appear here.
+                    } @else {
+                      No candidates yet. Run Google Maps or start a new search.
+                    }
+                  </div>
+                } @else {
+                  <div class="pb-candidate-table-wrap">
+                    <table class="pb-candidate-table">
+                      <thead>
+                        <tr>
+                          <th class="pb-candidate-table__check">
+                            <input type="checkbox" class="pb-lt-check" [checked]="allCampaignCandidatesSelected()" (change)="toggleAllCampaignCandidates()" />
+                          </th>
+                          <th>Business</th>
+                          <th>Category</th>
+                          <th>Rating</th>
+                          <th>Phone</th>
+                          <th>Links</th>
+                          <th>Signal</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (candidate of campaign.candidates; track candidate.source + ':' + candidate.sourceId) {
+                          <tr [class.is-selected]="isCandidateSelected(candidate)" (click)="toggleCandidate(candidate)">
+                            <td class="pb-candidate-table__check" (click)="$event.stopPropagation()">
+                              <input type="checkbox" class="pb-lt-check" [checked]="isCandidateSelected(candidate)" (change)="toggleCandidate(candidate)" />
+                            </td>
+                            <td>
+                              <strong>{{ candidate.name }}</strong>
+                              @if (candidate.area) {
+                                <span>{{ candidate.area }}</span>
+                              }
+                            </td>
+                            <td>{{ candidate.category || campaign.category }}</td>
+                            <td>
+                              @if (candidate.rating !== undefined && candidate.rating !== null) {
+                                {{ candidate.rating.toFixed(1) }}★
+                                @if (candidate.reviewCount) { <span class="pb-candidate-dim">({{ candidate.reviewCount }})</span> }
+                              } @else {
+                                <span class="pb-candidate-dim">—</span>
+                              }
+                            </td>
+                            <td>
+                              @if (candidate.phone) { {{ candidate.phone }} } @else { <span class="pb-candidate-dim">—</span> }
+                            </td>
+                            <td class="pb-candidate-links" (click)="$event.stopPropagation()">
+                              @if (candidate.website) {
+                                <a [href]="candidate.website" target="_blank" rel="noopener noreferrer">Website</a>
+                              }
+                              @if (candidate.sourceUrl) {
+                                <a [href]="candidate.sourceUrl" target="_blank" rel="noopener noreferrer">Maps</a>
+                              }
+                            </td>
+                            <td>
+                              @if (candidate.topSignal) {
+                                <span class="pb-candidate-signal">{{ candidate.topSignal }}</span>
+                              } @else {
+                                <span class="pb-candidate-dim">—</span>
+                              }
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              </article>
+            } @else {
+              <div class="pb-search-results__empty pb-search-results__empty--hero">
+                <span class="pb-panel-kicker">Results</span>
+                <h3>Search results will fill this table</h3>
+                <p>Start with a business category and location. Google Maps candidates will appear here without leaving the search view.</p>
+              </div>
+            }
+          }
         </div>
       </div>
     }
@@ -171,28 +333,22 @@
         } @else if (store.campaigns().length === 0) {
           <div class="pb-prospects-empty">Start a search to create your first prospecting campaign.</div>
         } @else {
-          <div class="pb-campaign-layout">
-            <div class="pb-campaign-list">
-              @for (campaign of store.campaigns(); track campaign.id) {
-                <button
-                  type="button"
-                  class="pb-campaign-list__item"
-                  [class.is-active]="store.selectedCampaignId() === campaign.id"
-                  (click)="selectCampaign(campaign)"
-                >
-                  <span>{{ campaign.name }}</span>
-                  <small>{{ campaign.status }} · {{ campaign.candidates.length }} candidates</small>
-                </button>
-              }
-            </div>
-
-            @let campaign = store.selectedCampaign();
-            @if (campaign) {
+          @let campaign = store.selectedCampaign();
+          @if (campaign) {
+            <div class="pb-campaign-layout">
               <article class="pb-campaign-card">
                 <header class="pb-campaign-card__head">
                   <div>
                     <h3>{{ campaign.name }}</h3>
                     <p>{{ campaign.category }} · {{ campaign.location }}</p>
+                    <div class="pb-campaign-sources" aria-label="Configured sources">
+                      @for (source of campaign.sources; track source.source) {
+                        <span [class.is-disabled]="!source.enabled">
+                          {{ source.source === 'google_maps' ? 'Google Maps' : source.source === 'yelp' ? 'Yelp' : source.source.replace('_', ' ') }}
+                          @if (!source.enabled) { · next }
+                        </span>
+                      }
+                    </div>
                   </div>
                   <div class="pb-campaign-card__actions">
                     <button
@@ -206,13 +362,21 @@
                     <button
                       type="button"
                       class="pb-leads-btn"
-                      [disabled]="campaign.candidates.length === 0"
+                      [disabled]="selectedCandidateCount() === 0"
                       (click)="stageCampaignCandidates(campaign)"
                     >
-                      Save as prospects
+                      Add selected to prospects
                     </button>
                   </div>
                 </header>
+
+                @if (selectedCandidateCount() > 0) {
+                  <div class="pb-leads-bar">
+                    <span class="pb-leads-bar__count">{{ selectedCandidateCount() }} selected</span>
+                    <button type="button" class="pb-leads-bar__action" (click)="stageCampaignCandidates(campaign)">Add to prospects</button>
+                    <button type="button" class="pb-leads-bar__action pb-leads-bar__action--muted" (click)="clearCandidateSelection()">Clear</button>
+                  </div>
+                }
 
                 @if (campaign.sourceRuns.length > 0) {
                   <div class="pb-source-runs">
@@ -225,37 +389,69 @@
                 @if (campaign.candidates.length === 0) {
                   <div class="pb-prospects-empty">No candidates yet. Run Google Maps to fill this campaign.</div>
                 } @else {
-                  <div class="pb-candidate-list">
-                    @for (candidate of campaign.candidates; track candidate.source + ':' + candidate.sourceId) {
-                      <div class="pb-candidate-row">
-                        <div>
-                          <strong>{{ candidate.name }}</strong>
-                          <span>
-                            {{ candidate.category || campaign.category }}
-                            @if (candidate.area) { · {{ candidate.area }} }
-                          </span>
-                          @if (candidate.topSignal) {
-                            <small>{{ candidate.topSignal }}</small>
-                          }
-                        </div>
-                        <div class="pb-candidate-row__meta">
-                          @if (candidate.rating !== undefined && candidate.rating !== null) {
-                            <span>{{ candidate.rating.toFixed(1) }}★</span>
-                          }
-                          @if (candidate.website) {
-                            <a [href]="candidate.website" target="_blank" rel="noopener noreferrer">Website</a>
-                          }
-                          @if (candidate.sourceUrl) {
-                            <a [href]="candidate.sourceUrl" target="_blank" rel="noopener noreferrer">Maps</a>
-                          }
-                        </div>
-                      </div>
-                    }
+                  <div class="pb-candidate-table-wrap">
+                    <table class="pb-candidate-table">
+                      <thead>
+                        <tr>
+                          <th class="pb-candidate-table__check">
+                            <input type="checkbox" class="pb-lt-check" [checked]="allCampaignCandidatesSelected()" (change)="toggleAllCampaignCandidates()" />
+                          </th>
+                          <th>Business</th>
+                          <th>Category</th>
+                          <th>Rating</th>
+                          <th>Phone</th>
+                          <th>Links</th>
+                          <th>Signal</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (candidate of campaign.candidates; track candidate.source + ':' + candidate.sourceId) {
+                          <tr [class.is-selected]="isCandidateSelected(candidate)" (click)="toggleCandidate(candidate)">
+                            <td class="pb-candidate-table__check" (click)="$event.stopPropagation()">
+                              <input type="checkbox" class="pb-lt-check" [checked]="isCandidateSelected(candidate)" (change)="toggleCandidate(candidate)" />
+                            </td>
+                            <td>
+                              <strong>{{ candidate.name }}</strong>
+                              @if (candidate.area) {
+                                <span>{{ candidate.area }}</span>
+                              }
+                            </td>
+                            <td>{{ candidate.category || campaign.category }}</td>
+                            <td>
+                              @if (candidate.rating !== undefined && candidate.rating !== null) {
+                                {{ candidate.rating.toFixed(1) }}★
+                                @if (candidate.reviewCount) { <span class="pb-candidate-dim">({{ candidate.reviewCount }})</span> }
+                              } @else {
+                                <span class="pb-candidate-dim">—</span>
+                              }
+                            </td>
+                            <td>
+                              @if (candidate.phone) { {{ candidate.phone }} } @else { <span class="pb-candidate-dim">—</span> }
+                            </td>
+                            <td class="pb-candidate-links" (click)="$event.stopPropagation()">
+                              @if (candidate.website) {
+                                <a [href]="candidate.website" target="_blank" rel="noopener noreferrer">Website</a>
+                              }
+                              @if (candidate.sourceUrl) {
+                                <a [href]="candidate.sourceUrl" target="_blank" rel="noopener noreferrer">Maps</a>
+                              }
+                            </td>
+                            <td>
+                              @if (candidate.topSignal) {
+                                <span class="pb-candidate-signal">{{ candidate.topSignal }}</span>
+                              } @else {
+                                <span class="pb-candidate-dim">—</span>
+                              }
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
                   </div>
                 }
               </article>
-            }
-          </div>
+            </div>
+          }
         }
       </div>
     }
@@ -411,11 +607,42 @@
             Select leads from a completed search and save them as prospects.
           </div>
         } @else {
-          <div class="pb-prospect-grid">
-            @for (prospect of store.prospects(); track prospect.id) {
-              <article class="pb-prospect-card pb-prospect-card--{{ prospect.priority }}">
-                <div class="pb-prospect-card__head">
+          <div class="pb-call-station">
+            <div class="pb-call-queue">
+              <div class="pb-call-queue__head">
+                <span>Call queue</span>
+                <small>{{ store.prospectCount() }} prospects</small>
+              </div>
+              @for (prospect of store.prospects(); track prospect.id) {
+                <button
+                  type="button"
+                  class="pb-call-row pb-call-row--{{ prospect.priority }}"
+                  [class.is-active]="activeProspect()?.id === prospect.id"
+                  (click)="selectProspect(prospect)"
+                >
+                  <span class="pb-call-row__main">
+                    <strong>{{ prospect.businessName }}</strong>
+                    <small>
+                      {{ prospect.category || 'Local business' }}
+                      @if (prospect.market) { · {{ prospect.market }} }
+                    </small>
+                  </span>
+                  <span class="pb-call-row__meta">
+                    <span>{{ label(prospect.salesStage || prospect.status) }}</span>
+                    @if (prospect.lastSalesInteractionOutcome) {
+                      <span>{{ label(prospect.lastSalesInteractionOutcome) }}</span>
+                    }
+                  </span>
+                </button>
+              }
+            </div>
+
+            @let prospect = activeProspect();
+            @if (prospect) {
+              <aside class="pb-call-drawer">
+                <header class="pb-call-drawer__head">
                   <div>
+                    <span class="pb-panel-kicker">Call station</span>
                     <h3>{{ prospect.businessName }}</h3>
                     <p>
                       {{ prospect.category || 'Local business' }}
@@ -425,47 +652,9 @@
                   @if (prospect.score !== undefined && prospect.score !== null) {
                     <span class="pb-prospect-score">{{ prospect.score }}</span>
                   }
-                </div>
+                </header>
 
-                @if (prospect.topSignal) {
-                  <p class="pb-prospect-signal">{{ prospect.topSignal }}</p>
-                }
-
-                <div class="pb-prospect-fields">
-                  <label>
-                    Status
-                    <select [ngModel]="prospect.status" (ngModelChange)="updateProspectStatus(prospect, $event)">
-                      @for (status of prospectStatuses; track status) {
-                        <option [value]="status">{{ status.replace('_', ' ') }}</option>
-                      }
-                    </select>
-                  </label>
-                  <label>
-                    Priority
-                    <select [ngModel]="prospect.priority" (ngModelChange)="updateProspectPriority(prospect, $event)">
-                      @for (priority of prospectPriorities; track priority) {
-                        <option [value]="priority">{{ priority }}</option>
-                      }
-                    </select>
-                  </label>
-                  <label>
-                    Website
-                    <select [ngModel]="prospect.websiteStatus" (ngModelChange)="updateProspectWebsiteStatus(prospect, $event)">
-                      @for (status of websiteStatuses; track status) {
-                        <option [value]="status">{{ status }}</option>
-                      }
-                    </select>
-                  </label>
-                </div>
-
-                <textarea
-                  class="pb-prospect-notes"
-                  placeholder="Cold-call notes, objections, or next step..."
-                  [ngModel]="prospect.notes"
-                  (ngModelChange)="updateProspectNotes(prospect, $event)"
-                ></textarea>
-
-                <div class="pb-prospect-card__actions">
+                <div class="pb-call-drawer__quick">
                   @if (prospect.phone) {
                     <a [href]="'tel:' + prospect.phone" class="pb-prospect-link">{{ prospect.phone }}</a>
                   }
@@ -476,7 +665,114 @@
                     Promote to Build Book
                   </button>
                 </div>
-              </article>
+
+                @if (prospect.topSignal) {
+                  <p class="pb-prospect-signal">{{ prospect.topSignal }}</p>
+                }
+
+                <div class="pb-call-controls">
+                  <label>
+                    Phase
+                    <select [ngModel]="interactionPhase()" (ngModelChange)="interactionPhase.set($event)">
+                      @for (phase of interactionPhases; track phase) {
+                        <option [value]="phase">{{ label(phase) }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label>
+                    Channel
+                    <select [ngModel]="interactionChannel()" (ngModelChange)="interactionChannel.set($event)">
+                      @for (channel of interactionChannels; track channel) {
+                        <option [value]="channel">{{ label(channel) }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label>
+                    Outcome
+                    <select [ngModel]="interactionOutcome()" (ngModelChange)="interactionOutcome.set($event)">
+                      @for (outcome of interactionOutcomes; track outcome) {
+                        <option [value]="outcome">{{ label(outcome) }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label>
+                    Sentiment
+                    <select [ngModel]="interactionSentiment()" (ngModelChange)="interactionSentiment.set($event)">
+                      @for (sentiment of interactionSentiments; track sentiment) {
+                        <option [value]="sentiment">{{ label(sentiment) }}</option>
+                      }
+                    </select>
+                  </label>
+                </div>
+
+                <div class="pb-call-fields">
+                  <label>
+                    Script
+                    <textarea [ngModel]="interactionScript()" (ngModelChange)="interactionScript.set($event)"></textarea>
+                  </label>
+                  <label>
+                    Offer
+                    <textarea [ngModel]="interactionOffer()" (ngModelChange)="interactionOffer.set($event)"></textarea>
+                  </label>
+                  <label>
+                    Extended research
+                    <textarea
+                      placeholder="Low reviews, no website, broken site, ads gap, notable services..."
+                      [ngModel]="interactionResearch()"
+                      (ngModelChange)="interactionResearch.set($event)"
+                    ></textarea>
+                  </label>
+                  <label>
+                    Call notes
+                    <textarea
+                      placeholder="What happened, objection, buyer language, useful details..."
+                      [ngModel]="interactionNotes()"
+                      (ngModelChange)="interactionNotes.set($event)"
+                    ></textarea>
+                  </label>
+                  <label>
+                    Reason tags
+                    <input
+                      type="text"
+                      placeholder="no answer, gatekeeper, price objection"
+                      [ngModel]="interactionReasonTags()"
+                      (ngModelChange)="interactionReasonTags.set($event)"
+                    />
+                  </label>
+                  <label>
+                    Next step
+                    <input
+                      type="text"
+                      placeholder="Call back Tuesday, send demo, qualify owner..."
+                      [ngModel]="interactionNextStep()"
+                      (ngModelChange)="interactionNextStep.set($event)"
+                    />
+                  </label>
+                </div>
+
+                <div class="pb-call-actions">
+                  <button type="button" class="pb-save" [disabled]="store.saving()" (click)="saveInteraction(prospect)">
+                    @if (store.saving()) { Saving... } @else { Save interaction }
+                  </button>
+                </div>
+
+                <div class="pb-call-history">
+                  <h4>History</h4>
+                  @if (activeProspectInteractions().length === 0) {
+                    <p>No saved interactions yet.</p>
+                  } @else {
+                    @for (interaction of activeProspectInteractions(); track interaction.id) {
+                      <article>
+                        <strong>{{ label(interaction.outcome) }}</strong>
+                        <span>{{ label(interaction.phase) }} · {{ label(interaction.channel) }}</span>
+                        @if (interaction.notes) {
+                          <p>{{ interaction.notes }}</p>
+                        }
+                      </article>
+                    }
+                  }
+                </div>
+              </aside>
             }
           </div>
         }

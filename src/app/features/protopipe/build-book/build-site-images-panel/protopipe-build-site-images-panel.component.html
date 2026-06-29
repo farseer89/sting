@@ -1,19 +1,79 @@
 <section class="bsi">
-  <header class="bsi__head">
-    <div>
-      <div class="bsi__kicker">Site setup · Image library</div>
-      <h3>Site info &amp; images</h3>
-      <p>Set the hero copy and image direction once. Blocks will later choose from this same site image set.</p>
-    </div>
-    <label class="bsi__upload">
-      Upload image
-      <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" (change)="onSiteImageUpload($event)" />
-    </label>
-  </header>
-
   @if (studio.error(); as err) {
     <div class="bsi__error">{{ err }}</div>
   }
+
+  <section class="bsi-library">
+    <div class="bsi-library__head">
+      <div>
+        <h4>Image library</h4>
+        <p>Generated and uploaded images are stored on the site and stay available for future block edits.</p>
+      </div>
+      <span>{{ siteImageAssets().length }} images</span>
+    </div>
+
+    <div class="bsi-library__tools">
+      <label class="bsi-field bsi-field--prompt">
+        <span>Image prompt</span>
+        <input
+          type="text"
+          placeholder="Describe the full site photo set..."
+          [ngModel]="imgPrompt()"
+          (ngModelChange)="imgPrompt.set($event)"
+        />
+      </label>
+      <label class="bsi-field bsi-field--model">
+        <span>Model</span>
+        <select [ngModel]="imgModel()" (ngModelChange)="imgModel.set($event)">
+          @if (studio.loadingConfig()) {
+            <option value="">Loading...</option>
+          } @else {
+            @for (m of photoModelChoices(); track m.id) {
+              <option [value]="m.id">{{ m.label }}</option>
+            }
+          }
+        </select>
+      </label>
+      <div class="bsi-field bsi-field--count">
+        <span>Count</span>
+        <div class="bsi-stepper">
+          <button type="button" (click)="adjustNumImages(-1)" [disabled]="imgNumImages() <= 1">-</button>
+          <strong>{{ imgNumImages() }}</strong>
+          <button type="button" (click)="adjustNumImages(1)" [disabled]="imgNumImages() >= (photoKindMeta()?.maxVariants ?? 4)">+</button>
+        </div>
+      </div>
+      <button type="button" class="bsi__generate" [disabled]="!canGenerate()" (click)="generateSiteImages()">
+        {{ studio.generating() ? 'Generating...' : 'Generate images' }}
+      </button>
+      <label class="bsi__upload">
+        Upload image
+        <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" (change)="onSiteImageUpload($event)" />
+      </label>
+    </div>
+
+    @if (siteImageAssets().length) {
+      <div class="bsi-grid">
+        @for (asset of siteImageAssets(); track asset.id) {
+          <article class="bsi-image-card" [class.is-selected]="selectedImageUrl() === asset.url || previewImageUrl() === asset.url">
+            <button type="button" class="bsi-image-card__preview" (click)="previewImage(asset.url)" aria-label="Preview image">
+              <img [src]="asset.url" [alt]="asset.label || asset.originalFilename || 'Site image'" loading="lazy" />
+            </button>
+            <div class="bsi-image-card__meta">
+              <strong>{{ asset.label || asset.originalFilename || (asset.source === 'generated' ? 'Generated image' : 'Uploaded image') }}</strong>
+              <span>{{ asset.source === 'generated' ? 'AI generated' : 'Uploaded' }}</span>
+            </div>
+            <button type="button" class="bsi-image-card__use" [disabled]="!canUseHeroImage()" (click)="selectImage(asset.url)">
+              {{ canUseHeroImage() ? 'Use for hero' : 'Select template first' }}
+            </button>
+          </article>
+        }
+      </div>
+    } @else {
+      <div class="bsi-empty">
+        <p>No site images yet. Generate a set or upload customer photography to make it available for previews and future blocks.</p>
+      </div>
+    }
+  </section>
 
   <div class="bsi__workspace">
     <div class="bsi__forms">
@@ -45,47 +105,6 @@
           </label>
         </div>
       </section>
-
-      <section class="bsi-card">
-        <div class="bsi-card__head">
-          <span>Generate image set</span>
-          <small>{{ photoKindMeta()?.label || 'Site photos' }}</small>
-        </div>
-        <label class="bsi-field bsi-field--full">
-          <span>Image prompt</span>
-          <textarea
-            rows="3"
-            placeholder="Describe the full site photo set, not just one hero image..."
-            [ngModel]="imgPrompt()"
-            (ngModelChange)="imgPrompt.set($event)"
-          ></textarea>
-        </label>
-        <div class="bsi-gen-row">
-          <label class="bsi-field bsi-field--model">
-            <span>Model</span>
-            <select [ngModel]="imgModel()" (ngModelChange)="imgModel.set($event)">
-              @if (studio.loadingConfig()) {
-                <option value="">Loading...</option>
-              } @else {
-                @for (m of photoModelChoices(); track m.id) {
-                  <option [value]="m.id">{{ m.label }}</option>
-                }
-              }
-            </select>
-          </label>
-          <div class="bsi-field bsi-field--count">
-            <span>Count</span>
-            <div class="bsi-stepper">
-              <button type="button" (click)="adjustNumImages(-1)" [disabled]="imgNumImages() <= 1">-</button>
-              <strong>{{ imgNumImages() }}</strong>
-              <button type="button" (click)="adjustNumImages(1)" [disabled]="imgNumImages() >= (photoKindMeta()?.maxVariants ?? 4)">+</button>
-            </div>
-          </div>
-          <button type="button" class="bsi__generate" [disabled]="!canGenerate()" (click)="generateSiteImages()">
-            {{ studio.generating() ? 'Generating...' : 'Generate images' }}
-          </button>
-        </div>
-      </section>
     </div>
 
     <aside class="bsi-preview">
@@ -108,37 +127,4 @@
       }
     </aside>
   </div>
-
-  <section class="bsi-library">
-    <div class="bsi-library__head">
-      <div>
-        <h4>Image library</h4>
-        <p>Generated and uploaded images are stored on the site and stay available for future block edits.</p>
-      </div>
-      <span>{{ siteImageAssets().length }} images</span>
-    </div>
-
-    @if (siteImageAssets().length) {
-      <div class="bsi-grid">
-        @for (asset of siteImageAssets(); track asset.id) {
-          <article class="bsi-image-card" [class.is-selected]="selectedImageUrl() === asset.url || previewImageUrl() === asset.url">
-            <button type="button" class="bsi-image-card__preview" (click)="previewImage(asset.url)" aria-label="Preview image">
-              <img [src]="asset.url" [alt]="asset.label || asset.originalFilename || 'Site image'" loading="lazy" />
-            </button>
-            <div class="bsi-image-card__meta">
-              <strong>{{ asset.label || asset.originalFilename || (asset.source === 'generated' ? 'Generated image' : 'Uploaded image') }}</strong>
-              <span>{{ asset.source === 'generated' ? 'AI generated' : 'Uploaded' }}</span>
-            </div>
-            <button type="button" class="bsi-image-card__use" [disabled]="!canUseHeroImage()" (click)="selectImage(asset.url)">
-              {{ canUseHeroImage() ? 'Use for hero' : 'Select template first' }}
-            </button>
-          </article>
-        }
-      </div>
-    } @else {
-      <div class="bsi-empty">
-        <p>No site images yet. Generate a set or upload customer photography to make it available for previews and future blocks.</p>
-      </div>
-    }
-  </section>
 </section>

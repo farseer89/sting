@@ -24,8 +24,8 @@
         (onClick)="save()"
       />
       <p-button
-        label="Preview site"
-        icon="pi pi-external-link"
+        label="Preview panel"
+        icon="pi pi-eye"
         severity="secondary"
         size="small"
         [disabled]="!buildBook.hasDraft()"
@@ -64,72 +64,132 @@
     </div>
   } @else if (!buildBook.hasDraft()) {
     <div class="bk-start">
-      <div class="bk-start__head">
-        <div class="bk-stage-kicker">Start demo build</div>
-        <h2 class="bk-start__title">Choose how to start the homepage stack</h2>
-        <p class="bk-start__deck">Templates are the fast path for prospect demos. Blocks remain available when you want to compose section-by-section.</p>
-      </div>
-
-      <div class="bk-entry-switch" role="tablist" aria-label="Build start mode">
-        <button type="button" class="bk-entry-switch__item" [class.is-active]="entryMode() === 'template'" (click)="setEntryMode('template')">
-          Start with template
-        </button>
-        <button type="button" class="bk-entry-switch__item" [class.is-active]="entryMode() === 'blocks'" (click)="setEntryMode('blocks')">
-          Start from blocks
-        </button>
-      </div>
-
-      @if (entryMode() === 'template') {
-        <div class="bk-template-grid">
-          @for (template of starterTemplates; track template.id) {
-            <article class="bk-template-card">
-              <div class="bk-template-card__preview" [style.--template-accent]="template.accent">
-                <span></span><span></span><span></span>
-              </div>
-              <div class="bk-template-card__body">
-                <div class="bk-template-card__meta">{{ template.category }} · {{ template.theme }}</div>
-                <h3>{{ template.label }}</h3>
-                <p>{{ template.bestFor }}</p>
-                <div class="bk-template-card__stack">{{ template.stack }}</div>
-                <button type="button" class="bk-template-card__action" [disabled]="buildBook.initializing()" (click)="useStarterTemplate(template)">
-                  Use this template
-                </button>
-              </div>
-            </article>
-          }
-        </div>
-      } @else {
-        <div class="bk-block-start">
-          <div class="bk-block-start__sketch">
-            @for (slot of navSlots; track slot) {
-              <span>{{ sectionLabel(slot) }}</span>
+      <nav class="bk-book-nav" aria-label="Build book chapters">
+        @for (group of chapterGroups; track group) {
+          <div class="bk-book-nav__label">{{ group }}</div>
+          @for (item of chapters; track item.id) {
+            @if (item.group === group) {
+              <button
+                type="button"
+                class="bk-book-nav__item"
+                [class.is-active]="chapter() === item.id"
+                (click)="selectChapter(item.id)"
+              >
+                <span>{{ item.label }}</span>
+                @if (item.status) {
+                  <small>{{ item.status }}</small>
+                }
+              </button>
             }
-          </div>
-          <div class="bk-block-start__body">
-            <h3>Build section by section</h3>
-            <p>Create the starter homepage stack, then choose the hero, fold, services, proof, areas, and close blocks manually.</p>
-            <p-button
-              label="Create homepage stack"
-              icon="pi pi-plus"
-              [loading]="buildBook.initializing()"
-              (onClick)="initializeDraft()"
-            />
-          </div>
-        </div>
-      }
+          }
+        }
+      </nav>
 
-      <div class="bk-start__note">
-        Shire migration note: Build Book state saves to Shire. Live preview still uses the legacy pageDraft adapter until publish moves over.
+      <div class="bk-book-panel">
+        @if (chapter() === 'templates') {
+          <div class="bk-start__head">
+            <div class="bk-stage-kicker">Build book · Templates</div>
+            <h2 class="bk-start__title">Choose the SEO-first template direction</h2>
+            <p class="bk-start__deck">Start from a full visual standard, then tune blocks, CTAs, image tone, and SEO strategy. These baselines come from WRI, Sparky Electric, and Wilco Consulting.</p>
+          </div>
+
+          <div class="bk-entry-switch" role="tablist" aria-label="Build start mode">
+            <button type="button" class="bk-entry-switch__item" [class.is-active]="entryMode() === 'template'" (click)="setEntryMode('template')">
+              Start with template
+            </button>
+            <button type="button" class="bk-entry-switch__item" [class.is-active]="entryMode() === 'blocks'" (click)="setEntryMode('blocks')">
+              Start from blocks
+            </button>
+          </div>
+
+          @if (entryMode() === 'template') {
+            <div class="bk-template-grid">
+              @for (template of starterTemplates; track template.id) {
+                <article class="bk-template-card" [class.is-selected]="isTemplateSelected(template)">
+                  <div class="bk-template-card__preview" [style.--template-accent]="template.accent">
+                    <div class="bk-template-image">
+                      <img [src]="templatePreviewImage(template)" [alt]="template.label + ' template preview'" loading="lazy" />
+                    </div>
+                  </div>
+                  <div class="bk-template-card__body">
+                    <h3>{{ template.serviceOffered }}</h3>
+                    <p>{{ template.previewDescription }}</p>
+                    <div class="bk-template-card__actions">
+                      <button type="button" class="bk-template-card__preview-btn" (click)="openTemplatePreview(template)">
+                        Preview
+                      </button>
+                      <button type="button" class="bk-template-card__action" [class.is-selected]="isTemplateSelected(template)" [disabled]="buildBook.initializing()" (click)="useStarterTemplate(template)">
+                        {{ templateActionLabel(template) }}
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              }
+            </div>
+          } @else {
+            <div class="bk-block-start">
+              <div class="bk-block-start__sketch">
+                @for (slot of navSlots; track slot) {
+                  <span>{{ sectionLabel(slot) }}</span>
+                }
+              </div>
+              <div class="bk-block-start__body">
+                <h3>Build section by section</h3>
+                <p>Create the starter homepage stack, then choose the hero, fold, services, proof, areas, and close blocks manually.</p>
+                <p-button
+                  label="Create homepage stack"
+                  icon="pi pi-plus"
+                  [loading]="buildBook.initializing()"
+                  (onClick)="initializeDraft()"
+                />
+              </div>
+            </div>
+          }
+        } @else {
+          <div class="bk-book-placeholder">
+            <div class="bk-stage-kicker">Build book · {{ activeChapterMeta().label }}</div>
+            <h2>{{ activeChapterMeta().label }}</h2>
+            <p>This chapter is part of the demo package roadmap. Start with Templates, then Build Book will unlock image tone, pages, posts, review gate, and lead form as Shire-backed sections.</p>
+          </div>
+        }
+
+        <div class="bk-start__note">
+          Build Book is Shire-first. Legacy Astro pages are design references only; saved template and block choices persist to Shire.
+        </div>
       </div>
     </div>
   } @else {
 
     <div
       class="bk-binder"
+      [class.bk-binder--chapter]="chapter() !== 'homepage'"
       [class.bk-binder--preview-open]="previewOpen()"
       [style.--bk-preview-w.px]="previewWidth()"
     >
+      <nav class="bk-book-nav" aria-label="Build book chapters">
+        @for (group of chapterGroups; track group) {
+          <div class="bk-book-nav__label">{{ group }}</div>
+          @for (item of chapters; track item.id) {
+            @if (item.group === group) {
+              <button
+                type="button"
+                class="bk-book-nav__item"
+                [class.is-active]="chapter() === item.id"
+                (click)="selectChapter(item.id)"
+              >
+                <span>{{ item.label }}</span>
+                @if (item.status) {
+                  <small>{{ item.status }}</small>
+                } @else if (item.id === 'homepage' && configuredStackCount() > 0) {
+                  <span class="bk-book-nav__check">✓</span>
+                }
+              </button>
+            }
+          }
+        }
+      </nav>
 
+      @if (chapter() === 'homepage') {
       <nav class="bk-section-nav" aria-label="Site sections">
         <div class="bk-section-nav__label">Start mode</div>
         <div class="bk-nav-mode">
@@ -204,7 +264,7 @@
           <div class="bk-stage-summary">
             <span>{{ configuredStackCount() }} / {{ navSlots.length }} sections selected</span>
             <span>{{ contextSignal() }}</span>
-            <span>Publish and checkout come next</span>
+            <span>SEO visibility + conversion first</span>
           </div>
           @if (section() === 'hero') {
             <div class="bk-stage-actions">
@@ -244,7 +304,89 @@
               (click)="selectOption(section(), opt.id)"
             >
               <div [class]="section() === 'hero' ? 'bk-hero-card__preview' : 'bk-fold-card__preview'">
-                <div class="bk-layout-chip" [attr.data-layout]="opt.id">{{ opt.label }}</div>
+                @if (section() === 'hero') {
+                  <div class="bk-prev bkh" [class]="'bk-prev bkh bkh--' + opt.layout">
+                    @switch (opt.layout) {
+                      @case ('fullbleed') {
+                        <div class="bkh__scrim"></div>
+                        <div class="bkh__copy">
+                          <span class="bkh__eye"></span>
+                          <span class="bkh__h"></span>
+                          <span class="bkh__sub"></span>
+                          <span class="bkh__btns"><span></span><span></span></span>
+                        </div>
+                      }
+                      @case ('split') {
+                        <div class="bkh__photo"></div>
+                        <div class="bkh__copy bkh__copy--right">
+                          <span class="bkh__eye"></span>
+                          <span class="bkh__h bkh__h--short"></span>
+                          <span class="bkh__btns"><span></span></span>
+                        </div>
+                      }
+                      @case ('bento') {
+                        <div class="bkh__copy bkh__copy--left">
+                          <span class="bkh__h bkh__h--short"></span>
+                          <span class="bkh__sub"></span>
+                        </div>
+                        <div class="bkh__mosaic"><span></span><span></span><span></span><span></span></div>
+                      }
+                      @case ('dual-path') {
+                        <span class="bkh__h bkh__h--center"></span>
+                        <div class="bkh__paths">
+                          <span class="bkh__path bkh__path--urgent"></span>
+                          <span class="bkh__path"></span>
+                        </div>
+                      }
+                      @case ('metrics') {
+                        <div class="bkh__copy bkh__copy--left">
+                          <span class="bkh__h"></span>
+                          <span class="bkh__sub"></span>
+                        </div>
+                        <div class="bkh__stats"><span></span><span></span><span></span></div>
+                      }
+                      @case ('band') {
+                        <div class="bkh__top">
+                          <span class="bkh__h bkh__h--short"></span>
+                          <span class="bkh__btns"><span></span></span>
+                        </div>
+                        <div class="bkh__band"></div>
+                      }
+                    }
+                  </div>
+                } @else {
+                  <div class="bkf" [class]="'bkf bkf--' + opt.layout">
+                    @switch (opt.layout) {
+                      @case ('contract-bar') {
+                        <span></span><span></span><span></span><span></span><span></span>
+                      }
+                      @case ('capabilities') {
+                        <span><i></i><em></em></span><span><i></i><em></em></span><span><i></i><em></em></span>
+                      }
+                      @case ('featured') {
+                        <span class="bkf__photo"></span><span class="bkf__copy"><em></em><i></i></span>
+                      }
+                      @case ('stats') {
+                        <span><strong></strong><i></i></span><span><strong></strong><i></i></span><span><strong></strong><i></i></span>
+                      }
+                      @case ('grid') {
+                        <span></span><span></span><span></span><span></span>
+                      }
+                      @case ('list') {
+                        <span></span><span></span><span></span><span></span>
+                      }
+                      @case ('cards') {
+                        <span><i></i></span><span><i></i></span>
+                      }
+                      @case ('tabs') {
+                        <span class="bkf__tabrow"><i class="is-on"></i><i></i><i></i></span><span class="bkf__panel"></span>
+                      }
+                      @default {
+                        <span class="bkf__panel"></span>
+                      }
+                    }
+                  </div>
+                }
               </div>
               <div [class]="section() === 'hero' ? 'bk-hero-card__meta' : 'bk-fold-card__meta'">
                 @if (opt.tag) {
@@ -267,6 +409,64 @@
         </div>
 
       </div>
+      } @else {
+        <div class="bk-stage bk-stage--chapter">
+          <div class="bk-book-placeholder">
+            <div class="bk-stage-kicker">Build book · {{ activeChapterMeta().group }}</div>
+            <h2>{{ activeChapterMeta().label }}</h2>
+            <p>
+              @switch (chapter()) {
+                @case ('templates') {
+                  Choose another full visual standard below. Switching templates reapplies the recommended hero, fold, and services selections while keeping the book in the Shire save flow.
+                }
+                @case ('image-tone') {
+                  Choose AI-generated or uploaded image sets before template assignment, then preview the site tone across blocks.
+                }
+                @case ('landing-pages') {
+                  Landing pages will use the same template/block system with page-specific SEO and conversion goals.
+                }
+                @case ('blog-posts') {
+                  Blog posts will use article block templates generated from SEO strategy and editable by the operator.
+                }
+                @case ('review-gate') {
+                  The review gate will package Google-review capture into the demo flow.
+                }
+                @case ('lead-form') {
+                  The lead form chapter will configure owner-texting capture pages.
+                }
+                @default {
+                  The checklist will gather site, review gate, content posts, and lead form readiness before a sales meeting.
+                }
+              }
+            </p>
+          </div>
+          @if (chapter() === 'templates') {
+            <div class="bk-template-grid bk-template-grid--chapter">
+              @for (template of starterTemplates; track template.id) {
+                <article class="bk-template-card" [class.is-selected]="isTemplateSelected(template)">
+                  <div class="bk-template-card__preview" [style.--template-accent]="template.accent">
+                    <div class="bk-template-image">
+                      <img [src]="templatePreviewImage(template)" [alt]="template.label + ' template preview'" loading="lazy" />
+                    </div>
+                  </div>
+                  <div class="bk-template-card__body">
+                    <h3>{{ template.serviceOffered }}</h3>
+                    <p>{{ template.previewDescription }}</p>
+                    <div class="bk-template-card__actions">
+                      <button type="button" class="bk-template-card__preview-btn" (click)="openTemplatePreview(template)">
+                        Preview
+                      </button>
+                      <button type="button" class="bk-template-card__action" [class.is-selected]="isTemplateSelected(template)" [disabled]="buildBook.initializing()" (click)="useStarterTemplate(template)">
+                        {{ templateActionLabel(template) }}
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        </div>
+      }
 
       <div class="bk-preview-shell" [class.is-open]="previewOpen()" [style.width.px]="previewOpen() ? previewWidth() : 0">
         <aside class="bk-stack-rail" aria-label="Live preview">
@@ -293,7 +493,16 @@
           </header>
 
           <div class="bk-stack-rail__body bk-stack-rail__body--hero">
-            @if (section() === 'hero') {
+            @if (selectedTemplatePreviewUrl(); as previewUrl) {
+              <div class="bk-template-live-preview">
+                <iframe
+                  class="bk-template-live-preview__frame"
+                  [src]="previewUrl"
+                  [title]="(selectedTemplate()?.label || 'Selected template') + ' preview'"
+                  loading="lazy"
+                ></iframe>
+              </div>
+            } @else if (section() === 'hero') {
               @if (heroImageUrl(); as url) {
                 <app-protopipe-build-hero-preview
                   [imageUrl]="url"

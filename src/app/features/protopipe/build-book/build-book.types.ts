@@ -41,3 +41,78 @@ export interface BuildBookOption {
   /** Static thumbnail — fal-generated or lab site photography for card previews. */
   previewImage?: string;
 }
+
+export type BuildBookPageKind =
+  | 'homepage'
+  | 'landing-page'
+  | 'blog-post'
+  | 'review-gate'
+  | 'lead-form';
+
+export interface BuildBookTemplateBlockRef {
+  section: BuildBookSection;
+  blockId: string;
+}
+
+export interface BuildBookTemplateDefinition {
+  id: string;
+  label: string;
+  category: string;
+  serviceOffered: string;
+  bestFor: string;
+  stack: string;
+  theme: string;
+  accent: string;
+  seoPurpose: string;
+  conversionGoal: string;
+  visualTone: string;
+  previewUrl: string;
+  previewDescription: string;
+  previewKicker: string;
+  previewHeadline: string;
+  previewSubhead: string;
+  previewStats: string[];
+  previewSections: string[];
+  recommendedHeroId: string;
+  recommendedFoldId: string;
+  recommendedServicesId: string;
+  defaultHomepageBlocks: BuildBookTemplateBlockRef[];
+}
+
+export interface BuildBookBlockDefinition {
+  id: string;
+  section: BuildBookSection;
+  label: string;
+  description: string;
+  sourceTemplateId?: string;
+  componentId: string;
+  astroComponent?: string;
+  layout: BuildBookWireLayout;
+  editableFields: string[];
+  defaultProps: Record<string, unknown>;
+  seoRole: string;
+  conversionRole: string;
+  previewPath?: string;
+  previewImage?: string;
+  demo?: BuildBookDemoMeta;
+}
+
+export interface BuildBookBlockInstance {
+  id: string;
+  blockId: string;
+  section: BuildBookSection;
+  componentId: string;
+  label?: string;
+  order: number;
+  props: Record<string, unknown>;
+  notes?: string;
+  sourceTemplateId?: string;
+}
+
+export interface BuildBookPage {
+  id: string;
+  kind: BuildBookPageKind;
+  label: string;
+  slug?: string;
+  blocks: BuildBookBlockInstance[];
+}

@@ -4,7 +4,7 @@ import { ShireEndpoints } from '@hive/contracts';
 import { firstValueFrom } from 'rxjs';
 import { shireApiUrl } from '../shire/shire-http.util';
 import type { BuildBookProspectContext } from './build-book-context';
-import type { BuildBookSection } from './build-book.constants';
+import type { BuildBookBlockInstance, BuildBookPage, BuildBookPageKind, BuildBookSection } from './build-book.types';
 
 export type BuildBookEntryMode = 'template' | 'blocks';
 
@@ -15,6 +15,12 @@ export interface BuildBookSectionSelectionDto {
   notes?: string;
 }
 
+export type BuildBookBlockInstanceDto = BuildBookBlockInstance;
+
+export interface BuildBookPageDto extends BuildBookPage {
+  kind: BuildBookPageKind;
+}
+
 export interface BuildBookShireDto {
   id: string;
   prospectContext?: BuildBookProspectContext;
@@ -22,6 +28,7 @@ export interface BuildBookShireDto {
   selectedTemplateId?: string;
   homepageStack: BuildBookSection[];
   sectionSelections: BuildBookSectionSelectionDto[];
+  pages: BuildBookPageDto[];
   strategyNotes: string;
   publishDraftId?: string;
   demoUrl?: string;
@@ -39,6 +46,7 @@ export interface SaveBuildBookDto {
   selectedTemplateId?: string;
   homepageStack: BuildBookSection[];
   sectionSelections: BuildBookSectionSelectionDto[];
+  pages?: BuildBookPageDto[];
   strategyNotes: string;
   publishDraftId?: string;
   demoUrl?: string;

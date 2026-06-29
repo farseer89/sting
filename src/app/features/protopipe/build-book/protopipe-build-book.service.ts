@@ -1,9 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import type { SitePageDraft, SitePageSectionDraft } from '@hive/contracts';
 import { parseProtopipeApiError } from '../protopipe-http.util';
-import { ProtopipeApiService } from '../protopipe-api.service';
 import { ProtopipeStrategyService } from '../protopipe-strategy.service';
-import { isShirePrimary } from '../shire/shire-http.util';
 import type { BuildBookProspectContext } from './build-book-context';
 import {
   BUILD_BOOK_COMPONENT_DEFAULTS,
@@ -12,12 +10,19 @@ import {
 import {
   BUILD_BOOK_OPTIONS,
   BUILD_BOOK_SECTION_SLOTS,
+  BUILD_BOOK_SECTION_ORDER,
+  buildBookSectionLabel,
   findBuildBookOption,
   findBuildBookOptionByComponentId,
   findBuildBookOptionByLabLayout,
   type BuildBookSection,
 } from './build-book.constants';
-import type { BuildBookOption } from './build-book.types';
+import {
+  findBuildBookBlockDefinition,
+  findBuildBookBlockDefinitionForSection,
+} from './build-book-block.catalog';
+import { findBuildBookTemplate } from './build-book-template.catalog';
+import type { BuildBookBlockDefinition, BuildBookBlockInstance, BuildBookOption, BuildBookPage } from './build-book.types';
 import {
   ProtopipeBuildBookShireApiService,
   type BuildBookEntryMode,
@@ -97,6 +102,91 @@ function swapSectionComponent(
   }
 }
 
+function propsForBlock(block: BuildBookBlockDefinition): Record<string, unknown> {
+  const props = structuredClone(block.defaultProps);
+  if (block.demo) {
+    props['labUnit'] = block.demo.astroUnit;
+    props['labBrand'] = block.demo.brand;
+    props['labLayout'] = block.id;
+    props['labCatalog'] = block.demo.catalog;
+  }
+  return props;
+}
+
+function blockInstanceFromDefinition(
+  section: BuildBookSection,
+  block: BuildBookBlockDefinition,
+  order: number,
+  sourceTemplateId?: string,
+): BuildBookBlockInstance {
+  return {
+    id: `home-${section}`,
+    blockId: block.id,
+    section,
+    componentId: block.componentId,
+    label: block.label,
+    order,
+    props: propsForBlock(block),
+    sourceTemplateId: sourceTemplateId ?? block.sourceTemplateId,
+  };
+}
+
+function materializeHomepagePages(templateId: string | null | undefined): BuildBookPage[] {
+  const template = findBuildBookTemplate(templateId);
+  const refs =
+    template?.defaultHomepageBlocks ??
+    BUILD_BOOK_SECTION_ORDER.map((section) => ({
+      section,
+      blockId: BUILD_BOOK_OPTIONS[section][0]?.id,
+    })).filter((ref): ref is { section: BuildBookSection; blockId: string } => Boolean(ref.blockId));
+
+  const blocks = refs
+    .map((ref, order) => {
+      const block = findBuildBookBlockDefinitionForSection(ref.section, ref.blockId);
+      return block ? blockInstanceFromDefinition(ref.section, block, order, template?.id) : null;
+    })
+    .filter((block) => block != null);
+
+  return [
+    {
+      id: 'home',
+      kind: 'homepage',
+      label: 'Home',
+      slug: '/',
+      blocks,
+    },
+  ];
+}
+
+function draftFromBuildBookPages(templateId: string, pages: BuildBookPage[]): SitePageDraft {
+  const now = new Date().toISOString();
+  const homepage = pages.find((page) => page.kind === 'homepage') ?? pages[0];
+  return {
+    templateId,
+    theme: 'ocean',
+    pages: [
+      {
+        id: 'home',
+        label: homepage?.label ?? 'Home',
+        sections: (homepage?.blocks ?? [])
+          .slice()
+          .sort((a, b) => a.order - b.order)
+          .map((block): SitePageSectionDraft => {
+            const defaults = BUILD_BOOK_COMPONENT_DEFAULTS[block.componentId];
+            return {
+              id: BUILD_BOOK_SECTION_SLOTS[block.section],
+              label: block.label ?? buildBookSectionLabel(block.section),
+              componentId: block.componentId,
+              props: structuredClone(block.props ?? defaults?.defaultProps ?? {}),
+              editableFields: [...(defaults?.editableFields ?? [])],
+            };
+          }),
+      },
+    ],
+    updatedAt: now,
+  };
+}
+
 export function findDraftSectionForSlot(
   draft: SitePageDraft,
   slot: BuildBookSection,
@@ -112,7 +202,12 @@ export function findDraftSectionForSlot(
   return page.sections.find((s) => componentIds.has(s.componentId)) ?? null;
 }
 
-function buildStarterDraft(): SitePageDraft {
+function buildStarterDraft(
+  templateId = 'service-business-landing-v1',
+  pages?: BuildBookPage[],
+): SitePageDraft {
+  if (pages?.length) return draftFromBuildBookPages(templateId, pages);
+
   const now = new Date().toISOString();
   const mk = (id: string, label: string, componentId: string): SitePageSectionDraft => {
     const defaults = BUILD_BOOK_COMPONENT_DEFAULTS[componentId];
@@ -126,7 +221,7 @@ function buildStarterDraft(): SitePageDraft {
   };
 
   return {
-    templateId: 'service-business-landing-v1',
+    templateId,
     theme: 'ocean',
     pages: [
       {
@@ -148,7 +243,6 @@ function buildStarterDraft(): SitePageDraft {
 
 @Injectable({ providedIn: 'root' })
 export class ProtopipeBuildBookService {
-  private readonly api = inject(ProtopipeApiService);
   private readonly shireApi = inject(ProtopipeBuildBookShireApiService);
   private readonly strategy = inject(ProtopipeStrategyService);
 
@@ -163,6 +257,7 @@ export class ProtopipeBuildBookService {
   private readonly _prospectContext = signal<BuildBookProspectContext | null>(null);
   private readonly _entryMode = signal<BuildBookEntryMode>('template');
   private readonly _selectedTemplateId = signal<string | null>(null);
+  private readonly _pages = signal<BuildBookPage[]>([]);
   private readonly _strategyNotes = signal('');
 
   readonly loading = this._loading.asReadonly();
@@ -175,6 +270,7 @@ export class ProtopipeBuildBookService {
   readonly prospectContext = this._prospectContext.asReadonly();
   readonly entryMode = this._entryMode.asReadonly();
   readonly selectedTemplateId = this._selectedTemplateId.asReadonly();
+  readonly pages = this._pages.asReadonly();
   readonly strategyNotes = this._strategyNotes.asReadonly();
 
   readonly hasDraft = () => Boolean(this._draft());
@@ -186,24 +282,13 @@ export class ProtopipeBuildBookService {
     this._loading.set(true);
     this._error.set(null);
     try {
-      if (isShirePrimary()) {
-        await this.loadShireBook(siteId);
-      }
-      const res = await this.api.getLegacySitePage(siteId);
-      if (res.pageDraft) {
-        this._saved.set(structuredClone(res.pageDraft));
-        this._draft.set(structuredClone(res.pageDraft));
-        this._dirty.set(false);
-        this.syncSelectionsFromDraft(res.pageDraft);
-      } else {
-        this._saved.set(null);
-        this._draft.set(null);
-        this._selections.set({});
-      }
+      await this.loadShireBook(siteId);
+      this._dirty.set(false);
     } catch (err) {
       this._error.set(parseProtopipeApiError(err, 'Could not load build book'));
       this._saved.set(null);
       this._draft.set(null);
+      this._selections.set({});
     } finally {
       this._loading.set(false);
     }
@@ -213,19 +298,19 @@ export class ProtopipeBuildBookService {
     const siteId = this.strategy.siteId();
     if (!siteId) return false;
 
-    const draft = buildStarterDraft();
+    const templateId = this._selectedTemplateId();
+    const pages = materializeHomepagePages(templateId);
+    const draft = buildStarterDraft(templateId ?? undefined, pages);
 
     this._initializing.set(true);
     this._error.set(null);
     try {
-      const res = await this.api.updateLegacySitePage(siteId, { pageDraft: draft });
-      this._saved.set(structuredClone(res.pageDraft));
-      this._draft.set(structuredClone(res.pageDraft));
+      this._saved.set(structuredClone(draft));
+      this._draft.set(structuredClone(draft));
+      this._pages.set(structuredClone(pages));
+      this.syncSelectionsFromDraft(draft);
+      await this.saveShireBook(siteId, draft, pages);
       this._dirty.set(false);
-      this.syncSelectionsFromDraft(res.pageDraft);
-      if (isShirePrimary()) {
-        await this.saveShireBook(siteId, res.pageDraft);
-      }
       return true;
     } catch (err) {
       this._error.set(parseProtopipeApiError(err, 'Could not create homepage draft'));
@@ -249,6 +334,7 @@ export class ProtopipeBuildBookService {
     swapSectionComponent(target, option.componentId, defaults, option);
     draft.updatedAt = new Date().toISOString();
     this._draft.set(structuredClone(draft));
+    this._pages.set(this.pagesFromDraft(draft));
     this._selections.update((s) => ({ ...s, [section]: optionId }));
     this._dirty.set(true);
   }
@@ -299,13 +385,11 @@ export class ProtopipeBuildBookService {
     this._saving.set(true);
     this._error.set(null);
     try {
-      const res = await this.api.updateLegacySitePage(siteId, { pageDraft: draft });
-      this._saved.set(structuredClone(res.pageDraft));
-      this._draft.set(structuredClone(res.pageDraft));
-      this.syncSelectionsFromDraft(res.pageDraft);
-      if (isShirePrimary()) {
-        await this.saveShireBook(siteId, res.pageDraft);
-      }
+      const pages = this.pagesFromDraft(draft);
+      this._pages.set(structuredClone(pages));
+      await this.saveShireBook(siteId, draft, pages);
+      this._saved.set(structuredClone(draft));
+      this._draft.set(structuredClone(draft));
       this._dirty.set(false);
       return true;
     } catch (err) {
@@ -332,14 +416,29 @@ export class ProtopipeBuildBookService {
 
   private async loadShireBook(siteId: string): Promise<void> {
     const res = await this.shireApi.get(siteId);
-    if (!res.buildBook) return;
+    if (!res.buildBook) {
+      this._saved.set(null);
+      this._draft.set(null);
+      this._selections.set({});
+      this._prospectContext.set(null);
+      this._entryMode.set('template');
+      this._selectedTemplateId.set(null);
+      this._pages.set([]);
+      this._strategyNotes.set('');
+      return;
+    }
     this.applyShireBook(res.buildBook);
+    const draft = this.draftFromShireBook(res.buildBook);
+    this._saved.set(structuredClone(draft));
+    this._draft.set(structuredClone(draft));
+    this._pages.set(res.buildBook.pages?.length ? structuredClone(res.buildBook.pages) : this.pagesFromDraft(draft));
   }
 
   private applyShireBook(book: BuildBookShireDto): void {
     this._prospectContext.set(book.prospectContext ? { ...book.prospectContext } : null);
     this._entryMode.set(book.entryMode);
     this._selectedTemplateId.set(book.selectedTemplateId ?? null);
+    this._pages.set(book.pages?.length ? structuredClone(book.pages) : []);
     this._strategyNotes.set(book.strategyNotes ?? '');
     if (book.sectionSelections.length > 0) {
       this._selections.set(
@@ -347,17 +446,94 @@ export class ProtopipeBuildBookService {
           book.sectionSelections.map((selection) => [selection.section, selection.optionId]),
         ) as Partial<Record<BuildBookSection, string>>,
       );
+    } else if (book.pages?.length) {
+      this._selections.set(this.selectionsFromPages(book.pages));
+    } else {
+      this._selections.set({});
     }
   }
 
-  private async saveShireBook(siteId: string, draft: SitePageDraft): Promise<void> {
-    const res = await this.shireApi.save(siteId, this.buildShirePayload(draft));
+  private async saveShireBook(
+    siteId: string,
+    draft: SitePageDraft,
+    pages = this.pagesFromDraft(draft),
+  ): Promise<void> {
+    const res = await this.shireApi.save(siteId, this.buildShirePayload(draft, pages));
     if (res.buildBook) {
       this.applyShireBook(res.buildBook);
     }
   }
 
-  private buildShirePayload(draft: SitePageDraft): SaveBuildBookDto {
+  private draftFromShireBook(book: BuildBookShireDto): SitePageDraft {
+    if (book.pages?.length) {
+      const draft = buildStarterDraft(book.selectedTemplateId, book.pages);
+      draft.updatedAt = book.updatedAt ?? new Date().toISOString();
+      return draft;
+    }
+
+    const draft = buildStarterDraft(book.selectedTemplateId);
+    for (const selection of book.sectionSelections) {
+      const option = findBuildBookOption(selection.section, selection.optionId);
+      if (!option) continue;
+      const defaults = BUILD_BOOK_COMPONENT_DEFAULTS[option.componentId];
+      const target = findDraftSectionForSlot(draft, selection.section);
+      if (!defaults || !target) continue;
+      swapSectionComponent(target, option.componentId, defaults, option);
+    }
+    draft.updatedAt = book.updatedAt ?? new Date().toISOString();
+    return draft;
+  }
+
+  private pagesFromDraft(draft: SitePageDraft): BuildBookPage[] {
+    const existingHomepage = this._pages().find((page) => page.kind === 'homepage');
+    const selections = this._selections();
+    const blocks = BUILD_BOOK_SECTION_ORDER.map((section, order) => {
+      const draftSection = findDraftSectionForSlot(draft, section);
+      if (!draftSection) return null;
+
+      const labLayout = draftSection.props['labLayout'];
+      const option =
+        (selections[section] ? findBuildBookOption(section, selections[section]!) : undefined) ??
+        (typeof labLayout === 'string' ? findBuildBookOptionByLabLayout(section, labLayout) : undefined) ??
+        findBuildBookOptionByComponentId(section, draftSection.componentId);
+      if (!option) return null;
+
+      const existingBlock = existingHomepage?.blocks.find((block) => block.section === section);
+      const definition = findBuildBookBlockDefinition(option.id);
+      return {
+        id: existingBlock?.id ?? `home-${section}`,
+        blockId: option.id,
+        section,
+        componentId: draftSection.componentId,
+        label: draftSection.label || option.label,
+        order,
+        props: structuredClone(draftSection.props),
+        notes: existingBlock?.notes,
+        sourceTemplateId:
+          existingBlock?.sourceTemplateId ?? this._selectedTemplateId() ?? definition?.sourceTemplateId,
+      };
+    }).filter((block) => block != null);
+
+    return [
+      {
+        id: existingHomepage?.id ?? 'home',
+        kind: 'homepage',
+        label: existingHomepage?.label ?? 'Home',
+        slug: existingHomepage?.slug ?? '/',
+        blocks,
+      },
+    ];
+  }
+
+  private selectionsFromPages(pages: BuildBookPage[]): Partial<Record<BuildBookSection, string>> {
+    const homepage = pages.find((page) => page.kind === 'homepage') ?? pages[0];
+    if (!homepage) return {};
+    return Object.fromEntries(
+      homepage.blocks.map((block) => [block.section, block.blockId]),
+    ) as Partial<Record<BuildBookSection, string>>;
+  }
+
+  private buildShirePayload(draft: SitePageDraft, pages: BuildBookPage[]): SaveBuildBookDto {
     const sections = Object.keys(BUILD_BOOK_SECTION_SLOTS) as BuildBookSection[];
     const homepageStack = sections.filter((section) => Boolean(findDraftSectionForSlot(draft, section)));
     const selections = this._selections();
@@ -378,6 +554,7 @@ export class ProtopipeBuildBookService {
           };
         })
         .filter((selection) => selection != null),
+      pages,
       strategyNotes: this._strategyNotes(),
     };
   }

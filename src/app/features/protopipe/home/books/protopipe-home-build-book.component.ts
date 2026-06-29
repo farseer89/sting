@@ -9,12 +9,11 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { DomSanitizer, type SafeResourceUrl } from '@angular/platform-browser';
 import { Button } from 'primeng/button';
 import { Message } from 'primeng/message';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { ProtopipeBuildBookService, findDraftSectionForSlot } from '../../build-book/protopipe-build-book.service';
-import { ProtopipeSiteBuilderService } from '../../site-builder/protopipe-site-builder.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import {
   BUILD_BOOK_OPTIONS,
@@ -32,7 +31,7 @@ import {
   filterDemoOptions,
   isDemoSection as isBuildBookDemoSection,
 } from '../../build-book/build-book-demo.catalog';
-import type { BuildBookDemoBrand } from '../../build-book/build-book.types';
+import type { BuildBookDemoBrand, BuildBookTemplateDefinition } from '../../build-book/build-book.types';
 import { ProtopipeBuildHeroPreviewComponent } from '../../build-book/build-hero-preview/protopipe-build-hero-preview.component';
 import { ProtopipeBuildImageStudioDialogComponent } from '../../build-book/build-image-studio/protopipe-build-image-studio-dialog.component';
 import {
@@ -40,6 +39,7 @@ import {
   type BuildHeroPreviewCopy,
 } from '../../build-book/build-hero-preview.types';
 import type { BuildBookProspectContext } from '../../build-book/build-book-context';
+import { BUILD_BOOK_TEMPLATE_DEFINITIONS } from '../../build-book/build-book-template.catalog';
 
 const SECTION_DECK: Record<BuildBookSection, string> = {
   hero: 'Pick a hero layout, then open Hero images & copy to generate photos and set headline text — same live preview as pitch prep.',
@@ -51,55 +51,22 @@ const SECTION_DECK: Record<BuildBookSection, string> = {
 };
 
 type BuildBookEntryMode = 'template' | 'blocks';
+type BuildBookChapter =
+  | 'templates'
+  | 'image-tone'
+  | 'homepage'
+  | 'landing-pages'
+  | 'blog-posts'
+  | 'review-gate'
+  | 'lead-form'
+  | 'checklist';
 
-interface BuildBookStarterTemplate {
-  id: string;
+interface BuildBookChapterItem {
+  id: BuildBookChapter;
   label: string;
-  category: string;
-  bestFor: string;
-  stack: string;
-  theme: string;
-  accent: string;
+  group: string;
+  status?: string;
 }
-
-const STARTER_TEMPLATES: BuildBookStarterTemplate[] = [
-  {
-    id: 'service-business-landing-v1',
-    label: 'Local Service Landing',
-    category: 'Service business',
-    bestFor: 'No-site or weak-site local businesses that need a fast conversion page.',
-    stack: 'Hero, proof, services, FAQ, lead capture',
-    theme: 'Ocean',
-    accent: '#0d9488',
-  },
-  {
-    id: 'construction-trades-v1',
-    label: 'Trades Authority',
-    category: 'Construction & trades',
-    bestFor: 'Contractors and trades with proof, service areas, and urgent quote intent.',
-    stack: 'Full-bleed hero, stats, services, project proof',
-    theme: 'Construction bold',
-    accent: '#d97706',
-  },
-  {
-    id: 'artist-landing-v1',
-    label: 'Creative / Artist',
-    category: 'Creative service',
-    bestFor: 'Visual businesses where portfolio, story, and inquiry flow sell the work.',
-    stack: 'Editorial hero, gallery, story, testimonials',
-    theme: 'Classic gold',
-    accent: '#b45309',
-  },
-  {
-    id: 'starter-minimal-v1',
-    label: 'Minimal Starter',
-    category: 'Quick start',
-    bestFor: 'Prospects that need a clean first web presence before full strategy.',
-    stack: 'Hero, benefits, FAQ, close',
-    theme: 'Ink cream',
-    accent: '#52525b',
-  },
-];
 
 @Component({
   selector: 'app-protopipe-home-build-book',
@@ -122,10 +89,10 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
 
   readonly buildBook = inject(ProtopipeBuildBookService);
   readonly strategy = inject(ProtopipeStrategyService);
-  readonly siteBuilder = inject(ProtopipeSiteBuilderService);
-  private readonly router = inject(Router);
+  private readonly sanitizer = inject(DomSanitizer);
 
   readonly section = signal<BuildBookSection>('hero');
+  readonly chapter = signal<BuildBookChapter>('templates');
   readonly entryMode = signal<BuildBookEntryMode>('template');
   readonly demoBrand = signal<BuildBookDemoBrand>('sparky');
   readonly previewOpen = signal(false);
@@ -145,6 +112,19 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
     'close',
   ];
 
+  readonly chapters: BuildBookChapterItem[] = [
+    { id: 'templates', label: 'Templates', group: 'Design' },
+    { id: 'image-tone', label: 'Image tone', group: 'Design', status: 'next' },
+    { id: 'homepage', label: 'Homepage', group: 'Build' },
+    { id: 'landing-pages', label: 'Landing pages', group: 'Build', status: 'planned' },
+    { id: 'blog-posts', label: 'Blog posts', group: 'Demo package', status: 'planned' },
+    { id: 'review-gate', label: 'Review gate', group: 'Demo package', status: 'planned' },
+    { id: 'lead-form', label: 'Lead form', group: 'Demo package', status: 'planned' },
+    { id: 'checklist', label: 'Demo checklist', group: 'Launch', status: 'planned' },
+  ];
+
+  readonly chapterGroups = [...new Set(this.chapters.map((chapter) => chapter.group))];
+
   readonly heroLayoutId = computed(() => this.selectedId('hero') ?? 'sp-callout');
 
   readonly heroPreviewMeta = computed(
@@ -159,7 +139,7 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
     this.navSlots.filter((slot) => Boolean(this.selectedId(slot))).length,
   );
 
-  readonly starterTemplates = STARTER_TEMPLATES;
+  readonly starterTemplates = BUILD_BOOK_TEMPLATE_DEFINITIONS;
 
   readonly activeProspectContext = computed(
     () => this.prospectContext() ?? this.buildBook.prospectContext(),
@@ -185,13 +165,25 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
     return prospect.topSignal ?? this.websiteStatusLabel(prospect.websiteStatus);
   });
 
+  readonly activeChapterMeta = computed(() =>
+    this.chapters.find((chapter) => chapter.id === this.chapter()) ?? this.chapters[0],
+  );
+
+  readonly selectedTemplateId = computed(() => this.buildBook.selectedTemplateId());
+  readonly selectedTemplate = computed(() =>
+    this.starterTemplates.find((template) => template.id === this.selectedTemplateId()) ?? null,
+  );
+  readonly selectedTemplatePreviewUrl = computed<SafeResourceUrl | null>(() => {
+    const url = this.selectedTemplate()?.previewUrl;
+    return url ? this.sanitizer.bypassSecurityTrustResourceUrl(url) : null;
+  });
+
   ngOnInit(): void {
     void this.init();
   }
 
   private async init(): Promise<void> {
     await this.strategy.ensureLoaded();
-    await this.siteBuilder.ensureLoaded();
     await this.buildBook.load();
     this.entryMode.set(this.buildBook.entryMode());
     const prospect = this.prospectContext();
@@ -237,6 +229,7 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
   }
 
   selectSection(id: BuildBookSection): void {
+    this.chapter.set('homepage');
     this.section.set(id);
     if (isBuildBookDemoSection(id)) {
       const brands = brandsForDemoSection(id);
@@ -332,6 +325,15 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
     this.demoBrand.set(brand);
   }
 
+  selectChapter(chapter: BuildBookChapter): void {
+    this.chapter.set(chapter);
+    if (chapter === 'homepage' && this.section() === 'hero') {
+      this.openPreview();
+    } else {
+      this.closePreview();
+    }
+  }
+
   async selectOption(section: BuildBookSection, optionId: string): Promise<void> {
     if (this.selectedId(section) === optionId) return;
     this.buildBook.selectOption(section, optionId);
@@ -341,7 +343,6 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
       const opt = findBuildBookOption('hero', optionId);
       if (opt?.demo?.brand) this.demoBrand.set(opt.demo.brand);
     }
-    await this.save();
     if (section === 'hero') this.openPreview();
   }
 
@@ -399,32 +400,69 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
 
   async initializeDraft(): Promise<void> {
     const ok = await this.buildBook.initializeStarterDraft();
-    if (ok) await this.save();
-  }
-
-  async useStarterTemplate(template: BuildBookStarterTemplate): Promise<void> {
-    this.setEntryMode('template');
-    this.buildBook.setSelectedTemplateId(template.id);
-    await this.initializeDraft();
-    if (template.id === 'construction-trades-v1') {
-      await this.selectOption('hero', 'sp-callout');
-    } else if (template.id === 'artist-landing-v1') {
-      await this.selectOption('hero', 'co-split');
-    } else if (template.id === 'starter-minimal-v1') {
-      await this.selectOption('hero', 'sp-teal');
+    if (ok) {
+      this.chapter.set('homepage');
+      await this.save();
     }
   }
 
-  openVisualEditor(): void {
-    const siteId = this.strategy.siteId();
-    if (!siteId) return;
-    void this.router.navigate(['/protopipe/site-builder/sites', siteId, 'visual']);
+  async useStarterTemplate(template: BuildBookTemplateDefinition): Promise<void> {
+    this.setEntryMode('template');
+    this.buildBook.setSelectedTemplateId(template.id);
+    await this.initializeDraft();
+    await this.selectOption('hero', template.recommendedHeroId);
+    await this.selectOption('fold', template.recommendedFoldId);
+    await this.selectOption('services', template.recommendedServicesId);
+    this.chapter.set('homepage');
+    this.openPreview();
+    await this.save();
+  }
+
+  isTemplateSelected(template: BuildBookTemplateDefinition): boolean {
+    return this.selectedTemplateId() === template.id;
+  }
+
+  templateActionLabel(template: BuildBookTemplateDefinition): string {
+    if (this.buildBook.initializing()) return 'Applying...';
+    return this.isTemplateSelected(template) ? 'Selected' : 'Select template';
+  }
+
+  templatePreviewImage(template: BuildBookTemplateDefinition): string {
+    const ink = template.id.includes('wilco') ? '#18181b' : template.accent;
+    const bg = template.id.includes('sparky')
+      ? '#fff7ed'
+      : template.id.includes('wri')
+        ? '#ecfeff'
+        : '#f4f4f5';
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
+        <rect width="640" height="360" fill="${bg}"/>
+        <rect x="38" y="34" width="564" height="292" rx="24" fill="#fff" stroke="#e4e4e7"/>
+        <rect x="70" y="68" width="108" height="14" rx="7" fill="${ink}"/>
+        <rect x="406" y="69" width="44" height="8" rx="4" fill="#d4d4d8"/>
+        <rect x="466" y="69" width="44" height="8" rx="4" fill="#d4d4d8"/>
+        <rect x="526" y="66" width="44" height="14" rx="7" fill="${ink}" opacity=".9"/>
+        <rect x="70" y="118" width="250" height="26" rx="13" fill="${ink}" opacity=".18"/>
+        <rect x="70" y="158" width="310" height="20" rx="10" fill="#18181b"/>
+        <rect x="70" y="190" width="238" height="12" rx="6" fill="#a1a1aa"/>
+        <rect x="70" y="214" width="202" height="12" rx="6" fill="#d4d4d8"/>
+        <rect x="70" y="252" width="112" height="28" rx="14" fill="${ink}"/>
+        <rect x="398" y="116" width="146" height="142" rx="22" fill="${ink}" opacity=".9"/>
+        <circle cx="512" cy="142" r="44" fill="#fff" opacity=".2"/>
+        <rect x="398" y="276" width="48" height="10" rx="5" fill="#d4d4d8"/>
+        <rect x="460" y="276" width="48" height="10" rx="5" fill="#d4d4d8"/>
+        <rect x="522" y="276" width="48" height="10" rx="5" fill="#d4d4d8"/>
+      </svg>
+    `;
+    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  }
+
+  openTemplatePreview(template: BuildBookTemplateDefinition): void {
+    window.open(template.previewUrl, '_blank', 'noopener,noreferrer');
   }
 
   openPreviewInNewTab(): void {
-    const siteId = this.strategy.siteId();
-    if (!siteId) return;
-    window.open(`/protopipe/site-builder/sites/${siteId}/visual`, '_blank', 'noopener');
+    this.openPreview();
   }
 
   themeLabel(): string {

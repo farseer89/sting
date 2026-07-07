@@ -19,7 +19,7 @@ export type BuildBookWireLayout =
   | 'map'
   | 'close-form';
 
-export type BuildBookDemoBrand = 'sparky' | 'wri' | 'consult';
+export type BuildBookDemoBrand = 'sparky' | 'wri' | 'consult' | 'veil';
 export type BuildBookDemoCatalog = 'heroes' | 'fold';
 
 export interface BuildBookDemoMeta {

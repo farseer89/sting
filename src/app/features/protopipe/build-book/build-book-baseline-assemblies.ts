@@ -1,6 +1,7 @@
 import { WRI_BASELINE_BLOCK_DEFINITIONS } from './build-book-baseline-block.catalog';
 import { SPARKY_BASELINE_BLOCK_DEFINITIONS } from './build-book-sparky-baseline-block.catalog';
 import { WILCO_BASELINE_BLOCK_DEFINITIONS } from './build-book-wilco-baseline-block.catalog';
+import { VEIL_BASELINE_BLOCK_DEFINITIONS } from './build-book-veil-baseline-block.catalog';
 import type { BuildBookBlockDefinition, BuildBookBlockInstance, BuildBookPage } from './build-book.types';
 
 function instanceFromBlock(block: BuildBookBlockDefinition, order: number): BuildBookBlockInstance {
@@ -58,9 +59,21 @@ const WILCO_STACK_BLOCK_IDS = [
   'wilco-baseline-call-cta',
 ] as const;
 
+const VEIL_STACK_BLOCK_IDS = [
+  'veil-baseline-hero-easel-witness',
+  'veil-baseline-fold-process',
+  'veil-baseline-fold-portfolio',
+  'veil-baseline-fold-packages',
+  'veil-baseline-fold-reviews',
+  'veil-baseline-fold-availability',
+  'veil-baseline-fold-faq',
+  'veil-baseline-fold-inquire',
+] as const;
+
 const WRI_BLOCKS_BY_ID = new Map(WRI_BASELINE_BLOCK_DEFINITIONS.map((block) => [block.id, block]));
 const SPARKY_BLOCKS_BY_ID = new Map(SPARKY_BASELINE_BLOCK_DEFINITIONS.map((block) => [block.id, block]));
 const WILCO_BLOCKS_BY_ID = new Map(WILCO_BASELINE_BLOCK_DEFINITIONS.map((block) => [block.id, block]));
+const VEIL_BLOCKS_BY_ID = new Map(VEIL_BASELINE_BLOCK_DEFINITIONS.map((block) => [block.id, block]));
 
 export const BUILD_BOOK_BASELINE_PAGE_ASSEMBLIES: Record<string, BuildBookPage[]> = {
   'wri-field-authority-v1': [
@@ -98,6 +111,19 @@ export const BUILD_BOOK_BASELINE_PAGE_ASSEMBLIES: Record<string, BuildBookPage[]
       blocks: WILCO_STACK_BLOCK_IDS.map((blockId, order) => {
         const block = WILCO_BLOCKS_BY_ID.get(blockId);
         if (!block) throw new Error(`Missing Wilco baseline block: ${blockId}`);
+        return instanceFromBlock(block, order);
+      }),
+    },
+  ],
+  'veil-live-painter-v1': [
+    {
+      id: 'home',
+      kind: 'homepage',
+      label: 'Home',
+      slug: '/',
+      blocks: VEIL_STACK_BLOCK_IDS.map((blockId, order) => {
+        const block = VEIL_BLOCKS_BY_ID.get(blockId);
+        if (!block) throw new Error(`Missing Veil baseline block: ${blockId}`);
         return instanceFromBlock(block, order);
       }),
     },

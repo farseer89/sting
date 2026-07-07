@@ -1,0 +1,421 @@
+/* Veil — build-book baseline (subset of lab-content-veil.css for canvas). */
+
+.veil-page {
+  --veil-bg: #faf7f2;
+  --veil-surface: #ffffff;
+  --veil-stone: #f0ebe4;
+  --veil-ink: #2c2420;
+  --veil-text: #3d3530;
+  --veil-muted: #7a6e68;
+  --veil-border: #e8dfd4;
+  --veil-blush-soft: #f5ebe8;
+  --veil-champagne: #c9a962;
+  --veil-champagne-soft: #f5eed9;
+  --veil-max: 76rem;
+  --veil-font: 'Source Sans 3', system-ui, sans-serif;
+  --veil-serif: 'Cormorant Garamond', Georgia, serif;
+  box-sizing: border-box;
+}
+
+.veil-page *,
+.veil-page *::before,
+.veil-page *::after {
+  box-sizing: border-box;
+}
+
+.veil-site {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--veil-bg);
+  color: var(--veil-text);
+  font-family: var(--veil-font);
+}
+
+.veil-wrap {
+  width: min(100% - 2.5rem, var(--veil-max));
+  margin-inline: auto;
+}
+
+.veil-header {
+  border-bottom: 1px solid var(--veil-border);
+  background: var(--veil-surface);
+}
+
+.veil-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.875rem 0;
+}
+
+.veil-logo {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: var(--veil-ink);
+  line-height: 1.1;
+}
+
+.veil-logo__mark {
+  font-family: var(--veil-serif);
+  font-size: 1.375rem;
+  font-weight: 600;
+}
+
+.veil-logo__sub {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--veil-champagne);
+}
+
+.veil-header__cta {
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: var(--veil-ink);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.veil-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.25rem;
+  border-radius: 999px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 2px solid transparent;
+}
+
+.veil-btn--primary {
+  background: var(--veil-ink);
+  color: #fff;
+}
+
+.veil-btn--secondary {
+  background: transparent;
+  border-color: rgb(255 255 255 / 0.5);
+  color: #fff;
+}
+
+.veil-btn--secondary-dark {
+  background: transparent;
+  border-color: var(--veil-ink);
+  color: var(--veil-ink);
+}
+
+.veil-section-kicker {
+  margin: 0 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--veil-champagne);
+}
+
+.veil-section-title {
+  margin: 0 0 0.75rem;
+  font-family: var(--veil-serif);
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 600;
+  color: var(--veil-ink);
+}
+
+.veil-section-lede {
+  margin: 0;
+  max-width: 42rem;
+  color: var(--veil-muted);
+}
+
+.veil-link {
+  font-weight: 600;
+  color: var(--veil-champagne);
+  text-decoration: none;
+}
+
+.veil-hero-eyebrow {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.veil-hero-title {
+  margin: 0 0 0.75rem;
+  font-family: var(--veil-serif);
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  font-weight: 600;
+  line-height: 1.12;
+}
+
+.veil-hero-sub {
+  margin: 0 0 1.25rem;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.veil-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.veil-hero-easel-witness {
+  position: relative;
+  min-height: clamp(24rem, 55vh, 36rem);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.veil-hero-easel-witness__photo {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+}
+
+.veil-hero-easel-witness__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.veil-hero-easel-witness__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgb(44 36 32 / 0.82) 0%, rgb(44 36 32 / 0.35) 45%, transparent 70%);
+}
+
+.veil-hero-easel-witness__panel {
+  position: relative;
+  z-index: 1;
+  width: min(100% - 2.5rem, 26rem);
+  margin-inline: clamp(1.25rem, 5vw, calc((100% - var(--veil-max)) / 2 + 1.25rem));
+  padding: 2rem;
+  color: #fff;
+}
+
+.veil-hero-canvas-frame {
+  padding: 2.5rem 0;
+  background: var(--veil-stone);
+}
+
+.veil-hero-canvas-frame__grid {
+  display: grid;
+  gap: 2rem;
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .veil-hero-canvas-frame__grid {
+    grid-template-columns: 1.1fr 0.9fr;
+  }
+}
+
+.veil-hero-canvas-frame__frame-wrap {
+  margin: 0;
+  padding: 1rem;
+  background: #fff;
+  box-shadow: inset 0 0 0 3px var(--veil-champagne), 0 16px 40px rgb(44 36 32 / 0.1);
+}
+
+.veil-hero-canvas-frame__frame-wrap img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+
+.veil-fold {
+  padding: 2.5rem 0;
+  border-bottom: 1px solid var(--veil-border);
+}
+
+.veil-fold--alt {
+  background: var(--veil-blush-soft);
+}
+
+.veil-fold-process__grid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .veil-fold-process__grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.veil-fold-process__step {
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background: var(--veil-surface);
+  border: 1px solid var(--veil-border);
+}
+
+.veil-fold-process__num {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--veil-champagne);
+}
+
+.veil-fold-portfolio__grid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .veil-fold-portfolio__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.veil-fold-portfolio__card img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+
+.veil-fold-portfolio__card figcaption {
+  padding: 0.75rem;
+}
+
+.veil-fold-packages__grid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .veil-fold-packages__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.veil-fold-packages__card {
+  padding: 1.25rem;
+  border-radius: 0.75rem;
+  background: var(--veil-surface);
+  border: 1px solid var(--veil-border);
+}
+
+.veil-fold-packages__range {
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+  color: var(--veil-champagne);
+}
+
+.veil-fold-reviews__grid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .veil-fold-reviews__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.veil-fold-reviews__card {
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background: var(--veil-surface);
+  border: 1px solid var(--veil-border);
+}
+
+.veil-fold-reviews__card blockquote {
+  margin: 0 0 0.5rem;
+  font-family: var(--veil-serif);
+  font-style: italic;
+}
+
+.veil-fold-availability {
+  text-align: center;
+  background: var(--veil-ink);
+  color: #fff;
+}
+
+.veil-fold-availability__season {
+  margin: 0 0 0.35rem;
+  font-family: var(--veil-serif);
+  font-size: 1.75rem;
+}
+
+.veil-fold-faq__item {
+  border-bottom: 1px solid var(--veil-border);
+  padding: 0.75rem 0;
+}
+
+.veil-fold-inquire {
+  background: var(--veil-champagne-soft);
+}
+
+.veil-fold-inquire__form {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 28rem;
+  margin-top: 1rem;
+}
+
+.veil-fold-inquire__field label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.veil-fold-inquire__field input,
+.veil-fold-inquire__field textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--veil-border);
+  border-radius: 0.5rem;
+  font: inherit;
+}
+
+.veil-footer {
+  margin-top: auto;
+  padding: 2rem 0;
+  border-top: 1px solid var(--veil-border);
+  background: var(--veil-surface);
+}
+
+.veil-footer__brand {
+  margin: 0 0 0.25rem;
+  font-family: var(--veil-serif);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--veil-ink);
+}
+
+.veil-fold-stack {
+  flex: 1;
+}
+
+.bb-veil-block .bb-veil-photo-edit {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 5;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.35);
+  background: rgb(44 36 32 / 0.72);
+  color: #fff;
+  font-size: 0.75rem;
+  cursor: pointer;
+}

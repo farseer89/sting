@@ -22,6 +22,7 @@ import {
   type BuildHeroPreviewCopy,
 } from '../build-hero-preview.types';
 import { BUILD_DEMO_HERO_VARIANTS } from '../build-book-demo.catalog';
+import type { BuildBookDemoBrand } from '../build-book.types';
 
 @Component({
   selector: 'app-protopipe-build-image-studio-dialog',
@@ -36,7 +37,7 @@ export class ProtopipeBuildImageStudioDialogComponent implements OnInit {
 
   readonly open = input(false);
   readonly heroLayout = input('sp-callout');
-  readonly heroBrand = input<'sparky' | 'wri' | 'consult'>('sparky');
+  readonly heroBrand = input<BuildBookDemoBrand>('sparky');
   readonly heroLabel = input('');
   readonly siteUrl = input('');
   readonly copy = input<BuildHeroPreviewCopy>(DEFAULT_HERO_PREVIEW_COPY);
@@ -46,7 +47,7 @@ export class ProtopipeBuildImageStudioDialogComponent implements OnInit {
   readonly copyChange = output<BuildHeroPreviewCopy>();
   readonly imageSelected = output<string>();
   readonly previewLayoutChange = output<string>();
-  readonly previewBrandChange = output<'sparky' | 'wri' | 'consult'>();
+  readonly previewBrandChange = output<BuildBookDemoBrand>();
 
   readonly imgPrompt = signal('');
   readonly imgModel = signal('');
@@ -157,7 +158,7 @@ export class ProtopipeBuildImageStudioDialogComponent implements OnInit {
     this.close();
   }
 
-  onPreviewBrandChange(brand: 'sparky' | 'wri' | 'consult'): void {
+  onPreviewBrandChange(brand: BuildBookDemoBrand): void {
     this.previewBrandChange.emit(brand);
     this.previewHeroIdx.set(0);
   }

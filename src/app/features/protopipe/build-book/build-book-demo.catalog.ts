@@ -6,6 +6,8 @@ export const BUILD_BOOK_CONSULT_DEMO_BASE = 'https://cs-consult-demo.pages.dev';
 
 const SPARKY_ASSETS = `${BUILD_BOOK_LAB_BASE}/sparky/site`;
 const WRI_GENERATED = `${BUILD_BOOK_LAB_BASE}/wri/generated`;
+const DWP_CDN = 'https://destinationweddingpainter.com';
+const VEIL_GENERATED = `${BUILD_BOOK_LAB_BASE}/lab/veil/generated`;
 
 /** Card thumbnails — same fal / lab photography as pitch build demo hero preview. */
 const HERO_PREVIEW_IMAGES: Record<string, string> = {
@@ -22,6 +24,18 @@ const HERO_PREVIEW_IMAGES: Record<string, string> = {
   'wri-coastal': `${WRI_GENERATED}/hero-life-coast.jpg`,
   'co-split': `${WRI_GENERATED}/hero-life-fields.jpg`,
   'co-fullbleed': `${WRI_GENERATED}/hero-life-valley.jpg`,
+  'veil-canvas-frame': `${DWP_CDN}/images/gallery/04.png`,
+  'veil-easel-witness': `${DWP_CDN}/images/hero-stash.jpg`,
+  'veil-salon-wall': `${DWP_CDN}/images/gallery/01.jpg`,
+  'veil-stationery-monogram': `${DWP_CDN}/images/gallery/02.jpg`,
+  'veil-process-ribbon': `${DWP_CDN}/images/gallery/05.jpg`,
+  'veil-over-shoulder': `${DWP_CDN}/images/gallery/05.jpg`,
+  'veil-brushstroke-split': `${DWP_CDN}/images/gallery/04.png`,
+  'veil-vow-inset': `${DWP_CDN}/images/gallery/01.jpg`,
+  'veil-heirloom-mantel': `${DWP_CDN}/images/hero.jpg`,
+  'veil-curtain-reveal': `${DWP_CDN}/images/hero-stash.jpg`,
+  'veil-quote-veil': `${DWP_CDN}/images/gallery/02.jpg`,
+  'veil-date-ribbon': `${DWP_CDN}/images/gallery/05.jpg`,
 };
 
 export const FOLD_PREVIEW_IMAGES: Record<string, string> = {
@@ -65,6 +79,18 @@ export const BUILD_DEMO_HERO_VARIANTS: BuildDemoHeroVariant[] = [
   { id: 'wri-coastal', label: 'Coastal Band', brand: 'wri', layout: 'wri-coastal', url: 'waterresourcesinternational.com' },
   { id: 'co-split', label: 'Split Layout', brand: 'consult', layout: 'co-split', url: 'wilcoconsulting.com' },
   { id: 'co-fullbleed', label: 'Fullbleed', brand: 'consult', layout: 'co-fullbleed', url: 'wilcoconsulting.com' },
+  { id: 'veil-canvas-frame', label: 'Canvas Frame', brand: 'veil', layout: 'veil-canvas-frame', url: 'destinationweddingpainter.com' },
+  { id: 'veil-easel-witness', label: 'Easel Witness', brand: 'veil', layout: 'veil-easel-witness', url: 'destinationweddingpainter.com' },
+  { id: 'veil-salon-wall', label: 'Salon Wall', brand: 'veil', layout: 'veil-salon-wall', url: 'destinationweddingpainter.com' },
+  { id: 'veil-stationery-monogram', label: 'Stationery Monogram', brand: 'veil', layout: 'veil-stationery-monogram', url: 'destinationweddingpainter.com' },
+  { id: 'veil-process-ribbon', label: 'Process Ribbon', brand: 'veil', layout: 'veil-process-ribbon', url: 'destinationweddingpainter.com' },
+  { id: 'veil-over-shoulder', label: 'Over Shoulder', brand: 'veil', layout: 'veil-over-shoulder', url: 'destinationweddingpainter.com' },
+  { id: 'veil-brushstroke-split', label: 'Brushstroke Split', brand: 'veil', layout: 'veil-brushstroke-split', url: 'destinationweddingpainter.com' },
+  { id: 'veil-vow-inset', label: 'Vow Inset', brand: 'veil', layout: 'veil-vow-inset', url: 'destinationweddingpainter.com' },
+  { id: 'veil-heirloom-mantel', label: 'Heirloom Mantel', brand: 'veil', layout: 'veil-heirloom-mantel', url: 'destinationweddingpainter.com' },
+  { id: 'veil-curtain-reveal', label: 'Curtain Reveal', brand: 'veil', layout: 'veil-curtain-reveal', url: 'destinationweddingpainter.com' },
+  { id: 'veil-quote-veil', label: 'Quote Veil', brand: 'veil', layout: 'veil-quote-veil', url: 'destinationweddingpainter.com' },
+  { id: 'veil-date-ribbon', label: 'Date Ribbon', brand: 'veil', layout: 'veil-date-ribbon', url: 'destinationweddingpainter.com' },
 ];
 
 const SPARKY_HERO_LAB: Record<string, { labId: string; astroUnit: string; componentId: string; layout: BuildBookWireLayout; desc: string }> = {
@@ -150,6 +176,93 @@ const WRI_HERO_LAB: Record<string, { labId: string; astroUnit: string; component
   },
 };
 
+const VEIL_HERO_LAB: Record<string, { labId: string; astroUnit: string; componentId: string; layout: BuildBookWireLayout; desc: string }> = {
+  'veil-canvas-frame': {
+    labId: 'canvas-frame',
+    astroUnit: 'components/veil/heroes/VeilHeroCanvasFrame.astro',
+    componentId: 'baseline-veil-hero-canvas-frame',
+    layout: 'split',
+    desc: 'Finished painting in gilt frame on gallery wall — copy beside the artifact.',
+  },
+  'veil-easel-witness': {
+    labId: 'easel-witness',
+    astroUnit: 'components/veil/heroes/VeilHeroEaselWitness.astro',
+    componentId: 'baseline-veil-hero-easel',
+    layout: 'fullbleed',
+    desc: 'Ceremony easel anchored right with copy on left scrim — default live painter hero.',
+  },
+  'veil-salon-wall': {
+    labId: 'salon-wall',
+    astroUnit: 'components/veil/heroes/VeilHeroSalonWall.astro',
+    componentId: 'baseline-veil-hero-salon',
+    layout: 'fullbleed',
+    desc: 'Six finished paintings in salon grid with dark scrim and centered headline.',
+  },
+  'veil-stationery-monogram': {
+    labId: 'stationery-monogram',
+    astroUnit: 'components/veil/heroes/VeilHeroStationeryMonogram.astro',
+    componentId: 'baseline-veil-hero-stationery',
+    layout: 'fullbleed',
+    desc: 'Invitation-style monogram hero with linen texture — typography-first.',
+  },
+  'veil-process-ribbon': {
+    labId: 'process-ribbon',
+    astroUnit: 'components/veil/heroes/VeilHeroProcessRibbon.astro',
+    componentId: 'baseline-veil-hero-process-ribbon',
+    layout: 'band',
+    desc: 'Four-step process ribbon above main hero photo.',
+  },
+  'veil-over-shoulder': {
+    labId: 'over-shoulder',
+    astroUnit: 'components/veil/heroes/VeilHeroOverShoulder.astro',
+    componentId: 'baseline-veil-hero-over-shoulder',
+    layout: 'fullbleed',
+    desc: 'Artist POV — immersive over-the-shoulder composition.',
+  },
+  'veil-brushstroke-split': {
+    labId: 'brushstroke-split',
+    astroUnit: 'components/veil/heroes/VeilHeroBrushstrokeSplit.astro',
+    componentId: 'baseline-veil-hero-brushstroke',
+    layout: 'split',
+    desc: 'Diagonal split — live moment vs finished painting.',
+  },
+  'veil-vow-inset': {
+    labId: 'vow-inset',
+    astroUnit: 'components/veil/heroes/VeilHeroVowInset.astro',
+    componentId: 'baseline-veil-hero-vow-inset',
+    layout: 'fullbleed',
+    desc: 'Ceremony wide shot with circular canvas preview inset.',
+  },
+  'veil-heirloom-mantel': {
+    labId: 'heirloom-mantel',
+    astroUnit: 'components/veil/heroes/VeilHeroHeirloomMantel.astro',
+    componentId: 'baseline-veil-hero-heirloom',
+    layout: 'split',
+    desc: 'Split layout — copy and painting on home mantel.',
+  },
+  'veil-curtain-reveal': {
+    labId: 'curtain-reveal',
+    astroUnit: 'components/veil/heroes/VeilHeroCurtainReveal.astro',
+    componentId: 'baseline-veil-hero-curtain',
+    layout: 'fullbleed',
+    desc: 'Theatre curtain partial reveal over emotional presentation.',
+  },
+  'veil-quote-veil': {
+    labId: 'quote-veil',
+    astroUnit: 'components/veil/heroes/VeilHeroQuoteVeil.astro',
+    componentId: 'baseline-veil-hero-quote',
+    layout: 'fullbleed',
+    desc: 'Paint texture background with couple testimonial as headline.',
+  },
+  'veil-date-ribbon': {
+    labId: 'date-ribbon',
+    astroUnit: 'components/veil/heroes/VeilHeroDateRibbon.astro',
+    componentId: 'baseline-veil-hero-date-ribbon',
+    layout: 'fullbleed',
+    desc: 'Cinematic reception with integrated availability ribbon.',
+  },
+};
+
 const CONSULT_HERO_LAB: Record<string, { labId: string; astroUnit: string; componentId: string; layout: BuildBookWireLayout; desc: string }> = {
   'co-split': {
     labId: 'split',
@@ -185,7 +298,9 @@ function mkHeroOption(v: BuildDemoHeroVariant, tag?: string): BuildBookDemoOptio
       ? SPARKY_HERO_LAB[v.id]
       : v.brand === 'wri'
         ? WRI_HERO_LAB[v.id]
-        : CONSULT_HERO_LAB[v.id];
+        : v.brand === 'veil'
+          ? VEIL_HERO_LAB[v.id]
+          : CONSULT_HERO_LAB[v.id];
 
   const demo: NonNullable<BuildBookOption['demo']> = {
     brand: v.brand,
@@ -358,15 +473,15 @@ export function isDemoSection(section: BuildBookSection): boolean {
 }
 
 export function demoBrandLabel(brand: BuildBookDemoBrand): string {
-  return { sparky: 'Sparky Electric', wri: 'WRI', consult: 'Wilco Consulting' }[brand];
+  return { sparky: 'Sparky Electric', wri: 'WRI', consult: 'Wilco Consulting', veil: 'Destination Wedding Painter' }[brand];
 }
 
 export function demoBrandDot(brand: BuildBookDemoBrand): string {
-  return { sparky: '#f59e0b', wri: '#0ea5e9', consult: '#64748b' }[brand];
+  return { sparky: '#f59e0b', wri: '#0ea5e9', consult: '#64748b', veil: '#c9a962' }[brand];
 }
 
 export function brandsForDemoSection(section: BuildBookSection): BuildBookDemoBrand[] {
-  if (section === 'hero') return ['sparky', 'wri', 'consult'];
+  if (section === 'hero') return ['sparky', 'wri', 'consult', 'veil'];
   if (section === 'fold') return ['sparky', 'wri'];
   return [];
 }

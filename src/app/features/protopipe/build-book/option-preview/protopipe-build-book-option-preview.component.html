@@ -1,0 +1,94 @@
+<div
+  #frame
+  class="bk-opt-preview"
+  [class.bk-opt-preview--hero]="section() === 'hero'"
+  [class.bk-opt-preview--fold]="section() === 'fold'"
+  [class.bk-opt-preview--generic]="section() !== 'hero' && section() !== 'fold'"
+  [class.is-selected]="selected()"
+>
+  @if (target(); as preview) {
+    <div
+      #viewport
+      class="bk-opt-preview__viewport"
+      [class.bk-opt-preview__viewport--fold]="section() === 'fold'"
+      [style.width.px]="viewportWidth()"
+      [style.transform]="viewportTransform()"
+    >
+      @switch (preview.kind) {
+        @case ('baseline') {
+          @if (preview.renderer === 'sparky' && preview.blockId) {
+            <div class="sparky-page sparky-page--site bk-opt-preview__shell">
+              <div class="sparky-site">
+                <app-protopipe-build-sparky-baseline-block
+                  [blockId]="preview.blockId"
+                  [props]="preview.props"
+                  [editable]="false"
+                />
+              </div>
+            </div>
+          } @else if (preview.renderer === 'wilco' && preview.blockId) {
+            <div class="page-landing page-consult bk-opt-preview__shell" data-theme="consult-minimal">
+              <app-protopipe-build-wilco-baseline-block
+                [blockId]="preview.blockId"
+                [props]="preview.props"
+                [editable]="false"
+              />
+            </div>
+          } @else if (preview.renderer === 'wri' && preview.blockId) {
+            <div class="wri-page wri-page--site bk-opt-preview__shell">
+              <div class="wri-site">
+                <app-protopipe-build-wri-baseline-block
+                  [blockId]="preview.blockId"
+                  [props]="preview.props"
+                  [editable]="false"
+                />
+              </div>
+            </div>
+          } @else if (preview.renderer === 'veil' && preview.blockId) {
+            <div class="veil-page bk-opt-preview__shell">
+              <div class="veil-site">
+                <app-protopipe-build-veil-baseline-block
+                  [blockId]="preview.blockId"
+                  [props]="preview.props"
+                  [editable]="false"
+                />
+              </div>
+            </div>
+          }
+        }
+        @case ('hero-lab') {
+          <app-protopipe-build-hero-preview
+            [imageUrl]="heroImageUrl()"
+            [layout]="heroLayoutId()"
+            [copy]="heroCopy()"
+            [editable]="false"
+          />
+        }
+        @case ('fold-lab') {
+          <app-protopipe-build-fold-block
+            [layout]="preview.foldWireLayout ?? 'stats'"
+            [layoutId]="preview.foldLayoutId ?? option().id"
+            [props]="preview.props"
+            [editable]="false"
+          />
+        }
+      }
+    </div>
+  } @else {
+    <div #viewport class="bk-opt-preview__viewport bk-opt-preview__viewport--generic">
+      <app-protopipe-build-fold-block
+        [layout]="option().layout"
+        [layoutId]="option().id"
+        [props]="{}"
+        [editable]="false"
+      />
+    </div>
+  }
+
+  @if (selected()) {
+    <span class="bk-opt-preview__badge" aria-hidden="true">
+      <svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      On site
+    </span>
+  }
+</div>

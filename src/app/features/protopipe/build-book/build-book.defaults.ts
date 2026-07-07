@@ -164,6 +164,25 @@ export const BUILD_BOOK_COMPONENT_DEFAULTS: Record<string, BuildBookComponentDef
     },
     editableFields: ['heading', 'subhead', 'submitLabel'],
   },
+  'quote-request-form': {
+    defaultProps: {
+      heading: 'Request your free quote',
+      subhead: 'Tell us about your property. We respond within one business day.',
+      submitLabel: 'Submit quote request',
+      serviceOptions: [
+        { id: 'mowing', label: 'Lawn mowing / maintenance' },
+        { id: 'installation', label: 'Landscape installation' },
+        { id: 'hardscape', label: 'Hardscape / patio' },
+        { id: 'cleanup', label: 'Spring or fall cleanup' },
+        { id: 'other', label: 'Other' },
+      ],
+      showPhotoUpload: true,
+      showAddressLookup: true,
+      maxPhotos: 5,
+      layout: 'wizard',
+    },
+    editableFields: ['heading', 'subhead', 'submitLabel'],
+  },
   'saas-hero-gradient': {
     defaultProps: {
       titleLines: ['Quality work.', 'Local trust.'],

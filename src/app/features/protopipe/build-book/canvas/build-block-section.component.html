@@ -30,7 +30,46 @@
       (propPathChange)="onPropPath($event.path, $event.value)"
     />
   } @else if (isBaselineRenderer()) {
-    @if (baselineRenderer() === 'sparky-site') {
+    @if (usesEffectiveFoldRenderer()) {
+      @switch (effectiveFoldRenderer()) {
+        @case ('sparky') {
+          <app-protopipe-build-sparky-baseline-block
+            [blockId]="effectiveFoldBlockId()"
+            [props]="props()"
+            [editable]="editable()"
+            (propPathChange)="onPropPath($event.path, $event.value)"
+            (imageEdit)="onBaselineImageEdit($event)"
+          />
+        }
+        @case ('wilco') {
+          <app-protopipe-build-wilco-baseline-block
+            [blockId]="effectiveFoldBlockId()"
+            [props]="props()"
+            [editable]="editable()"
+            (propPathChange)="onPropPath($event.path, $event.value)"
+            (imageEdit)="onBaselineImageEdit($event)"
+          />
+        }
+        @case ('wri') {
+          <app-protopipe-build-wri-baseline-block
+            [blockId]="effectiveFoldBlockId()"
+            [props]="props()"
+            [editable]="editable()"
+            (propPathChange)="onPropPath($event.path, $event.value)"
+            (imageEdit)="onBaselineImageEdit($event)"
+          />
+        }
+        @case ('veil') {
+          <app-protopipe-build-veil-baseline-block
+            [blockId]="effectiveFoldBlockId()"
+            [props]="props()"
+            [editable]="editable()"
+            (propPathChange)="onPropPath($event.path, $event.value)"
+            (imageEdit)="onBaselineImageEdit($event)"
+          />
+        }
+      }
+    } @else if (baselineRenderer() === 'sparky-site') {
       <app-protopipe-build-sparky-baseline-block
         [blockId]="resolvedBaselineBlockId()"
         [props]="props()"
@@ -40,6 +79,14 @@
       />
     } @else if (baselineRenderer() === 'wilco-site') {
       <app-protopipe-build-wilco-baseline-block
+        [blockId]="resolvedBaselineBlockId()"
+        [props]="props()"
+        [editable]="editable()"
+        (propPathChange)="onPropPath($event.path, $event.value)"
+        (imageEdit)="onBaselineImageEdit($event)"
+      />
+    } @else if (baselineRenderer() === 'veil-site') {
+      <app-protopipe-build-veil-baseline-block
         [blockId]="resolvedBaselineBlockId()"
         [props]="props()"
         [editable]="editable()"

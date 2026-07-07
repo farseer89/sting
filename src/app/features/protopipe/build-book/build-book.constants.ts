@@ -141,6 +141,13 @@ export const BUILD_BOOK_OPTIONS: Record<BuildBookSection, BuildBookOption[]> = {
       componentId: 'lead-capture-form',
       layout: 'close-form',
     },
+    {
+      id: 'close-quote-form',
+      label: 'Quote request form',
+      desc: 'Full quote intake with address lookup, services, and photo upload.',
+      componentId: 'quote-request-form',
+      layout: 'close-form',
+    },
   ],
 };
 

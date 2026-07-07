@@ -4,14 +4,14 @@ import type { SitePageDraft, SitePageSectionDraft } from '@hive/contracts';
 
 export function isBaselineBlockProps(props: Record<string, unknown>): boolean {
   const renderer = props['baselineRenderer'];
-  return renderer === 'wri-site' || renderer === 'sparky-site' || renderer === 'wilco-site';
+  return renderer === 'wri-site' || renderer === 'sparky-site' || renderer === 'wilco-site' || renderer === 'veil-site';
 }
 
 export function baselineRendererFromProps(
   props: Record<string, unknown>,
-): 'wri-site' | 'sparky-site' | 'wilco-site' | null {
+): 'wri-site' | 'sparky-site' | 'wilco-site' | 'veil-site' | null {
   const renderer = props['baselineRenderer'];
-  if (renderer === 'wri-site' || renderer === 'sparky-site' || renderer === 'wilco-site') return renderer;
+  if (renderer === 'wri-site' || renderer === 'sparky-site' || renderer === 'wilco-site' || renderer === 'veil-site') return renderer;
   return null;
 }
 

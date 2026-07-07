@@ -11,15 +11,21 @@ import { ProtopipeBuildWilcoBaselineBlockComponent } from '../baseline/wilco/bui
 import type { BuildSparkyImageEditRequest } from '../baseline/sparky/build-sparky-baseline-block.component';
 import { ProtopipeBuildSparkyBaselineBlockComponent } from '../baseline/sparky/build-sparky-baseline-block.component';
 import { ProtopipeBuildWriBaselineBlockComponent } from '../baseline/wri/build-wri-baseline-block.component';
+import type { BuildVeilImageEditRequest } from '../baseline/veil/build-veil-baseline-block.component';
+import { ProtopipeBuildVeilBaselineBlockComponent } from '../baseline/veil/build-veil-baseline-block.component';
 import { baselineRendererFromProps, isBaselineBlockProps } from '../build-book-baseline.util';
 import {
   isBaselineApprovedHeroLayout,
   resolveBaselineHeroLayoutId,
 } from '../build-book-baseline-hero.catalog';
 import {
+  baselineFoldRendererBrand,
   isBaselineApprovedFoldLayout,
   resolveBaselineFoldLayoutId,
 } from '../build-book-baseline-fold.catalog';
+import {
+  effectiveBaselineBlockIdForLayout,
+} from '../option-preview/build-book-option-preview.util';
 import {
   foldLabPreviewProps,
   resolveFoldWireLayout,
@@ -59,6 +65,7 @@ const HERO_PREVIEW_PLACEHOLDER_IMAGE =
     ProtopipeBuildWriBaselineBlockComponent,
     ProtopipeBuildSparkyBaselineBlockComponent,
     ProtopipeBuildWilcoBaselineBlockComponent,
+    ProtopipeBuildVeilBaselineBlockComponent,
   ],
   templateUrl: './build-block-section.component.html',
   styleUrl: './build-block-section.component.scss',
@@ -90,12 +97,33 @@ export class ProtopipeBuildBlockSectionComponent {
     return isBaselineBlockProps(this.props());
   }
 
-  baselineRenderer(): 'wri-site' | 'sparky-site' | 'wilco-site' | null {
+  baselineRenderer(): 'wri-site' | 'sparky-site' | 'wilco-site' | 'veil-site' | null {
     return baselineRendererFromProps(this.props());
   }
 
   resolvedBaselineBlockId(): string {
     return this.baselineBlockId() ?? this.blockId() ?? '';
+  }
+
+  effectiveFoldBlockId(): string {
+    if (this.section() !== 'fold' || !this.isBaselineRenderer()) {
+      return this.resolvedBaselineBlockId();
+    }
+    return effectiveBaselineBlockIdForLayout(
+      'fold',
+      this.resolvedFoldLayoutId(),
+      this.resolvedBaselineBlockId(),
+    );
+  }
+
+  effectiveFoldRenderer(): 'sparky' | 'wri' | 'wilco' | 'veil' | null {
+    if (this.section() !== 'fold' || !this.isBaselineRenderer()) return null;
+    if (!isBaselineApprovedFoldLayout(this.resolvedFoldLayoutId())) return null;
+    return baselineFoldRendererBrand(this.resolvedFoldLayoutId());
+  }
+
+  usesEffectiveFoldRenderer(): boolean {
+    return Boolean(this.effectiveFoldRenderer());
   }
 
   heroCopy(): BuildHeroPreviewCopy {
@@ -163,7 +191,11 @@ export class ProtopipeBuildBlockSectionComponent {
   }
 
   onBaselineImageEdit(
-    request: BuildWriImageEditRequest | BuildSparkyImageEditRequest | BuildWilcoImageEditRequest,
+    request:
+      | BuildWriImageEditRequest
+      | BuildSparkyImageEditRequest
+      | BuildWilcoImageEditRequest
+      | BuildVeilImageEditRequest,
   ): void {
     this.imageEdit.emit({ propPath: request.propPath });
   }

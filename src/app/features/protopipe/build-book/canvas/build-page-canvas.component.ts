@@ -19,6 +19,8 @@ import { ProtopipeBuildSparkySiteFooterComponent } from '../baseline/sparky/buil
 import { ProtopipeBuildSparkySiteHeaderComponent } from '../baseline/sparky/build-sparky-site-header.component';
 import { ProtopipeBuildWriSiteFooterComponent } from '../baseline/wri/build-wri-site-footer.component';
 import { ProtopipeBuildWriSiteHeaderComponent } from '../baseline/wri/build-wri-site-header.component';
+import { ProtopipeBuildVeilSiteFooterComponent } from '../baseline/veil/build-veil-site-footer.component';
+import { ProtopipeBuildVeilSiteHeaderComponent } from '../baseline/veil/build-veil-site-header.component';
 import { ProtopipeBuildBlockSectionComponent, type BuildBlockImageEditEvent } from './build-block-section.component';
 
 export interface BuildPageImageEditEvent {
@@ -74,6 +76,8 @@ const SPARKY_FIELD_NOTES_BLOCK_ID = 'sparky-baseline-field-notes';
     ProtopipeBuildSparkySiteFooterComponent,
     ProtopipeBuildWilcoSiteHeaderComponent,
     ProtopipeBuildWilcoSiteFooterComponent,
+    ProtopipeBuildVeilSiteHeaderComponent,
+    ProtopipeBuildVeilSiteFooterComponent,
   ],
   templateUrl: './build-page-canvas.component.html',
   styleUrl: './build-page-canvas.component.scss',
@@ -103,7 +107,7 @@ export class ProtopipeBuildPageCanvasComponent {
 
   readonly sectionSlots = BUILD_BOOK_SECTION_ORDER;
 
-  readonly baselineSiteRenderer = computed((): 'wri-site' | 'sparky-site' | 'wilco-site' | null => {
+  readonly baselineSiteRenderer = computed((): 'wri-site' | 'sparky-site' | 'wilco-site' | 'veil-site' | null => {
     for (const block of this.blocks()) {
       const renderer = baselineRendererFromProps(block.props);
       if (renderer) return renderer;
@@ -137,9 +141,9 @@ export class ProtopipeBuildPageCanvasComponent {
   });
 
   readonly baselineRenderSegments = computed((): BuildPageBlockRenderSegment[] => {
-    if (this.baselineSiteRenderer() === 'sparky-site') {
-      return this.sparkyRenderSegments();
-    }
+    const renderer = this.baselineSiteRenderer();
+    if (renderer === 'sparky-site') return this.sparkyRenderSegments();
+    if (renderer === 'veil-site') return this.veilRenderSegments();
     return this.wriRenderSegments();
   });
 
@@ -231,6 +235,32 @@ export class ProtopipeBuildPageCanvasComponent {
         key: group.blocks.map((block) => block.id).join(':'),
         type: 'fold-stack',
         blocks: [...group.blocks],
+      });
+    }
+
+    return segments;
+  }
+
+  private veilRenderSegments(): BuildPageBlockRenderSegment[] {
+    const segments: BuildPageBlockRenderSegment[] = [];
+
+    for (const block of this.blocks()) {
+      if (block.section === 'hero') {
+        segments.push({ key: block.id, type: 'single', blocks: [block] });
+        continue;
+      }
+
+      const last = segments[segments.length - 1];
+      if (last?.type === 'fold-stack') {
+        last.blocks.push(block);
+        last.key = last.blocks.map((item) => item.id).join(':');
+        continue;
+      }
+
+      segments.push({
+        key: block.id,
+        type: 'fold-stack',
+        blocks: [block],
       });
     }
 

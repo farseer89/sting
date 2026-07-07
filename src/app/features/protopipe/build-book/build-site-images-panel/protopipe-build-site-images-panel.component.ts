@@ -18,6 +18,7 @@ import {
   type BuildHeroPreviewCopy,
 } from '../build-hero-preview.types';
 import { BUILD_DEMO_HERO_VARIANTS } from '../build-book-demo.catalog';
+import type { BuildBookDemoBrand } from '../build-book.types';
 
 type SiteInfoTab = 'images' | 'basic' | 'seo';
 
@@ -33,7 +34,7 @@ export class ProtopipeBuildSiteImagesPanelComponent implements OnInit {
   readonly studio = inject(ProtopipeMediaStudioService);
 
   readonly heroLayout = input('sp-callout');
-  readonly heroBrand = input<'sparky' | 'wri' | 'consult'>('sparky');
+  readonly heroBrand = input<BuildBookDemoBrand>('sparky');
   readonly heroLabel = input('');
   readonly siteUrl = input('');
   readonly copy = input<BuildHeroPreviewCopy>(DEFAULT_HERO_PREVIEW_COPY);
@@ -43,7 +44,7 @@ export class ProtopipeBuildSiteImagesPanelComponent implements OnInit {
   readonly copyChange = output<BuildHeroPreviewCopy>();
   readonly imageSelected = output<string>();
   readonly previewLayoutChange = output<string>();
-  readonly previewBrandChange = output<'sparky' | 'wri' | 'consult'>();
+  readonly previewBrandChange = output<BuildBookDemoBrand>();
 
   readonly imgPrompt = signal('');
   readonly imgModel = signal('');
@@ -196,7 +197,7 @@ export class ProtopipeBuildSiteImagesPanelComponent implements OnInit {
     this.deletingAssetId.set(null);
   }
 
-  onPreviewBrandChange(brand: 'sparky' | 'wri' | 'consult'): void {
+  onPreviewBrandChange(brand: BuildBookDemoBrand): void {
     this.previewBrandChange.emit(brand);
     this.previewHeroIdx.set(0);
   }

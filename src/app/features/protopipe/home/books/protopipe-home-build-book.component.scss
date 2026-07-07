@@ -1895,6 +1895,8 @@ $bk-build: #0d9488;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  position: relative;
+  transform: translateZ(0);
 
   app-protopipe-build-page-canvas,
   app-protopipe-build-hero-preview {

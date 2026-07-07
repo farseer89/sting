@@ -41,13 +41,14 @@ import {
 } from '../../build-book/build-book-demo.catalog';
 import { baselineApprovedHeroOptionsForBrand } from '../../build-book/build-book-baseline-hero.catalog';
 import {
-  baselineApprovedFoldOptionsForBlock,
+  BASELINE_APPROVED_FOLD_LIBRARY,
   resolveBaselineFoldLayoutId,
 } from '../../build-book/build-book-baseline-fold.catalog';
 import type { BuildBookDemoBrand, BuildBookTemplateDefinition } from '../../build-book/build-book.types';
 import { ProtopipeBuildSiteImagesPanelComponent } from '../../build-book/build-site-images-panel/protopipe-build-site-images-panel.component';
 import { ProtopipeBuildImageQuickPickerComponent } from '../../build-book/image-picker/build-image-quick-picker.component';
 import { ProtopipeBuildBlockNavThumbComponent } from '../../build-book/nav-thumb/build-block-nav-thumb.component';
+import { ProtopipeBuildBookOptionPreviewComponent } from '../../build-book/option-preview/protopipe-build-book-option-preview.component';
 import {
   ProtopipeBuildPageCanvasComponent,
   type BuildPageBlockState,
@@ -116,6 +117,7 @@ interface BuildBookChapterItem {
     ProtopipeBuildSiteImagesPanelComponent,
     ProtopipeBuildImageQuickPickerComponent,
     ProtopipeBuildBlockNavThumbComponent,
+    ProtopipeBuildBookOptionPreviewComponent,
   ],
   templateUrl: './protopipe-home-build-book.component.html',
   styleUrl: './protopipe-home-build-book.component.scss',
@@ -433,7 +435,7 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
   ): void {
     const heroSection = findDraftSectionForSlot(draft, 'hero');
     const labBrand = heroSection?.props['labBrand'];
-    if (labBrand === 'sparky' || labBrand === 'wri' || labBrand === 'consult') {
+    if (labBrand === 'sparky' || labBrand === 'wri' || labBrand === 'consult' || labBrand === 'veil') {
       this.demoBrand.set(labBrand);
       return;
     }
@@ -484,7 +486,7 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
 
     const props = this.buildBook.sectionProps(section);
     const labBrand = props?.['labBrand'];
-    if (labBrand === 'sparky' || labBrand === 'wri' || labBrand === 'consult') {
+    if (labBrand === 'sparky' || labBrand === 'wri' || labBrand === 'consult' || labBrand === 'veil') {
       this.demoBrand.set(labBrand);
       return;
     }
@@ -994,7 +996,7 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
   heroPanelApprovedOptions(): BuildBookOption[] {
     const block = this.activeBlock();
     if (block?.section === 'fold') {
-      return baselineApprovedFoldOptionsForBlock(block.blockId);
+      return BASELINE_APPROVED_FOLD_LIBRARY;
     }
     return baselineApprovedHeroOptionsForBrand(this.baselineTemplateBrand());
   }
@@ -1021,13 +1023,14 @@ export class ProtopipeHomeBuildBookComponent implements OnInit {
 
   baselineTemplateBrand(): BuildBookDemoBrand {
     const fromBlock = this.baselineBlocks()[0]?.props['labBrand'];
-    if (fromBlock === 'sparky' || fromBlock === 'wri' || fromBlock === 'consult') {
+    if (fromBlock === 'sparky' || fromBlock === 'wri' || fromBlock === 'consult' || fromBlock === 'veil') {
       return fromBlock;
     }
 
     const templateId = this.selectedTemplateId();
     if (templateId === 'sparky-electric-trades-v1') return 'sparky';
     if (templateId === 'wilco-consulting-v1') return 'consult';
+    if (templateId === 'veil-live-painter-v1') return 'veil';
     return 'wri';
   }
 

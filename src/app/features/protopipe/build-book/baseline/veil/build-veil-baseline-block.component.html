@@ -1,0 +1,236 @@
+<div class="bb-veil-block">
+  @switch (blockId()) {
+    @case ('veil-baseline-hero-easel-witness') {
+      <section class="veil-hero-easel-witness">
+        <figure class="veil-hero-easel-witness__photo">
+          <img [src]="str('backgroundImageSrc')" alt="" width="1920" height="1080" loading="eager" />
+        </figure>
+        <div class="veil-hero-easel-witness__scrim" aria-hidden="true"></div>
+        <div class="veil-hero-easel-witness__panel">
+          <p class="veil-hero-eyebrow">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('eyebrow')" hostClass="" ariaLabel="Hero eyebrow" (valueChange)="patch('eyebrow', $event)" />
+          </p>
+          <h1 class="veil-hero-title">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Hero headline" [multiline]="true" (valueChange)="patch('heading', $event)" />
+          </h1>
+          <p class="veil-hero-sub">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('subhead')" hostClass="" ariaLabel="Hero subhead" [multiline]="true" (valueChange)="patch('subhead', $event)" />
+          </p>
+          <div class="veil-hero-actions">
+            <a class="veil-btn veil-btn--primary" [href]="str('primaryCtaHref', '#inquire')" (click)="onLinkClick($event)">
+              <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('primaryCtaLabel', 'Check my date')" hostClass="" (valueChange)="patch('primaryCtaLabel', $event)" />
+            </a>
+            <a class="veil-btn veil-btn--secondary" [href]="str('secondaryCtaHref', '#portfolio')" (click)="onLinkClick($event)">
+              <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('secondaryCtaLabel', 'View portfolio')" hostClass="" (valueChange)="patch('secondaryCtaLabel', $event)" />
+            </a>
+          </div>
+        </div>
+        @if (editable()) {
+          <button type="button" class="bb-veil-photo-edit" aria-label="Change hero background" (click)="onPhotoEdit($event, 'backgroundImageSrc')">Change photo</button>
+        }
+      </section>
+    }
+    @case ('veil-baseline-hero-canvas-frame') {
+      <section class="veil-hero-canvas-frame">
+        <div class="veil-wrap">
+          <div class="veil-hero-canvas-frame__grid">
+            <figure class="veil-hero-canvas-frame__frame-wrap">
+              <img [src]="str('paintingImageSrc')" alt="" width="800" height="1000" loading="eager" />
+            </figure>
+            <div>
+              <p class="veil-hero-eyebrow veil-section-kicker">
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('eyebrow')" hostClass="" ariaLabel="Hero eyebrow" (valueChange)="patch('eyebrow', $event)" />
+              </p>
+              <h1 class="veil-hero-title">
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Hero headline" [multiline]="true" (valueChange)="patch('heading', $event)" />
+              </h1>
+              <p class="veil-hero-sub">
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('subhead')" hostClass="" ariaLabel="Hero subhead" [multiline]="true" (valueChange)="patch('subhead', $event)" />
+              </p>
+              <a class="veil-btn veil-btn--primary" [href]="str('primaryCtaHref', '#inquire')" (click)="onLinkClick($event)">
+                <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('primaryCtaLabel', 'Check my date')" hostClass="" (valueChange)="patch('primaryCtaLabel', $event)" />
+              </a>
+            </div>
+          </div>
+        </div>
+        @if (editable()) {
+          <button type="button" class="bb-veil-photo-edit" aria-label="Change painting" (click)="onPhotoEdit($event, 'paintingImageSrc')">Change photo</button>
+        }
+      </section>
+    }
+    @case ('veil-baseline-fold-process') {
+      <section class="veil-fold veil-fold-process" id="process">
+        <div class="veil-wrap">
+          <p class="veil-section-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker', 'How it works')" hostClass="" ariaLabel="Process kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="veil-section-title">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Process heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <div class="veil-fold-process__grid">
+            @for (step of steps(); track $index) {
+              <article class="veil-fold-process__step">
+                <span class="veil-fold-process__num">
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="step.step" hostClass="" ariaLabel="Step number" (valueChange)="patchStep($index, 'step', $event)" />
+                </span>
+                <h3>
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="step.title" hostClass="" ariaLabel="Step title" (valueChange)="patchStep($index, 'title', $event)" />
+                </h3>
+                <p>
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="step.body" hostClass="" ariaLabel="Step body" [multiline]="true" (valueChange)="patchStep($index, 'body', $event)" />
+                </p>
+              </article>
+            }
+          </div>
+        </div>
+      </section>
+    }
+    @case ('veil-baseline-fold-portfolio') {
+      <section class="veil-fold veil-fold--alt" id="portfolio">
+        <div class="veil-wrap">
+          <p class="veil-section-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker', 'Portfolio')" hostClass="" ariaLabel="Portfolio kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="veil-section-title">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Portfolio heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <div class="veil-fold-portfolio__grid">
+            @for (item of items(); track $index) {
+              <figure class="veil-fold-portfolio__card">
+                <img [src]="item.image" [alt]="item.couple" loading="lazy" />
+                <figcaption>
+                  <strong>
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="item.couple" hostClass="" ariaLabel="Couple name" (valueChange)="patchPortfolio($index, 'couple', $event)" />
+                  </strong>
+                  <span>
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="item.venue" hostClass="" ariaLabel="Venue" (valueChange)="patchPortfolio($index, 'venue', $event)" />
+                    ·
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="item.note" hostClass="" ariaLabel="Note" (valueChange)="patchPortfolio($index, 'note', $event)" />
+                  </span>
+                </figcaption>
+              </figure>
+            }
+          </div>
+        </div>
+      </section>
+    }
+    @case ('veil-baseline-fold-packages') {
+      <section class="veil-fold veil-fold-packages" id="packages">
+        <div class="veil-wrap">
+          <p class="veil-section-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker', 'Packages')" hostClass="" ariaLabel="Packages kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="veil-section-title">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Packages heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <div class="veil-fold-packages__grid">
+            @for (pkg of packages(); track $index) {
+              <article class="veil-fold-packages__card">
+                <h3>
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="pkg.name" hostClass="" ariaLabel="Package name" (valueChange)="patchPackage($index, 'name', $event)" />
+                </h3>
+                <p class="veil-fold-packages__range">
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="pkg.range" hostClass="" ariaLabel="Package range" (valueChange)="patchPackage($index, 'range', $event)" />
+                </p>
+                <p>
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="pkg.detail" hostClass="" ariaLabel="Package detail" [multiline]="true" (valueChange)="patchPackage($index, 'detail', $event)" />
+                </p>
+              </article>
+            }
+          </div>
+        </div>
+      </section>
+    }
+    @case ('veil-baseline-fold-reviews') {
+      <section class="veil-fold veil-fold--alt" id="reviews">
+        <div class="veil-wrap">
+          <p class="veil-section-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker', 'Couples say')" hostClass="" ariaLabel="Reviews kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="veil-section-title">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Reviews heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <div class="veil-fold-reviews__grid">
+            @for (review of reviews(); track $index) {
+              <article class="veil-fold-reviews__card">
+                <blockquote>
+                  "<app-protopipe-build-inline-text [editable]="editable()" [value]="review.quote" hostClass="" ariaLabel="Review quote" [multiline]="true" (valueChange)="patchReview($index, 'quote', $event)" />"
+                </blockquote>
+                <cite>
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="review.author" hostClass="" ariaLabel="Review author" (valueChange)="patchReview($index, 'author', $event)" />
+                  ·
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="review.detail" hostClass="" ariaLabel="Review detail" (valueChange)="patchReview($index, 'detail', $event)" />
+                </cite>
+              </article>
+            }
+          </div>
+        </div>
+      </section>
+    }
+    @case ('veil-baseline-fold-availability') {
+      <section class="veil-fold veil-fold-availability" id="availability">
+        <div class="veil-wrap">
+          <p class="veil-fold-availability__season">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('season')" hostClass="" ariaLabel="Availability season" (valueChange)="patch('season', $event)" />
+          </p>
+          <p class="veil-fold-availability__detail">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('detail')" hostClass="" ariaLabel="Availability detail" [multiline]="true" (valueChange)="patch('detail', $event)" />
+          </p>
+          <a class="veil-btn veil-btn--primary" [href]="str('primaryCtaHref', '#inquire')" (click)="onLinkClick($event)">
+            <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('primaryCtaLabel', 'Check my date')" hostClass="" (valueChange)="patch('primaryCtaLabel', $event)" />
+          </a>
+        </div>
+      </section>
+    }
+    @case ('veil-baseline-fold-faq') {
+      <section class="veil-fold veil-fold-faq" id="faq">
+        <div class="veil-wrap">
+          <p class="veil-section-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker', 'FAQ')" hostClass="" ariaLabel="FAQ kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="veil-section-title">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="FAQ heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          @for (item of faqItems(); track $index) {
+            <div class="veil-fold-faq__item">
+              <strong>
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="item.q" hostClass="" ariaLabel="FAQ question" (valueChange)="patchFaq($index, 'q', $event)" />
+              </strong>
+              <p>
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="item.a" hostClass="" ariaLabel="FAQ answer" [multiline]="true" (valueChange)="patchFaq($index, 'a', $event)" />
+              </p>
+            </div>
+          }
+        </div>
+      </section>
+    }
+    @case ('veil-baseline-fold-inquire') {
+      <section class="veil-fold veil-fold-inquire" id="inquire">
+        <div class="veil-wrap">
+          <p class="veil-section-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker', 'Inquire')" hostClass="" ariaLabel="Inquire kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="veil-section-title">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Inquire heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <p class="veil-section-lede">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('lede')" hostClass="" ariaLabel="Inquire lede" [multiline]="true" (valueChange)="patch('lede', $event)" />
+          </p>
+          <div class="veil-fold-inquire__form">
+            <div class="veil-fold-inquire__field">
+              <label>Your names</label>
+              <input type="text" disabled placeholder="Names" />
+            </div>
+            <div class="veil-fold-inquire__field">
+              <label>Email</label>
+              <input type="email" disabled placeholder="Email" />
+            </div>
+            <button class="veil-btn veil-btn--primary" type="button" disabled>
+              <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('primaryCtaLabel', 'Check my date')" hostClass="" (valueChange)="patch('primaryCtaLabel', $event)" />
+            </button>
+          </div>
+        </div>
+      </section>
+    }
+  }
+</div>

@@ -2,6 +2,7 @@ import type { BuildBookDemoBrand, BuildBookOption } from './build-book.types';
 
 const WRI_GENERATED = 'https://cs-futureproof.pages.dev/wri/generated';
 const SPARKY_ASSETS = 'https://cs-futureproof.pages.dev/sparky/site';
+const VEIL_GENERATED = 'https://destinationweddingpainter.com/images/hero-stash.jpg';
 const WILCO_HERO =
   'https://images.unsplash.com/photo-1624469681156-4114efeb85a0?w=1920&q=80&auto=format&fit=crop';
 
@@ -10,6 +11,7 @@ export const BASELINE_APPROVED_HERO_LAYOUT_IDS = [
   'wri-baseline-life-proof',
   'sparky-baseline-callout',
   'wilco-baseline-split',
+  'veil-baseline-easel-witness',
 ] as const;
 
 export type BaselineApprovedHeroLayoutId = (typeof BASELINE_APPROVED_HERO_LAYOUT_IDS)[number];
@@ -19,6 +21,7 @@ export const BASELINE_HERO_BLOCK_TO_APPROVED_LAYOUT: Record<string, BaselineAppr
   'wri-baseline-hero-life-proof': 'wri-baseline-life-proof',
   'sparky-baseline-hero-callout': 'sparky-baseline-callout',
   'wilco-baseline-hero-split': 'wilco-baseline-split',
+  'veil-baseline-hero-easel-witness': 'veil-baseline-easel-witness',
 };
 
 export const BASELINE_APPROVED_HERO_LIBRARY: BuildBookOption[] = [
@@ -66,6 +69,21 @@ export const BASELINE_APPROVED_HERO_LIBRARY: BuildBookOption[] = [
       astroUnit: '@client-sites/theme/components/landing/ConsultHeroSplit.astro',
     },
     previewImage: WILCO_HERO,
+  },
+  {
+    id: 'veil-baseline-easel-witness',
+    label: 'Easel witness hero',
+    desc: 'Approved Destination Wedding Painter baseline — ceremony easel with left scrim copy panel.',
+    componentId: 'baseline-veil-hero-easel',
+    layout: 'fullbleed',
+    tag: 'Approved baseline',
+    demo: {
+      brand: 'veil',
+      catalog: 'heroes',
+      labId: 'easel-witness',
+      astroUnit: 'components/veil/heroes/VeilHeroEaselWitness.astro',
+    },
+    previewImage: `${VEIL_GENERATED}`,
   },
 ];
 

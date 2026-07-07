@@ -1,5 +1,6 @@
 @import '../baseline/sparky/sparky-baseline.css';
 @import '../baseline/wilco/wilco-baseline.css';
+@import '../baseline/veil/veil-baseline.css';
 
 :host {
   display: block;
@@ -15,6 +16,9 @@
   min-height: 0;
   overflow: auto;
   background: #fff;
+  position: relative;
+  /* Contain baseline site headers (position:fixed in lab CSS) inside the preview scrollport. */
+  transform: translateZ(0);
 }
 
 .bb-page-canvas app-protopipe-build-block-section:not(:last-child) {
@@ -27,6 +31,29 @@
 
 .bb-page-canvas--baseline {
   background: var(--wri-mist, #f4f7f6);
+
+  .sparky-page--site,
+  .wri-page--site,
+  .page-consult,
+  .veil-page {
+    min-height: 0 !important;
+  }
+
+  .sparky-page--site .sparky-header,
+  .wri-header,
+  [data-theme='consult-minimal'] .site-header,
+  .veil-header {
+    position: sticky !important;
+    top: 0 !important;
+    left: auto !important;
+    right: auto !important;
+    width: 100%;
+  }
+
+  .sparky-lab-escape,
+  .wri-lab-escape {
+    display: none !important;
+  }
 }
 
 .bb-page-canvas--baseline.bb-page-canvas--sparky {
@@ -35,6 +62,10 @@
 
 .bb-page-canvas--baseline.bb-page-canvas--wilco {
   background: var(--color-bg, #ffffff);
+}
+
+.bb-page-canvas--baseline.bb-page-canvas--veil {
+  background: var(--veil-bg, #faf7f2);
 }
 
 .bb-page-canvas--baseline app-protopipe-build-block-section {
@@ -56,7 +87,8 @@
 
 .bb-page-canvas--baseline .wri-hero-unit app-protopipe-build-fold-block,
 .bb-page-canvas--baseline .wri-fold-stack app-protopipe-build-fold-block,
-.bb-page-canvas--baseline .sp-fold-stack app-protopipe-build-fold-block {
+.bb-page-canvas--baseline .sp-fold-stack app-protopipe-build-fold-block,
+.bb-page-canvas--baseline .veil-fold-stack app-protopipe-build-block-section {
   display: block;
   width: 100%;
   font-size: 1rem;
@@ -64,7 +96,8 @@
 
 .bb-page-canvas__wri-shell,
 .bb-page-canvas__sparky-shell,
-.bb-page-canvas__wilco-shell {
+.bb-page-canvas__wilco-shell,
+.bb-page-canvas__veil-shell {
   min-height: 0;
 }
 

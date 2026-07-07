@@ -99,6 +99,20 @@ export function findBaselineApprovedFoldOption(optionId: string): BuildBookOptio
   return BASELINE_APPROVED_FOLD_LIBRARY.find((option) => option.id === optionId);
 }
 
+export function baselineFoldBlockIdForLayout(layoutId: string): string | null {
+  if (isBaselineApprovedFoldLayout(layoutId)) return layoutId;
+  return null;
+}
+
+export function baselineFoldRendererBrand(
+  layoutId: string,
+): 'sparky' | 'wri' | 'wilco' | 'veil' | null {
+  const option = findBaselineApprovedFoldOption(layoutId);
+  if (!option?.demo?.brand) return null;
+  if (option.demo.brand === 'consult') return 'wilco';
+  return option.demo.brand;
+}
+
 export function resolveBaselineFoldLayoutId(blockId: string, props: Record<string, unknown>): string {
   const labLayout = typeof props['labLayout'] === 'string' ? props['labLayout'] : undefined;
   if (labLayout && isBaselineApprovedFoldLayout(labLayout)) return labLayout;

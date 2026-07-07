@@ -27,6 +27,7 @@ import {
   resolveBaselineHeroLayoutId,
 } from './build-book-baseline-hero.catalog';
 import {
+  baselineFoldBlockIdForLayout,
   findBaselineApprovedFoldOption,
   isBaselineApprovedFoldLayout,
   resolveBaselineFoldLayoutId,
@@ -646,11 +647,16 @@ export class ProtopipeBuildBookService {
       ) {
         Object.assign(patch, templateDefaultHeroImageProps(block.blockId) ?? {});
       }
-    } else if (
-      isBaselineApprovedFoldLayout(option.id) &&
-      !isBaselineApprovedFoldLayout(previousLayout)
-    ) {
-      Object.assign(patch, templateDefaultBlockProps(block.blockId) ?? {});
+    } else {
+      const targetBlockId = baselineFoldBlockIdForLayout(option.id);
+      if (targetBlockId) {
+        Object.assign(patch, templateDefaultBlockProps(targetBlockId) ?? {});
+      } else {
+        const defaults = BUILD_BOOK_COMPONENT_DEFAULTS[option.componentId];
+        if (defaults) {
+          Object.assign(patch, structuredClone(defaults.defaultProps));
+        }
+      }
     }
 
     this.updateBlockProps(blockInstanceId, patch);

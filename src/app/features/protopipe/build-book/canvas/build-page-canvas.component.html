@@ -3,6 +3,7 @@
   [class.bb-page-canvas--baseline]="baselineMode()"
   [class.bb-page-canvas--sparky]="baselineSiteRenderer() === 'sparky-site'"
   [class.bb-page-canvas--wilco]="baselineSiteRenderer() === 'wilco-site'"
+  [class.bb-page-canvas--veil]="baselineSiteRenderer() === 'veil-site'"
 >
   @if (baselineMode()) {
     @if (baselineSiteRenderer() === 'sparky-site') {
@@ -63,6 +64,64 @@
           }
 
           <app-protopipe-build-sparky-site-footer [editable]="editable()" />
+        </div>
+      </div>
+    } @else if (baselineSiteRenderer() === 'veil-site') {
+      <div class="veil-page bb-page-canvas__veil-shell">
+        <div class="veil-site">
+          <app-protopipe-build-veil-site-header />
+
+          @for (segment of baselineRenderSegments(); track segment.key) {
+            @if (segment.type === 'single') {
+              @for (block of segment.blocks; track block.id) {
+                <app-protopipe-build-block-section
+                  [attr.data-block-id]="block.id"
+                  [section]="block.section"
+                  [blockInstanceId]="block.id"
+                  [baselineBlockId]="block.blockId"
+                  [blockId]="block.blockId"
+                  [layout]="block.layout"
+                  [props]="block.props"
+                  [configured]="block.configured"
+                  [editable]="editable()"
+                  [active]="activeBlockId() === block.id"
+                  [heroLayoutId]="heroLayoutId()"
+                  [heroImageUrl]="heroImageUrl()"
+                  (sectionClick)="onBlockClick(block.id)"
+                  (propPathChange)="onBlockPropPathChange(block.id, $event.path, $event.value)"
+                  (propsChange)="onBlockPropsChange(block.id, $event)"
+                  (copyChange)="copyChange.emit($event)"
+                  (imageEdit)="onBlockImageEdit(block.id, $event)"
+                />
+              }
+            } @else {
+              <div class="veil-fold-stack">
+                @for (block of segment.blocks; track block.id) {
+                  <app-protopipe-build-block-section
+                    [attr.data-block-id]="block.id"
+                    [section]="block.section"
+                    [blockInstanceId]="block.id"
+                    [baselineBlockId]="block.blockId"
+                    [blockId]="block.blockId"
+                    [layout]="block.layout"
+                    [props]="block.props"
+                    [configured]="block.configured"
+                    [editable]="editable()"
+                    [active]="activeBlockId() === block.id"
+                    [heroLayoutId]="heroLayoutId()"
+                    [heroImageUrl]="heroImageUrl()"
+                    (sectionClick)="onBlockClick(block.id)"
+                    (propPathChange)="onBlockPropPathChange(block.id, $event.path, $event.value)"
+                    (propsChange)="onBlockPropsChange(block.id, $event)"
+                    (copyChange)="copyChange.emit($event)"
+                    (imageEdit)="onBlockImageEdit(block.id, $event)"
+                  />
+                }
+              </div>
+            }
+          }
+
+          <app-protopipe-build-veil-site-footer />
         </div>
       </div>
     } @else if (baselineSiteRenderer() === 'wilco-site') {

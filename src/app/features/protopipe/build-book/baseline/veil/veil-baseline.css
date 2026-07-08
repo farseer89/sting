@@ -1,19 +1,23 @@
 /* Veil — build-book baseline (subset of lab-content-veil.css for canvas). */
 
-.veil-page {
-  --veil-bg: #faf7f2;
-  --veil-surface: #ffffff;
-  --veil-stone: #f0ebe4;
-  --veil-ink: #2c2420;
-  --veil-text: #3d3530;
-  --veil-muted: #7a6e68;
-  --veil-border: #e8dfd4;
-  --veil-blush-soft: #f5ebe8;
-  --veil-champagne: #c9a962;
-  --veil-champagne-soft: #f5eed9;
+.veil-page,
+.bb-veil-block {
+  --veil-bg: var(--bb-background, #faf7f2);
+  --veil-surface: var(--bb-surface, #ffffff);
+  --veil-stone: var(--bb-surface, #f0ebe4);
+  --veil-ink: var(--bb-ink, #2c2420);
+  --veil-text: var(--bb-text, #3d3530);
+  --veil-muted: var(--bb-muted, #7a6e68);
+  --veil-border: var(--bb-border, #e8dfd4);
+  --veil-blush-soft: var(--bb-accent-soft, #f5ebe8);
+  --veil-champagne: var(--bb-accent, #c9a962);
+  --veil-champagne-soft: var(--bb-accent-soft, #f5eed9);
+  --veil-on-ink: var(--bb-on-ink, #ffffff);
+  --veil-on-surface: var(--bb-on-surface, var(--veil-text));
+  --veil-accent-on: var(--bb-accent-on, #2c2420);
   --veil-max: 76rem;
-  --veil-font: 'Source Sans 3', system-ui, sans-serif;
-  --veil-serif: 'Cormorant Garamond', Georgia, serif;
+  --veil-font: var(--bb-font-sans);
+  --veil-serif: var(--bb-font-serif);
   box-sizing: border-box;
 }
 
@@ -418,4 +422,595 @@
   color: #fff;
   font-size: 0.75rem;
   cursor: pointer;
+}
+
+.bb-veil-block .bb-veil-photo-edit--cover {
+  top: auto;
+  bottom: 0.5rem;
+  right: 0.5rem;
+}
+
+.bb-veil-block .bb-veil-photo-edit--compact {
+  top: 0.35rem;
+  right: 0.35rem;
+  padding: 0.2rem 0.45rem;
+  font-size: 0.65rem;
+}
+
+.bb-veil-block .veil-hero-salon-wall__cell,
+.bb-veil-block .veil-hero-process-ribbon__step,
+.bb-veil-block .veil-hero-process-ribbon__photo,
+.bb-veil-block .veil-hero-stationery__texture,
+.bb-veil-block .veil-hero-brushstroke__left,
+.bb-veil-block .veil-hero-brushstroke__right,
+.bb-veil-block .veil-hero-vow-inset__photo,
+.bb-veil-block .veil-hero-vow-inset__inset,
+.bb-veil-block .veil-hero-heirloom__photo,
+.bb-veil-block .veil-hero-quote-veil__texture {
+  position: relative;
+}
+/* Hero: Salon wall */
+.veil-hero-salon-wall {
+  position: relative;
+  min-height: clamp(32rem, 80vh, 44rem);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.veil-hero-salon-wall__grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 0.35rem;
+}
+
+.veil-hero-salon-wall__cell {
+  margin: 0;
+  overflow: hidden;
+}
+
+.veil-hero-salon-wall__cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.veil-hero-salon-wall__cell--tall {
+  grid-row: span 2;
+}
+
+.veil-hero-salon-wall__cell--wide {
+  grid-column: span 2;
+}
+
+.veil-hero-salon-wall__cell:nth-child(1) {
+  grid-column: 1;
+  grid-row: 1 / 3;
+}
+
+.veil-hero-salon-wall__cell:nth-child(2) {
+  grid-column: 2 / 4;
+  grid-row: 1;
+}
+
+.veil-hero-salon-wall__cell:nth-child(3) {
+  grid-column: 4;
+  grid-row: 1;
+}
+
+.veil-hero-salon-wall__cell:nth-child(4) {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.veil-hero-salon-wall__cell:nth-child(5) {
+  grid-column: 3 / 5;
+  grid-row: 2 / 4;
+}
+
+.veil-hero-salon-wall__cell:nth-child(6) {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.veil-hero-salon-wall__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgb(44 36 32 / 0.55);
+}
+
+.veil-hero-salon-wall__copy {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  max-width: 32rem;
+  padding: 2rem;
+  color: #fff;
+}
+
+.veil-hero-salon-wall__title {
+  font-size: clamp(2rem, 5vw, 3rem);
+}
+
+/* Hero: Stationery monogram */
+.veil-hero-stationery {
+  position: relative;
+  min-height: clamp(24rem, 65vh, 36rem);
+  display: grid;
+  place-items: center;
+  padding: 3rem 0;
+  overflow: hidden;
+}
+
+.veil-hero-stationery__texture {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+}
+
+.veil-hero-stationery__texture img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.35;
+}
+
+.veil-hero-stationery__inner {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  max-width: 28rem;
+  padding: 2rem;
+}
+
+.veil-hero-stationery__monogram {
+  margin: 0 0 1rem;
+  font-family: var(--veil-serif);
+  font-size: clamp(3rem, 8vw, 5rem);
+  font-weight: 600;
+  color: var(--veil-champagne);
+  line-height: 1;
+}
+
+.veil-hero-stationery__rule {
+  width: 6rem;
+  height: 1px;
+  margin: 0 auto 1.5rem;
+  background: var(--veil-champagne);
+}
+
+.veil-hero-stationery__title {
+  color: var(--veil-ink);
+}
+
+.veil-hero-stationery__eyebrow {
+  color: var(--veil-muted);
+}
+
+/* Hero: Process ribbon */
+.veil-hero-process-ribbon {
+  background: var(--veil-surface);
+}
+
+.veil-hero-process-ribbon__steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--veil-border);
+}
+
+.veil-hero-process-ribbon__step {
+  margin: 0;
+  text-align: center;
+}
+
+.veil-hero-process-ribbon__step img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 0.35rem;
+}
+
+.veil-hero-process-ribbon__step figcaption {
+  margin-top: 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--veil-muted);
+}
+
+.veil-hero-process-ribbon__main {
+  position: relative;
+  min-height: clamp(22rem, 55vh, 32rem);
+  display: flex;
+  align-items: flex-end;
+}
+
+.veil-hero-process-ribbon__photo {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+}
+
+.veil-hero-process-ribbon__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.veil-hero-process-ribbon__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgb(44 36 32 / 0.7) 100%);
+}
+
+.veil-hero-process-ribbon__panel {
+  position: relative;
+  z-index: 1;
+  padding: 2.5rem 0;
+  color: #fff;
+}
+
+/* Hero: Over shoulder */
+.veil-hero-over-shoulder {
+  position: relative;
+  min-height: clamp(28rem, 72vh, 40rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.veil-hero-over-shoulder__photo {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+}
+
+.veil-hero-over-shoulder__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.veil-hero-over-shoulder__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgb(44 36 32 / 0.2) 0%, rgb(44 36 32 / 0.65) 100%);
+}
+
+.veil-hero-over-shoulder__copy {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  max-width: 32rem;
+  padding: 2rem;
+  color: #fff;
+}
+
+/* Hero: Brushstroke split */
+.veil-hero-brushstroke {
+  display: grid;
+  min-height: clamp(26rem, 70vh, 38rem);
+}
+
+@media (min-width: 768px) {
+  .veil-hero-brushstroke {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.veil-hero-brushstroke__left,
+.veil-hero-brushstroke__right {
+  position: relative;
+  margin: 0;
+  min-height: 16rem;
+}
+
+.veil-hero-brushstroke__left img,
+.veil-hero-brushstroke__right img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  min-height: inherit;
+}
+
+.veil-hero-brushstroke__divider {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .veil-hero-brushstroke__divider {
+    display: block;
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 4rem;
+    margin-left: -2rem;
+    z-index: 2;
+    background: linear-gradient(135deg, var(--veil-bg) 45%, transparent 55%);
+    pointer-events: none;
+  }
+}
+
+.veil-hero-brushstroke__band {
+  grid-column: 1 / -1;
+  padding: 2rem 0;
+  background: var(--veil-ink);
+  color: #fff;
+}
+
+.veil-hero-brushstroke__band .veil-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.veil-hero-brushstroke__band h1 {
+  margin: 0;
+  font-family: var(--veil-serif);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 600;
+}
+
+/* Hero: Vow inset */
+.veil-hero-vow-inset {
+  position: relative;
+  min-height: clamp(28rem, 72vh, 40rem);
+  display: flex;
+  align-items: center;
+}
+
+.veil-hero-vow-inset__photo {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+}
+
+.veil-hero-vow-inset__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.veil-hero-vow-inset__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgb(44 36 32 / 0.75) 0%, transparent 55%);
+}
+
+.veil-hero-vow-inset__inset {
+  position: absolute;
+  right: clamp(1rem, 8vw, 6rem);
+  top: 50%;
+  transform: translateY(-50%);
+  width: clamp(8rem, 22vw, 14rem);
+  height: clamp(8rem, 22vw, 14rem);
+  margin: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid #fff;
+  box-shadow: 0 12px 40px rgb(44 36 32 / 0.35);
+  z-index: 2;
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .veil-hero-vow-inset__inset {
+    display: block;
+  }
+}
+
+.veil-hero-vow-inset__inset img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.veil-hero-vow-inset__panel {
+  position: relative;
+  z-index: 1;
+  max-width: 26rem;
+  margin-inline: clamp(1.25rem, 5vw, calc((100% - var(--veil-max)) / 2 + 1.25rem));
+  color: #fff;
+}
+
+/* Hero: Heirloom mantel */
+.veil-hero-heirloom {
+  padding: 3rem 0;
+  background: var(--veil-surface);
+}
+
+.veil-hero-heirloom__grid {
+  display: grid;
+  gap: 2rem;
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .veil-hero-heirloom__grid {
+    grid-template-columns: 0.95fr 1.05fr;
+  }
+}
+
+.veil-hero-heirloom__photo {
+  margin: 0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgb(44 36 32 / 0.1);
+}
+
+.veil-hero-heirloom__photo img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.veil-hero-heirloom__eyebrow {
+  color: var(--veil-champagne);
+}
+
+.veil-hero-heirloom__copy {
+  color: var(--veil-ink);
+}
+
+/* Hero: Curtain reveal */
+.veil-hero-curtain {
+  position: relative;
+  min-height: clamp(28rem, 72vh, 40rem);
+  overflow: hidden;
+}
+
+.veil-hero-curtain__photo {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+}
+
+.veil-hero-curtain__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.veil-hero-curtain__curtain {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background:
+    linear-gradient(90deg, rgb(44 36 32 / 0.92) 0%, rgb(44 36 32 / 0.85) 28%, transparent 55%),
+    repeating-linear-gradient(90deg, rgb(60 45 38 / 0.4) 0, rgb(60 45 38 / 0.4) 8px, transparent 8px, transparent 16px);
+  pointer-events: none;
+}
+
+.veil-hero-curtain__panel {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  min-height: inherit;
+  padding: 2rem 0;
+}
+
+.veil-hero-curtain__copy {
+  max-width: 26rem;
+  color: #fff;
+}
+
+/* Hero: Quote veil */
+.veil-hero-quote-veil {
+  position: relative;
+  min-height: clamp(26rem, 68vh, 36rem);
+  display: grid;
+  place-items: center;
+  padding: 3rem 0;
+}
+
+.veil-hero-quote-veil__texture {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+}
+
+.veil-hero-quote-veil__texture img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.veil-hero-quote-veil__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgb(250 247 242 / 0.88);
+}
+
+.veil-hero-quote-veil__inner {
+  position: relative;
+  z-index: 1;
+  max-width: 36rem;
+  text-align: center;
+  padding: 2rem;
+}
+
+.veil-hero-quote-veil__quote {
+  margin: 0 0 1rem;
+  font-family: var(--veil-serif);
+  font-size: clamp(1.5rem, 3.5vw, 2.25rem);
+  font-style: italic;
+  font-weight: 500;
+  color: var(--veil-ink);
+  line-height: 1.25;
+}
+
+.veil-hero-quote-veil__attr {
+  margin: 0 0 1.5rem;
+  font-size: 0.875rem;
+  color: var(--veil-muted);
+}
+
+/* Hero: Date ribbon */
+.veil-hero-date-ribbon {
+  position: relative;
+  min-height: clamp(26rem, 68vh, 36rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.veil-hero-date-ribbon__photo {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+}
+
+.veil-hero-date-ribbon__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.veil-hero-date-ribbon__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 30%, rgb(44 36 32 / 0.8) 100%);
+}
+
+.veil-hero-date-ribbon__panel {
+  position: relative;
+  z-index: 1;
+  padding: 2rem 0 0;
+  color: #fff;
+}
+
+.veil-hero-date-ribbon__ribbon {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+  background: rgb(255 255 255 / 0.12);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgb(255 255 255 / 0.2);
+}
+
+.veil-hero-date-ribbon__ribbon strong {
+  display: block;
+  font-family: var(--veil-serif);
+  font-size: 1.125rem;
+}
+
+.veil-hero-date-ribbon__ribbon span {
+  font-size: 0.8125rem;
+  opacity: 0.9;
 }

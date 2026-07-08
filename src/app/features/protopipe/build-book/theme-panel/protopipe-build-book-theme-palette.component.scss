@@ -1,0 +1,213 @@
+.bk-palette {
+  margin-bottom: 1.75rem;
+  padding: 1.15rem 1.2rem 1.25rem;
+  border: 1px solid #e4e4e7;
+  border-radius: 0.85rem;
+  background:
+    radial-gradient(circle at top right, rgb(15 118 110 / 0.06), transparent 42%),
+    linear-gradient(180deg, #fcfcfc 0%, #f8fafc 100%);
+}
+
+.bk-palette__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.bk-palette__title {
+  margin: 0 0 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #52525b;
+}
+
+.bk-palette__deck {
+  margin: 0;
+  max-width: 28rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #71717a;
+}
+
+.bk-palette__layout {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 720px) {
+  .bk-palette__layout {
+    grid-template-columns: 13.75rem minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.bk-palette__wheel-wrap {
+  position: relative;
+  width: 13.75rem;
+  height: 13.75rem;
+  margin-inline: auto;
+}
+
+.bk-palette__wheel {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  cursor: crosshair;
+  touch-action: none;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.06),
+    0 10px 24px rgb(15 23 42 / 0.08);
+}
+
+.bk-palette__wheel-indicator {
+  position: absolute;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.28),
+    0 2px 8px rgb(0 0 0 / 0.18);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.bk-palette__wheel-base {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2.35rem;
+  height: 2.35rem;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.08);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.bk-palette__controls {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.bk-palette__harmony {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.bk-palette__harmony-btn {
+  border: 1px solid #d4d4d8;
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  background: #fff;
+  color: #52525b;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.bk-palette__harmony-btn:hover {
+  border-color: #0f766e;
+  color: #0f766e;
+}
+
+.bk-palette__harmony-btn.is-active {
+  border-color: #0f766e;
+  background: #0f766e;
+  color: #fff;
+}
+
+.bk-palette__slider-field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.bk-palette__slider-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #71717a;
+}
+
+.bk-palette__slider-field input[type='range'] {
+  width: 100%;
+  accent-color: #0f766e;
+}
+
+.bk-palette__chips {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+@media (max-width: 640px) {
+  .bk-palette__chips {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bk-palette__chip:nth-child(5) {
+    grid-column: span 2;
+  }
+}
+
+.bk-palette__chip {
+  position: relative;
+  min-height: 4.75rem;
+  padding: 0.55rem 0.45rem 0.4rem;
+  border: 2px solid rgb(255 255 255 / 0.65);
+  border-radius: 0.7rem;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    0 4px 14px rgb(15 23 42 / 0.12);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.bk-palette__chip:hover {
+  transform: translateY(-1px);
+}
+
+.bk-palette__chip.is-selected {
+  border-color: #18181b;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px #18181b,
+    0 8px 18px rgb(15 23 42 / 0.16);
+}
+
+.bk-palette__chip-label,
+.bk-palette__chip-hex {
+  display: block;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bk-palette__chip-hex {
+  margin-top: 0.15rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  opacity: 0.88;
+}
+
+.bk-palette__chip-label {
+  opacity: 0.92;
+}

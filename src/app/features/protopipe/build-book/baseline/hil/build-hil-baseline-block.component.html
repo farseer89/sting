@@ -1,0 +1,239 @@
+<div class="bb-hil-block">
+  @switch (blockId()) {
+    @case ('hil-baseline-hero-canopy') {
+      <section class="hil-hero">
+        <figure class="hil-hero__photo" aria-hidden="true">
+          <img [src]="str('backgroundImageSrc')" alt="" width="1600" height="900" loading="eager" />
+        </figure>
+        <div class="hil-hero__scrim" aria-hidden="true"></div>
+        <div class="hil-hero__content">
+          <p class="hil-hero__eyebrow">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('eyebrow')"
+              hostClass=""
+              ariaLabel="Hero eyebrow"
+              (valueChange)="patch('eyebrow', $event)"
+            />
+          </p>
+          <h1 class="hil-hero__title">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('heading')"
+              hostClass=""
+              ariaLabel="Hero headline"
+              [multiline]="true"
+              (valueChange)="patch('heading', $event)"
+            />
+          </h1>
+          <p class="hil-hero__sub">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('subhead')"
+              hostClass=""
+              ariaLabel="Hero subhead"
+              [multiline]="true"
+              (valueChange)="patch('subhead', $event)"
+            />
+          </p>
+          <a class="hil-hero__cta" [href]="str('primaryCtaHref', '#quote')">
+            {{ str('primaryCtaLabel', 'Get my free estimate') }}
+          </a>
+        </div>
+        @if (editable()) {
+          <button type="button" class="hil-photo-edit" (click)="onPhotoEdit($event, 'backgroundImageSrc')">
+            Change photo
+          </button>
+        }
+      </section>
+    }
+    @case ('hil-baseline-service-grid') {
+      <section class="hil-section hil-services">
+        <p class="hil-kicker">{{ str('kicker', 'Services') }}</p>
+        <h2 class="hil-heading">
+          <app-protopipe-build-inline-text
+            [editable]="editable()"
+            [value]="str('heading')"
+            hostClass=""
+            ariaLabel="Services heading"
+            (valueChange)="patch('heading', $event)"
+          />
+        </h2>
+        <p class="hil-lede">
+          <app-protopipe-build-inline-text
+            [editable]="editable()"
+            [value]="str('subhead')"
+            hostClass=""
+            ariaLabel="Services subhead"
+            [multiline]="true"
+            (valueChange)="patch('subhead', $event)"
+          />
+        </p>
+        <div class="hil-services__grid">
+          @for (service of services(); track $index) {
+            <article class="hil-service-card">
+              <img [src]="service.image" [alt]="service.alt ?? service.title" loading="lazy" />
+              <div class="hil-service-card__body">
+                <h3>{{ service.title }}</h3>
+                <p>{{ service.body }}</p>
+                @if (service.priceFrom) {
+                  <span class="hil-service-card__price">{{ service.priceFrom }}</span>
+                }
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+    }
+    @case ('hil-baseline-work-gallery') {
+      <section class="hil-section hil-gallery">
+        <p class="hil-kicker">{{ str('kicker', 'Photos') }}</p>
+        <h2 class="hil-heading">
+          <app-protopipe-build-inline-text
+            [editable]="editable()"
+            [value]="str('heading')"
+            hostClass=""
+            ariaLabel="Gallery heading"
+            (valueChange)="patch('heading', $event)"
+          />
+        </h2>
+        <p class="hil-lede">
+          <app-protopipe-build-inline-text
+            [editable]="editable()"
+            [value]="str('subhead')"
+            hostClass=""
+            ariaLabel="Gallery subhead"
+            [multiline]="true"
+            (valueChange)="patch('subhead', $event)"
+          />
+        </p>
+        <div class="hil-gallery__grid">
+          @for (image of galleryImages(); track $index) {
+            <figure class="hil-gallery__item">
+              <img [src]="image.src" [alt]="image.alt" loading="lazy" />
+              @if (image.label) {
+                <figcaption>{{ image.label }}</figcaption>
+              }
+            </figure>
+          }
+        </div>
+      </section>
+    }
+    @case ('hil-baseline-before-after') {
+      <section class="hil-section hil-before-after">
+        <p class="hil-kicker">
+          <app-protopipe-build-inline-text
+            [editable]="editable()"
+            [value]="str('kicker', 'Results')"
+            hostClass=""
+            ariaLabel="Before after kicker"
+            (valueChange)="patch('kicker', $event)"
+          />
+        </p>
+        <h2 class="hil-heading">
+          <app-protopipe-build-inline-text
+            [editable]="editable()"
+            [value]="str('title')"
+            hostClass=""
+            ariaLabel="Before after title"
+            (valueChange)="patch('title', $event)"
+          />
+        </h2>
+        <p class="hil-lede">
+          <app-protopipe-build-inline-text
+            [editable]="editable()"
+            [value]="str('lede')"
+            hostClass=""
+            ariaLabel="Before after lede"
+            [multiline]="true"
+            (valueChange)="patch('lede', $event)"
+          />
+        </p>
+        <div class="hil-before-after__grid">
+          @if (beforeSide(); as before) {
+            <figure class="hil-before-after__panel">
+              <img [src]="before.image" [alt]="before.alt" loading="lazy" />
+              <figcaption>
+                <span class="hil-before-after__label">{{ before.label }}</span>
+                <strong>{{ before.headline }}</strong>
+                <span>{{ before.detail }}</span>
+              </figcaption>
+            </figure>
+          }
+          @if (afterSide(); as after) {
+            <figure class="hil-before-after__panel">
+              <img [src]="after.image" [alt]="after.alt" loading="lazy" />
+              <figcaption>
+                <span class="hil-before-after__label">{{ after.label }}</span>
+                <strong>{{ after.headline }}</strong>
+                <span>{{ after.detail }}</span>
+              </figcaption>
+            </figure>
+          }
+        </div>
+      </section>
+    }
+    @case ('hil-baseline-faq') {
+      <section class="hil-section hil-faq">
+        <p class="hil-kicker">{{ str('kicker', 'FAQ') }}</p>
+        <h2 class="hil-heading">
+          <app-protopipe-build-inline-text
+            [editable]="editable()"
+            [value]="str('heading')"
+            hostClass=""
+            ariaLabel="FAQ heading"
+            (valueChange)="patch('heading', $event)"
+          />
+        </h2>
+        <p class="hil-lede">
+          <app-protopipe-build-inline-text
+            [editable]="editable()"
+            [value]="str('subhead')"
+            hostClass=""
+            ariaLabel="FAQ subhead"
+            [multiline]="true"
+            (valueChange)="patch('subhead', $event)"
+          />
+        </p>
+        <div class="hil-faq__list">
+          @for (item of faqItems(); track $index) {
+            <details class="hil-faq__item" [open]="$index === 0">
+              <summary>{{ item.q }}</summary>
+              <p>{{ item.a }}</p>
+            </details>
+          }
+        </div>
+      </section>
+    }
+    @case ('hil-baseline-cta-banner') {
+      <section class="hil-section hil-cta">
+        <h2 class="hil-cta__title">
+          <app-protopipe-build-inline-text
+            [editable]="editable()"
+            [value]="str('heading')"
+            hostClass=""
+            ariaLabel="CTA heading"
+            (valueChange)="patch('heading', $event)"
+          />
+        </h2>
+        <p class="hil-cta__sub">
+          <app-protopipe-build-inline-text
+            [editable]="editable()"
+            [value]="str('subhead')"
+            hostClass=""
+            ariaLabel="CTA subhead"
+            [multiline]="true"
+            (valueChange)="patch('subhead', $event)"
+          />
+        </p>
+        <a class="hil-cta__btn" [href]="str('ctaHref', '#quote')">{{ str('ctaLabel', 'Get my free estimate') }}</a>
+      </section>
+    }
+    @default {
+      <section class="hil-section">
+        <p class="hil-kicker">Block preview</p>
+        <h2 class="hil-heading">{{ blockId() }}</h2>
+      </section>
+    }
+  }
+</div>

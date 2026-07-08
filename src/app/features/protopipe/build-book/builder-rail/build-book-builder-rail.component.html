@@ -1,0 +1,50 @@
+<aside class="bk-builder-rail" aria-label="Page builder">
+  <header class="bk-builder-rail__head">
+    <div class="bk-builder-rail__head-top">
+      @if (isAddView()) {
+        <button type="button" class="bk-builder-rail__back" (click)="back.emit()" aria-label="Back to page stack">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Back to stack</span>
+        </button>
+      }
+      <span class="bk-builder-rail__title">
+        {{ title() }}
+        @if (subtitle(); as sub) {
+          <small>{{ sub }}</small>
+        }
+      </span>
+      @if (showClose() && !isAddView()) {
+        <button type="button" class="bk-builder-rail__close" (click)="close.emit()" aria-label="Collapse page builder">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 4L6 8l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      }
+    </div>
+    @if (showTabs() && !isAddView()) {
+      <nav class="bk-inspector-tabs" role="tablist" aria-label="Page builder sections">
+        <button
+          type="button"
+          role="tab"
+          class="bk-inspector-tabs__item"
+          [class.is-active]="activeTab() === 'stack'"
+          [attr.aria-selected]="activeTab() === 'stack'"
+          (click)="selectTab('stack')"
+        >
+          Stack
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="bk-inspector-tabs__item"
+          [class.is-active]="activeTab() === 'patterns'"
+          [attr.aria-selected]="activeTab() === 'patterns'"
+          (click)="selectTab('patterns')"
+        >
+          Patterns
+        </button>
+      </nav>
+    }
+  </header>
+  <div class="bk-builder-rail__body bk-stack-rail__body--options">
+    <ng-content />
+  </div>
+</aside>

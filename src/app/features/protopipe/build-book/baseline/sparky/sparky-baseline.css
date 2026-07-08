@@ -1,19 +1,25 @@
 /* Sparky Electric Hawaii — build-book baseline (fonts use system fallbacks to stay within bundle budget). */
 
-.sparky-page {
-  --sp-bg: #ffffff;
-  --sp-surface: #f4f4f4;
-  --sp-ink: #171a20;
-  --sp-text: #393c41;
-  --sp-muted: #5c5e62;
-  --sp-border: #e8e8e8;
-  --sp-accent: #0e7490;
-  --sp-accent-soft: #ecfeff;
+.sparky-page,
+.bb-sparky-block {
+  --sp-bg: var(--bb-background, #ffffff);
+  --sp-surface: var(--bb-surface, #f4f4f4);
+  --sp-ink: var(--bb-ink, #171a20);
+  --sp-text: var(--bb-text, #393c41);
+  --sp-muted: var(--bb-muted, #5c5e62);
+  --sp-border: var(--bb-border, #e8e8e8);
+  --sp-accent: var(--bb-accent, #0e7490);
+  --sp-accent-soft: var(--bb-accent-soft, #ecfeff);
+  --sp-accent-on: var(--bb-accent-on, #ffffff);
+  --sp-on-ink: var(--bb-on-ink, #ffffff);
+  --sp-on-surface: var(--bb-on-surface, var(--sp-ink));
+  --sp-on-accent-soft: var(--bb-on-accent-soft, var(--sp-ink));
   --sp-spark: #ca8a04;
   --sp-max: 76rem;
   --sp-article: 44rem;
   --sp-rail: 15rem;
-  --sp-font: 'DM Sans', system-ui, sans-serif;
+  --sp-font: var(--bb-font-sans);
+  --sp-serif: var(--bb-font-serif);
   --sp-header: 4rem;
   box-sizing: border-box;
 }
@@ -361,7 +367,7 @@
 
 .sparky-header__cta:hover {
   background: var(--sp-ink);
-  color: #fff;
+  color: var(--sp-on-ink, #fff);
 }
 
 /* Publication masthead — news site */
@@ -595,7 +601,7 @@
 
 .sparky-article.prose .article-cta {
   background: var(--sp-ink);
-  color: #fff;
+  color: var(--sp-on-ink, #fff);
   border: none;
   border-radius: 4px;
   padding: 1.5rem;
@@ -860,7 +866,7 @@
 
 .sp-btn--primary {
   background: var(--sp-ink);
-  color: #fff;
+  color: var(--sp-on-ink, #fff);
   border: 1px solid var(--sp-ink);
 }
 
@@ -877,7 +883,7 @@
 
 .sp-btn--secondary:hover {
   background: var(--sp-ink);
-  color: #fff;
+  color: var(--sp-on-ink, #fff);
 }
 
 .sp-btn--invert {
@@ -1173,7 +1179,7 @@
   gap: 0.5rem 1rem;
   padding: 0.75rem clamp(1rem, 4vw, 2rem);
   background: var(--sp-accent);
-  color: #fff;
+  color: var(--sp-accent-on, #fff);
   font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.04em;
@@ -1188,8 +1194,8 @@
   display: flex;
   align-items: center;
   padding: clamp(3rem, 8vh, 5rem) 0;
-  background: linear-gradient(145deg, #0e7490 0%, #155e75 55%, #134e4a 100%);
-  color: #fff;
+  background: var(--sp-accent);
+  color: var(--sp-accent-on, #fff);
 }
 
 .sp-hero-t__grid {
@@ -1224,7 +1230,7 @@
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgb(255 255 255 / 0.72);
+  color: color-mix(in srgb, var(--sp-accent-on, #fff) 72%, transparent);
 }
 
 .sp-hero-t__title {
@@ -1233,6 +1239,7 @@
   font-weight: 600;
   letter-spacing: -0.045em;
   line-height: 1.02;
+  color: var(--sp-accent-on, #fff);
 }
 
 .sp-hero-t__sub {
@@ -1240,7 +1247,7 @@
   max-width: 32rem;
   font-size: 1.0625rem;
   line-height: 1.55;
-  color: rgb(255 255 255 / 0.82);
+  color: color-mix(in srgb, var(--sp-accent-on, #fff) 82%, transparent);
 }
 
 .sp-hero-t__actions {
@@ -1261,20 +1268,21 @@
 
 .sp-hero-t__stats li {
   padding: 0.5rem 0.875rem;
-  border: 1px solid rgb(255 255 255 / 0.28);
+  border: 1px solid color-mix(in srgb, var(--sp-accent-on, #fff) 28%, transparent);
   border-radius: 4px;
-  background: rgb(255 255 255 / 0.08);
+  background: color-mix(in srgb, var(--sp-accent-on, #fff) 8%, transparent);
 }
 
 .sp-hero-t__stat-value {
   font-size: 0.9375rem;
   font-weight: 600;
+  color: var(--sp-accent-on, #fff);
 }
 
 .sp-hero-t__stat-label {
   margin-left: 0.375rem;
   font-size: 0.75rem;
-  color: rgb(255 255 255 / 0.72);
+  color: color-mix(in srgb, var(--sp-accent-on, #fff) 72%, transparent);
 }
 
 /* ——— Hero 3: Floating card ——— */
@@ -1619,7 +1627,7 @@
   padding: 0.875rem 1rem;
   border-radius: 4px;
   background: var(--sp-ink);
-  color: #fff;
+  color: var(--sp-on-ink, #fff);
   border: none;
 }
 
@@ -2153,7 +2161,7 @@
   padding: clamp(2rem, 5vw, 3rem) 0;
   border-bottom: 1px solid var(--sp-border);
   background: var(--sp-ink);
-  color: #fff;
+  color: var(--sp-on-ink, #fff);
 }
 
 .sp-hero-d__grid {
@@ -2953,7 +2961,7 @@
 .sp-cta-band {
   padding: 3rem 0;
   background: var(--sp-ink);
-  color: #fff;
+  color: var(--sp-on-ink, #fff);
 }
 
 .sp-cta-band__inner {
@@ -2998,8 +3006,8 @@
 /* Trust + stats */
 .sp-fold-trust {
   padding: 1rem 0;
-  background: var(--sp-ink);
-  color: #fff;
+  background: var(--bb-ink, var(--sp-ink));
+  color: var(--bb-on-ink, var(--sp-on-ink, #fff));
 }
 
 .sp-fold-trust__list {
@@ -3021,18 +3029,20 @@
   display: block;
   font-size: 0.8125rem;
   font-weight: 600;
+  color: var(--bb-on-ink, var(--sp-on-ink, #fff));
 }
 
 .sp-fold-trust__detail {
   display: block;
   margin-top: 0.125rem;
   font-size: 0.6875rem;
-  color: rgb(255 255 255 / 0.65);
+  color: color-mix(in srgb, var(--bb-on-ink, var(--sp-on-ink, #fff)) 65%, transparent);
 }
 
 .sp-fold-stats {
   padding: 1.25rem 0;
-  background: var(--sp-surface);
+  background: var(--bb-surface, var(--sp-surface));
+  color: var(--bb-on-surface, var(--sp-on-surface));
 }
 
 .sp-fold-stats__grid {
@@ -3049,14 +3059,14 @@
   display: block;
   font-size: 1.375rem;
   font-weight: 600;
-  color: var(--sp-ink);
+  color: var(--bb-on-surface, var(--sp-on-surface));
 }
 
 .sp-fold-stats__label {
   display: block;
   margin-top: 0.125rem;
   font-size: 0.6875rem;
-  color: var(--sp-muted);
+  color: color-mix(in srgb, var(--bb-on-surface, var(--sp-on-surface)) 72%, transparent);
 }
 
 /* Services grid */
@@ -3538,7 +3548,7 @@
 .sp-fold-gallery-cta__band {
   padding: 2.5rem 0;
   background: var(--sp-ink);
-  color: #fff;
+  color: var(--sp-on-ink, #fff);
 }
 
 .sp-fold-gallery-cta__inner {
@@ -3647,7 +3657,7 @@
   place-items: center;
   border-radius: 4px;
   background: var(--sp-ink);
-  color: #fff;
+  color: var(--sp-on-ink, #fff);
   font-size: 0.6875rem;
   font-weight: 700;
 }

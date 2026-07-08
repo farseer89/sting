@@ -1,3 +1,10 @@
+export type {
+  BuildBookBlockIntent,
+  BuildBookBlockPatternCategory,
+  BuildBookBlockRenderMode,
+} from './build-book-block-patterns.catalog';
+import type { BuildBookBlockRenderMode } from './build-book-block-patterns.catalog';
+
 export type BuildBookSection = 'hero' | 'fold' | 'services' | 'proof' | 'areas' | 'close';
 
 export type BuildBookWireLayout =
@@ -117,6 +124,10 @@ export interface BuildBookBlockDefinition {
   navThumbKind?: BuildBookBlockNavThumbKind;
   /** Relative nav thumbnail proportions vs on-page block height. */
   navThumbAspect?: BuildBookBlockNavThumbAspect;
+  /** Canonical pattern id — set on enriched definitions from variant registry. */
+  patternId?: string;
+  variantLabel?: string;
+  renderMode?: BuildBookBlockRenderMode;
 }
 
 export interface BuildBookBlockInstance {
@@ -129,6 +140,8 @@ export interface BuildBookBlockInstance {
   props: Record<string, unknown>;
   notes?: string;
   sourceTemplateId?: string;
+  /** Denormalized pattern id for Shire saves and library queries. */
+  patternId?: string;
 }
 
 export interface BuildBookPage {
@@ -137,4 +150,17 @@ export interface BuildBookPage {
   label: string;
   slug?: string;
   blocks: BuildBookBlockInstance[];
+}
+
+/** Synthetic canvas id for pending-add ghost preview. */
+export const BUILD_BOOK_PENDING_ADD_BLOCK_ID = '__pending-add__';
+
+/** In-progress add: pattern chosen on left, variant chosen on Layout tab. */
+export interface BuildBookPendingAdd {
+  patternId: string;
+  insertAt: number;
+  /** Hero/fold layout option id while browsing. */
+  previewOptionId?: string;
+  /** Resolved catalog block id for ghost preview / commit. */
+  previewBlockId?: string;
 }

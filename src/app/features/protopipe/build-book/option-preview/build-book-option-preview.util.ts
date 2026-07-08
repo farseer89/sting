@@ -9,11 +9,24 @@ import {
   isBaselineApprovedFoldLayout,
 } from '../build-book-baseline-fold.catalog';
 import { findBuildBookBlockDefinition } from '../build-book-block.catalog';
+import {
+  baselineRendererBrandFromBlockId,
+} from '../build-book-baseline.util';
+import { heroPreviewImageForLayout, resolveHeroPreviewWireLayout } from '../build-book-demo.catalog';
+import {
+  isVeilHeroLabLayout,
+  resolveVeilHeroPreviewBlockId,
+  veilHeroLabPreviewProps,
+} from '../build-book-veil-hero.catalog';
 import { readHeroImageUrl } from '../build-hero-block.util';
 import { foldLabPreviewProps, resolveFoldWireLayout } from '../build-fold-block.util';
 import type { BuildBookOption, BuildBookSection, BuildBookWireLayout } from '../build-book.types';
+import {
+  materializeBlockPropsForInsert,
+  type SiteDesignContext,
+} from '../../site-design/public';
 
-export type BaselineRendererBrand = 'sparky' | 'wri' | 'wilco' | 'veil';
+export type BaselineRendererBrand = 'sparky' | 'wri' | 'wilco' | 'veil' | 'hil';
 
 export type BuildBookOptionPreviewKind = 'baseline' | 'hero-lab' | 'fold-lab';
 
@@ -68,28 +81,75 @@ export function defaultPropsForLayoutOption(
   return def ? structuredClone(def.defaultProps) : {};
 }
 
+function resolveCatalogBaselinePreview(
+  optionId: string,
+  designContext?: SiteDesignContext | null,
+): BuildBookOptionPreviewTarget | null {
+  const catalogBlock = findBuildBookBlockDefinition(optionId);
+  if (!catalogBlock) return null;
+
+  const renderer = baselineRendererBrandFromBlockId(optionId, catalogBlock.defaultProps);
+  if (!renderer) return null;
+
+  return {
+    kind: 'baseline',
+    renderer,
+    blockId: optionId,
+    props: designContext
+      ? materializeBlockPropsForInsert(optionId, designContext)
+      : structuredClone(catalogBlock.defaultProps),
+  };
+}
+
 export function resolveOptionPreviewTarget(
   option: BuildBookOption,
   section: BuildBookSection,
+  designContext?: SiteDesignContext | null,
 ): BuildBookOptionPreviewTarget {
   if (section === 'hero') {
     if (isBaselineApprovedHeroLayout(option.id)) {
+      const blockId = baselineHeroBlockIdForLayout(option.id);
       return {
         kind: 'baseline',
         renderer: baselineHeroRendererBrand(option.id),
-        blockId: baselineHeroBlockIdForLayout(option.id),
-        props: defaultPropsForLayoutOption(option.id, 'hero'),
+        blockId,
+        props:
+          blockId && designContext
+            ? materializeBlockPropsForInsert(blockId, designContext)
+            : defaultPropsForLayoutOption(option.id, 'hero'),
       };
     }
 
-    const props = defaultPropsForLayoutOption(option.id, 'hero');
+    if (isVeilHeroLabLayout(option.id)) {
+      const blockId = resolveVeilHeroPreviewBlockId(option.id);
+      const baseProps =
+        blockId && designContext
+          ? materializeBlockPropsForInsert(blockId, designContext)
+          : defaultPropsForLayoutOption(option.id, 'hero');
+      return {
+        kind: 'baseline',
+        renderer: 'veil',
+        blockId,
+        props: veilHeroLabPreviewProps(option.id, baseProps),
+      };
+    }
+
+    const blockIdForHero = baselineHeroBlockIdForLayout(option.id);
+    const props =
+      blockIdForHero && designContext
+        ? materializeBlockPropsForInsert(blockIdForHero, designContext)
+        : defaultPropsForLayoutOption(option.id, 'hero');
     return {
       kind: 'hero-lab',
       renderer: null,
       blockId: null,
       props,
-      heroLayoutId: option.id,
-      heroImageUrl: option.previewImage ?? readHeroImageUrl(props) ?? undefined,
+      heroLayoutId: resolveHeroPreviewWireLayout(option.id),
+      heroImageUrl:
+        option.previewImage ??
+        heroPreviewImageForLayout(option.id) ??
+        readHeroImageUrl(props, option.id) ??
+        undefined,
     };
   }
 
@@ -98,9 +158,14 @@ export function resolveOptionPreviewTarget(
       kind: 'baseline',
       renderer: baselineFoldRendererBrand(option.id),
       blockId: option.id,
-      props: defaultPropsForLayoutOption(option.id, 'fold'),
+      props: designContext
+        ? materializeBlockPropsForInsert(option.id, designContext)
+        : defaultPropsForLayoutOption(option.id, 'fold'),
     };
   }
+
+  const catalogPreview = resolveCatalogBaselinePreview(option.id, designContext);
+  if (catalogPreview) return catalogPreview;
 
   const foldLayoutId = option.id;
   return {

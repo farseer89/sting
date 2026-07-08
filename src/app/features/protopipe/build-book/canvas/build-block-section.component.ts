@@ -13,7 +13,12 @@ import { ProtopipeBuildSparkyBaselineBlockComponent } from '../baseline/sparky/b
 import { ProtopipeBuildWriBaselineBlockComponent } from '../baseline/wri/build-wri-baseline-block.component';
 import type { BuildVeilImageEditRequest } from '../baseline/veil/build-veil-baseline-block.component';
 import { ProtopipeBuildVeilBaselineBlockComponent } from '../baseline/veil/build-veil-baseline-block.component';
-import { baselineRendererFromProps, isBaselineBlockProps } from '../build-book-baseline.util';
+import {
+  isBaselineBlock,
+  isBaselineBlockProps,
+  isVeilBaselineBlockId,
+  resolveBaselineBlockRenderer,
+} from '../build-book-baseline.util';
 import {
   isBaselineApprovedHeroLayout,
   resolveBaselineHeroLayoutId,
@@ -34,13 +39,28 @@ import {
   DEFAULT_HERO_PREVIEW_COPY,
   type BuildHeroPreviewCopy,
 } from '../build-hero-preview.types';
+import { resolveHeroPreviewWireLayout } from '../build-book-demo.catalog';
+import {
+  isVeilHeroLabLayout,
+  resolveVeilHeroPreviewBlockId,
+} from '../build-book-veil-hero.catalog';
 import { readHeroCopy, readHeroImageUrl, resolveHeroPreviewLayoutId } from '../build-hero-block.util';
 import { buildBookSectionLabel } from '../build-book.constants';
 import type { BuildWriImageEditRequest } from '../baseline/wri/build-wri-baseline-block.component';
+import { enrichedBlockDefinition } from '../build-book-block-registry.util';
+import { ProtopipeBuildInteractiveStubComponent } from '../baseline/hil/build-interactive-stub.component';
+import { ProtopipeBuildHilBaselineBlockComponent } from '../baseline/hil/build-hil-baseline-block.component';
+import {
+  ProtopipeBuildUniversalBaselineBlockComponent,
+  type BuildUniversalImageEditRequest,
+} from '../baseline/universal/build-universal-baseline-block.component';
+import { isUniversalBaselineBlockId } from '../build-book-universal-block.catalog';
 
 export interface BuildBlockImageEditEvent {
   propPath?: string;
 }
+
+export type BuildBlockInspectorTab = 'content' | 'layout' | 'media' | 'links';
 
 const HERO_PREVIEW_PLACEHOLDER_IMAGE =
   'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000"%3E%3Cdefs%3E%3ClinearGradient id="g" x1="0" x2="1" y1="0" y2="1"%3E%3Cstop offset="0" stop-color="%230f766e"/%3E%3Cstop offset="0.52" stop-color="%23164e63"/%3E%3Cstop offset="1" stop-color="%230f172a"/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="1600" height="1000" fill="url(%23g)"/%3E%3C/svg%3E';
@@ -54,6 +74,7 @@ const HERO_PREVIEW_PLACEHOLDER_IMAGE =
     '[attr.data-block-id]': 'blockInstanceId() || null',
     '[class.is-baseline-block]': 'isBaselineRenderer()',
     '[class.is-lab-fold-preview]': 'isBaselineFoldLabPreview()',
+    '[class.is-pending-preview]': 'pendingPreview()',
   },
   imports: [
     ProtopipeBuildHeroPreviewComponent,
@@ -66,6 +87,9 @@ const HERO_PREVIEW_PLACEHOLDER_IMAGE =
     ProtopipeBuildSparkyBaselineBlockComponent,
     ProtopipeBuildWilcoBaselineBlockComponent,
     ProtopipeBuildVeilBaselineBlockComponent,
+    ProtopipeBuildInteractiveStubComponent,
+    ProtopipeBuildHilBaselineBlockComponent,
+    ProtopipeBuildUniversalBaselineBlockComponent,
   ],
   templateUrl: './build-block-section.component.html',
   styleUrl: './build-block-section.component.scss',
@@ -82,23 +106,42 @@ export class ProtopipeBuildBlockSectionComponent {
   readonly configured = input(false);
   readonly heroLayoutId = input('sp-callout');
   readonly heroImageUrl = input<string | null>(null);
+  readonly blockLabel = input('');
+  readonly showBlockChrome = input(false);
+  readonly heroPhotoDrifted = input(false);
+  readonly pendingPreview = input(false);
 
   readonly sectionClick = output<BuildBookSection>();
   readonly propsChange = output<Record<string, unknown>>();
   readonly propPathChange = output<{ path: string; value: unknown }>();
   readonly imageEdit = output<BuildBlockImageEditEvent>();
   readonly copyChange = output<BuildHeroPreviewCopy>();
+  readonly inspectorNavigate = output<BuildBlockInspectorTab>();
+  readonly resetHeroPhoto = output<void>();
 
   sectionLabel(): string {
     return buildBookSectionLabel(this.section());
   }
 
   isBaselineRenderer(): boolean {
-    return isBaselineBlockProps(this.props());
+    return isBaselineBlock(this.resolvedBaselineBlockId(), this.props());
   }
 
-  baselineRenderer(): 'wri-site' | 'sparky-site' | 'wilco-site' | 'veil-site' | null {
-    return baselineRendererFromProps(this.props());
+  isInteractiveStubBlock(): boolean {
+    const blockId = this.resolvedBaselineBlockId();
+    return enrichedBlockDefinition(blockId)?.renderMode === 'interactive-stub';
+  }
+
+  isUniversalBaselineBlock(): boolean {
+    return isUniversalBaselineBlockId(this.resolvedBaselineBlockId());
+  }
+
+  isHilBaselineBlock(): boolean {
+    return this.baselineRenderer() === 'hil-site' && !this.isInteractiveStubBlock();
+  }
+
+  baselineRenderer(): 'wri-site' | 'sparky-site' | 'wilco-site' | 'veil-site' | 'hil-site' | null {
+    return resolveBaselineBlockRenderer(this.resolvedBaselineBlockId(), this.props());
   }
 
   resolvedBaselineBlockId(): string {
@@ -131,16 +174,36 @@ export class ProtopipeBuildBlockSectionComponent {
   }
 
   heroPreviewImageUrl(): string {
-    return readHeroImageUrl(this.props()) ?? this.heroImageUrl() ?? HERO_PREVIEW_PLACEHOLDER_IMAGE;
+    return (
+      readHeroImageUrl(this.props(), this.resolvedHeroLayoutId()) ??
+      this.heroImageUrl() ??
+      HERO_PREVIEW_PLACEHOLDER_IMAGE
+    );
   }
 
   isBaselineHeroLabPreview(): boolean {
     if (!this.isBaselineRenderer() || this.section() !== 'hero') return false;
+    if (this.baselineRenderer() === 'hil-site' || this.isInteractiveStubBlock()) return false;
+    if (isVeilHeroLabLayout(this.resolvedHeroLayoutId())) return false;
     return !isBaselineApprovedHeroLayout(this.resolvedHeroLayoutId());
+  }
+
+  isBaselineVeilHeroLabPreview(): boolean {
+    if (!this.isBaselineRenderer() || this.section() !== 'hero') return false;
+    return isVeilHeroLabLayout(this.resolvedHeroLayoutId());
+  }
+
+  resolvedVeilHeroPreviewBlockId(): string {
+    return (
+      resolveVeilHeroPreviewBlockId(this.resolvedHeroLayoutId(), this.resolvedBaselineBlockId()) ??
+      this.resolvedBaselineBlockId()
+    );
   }
 
   isBaselineFoldLabPreview(): boolean {
     if (!this.isBaselineRenderer() || this.section() !== 'fold') return false;
+    if (this.baselineRenderer() === 'hil-site') return false;
+    if (isVeilBaselineBlockId(this.resolvedBaselineBlockId())) return false;
     return !isBaselineApprovedFoldLayout(this.resolvedFoldLayoutId());
   }
 
@@ -173,7 +236,15 @@ export class ProtopipeBuildBlockSectionComponent {
     return this.heroLayoutId();
   }
 
+  resolvedHeroPreviewWireLayoutId(): string {
+    return resolveHeroPreviewWireLayout(this.resolvedHeroLayoutId());
+  }
+
   onSectionClick(event: MouseEvent): void {
+    if (this.pendingPreview()) {
+      event.stopPropagation();
+      return;
+    }
     event.stopPropagation();
     this.sectionClick.emit(this.section());
   }
@@ -195,8 +266,21 @@ export class ProtopipeBuildBlockSectionComponent {
       | BuildWriImageEditRequest
       | BuildSparkyImageEditRequest
       | BuildWilcoImageEditRequest
-      | BuildVeilImageEditRequest,
+      | BuildVeilImageEditRequest
+      | BuildUniversalImageEditRequest,
   ): void {
     this.imageEdit.emit({ propPath: request.propPath });
+  }
+
+  onChromeNavigate(tab: BuildBlockInspectorTab, event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.inspectorNavigate.emit(tab);
+  }
+
+  onChromeResetPhoto(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.resetHeroPhoto.emit();
   }
 }

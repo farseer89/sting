@@ -12,6 +12,8 @@ import {
   viewChild,
 } from '@angular/core';
 import type { BuildBookOption, BuildBookSection } from '../build-book.types';
+import type { SiteDesignContext } from '../../site-design/public';
+import { siteThemeTokensToCssVars } from '../../site-design/site-theme.util';
 import { DEFAULT_HERO_PREVIEW_COPY } from '../build-hero-preview.types';
 import { readHeroCopy } from '../build-hero-block.util';
 import { ProtopipeBuildHeroPreviewComponent } from '../build-hero-preview/protopipe-build-hero-preview.component';
@@ -20,10 +22,12 @@ import { ProtopipeBuildSparkyBaselineBlockComponent } from '../baseline/sparky/b
 import { ProtopipeBuildWriBaselineBlockComponent } from '../baseline/wri/build-wri-baseline-block.component';
 import { ProtopipeBuildWilcoBaselineBlockComponent } from '../baseline/wilco/build-wilco-baseline-block.component';
 import { ProtopipeBuildVeilBaselineBlockComponent } from '../baseline/veil/build-veil-baseline-block.component';
+import { ProtopipeBuildHilBaselineBlockComponent } from '../baseline/hil/build-hil-baseline-block.component';
 import {
   optionPreviewViewportWidth,
   resolveOptionPreviewTarget,
 } from './build-book-option-preview.util';
+import { resolveHeroPreviewWireLayout } from '../build-book-demo.catalog';
 
 const HERO_PREVIEW_PLACEHOLDER_IMAGE =
   'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000"%3E%3Cdefs%3E%3ClinearGradient id="g" x1="0" x2="1" y1="0" y2="1"%3E%3Cstop offset="0" stop-color="%230f766e"/%3E%3Cstop offset="0.52" stop-color="%23164e63"/%3E%3Cstop offset="1" stop-color="%230f172a"/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="1600" height="1000" fill="url(%23g)"/%3E%3C/svg%3E';
@@ -33,6 +37,9 @@ const HERO_PREVIEW_PLACEHOLDER_IMAGE =
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
+  host: {
+    '[style]': 'previewThemeStyle()',
+  },
   imports: [
     ProtopipeBuildHeroPreviewComponent,
     ProtopipeBuildFoldBlockComponent,
@@ -40,6 +47,7 @@ const HERO_PREVIEW_PLACEHOLDER_IMAGE =
     ProtopipeBuildWriBaselineBlockComponent,
     ProtopipeBuildWilcoBaselineBlockComponent,
     ProtopipeBuildVeilBaselineBlockComponent,
+    ProtopipeBuildHilBaselineBlockComponent,
   ],
   templateUrl: './protopipe-build-book-option-preview.component.html',
   styleUrl: './protopipe-build-book-option-preview.component.scss',
@@ -48,6 +56,12 @@ export class ProtopipeBuildBookOptionPreviewComponent implements AfterViewInit, 
   readonly option = input.required<BuildBookOption>();
   readonly section = input.required<BuildBookSection>();
   readonly selected = input(false);
+  readonly designContext = input<SiteDesignContext | null>(null);
+
+  readonly previewThemeStyle = computed(() => {
+    const ctx = this.designContext();
+    return ctx ? siteThemeTokensToCssVars(ctx.theme) : {};
+  });
 
   readonly frameRef = viewChild.required<ElementRef<HTMLElement>>('frame');
   readonly viewportRef = viewChild<ElementRef<HTMLElement>>('viewport');
@@ -55,7 +69,7 @@ export class ProtopipeBuildBookOptionPreviewComponent implements AfterViewInit, 
   readonly target = computed(() => {
     const section = this.section();
     if (section !== 'hero' && section !== 'fold') return null;
-    return resolveOptionPreviewTarget(this.option(), section);
+    return resolveOptionPreviewTarget(this.option(), section, this.designContext());
   });
   readonly heroCopy = computed(() => {
     const target = this.target();
@@ -65,7 +79,10 @@ export class ProtopipeBuildBookOptionPreviewComponent implements AfterViewInit, 
   readonly heroImageUrl = computed(
     () => this.target()?.heroImageUrl ?? HERO_PREVIEW_PLACEHOLDER_IMAGE,
   );
-  readonly heroLayoutId = computed(() => this.target()?.heroLayoutId ?? 'sp-callout');
+  readonly heroLayoutId = computed(() => {
+    const layoutId = this.target()?.heroLayoutId ?? 'sp-callout';
+    return resolveHeroPreviewWireLayout(layoutId);
+  });
   readonly viewportWidth = computed(() => optionPreviewViewportWidth(this.section()));
 
   readonly scale = signal(0.3);

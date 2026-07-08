@@ -1,0 +1,295 @@
+.bb-hil-block {
+  color: #14532d;
+  font-family: var(--bb-font-sans);
+}
+
+.hil-section {
+  padding: 2.5rem 1.5rem;
+  background: #fff;
+}
+
+.hil-kicker {
+  margin: 0 0 0.35rem;
+  color: #166534;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hil-heading {
+  margin: 0 0 0.5rem;
+  color: #0f172a;
+  font-size: clamp(1.35rem, 2.5vw, 1.85rem);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.hil-lede {
+  margin: 0 0 1.25rem;
+  max-width: 42rem;
+  color: #475569;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.hil-hero {
+  position: relative;
+  min-height: min(52vh, 28rem);
+  overflow: hidden;
+  background: #14532d;
+}
+
+.hil-hero__photo {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+}
+
+.hil-hero__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hil-hero__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgb(15 23 42 / 0.12) 0%, rgb(15 23 42 / 0.72) 100%);
+}
+
+.hil-hero__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: min(52vh, 28rem);
+  padding: 2.5rem 1.75rem;
+  color: #fff;
+}
+
+.hil-hero__eyebrow {
+  margin: 0 0 0.35rem;
+  color: #bbf7d0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hil-hero__title {
+  margin: 0 0 0.5rem;
+  max-width: 16ch;
+  font-size: clamp(1.65rem, 3.5vw, 2.5rem);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.hil-hero__sub {
+  margin: 0 0 1rem;
+  max-width: 36rem;
+  color: rgb(255 255 255 / 0.9);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.hil-hero__cta {
+  display: inline-flex;
+  width: fit-content;
+  padding: 0.65rem 1.1rem;
+  border-radius: 999px;
+  background: #166534;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.hil-photo-edit {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 2;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid rgb(255 255 255 / 0.35);
+  border-radius: 999px;
+  background: rgb(15 23 42 / 0.55);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.6875rem;
+}
+
+.hil-services__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.hil-service-card {
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+}
+
+.hil-service-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.hil-service-card__body {
+  padding: 0.85rem 0.95rem 1rem;
+}
+
+.hil-service-card__body h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.9375rem;
+}
+
+.hil-service-card__body p {
+  margin: 0 0 0.5rem;
+  color: #475569;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.hil-service-card__price {
+  color: #166534;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.hil-gallery__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.hil-gallery__item {
+  margin: 0;
+  overflow: hidden;
+  border-radius: 0.65rem;
+}
+
+.hil-gallery__item img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.hil-gallery__item figcaption {
+  padding: 0.45rem 0.15rem 0;
+  color: #64748b;
+  font-size: 0.6875rem;
+}
+
+.hil-before-after__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.hil-before-after__panel {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+}
+
+.hil-before-after__panel img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.hil-before-after__panel figcaption {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem 0.85rem 0.95rem;
+}
+
+.hil-before-after__label {
+  color: #166534;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.hil-before-after__panel strong {
+  font-size: 0.875rem;
+}
+
+.hil-before-after__panel span:last-child {
+  color: #64748b;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.hil-faq__list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.hil-faq__item {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.65rem;
+  padding: 0.65rem 0.85rem;
+  background: #f8fafc;
+}
+
+.hil-faq__item summary {
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.hil-faq__item p {
+  margin: 0.55rem 0 0;
+  color: #475569;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.hil-cta {
+  text-align: center;
+  background: linear-gradient(180deg, #ecfdf5 0%, #dcfce7 100%);
+}
+
+.hil-cta__title {
+  margin: 0 0 0.45rem;
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+}
+
+.hil-cta__sub {
+  margin: 0 auto 1rem;
+  max-width: 32rem;
+  color: #475569;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.hil-cta__btn {
+  display: inline-flex;
+  padding: 0.65rem 1.1rem;
+  border-radius: 999px;
+  background: #166534;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@media (max-width: 720px) {
+  .hil-services__grid,
+  .hil-gallery__grid,
+  .hil-before-after__grid {
+    grid-template-columns: 1fr;
+  }
+}

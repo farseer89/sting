@@ -1,6 +1,7 @@
 /** Minimal component defaults for section swaps — keep in sync with bagend componentSectionDefaults. */
 
 import { WRI_BASELINE_BLOCK_DEFINITIONS } from './build-book-baseline-block.catalog';
+import { HIL_BASELINE_BLOCK_DEFINITIONS } from './build-book-hil-baseline-block.catalog';
 
 export interface BuildBookComponentDefaults {
   defaultProps: Record<string, unknown>;
@@ -22,8 +23,19 @@ const BASELINE_WRI_COMPONENT_DEFAULTS = Object.fromEntries(
   ]),
 ) as Record<string, BuildBookComponentDefaults>;
 
+const BASELINE_HIL_COMPONENT_DEFAULTS = Object.fromEntries(
+  HIL_BASELINE_BLOCK_DEFINITIONS.map((block) => [
+    block.componentId,
+    {
+      defaultProps: structuredClone(block.defaultProps),
+      editableFields: [...block.editableFields],
+    },
+  ]),
+) as Record<string, BuildBookComponentDefaults>;
+
 export const BUILD_BOOK_COMPONENT_DEFAULTS: Record<string, BuildBookComponentDefaults> = {
   ...BASELINE_WRI_COMPONENT_DEFAULTS,
+  ...BASELINE_HIL_COMPONENT_DEFAULTS,
   'hero-split': {
     defaultProps: {
       eyebrow: 'Your business',

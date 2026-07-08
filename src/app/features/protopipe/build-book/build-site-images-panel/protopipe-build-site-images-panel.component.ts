@@ -18,9 +18,19 @@ import {
   type BuildHeroPreviewCopy,
 } from '../build-hero-preview.types';
 import { BUILD_DEMO_HERO_VARIANTS } from '../build-book-demo.catalog';
+import { collectBuildBookTemplateCoreImages } from '../build-book-template-images.util';
 import type { BuildBookDemoBrand } from '../build-book.types';
 
 type SiteInfoTab = 'images' | 'basic' | 'seo';
+
+export type BuildSiteImageLibraryItem = {
+  id: string;
+  url: string;
+  label: string;
+  source: 'template' | 'generated' | 'uploaded';
+  originalFilename?: string | null;
+  deletable: boolean;
+};
 
 @Component({
   selector: 'app-protopipe-build-site-images-panel',
@@ -40,6 +50,9 @@ export class ProtopipeBuildSiteImagesPanelComponent implements OnInit {
   readonly copy = input<BuildHeroPreviewCopy>(DEFAULT_HERO_PREVIEW_COPY);
   readonly selectedImageUrl = input<string | null>(null);
   readonly canUseHeroImage = input(false);
+  /** full = chapter view with tabs; library = images library only (inspector embed) */
+  readonly embedMode = input<'full' | 'library'>('full');
+  readonly templateId = input<string | null>(null);
 
   readonly copyChange = output<BuildHeroPreviewCopy>();
   readonly imageSelected = output<string>();
@@ -61,7 +74,38 @@ export class ProtopipeBuildSiteImagesPanelComponent implements OnInit {
     { id: 'seo', label: 'SEO Plan' },
   ];
 
-  readonly siteImageAssets = computed(() => this.studio.assets());
+  readonly templateCoreImages = computed(() => collectBuildBookTemplateCoreImages(this.templateId()));
+
+  readonly siteImageAssets = computed<BuildSiteImageLibraryItem[]>(() => {
+    const uploadedUrls = new Set<string>();
+    const items: BuildSiteImageLibraryItem[] = [];
+
+    for (const asset of this.templateCoreImages()) {
+      items.push({
+        id: asset.id,
+        url: asset.url,
+        label: asset.label,
+        source: 'template',
+        deletable: false,
+      });
+      uploadedUrls.add(asset.url);
+    }
+
+    for (const asset of this.studio.assets()) {
+      if (uploadedUrls.has(asset.url)) continue;
+      items.push({
+        id: asset.id,
+        url: asset.url,
+        label: asset.label || asset.originalFilename || 'Site image',
+        source: asset.source === 'generated' ? 'generated' : 'uploaded',
+        originalFilename: asset.originalFilename,
+        deletable: true,
+      });
+      uploadedUrls.add(asset.url);
+    }
+
+    return items;
+  });
 
   readonly photoModelChoices = computed(() => {
     const cfg = this.studio.config();
@@ -93,8 +137,20 @@ export class ProtopipeBuildSiteImagesPanelComponent implements OnInit {
   });
 
   readonly activePreviewUrl = computed(
-    () => this.previewImageUrl() ?? this.selectedImageUrl() ?? this.siteImageAssets()[0]?.url ?? '',
+    () =>
+      this.previewImageUrl() ??
+      this.selectedImageUrl() ??
+      this.siteImageAssets()[0]?.url ??
+      '',
   );
+
+  readonly libraryCountLabel = computed(() => {
+    const items = this.siteImageAssets();
+    const templateCount = items.filter((item) => item.source === 'template').length;
+    const siteCount = items.length - templateCount;
+    if (templateCount && siteCount) return `${items.length} images · ${templateCount} template`;
+    return `${items.length} images`;
+  });
 
   readonly previewLayout = computed(() => this.heroLayout());
 
@@ -102,6 +158,10 @@ export class ProtopipeBuildSiteImagesPanelComponent implements OnInit {
     const hero = BUILD_DEMO_HERO_VARIANTS.find((h) => h.id === this.heroLayout());
     return hero?.label ?? this.currentHero()?.label ?? this.heroLabel();
   });
+
+  readonly useImageButtonLabel = computed(() =>
+    this.canUseHeroImage() ? 'Apply to block' : 'Select template first',
+  );
 
   readonly previewSiteUrl = computed(() => {
     const hero = BUILD_DEMO_HERO_VARIANTS.find((h) => h.id === this.heroLayout());
@@ -183,6 +243,17 @@ export class ProtopipeBuildSiteImagesPanelComponent implements OnInit {
   selectImage(url: string): void {
     if (!this.canUseHeroImage()) return;
     this.imageSelected.emit(url);
+  }
+
+  sourceLabel(source: BuildSiteImageLibraryItem['source']): string {
+    switch (source) {
+      case 'template':
+        return 'Template stock';
+      case 'generated':
+        return 'AI generated';
+      default:
+        return 'Uploaded';
+    }
   }
 
   async deleteSiteImage(assetId: string, imageUrl: string): Promise<void> {

@@ -1,11 +1,15 @@
 @import '../baseline/sparky/sparky-baseline.css';
 @import '../baseline/wilco/wilco-baseline.css';
 @import '../baseline/veil/veil-baseline.css';
+@import '../baseline/baseline-theme-typography.css';
 
 :host {
   display: block;
   height: 100%;
   min-height: 0;
+  background: var(--bb-background, #fff);
+  --bb-font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --bb-font-serif: Georgia, 'Times New Roman', serif;
 }
 
 .bb-page-canvas {
@@ -15,8 +19,11 @@
   height: 100%;
   min-height: 0;
   overflow: auto;
-  background: #fff;
+  background: var(--bb-background, #fff);
+  color: var(--bb-text, inherit);
   position: relative;
+  --bb-font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --bb-font-serif: Georgia, 'Times New Roman', serif;
   /* Contain baseline site headers (position:fixed in lab CSS) inside the preview scrollport. */
   transform: translateZ(0);
 }
@@ -64,8 +71,45 @@
   background: var(--color-bg, #ffffff);
 }
 
+.bb-page-canvas--baseline.bb-page-canvas--wri {
+  background: var(--wri-mist, #f4f7f6);
+}
+
 .bb-page-canvas--baseline.bb-page-canvas--veil {
   background: var(--veil-bg, #faf7f2);
+}
+
+.bb-page-canvas--baseline.bb-page-canvas--hil {
+  background: #f0fdf4;
+}
+
+.bb-page-canvas__hil-shell {
+  min-height: 0;
+}
+
+.hil-site-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid #dcfce7;
+  background: rgb(255 255 255 / 0.92);
+  color: #14532d;
+  font-size: 0.8125rem;
+
+  span {
+    color: #166534;
+  }
+}
+
+.hil-site-header__logo {
+  display: block;
+  height: 2rem;
+  width: auto;
 }
 
 .bb-page-canvas--baseline app-protopipe-build-block-section {
@@ -107,4 +151,22 @@
 
 .bb-page-canvas--baseline .wri-fold-fw__media img {
   min-height: 10rem;
+}
+
+.bb-page-canvas--focus-block {
+  app-protopipe-build-block-section[data-focus-active='false'] {
+    max-height: 2.75rem;
+    overflow: hidden;
+    opacity: 0.42;
+    cursor: pointer;
+    transition: opacity 0.15s, max-height 0.2s;
+
+    &:hover {
+      opacity: 0.65;
+    }
+  }
+
+  app-protopipe-build-block-section[data-focus-active='true'] {
+    scroll-margin-top: 1rem;
+  }
 }

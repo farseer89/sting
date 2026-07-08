@@ -58,6 +58,375 @@
         }
       </section>
     }
+    @case ('veil-baseline-hero-salon-wall') {
+      <section class="veil-hero-salon-wall">
+        <div class="veil-hero-salon-wall__grid" aria-hidden="true">
+          @for (panel of salonPanels(); track $index) {
+            <figure
+              class="veil-hero-salon-wall__cell"
+              [class.veil-hero-salon-wall__cell--tall]="panel.span === 'tall'"
+              [class.veil-hero-salon-wall__cell--wide]="panel.span === 'wide'"
+            >
+              <img [src]="panel.image" alt="" loading="eager" />
+              @if (editable()) {
+                <button
+                  type="button"
+                  class="bb-veil-photo-edit bb-veil-photo-edit--compact"
+                  aria-label="Change salon panel photo"
+                  (click)="onPhotoEdit($event, 'salonPanels.' + $index + '.image')"
+                >
+                  Change photo
+                </button>
+              }
+            </figure>
+          }
+        </div>
+        <div class="veil-hero-salon-wall__scrim" aria-hidden="true"></div>
+        <div class="veil-hero-salon-wall__copy">
+          <p class="veil-hero-eyebrow">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('eyebrow')" hostClass="" ariaLabel="Hero eyebrow" (valueChange)="patch('eyebrow', $event)" />
+          </p>
+          <h1 class="veil-hero-title veil-hero-salon-wall__title">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Hero headline" [multiline]="true" (valueChange)="patch('heading', $event)" />
+          </h1>
+          <p class="veil-hero-sub">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('subhead')" hostClass="" ariaLabel="Hero subhead" [multiline]="true" (valueChange)="patch('subhead', $event)" />
+          </p>
+          <div class="veil-hero-actions" style="justify-content: center;">
+            <a class="veil-btn veil-btn--primary" [href]="str('primaryCtaHref', '#inquire')" (click)="onLinkClick($event)">
+              <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('primaryCtaLabel', 'Book your date')" hostClass="" (valueChange)="patch('primaryCtaLabel', $event)" />
+            </a>
+          </div>
+        </div>
+      </section>
+    }
+    @case ('veil-baseline-hero-stationery') {
+      <section class="veil-hero-stationery">
+        <figure class="veil-hero-stationery__texture">
+          <img [src]="str('textureImageSrc')" alt="" loading="eager" />
+          @if (editable()) {
+            <button
+              type="button"
+              class="bb-veil-photo-edit bb-veil-photo-edit--cover"
+              aria-label="Change texture photo"
+              (click)="onPhotoEdit($event, 'textureImageSrc')"
+            >
+              Change photo
+            </button>
+          }
+        </figure>
+        <div class="veil-hero-stationery__inner">
+          <p class="veil-hero-stationery__monogram" aria-hidden="true">{{ str('monogram', 'AL') }}</p>
+          <div class="veil-hero-stationery__rule" aria-hidden="true"></div>
+          <p class="veil-hero-eyebrow veil-hero-stationery__eyebrow">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('eyebrow')" hostClass="" ariaLabel="Hero eyebrow" (valueChange)="patch('eyebrow', $event)" />
+          </p>
+          <h1 class="veil-hero-title veil-hero-stationery__title">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Hero headline" [multiline]="true" (valueChange)="patch('heading', $event)" />
+          </h1>
+          <div class="veil-hero-actions" style="justify-content: center;">
+            <a class="veil-btn veil-btn--primary" [href]="str('primaryCtaHref', '#inquire')" (click)="onLinkClick($event)">
+              <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('primaryCtaLabel', 'Book your date')" hostClass="" (valueChange)="patch('primaryCtaLabel', $event)" />
+            </a>
+          </div>
+        </div>
+      </section>
+    }
+    @case ('veil-baseline-hero-process-ribbon') {
+      <section class="veil-hero-process-ribbon">
+        <div class="veil-wrap">
+          <div class="veil-hero-process-ribbon__steps" aria-label="Live painting process">
+            @for (step of processSteps(); track $index) {
+              <figure class="veil-hero-process-ribbon__step">
+                <img [src]="step.image" [alt]="step.label" loading="eager" />
+                @if (editable()) {
+                  <button
+                    type="button"
+                    class="bb-veil-photo-edit bb-veil-photo-edit--compact"
+                    aria-label="Change process step photo"
+                    (click)="onPhotoEdit($event, 'processSteps.' + $index + '.image')"
+                  >
+                    Change photo
+                  </button>
+                }
+                <figcaption>{{ step.label }}</figcaption>
+              </figure>
+            }
+          </div>
+        </div>
+        <div class="veil-hero-process-ribbon__main">
+          <figure class="veil-hero-process-ribbon__photo">
+            <img [src]="str('backgroundImageSrc')" alt="" loading="eager" />
+            @if (editable()) {
+              <button
+                type="button"
+                class="bb-veil-photo-edit bb-veil-photo-edit--cover"
+                aria-label="Change hero background"
+                (click)="onPhotoEdit($event, 'backgroundImageSrc')"
+              >
+                Change photo
+              </button>
+            }
+          </figure>
+          <div class="veil-hero-process-ribbon__scrim" aria-hidden="true"></div>
+          <div class="veil-wrap veil-hero-process-ribbon__panel">
+            <h1 class="veil-hero-title">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Hero headline" [multiline]="true" (valueChange)="patch('heading', $event)" />
+            </h1>
+            <p class="veil-hero-sub">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('subhead')" hostClass="" ariaLabel="Hero subhead" [multiline]="true" (valueChange)="patch('subhead', $event)" />
+            </p>
+            <div class="veil-hero-actions">
+              <a class="veil-btn veil-btn--primary" [href]="str('primaryCtaHref', '#inquire')" (click)="onLinkClick($event)">
+                <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('primaryCtaLabel', 'Book your date')" hostClass="" (valueChange)="patch('primaryCtaLabel', $event)" />
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    }
+    @case ('veil-baseline-hero-over-shoulder') {
+      <section class="veil-hero-over-shoulder">
+        <figure class="veil-hero-over-shoulder__photo">
+          <img [src]="str('backgroundImageSrc')" alt="" loading="eager" />
+        </figure>
+        <div class="veil-hero-over-shoulder__scrim" aria-hidden="true"></div>
+        <div class="veil-hero-over-shoulder__copy">
+          <p class="veil-hero-eyebrow">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('eyebrow')" hostClass="" ariaLabel="Hero eyebrow" (valueChange)="patch('eyebrow', $event)" />
+          </p>
+          <h1 class="veil-hero-title">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Hero headline" [multiline]="true" (valueChange)="patch('heading', $event)" />
+          </h1>
+          <p class="veil-hero-sub">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('subhead')" hostClass="" ariaLabel="Hero subhead" [multiline]="true" (valueChange)="patch('subhead', $event)" />
+          </p>
+          <div class="veil-hero-actions" style="justify-content: center;">
+            <a class="veil-btn veil-btn--primary" [href]="str('primaryCtaHref', '#inquire')" (click)="onLinkClick($event)">
+              <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('primaryCtaLabel', 'Book your date')" hostClass="" (valueChange)="patch('primaryCtaLabel', $event)" />
+            </a>
+          </div>
+        </div>
+        @if (editable()) {
+          <button type="button" class="bb-veil-photo-edit" aria-label="Change hero background" (click)="onPhotoEdit($event, 'backgroundImageSrc')">Change photo</button>
+        }
+      </section>
+    }
+    @case ('veil-baseline-hero-brushstroke') {
+      <section class="veil-hero-brushstroke">
+        <figure class="veil-hero-brushstroke__left">
+          <img [src]="str('leftImageSrc')" alt="" loading="eager" />
+          @if (editable()) {
+            <button
+              type="button"
+              class="bb-veil-photo-edit bb-veil-photo-edit--cover"
+              aria-label="Change left photo"
+              (click)="onPhotoEdit($event, 'leftImageSrc')"
+            >
+              Change photo
+            </button>
+          }
+        </figure>
+        <figure class="veil-hero-brushstroke__right">
+          <img [src]="str('rightImageSrc')" alt="" loading="eager" />
+          @if (editable()) {
+            <button
+              type="button"
+              class="bb-veil-photo-edit bb-veil-photo-edit--cover"
+              aria-label="Change right photo"
+              (click)="onPhotoEdit($event, 'rightImageSrc')"
+            >
+              Change photo
+            </button>
+          }
+        </figure>
+        <div class="veil-hero-brushstroke__divider" aria-hidden="true"></div>
+        <div class="veil-hero-brushstroke__band">
+          <div class="veil-wrap">
+            <h1>
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Hero headline" [multiline]="true" (valueChange)="patch('heading', $event)" />
+            </h1>
+            <a class="veil-btn veil-btn--primary" [href]="str('primaryCtaHref', '#inquire')" (click)="onLinkClick($event)">
+              <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('primaryCtaLabel', 'Book your date')" hostClass="" (valueChange)="patch('primaryCtaLabel', $event)" />
+            </a>
+          </div>
+        </div>
+      </section>
+    }
+    @case ('veil-baseline-hero-vow-inset') {
+      <section class="veil-hero-vow-inset">
+        <figure class="veil-hero-vow-inset__photo">
+          <img [src]="str('backgroundImageSrc')" alt="" loading="eager" />
+          @if (editable()) {
+            <button
+              type="button"
+              class="bb-veil-photo-edit bb-veil-photo-edit--cover"
+              aria-label="Change hero background"
+              (click)="onPhotoEdit($event, 'backgroundImageSrc')"
+            >
+              Change photo
+            </button>
+          }
+        </figure>
+        <figure class="veil-hero-vow-inset__inset">
+          <img [src]="str('insetImageSrc')" alt="" loading="eager" />
+          @if (editable()) {
+            <button
+              type="button"
+              class="bb-veil-photo-edit bb-veil-photo-edit--cover"
+              aria-label="Change inset painting"
+              (click)="onPhotoEdit($event, 'insetImageSrc')"
+            >
+              Change photo
+            </button>
+          }
+        </figure>
+        <div class="veil-hero-vow-inset__scrim" aria-hidden="true"></div>
+        <div class="veil-hero-vow-inset__panel">
+          <p class="veil-hero-eyebrow">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('eyebrow')" hostClass="" ariaLabel="Hero eyebrow" (valueChange)="patch('eyebrow', $event)" />
+          </p>
+          <h1 class="veil-hero-title">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Hero headline" [multiline]="true" (valueChange)="patch('heading', $event)" />
+          </h1>
+          <p class="veil-hero-sub">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('subhead')" hostClass="" ariaLabel="Hero subhead" [multiline]="true" (valueChange)="patch('subhead', $event)" />
+          </p>
+          <div class="veil-hero-actions">
+            <a class="veil-btn veil-btn--primary" [href]="str('primaryCtaHref', '#inquire')" (click)="onLinkClick($event)">
+              <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('primaryCtaLabel', 'Book your date')" hostClass="" (valueChange)="patch('primaryCtaLabel', $event)" />
+            </a>
+          </div>
+        </div>
+      </section>
+    }
+    @case ('veil-baseline-hero-heirloom') {
+      <section class="veil-hero-heirloom">
+        <div class="veil-wrap">
+          <div class="veil-hero-heirloom__grid">
+            <div class="veil-hero-heirloom__copy">
+              <p class="veil-hero-eyebrow veil-hero-heirloom__eyebrow">
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('eyebrow')" hostClass="" ariaLabel="Hero eyebrow" (valueChange)="patch('eyebrow', $event)" />
+              </p>
+              <h1 class="veil-hero-title">
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Hero headline" [multiline]="true" (valueChange)="patch('heading', $event)" />
+              </h1>
+              <p class="veil-hero-sub">
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('subhead')" hostClass="" ariaLabel="Hero subhead" [multiline]="true" (valueChange)="patch('subhead', $event)" />
+              </p>
+              <div class="veil-hero-actions">
+                <a class="veil-btn veil-btn--primary" [href]="str('primaryCtaHref', '#inquire')" (click)="onLinkClick($event)">
+                  <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('primaryCtaLabel', 'Book your date')" hostClass="" (valueChange)="patch('primaryCtaLabel', $event)" />
+                </a>
+                <a class="veil-btn veil-btn--secondary-dark" [href]="str('secondaryCtaHref', '#portfolio')" (click)="onLinkClick($event)">
+                  <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('secondaryCtaLabel', 'View gallery')" hostClass="" (valueChange)="patch('secondaryCtaLabel', $event)" />
+                </a>
+              </div>
+            </div>
+            <figure class="veil-hero-heirloom__photo">
+              <img [src]="str('backgroundImageSrc')" alt="" loading="eager" />
+              @if (editable()) {
+                <button
+                  type="button"
+                  class="bb-veil-photo-edit bb-veil-photo-edit--cover"
+                  aria-label="Change hero photo"
+                  (click)="onPhotoEdit($event, 'backgroundImageSrc')"
+                >
+                  Change photo
+                </button>
+              }
+            </figure>
+          </div>
+        </div>
+      </section>
+    }
+    @case ('veil-baseline-hero-curtain') {
+      <section class="veil-hero-curtain">
+        <figure class="veil-hero-curtain__photo">
+          <img [src]="str('backgroundImageSrc')" alt="" loading="eager" />
+        </figure>
+        <div class="veil-hero-curtain__curtain" aria-hidden="true"></div>
+        <div class="veil-hero-curtain__panel">
+          <div class="veil-wrap">
+            <div class="veil-hero-curtain__copy">
+              <p class="veil-hero-eyebrow">
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('eyebrow')" hostClass="" ariaLabel="Hero eyebrow" (valueChange)="patch('eyebrow', $event)" />
+              </p>
+              <h1 class="veil-hero-title">
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Hero headline" [multiline]="true" (valueChange)="patch('heading', $event)" />
+              </h1>
+              <p class="veil-hero-sub">
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('subhead')" hostClass="" ariaLabel="Hero subhead" [multiline]="true" (valueChange)="patch('subhead', $event)" />
+              </p>
+              <div class="veil-hero-actions">
+                <a class="veil-btn veil-btn--primary" [href]="str('primaryCtaHref', '#inquire')" (click)="onLinkClick($event)">
+                  <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('primaryCtaLabel', 'Book your date')" hostClass="" (valueChange)="patch('primaryCtaLabel', $event)" />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+        @if (editable()) {
+          <button type="button" class="bb-veil-photo-edit" aria-label="Change hero background" (click)="onPhotoEdit($event, 'backgroundImageSrc')">Change photo</button>
+        }
+      </section>
+    }
+    @case ('veil-baseline-hero-quote') {
+      <section class="veil-hero-quote-veil">
+        <figure class="veil-hero-quote-veil__texture">
+          <img [src]="str('textureImageSrc')" alt="" loading="eager" />
+          @if (editable()) {
+            <button
+              type="button"
+              class="bb-veil-photo-edit bb-veil-photo-edit--cover"
+              aria-label="Change texture photo"
+              (click)="onPhotoEdit($event, 'textureImageSrc')"
+            >
+              Change photo
+            </button>
+          }
+        </figure>
+        <div class="veil-hero-quote-veil__scrim" aria-hidden="true"></div>
+        <div class="veil-hero-quote-veil__inner">
+          <blockquote class="veil-hero-quote-veil__quote">"{{ str('quote') }}"</blockquote>
+          <p class="veil-hero-quote-veil__attr">— {{ str('quoteAuthor') }} · {{ str('quoteDetail') }}</p>
+          <a class="veil-btn veil-btn--primary" [href]="str('primaryCtaHref', '#inquire')" (click)="onLinkClick($event)">
+            <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('primaryCtaLabel', 'Book your date')" hostClass="" (valueChange)="patch('primaryCtaLabel', $event)" />
+          </a>
+        </div>
+      </section>
+    }
+    @case ('veil-baseline-hero-date-ribbon') {
+      <section class="veil-hero-date-ribbon">
+        <figure class="veil-hero-date-ribbon__photo">
+          <img [src]="str('backgroundImageSrc')" alt="" loading="eager" />
+        </figure>
+        <div class="veil-hero-date-ribbon__scrim" aria-hidden="true"></div>
+        <div class="veil-wrap veil-hero-date-ribbon__panel">
+          <p class="veil-hero-eyebrow">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('eyebrow')" hostClass="" ariaLabel="Hero eyebrow" (valueChange)="patch('eyebrow', $event)" />
+          </p>
+          <h1 class="veil-hero-title">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Hero headline" [multiline]="true" (valueChange)="patch('heading', $event)" />
+          </h1>
+          <p class="veil-hero-sub">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('subhead')" hostClass="" ariaLabel="Hero subhead" [multiline]="true" (valueChange)="patch('subhead', $event)" />
+          </p>
+          <div class="veil-hero-date-ribbon__ribbon">
+            <div>
+              <strong>{{ str('ribbonSeason') }}</strong>
+              <span>{{ str('ribbonDetail') }}</span>
+            </div>
+            <a class="veil-btn veil-btn--primary" [href]="str('primaryCtaHref', '#inquire')" (click)="onLinkClick($event)">
+              <app-protopipe-build-inline-cta [editable]="editable()" [value]="str('primaryCtaLabel', 'Book your date')" hostClass="" (valueChange)="patch('primaryCtaLabel', $event)" />
+            </a>
+          </div>
+        </div>
+        @if (editable()) {
+          <button type="button" class="bb-veil-photo-edit" aria-label="Change hero background" (click)="onPhotoEdit($event, 'backgroundImageSrc')">Change photo</button>
+        }
+      </section>
+    }
     @case ('veil-baseline-fold-process') {
       <section class="veil-fold veil-fold-process" id="process">
         <div class="veil-wrap">

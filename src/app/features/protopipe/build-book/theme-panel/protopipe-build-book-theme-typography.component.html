@@ -1,0 +1,54 @@
+<section class="bk-type" aria-labelledby="bk-theme-type-heading">
+  <div class="bk-type__head">
+    <div>
+      <h3 id="bk-theme-type-heading" class="bk-type__title">Typography</h3>
+      <p class="bk-type__deck">Curated Google Font pairings for headlines and body copy.</p>
+    </div>
+    <button type="button" class="bk-type__reset" (click)="resetFonts()">Reset fonts</button>
+  </div>
+
+  @if (activeTypography(); as active) {
+    <div class="bk-type__live-preview">
+      <p class="bk-type__live-serif" [attr.data-bk-font]="activeSerifId()">Trusted local headlines</p>
+      <p class="bk-type__live-sans" [attr.data-bk-font]="activeSansId()">
+        Body copy — Sphinx of black quartz, judge my vow.
+      </p>
+    </div>
+  }
+
+  <div class="bk-type__group">
+    <h4 class="bk-type__group-title">Font pairings</h4>
+    <div class="bk-type__list" role="listbox" aria-label="Font pairing options">
+      @for (pairing of fontPairings; track pairing.id) {
+        <div
+          role="option"
+          tabindex="0"
+          class="bk-type__pairing"
+          [class.is-selected]="isSelected(pairing)"
+          [attr.aria-selected]="isSelected(pairing)"
+          (click)="selectPairing(pairing)"
+          (keydown)="onPairingKeydown($event, pairing)"
+        >
+          <span class="bk-type__pairing-meta">
+            <span class="bk-type__pairing-label">{{ pairing.label }}</span>
+            <span class="bk-type__pairing-mood">{{ pairing.mood }}</span>
+          </span>
+          <span class="bk-type__pairing-stack">{{ pairing.serifLabel }} headlines · {{ pairing.sansLabel }} body</span>
+          <span class="bk-type__pairing-preview">
+            <span class="bk-type__pairing-glyphs" aria-hidden="true">
+              <span class="bk-type__pairing-serif-aa" [attr.data-bk-font]="pairing.serifId">Aa</span>
+              <span class="bk-type__pairing-sans-aa" [attr.data-bk-font]="pairing.sansId">Aa</span>
+            </span>
+            <span class="bk-type__pairing-headline" [attr.data-bk-font]="pairing.serifId">
+              Trusted local service
+            </span>
+            <span class="bk-type__pairing-sans-label" [attr.data-bk-font]="pairing.sansId">{{ pairing.sansLabel }}</span>
+            <span class="bk-type__pairing-body" [attr.data-bk-font]="pairing.sansId">
+              Sphinx of black quartz, judge my vow.
+            </span>
+          </span>
+        </div>
+      }
+    </div>
+  </div>
+</section>

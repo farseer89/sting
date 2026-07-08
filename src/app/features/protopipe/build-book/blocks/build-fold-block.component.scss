@@ -6,8 +6,9 @@
 
 .bbf {
   padding: 1.5rem 1.75rem;
-  background: #fff;
-  color: #18181b;
+  background: var(--bb-background, #fff);
+  color: var(--bb-text, #18181b);
+  font-family: var(--bb-font-sans, system-ui, -apple-system, 'Segoe UI', sans-serif);
 }
 
 .bbf__stats {
@@ -17,9 +18,20 @@
 }
 
 .bbf__stats--bar {
-  border-top: 1px solid #e4e4e7;
-  border-bottom: 1px solid #e4e4e7;
+  border-top: 1px solid var(--bb-border, #e4e4e7);
+  border-bottom: 1px solid var(--bb-border, #e4e4e7);
   padding: 1rem 0;
+  background: var(--bb-ink, var(--bb-accent, #0a2240));
+  color: var(--bb-on-ink, #fff);
+}
+
+.bbf--contract-bar .bbf__stat {
+  background: transparent;
+  color: inherit;
+}
+
+.bbf--contract-bar .bbf__sectors {
+  color: color-mix(in srgb, var(--bb-on-ink, #fff) 72%, transparent);
 }
 
 .bbf__stat {
@@ -47,8 +59,8 @@
   margin-bottom: 1rem;
   padding: 0.85rem 1rem;
   border-radius: 0.75rem;
-  background: #18181b;
-  color: #fff;
+  background: var(--bb-ink, #18181b);
+  color: var(--bb-on-ink, #fff);
 }
 
 .bbf__trust-item {
@@ -61,7 +73,7 @@
 
   span {
     font-size: 0.6875rem;
-    color: rgb(255 255 255 / 0.72);
+    color: color-mix(in srgb, var(--bb-on-ink, #fff) 72%, transparent);
   }
 }
 
@@ -239,7 +251,8 @@
 .bbf__close-band {
   padding: 1rem;
   border-radius: 0.75rem;
-  background: #0f172a;
+  background: var(--bb-ink, #0f172a);
+  color: var(--bb-on-ink, #fff);
 }
 
 .bbf__close-btn {

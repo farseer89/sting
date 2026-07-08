@@ -1,0 +1,252 @@
+.bk-theme {
+  max-width: 72rem;
+  padding: 1.5rem 1.75rem 2.5rem;
+}
+
+.bk-theme--empty {
+  color: #71717a;
+  font-size: 0.9375rem;
+}
+
+.bk-theme__head {
+  margin-bottom: 1.5rem;
+}
+
+.bk-theme__title {
+  margin: 0.35rem 0 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #18181b;
+}
+
+.bk-theme__deck {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: #52525b;
+}
+
+.bk-theme__preview {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #e4e4e7;
+  border-radius: 0.75rem;
+  background: #fafafa;
+}
+
+.bk-theme__columns {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 960px) {
+  .bk-theme__columns {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+    align-items: start;
+  }
+
+  .bk-theme__column--type {
+    position: sticky;
+    top: 1rem;
+  }
+}
+
+.bk-theme__column {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.bk-theme__preview-surface {
+  padding: 0.85rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--bb-surface);
+  color: var(--bb-on-surface);
+}
+
+.bk-theme__preview-ink {
+  padding: 0.85rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--bb-ink);
+  color: var(--bb-on-ink);
+}
+
+.bk-theme__preview-body {
+  padding: 0.85rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--bb-background);
+  color: var(--bb-text);
+}
+
+.bk-theme__preview-kicker {
+  margin: 0 0 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+.bk-theme__preview-stat {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.bk-theme__preview-muted {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  opacity: 0.72;
+}
+
+.bk-theme__preview-heading {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.bk-theme__preview-accent {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--bb-button-radius, 999px);
+  background: var(--bb-accent);
+  color: var(--bb-accent-on);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.bk-theme__preview-serif {
+  margin: 0 0 0.35rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.bk-theme__preview-copy {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.bk-theme__section + .bk-theme__section {
+  margin-top: 1.75rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid #e4e4e7;
+}
+
+.bk-theme__section--nested {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.bk-theme__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.bk-theme__section-title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #52525b;
+}
+
+.bk-theme__reset {
+  border: none;
+  background: none;
+  padding: 0;
+  color: #0f766e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bk-theme__reset:hover {
+  text-decoration: underline;
+}
+
+.bk-theme__grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+@media (min-width: 640px) {
+  .bk-theme__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.bk-theme__grid--type {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .bk-theme__column--color .bk-theme__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.bk-theme__field {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.bk-theme__field-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #18181b;
+}
+
+.bk-theme__field-hint {
+  font-size: 0.6875rem;
+  color: #71717a;
+}
+
+.bk-theme__swatch-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bk-theme__color-input {
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 1px solid #d4d4d8;
+  border-radius: 0.375rem;
+  background: transparent;
+  cursor: pointer;
+}
+
+.bk-theme__hex-input,
+.bk-theme__select {
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #d4d4d8;
+  border-radius: 0.375rem;
+  background: #fff;
+  font-size: 0.8125rem;
+  color: #18181b;
+}
+
+.bk-theme__hex-input:focus,
+.bk-theme__select:focus {
+  outline: 2px solid #0f766e;
+  outline-offset: 1px;
+}
+
+.bk-theme__footer {
+  margin-top: 1.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e4e4e7;
+}

@@ -10,9 +10,9 @@ import {
   output,
 } from '@angular/core';
 import type { BuildBookSection, BuildBookWireLayout } from '../build-book.types';
-import { BUILD_BOOK_SECTION_ORDER } from '../build-book.constants';
+import { BUILD_BOOK_SECTION_ORDER, buildBookSectionLabel } from '../build-book.constants';
 import type { BuildHeroPreviewCopy } from '../build-hero-preview.types';
-import { baselineRendererFromProps, isBaselineBlockProps } from '../build-book-baseline.util';
+import { resolveBaselineBlockRenderer } from '../build-book-baseline.util';
 import { ProtopipeBuildWilcoSiteFooterComponent } from '../baseline/wilco/build-wilco-site-footer.component';
 import { ProtopipeBuildWilcoSiteHeaderComponent } from '../baseline/wilco/build-wilco-site-header.component';
 import { ProtopipeBuildSparkySiteFooterComponent } from '../baseline/sparky/build-sparky-site-footer.component';
@@ -21,7 +21,9 @@ import { ProtopipeBuildWriSiteFooterComponent } from '../baseline/wri/build-wri-
 import { ProtopipeBuildWriSiteHeaderComponent } from '../baseline/wri/build-wri-site-header.component';
 import { ProtopipeBuildVeilSiteFooterComponent } from '../baseline/veil/build-veil-site-footer.component';
 import { ProtopipeBuildVeilSiteHeaderComponent } from '../baseline/veil/build-veil-site-header.component';
-import { ProtopipeBuildBlockSectionComponent, type BuildBlockImageEditEvent } from './build-block-section.component';
+import { HIL_ASSETS } from '../baseline/hil/build-book-hil-content.constants';
+import { applySiteThemeCssVarsToCanvas } from '../../site-design/site-theme.util';
+import { ProtopipeBuildBlockSectionComponent, type BuildBlockImageEditEvent, type BuildBlockInspectorTab } from './build-block-section.component';
 
 export interface BuildPageImageEditEvent {
   blockId?: string;
@@ -44,6 +46,7 @@ export interface BuildPageBlockState {
   layout: BuildBookWireLayout;
   props: Record<string, unknown>;
   configured: boolean;
+  pendingPreview?: boolean;
 }
 
 export interface BuildPageBlockRenderGroup {
@@ -93,8 +96,14 @@ export class ProtopipeBuildPageCanvasComponent {
   readonly editable = input(true);
   readonly heroLayoutId = input('sp-callout');
   readonly heroImageUrl = input<string | null>(null);
+  readonly heroPhotoDriftedBlockId = input<string | null>(null);
   readonly scrollToSection = input<BuildBookSection | null>(null);
   readonly scrollToBlockId = input<string | null>(null);
+  readonly focusBlockMode = input(false);
+  readonly themeCssVars = input<Record<string, string> | null>(null);
+  readonly siteBaselineRenderer = input<
+    'wri-site' | 'sparky-site' | 'wilco-site' | 'veil-site' | 'hil-site' | null
+  >(null);
 
   readonly sectionClick = output<BuildBookSection>();
   readonly blockClick = output<string>();
@@ -104,12 +113,41 @@ export class ProtopipeBuildPageCanvasComponent {
   readonly blockPropsChange = output<{ blockId: string; props: Record<string, unknown> }>();
   readonly copyChange = output<BuildHeroPreviewCopy>();
   readonly imageEdit = output<BuildPageImageEditEvent>();
+  readonly inspectorNavigate = output<BuildBlockInspectorTab>();
+  readonly resetHeroPhoto = output<string>();
 
   readonly sectionSlots = BUILD_BOOK_SECTION_ORDER;
+  readonly hilLogoSrc = HIL_ASSETS.logoHorizontal;
 
-  readonly baselineSiteRenderer = computed((): 'wri-site' | 'sparky-site' | 'wilco-site' | 'veil-site' | null => {
+  constructor() {
+    effect(() => {
+      applySiteThemeCssVarsToCanvas(this.host.nativeElement, this.themeCssVars());
+    });
+
+    effect(() => {
+      const blockTarget = this.scrollToBlockId();
+      if (blockTarget) {
+        queueMicrotask(() => {
+          const el = this.host.nativeElement.querySelector(`[data-block-id="${blockTarget}"]`);
+          el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        return;
+      }
+
+      const target = this.scrollToSection();
+      if (!target) return;
+      queueMicrotask(() => {
+        const el = this.host.nativeElement.querySelector(`[data-section="${target}"]`);
+        el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  }
+
+  readonly baselineSiteRenderer = computed((): 'wri-site' | 'sparky-site' | 'wilco-site' | 'veil-site' | 'hil-site' | null => {
+    const siteRenderer = this.siteBaselineRenderer();
+    if (siteRenderer) return siteRenderer;
     for (const block of this.blocks()) {
-      const renderer = baselineRendererFromProps(block.props);
+      const renderer = resolveBaselineBlockRenderer(block.blockId, block.props);
       if (renderer) return renderer;
     }
     return null;
@@ -146,26 +184,6 @@ export class ProtopipeBuildPageCanvasComponent {
     if (renderer === 'veil-site') return this.veilRenderSegments();
     return this.wriRenderSegments();
   });
-
-  constructor() {
-    effect(() => {
-      const blockTarget = this.scrollToBlockId();
-      if (blockTarget) {
-        queueMicrotask(() => {
-          const el = this.host.nativeElement.querySelector(`[data-block-id="${blockTarget}"]`);
-          el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-        return;
-      }
-
-      const target = this.scrollToSection();
-      if (!target) return;
-      queueMicrotask(() => {
-        const el = this.host.nativeElement.querySelector(`[data-section="${target}"]`);
-        el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    });
-  }
 
   stateFor(section: BuildBookSection): BuildPageSectionState {
     return (
@@ -207,8 +225,14 @@ export class ProtopipeBuildPageCanvasComponent {
     this.imageEdit.emit({ blockId, propPath: event.propPath });
   }
 
-  isBaselineBlock(props: Record<string, unknown>): boolean {
-    return isBaselineBlockProps(props);
+  sectionLabel(section: BuildBookSection): string {
+    return buildBookSectionLabel(section);
+  }
+
+  isFocusBlockActive(blockInstanceId: string): boolean {
+    if (!this.focusBlockMode()) return true;
+    const active = this.activeBlockId();
+    return !active || active === blockInstanceId;
   }
 
   private wriRenderSegments(): BuildPageBlockRenderSegment[] {

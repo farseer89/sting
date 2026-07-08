@@ -1,0 +1,41 @@
+<div class="bk-landing-pages">
+  <aside class="bk-landing-pages__list" aria-label="Landing pages">
+    <div class="bk-landing-pages__head">
+      <strong>Landing pages</strong>
+      <p>Conversion-focused pages using the same pattern library as Homepage.</p>
+    </div>
+    <div class="bk-landing-pages__create">
+      <input
+        type="text"
+        [value]="newPageLabel()"
+        (input)="newPageLabel.set($any($event.target).value)"
+        placeholder="Page name"
+        aria-label="New landing page name"
+      />
+      <p-button label="Add page" icon="pi pi-plus" size="small" (onClick)="createPage()" />
+    </div>
+    <ul class="bk-landing-pages__items">
+      @for (page of pages(); track page.id) {
+        <li>
+          <button
+            type="button"
+            class="bk-landing-pages__item"
+            [class.is-active]="selectedPageId() === page.id"
+            (click)="selectPage(page.id)"
+          >
+            <span>{{ page.label }}</span>
+            @if (page.slug) {
+              <small>/{{ page.slug }}</small>
+            }
+            <span class="bk-landing-pages__count">{{ page.blocks.length }} blocks</span>
+          </button>
+        </li>
+      } @empty {
+        <li class="bk-landing-pages__empty">No landing pages yet. Add one to start building.</li>
+      }
+    </ul>
+  </aside>
+  <div class="bk-landing-pages__editor">
+    <ng-content />
+  </div>
+</div>

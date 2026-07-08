@@ -54,6 +54,14 @@
                 />
               </div>
             </div>
+          } @else if (preview.renderer === 'hil' && preview.blockId) {
+            <div class="hil-page bk-opt-preview__shell">
+              <app-protopipe-build-hil-baseline-block
+                [blockId]="preview.blockId"
+                [props]="preview.props"
+                [editable]="false"
+              />
+            </div>
           }
         }
         @case ('hero-lab') {

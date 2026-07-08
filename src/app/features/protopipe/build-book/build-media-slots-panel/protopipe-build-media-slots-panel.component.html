@@ -1,0 +1,27 @@
+@if (slots().length) {
+  <section class="bk-media-slots" aria-label="Image slots for this block">
+    <div class="bk-media-slots__head">
+      <strong>Slots for {{ blockLabel() || 'this block' }}</strong>
+      <p>Choose a slot, then pick a photo from the library below.</p>
+    </div>
+    <div class="bk-media-slots__grid">
+      @for (slot of slots(); track slot.id) {
+        <article class="bk-media-slots__card" [class.is-active]="activePropPath() === slot.propPath">
+          <button type="button" class="bk-media-slots__thumb" (click)="chooseSlot(slot.propPath)">
+            @if (slot.imageUrl) {
+              <img [src]="slot.imageUrl" [alt]="slot.label" loading="lazy" />
+            } @else {
+              <span class="bk-media-slots__empty">No photo</span>
+            }
+          </button>
+          <div class="bk-media-slots__meta">
+            <span>{{ slot.label }}</span>
+            <button type="button" class="bk-media-slots__choose" (click)="chooseSlot(slot.propPath)">
+              {{ activePropPath() === slot.propPath ? 'Choosing…' : 'Choose' }}
+            </button>
+          </div>
+        </article>
+      }
+    </div>
+  </section>
+}

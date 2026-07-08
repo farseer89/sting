@@ -1,0 +1,44 @@
+<div class="bk-stack-panel">
+  <div
+    class="bk-stack-panel__list"
+    cdkDropList
+    id="build-book-page-stack"
+    cdkDropListOrientation="vertical"
+    [cdkDropListData]="blocks()"
+    (cdkDropListDropped)="onDrop($any($event))"
+  >
+    @for (block of blocks(); track block.id; let idx = $index) {
+      <div class="bk-stack-panel__row" cdkDrag [cdkDragData]="block">
+        <span class="bk-stack-panel__drag" cdkDragHandle aria-hidden="true">⋮⋮</span>
+        <button
+          type="button"
+          class="bk-stack-panel__item"
+          [class.is-active]="activeBlockId() === block.id"
+          (click)="selectBlock.emit(block.id)"
+        >
+          <span class="bk-stack-panel__num">{{ idx + 1 }}</span>
+          <span class="bk-stack-panel__meta">
+            <span class="bk-stack-panel__name">{{ blockLabel(block) }}</span>
+            @if (blockType(block); as typeLabel) {
+              <small class="bk-stack-panel__type">{{ typeLabel }}</small>
+            }
+          </span>
+        </button>
+        @if (!isPinned(block.blockId)) {
+          <button
+            type="button"
+            class="bk-stack-panel__remove"
+            aria-label="Remove block"
+            (click)="onRemove(block.id, $event)"
+          >
+            ×
+          </button>
+        }
+      </div>
+    }
+    @if (blocks().length === 0) {
+      <div class="bk-stack-panel__empty">No blocks yet. Add a pattern to start building this page.</div>
+    }
+  </div>
+  <button type="button" class="bk-stack-panel__add" (click)="onAddBlockClick($event)">+ Add block</button>
+</div>

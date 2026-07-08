@@ -118,5 +118,9 @@ export function resolveBaselineFoldLayoutId(blockId: string, props: Record<strin
   if (labLayout && isBaselineApprovedFoldLayout(labLayout)) return labLayout;
   if (labLayout && !isBaselineApprovedFoldLayout(labLayout)) return labLayout;
 
-  return baselineApprovedFoldLayoutForBlock(blockId) ?? labLayout ?? 'wri-fold-contract';
+  const approved = baselineApprovedFoldLayoutForBlock(blockId);
+  if (approved) return approved;
+  if (blockId.startsWith('veil-baseline-')) return blockId;
+
+  return labLayout ?? 'wri-fold-contract';
 }

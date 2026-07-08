@@ -1,0 +1,134 @@
+/*
+ * Site theme typography roles — pairing sans body + serif headlines.
+ * Requires --bb-font-sans / --bb-font-serif on the canvas host (site theme panel).
+ */
+
+/* —— Shared body copy selectors —— */
+.bb-page-canvas :is(
+  p,
+  li,
+  dd,
+  label,
+  input,
+  textarea,
+  select,
+  button,
+  [class*='__lede'],
+  [class*='__sub'],
+  [class*='__body'],
+  [class*='__copy'],
+  [class*='__detail'],
+  [class*='__fine'],
+  [class*='__note'],
+  [class*='__text'],
+  [class*='__desc']
+) {
+  font-family: var(--bb-font-sans);
+}
+
+/* —— Shared headline selectors —— */
+.bb-page-canvas :is(
+  h1,
+  h2,
+  h3,
+  [class*='__title'],
+  [class*='__headline'],
+  [class*='__monogram'],
+  [class*='__value']
+) {
+  font-family: var(--bb-font-serif);
+}
+
+/* —— Veil (live wedding painter) —— */
+.bb-page-canvas--veil :is(.veil-site, .veil-page),
+.bb-veil-block {
+  font-family: var(--bb-font-sans);
+}
+
+.bb-page-canvas--veil :is(
+  .veil-section-title,
+  .veil-hero-title,
+  .veil-logo__mark,
+  .veil-fold-reviews__card blockquote,
+  .veil-fold-availability__season,
+  .veil-hero-stationery__monogram
+) {
+  font-family: var(--bb-font-serif);
+}
+
+.bb-page-canvas--veil :is(
+  .veil-section-kicker,
+  .veil-section-lede,
+  .veil-hero-eyebrow,
+  .veil-hero-sub,
+  .veil-logo__sub,
+  .veil-link,
+  .veil-btn
+) {
+  font-family: var(--bb-font-sans);
+}
+
+/* —— WRI —— */
+.bb-page-canvas--wri :is(.wri-site, .wri-page),
+.bb-wri-block {
+  font-family: var(--bb-font-sans);
+}
+
+.bb-page-canvas--wri :is(
+  [class*='__title'],
+  .wri-logo__line,
+  .wri-footer__brand,
+  .wri-fold-cb__value,
+  .wri-chalk-stats__value,
+  .wri-hero-mx__value
+) {
+  font-family: var(--bb-font-serif);
+}
+
+/* —— Sparky —— */
+.bb-page-canvas--sparky :is(.sparky-site, .sparky-page),
+.bb-sparky-block {
+  font-family: var(--bb-font-sans);
+}
+
+.bb-page-canvas--sparky :is(
+  h1,
+  h2,
+  h3,
+  [class*='__title'],
+  [class*='__headline'],
+  .sparky-pullquote
+) {
+  font-family: var(--bb-font-serif);
+}
+
+/* —— Wilco —— */
+.bb-page-canvas--wilco :is(.page-consult, .page-landing),
+.bb-wilco-block {
+  font-family: var(--bb-font-sans);
+}
+
+.bb-page-canvas--wilco :is(
+  h1,
+  h2,
+  h3,
+  .site-logo,
+  .blog-list a,
+  .page-intro__subheading
+) {
+  font-family: var(--bb-font-serif);
+}
+
+.bb-page-canvas--wilco [data-theme='consult-minimal'] :is(h2, h3, .site-logo) {
+  font-family: var(--bb-font-sans);
+}
+
+/* —— HIL —— */
+.bb-page-canvas--hil .bb-hil-block,
+.bb-hil-block {
+  font-family: var(--bb-font-sans);
+}
+
+.bb-page-canvas--hil :is(h1, h2, h3, [class*='__title']) {
+  font-family: var(--bb-font-serif);
+}

@@ -301,6 +301,12 @@ export class ProtopipeStrategyService {
     this._defaultCognitivePackId.set(packId || 'none');
   }
 
+  mergeSite(patch: Partial<import('@hive/contracts').ProtopipeSite>): void {
+    const current = this._site();
+    if (!current) return;
+    this._site.set({ ...current, ...patch });
+  }
+
   private clampPhrase(value: string): string {
     return value.trim().slice(0, PROTOPIPE_MAX_PHRASE_LENGTH);
   }

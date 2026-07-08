@@ -1,4 +1,4 @@
-const HREF_LABELS: Record<string, string> = {
+export const HREF_LABELS: Record<string, string> = {
   ctaHref: 'CTA link',
   primaryCtaHref: 'Primary CTA link',
   secondaryCtaHref: 'Secondary CTA link',

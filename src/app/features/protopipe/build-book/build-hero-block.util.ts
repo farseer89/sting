@@ -3,6 +3,7 @@ import {
   BUILD_BOOK_DEMO_HERO_OPTIONS,
 } from './build-book-demo.catalog';
 import { isBaselineApprovedHeroLayout } from './build-book-baseline-hero.catalog';
+import { readVeilHeroPrimaryImageUrl } from './build-book-veil-hero.catalog';
 import {
   findBuildBookOption,
   findBuildBookOptionByComponentId,
@@ -49,8 +50,21 @@ export function heroBackgroundImageStyle(imageUrl: string | null | undefined): s
   return `url(${JSON.stringify(imageUrl)})`;
 }
 
-export function readHeroImageUrl(props: Record<string, unknown>): string | null {
-  const candidates = [props['imageSrc'], props['backgroundImageSrc'], props['visualSrc']];
+export function readHeroImageUrl(
+  props: Record<string, unknown>,
+  layoutId?: string | null,
+): string | null {
+  if (layoutId?.startsWith('veil-')) {
+    const veilImage = readVeilHeroPrimaryImageUrl(layoutId, props);
+    if (veilImage) return veilImage;
+  }
+
+  const candidates = [
+    props['imageSrc'],
+    props['backgroundImageSrc'],
+    props['paintingImageSrc'],
+    props['visualSrc'],
+  ];
   for (const value of candidates) {
     if (typeof value === 'string' && value.trim()) return value;
   }
@@ -90,6 +104,7 @@ export function heroImageToProps(url: string): Record<string, unknown> {
   return {
     imageSrc: url,
     backgroundImageSrc: url,
+    paintingImageSrc: url,
     visualSrc: url,
   };
 }
@@ -98,6 +113,7 @@ export function clearHeroImageProps(): Record<string, null> {
   return {
     imageSrc: null,
     backgroundImageSrc: null,
+    paintingImageSrc: null,
     visualSrc: null,
   };
 }

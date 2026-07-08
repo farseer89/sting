@@ -1,0 +1,161 @@
+/*
+ * Cross-template ink/accent bands — honor canvas --bb-* tokens when blocks mount
+ * outside their native page shell (.wri-page, .sparky-page, etc.).
+ */
+
+/* —— WRI —— */
+.bb-wri-block :is(
+  .wri-fold-cb,
+  .wri-footer,
+  .wri-hero-aq,
+  .wri-hero-dg__gauge,
+  .wri-hero-mx__tile--accent,
+  .wri-hero-dp__path--gov,
+  .wri-fold-rg__cta,
+  .wri-fold-stack .wri-seo-band.wri-copy-sidebar,
+  .wri-blog-article__prose .article-cta
+) {
+  background: var(--bb-ink, var(--wri-navy, #061528));
+  color: var(--bb-on-ink, var(--wri-on-navy, #fff));
+}
+
+.bb-wri-block :is(
+  .wri-fold-cb__label,
+  .wri-footer__fine,
+  .wri-hero-aq__eyebrow,
+  .wri-hero-dg__gauge-mark,
+  .wri-fold-rg__cta p,
+  .wri-fold-stack .wri-seo-band.wri-copy-sidebar h2,
+  .wri-fold-stack .wri-seo-band.wri-copy-sidebar .wri-copy-sidebar__lede,
+  .wri-fold-stack .wri-seo-band.wri-copy-sidebar .wri-copy-sidebar__facts dt,
+  .wri-blog-article__prose .article-cta p
+) {
+  color: color-mix(in srgb, var(--bb-on-ink, var(--wri-on-navy, #fff)) 72%, transparent);
+}
+
+.bb-wri-block :is(
+  .wri-fold-stack .wri-seo-band.wri-copy-sidebar .wri-copy-sidebar__facts dd,
+  .wri-footer__brand,
+  .wri-blog-article__prose .article-cta p:first-child
+) {
+  color: var(--bb-on-ink, var(--wri-on-navy, #fff));
+}
+
+.bb-wri-block :is(.wri-btn--primary, .wri-header__cta) {
+  color: var(--bb-accent-on, var(--wri-accent-on, #fff));
+}
+
+/* —— Sparky —— */
+.bb-sparky-block :is(
+  .sp-fold-trust,
+  .sp-cta-band,
+  .sp-hero-d,
+  .sp-fold-gallery-cta__band,
+  .sparky-article.prose .article-cta
+) {
+  background: var(--bb-ink, var(--sp-ink, #171a20));
+  color: var(--bb-on-ink, var(--sp-on-ink, #fff));
+}
+
+.bb-sparky-block :is(
+  .sp-fold-trust__detail,
+  .sp-hero-d__eyebrow,
+  .sp-hero-d__sub,
+  .sp-cta-band__sub,
+  .sp-fold-gallery-cta__band p,
+  .sparky-article.prose .article-cta footer
+) {
+  color: color-mix(in srgb, var(--bb-on-ink, var(--sp-on-ink, #fff)) 72%, transparent);
+}
+
+.bb-sparky-block :is(.sp-btn--primary) {
+  color: var(--bb-accent-on, var(--sp-accent-on, #fff));
+}
+
+.bb-sparky-block .sp-btn--ghost {
+  color: var(--bb-on-ink, var(--sp-on-ink, #fff));
+  border-color: color-mix(in srgb, var(--bb-on-ink, var(--sp-on-ink, #fff)) 45%, transparent);
+}
+
+/* —— Light surface bands (stats) —— */
+.bb-sparky-block .sp-fold-stats {
+  background: var(--bb-surface, var(--sp-surface, #f4f4f4));
+  color: var(--bb-on-surface, var(--sp-on-surface, var(--sp-ink)));
+}
+
+.bb-sparky-block :is(.sp-fold-stats__value) {
+  color: var(--bb-on-surface, var(--sp-on-surface, var(--sp-ink)));
+}
+
+.bb-sparky-block :is(.sp-fold-stats__label) {
+  color: color-mix(
+    in srgb,
+    var(--bb-on-surface, var(--sp-on-surface, var(--sp-muted))) 72%,
+    transparent
+  );
+}
+
+.bb-wilco-block .consult-stats-band {
+  background: var(--bb-surface, var(--color-bg, #f6f3ee));
+  color: var(--bb-on-surface, var(--color-on-surface, var(--color-ink)));
+}
+
+.bb-wilco-block :is(.consult-stats-band__value) {
+  color: var(--bb-on-surface, var(--color-on-surface, var(--color-ink)));
+}
+
+.bb-wilco-block :is(.consult-stats-band__label) {
+  color: color-mix(
+    in srgb,
+    var(--bb-on-surface, var(--color-on-surface, var(--color-muted))) 72%,
+    transparent
+  );
+}
+
+/* —— Wilco —— */
+.bb-wilco-block :is(
+  .cta-banner,
+  .site-footer,
+  .hero-overlay,
+  .consult-hero-fullbleed__scrim
+) {
+  background: var(--bb-ink, var(--color-hero-dark, #1a1714));
+  color: var(--bb-on-ink, var(--color-on-hero, #faf6f0));
+}
+
+.bb-wilco-block :is(
+  .cta-banner__sub,
+  .site-footer__fine,
+  .hero-overlay__lede
+) {
+  color: color-mix(in srgb, var(--bb-on-ink, var(--color-on-hero, #faf6f0)) 72%, transparent);
+}
+
+.bb-wilco-block :is(.btn--primary, .site-nav__cta) {
+  color: var(--bb-accent-on, var(--color-on-accent, #fff));
+}
+
+/* —— Veil —— */
+.bb-veil-block :is(
+  .veil-fold-availability,
+  .veil-hero-brushstroke__band,
+  .veil-header__cta,
+  .veil-btn--primary
+) {
+  background: var(--bb-ink, var(--veil-ink, #2c2420));
+  color: var(--bb-on-ink, var(--veil-on-ink, #fff));
+}
+
+.bb-veil-block :is(
+  .veil-fold-availability__detail,
+  .veil-hero-brushstroke__lede,
+  .veil-btn--secondary
+) {
+  color: color-mix(in srgb, var(--bb-on-ink, var(--veil-on-ink, #fff)) 72%, transparent);
+}
+
+/* —— Hil —— */
+.bb-hil-block .hil-hero {
+  background: var(--bb-ink, #14532d);
+  color: var(--bb-on-ink, #fff);
+}

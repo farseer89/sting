@@ -10,7 +10,7 @@
       <div class="bb-img-picker__head">
         <div>
           <h3>{{ title() }}</h3>
-          <p>Pick from images already generated for this site.</p>
+          <p>Pick from template stock and site library images.</p>
         </div>
         <button type="button" class="bb-img-picker__close" (click)="close()" aria-label="Close">×</button>
       </div>
@@ -26,12 +26,12 @@
               [class.is-selected]="selectedUrl() === asset.url"
               (click)="select(asset.url)"
             >
-              <img [src]="asset.url" [alt]="asset.label || asset.originalFilename || 'Site image'" loading="lazy" />
+              <img [src]="asset.url" [alt]="asset.label || 'Site image'" loading="lazy" />
             </button>
           }
         </div>
       } @else {
-        <div class="bb-img-picker__empty">No generated images yet. Open the library to create or upload photos.</div>
+        <div class="bb-img-picker__empty">No images yet. Open the Media tab to upload or generate photos.</div>
       }
 
       <div class="bb-img-picker__actions">

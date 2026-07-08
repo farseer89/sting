@@ -2,8 +2,11 @@
   class="bb-page-canvas"
   [class.bb-page-canvas--baseline]="baselineMode()"
   [class.bb-page-canvas--sparky]="baselineSiteRenderer() === 'sparky-site'"
+  [class.bb-page-canvas--wri]="baselineSiteRenderer() === 'wri-site'"
   [class.bb-page-canvas--wilco]="baselineSiteRenderer() === 'wilco-site'"
   [class.bb-page-canvas--veil]="baselineSiteRenderer() === 'veil-site'"
+  [class.bb-page-canvas--hil]="baselineSiteRenderer() === 'hil-site'"
+  [class.bb-page-canvas--focus-block]="baselineMode() && focusBlockMode()"
 >
   @if (baselineMode()) {
     @if (baselineSiteRenderer() === 'sparky-site') {
@@ -16,6 +19,7 @@
               @for (block of segment.blocks; track block.id) {
                 <app-protopipe-build-block-section
                   [attr.data-block-id]="block.id"
+                  [attr.data-focus-active]="isFocusBlockActive(block.id)"
                   [section]="block.section"
                   [blockInstanceId]="block.id"
                   [baselineBlockId]="block.blockId"
@@ -27,12 +31,17 @@
                   [active]="activeBlockId() === block.id"
                   [heroLayoutId]="heroLayoutId()"
                   [heroImageUrl]="heroImageUrl()"
+                  [blockLabel]="block.label"
+                  [showBlockChrome]="editable() && !block.pendingPreview"
+                  [pendingPreview]="block.pendingPreview ?? false"
+                  [heroPhotoDrifted]="heroPhotoDriftedBlockId() === block.id"
                   (sectionClick)="onBlockClick(block.id)"
                   (propPathChange)="onBlockPropPathChange(block.id, $event.path, $event.value)"
-              (propsChange)="onBlockPropsChange(block.id, $event)"
                   (propsChange)="onBlockPropsChange(block.id, $event)"
                   (copyChange)="copyChange.emit($event)"
                   (imageEdit)="onBlockImageEdit(block.id, $event)"
+                  (inspectorNavigate)="inspectorNavigate.emit($event)"
+                  (resetHeroPhoto)="resetHeroPhoto.emit(block.id)"
                 />
               }
             } @else {
@@ -40,6 +49,7 @@
                 @for (block of segment.blocks; track block.id) {
                   <app-protopipe-build-block-section
                     [attr.data-block-id]="block.id"
+                  [attr.data-focus-active]="isFocusBlockActive(block.id)"
                     [section]="block.section"
                     [blockInstanceId]="block.id"
                     [baselineBlockId]="block.blockId"
@@ -51,12 +61,17 @@
                     [active]="activeBlockId() === block.id"
                     [heroLayoutId]="heroLayoutId()"
                     [heroImageUrl]="heroImageUrl()"
+                    [blockLabel]="block.label"
+                    [showBlockChrome]="editable() && !block.pendingPreview"
+                  [pendingPreview]="block.pendingPreview ?? false"
+                    [heroPhotoDrifted]="heroPhotoDriftedBlockId() === block.id"
                     (sectionClick)="onBlockClick(block.id)"
                     (propPathChange)="onBlockPropPathChange(block.id, $event.path, $event.value)"
-              (propsChange)="onBlockPropsChange(block.id, $event)"
-                  (propsChange)="onBlockPropsChange(block.id, $event)"
+                    (propsChange)="onBlockPropsChange(block.id, $event)"
                     (copyChange)="copyChange.emit($event)"
                     (imageEdit)="onBlockImageEdit(block.id, $event)"
+                    (inspectorNavigate)="inspectorNavigate.emit($event)"
+                    (resetHeroPhoto)="resetHeroPhoto.emit(block.id)"
                   />
                 }
               </div>
@@ -76,6 +91,7 @@
               @for (block of segment.blocks; track block.id) {
                 <app-protopipe-build-block-section
                   [attr.data-block-id]="block.id"
+                  [attr.data-focus-active]="isFocusBlockActive(block.id)"
                   [section]="block.section"
                   [blockInstanceId]="block.id"
                   [baselineBlockId]="block.blockId"
@@ -87,11 +103,17 @@
                   [active]="activeBlockId() === block.id"
                   [heroLayoutId]="heroLayoutId()"
                   [heroImageUrl]="heroImageUrl()"
+                  [blockLabel]="block.label"
+                  [showBlockChrome]="editable() && !block.pendingPreview"
+                  [pendingPreview]="block.pendingPreview ?? false"
+                  [heroPhotoDrifted]="heroPhotoDriftedBlockId() === block.id"
                   (sectionClick)="onBlockClick(block.id)"
                   (propPathChange)="onBlockPropPathChange(block.id, $event.path, $event.value)"
                   (propsChange)="onBlockPropsChange(block.id, $event)"
                   (copyChange)="copyChange.emit($event)"
                   (imageEdit)="onBlockImageEdit(block.id, $event)"
+                  (inspectorNavigate)="inspectorNavigate.emit($event)"
+                  (resetHeroPhoto)="resetHeroPhoto.emit(block.id)"
                 />
               }
             } @else {
@@ -99,6 +121,7 @@
                 @for (block of segment.blocks; track block.id) {
                   <app-protopipe-build-block-section
                     [attr.data-block-id]="block.id"
+                  [attr.data-focus-active]="isFocusBlockActive(block.id)"
                     [section]="block.section"
                     [blockInstanceId]="block.id"
                     [baselineBlockId]="block.blockId"
@@ -142,15 +165,58 @@
               [active]="activeBlockId() === block.id"
               [heroLayoutId]="heroLayoutId()"
               [heroImageUrl]="heroImageUrl()"
+              [blockLabel]="block.label"
+              [showBlockChrome]="editable() && !block.pendingPreview"
+              [pendingPreview]="block.pendingPreview ?? false"
+              [heroPhotoDrifted]="heroPhotoDriftedBlockId() === block.id"
               (sectionClick)="onBlockClick(block.id)"
               (propPathChange)="onBlockPropPathChange(block.id, $event.path, $event.value)"
               (propsChange)="onBlockPropsChange(block.id, $event)"
               (copyChange)="copyChange.emit($event)"
               (imageEdit)="onBlockImageEdit(block.id, $event)"
+              (inspectorNavigate)="inspectorNavigate.emit($event)"
+              (resetHeroPhoto)="resetHeroPhoto.emit(block.id)"
             />
           }
         </main>
         <app-protopipe-build-wilco-site-footer [editable]="editable()" />
+      </div>
+    } @else if (baselineSiteRenderer() === 'hil-site') {
+      <div class="hil-page bb-page-canvas__hil-shell">
+        <header class="hil-site-header">
+          <img class="hil-site-header__logo" [src]="hilLogoSrc" alt="Blackstone Landscaping" width="180" height="40" />
+          <span>Anchorage · Free estimates</span>
+        </header>
+        <main>
+          @for (block of blocks(); track block.id) {
+            <app-protopipe-build-block-section
+              [attr.data-block-id]="block.id"
+              [attr.data-focus-active]="isFocusBlockActive(block.id)"
+              [section]="block.section"
+              [blockInstanceId]="block.id"
+              [baselineBlockId]="block.blockId"
+              [blockId]="block.blockId"
+              [layout]="block.layout"
+              [props]="block.props"
+              [configured]="block.configured"
+              [editable]="editable()"
+              [active]="activeBlockId() === block.id"
+              [heroLayoutId]="heroLayoutId()"
+              [heroImageUrl]="heroImageUrl()"
+              [blockLabel]="block.label"
+              [showBlockChrome]="editable() && !block.pendingPreview"
+              [pendingPreview]="block.pendingPreview ?? false"
+              [heroPhotoDrifted]="heroPhotoDriftedBlockId() === block.id"
+              (sectionClick)="onBlockClick(block.id)"
+              (propPathChange)="onBlockPropPathChange(block.id, $event.path, $event.value)"
+              (propsChange)="onBlockPropsChange(block.id, $event)"
+              (copyChange)="copyChange.emit($event)"
+              (imageEdit)="onBlockImageEdit(block.id, $event)"
+              (inspectorNavigate)="inspectorNavigate.emit($event)"
+              (resetHeroPhoto)="resetHeroPhoto.emit(block.id)"
+            />
+          }
+        </main>
       </div>
     } @else {
       <div class="wri-page wri-page--site bb-page-canvas__wri-shell">
@@ -163,6 +229,7 @@
                 @for (block of segment.blocks; track block.id) {
                   <app-protopipe-build-block-section
                     [attr.data-block-id]="block.id"
+                  [attr.data-focus-active]="isFocusBlockActive(block.id)"
                     [section]="block.section"
                     [blockInstanceId]="block.id"
                     [baselineBlockId]="block.blockId"
@@ -174,12 +241,17 @@
                     [active]="activeBlockId() === block.id"
                     [heroLayoutId]="heroLayoutId()"
                     [heroImageUrl]="heroImageUrl()"
+                    [blockLabel]="block.label"
+                    [showBlockChrome]="editable() && !block.pendingPreview"
+                  [pendingPreview]="block.pendingPreview ?? false"
+                    [heroPhotoDrifted]="heroPhotoDriftedBlockId() === block.id"
                     (sectionClick)="onBlockClick(block.id)"
                     (propPathChange)="onBlockPropPathChange(block.id, $event.path, $event.value)"
-              (propsChange)="onBlockPropsChange(block.id, $event)"
-                  (propsChange)="onBlockPropsChange(block.id, $event)"
+                    (propsChange)="onBlockPropsChange(block.id, $event)"
                     (copyChange)="copyChange.emit($event)"
                     (imageEdit)="onBlockImageEdit(block.id, $event)"
+                    (inspectorNavigate)="inspectorNavigate.emit($event)"
+                    (resetHeroPhoto)="resetHeroPhoto.emit(block.id)"
                   />
                 }
               </div>
@@ -188,6 +260,7 @@
                 @for (block of segment.blocks; track block.id) {
                   <app-protopipe-build-block-section
                     [attr.data-block-id]="block.id"
+                  [attr.data-focus-active]="isFocusBlockActive(block.id)"
                     [section]="block.section"
                     [blockInstanceId]="block.id"
                     [baselineBlockId]="block.blockId"
@@ -199,12 +272,17 @@
                     [active]="activeBlockId() === block.id"
                     [heroLayoutId]="heroLayoutId()"
                     [heroImageUrl]="heroImageUrl()"
+                    [blockLabel]="block.label"
+                    [showBlockChrome]="editable() && !block.pendingPreview"
+                  [pendingPreview]="block.pendingPreview ?? false"
+                    [heroPhotoDrifted]="heroPhotoDriftedBlockId() === block.id"
                     (sectionClick)="onBlockClick(block.id)"
                     (propPathChange)="onBlockPropPathChange(block.id, $event.path, $event.value)"
-              (propsChange)="onBlockPropsChange(block.id, $event)"
-                  (propsChange)="onBlockPropsChange(block.id, $event)"
+                    (propsChange)="onBlockPropsChange(block.id, $event)"
                     (copyChange)="copyChange.emit($event)"
                     (imageEdit)="onBlockImageEdit(block.id, $event)"
+                    (inspectorNavigate)="inspectorNavigate.emit($event)"
+                    (resetHeroPhoto)="resetHeroPhoto.emit(block.id)"
                   />
                 }
               </div>
@@ -228,11 +306,14 @@
         [active]="activeSection() === slot"
         [heroLayoutId]="heroLayoutId()"
         [heroImageUrl]="heroImageUrl()"
+        [blockLabel]="sectionLabel(slot)"
+        [showBlockChrome]="editable()"
         (sectionClick)="onSectionClick($event)"
         (propsChange)="onPropsChange(slot, $event)"
         (propPathChange)="onPropPathChange(slot, $event.path, $event.value)"
         (copyChange)="copyChange.emit($event)"
         (imageEdit)="imageEdit.emit({})"
+        (inspectorNavigate)="inspectorNavigate.emit($event)"
       />
     }
   }

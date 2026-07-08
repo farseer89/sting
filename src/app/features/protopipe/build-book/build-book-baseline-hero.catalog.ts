@@ -12,6 +12,7 @@ export const BASELINE_APPROVED_HERO_LAYOUT_IDS = [
   'sparky-baseline-callout',
   'wilco-baseline-split',
   'veil-baseline-easel-witness',
+  'hil-baseline-hero-canopy',
 ] as const;
 
 export type BaselineApprovedHeroLayoutId = (typeof BASELINE_APPROVED_HERO_LAYOUT_IDS)[number];
@@ -22,6 +23,7 @@ export const BASELINE_HERO_BLOCK_TO_APPROVED_LAYOUT: Record<string, BaselineAppr
   'sparky-baseline-hero-callout': 'sparky-baseline-callout',
   'wilco-baseline-hero-split': 'wilco-baseline-split',
   'veil-baseline-hero-easel-witness': 'veil-baseline-easel-witness',
+  'hil-baseline-hero-canopy': 'hil-baseline-hero-canopy',
 };
 
 export const BASELINE_APPROVED_HERO_LIBRARY: BuildBookOption[] = [
@@ -84,6 +86,21 @@ export const BASELINE_APPROVED_HERO_LIBRARY: BuildBookOption[] = [
       astroUnit: 'components/veil/heroes/VeilHeroEaselWitness.astro',
     },
     previewImage: `${VEIL_GENERATED}`,
+  },
+  {
+    id: 'hil-baseline-hero-canopy',
+    label: 'Canopy hero',
+    desc: 'Approved Blackstone Landscaping baseline — full-bleed canopy hero with estimate CTA.',
+    componentId: 'baseline-hil-hero',
+    layout: 'fullbleed',
+    tag: 'Approved baseline',
+    demo: {
+      brand: 'wri',
+      catalog: 'heroes',
+      labId: 'canopy',
+      astroUnit: 'sites/futureproof/src/components/hil/HilPitchHero.astro',
+    },
+    previewImage: 'https://cs-futureproof.pages.dev/hil/generated/hero-canopy.jpg',
   },
 ];
 

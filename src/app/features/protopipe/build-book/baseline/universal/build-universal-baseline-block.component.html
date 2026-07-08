@@ -1,0 +1,907 @@
+<div class="bb-universal-block">
+  @switch (blockId()) {
+    @case ('universal-process-vertical') {
+      <section class="bb-uni-process bb-uni-process--vertical">
+        <div class="bb-uni-process__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('kicker', 'How it works')"
+              hostClass=""
+              ariaLabel="Process kicker"
+              (valueChange)="patch('kicker', $event)"
+            />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('heading')"
+              hostClass=""
+              ariaLabel="Process heading"
+              (valueChange)="patch('heading', $event)"
+            />
+          </h2>
+          <ol class="bb-uni-process__list">
+            @for (step of steps(); track $index) {
+              <li class="bb-uni-process__list-item">
+                <span class="bb-uni-process__num">{{ step.step }}</span>
+                <div class="bb-uni-process__copy">
+                  <h3>
+                    <app-protopipe-build-inline-text
+                      [editable]="editable()"
+                      [value]="step.title"
+                      hostClass=""
+                      ariaLabel="Process step title"
+                      (valueChange)="patchStep($index, 'title', $event)"
+                    />
+                  </h3>
+                  <p>
+                    <app-protopipe-build-inline-text
+                      [editable]="editable()"
+                      [value]="step.body"
+                      hostClass=""
+                      ariaLabel="Process step body"
+                      [multiline]="true"
+                      (valueChange)="patchStep($index, 'body', $event)"
+                    />
+                  </p>
+                </div>
+              </li>
+            }
+          </ol>
+        </div>
+      </section>
+    }
+    @case ('universal-process-visual') {
+      <section class="bb-uni-process bb-uni-process--visual">
+        <div class="bb-uni-process__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('kicker', 'How it works')"
+              hostClass=""
+              ariaLabel="Process kicker"
+              (valueChange)="patch('kicker', $event)"
+            />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('heading')"
+              hostClass=""
+              ariaLabel="Process heading"
+              (valueChange)="patch('heading', $event)"
+            />
+          </h2>
+          <div class="bb-uni-process__grid">
+            @for (step of steps(); track $index) {
+              <article class="bb-uni-process__card">
+                <figure class="bb-uni-process__photo">
+                  @if (stepImage(step); as src) {
+                    <img [src]="src" [alt]="step.imageAlt ?? step.title" loading="lazy" />
+                  } @else {
+                    <div class="bb-uni-process__photo-placeholder" aria-hidden="true"></div>
+                  }
+                  @if (editable()) {
+                    <button
+                      type="button"
+                      class="bb-uni-photo-edit"
+                      aria-label="Change step photo"
+                      (click)="onPhotoEdit($event, 'steps.' + $index + '.image')"
+                    >
+                      Change photo
+                    </button>
+                  }
+                </figure>
+                <span class="bb-uni-process__num">{{ step.step }}</span>
+                <h3>
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="step.title"
+                    hostClass=""
+                    ariaLabel="Process step title"
+                    (valueChange)="patchStep($index, 'title', $event)"
+                  />
+                </h3>
+                <p>
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="step.body"
+                    hostClass=""
+                    ariaLabel="Process step body"
+                    [multiline]="true"
+                    (valueChange)="patchStep($index, 'body', $event)"
+                  />
+                </p>
+              </article>
+            }
+          </div>
+        </div>
+      </section>
+    }
+    @case ('universal-stats-compact') {
+      <section class="bb-uni-stats bb-uni-stats--compact">
+        <div class="bb-uni-stats__wrap">
+          <p class="bb-uni-kicker bb-uni-kicker--on-ink">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('kicker')"
+              hostClass=""
+              ariaLabel="Stats kicker"
+              (valueChange)="patch('kicker', $event)"
+            />
+          </p>
+          <ul class="bb-uni-stats__strip">
+            @for (stat of stats(); track $index) {
+              <li>
+                <span class="bb-uni-stats__value">
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="stat.value"
+                    hostClass=""
+                    ariaLabel="Stat value"
+                    (valueChange)="patchStat($index, 'value', $event)"
+                  />
+                </span>
+                <span class="bb-uni-stats__label">
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="stat.label"
+                    hostClass=""
+                    ariaLabel="Stat label"
+                    (valueChange)="patchStat($index, 'label', $event)"
+                  />
+                </span>
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+    }
+    @case ('universal-stats-cards') {
+      <section class="bb-uni-stats bb-uni-stats--cards">
+        <div class="bb-uni-stats__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('kicker')"
+              hostClass=""
+              ariaLabel="Stats kicker"
+              (valueChange)="patch('kicker', $event)"
+            />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('heading')"
+              hostClass=""
+              ariaLabel="Stats heading"
+              (valueChange)="patch('heading', $event)"
+            />
+          </h2>
+          <ul class="bb-uni-stats__grid">
+            @for (stat of stats(); track $index) {
+              <li class="bb-uni-stats__card">
+                <span class="bb-uni-stats__value">
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="stat.value"
+                    hostClass=""
+                    ariaLabel="Stat value"
+                    (valueChange)="patchStat($index, 'value', $event)"
+                  />
+                </span>
+                <span class="bb-uni-stats__label">
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="stat.label"
+                    hostClass=""
+                    ariaLabel="Stat label"
+                    (valueChange)="patchStat($index, 'label', $event)"
+                  />
+                </span>
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+    }
+    @case ('universal-faq-accordion') {
+      <section class="bb-uni-faq bb-uni-faq--accordion">
+        <div class="bb-uni-faq__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('kicker', 'FAQ')"
+              hostClass=""
+              ariaLabel="FAQ kicker"
+              (valueChange)="patch('kicker', $event)"
+            />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('heading')"
+              hostClass=""
+              ariaLabel="FAQ heading"
+              (valueChange)="patch('heading', $event)"
+            />
+          </h2>
+          <p class="bb-uni-lede">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('subhead')"
+              hostClass=""
+              ariaLabel="FAQ subhead"
+              [multiline]="true"
+              (valueChange)="patch('subhead', $event)"
+            />
+          </p>
+          <div class="bb-uni-faq__list">
+            @for (item of faqItems(); track $index) {
+              <details class="bb-uni-faq__item" [open]="$index === 0">
+                <summary>
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="item.q"
+                    hostClass=""
+                    ariaLabel="FAQ question"
+                    (valueChange)="patchFaq($index, 'q', $event)"
+                  />
+                </summary>
+                <p>
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="item.a"
+                    hostClass=""
+                    ariaLabel="FAQ answer"
+                    [multiline]="true"
+                    (valueChange)="patchFaq($index, 'a', $event)"
+                  />
+                </p>
+              </details>
+            }
+          </div>
+        </div>
+      </section>
+    }
+    @case ('universal-faq-two-col') {
+      <section class="bb-uni-faq bb-uni-faq--two-col">
+        <div class="bb-uni-faq__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('kicker', 'FAQ')"
+              hostClass=""
+              ariaLabel="FAQ kicker"
+              (valueChange)="patch('kicker', $event)"
+            />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('heading')"
+              hostClass=""
+              ariaLabel="FAQ heading"
+              (valueChange)="patch('heading', $event)"
+            />
+          </h2>
+          <p class="bb-uni-lede">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('subhead')"
+              hostClass=""
+              ariaLabel="FAQ subhead"
+              [multiline]="true"
+              (valueChange)="patch('subhead', $event)"
+            />
+          </p>
+          <div class="bb-uni-faq__grid">
+            @for (item of faqItems(); track $index) {
+              <article class="bb-uni-faq__card">
+                <h3>
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="item.q"
+                    hostClass=""
+                    ariaLabel="FAQ question"
+                    (valueChange)="patchFaq($index, 'q', $event)"
+                  />
+                </h3>
+                <p>
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="item.a"
+                    hostClass=""
+                    ariaLabel="FAQ answer"
+                    [multiline]="true"
+                    (valueChange)="patchFaq($index, 'a', $event)"
+                  />
+                </p>
+              </article>
+            }
+          </div>
+        </div>
+      </section>
+    }
+    @case ('universal-cta-band') {
+      <section class="bb-uni-cta bb-uni-cta--band">
+        <div class="bb-uni-cta__wrap">
+          <h2 class="bb-uni-cta__heading">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('heading')"
+              hostClass=""
+              ariaLabel="CTA heading"
+              (valueChange)="patch('heading', $event)"
+            />
+          </h2>
+          <p class="bb-uni-cta__body">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('body')"
+              hostClass=""
+              ariaLabel="CTA body"
+              [multiline]="true"
+              (valueChange)="patch('body', $event)"
+            />
+          </p>
+          <a class="bb-uni-cta__btn" [href]="str('ctaHref', '#inquiry')">
+            <app-protopipe-build-inline-cta
+              [editable]="editable()"
+              [value]="str('ctaLabel', 'Request a quote')"
+              hostClass="bb-uni-cta__btn-label"
+              (valueChange)="patch('ctaLabel', $event)"
+            />
+          </a>
+        </div>
+      </section>
+    }
+    @case ('universal-cta-split') {
+      <section class="bb-uni-cta bb-uni-cta--split">
+        <div class="bb-uni-cta__split">
+          <div class="bb-uni-cta__copy">
+            <h2 class="bb-uni-cta__heading">
+              <app-protopipe-build-inline-text
+                [editable]="editable()"
+                [value]="str('heading')"
+                hostClass=""
+                ariaLabel="CTA heading"
+                (valueChange)="patch('heading', $event)"
+              />
+            </h2>
+            <p class="bb-uni-cta__body">
+              <app-protopipe-build-inline-text
+                [editable]="editable()"
+                [value]="str('body')"
+                hostClass=""
+                ariaLabel="CTA body"
+                [multiline]="true"
+                (valueChange)="patch('body', $event)"
+              />
+            </p>
+            <a class="bb-uni-cta__btn" [href]="str('ctaHref', '#inquiry')">
+              <app-protopipe-build-inline-cta
+                [editable]="editable()"
+                [value]="str('ctaLabel', 'Get in touch')"
+                hostClass="bb-uni-cta__btn-label"
+                (valueChange)="patch('ctaLabel', $event)"
+              />
+            </a>
+          </div>
+          <figure class="bb-uni-cta__photo">
+            @if (ctaImage(); as src) {
+              <img [src]="src" [alt]="str('imageAlt', 'Team on site')" loading="lazy" />
+            } @else {
+              <div class="bb-uni-cta__photo-placeholder" aria-hidden="true"></div>
+            }
+            @if (editable()) {
+              <button
+                type="button"
+                class="bb-uni-photo-edit"
+                aria-label="Change CTA photo"
+                (click)="onPhotoEdit($event, 'imageSrc')"
+              >
+                Change photo
+              </button>
+            }
+          </figure>
+        </div>
+      </section>
+    }
+    @case ('universal-reviews-grid') {
+      <section class="bb-uni-reviews bb-uni-reviews--grid">
+        <div class="bb-uni-reviews__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Reviews kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Reviews heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <div class="bb-uni-reviews__grid">
+            @for (item of testimonials(); track $index) {
+              <blockquote class="bb-uni-reviews__card">
+                <p class="bb-uni-reviews__quote">
+                  "<app-protopipe-build-inline-text [editable]="editable()" [value]="item.quote" hostClass="" ariaLabel="Review quote" [multiline]="true" (valueChange)="patchTestimonial($index, 'quote', $event)" />"
+                </p>
+                <footer>
+                  <cite>
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="item.name" hostClass="" ariaLabel="Reviewer name" (valueChange)="patchTestimonial($index, 'name', $event)" />
+                  </cite>
+                  @if (item.role) {
+                    <span class="bb-uni-reviews__role">
+                      <app-protopipe-build-inline-text [editable]="editable()" [value]="item.role" hostClass="" ariaLabel="Reviewer role" (valueChange)="patchTestimonial($index, 'role', $event)" />
+                    </span>
+                  }
+                </footer>
+              </blockquote>
+            }
+          </div>
+        </div>
+      </section>
+    }
+    @case ('universal-reviews-quote') {
+      <section class="bb-uni-reviews bb-uni-reviews--quote">
+        <div class="bb-uni-reviews__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Review kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Review heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          @if (featuredTestimonial(); as item) {
+            <blockquote class="bb-uni-reviews__featured">
+              <p class="bb-uni-reviews__quote">
+                "<app-protopipe-build-inline-text [editable]="editable()" [value]="item.quote" hostClass="" ariaLabel="Featured quote" [multiline]="true" (valueChange)="patchTestimonial(0, 'quote', $event)" />"
+              </p>
+              <footer>
+                <cite>
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="item.name" hostClass="" ariaLabel="Reviewer name" (valueChange)="patchTestimonial(0, 'name', $event)" />
+                </cite>
+                @if (item.role) {
+                  <span class="bb-uni-reviews__role">
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="item.role" hostClass="" ariaLabel="Reviewer role" (valueChange)="patchTestimonial(0, 'role', $event)" />
+                  </span>
+                }
+              </footer>
+            </blockquote>
+          }
+        </div>
+      </section>
+    }
+    @case ('universal-intro-centered') {
+      <section class="bb-uni-intro bb-uni-intro--centered">
+        <div class="bb-uni-intro__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Intro kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Intro heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <p class="bb-uni-lede">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('body')" hostClass="" ariaLabel="Intro body" [multiline]="true" (valueChange)="patch('body', $event)" />
+          </p>
+        </div>
+      </section>
+    }
+    @case ('universal-intro-split') {
+      <section class="bb-uni-intro bb-uni-intro--split">
+        <div class="bb-uni-intro__split">
+          <div class="bb-uni-intro__aside">
+            <p class="bb-uni-kicker">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Intro kicker" (valueChange)="patch('kicker', $event)" />
+            </p>
+            <span class="bb-uni-intro__rule" aria-hidden="true"></span>
+          </div>
+          <div class="bb-uni-intro__copy">
+            <h2 class="bb-uni-heading">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Intro heading" (valueChange)="patch('heading', $event)" />
+            </h2>
+            <p class="bb-uni-lede">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('body')" hostClass="" ariaLabel="Intro body" [multiline]="true" (valueChange)="patch('body', $event)" />
+            </p>
+          </div>
+        </div>
+      </section>
+    }
+    @case ('universal-services-grid') {
+      <section class="bb-uni-services bb-uni-services--grid">
+        <div class="bb-uni-services__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Services kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Services heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <ul class="bb-uni-services__grid">
+            @for (service of services(); track $index) {
+              <li class="bb-uni-services__card">
+                <figure class="bb-uni-services__photo">
+                  @if (serviceImage(service); as src) {
+                    <img [src]="src" [alt]="service.imageAlt ?? service.title" loading="lazy" />
+                  } @else {
+                    <div class="bb-uni-services__photo-placeholder" aria-hidden="true"></div>
+                  }
+                  @if (editable()) {
+                    <button type="button" class="bb-uni-photo-edit" aria-label="Change service photo" (click)="onPhotoEdit($event, 'services.' + $index + '.image')">Change photo</button>
+                  }
+                </figure>
+                <h3>
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="service.title" hostClass="" ariaLabel="Service title" (valueChange)="patchService($index, 'title', $event)" />
+                </h3>
+                <p>
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="service.body" hostClass="" ariaLabel="Service body" [multiline]="true" (valueChange)="patchService($index, 'body', $event)" />
+                </p>
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+    }
+    @case ('universal-services-list') {
+      <section class="bb-uni-services bb-uni-services--list">
+        <div class="bb-uni-services__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Services kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Services heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <ul class="bb-uni-services__list">
+            @for (service of services(); track $index) {
+              <li>
+                <a class="bb-uni-services__row" [href]="service.href ?? '#inquiry'" (click)="onLinkClick($event)">
+                  <div class="bb-uni-services__row-copy">
+                    <h3>
+                      <app-protopipe-build-inline-text [editable]="editable()" [value]="service.title" hostClass="" ariaLabel="Service title" (valueChange)="patchService($index, 'title', $event)" />
+                    </h3>
+                    <p>
+                      <app-protopipe-build-inline-text [editable]="editable()" [value]="service.body" hostClass="" ariaLabel="Service body" [multiline]="true" (valueChange)="patchService($index, 'body', $event)" />
+                    </p>
+                  </div>
+                  <span class="bb-uni-services__chevron" aria-hidden="true">›</span>
+                </a>
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+    }
+    @case ('universal-split-image-right') {
+      <section class="bb-uni-split bb-uni-split--image-right">
+        <div class="bb-uni-split__wrap">
+          <div class="bb-uni-split__copy">
+            <p class="bb-uni-kicker">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Split kicker" (valueChange)="patch('kicker', $event)" />
+            </p>
+            <h2 class="bb-uni-heading">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Split heading" (valueChange)="patch('heading', $event)" />
+            </h2>
+            <p class="bb-uni-lede">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('body')" hostClass="" ariaLabel="Split body" [multiline]="true" (valueChange)="patch('body', $event)" />
+            </p>
+          </div>
+          <figure class="bb-uni-split__photo">
+            @if (splitImage(); as src) {
+              <img [src]="src" [alt]="str('imageAlt', 'Featured photo')" loading="lazy" />
+            } @else {
+              <div class="bb-uni-split__photo-placeholder" aria-hidden="true"></div>
+            }
+            @if (editable()) {
+              <button type="button" class="bb-uni-photo-edit" aria-label="Change split photo" (click)="onPhotoEdit($event, 'imageSrc')">Change photo</button>
+            }
+          </figure>
+        </div>
+      </section>
+    }
+    @case ('universal-split-image-left') {
+      <section class="bb-uni-split bb-uni-split--image-left">
+        <div class="bb-uni-split__wrap">
+          <figure class="bb-uni-split__photo">
+            @if (splitImage(); as src) {
+              <img [src]="src" [alt]="str('imageAlt', 'Featured photo')" loading="lazy" />
+            } @else {
+              <div class="bb-uni-split__photo-placeholder" aria-hidden="true"></div>
+            }
+            @if (editable()) {
+              <button type="button" class="bb-uni-photo-edit" aria-label="Change split photo" (click)="onPhotoEdit($event, 'imageSrc')">Change photo</button>
+            }
+          </figure>
+          <div class="bb-uni-split__copy">
+            <p class="bb-uni-kicker">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Split kicker" (valueChange)="patch('kicker', $event)" />
+            </p>
+            <h2 class="bb-uni-heading">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Split heading" (valueChange)="patch('heading', $event)" />
+            </h2>
+            <p class="bb-uni-lede">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('body')" hostClass="" ariaLabel="Split body" [multiline]="true" (valueChange)="patch('body', $event)" />
+            </p>
+          </div>
+        </div>
+      </section>
+    }
+    @case ('universal-gallery-grid') {
+      <section class="bb-uni-gallery bb-uni-gallery--grid">
+        <div class="bb-uni-gallery__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Gallery kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Gallery heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <div class="bb-uni-gallery__grid">
+            @for (item of gallery(); track $index) {
+              <figure class="bb-uni-gallery__item">
+                @if (galleryImage(item); as src) {
+                  <img [src]="src" [alt]="item.imageAlt ?? item.caption" loading="lazy" />
+                } @else {
+                  <div class="bb-uni-gallery__placeholder" aria-hidden="true"></div>
+                }
+                <figcaption>
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="item.caption" hostClass="" ariaLabel="Gallery caption" (valueChange)="patchGallery($index, 'caption', $event)" />
+                </figcaption>
+                @if (editable()) {
+                  <button type="button" class="bb-uni-photo-edit" aria-label="Change gallery photo" (click)="onPhotoEdit($event, 'gallery.' + $index + '.image')">Change photo</button>
+                }
+              </figure>
+            }
+          </div>
+        </div>
+      </section>
+    }
+    @case ('universal-gallery-masonry') {
+      <section class="bb-uni-gallery bb-uni-gallery--masonry">
+        <div class="bb-uni-gallery__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Gallery kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Gallery heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <div class="bb-uni-gallery__masonry">
+            @for (item of gallery(); track $index) {
+              <figure class="bb-uni-gallery__tile">
+                @if (galleryImage(item); as src) {
+                  <img [src]="src" [alt]="item.imageAlt ?? item.caption" loading="lazy" />
+                } @else {
+                  <div class="bb-uni-gallery__placeholder" aria-hidden="true"></div>
+                }
+                <figcaption>
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="item.caption" hostClass="" ariaLabel="Gallery caption" (valueChange)="patchGallery($index, 'caption', $event)" />
+                </figcaption>
+                @if (editable()) {
+                  <button type="button" class="bb-uni-photo-edit" aria-label="Change gallery photo" (click)="onPhotoEdit($event, 'gallery.' + $index + '.image')">Change photo</button>
+                }
+              </figure>
+            }
+          </div>
+        </div>
+      </section>
+    }
+    @case ('universal-case-featured') {
+      <section class="bb-uni-case bb-uni-case--featured">
+        <div class="bb-uni-case__wrap">
+          <div class="bb-uni-case__copy">
+            <p class="bb-uni-kicker">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Case kicker" (valueChange)="patch('kicker', $event)" />
+            </p>
+            <h2 class="bb-uni-heading">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Case heading" (valueChange)="patch('heading', $event)" />
+            </h2>
+            <p class="bb-uni-lede">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('body')" hostClass="" ariaLabel="Case body" [multiline]="true" (valueChange)="patch('body', $event)" />
+            </p>
+          </div>
+          <figure class="bb-uni-case__photo">
+            @if (caseImage(); as src) {
+              <img [src]="src" [alt]="str('imageAlt', 'Project photo')" loading="lazy" />
+            } @else {
+              <div class="bb-uni-case__photo-placeholder" aria-hidden="true"></div>
+            }
+            @if (editable()) {
+              <button type="button" class="bb-uni-photo-edit" aria-label="Change case photo" (click)="onPhotoEdit($event, 'imageSrc')">Change photo</button>
+            }
+          </figure>
+        </div>
+      </section>
+    }
+    @case ('universal-case-metrics') {
+      <section class="bb-uni-case bb-uni-case--metrics">
+        <div class="bb-uni-case__wrap">
+          <figure class="bb-uni-case__photo">
+            @if (caseImage(); as src) {
+              <img [src]="src" [alt]="str('imageAlt', 'Project photo')" loading="lazy" />
+            } @else {
+              <div class="bb-uni-case__photo-placeholder" aria-hidden="true"></div>
+            }
+            @if (editable()) {
+              <button type="button" class="bb-uni-photo-edit" aria-label="Change case photo" (click)="onPhotoEdit($event, 'imageSrc')">Change photo</button>
+            }
+          </figure>
+          <div class="bb-uni-case__copy">
+            <p class="bb-uni-kicker">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Case kicker" (valueChange)="patch('kicker', $event)" />
+            </p>
+            <h2 class="bb-uni-heading">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Case heading" (valueChange)="patch('heading', $event)" />
+            </h2>
+            <p class="bb-uni-case__caption">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('caption')" hostClass="" ariaLabel="Case caption" (valueChange)="patch('caption', $event)" />
+            </p>
+            <ul class="bb-uni-case__metrics">
+              @for (metric of caseMetrics(); track $index) {
+                <li>
+                  <span class="bb-uni-case__metric-value">
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="metric.value" hostClass="" ariaLabel="Metric value" (valueChange)="patchCaseMetric($index, 'value', $event)" />
+                  </span>
+                  <span class="bb-uni-case__metric-label">
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="metric.label" hostClass="" ariaLabel="Metric label" (valueChange)="patchCaseMetric($index, 'label', $event)" />
+                  </span>
+                </li>
+              }
+            </ul>
+          </div>
+        </div>
+      </section>
+    }
+    @case ('universal-logos-row') {
+      <section class="bb-uni-logos bb-uni-logos--row">
+        <div class="bb-uni-logos__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Logos kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Logos heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <ul class="bb-uni-logos__row">
+            @for (logo of logos(); track $index) {
+              <li class="bb-uni-logos__item">
+                @if (logoImage(logo); as src) {
+                  <img [src]="src" [alt]="logo.alt ?? logo.name" loading="lazy" />
+                } @else {
+                  <span class="bb-uni-logos__fallback">
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="logo.name" hostClass="" ariaLabel="Partner name" (valueChange)="patchLogo($index, 'name', $event)" />
+                  </span>
+                }
+                @if (editable()) {
+                  <button type="button" class="bb-uni-photo-edit" aria-label="Change logo" (click)="onPhotoEdit($event, 'logos.' + $index + '.image')">Change logo</button>
+                }
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+    }
+    @case ('universal-logos-grid') {
+      <section class="bb-uni-logos bb-uni-logos--grid">
+        <div class="bb-uni-logos__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Logos kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Logos heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <ul class="bb-uni-logos__grid">
+            @for (logo of logos(); track $index) {
+              <li class="bb-uni-logos__item">
+                @if (logoImage(logo); as src) {
+                  <img [src]="src" [alt]="logo.alt ?? logo.name" loading="lazy" />
+                } @else {
+                  <span class="bb-uni-logos__fallback">
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="logo.name" hostClass="" ariaLabel="Partner name" (valueChange)="patchLogo($index, 'name', $event)" />
+                  </span>
+                }
+                @if (editable()) {
+                  <button type="button" class="bb-uni-photo-edit" aria-label="Change logo" (click)="onPhotoEdit($event, 'logos.' + $index + '.image')">Change logo</button>
+                }
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+    }
+    @case ('universal-before-after') {
+      <section class="bb-uni-ba bb-uni-ba--side">
+        <div class="bb-uni-ba__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Before after kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Before after heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <p class="bb-uni-lede">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('subhead')" hostClass="" ariaLabel="Before after subhead" [multiline]="true" (valueChange)="patch('subhead', $event)" />
+          </p>
+          <div class="bb-uni-ba__panels">
+            @if (beforePanel(); as before) {
+              <figure class="bb-uni-ba__panel">
+                @if (beforeAfterImage(before); as src) {
+                  <img [src]="src" [alt]="before.alt" loading="lazy" />
+                } @else {
+                  <div class="bb-uni-ba__placeholder" aria-hidden="true"></div>
+                }
+                <figcaption>
+                  <span class="bb-uni-ba__label">
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="before.label" hostClass="" ariaLabel="Before label" (valueChange)="patchBeforeAfter('before', 'label', $event)" />
+                  </span>
+                </figcaption>
+                @if (editable()) {
+                  <button type="button" class="bb-uni-photo-edit" aria-label="Change before photo" (click)="onPhotoEdit($event, 'before.image')">Change photo</button>
+                }
+              </figure>
+            }
+            @if (afterPanel(); as after) {
+              <figure class="bb-uni-ba__panel">
+                @if (beforeAfterImage(after); as src) {
+                  <img [src]="src" [alt]="after.alt" loading="lazy" />
+                } @else {
+                  <div class="bb-uni-ba__placeholder" aria-hidden="true"></div>
+                }
+                <figcaption>
+                  <span class="bb-uni-ba__label">
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="after.label" hostClass="" ariaLabel="After label" (valueChange)="patchBeforeAfter('after', 'label', $event)" />
+                  </span>
+                </figcaption>
+                @if (editable()) {
+                  <button type="button" class="bb-uni-photo-edit" aria-label="Change after photo" (click)="onPhotoEdit($event, 'after.image')">Change photo</button>
+                }
+              </figure>
+            }
+          </div>
+        </div>
+      </section>
+    }
+    @case ('universal-before-after-stack') {
+      <section class="bb-uni-ba bb-uni-ba--stack">
+        <div class="bb-uni-ba__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Before after kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Before after heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <p class="bb-uni-lede">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('subhead')" hostClass="" ariaLabel="Before after subhead" [multiline]="true" (valueChange)="patch('subhead', $event)" />
+          </p>
+          <div class="bb-uni-ba__stack">
+            @if (beforePanel(); as before) {
+              <figure class="bb-uni-ba__panel">
+                @if (beforeAfterImage(before); as src) {
+                  <img [src]="src" [alt]="before.alt" loading="lazy" />
+                } @else {
+                  <div class="bb-uni-ba__placeholder" aria-hidden="true"></div>
+                }
+                <figcaption>
+                  <span class="bb-uni-ba__label">
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="before.label" hostClass="" ariaLabel="Before label" (valueChange)="patchBeforeAfter('before', 'label', $event)" />
+                  </span>
+                </figcaption>
+                @if (editable()) {
+                  <button type="button" class="bb-uni-photo-edit" aria-label="Change before photo" (click)="onPhotoEdit($event, 'before.image')">Change photo</button>
+                }
+              </figure>
+            }
+            @if (afterPanel(); as after) {
+              <figure class="bb-uni-ba__panel">
+                @if (beforeAfterImage(after); as src) {
+                  <img [src]="src" [alt]="after.alt" loading="lazy" />
+                } @else {
+                  <div class="bb-uni-ba__placeholder" aria-hidden="true"></div>
+                }
+                <figcaption>
+                  <span class="bb-uni-ba__label">
+                    <app-protopipe-build-inline-text [editable]="editable()" [value]="after.label" hostClass="" ariaLabel="After label" (valueChange)="patchBeforeAfter('after', 'label', $event)" />
+                  </span>
+                </figcaption>
+                @if (editable()) {
+                  <button type="button" class="bb-uni-photo-edit" aria-label="Change after photo" (click)="onPhotoEdit($event, 'after.image')">Change photo</button>
+                }
+              </figure>
+            }
+          </div>
+        </div>
+      </section>
+    }
+  }
+</div>

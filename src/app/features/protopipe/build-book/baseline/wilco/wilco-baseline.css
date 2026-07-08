@@ -36,6 +36,25 @@
   --shadow-glow: 0 4px 20px rgb(var(--color-accent-rgb) / 0.25);
 }
 
+.page-consult,
+.page-landing.page-consult,
+.bb-wilco-block {
+  --color-bg: var(--bb-background, #f6f3ee);
+  --color-surface: var(--bb-surface, #ffffff);
+  --color-ink: var(--bb-ink, #141210);
+  --color-text: var(--bb-text, #1f1c18);
+  --color-muted: var(--bb-muted, #5f5a54);
+  --color-accent: var(--bb-accent, #9a7228);
+  --color-accent-light: var(--bb-accent-soft, #c9a45a);
+  --color-border: var(--bb-border, #e5dfd6);
+  --color-hero-dark: var(--bb-ink, #1a1714);
+  --color-on-accent: var(--bb-accent-on, #ffffff);
+  --color-on-hero: var(--bb-on-ink, #faf6f0);
+  --color-on-surface: var(--bb-on-surface, var(--color-ink));
+  --font-sans: var(--bb-font-sans);
+  --font-serif: var(--bb-font-serif);
+}
+
 *,
 *::before,
 *::after {
@@ -2786,7 +2805,8 @@ h2 {
 
 .consult-stats-band {
   padding: clamp(1.75rem, 4vw, 2.25rem) clamp(1.5rem, 4vw, 3rem);
-  background: var(--color-bg);
+  background: var(--bb-surface, var(--color-bg));
+  color: var(--bb-on-surface, var(--color-on-surface, var(--color-ink)));
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -2831,7 +2851,7 @@ h2 {
   font-size: clamp(1.375rem, 3vw, 1.75rem);
   font-weight: 400;
   letter-spacing: -0.03em;
-  color: var(--color-ink);
+  color: var(--bb-on-surface, var(--color-on-surface, var(--color-ink)));
 }
 
 .consult-stats-band__label {
@@ -2841,7 +2861,11 @@ h2 {
   font-weight: 400;
   letter-spacing: 0.02em;
   text-transform: none;
-  color: var(--color-muted);
+  color: color-mix(
+    in srgb,
+    var(--bb-on-surface, var(--color-on-surface, var(--color-muted))) 72%,
+    transparent
+  );
 }
 
 .consult-trusted-by {

@@ -1,0 +1,31 @@
+<div class="bk-page-builder-rail" cdkDropListGroup>
+  <app-build-book-builder-rail
+    [title]="isAddView() ? 'Add block' : pageLabel()"
+    [subtitle]="isAddView() ? 'Pick a pattern, then choose a variant in Layout' : systemLabel()"
+    [view]="panelView()"
+    [showTabs]="false"
+    [showClose]="false"
+    (back)="backToStack()"
+  >
+    @if (isAddView()) {
+      <app-build-book-pattern-library-panel
+        [patternGroups]="patternGroups()"
+        [catalogFilter]="catalogFilter()"
+        [catalogSession]="catalogSession()"
+        [selectedPatternId]="selectedPatternId()"
+        [panelStyle]="patternPanelStyle()"
+        (catalogFilterChange)="onCatalogFilterChange($event)"
+        (patternSelected)="onPatternPick($event)"
+      />
+    } @else {
+      <app-build-book-page-stack-panel
+        [blocks]="blocks()"
+        [activeBlockId]="activeBlockId()"
+        (selectBlock)="selectBlock.emit($event)"
+        (reorder)="reorder.emit($event)"
+        (removeBlock)="removeBlock.emit($event)"
+        (addBlock)="openAddBlock()"
+      />
+    }
+  </app-build-book-builder-rail>
+</div>

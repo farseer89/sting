@@ -1,6 +1,6 @@
 <div
   [class]="'bk-bt bk-bt--' + kind()"
-  [style.aspect-ratio]="aspectRatio()"
+  [style.aspect-ratio]="aspectRatio() ?? null"
   aria-hidden="true"
 >
   @switch (kind()) {
@@ -68,9 +68,67 @@
       </span>
     }
     @default {
-      <span class="bk-bt__line bk-bt__line--md"></span>
-      <span class="bk-bt__line"></span>
-      <span class="bk-bt__fill"></span>
+      @switch (kind()) {
+        @case ('pattern-hero') {
+          <span class="bk-bt__photo"></span>
+          <span class="bk-bt__line bk-bt__line--lg"></span>
+          <span class="bk-bt__cta bk-bt__cta--wide"></span>
+        }
+        @case ('pattern-stats') {
+          <span class="bk-bt__bar bk-bt__bar--dark"></span>
+          <span class="bk-bt__grid bk-bt__grid--3"><span></span><span></span><span></span></span>
+        }
+        @case ('pattern-logos') {
+          <span class="bk-bt__pill-row"><span></span><span></span><span></span><span></span></span>
+        }
+        @case ('pattern-services') {
+          <span class="bk-bt__line bk-bt__line--sm"></span>
+          <span class="bk-bt__grid bk-bt__grid--3"><span></span><span></span><span></span></span>
+        }
+        @case ('pattern-gallery') {
+          <span class="bk-bt__grid bk-bt__grid--2x2"><span></span><span></span><span></span><span></span></span>
+        }
+        @case ('pattern-before-after') {
+          <span class="bk-bt__split bk-bt__split--even">
+            <span class="bk-bt__photo bk-bt__photo--side"></span>
+            <span class="bk-bt__photo bk-bt__photo--side"></span>
+          </span>
+        }
+        @case ('pattern-faq') {
+          <span class="bk-bt__line bk-bt__line--md"></span>
+          <span class="bk-bt__col bk-bt__col--stack"><span></span><span></span><span></span></span>
+        }
+        @case ('pattern-cta') {
+          <span class="bk-bt__band">
+            <span class="bk-bt__line bk-bt__line--center"></span>
+            <span class="bk-bt__cta bk-bt__cta--wide"></span>
+          </span>
+        }
+        @case ('pattern-interactive') {
+          <span class="bk-bt__line bk-bt__line--md"></span>
+          <span class="bk-bt__fill"></span>
+          <span class="bk-bt__cta"></span>
+        }
+        @case ('pattern-split') {
+          <span class="bk-bt__split bk-bt__split--even">
+            <span class="bk-bt__col"><span class="bk-bt__line bk-bt__line--md"></span><span class="bk-bt__line"></span></span>
+            <span class="bk-bt__photo bk-bt__photo--side"></span>
+          </span>
+        }
+        @case ('pattern-map') {
+          <span class="bk-bt__line bk-bt__line--sm"></span>
+          <span class="bk-bt__map"></span>
+        }
+        @case ('pattern-testimonials') {
+          <span class="bk-bt__quote"></span>
+          <span class="bk-bt__avatar-row"><span></span><span></span><span></span></span>
+        }
+        @default {
+          <span class="bk-bt__line bk-bt__line--md"></span>
+          <span class="bk-bt__line"></span>
+          <span class="bk-bt__fill"></span>
+        }
+      }
     }
   }
 </div>

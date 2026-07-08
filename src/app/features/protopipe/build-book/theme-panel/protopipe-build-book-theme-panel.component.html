@@ -1,0 +1,85 @@
+@if (theme(); as resolved) {
+  <div class="bk-theme">
+    <div class="bk-theme__head">
+      <div class="bk-stage-kicker">Site design</div>
+      <h2 class="bk-theme__title">Theme</h2>
+      <p class="bk-theme__deck">
+        Colors and type apply to the page canvas, pattern previews, Content Writer infographics, and publish export.
+        Brand Book palette still merges upstream when set.
+      </p>
+    </div>
+
+    <section class="bk-theme__preview" aria-label="Theme preview">
+      <div class="bk-theme__preview-surface">
+        <p class="bk-theme__preview-kicker">Surface band</p>
+        <p class="bk-theme__preview-stat">24/7 dispatch</p>
+        <p class="bk-theme__preview-muted">Licensed · insured · local</p>
+      </div>
+      <div class="bk-theme__preview-ink">
+        <p class="bk-theme__preview-kicker">Ink band</p>
+        <p class="bk-theme__preview-heading">Trusted local service</p>
+        <span class="bk-theme__preview-accent">Accent CTA</span>
+      </div>
+      <div class="bk-theme__preview-body">
+        <h3 class="bk-theme__preview-serif" [attr.data-bk-font]="activeSerifId()">Serif display headline</h3>
+        <p class="bk-theme__preview-copy" [attr.data-bk-font]="activeSansId()">
+          Body sans sample — Sphinx of black quartz, judge my vow.
+        </p>
+      </div>
+    </section>
+
+    <div class="bk-theme__columns">
+      <div class="bk-theme__column bk-theme__column--color">
+        <app-protopipe-build-book-theme-palette [colors]="resolved.color" />
+
+        <section class="bk-theme__section bk-theme__section--nested" aria-labelledby="bk-theme-colors-heading">
+          <div class="bk-theme__section-head">
+            <h3 id="bk-theme-colors-heading" class="bk-theme__section-title">Token overrides</h3>
+            <button type="button" class="bk-theme__reset" (click)="resetColors()">Reset colors</button>
+          </div>
+          <div class="bk-theme__grid">
+            @for (field of colorFields; track field.key) {
+              <label class="bk-theme__field">
+                <span class="bk-theme__field-label">{{ field.label }}</span>
+                @if (field.hint) {
+                  <span class="bk-theme__field-hint">{{ field.hint }}</span>
+                }
+                <span class="bk-theme__swatch-row">
+                  <input
+                    type="color"
+                    class="bk-theme__color-input"
+                    [value]="colorValue(field.key)"
+                    (input)="onColorChange(field.key, $any($event.target).value)"
+                    [attr.aria-label]="field.label + ' color picker'"
+                  />
+                  <input
+                    type="text"
+                    class="bk-theme__hex-input"
+                    [ngModel]="colorValue(field.key)"
+                    (ngModelChange)="onColorChange(field.key, $event)"
+                    spellcheck="false"
+                    autocapitalize="off"
+                  />
+                </span>
+              </label>
+            }
+          </div>
+        </section>
+      </div>
+
+      <div class="bk-theme__column bk-theme__column--type">
+        <app-protopipe-build-book-theme-typography [typography]="resolved.typography" />
+      </div>
+    </div>
+
+    @if (hasOverrides()) {
+      <div class="bk-theme__footer">
+        <p-button label="Reset all theme overrides" severity="secondary" size="small" (onClick)="resetAll()" />
+      </div>
+    }
+  </div>
+} @else {
+  <div class="bk-theme bk-theme--empty">
+    <p>Select a template and start a draft to edit site theme.</p>
+  </div>
+}

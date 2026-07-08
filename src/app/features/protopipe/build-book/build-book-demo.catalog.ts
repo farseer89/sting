@@ -495,3 +495,25 @@ export function filterDemoOptions(
   if (brand === 'all') return options;
   return options.filter((o) => o.demo?.brand === brand);
 }
+
+/** Maps catalog hero layout ids (including veil lab ids) to Build Book wire preview layouts. */
+export function resolveHeroPreviewWireLayout(layoutId: string): string {
+  if (!layoutId.startsWith('veil-')) return layoutId;
+
+  const meta = VEIL_HERO_LAB[layoutId];
+  if (!meta) return 'wri-fullbleed';
+
+  switch (meta.layout) {
+    case 'split':
+      return 'co-split';
+    case 'band':
+      return 'wri-coastal';
+    default:
+      return 'wri-fullbleed';
+  }
+}
+
+export function heroPreviewImageForLayout(layoutId: string | null | undefined): string | null {
+  if (!layoutId) return null;
+  return HERO_PREVIEW_IMAGES[layoutId] ?? null;
+}

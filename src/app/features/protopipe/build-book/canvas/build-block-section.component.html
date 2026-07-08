@@ -1,20 +1,69 @@
 <section
   class="bb-section"
-  [class.is-active]="active()"
+  [class.is-active]="active() && !pendingPreview()"
   [class.is-empty]="!configured()"
   [class.is-baseline]="isBaselineRenderer()"
   [attr.data-section]="section()"
   (click)="onSectionClick($event)"
 >
+  @if (pendingPreview() && !configured()) {
+    <div class="bb-section__placeholder bb-section__placeholder--pending">
+      <span class="bb-section__label">Adding: {{ blockLabel() || sectionLabel() }}</span>
+      <p>Pick a variant in the Layout tab to preview this block.</p>
+    </div>
+  } @else if (showBlockChrome() && active() && editable() && configured()) {
+    <div class="bb-section__chrome" (click)="$event.stopPropagation()">
+      <span class="bb-section__chrome-label">{{ blockLabel() || sectionLabel() }}</span>
+      <div class="bb-section__chrome-actions">
+        <button type="button" (click)="onChromeNavigate('content', $event)">Copy</button>
+        @if (section() === 'hero' || section() === 'fold') {
+          <button type="button" (click)="onChromeNavigate('layout', $event)">Layout</button>
+        }
+        <button type="button" (click)="onChromeNavigate('media', $event)">Photos</button>
+        @if (heroPhotoDrifted()) {
+          <button type="button" class="bb-section__chrome-reset" (click)="onChromeResetPhoto($event)">Reset photo</button>
+        }
+      </div>
+    </div>
+  }
   @if (!configured()) {
     <div class="bb-section__placeholder">
       <span class="bb-section__label">{{ sectionLabel() }}</span>
-      <p>Choose a layout in the options panel for this {{ sectionLabel() }} block.</p>
+      <p>Choose a layout in the inspector for this {{ sectionLabel() }} block.</p>
     </div>
+  } @else if (isInteractiveStubBlock()) {
+    <app-protopipe-build-interactive-stub
+      [blockId]="resolvedBaselineBlockId()"
+      [props]="props()"
+    />
+  } @else if (isUniversalBaselineBlock()) {
+    <app-protopipe-build-universal-baseline-block
+      [blockId]="resolvedBaselineBlockId()"
+      [props]="props()"
+      [editable]="editable()"
+      (propPathChange)="onPropPath($event.path, $event.value)"
+      (imageEdit)="onBaselineImageEdit($event)"
+    />
+  } @else if (isHilBaselineBlock()) {
+    <app-protopipe-build-hil-baseline-block
+      [blockId]="resolvedBaselineBlockId()"
+      [props]="props()"
+      [editable]="editable()"
+      (propPathChange)="onPropPath($event.path, $event.value)"
+      (imageEdit)="onBaselineImageEdit($event)"
+    />
+  } @else if (isBaselineVeilHeroLabPreview()) {
+    <app-protopipe-build-veil-baseline-block
+      [blockId]="resolvedVeilHeroPreviewBlockId()"
+      [props]="props()"
+      [editable]="editable()"
+      (propPathChange)="onPropPath($event.path, $event.value)"
+      (imageEdit)="onBaselineImageEdit($event)"
+    />
   } @else if (isBaselineHeroLabPreview()) {
     <app-protopipe-build-hero-preview
       [imageUrl]="heroPreviewImageUrl()"
-      [layout]="resolvedHeroLayoutId()"
+      [layout]="resolvedHeroPreviewWireLayoutId()"
       [copy]="heroCopy()"
       [editable]="editable()"
       (copyChange)="onCopyChange($event)"
@@ -107,7 +156,7 @@
       @case ('hero') {
         <app-protopipe-build-hero-preview
           [imageUrl]="heroPreviewImageUrl()"
-          [layout]="heroLayoutId()"
+          [layout]="resolvedHeroPreviewWireLayoutId()"
           [copy]="heroCopy()"
           [editable]="editable()"
           (copyChange)="onCopyChange($event)"

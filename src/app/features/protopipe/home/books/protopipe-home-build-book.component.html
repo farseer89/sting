@@ -1,19 +1,31 @@
 <div class="bk-shell">
 
-  <header class="bk-masthead">
-    <div class="bk-masthead__left">
-      <button type="button" class="bk-masthead__back" (click)="exit.emit()" aria-label="Exit build book">
+  <header class="bk-toolbar">
+    <div class="bk-toolbar__left">
+      <button type="button" class="bk-toolbar__back" (click)="tryExit()" aria-label="Exit build book">
         <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>Books</span>
       </button>
-      <div class="bk-masthead__titles">
-        <div class="bk-masthead__eyebrow">Build book · Shire-ready designer</div>
-        <h1 class="bk-masthead__title">{{ title() }}</h1>
-        <p class="bk-masthead__deck">{{ deck() }}</p>
-      </div>
+      @if (!buildBook.loading()) {
+        <nav class="bk-top-tabs" aria-label="Build book sections">
+          @for (tab of bookTabs; track tab.id) {
+            <button
+              type="button"
+              class="bk-top-tabs__item"
+              [class.is-active]="bookTab() === tab.id"
+              [attr.aria-current]="bookTab() === tab.id ? 'page' : null"
+              (click)="selectBookTab(tab.id)"
+            >
+              {{ tab.label }}
+              @if (tab.status) {
+                <span class="bk-top-tabs__status">{{ tab.status }}</span>
+              }
+            </button>
+          }
+        </nav>
+      }
     </div>
-    <div class="bk-masthead__actions">
-      <span class="bk-badge bk-badge--mock">Draft demo</span>
+    <div class="bk-toolbar__actions">
       @if (buildBook.dirty()) {
         <span class="bk-badge bk-badge--dirty">Unsaved</span>
       }
@@ -24,15 +36,119 @@
         (onClick)="save()"
       />
       <p-button
-        label="Options panel"
+        label="Publish"
+        icon="pi pi-cloud-upload"
+        size="small"
+        [loading]="publishing()"
+        [disabled]="!canPublish()"
+        (onClick)="publishSite()"
+      />
+      <p-button
+        [label]="previewOpen() ? 'Hide inspector' : 'Show inspector'"
         icon="pi pi-sliders-h"
         severity="secondary"
         size="small"
-        [disabled]="!buildBook.hasDraft()"
-        (onClick)="openPreviewInNewTab()"
+        [disabled]="!isPageEditor()"
+        (onClick)="toggleInspector()"
       />
+      @if (isPageEditor() && isBaselineMode()) {
+        <p-button
+          [label]="canvasViewMode() === 'focus' ? 'Full page' : 'Focus block'"
+          icon="pi pi-window-maximize"
+          severity="secondary"
+          size="small"
+          (onClick)="toggleCanvasViewMode()"
+        />
+      }
     </div>
   </header>
+
+  @if (buildBook.hasDraft()) {
+    <section class="bk-masthead" aria-label="Site project">
+      <div class="bk-masthead__main">
+        <div class="bk-masthead__title-row">
+          @if (editingDisplayName()) {
+            <input
+              pInputText
+              class="bk-masthead__name-input"
+              [ngModel]="displayNameDraft()"
+              (ngModelChange)="displayNameDraft.set($event)"
+            />
+            <p-button label="Save name" size="small" (onClick)="saveDisplayName()" />
+            <p-button label="Cancel" severity="secondary" size="small" (onClick)="cancelEditingDisplayName()" />
+          } @else {
+            <h1 class="bk-masthead__title">{{ siteLabel() }}</h1>
+            <button type="button" class="bk-masthead__edit" (click)="startEditingDisplayName()">Edit name</button>
+          }
+        </div>
+        <div class="bk-masthead__meta">
+          @if (selectedTemplateId(); as templateId) {
+            <span class="bk-masthead__badge">{{ variantBrandLabel(templateId) }}</span>
+          }
+          @if (siteSlug(); as slug) {
+            <span class="bk-masthead__slug">Slug: {{ slug }}</span>
+          } @else {
+            <span class="bk-masthead__slug bk-masthead__slug--missing">Slug not set</span>
+          }
+          <span class="bk-masthead__saved">{{ lastSavedLabel() }}</span>
+        </div>
+        @if (!canPublish() && publishBlockers()) {
+          <p class="bk-masthead__blockers">{{ publishBlockers() }}</p>
+        }
+        @if (strategy.site()?.provisioningError; as provisionErr) {
+          <p class="bk-masthead__error">{{ provisionErr }}</p>
+        }
+      </div>
+      <div class="bk-masthead__actions">
+        <p-tag
+          [value]="publishStatusLabel(publishStatus())"
+          [severity]="publishStatusSeverity(publishStatus())"
+        />
+        @if (liveSiteUrl(); as liveUrl) {
+          <a class="bk-masthead__live" [href]="liveUrl" target="_blank" rel="noopener noreferrer">Open live site</a>
+        }
+      </div>
+    </section>
+  }
+
+  <p-dialog
+    header="Name your site"
+    [visible]="setupOpen()"
+    [modal]="true"
+    [closable]="!setupSaving()"
+    [style]="{ width: '28rem' }"
+    (visibleChange)="setupOpen.set($event)"
+  >
+    @if (setupTemplate(); as template) {
+      <p class="bk-setup__template">Template: <strong>{{ template.label }}</strong></p>
+    }
+    <label class="bk-setup__field">
+      <span>Display name</span>
+      <input
+        pInputText
+        class="w-full"
+        [ngModel]="setupDisplayName()"
+        (ngModelChange)="setupDisplayName.set($event); onSetupNameChange()"
+      />
+    </label>
+    <label class="bk-setup__field">
+      <span>Site slug (repo folder)</span>
+      <input pInputText class="w-full" [ngModel]="setupSlug()" (ngModelChange)="setupSlug.set($event)" />
+      <small>Used for files in client-sites. Live URL appears after Publish.</small>
+    </label>
+    @if (setupError(); as err) {
+      <p-message severity="error" [text]="err" styleClass="w-full" />
+    }
+    <div class="bk-setup__actions">
+      <p-button
+        label="Create site project"
+        icon="pi pi-check"
+        [loading]="setupSaving()"
+        [disabled]="!setupDisplayName().trim() || !setupSlug().trim()"
+        (onClick)="confirmSiteSetup()"
+      />
+    </div>
+  </p-dialog>
 
   @if (activeProspectContext(); as prospect) {
     <section class="bk-context" aria-label="Prospect context">
@@ -58,57 +174,16 @@
     <p-message severity="error" [text]="err" styleClass="w-full bk-message" />
   }
 
-  @if (buildBook.hasDraft() && chapter() === 'homepage' && isBaselineMode() && selectedTemplate(); as template) {
-    <section class="bk-template-bar" aria-label="Active template baseline">
-      <div class="bk-template-bar__main">
-        <span class="bk-template-bar__eyebrow">Editing approved baseline</span>
-        <strong>{{ template.label }}</strong>
-        @if (baselineVariantLabel(); as variant) {
-          <span class="bk-template-bar__variant">{{ variant }}</span>
-        }
-        <span class="bk-template-bar__count">{{ blockAssemblyCount() }} blocks from approved baseline</span>
-      </div>
-      <div class="bk-template-bar__actions">
-        @if (blockAssemblyPreviewUrl(); as previewUrl) {
-          <a class="bk-template-bar__link" [href]="previewUrl" target="_blank" rel="noopener noreferrer">
-            Open reference site
-          </a>
-        }
-      </div>
-    </section>
-  }
-
   @if (buildBook.loading()) {
     <div class="bk-loading">
       <p-progressSpinner strokeWidth="4" ariaLabel="Loading build book" />
     </div>
-  } @else if (!buildBook.hasDraft()) {
-    <div class="bk-start">
-      <nav class="bk-book-nav" aria-label="Build book chapters">
-        @for (group of chapterGroups; track group) {
-          <div class="bk-book-nav__label">{{ group }}</div>
-          @for (item of chapters; track item.id) {
-            @if (item.group === group) {
-              <button
-                type="button"
-                class="bk-book-nav__item"
-                [class.is-active]="chapter() === item.id"
-                (click)="selectChapter(item.id)"
-              >
-                <span>{{ item.label }}</span>
-                @if (item.status) {
-                  <small>{{ item.status }}</small>
-                }
-              </button>
-            }
-          }
-        }
-      </nav>
-
-      <div class="bk-book-panel">
-        @if (chapter() === 'templates') {
+  } @else {
+    <div class="bk-workspace">
+      @if (!buildBook.hasDraft() || bookTab() === 'templates') {
+        <div class="bk-tab-panel bk-tab-panel--library">
           <div class="bk-start__head">
-            <div class="bk-stage-kicker">Build book · Templates</div>
+            <div class="bk-stage-kicker">Templates</div>
             <h2 class="bk-start__title">Choose the SEO-first template direction</h2>
             <p class="bk-start__deck">Start from a full visual standard, then tune blocks, CTAs, site images, and SEO strategy. These baselines come from WRI, Sparky Electric, and Wilco Consulting.</p>
           </div>
@@ -165,7 +240,39 @@
               </div>
             </div>
           }
-        } @else if (chapter() === 'site-info-images') {
+
+          <div class="bk-start__note">
+            Build Book is Shire-first. Legacy Astro pages are design references only; saved template and block choices persist to Shire.
+          </div>
+        </div>
+      } @else if (bookTab() === 'homepage' && !buildBook.hasDraft()) {
+        <div class="bk-tab-panel bk-tab-panel--placeholder">
+          <div class="bk-book-placeholder">
+            <div class="bk-stage-kicker">Homepage</div>
+            <h2>Pick a template first</h2>
+            <p>Choose a template on the Templates tab, then return here to build the homepage stack with patterns and drag-in blocks.</p>
+            <p-button label="Go to Templates" size="small" (onClick)="selectBookTab('templates')" />
+          </div>
+        </div>
+      } @else if (bookTab() === 'landing-pages' && buildBook.hasDraft()) {
+        <app-build-book-landing-pages-panel
+          [selectedPageId]="landingPageId()"
+          (selectedPageIdChange)="onLandingPageSelected($event)"
+        >
+          @if (landingPageId()) {
+            <ng-container *ngTemplateOutlet="pageEditorShell" />
+          } @else {
+            <div class="bk-landing-pages__prompt">Select a landing page from the list, or add a new one to start building.</div>
+          }
+        </app-build-book-landing-pages-panel>
+      } @else if (isPageEditor()) {
+        <ng-container *ngTemplateOutlet="pageEditorShell" />
+      } @else if (bookTab() === 'site-theme') {
+        <div class="bk-tab-panel bk-tab-panel--theme">
+          <app-protopipe-build-book-theme-panel [designContext]="themeEditorContext()" />
+        </div>
+      } @else if (bookTab() === 'seo-strategy') {
+        <div class="bk-tab-panel bk-tab-panel--seo">
           <app-protopipe-build-site-images-panel
             [heroLayout]="heroLayoutId()"
             [heroBrand]="heroPreviewBrand()"
@@ -174,204 +281,86 @@
             [copy]="heroCopy()"
             [selectedImageUrl]="activeImageEditUrl()"
             [canUseHeroImage]="buildBook.hasDraft()"
+            [templateId]="selectedTemplateId()"
             (imageSelected)="onHeroImageSelected($event)"
             (previewLayoutChange)="onPreviewLayoutFromStudio($event)"
             (previewBrandChange)="onPreviewBrandFromStudio($event)"
           />
-        } @else {
-          <div class="bk-book-placeholder">
-            <div class="bk-stage-kicker">Build book · {{ activeChapterMeta().label }}</div>
-            <h2>{{ activeChapterMeta().label }}</h2>
-            <p>This chapter is part of the demo package roadmap. Start with Templates, then Build Book will unlock pages, posts, review gate, and lead form as Shire-backed sections.</p>
-          </div>
-        }
-
-        <div class="bk-start__note">
-          Build Book is Shire-first. Legacy Astro pages are design references only; saved template and block choices persist to Shire.
         </div>
-      </div>
+      } @else {
+        <div class="bk-tab-panel bk-tab-panel--placeholder">
+          <div class="bk-book-placeholder">
+            <div class="bk-stage-kicker">Build book · {{ activeBookTabMeta().label }}</div>
+            <h2>{{ activeBookTabMeta().label }}</h2>
+            <p>
+              @switch (bookTab()) {
+                @case ('landing-pages') {
+                  Landing pages will use the same template/block system with page-specific SEO and conversion goals.
+                }
+                @case ('content-posts') {
+                  Blog posts will use article block templates generated from SEO strategy and editable by the operator.
+                }
+                @default {
+                  This section is part of the demo package roadmap. Start with Templates, then refine homepage blocks and SEO strategy.
+                }
+              }
+            </p>
+          </div>
+        </div>
+      }
     </div>
-  } @else {
+  }
 
+  <ng-template #pageEditorShell>
     <div
       class="bk-binder"
-      [class.bk-binder--chapter]="chapter() !== 'homepage'"
       [class.bk-binder--preview-open]="previewOpen()"
       [style.--bk-preview-w.px]="previewWidth()"
     >
-      <nav class="bk-book-nav" aria-label="Build book chapters">
-        @for (group of chapterGroups; track group) {
-          <div class="bk-book-nav__label">{{ group }}</div>
-          @for (item of chapters; track item.id) {
-            @if (item.group === group) {
-              <button
-                type="button"
-                class="bk-book-nav__item"
-                [class.is-active]="chapter() === item.id"
-                (click)="selectChapter(item.id)"
-              >
-                <span>{{ item.label }}</span>
-                @if (item.status) {
-                  <small>{{ item.status }}</small>
-                } @else if (item.id === 'homepage' && configuredStackCount() > 0) {
-                  <span class="bk-book-nav__check">✓</span>
+      @if (isBaselineMode() || bookTab() === 'landing-pages') {
+        <app-build-book-page-builder-rail
+          #pageBuilderRail
+          [pageKind]="activePageKind()"
+          [pageLabel]="activePageLabel()"
+          [templateId]="selectedTemplateId()"
+          [blocks]="pageStackBlocks()"
+          [activeBlockId]="activeBlockId()"
+          [selectedPatternId]="pendingAdd()?.patternId ?? null"
+          [patternPanelStyle]="patternThumbStyle()"
+          [systemLabel]="siteLabel() + ' · ' + themeLabel()"
+          (selectBlock)="selectBlock($event)"
+          (reorder)="onPageBlockReorder($event)"
+          (removeBlock)="onRemovePageBlock($event)"
+          (catalogFilterChange)="onAddCatalogFilterChange($event)"
+          (patternSelected)="onPendingPatternSelected($event)"
+          (pendingCancel)="clearPendingAdd()"
+        />
+      } @else {
+        <nav class="bk-section-nav" aria-label="Homepage sections">
+          <div class="bk-section-nav__label">Homepage stack</div>
+          @for (slot of navSlots; track slot) {
+            <button
+              type="button"
+              class="bk-section-nav__item"
+              [class.is-active]="section() === slot"
+              (click)="selectSection(slot)"
+            >
+              <div class="bk-section-nav__meta">
+                <span class="bk-section-nav__num">{{ sectionNum(slot) }}</span>
+                <span class="bk-section-nav__name">{{ sectionLabel(slot) }}</span>
+                @if (selectedId(slot)) {
+                  <span class="bk-section-nav__check">✓</span>
                 }
-              </button>
-            }
+              </div>
+            </button>
           }
-        }
-      </nav>
-
-      @if (chapter() === 'homepage') {
-      <nav class="bk-section-nav" aria-label="Site sections">
-        <div class="bk-section-nav__label">Start mode</div>
-        <div class="bk-nav-mode">
-          <button type="button" [class.is-active]="entryMode() === 'template'" (click)="setEntryMode('template')">Template</button>
-          <button type="button" [class.is-active]="entryMode() === 'blocks'" (click)="setEntryMode('blocks')">Blocks</button>
-        </div>
-        <div class="bk-section-nav__label">Homepage stack</div>
-
-        @if (isBaselineMode()) {
-          <div
-            class="bk-section-nav__list"
-            cdkDropList
-            cdkDropListOrientation="vertical"
-            (cdkDropListDropped)="onBaselineBlockDrop($event)"
-          >
-            @for (entry of baselineNavEntries(); track entry.key; let idx = $index) {
-              <div class="bk-section-nav__row" cdkDrag [cdkDragData]="entry">
-                <span class="bk-section-nav__drag" cdkDragHandle aria-hidden="true">⋮⋮</span>
-                @if (entry.type === 'hero-unit') {
-                  <div class="bk-section-nav__hero-unit">
-                    @for (block of entry.blocks; track block.id; let sub = $index) {
-                      <button
-                        type="button"
-                        class="bk-section-nav__item bk-section-nav__item--nested"
-                        [class.is-active]="activeBlockId() === block.id"
-                        (click)="selectBlock(block.id)"
-                      >
-                        <app-protopipe-build-block-nav-thumb [blockId]="block.blockId" />
-                        <div class="bk-section-nav__meta">
-                          <span class="bk-section-nav__num">{{ idx + 1 }}{{ sub === 0 ? 'a' : 'b' }}</span>
-                          <span class="bk-section-nav__name">{{ block.label }}</span>
-                          <span class="bk-section-nav__check">✓</span>
-                        </div>
-                      </button>
-                    }
-                  </div>
-                } @else {
-                  @for (block of entry.blocks; track block.id) {
-                    <button
-                      type="button"
-                      class="bk-section-nav__item"
-                      [class.is-active]="activeBlockId() === block.id"
-                      (click)="selectBlock(block.id)"
-                    >
-                      <app-protopipe-build-block-nav-thumb [blockId]="block.blockId" />
-                      <div class="bk-section-nav__meta">
-                        <span class="bk-section-nav__num">{{ idx + 1 }}</span>
-                        <span class="bk-section-nav__name">{{ block.label }}</span>
-                        <span class="bk-section-nav__check">✓</span>
-                      </div>
-                    </button>
-                  }
-                }
-                @if (!isPinnedBaselineEntry(entry)) {
-                  <button
-                    type="button"
-                    class="bk-section-nav__remove"
-                    aria-label="Remove block"
-                    (click)="removeBaselineBlock(entry.blocks[0].id, $event)"
-                  >
-                    ×
-                  </button>
-                }
-              </div>
-            }
-          </div>
-
-          <button type="button" class="bk-section-nav__add" (click)="openAddBlockDialog()">+ Add block</button>
-
-          @if (addBlockDialogOpen()) {
-            <div class="bk-add-block-dialog" role="dialog" aria-label="Add homepage block">
-              <div class="bk-add-block-dialog__head">
-                <strong>Add block</strong>
-                <button type="button" class="bk-add-block-dialog__close" (click)="closeAddBlockDialog()" aria-label="Close">×</button>
-              </div>
-              <div class="bk-add-block-dialog__grid">
-                @for (def of baselineCatalogBlocks(); track def.id) {
-                  <button type="button" class="bk-add-block-dialog__item" (click)="addBaselineBlockFromCatalog(def.id)">
-                    <app-protopipe-build-block-nav-thumb [blockId]="def.id" />
-                    <span>{{ def.label }}</span>
-                  </button>
-                }
-              </div>
-            </div>
-          }
-        } @else {
-        @for (slot of navSlots; track slot) {
-          <button
-            type="button"
-            class="bk-section-nav__item"
-            [class.is-active]="section() === slot"
-            (click)="selectSection(slot)"
-          >
-            <div class="bk-sk" [class]="'bk-sk bk-sk--' + slot" aria-hidden="true">
-              @switch (slot) {
-                @case ('hero') {
-                  <span class="bk-sk__bar bk-sk__bar--nav"></span>
-                  <span class="bk-sk__block bk-sk__block--hero-photo"></span>
-                  <span class="bk-sk__line bk-sk__line--lg"></span>
-                  <span class="bk-sk__line"></span>
-                  <span class="bk-sk__cta-row"><span class="bk-sk__cta"></span><span class="bk-sk__cta bk-sk__cta--ghost"></span></span>
-                }
-                @case ('fold') {
-                  <span class="bk-sk__bar bk-sk__bar--thin"></span>
-                  <span class="bk-sk__fold-icons"><span></span><span></span><span></span><span></span></span>
-                }
-                @case ('services') {
-                  <span class="bk-sk__line bk-sk__line--sm"></span>
-                  <span class="bk-sk__grid"><span></span><span></span><span></span></span>
-                }
-                @case ('proof') {
-                  <span class="bk-sk__quote"></span>
-                  <span class="bk-sk__avatar-row"><span></span><span></span><span></span></span>
-                }
-                @case ('areas') {
-                  <span class="bk-sk__map"></span>
-                  <span class="bk-sk__pill-row"><span></span><span></span><span></span></span>
-                }
-                @case ('close') {
-                  <span class="bk-sk__line bk-sk__line--md"></span>
-                  <span class="bk-sk__cta bk-sk__cta--wide"></span>
-                }
-              }
-            </div>
-            <div class="bk-section-nav__meta">
-              <span class="bk-section-nav__num">{{ sectionNum(slot) }}</span>
-              <span class="bk-section-nav__name">{{ sectionLabel(slot) }}</span>
-              @if (selectedId(slot)) {
-                <span class="bk-section-nav__check">✓</span>
-              }
-            </div>
-          </button>
-        }
-        }
-
-        <div class="bk-section-nav__foot">
-          <div class="bk-section-nav__foot-label">Visual system</div>
-          <div class="bk-system-chip">
-            <span class="bk-system-chip__dot" style="background:#2563eb"></span>
-            {{ siteLabel() }} · {{ themeLabel() }}
-          </div>
-        </div>
-      </nav>
+        </nav>
+      }
 
       <div class="bk-stage bk-stage--preview">
-
         <div class="bk-main-preview" aria-label="Live site preview">
           <app-protopipe-build-page-canvas
-            [baselineMode]="isBaselineMode()"
+            [baselineMode]="isBaselineMode() || bookTab() === 'landing-pages'"
             [sections]="pageSectionStates()"
             [blocks]="pageBlockStates()"
             [activeSection]="section()"
@@ -379,8 +368,12 @@
             [editable]="true"
             [heroLayoutId]="heroLayoutId()"
             [heroImageUrl]="activeHeroImageUrl()"
+            [heroPhotoDriftedBlockId]="baselineHeroPhotoDrifted() ? activeBlock()?.id ?? null : null"
             [scrollToSection]="scrollToSection()"
             [scrollToBlockId]="scrollToBlockId()"
+            [focusBlockMode]="canvasViewMode() === 'focus'"
+            [themeCssVars]="siteThemeCssVars()"
+            [siteBaselineRenderer]="siteDesignContext()?.baselineRenderer ?? null"
             (sectionClick)="onCanvasSectionClick($event)"
             (blockClick)="onCanvasBlockClick($event)"
             (propsChange)="onCanvasPropsChange($event)"
@@ -389,383 +382,294 @@
             (blockPropsChange)="onCanvasBlockPropsChange($event)"
             (copyChange)="onHeroCopyChange($event)"
             (imageEdit)="onCanvasImageEdit($event)"
+            (inspectorNavigate)="onInspectorNavigate($event)"
+            (resetHeroPhoto)="resetBaselineHeroPhotoForBlock($event)"
           />
         </div>
-
       </div>
-      } @else {
-        <div class="bk-stage bk-stage--chapter">
-          @if (chapter() !== 'site-info-images') {
-            <div class="bk-book-placeholder">
-              <div class="bk-stage-kicker">Build book · {{ activeChapterMeta().group }}</div>
-              <h2>{{ activeChapterMeta().label }}</h2>
-              <p>
-                @switch (chapter()) {
-                  @case ('templates') {
-                    Choose another full visual standard below. Switching templates reapplies the recommended hero, fold, and services selections while keeping the book in the Shire save flow.
-                  }
-                  @case ('landing-pages') {
-                    Landing pages will use the same template/block system with page-specific SEO and conversion goals.
-                  }
-                  @case ('blog-posts') {
-                    Blog posts will use article block templates generated from SEO strategy and editable by the operator.
-                  }
-                  @case ('review-gate') {
-                    The review gate will package Google-review capture into the demo flow.
-                  }
-                  @case ('lead-form') {
-                    The lead form chapter will configure owner-texting capture pages.
-                  }
-                  @default {
-                    The checklist will gather site, review gate, content posts, and lead form readiness before a sales meeting.
-                  }
-                }
-              </p>
-            </div>
-          }
-          @if (chapter() === 'templates') {
-            <div class="bk-template-grid bk-template-grid--chapter">
-              @for (template of starterTemplates; track template.id) {
-                <article class="bk-template-card" [class.is-selected]="isTemplateSelected(template)">
-                  <div class="bk-template-card__preview" [style.--template-accent]="template.accent">
-                    <div class="bk-template-image">
-                      <img [src]="templatePreviewImage(template)" [alt]="template.label + ' template preview'" loading="lazy" />
-                    </div>
-                  </div>
-                  <div class="bk-template-card__body">
-                    <h3>{{ template.serviceOffered }}</h3>
-                    <p>{{ template.previewDescription }}</p>
-                    <div class="bk-template-card__actions">
-                      <button type="button" class="bk-template-card__preview-btn" (click)="openTemplatePreview(template)">
-                        Preview
-                      </button>
-                      <button type="button" class="bk-template-card__action" [class.is-selected]="isTemplateSelected(template)" [disabled]="buildBook.initializing()" (click)="useStarterTemplate(template)">
-                        {{ templateActionLabel(template) }}
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              }
-            </div>
-          } @else if (chapter() === 'site-info-images') {
-            <app-protopipe-build-site-images-panel
-              [heroLayout]="heroLayoutId()"
-              [heroBrand]="heroPreviewBrand()"
-              [heroLabel]="heroPreviewMeta().label"
-              [siteUrl]="heroPreviewMeta().url"
-              [copy]="heroCopy()"
-              [selectedImageUrl]="activeImageEditUrl()"
-              [canUseHeroImage]="buildBook.hasDraft()"
-              (imageSelected)="onHeroImageSelected($event)"
-              (previewLayoutChange)="onPreviewLayoutFromStudio($event)"
-              (previewBrandChange)="onPreviewBrandFromStudio($event)"
-            />
-          }
-        </div>
-      }
 
       <div class="bk-preview-shell" [class.is-open]="previewOpen()" [style.width.px]="previewOpen() ? previewWidth() : 0">
-        <aside class="bk-stack-rail" aria-label="Block options">
+        <aside class="bk-stack-rail bk-inspector" aria-label="Inspector">
           <div
             class="bk-stack-rail__resize"
             role="separator"
             aria-orientation="vertical"
-            aria-label="Resize options panel"
+            aria-label="Resize inspector"
             (pointerdown)="startPreviewResize($event)"
           ></div>
 
           <header class="bk-stack-rail__head">
             <div class="bk-stack-rail__head-top">
               <span class="bk-stack-rail__title">
-                Block options
-                @if (isBaselineMode()) {
-                  <small>{{ activeBlock()?.label ?? 'Baseline block' }}</small>
+                Inspector
+                @if (isBaselineMode() || bookTab() === 'landing-pages') {
+                  <small>{{ activeBlock()?.label ?? 'Select a block' }}</small>
                 } @else {
                   <small>Section {{ sectionNum(section()) }} · {{ sectionLabel(section()) }}</small>
                 }
               </span>
               <div class="bk-stack-rail__head-actions">
-                @if (!isBaselineMode() && section() === 'hero') {
-                  <button type="button" class="bk-stack-rail__studio-link" (click)="openSiteInfoImages()">Site Info &amp; Images</button>
-                }
-                @if (isBaselineMode() && activeBlock()?.section === 'hero') {
-                  <button type="button" class="bk-stack-rail__studio-link" (click)="openSiteInfoImages()">Site Info &amp; Images</button>
-                }
-                <button type="button" class="bk-stack-rail__close" (click)="closePreview()" aria-label="Close preview panel">
+                <button type="button" class="bk-stack-rail__close" (click)="closePreview()" aria-label="Close inspector">
                   <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 4L6 8l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
               </div>
             </div>
+            <nav class="bk-inspector-tabs" role="tablist" aria-label="Inspector sections">
+              <button type="button" role="tab" class="bk-inspector-tabs__item" [class.is-active]="inspectorTab() === 'content'" [attr.aria-selected]="inspectorTab() === 'content'" (click)="selectInspectorTab('content')">Content</button>
+              @if (inspectorLayoutTabVisible()) {
+                <button type="button" role="tab" class="bk-inspector-tabs__item" [class.is-active]="inspectorTab() === 'layout'" [attr.aria-selected]="inspectorTab() === 'layout'" (click)="selectInspectorTab('layout')">Layout</button>
+              }
+              <button type="button" role="tab" class="bk-inspector-tabs__item" [class.is-active]="inspectorTab() === 'media'" [attr.aria-selected]="inspectorTab() === 'media'" (click)="selectInspectorTab('media')">Media</button>
+              @if (inspectorLinksTabVisible()) {
+                <button type="button" role="tab" class="bk-inspector-tabs__item" [class.is-active]="inspectorTab() === 'links'" [attr.aria-selected]="inspectorTab() === 'links'" (click)="selectInspectorTab('links')">Links</button>
+              }
+            </nav>
           </header>
 
           <div class="bk-stack-rail__body bk-stack-rail__body--options">
-            @if (isBaselineMode()) {
-              @if (baselineLayoutOptionsVisible()) {
+            @switch (inspectorTab()) {
+              @case ('content') {
                 <div class="bk-inline-hint">{{ baselineStructuralHint() }}</div>
+                @if (contentPanelVisible()) {
+                  <div class="bk-href-panel" aria-label="Copy fields">
+                    <div class="bk-href-panel__label">Copy</div>
+                    @for (field of activeContentFields(); track field.key) {
+                      <label class="bk-href-panel__field">
+                        <span>{{ field.label }}</span>
+                        @if (field.multiline) {
+                          <textarea rows="3" [ngModel]="field.value" (ngModelChange)="updateActiveContent(field.key, $event)"></textarea>
+                        } @else {
+                          <input type="text" [ngModel]="field.value" (ngModelChange)="updateActiveContent(field.key, $event)" />
+                        }
+                      </label>
+                    }
+                  </div>
+                }
                 @if (activeBlock()?.section === 'hero' && baselineHeroPhotoDrifted()) {
-                  <button type="button" class="bk-struct-panel__action" (click)="resetBaselineHeroPhoto()">
-                    Reset hero photo to template default
-                  </button>
+                  <button type="button" class="bk-struct-panel__action" (click)="resetBaselineHeroPhoto()">Reset hero photo to template default</button>
                 }
-                @if (hrefPanelVisible()) {
-                  <div class="bk-href-panel" aria-label="CTA links">
-                    <div class="bk-href-panel__label">CTA links</div>
-                    @for (field of activeHrefFields(); track field.key) {
-                      <label class="bk-href-panel__field">
-                        <span>{{ field.label }}</span>
-                        <input
-                          type="text"
-                          [ngModel]="field.value"
-                          (ngModelChange)="updateActiveHref(field.key, $event)"
-                          placeholder="#quote or tel:+18085318422"
-                        />
-                      </label>
-                    }
-                  </div>
-                }
-
-                @if (altPanelVisible()) {
-                  <div class="bk-href-panel" aria-label="Image alt text">
-                    <div class="bk-href-panel__label">Image alt text</div>
-                    @for (field of activeAltFields(); track field.key) {
-                      <label class="bk-href-panel__field">
-                        <span>{{ field.label }}</span>
-                        <input
-                          type="text"
-                          [ngModel]="field.value"
-                          (ngModelChange)="updateActiveAlt(field.key, $event)"
-                          placeholder="Describe the image for accessibility"
-                        />
-                      </label>
-                    }
-                  </div>
-                }
-
-                @if (structuralPanelVisible()) {
-                  <div class="bk-struct-panel" aria-label="Block structure">
-                    @if (activeBlock()?.blockId === 'wri-baseline-contract-bar') {
-                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineBlockStat()">+ Add stat</button>
-                    }
-                  </div>
-                }
-              } @else {
-                <div class="bk-inline-hint">{{ baselineStructuralHint() }}</div>
                 @if (activeBlockDefinition(); as def) {
-                  <div class="bk-baseline-panel">
-                    <div class="bk-baseline-panel__label">Approved baseline block</div>
-                    <strong>{{ def.label }}</strong>
-                    <p>{{ def.description }}</p>
+                  @if (!baselineLayoutOptionsVisible()) {
+                    <div class="bk-baseline-panel">
+                      <div class="bk-baseline-panel__label">Approved baseline block</div>
+                      <strong>{{ def.label }}</strong>
+                      <p>{{ def.description }}</p>
+                    </div>
+                  }
+                }
+                @if (structuralPanelVisible()) {
+                  <ng-container *ngTemplateOutlet="inspectorStructuralPanel" />
+                }
+                @if (!isBaselineMode() && sectionShowsDemoBrandTabs(section())) {
+                  <div class="bk-demo-tabs" role="tablist" [attr.aria-label]="sectionLabel(section()) + ' brands'">
+                    @for (brand of demoBrandsForSection(section()); track brand) {
+                      <button type="button" class="bk-demo-tabs__item" role="tab" [class.is-active]="demoBrand() === brand" [attr.aria-selected]="demoBrand() === brand" (click)="selectDemoBrand(brand)">
+                        <span class="bk-demo-tabs__dot" [style.background]="demoBrandDot(brand)"></span>
+                        {{ demoBrandLabel(brand) }}
+                      </button>
+                    }
                   </div>
                 }
+              }
+              @case ('layout') {
+                @if (pendingAdd()) {
+                  <div class="bk-inline-hint">Pick a variant in Layout to add {{ pendingPatternLabel() }} to the page.</div>
+                }
+                @if (pendingLayoutVariants().length > 0) {
+                  <div class="bk-pending-variants">
+                    @for (variant of pendingLayoutVariants(); track variant.id) {
+                      <button
+                        type="button"
+                        class="bk-pending-variants__row"
+                        [class.is-selected]="pendingAdd()?.previewBlockId === variant.id"
+                        (mouseenter)="onPendingVariantPreview(variant.id)"
+                        (click)="onPendingVariantSelect(variant.id)"
+                      >
+                        <span class="bk-pending-variants__title">{{ variant.variantLabel || variant.label }}</span>
+                        @if (variant.brandLabel) {
+                          <span class="bk-pending-variants__badge">{{ variant.brandLabel }}</span>
+                        }
+                      </button>
+                    }
+                  </div>
+                }
+                @if (isBaselineMode() && baselineLayoutOptionsVisible()) {
+                  <div class="bk-option-grid__section-label">Approved baseline</div>
+                  <div class="bk-option-grid bk-option-grid--rail" [class.bk-option-grid--heroes]="heroPanelSection() === 'hero'">
+                    @for (opt of heroPanelApprovedOptions(); track opt.id) {
+                      <ng-container *ngTemplateOutlet="heroOptionCard; context: { $implicit: opt }" />
+                    }
+                  </div>
+                  <div class="bk-option-grid__section-label">Lab layouts</div>
+                  <div class="bk-option-grid bk-option-grid--rail" [class.bk-option-grid--heroes]="heroPanelSection() === 'hero'">
+                    @for (opt of heroPanelLabOptions(); track opt.id) {
+                      <ng-container *ngTemplateOutlet="heroOptionCard; context: { $implicit: opt }" />
+                    }
+                  </div>
+                } @else if (!isBaselineMode()) {
+                  <div class="bk-option-grid bk-option-grid--rail" [class.bk-option-grid--heroes]="heroPanelSection() === 'hero'">
+                    @for (opt of heroPanelOptions(); track opt.id) {
+                      <ng-container *ngTemplateOutlet="heroOptionCard; context: { $implicit: opt }" />
+                    }
+                  </div>
+                }
+              }
+              @case ('media') {
+                @if (activeBlock(); as block) {
+                  <app-protopipe-build-media-slots-panel
+                    [slots]="activeMediaSlots()"
+                    [activePropPath]="activeMediaSlotPropPath()"
+                    [blockLabel]="blockNavLabel(block.blockId, block.label)"
+                    (slotSelect)="onMediaSlotSelect($event)"
+                  />
+                }
+                @if (pendingImageEdit(); as pending) {
+                  <div class="bk-inline-hint bk-inline-hint--media">Choosing image for <strong>{{ pending.propPath }}</strong>.</div>
+                } @else {
+                  <div class="bk-inline-hint">Generate or upload site photos here, then apply them from a slot or the canvas.</div>
+                }
+                <app-protopipe-build-site-images-panel
+                  embedMode="library"
+                  [heroLayout]="heroLayoutId()"
+                  [heroBrand]="heroPreviewBrand()"
+                  [heroLabel]="heroPreviewMeta().label"
+                  [siteUrl]="heroPreviewMeta().url"
+                  [copy]="heroCopy()"
+                  [selectedImageUrl]="activeImageEditUrl()"
+                  [canUseHeroImage]="buildBook.hasDraft()"
+                  [templateId]="selectedTemplateId()"
+                  (imageSelected)="onHeroImageSelected($event)"
+                />
+              }
+              @case ('links') {
                 @if (hrefPanelVisible()) {
                   <div class="bk-href-panel" aria-label="CTA links">
                     <div class="bk-href-panel__label">CTA links</div>
                     @for (field of activeHrefFields(); track field.key) {
                       <label class="bk-href-panel__field">
                         <span>{{ field.label }}</span>
-                        <input
-                          type="text"
-                          [ngModel]="field.value"
-                          (ngModelChange)="updateActiveHref(field.key, $event)"
-                          placeholder="#quote or tel:+18085318422"
-                        />
+                        <input type="text" [ngModel]="field.value" (ngModelChange)="updateActiveHref(field.key, $event)" placeholder="#quote or tel:+18085318422" />
                       </label>
                     }
                   </div>
                 }
-
                 @if (altPanelVisible()) {
                   <div class="bk-href-panel" aria-label="Image alt text">
                     <div class="bk-href-panel__label">Image alt text</div>
                     @for (field of activeAltFields(); track field.key) {
                       <label class="bk-href-panel__field">
                         <span>{{ field.label }}</span>
-                        <input
-                          type="text"
-                          [ngModel]="field.value"
-                          (ngModelChange)="updateActiveAlt(field.key, $event)"
-                          placeholder="Describe the image for accessibility"
-                        />
+                        <input type="text" [ngModel]="field.value" (ngModelChange)="updateActiveAlt(field.key, $event)" />
                       </label>
                     }
                   </div>
                 }
-
-                @if (structuralPanelVisible()) {
-                  <div class="bk-struct-panel" aria-label="Block structure">
-                    @if (activeBlock()?.blockId === 'wri-baseline-contract-bar') {
-                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineBlockStat()">+ Add stat</button>
-                    }
-                    @if (activeBlock()?.blockId === 'wri-baseline-capabilities-grid') {
-                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineCapability()">+ Add capability</button>
-                    }
-                    @if (activeBlock()?.blockId === 'wri-baseline-life-proof-split') {
-                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineBullet()">+ Add bullet</button>
-                    }
-                    @if (activeBlock()?.blockId === 'wri-baseline-project-lifecycle') {
-                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineLifecycleStep()">+ Add step</button>
-                    }
-                    @if (activeBlock()?.blockId === 'wri-baseline-regulatory-trust') {
-                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineCredential()">+ Add credential</button>
-                    }
-                    @if (activeBlock()?.blockId === 'wri-baseline-featured-well') {
-                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineFeaturedMetric()">+ Add metric</button>
-                    }
-                    @if (activeBlock()?.blockId === 'wri-baseline-sidebar-facts') {
-                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineFact()">+ Add fact</button>
-                    }
-                    @if (activeBlock()?.blockId === 'wri-baseline-island-coverage') {
-                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineOffice()">+ Add office</button>
-                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineIsland()">+ Add island</button>
-                    }
-                    @if (activeBlock()?.blockId === 'wri-baseline-rig-gallery-cta') {
-                      <button type="button" class="bk-struct-panel__action" (click)="addBaselineGalleryItem()">+ Add gallery item</button>
-                    }
-                  </div>
+                @if (!hrefPanelVisible() && !altPanelVisible()) {
+                  <div class="bk-inline-hint">This block has no editable links or alt text fields.</div>
                 }
               }
-            } @else {
-            @if (hrefPanelVisible()) {
-              <div class="bk-href-panel" aria-label="CTA links">
-                <div class="bk-href-panel__label">CTA links</div>
-                @for (field of activeHrefFields(); track field.key) {
-                  <label class="bk-href-panel__field">
-                    <span>{{ field.label }}</span>
-                    <input
-                      type="text"
-                      [ngModel]="field.value"
-                      (ngModelChange)="updateActiveHref(field.key, $event)"
-                      placeholder="#quote or tel:+18085318422"
-                    />
-                  </label>
-                }
-              </div>
             }
-
-            @if (structuralPanelVisible()) {
-              <div class="bk-struct-panel" aria-label="Block structure">
-                @if (section() === 'fold') {
-                  <button type="button" class="bk-struct-panel__action" (click)="addSectionStat()">+ Add stat</button>
-                }
-                @if (section() === 'services') {
-                  <button type="button" class="bk-struct-panel__action" (click)="addSectionListItem('services')">+ Add service</button>
-                }
-                @if (section() === 'proof' && selectedId('proof') === 'proof-reviews') {
-                  <button type="button" class="bk-struct-panel__action" (click)="addSectionListItem('testimonials')">+ Add review</button>
-                }
-                @if (section() === 'areas') {
-                  <button type="button" class="bk-struct-panel__action" (click)="addSectionListItem('items')">+ Add FAQ item</button>
-                }
-              </div>
-            }
-
-            @if (section() === 'hero') {
-              <div class="bk-inline-hint">
-                Click text in the page preview to edit copy inline. Use Site Info &amp; Images for hero photos.
-              </div>
-            }
-
-            @if (sectionShowsDemoBrandTabs(section())) {
-              <div class="bk-demo-tabs" role="tablist" [attr.aria-label]="sectionLabel(section()) + ' brands'">
-                @for (brand of demoBrandsForSection(section()); track brand) {
-                  <button
-                    type="button"
-                    class="bk-demo-tabs__item"
-                    role="tab"
-                    [class.is-active]="demoBrand() === brand"
-                    [attr.aria-selected]="demoBrand() === brand"
-                    (click)="selectDemoBrand(brand)"
-                  >
-                    <span class="bk-demo-tabs__dot" [style.background]="demoBrandDot(brand)"></span>
-                    {{ demoBrandLabel(brand) }}
-                  </button>
-                }
-              </div>
-            }
-            }
-
-            @if (!isBaselineMode() || baselineLayoutOptionsVisible()) {
-            @if (isBaselineMode() && baselineLayoutOptionsVisible()) {
-              <div class="bk-option-grid__section-label">Approved baseline</div>
-              <div class="bk-option-grid bk-option-grid--rail" [class.bk-option-grid--heroes]="heroPanelSection() === 'hero'">
-                @for (opt of heroPanelApprovedOptions(); track opt.id) {
-                  <ng-container *ngTemplateOutlet="heroOptionCard; context: { $implicit: opt }" />
-                }
-              </div>
-              <div class="bk-option-grid__section-label">Lab layouts</div>
-              <div class="bk-option-grid bk-option-grid--rail" [class.bk-option-grid--heroes]="heroPanelSection() === 'hero'">
-                @for (opt of heroPanelLabOptions(); track opt.id) {
-                  <ng-container *ngTemplateOutlet="heroOptionCard; context: { $implicit: opt }" />
-                }
-              </div>
-            } @else {
-            <div class="bk-option-grid bk-option-grid--rail" [class.bk-option-grid--heroes]="heroPanelSection() === 'hero'">
-              @for (opt of heroPanelOptions(); track opt.id) {
-                <ng-container *ngTemplateOutlet="heroOptionCard; context: { $implicit: opt }" />
-              }
-            </div>
-            }
-            }
-
-            <ng-template #heroOptionCard let-opt>
-                <button
-                  type="button"
-                  [class]="heroPanelSection() === 'hero' ? 'bk-hero-card' : 'bk-fold-card'"
-                  [class.is-selected]="isOptionSelected(heroPanelSection(), opt.id)"
-                  [disabled]="buildBook.saving()"
-                  (click)="onHeroPanelOptionSelect(opt.id)"
-                >
-                  <div [class]="heroPanelSection() === 'hero' ? 'bk-hero-card__preview' : 'bk-fold-card__preview'">
-                    <app-protopipe-build-book-option-preview
-                      [option]="opt"
-                      [section]="heroPanelSection()"
-                      [selected]="isOptionSelected(heroPanelSection(), opt.id)"
-                    />
-                  </div>
-                  <div [class]="heroPanelSection() === 'hero' ? 'bk-hero-card__meta' : 'bk-fold-card__meta'">
-                    @if (opt.tag) {
-                      <span class="bk-hero-card__tag">{{ opt.tag }}</span>
-                    }
-                    @if (opt.demo && opt.tag !== 'Approved baseline') {
-                      <span class="bk-hero-card__tag bk-hero-card__tag--demo">Lab demo</span>
-                    }
-                    <span [class]="heroPanelSection() === 'hero' ? 'bk-hero-card__name' : 'bk-fold-card__name'">{{ opt.label }}</span>
-                    <span [class]="heroPanelSection() === 'hero' ? 'bk-hero-card__desc' : 'bk-fold-card__desc'">{{ opt.desc }}</span>
-                    @if (isOptionSelected(heroPanelSection(), opt.id)) {
-                      <span class="bk-hero-card__selected">
-                        <svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        On site
-                      </span>
-                    }
-                  </div>
-                </button>
-            </ng-template>
           </div>
         </aside>
       </div>
 
-      <nav class="bk-preview-rail" aria-label="Preview panel">
+      <nav class="bk-preview-rail" aria-label="Inspector panel">
         <button
           type="button"
           class="bk-preview-rail__toggle"
           [class.is-active]="previewOpen()"
           [attr.aria-pressed]="previewOpen()"
           [attr.aria-expanded]="previewOpen()"
-          aria-label="Block options"
-          title="Block options"
+          aria-label="Inspector"
+          title="Inspector"
           (click)="togglePreview()"
         >
           <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 3.5h10M3 8h10M3 12.5h10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M5 2.2v2.6M11 6.7v2.6M8 11.2v2.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-          <span class="bk-preview-rail__label">Options</span>
+          <span class="bk-preview-rail__label">Inspector</span>
         </button>
       </nav>
     </div>
-  }
+  </ng-template>
+
+  <ng-template #inspectorStructuralPanel>
+    <div class="bk-struct-panel" aria-label="Block structure">
+      @if (isBaselineMode()) {
+        @if (activeBlock()?.blockId === 'wri-baseline-contract-bar') {
+          <button type="button" class="bk-struct-panel__action" (click)="addBaselineBlockStat()">+ Add stat</button>
+        }
+        @if (activeBlock()?.blockId === 'wri-baseline-capabilities-grid') {
+          <button type="button" class="bk-struct-panel__action" (click)="addBaselineCapability()">+ Add capability</button>
+        }
+        @if (activeBlock()?.blockId === 'wri-baseline-life-proof-split') {
+          <button type="button" class="bk-struct-panel__action" (click)="addBaselineBullet()">+ Add bullet</button>
+        }
+        @if (activeBlock()?.blockId === 'wri-baseline-project-lifecycle') {
+          <button type="button" class="bk-struct-panel__action" (click)="addBaselineLifecycleStep()">+ Add step</button>
+        }
+        @if (activeBlock()?.blockId === 'wri-baseline-regulatory-trust') {
+          <button type="button" class="bk-struct-panel__action" (click)="addBaselineCredential()">+ Add credential</button>
+        }
+        @if (activeBlock()?.blockId === 'wri-baseline-featured-well') {
+          <button type="button" class="bk-struct-panel__action" (click)="addBaselineFeaturedMetric()">+ Add metric</button>
+        }
+        @if (activeBlock()?.blockId === 'wri-baseline-sidebar-facts') {
+          <button type="button" class="bk-struct-panel__action" (click)="addBaselineFact()">+ Add fact</button>
+        }
+        @if (activeBlock()?.blockId === 'wri-baseline-island-coverage') {
+          <button type="button" class="bk-struct-panel__action" (click)="addBaselineOffice()">+ Add office</button>
+          <button type="button" class="bk-struct-panel__action" (click)="addBaselineIsland()">+ Add island</button>
+        }
+        @if (activeBlock()?.blockId === 'wri-baseline-rig-gallery-cta') {
+          <button type="button" class="bk-struct-panel__action" (click)="addBaselineGalleryItem()">+ Add gallery item</button>
+        }
+      } @else {
+        @if (section() === 'fold') {
+          <button type="button" class="bk-struct-panel__action" (click)="addSectionStat()">+ Add stat</button>
+        }
+        @if (section() === 'services') {
+          <button type="button" class="bk-struct-panel__action" (click)="addSectionListItem('services')">+ Add service</button>
+        }
+        @if (section() === 'proof' && selectedId('proof') === 'proof-reviews') {
+          <button type="button" class="bk-struct-panel__action" (click)="addSectionListItem('testimonials')">+ Add review</button>
+        }
+        @if (section() === 'areas') {
+          <button type="button" class="bk-struct-panel__action" (click)="addSectionListItem('items')">+ Add FAQ item</button>
+        }
+      }
+    </div>
+  </ng-template>
+
+  <ng-template #heroOptionCard let-opt>
+    <button
+      type="button"
+      [class]="heroPanelSection() === 'hero' ? 'bk-hero-card' : 'bk-fold-card'"
+      [class.is-selected]="isOptionSelected(heroPanelSection(), opt.id)"
+      [disabled]="buildBook.saving()"
+      (click)="onHeroPanelOptionSelect(opt.id)"
+      (mouseenter)="pendingAdd()?.patternId === 'hero' ? onPendingHeroLayoutPreview(opt.id) : null"
+    >
+      <div [class]="heroPanelSection() === 'hero' ? 'bk-hero-card__preview' : 'bk-fold-card__preview'">
+        <app-protopipe-build-book-option-preview
+          [option]="opt"
+          [section]="heroPanelSection()"
+          [selected]="isOptionSelected(heroPanelSection(), opt.id)"
+          [designContext]="siteDesignContext()"
+        />
+      </div>
+      <div [class]="heroPanelSection() === 'hero' ? 'bk-hero-card__meta' : 'bk-fold-card__meta'">
+        @if (opt.tag) { <span class="bk-hero-card__tag">{{ opt.tag }}</span> }
+        @if (opt.demo && opt.tag !== 'Approved baseline') { <span class="bk-hero-card__tag bk-hero-card__tag--demo">Lab demo</span> }
+        <span [class]="heroPanelSection() === 'hero' ? 'bk-hero-card__name' : 'bk-fold-card__name'">{{ opt.label }}</span>
+        <span [class]="heroPanelSection() === 'hero' ? 'bk-hero-card__desc' : 'bk-fold-card__desc'">{{ opt.desc }}</span>
+      </div>
+    </button>
+  </ng-template>
 
   <app-protopipe-build-image-quick-picker
     [open]="imagePickerOpen()"
     [selectedUrl]="activeImageEditUrl()"
     [title]="imagePickerTitle()"
+    [templateId]="selectedTemplateId()"
     (closed)="closeImagePicker()"
     (selected)="onImagePickerSelect($event)"
     (library)="onImagePickerOpenLibrary()"

@@ -231,10 +231,10 @@ $accent: #2563eb;
   letter-spacing: 0.02em;
   white-space: nowrap;
 
-  &--y        { background: #f59e0b; color: #1c1917; }
-  &--earth    { background: #15803d; color: #fff; }
-  &--slate    { background: #475569; color: #fff; }
-  &--invert   { background: #fff; color: #0d9488; font-weight: 800; }
+  &--y        { background: var(--bb-accent, #f59e0b); color: var(--bb-accent-on, #1c1917); }
+  &--earth    { background: var(--bb-accent, #15803d); color: var(--bb-accent-on, #fff); }
+  &--slate    { background: var(--bb-ink, #475569); color: var(--bb-on-ink, #fff); }
+  &--invert   { background: #fff; color: var(--bb-accent, #0d9488); font-weight: 800; }
   &--ghost    { background: rgba(255 255 255 / 0.14); color: #fff; border: 1px solid rgba(255 255 255 / 0.25); }
   &--ghost-dark { background: transparent; color: #1e293b; border: 1px solid #cbd5e1; }
 }
@@ -541,7 +541,8 @@ $accent: #2563eb;
 // ─────────────────────────────────────────
 
 .bdh--sp-teal {
-  background: #0d9488;
+  background: var(--bb-accent, #0d9488);
+  color: var(--bb-accent-on, #fff);
   position: relative;
   overflow: hidden;
 }
@@ -580,7 +581,7 @@ $accent: #2563eb;
 .bdh__sp-teal-h {
   font-size: 1.125rem;
   font-weight: 800;
-  color: #fff;
+  color: var(--bb-accent-on, #fff);
   margin: 0;
   line-height: 1.2;
   letter-spacing: -0.03em;
@@ -596,13 +597,18 @@ $accent: #2563eb;
   display: flex;
   flex-direction: column;
   font-size: 0.375rem;
-  color: rgba(255 255 255 / 0.6);
+  color: color-mix(in srgb, var(--bb-accent-on, #fff) 60%, transparent);
 
   strong {
     font-size: 0.625rem;
     font-weight: 700;
-    color: #fff;
+    color: var(--bb-accent-on, #fff);
   }
+}
+
+.bdh--sp-teal .bdh__sp-eye,
+.bdh--sp-teal .bdh__sp-sub {
+  color: color-mix(in srgb, var(--bb-accent-on, #fff) 65%, transparent);
 }
 
 // ─────────────────────────────────────────
@@ -806,7 +812,7 @@ $accent: #2563eb;
   overflow: hidden;
   background: #c4cdd5;
 
-  &--accent { background: #1e3a5f; }
+  &--accent { background: var(--bb-accent, #1e3a5f); }
 
   img { width: 100%; height: 100%; object-fit: cover; display: block; }
 }
@@ -856,7 +862,7 @@ $accent: #2563eb;
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
 
-  &--accent { background: #1e3a5f; border-color: transparent; }
+  &--accent { background: var(--bb-accent, #1e3a5f); border-color: transparent; }
 }
 
 .bdh__wri-mx-val {
@@ -865,14 +871,14 @@ $accent: #2563eb;
   color: #0c1a2e;
   line-height: 1;
 
-  .bdh__wri-mx-tile--accent & { color: #7dd3fc; }
+  .bdh__wri-mx-tile--accent & { color: var(--bb-accent-on, #7dd3fc); }
 }
 
 .bdh__wri-mx-label {
   font-size: 0.4375rem;
   color: #6b7280;
 
-  .bdh__wri-mx-tile--accent & { color: rgba(255 255 255 / 0.6); }
+  .bdh__wri-mx-tile--accent & { color: color-mix(in srgb, var(--bb-accent-on, #fff) 60%, transparent); }
 }
 
 // ─────────────────────────────────────────

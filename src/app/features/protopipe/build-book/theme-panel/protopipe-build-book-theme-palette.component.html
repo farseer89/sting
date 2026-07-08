@@ -1,0 +1,73 @@
+<section class="bk-palette" aria-labelledby="bk-palette-heading">
+  <div class="bk-palette__head">
+    <div>
+      <h3 id="bk-palette-heading" class="bk-palette__title">Color wheel</h3>
+      <p class="bk-palette__deck">Adobe-style harmonies — pick a base hue, preview five palette chips, then apply to your site tokens.</p>
+    </div>
+    <p-button label="Apply palette" size="small" (onClick)="applyPalette()" />
+  </div>
+
+  <div class="bk-palette__layout">
+    <div class="bk-palette__wheel-wrap">
+      <canvas
+        #wheelCanvas
+        class="bk-palette__wheel"
+        width="220"
+        height="220"
+        aria-label="Color wheel — drag to pick hue and saturation"
+        (pointerdown)="onWheelPointerDown($event)"
+        (pointermove)="onWheelPointerMove($event)"
+        (pointerup)="onWheelPointerUp($event)"
+        (pointercancel)="onWheelPointerUp($event)"
+      ></canvas>
+      <span class="bk-palette__wheel-indicator" [style]="indicatorStyle()" aria-hidden="true"></span>
+      <span class="bk-palette__wheel-base" [style.background]="baseHex()" aria-hidden="true"></span>
+    </div>
+
+    <div class="bk-palette__controls">
+      <div class="bk-palette__harmony" role="tablist" aria-label="Color harmony">
+        @for (mode of harmonyModes; track mode.id) {
+          <button
+            type="button"
+            role="tab"
+            class="bk-palette__harmony-btn"
+            [class.is-active]="harmonyMode() === mode.id"
+            [attr.aria-selected]="harmonyMode() === mode.id"
+            (click)="setHarmonyMode(mode.id)"
+          >
+            {{ mode.label }}
+          </button>
+        }
+      </div>
+
+      <label class="bk-palette__slider-field">
+        <span class="bk-palette__slider-label">Lightness</span>
+        <input
+          type="range"
+          min="28"
+          max="70"
+          step="1"
+          [ngModel]="baseLightness()"
+          (ngModelChange)="onLightnessInput($event)"
+        />
+      </label>
+
+      <div class="bk-palette__chips" aria-label="Generated palette">
+        @for (chip of paletteChips(); track chip.role) {
+          <button
+            type="button"
+            class="bk-palette__chip"
+            [class.is-selected]="selectedChipRole() === chip.role"
+            [style.background]="chip.hex"
+            [style.color]="chipTextColor(chip.hex)"
+            [attr.aria-label]="chipAriaLabel(chip)"
+            (click)="selectChip(chip)"
+          >
+            <span class="bk-palette__chip-label">{{ chip.label }}</span>
+            <span class="bk-palette__chip-hex">{{ chip.hex }}</span>
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+</section>

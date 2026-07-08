@@ -43,6 +43,16 @@ interface VeilFaqItem {
   a: string;
 }
 
+interface VeilSalonPanel {
+  image: string;
+  span?: string;
+}
+
+interface VeilProcessStep {
+  image: string;
+  label: string;
+}
+
 @Component({
   selector: 'app-protopipe-build-veil-baseline-block',
   standalone: true,
@@ -84,6 +94,16 @@ export class ProtopipeBuildVeilBaselineBlockComponent {
     const raw = this.props()['items'];
     if (this.blockId() !== 'veil-baseline-fold-faq') return [];
     return Array.isArray(raw) ? (raw as VeilFaqItem[]) : [];
+  });
+
+  readonly salonPanels = computed((): VeilSalonPanel[] => {
+    const raw = this.props()['salonPanels'];
+    return Array.isArray(raw) ? (raw as VeilSalonPanel[]) : [];
+  });
+
+  readonly processSteps = computed((): VeilProcessStep[] => {
+    const raw = this.props()['processSteps'];
+    return Array.isArray(raw) ? (raw as VeilProcessStep[]) : [];
   });
 
   str(key: string, fallback = ''): string {

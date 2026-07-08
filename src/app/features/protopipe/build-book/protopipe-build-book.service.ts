@@ -21,11 +21,16 @@ import {
   findBuildBookBlockDefinition,
   findBuildBookBlockDefinitionForSection,
 } from './build-book-block.catalog';
+import { resolvePatternIdForBlock } from './build-book-block-registry.util';
+import { enrichHilPages } from './build-book-hil-props.util';
 import {
   findBaselineApprovedHeroOption,
   isBaselineApprovedHeroLayout,
   resolveBaselineHeroLayoutId,
 } from './build-book-baseline-hero.catalog';
+import { heroPreviewImageForLayout } from './build-book-demo.catalog';
+import { isVeilHeroLabLayout, veilHeroLabPreviewProps } from './build-book-veil-hero.catalog';
+import { baselineHeroBlockIdForLayout } from './option-preview/build-book-option-preview.util';
 import {
   baselineFoldBlockIdForLayout,
   findBaselineApprovedFoldOption,
@@ -41,10 +46,14 @@ import {
 import {
   findDraftSectionForBlock,
   findPageBlockById,
+  findPageById,
+  findPageByKind,
+  blocksForPage as blocksForPageUtil,
   homepageBlocksFromPages,
   isBaselineBlockProps,
   isBaselineHomepage,
 } from './build-book-baseline.util';
+import { isPinnedBaselineBlockId } from './build-book-pinned-blocks.util';
 import { findBuildBookTemplate } from './build-book-template.catalog';
 import type {
   BuildBookBlockDefinition,
@@ -73,6 +82,23 @@ import {
   type BuildBookShireDto,
   type SaveBuildBookDto,
 } from './protopipe-build-book-shire-api.service';
+import { ProtopipeShireSitesApiService } from './protopipe-shire-sites-api.service';
+import { compileBuildBookHomepage } from './build-book-publish-compiler.util';
+import {
+  validateBuildBookPublishGate,
+  type BuildBookPublishGateResult,
+} from './validation/build-book-publish-gate.util';
+import { ProtopipeMediaStudioService } from '../protopipe-media-studio.service';
+import { ProtopipeBrandBookService } from '../brand-book/protopipe-brand-book.service';
+import {
+  exportSiteThemeForPublish,
+  materializeBlockPropsForInsert,
+  resolveSiteDesignContext,
+  type ResolveSiteDesignContextInput,
+  type SiteDesignContext,
+  type SiteThemePersistedOverride,
+} from '../site-design/public';
+import type { BuildBookPageKind } from './build-book.types';
 
 const COPY_FIELDS = [
   'heading',
@@ -97,6 +123,17 @@ const COPY_FIELDS = [
 ] as const;
 
 const HERO_IMAGE_PROP_KEYS = ['imageSrc', 'backgroundImageSrc', 'visualSrc'] as const;
+
+function backfillPatternIdsOnPages(pages: BuildBookPage[]): BuildBookPage[] {
+  const withPatternIds = pages.map((page) => ({
+    ...page,
+    blocks: page.blocks.map((block) => ({
+      ...block,
+      patternId: block.patternId ?? resolvePatternIdForBlock(block.blockId),
+    })),
+  }));
+  return enrichHilPages(withPatternIds);
+}
 
 function templateDefaultBlockProps(blockId: string): Record<string, unknown> | null {
   const def = findBuildBookBlockDefinition(blockId);
@@ -249,6 +286,7 @@ function draftFromBuildBookPages(templateId: string, pages: BuildBookPage[]): Si
           .sort((a, b) => a.order - b.order)
           .map((block): SitePageSectionDraft => {
             const defaults = BUILD_BOOK_COMPONENT_DEFAULTS[block.componentId];
+            const definition = findBuildBookBlockDefinition(block.blockId);
             const isBaseline = isBaselineBlockProps(block.props);
             const firstForSection = !seenSections.has(block.section);
             seenSections.add(block.section);
@@ -261,7 +299,7 @@ function draftFromBuildBookPages(templateId: string, pages: BuildBookPage[]): Si
               label: block.label ?? buildBookSectionLabel(block.section),
               componentId: block.componentId,
               props: structuredClone(block.props ?? defaults?.defaultProps ?? {}),
-              editableFields: [...(defaults?.editableFields ?? [])],
+              editableFields: [...(definition?.editableFields ?? defaults?.editableFields ?? [])],
             };
           }),
       },
@@ -359,7 +397,10 @@ function buildStarterDraft(
 @Injectable({ providedIn: 'root' })
 export class ProtopipeBuildBookService {
   private readonly shireApi = inject(ProtopipeBuildBookShireApiService);
+  private readonly shireSitesApi = inject(ProtopipeShireSitesApiService);
   private readonly strategy = inject(ProtopipeStrategyService);
+  private readonly mediaStudio = inject(ProtopipeMediaStudioService);
+  private readonly brandBook = inject(ProtopipeBrandBookService);
 
   private readonly _loading = signal(false);
   private readonly _saving = signal(false);
@@ -372,6 +413,7 @@ export class ProtopipeBuildBookService {
   private readonly _prospectContext = signal<BuildBookProspectContext | null>(null);
   private readonly _entryMode = signal<BuildBookEntryMode>('template');
   private readonly _selectedTemplateId = signal<string | null>(null);
+  private readonly _siteTheme = signal<SiteThemePersistedOverride | null>(null);
   private readonly _pages = signal<BuildBookPage[]>([]);
   private readonly _strategyNotes = signal('');
 
@@ -385,10 +427,169 @@ export class ProtopipeBuildBookService {
   readonly prospectContext = this._prospectContext.asReadonly();
   readonly entryMode = this._entryMode.asReadonly();
   readonly selectedTemplateId = this._selectedTemplateId.asReadonly();
+  readonly siteTheme = this._siteTheme.asReadonly();
   readonly pages = this._pages.asReadonly();
   readonly strategyNotes = this._strategyNotes.asReadonly();
 
   readonly hasDraft = () => Boolean(this._draft());
+
+  resolveSiteDesignContext(
+    pageId: string | null,
+    pageKind: BuildBookPageKind = 'homepage',
+  ): SiteDesignContext | null {
+    const siteId = this.strategy.siteId();
+    if (!siteId) return null;
+
+    const site = this.strategy.site();
+    const brandPalette = this.brandBook.brandBook()?.infographStyle?.palette;
+    const input: ResolveSiteDesignContextInput = {
+      siteId,
+      templateId: this._selectedTemplateId(),
+      pageId,
+      pageKind,
+      siteDisplayName: site?.displayName ?? undefined,
+      siteUrl: site?.url ?? site?.hostname ?? undefined,
+      themeOverride: this._siteTheme()?.colorOverride,
+      typographyOverride: this._siteTheme()?.typographyOverride,
+      brandPalette: brandPalette
+        ? {
+            primary: brandPalette.primary,
+            accent: brandPalette.accent,
+            background: brandPalette.background,
+          }
+        : undefined,
+      studioAssets: this.mediaStudio.assets().map((asset) => ({
+        id: asset.id,
+        url: asset.url,
+        label: asset.label,
+        originalFilename: asset.originalFilename,
+        source: asset.source,
+      })),
+    };
+
+    return resolveSiteDesignContext(input, this._pages());
+  }
+
+  materializeBlockPropsForPage(blockId: string, pageId: string | null): Record<string, unknown> {
+    const ctx = this.resolveSiteDesignContext(pageId);
+    if (!ctx) {
+      const def = findBuildBookBlockDefinition(blockId);
+      return def ? structuredClone(def.defaultProps) : {};
+    }
+    return materializeBlockPropsForInsert(blockId, ctx);
+  }
+
+  /** Phase 6 — export resolved theme tokens for client-sites publish. */
+  exportPublishSiteTheme(pageId: string | null = null): Record<string, unknown> | null {
+    const ctx = this.resolveSiteDesignContext(pageId);
+    return ctx ? exportSiteThemeForPublish(ctx) : null;
+  }
+
+  validateForPublish(): BuildBookPublishGateResult {
+    const homepage = this._pages().find((page) => page.kind === 'homepage') ?? null;
+    return validateBuildBookPublishGate({
+      homepage,
+      site: this.strategy.site(),
+      dirty: this._dirty(),
+    });
+  }
+
+  compileForPublish() {
+    const homepage = this._pages().find((page) => page.kind === 'homepage');
+    if (!homepage) {
+      throw new Error('Homepage is required to publish');
+    }
+    const draft = this._draft();
+    return compileBuildBookHomepage({
+      homepage,
+      sourceTemplateId: this._selectedTemplateId() ?? undefined,
+      theme: draft?.theme,
+      siteTheme: this.exportPublishSiteTheme(this.homepagePageId()),
+    });
+  }
+
+  async publishSite(): Promise<boolean> {
+    const siteId = this.strategy.siteId();
+    if (!siteId) return false;
+
+    const gate = this.validateForPublish();
+    if (!gate.ok) {
+      this._error.set(gate.issues[0]?.message ?? 'Cannot publish yet');
+      return false;
+    }
+
+    this._saving.set(true);
+    this._error.set(null);
+    try {
+      const pagePublished = this.compileForPublish();
+      const res = await this.shireSitesApi.publish(siteId, { pagePublished });
+      this.strategy.mergeSite({
+        publishStatus: res.publishStatus,
+        provisioningError: undefined,
+      });
+      return true;
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Could not publish site'));
+      return false;
+    } finally {
+      this._saving.set(false);
+    }
+  }
+
+  async refreshSitePublishStatus(): Promise<void> {
+    const siteId = this.strategy.siteId();
+    if (!siteId) return;
+    const site = await this.shireSitesApi.get(siteId);
+    this.strategy.mergeSite(site);
+  }
+
+  patchSiteThemeColorOverride(colorOverride: SiteThemePersistedOverride['colorOverride']): void {
+    this.patchSiteTheme({ colorOverride: colorOverride ?? undefined });
+  }
+
+  patchSiteTheme(patch: SiteThemePersistedOverride): void {
+    const current = this._siteTheme();
+    const next: SiteThemePersistedOverride = {
+      colorOverride: patch.colorOverride
+        ? { ...current?.colorOverride, ...patch.colorOverride }
+        : current?.colorOverride,
+      typographyOverride: patch.typographyOverride
+        ? { ...current?.typographyOverride, ...patch.typographyOverride }
+        : current?.typographyOverride,
+    };
+
+    const hasColors = next.colorOverride && Object.keys(next.colorOverride).length > 0;
+    const hasTypography =
+      next.typographyOverride && Object.keys(next.typographyOverride).length > 0;
+
+    this._siteTheme.set(hasColors || hasTypography ? next : null);
+    this._dirty.set(true);
+  }
+
+  resetSiteTheme(): void {
+    this._siteTheme.set(null);
+    this._dirty.set(true);
+  }
+
+  clearSiteThemeColorOverride(): void {
+    const current = this._siteTheme();
+    if (!current?.typographyOverride || Object.keys(current.typographyOverride).length === 0) {
+      this.resetSiteTheme();
+      return;
+    }
+    this._siteTheme.set({ typographyOverride: current.typographyOverride });
+    this._dirty.set(true);
+  }
+
+  clearSiteThemeTypographyOverride(): void {
+    const current = this._siteTheme();
+    if (!current?.colorOverride || Object.keys(current.colorOverride).length === 0) {
+      this.resetSiteTheme();
+      return;
+    }
+    this._siteTheme.set({ colorOverride: current.colorOverride });
+    this._dirty.set(true);
+  }
 
   async load(): Promise<void> {
     const siteId = this.strategy.siteId();
@@ -626,11 +827,6 @@ export class ProtopipeBuildBookService {
         : findBaselineApprovedFoldOption(optionId));
     if (!option) return;
 
-    const previousLayout =
-      section === 'hero'
-        ? resolveBaselineHeroLayoutId(block.blockId, block.props)
-        : resolveBaselineFoldLayoutId(block.blockId, block.props);
-
     const patch: Record<string, unknown> = {
       labLayout: option.id,
     };
@@ -641,11 +837,46 @@ export class ProtopipeBuildBookService {
     }
 
     if (section === 'hero') {
-      if (
-        isBaselineApprovedHeroLayout(option.id) &&
-        !isBaselineApprovedHeroLayout(previousLayout)
-      ) {
-        Object.assign(patch, templateDefaultHeroImageProps(block.blockId) ?? {});
+      if (isBaselineApprovedHeroLayout(option.id)) {
+        const approvedBlockId = baselineHeroBlockIdForLayout(option.id);
+        const def = approvedBlockId ? findBuildBookBlockDefinition(approvedBlockId) : null;
+        if (def) {
+          const nextProps: Record<string, unknown> = {
+            ...structuredClone(def.defaultProps),
+            labLayout: option.id,
+          };
+          for (const key of ['eyebrow', 'heading', 'subhead', 'primaryCtaLabel', 'secondaryCtaLabel'] as const) {
+            if (typeof block.props[key] === 'string' && block.props[key]) {
+              nextProps[key] = block.props[key];
+            }
+          }
+          if (option.demo) {
+            nextProps['labUnit'] = option.demo.astroUnit;
+            nextProps['labCatalog'] = option.demo.catalog;
+          }
+          this.setBlockProps(blockInstanceId, nextProps);
+          return;
+        }
+      }
+
+      if (isVeilHeroLabLayout(option.id)) {
+        const nextProps: Record<string, unknown> = {
+          ...veilHeroLabPreviewProps(option.id, block.props),
+          labLayout: option.id,
+        };
+        if (option.demo) {
+          nextProps['labUnit'] = option.demo.astroUnit;
+          nextProps['labCatalog'] = option.demo.catalog;
+        }
+        this.setBlockProps(blockInstanceId, nextProps);
+        return;
+      }
+
+      if (!isBaselineApprovedHeroLayout(option.id)) {
+        const previewImage = option.previewImage ?? heroPreviewImageForLayout(option.id);
+        if (previewImage) {
+          Object.assign(patch, heroImageToProps(previewImage));
+        }
       }
     } else {
       const targetBlockId = baselineFoldBlockIdForLayout(option.id);
@@ -689,8 +920,49 @@ export class ProtopipeBuildBookService {
     return homepageBlocksFromPages(this._pages());
   }
 
+  homepagePage(): BuildBookPage | null {
+    return findPageByKind(this._pages(), 'homepage') ?? null;
+  }
+
+  homepagePageId(): string | null {
+    return this.homepagePage()?.id ?? null;
+  }
+
+  landingPages(): BuildBookPage[] {
+    return this._pages().filter((page) => page.kind === 'landing-page');
+  }
+
+  blocksForPage(pageId: string): BuildBookBlockInstance[] {
+    return blocksForPageUtil(this._pages(), pageId);
+  }
+
+  reorderPageBlocks(pageId: string, fromIndex: number, toIndex: number): void {
+    if (fromIndex === toIndex) return;
+
+    const pages = structuredClone(this._pages());
+    const page = findPageById(pages, pageId);
+    if (!page) return;
+
+    const blocks = [...page.blocks].sort((a, b) => a.order - b.order);
+    if (
+      fromIndex < 0 ||
+      toIndex < 0 ||
+      fromIndex >= blocks.length ||
+      toIndex >= blocks.length
+    ) {
+      return;
+    }
+
+    const [moved] = blocks.splice(fromIndex, 1);
+    blocks.splice(toIndex, 0, moved);
+    page.blocks = blocks.map((block, order) => ({ ...block, order }));
+    this.commitPageStructure(pages);
+  }
+
   reorderHomepageBlocks(fromIndex: number, toIndex: number): void {
-    this.reorderHomepageNavEntries(fromIndex, toIndex);
+    const pageId = this.homepagePageId();
+    if (!pageId) return;
+    this.reorderPageBlocks(pageId, fromIndex, toIndex);
   }
 
   reorderHomepageNavEntries(fromEntryIndex: number, toEntryIndex: number): void {
@@ -718,65 +990,105 @@ export class ProtopipeBuildBookService {
     this.commitHomepageStructure(pages);
   }
 
-  addHomepageBlock(blockId: string, insertAfterIndex?: number): void {
+  addPageBlock(pageId: string, blockId: string, insertAt?: number): void {
     const definition = findBuildBookBlockDefinition(blockId);
     if (!definition) return;
 
     const pages = structuredClone(this._pages());
-    const homepage = pages.find((page) => page.kind === 'homepage');
-    if (!homepage) return;
+    const page = findPageById(pages, pageId);
+    if (!page) return;
 
-    const blocks = [...homepage.blocks].sort((a, b) => a.order - b.order);
+    const blocks = [...page.blocks].sort((a, b) => a.order - b.order);
     const existingCount = blocks.filter((block) => block.blockId === blockId).length;
+    const prefix = page.kind === 'homepage' ? 'home' : page.kind.replace(/-/g, '');
     const nextBlock: BuildBookBlockInstance = {
-      id: `home-${blockId}-${existingCount + 1}`,
+      id: `${prefix}-${blockId}-${existingCount + 1}`,
       blockId,
       section: definition.section,
       componentId: definition.componentId,
       label: definition.label,
       order: blocks.length,
-      props: structuredClone(definition.defaultProps),
+      props: this.materializeBlockPropsForPage(blockId, pageId),
       sourceTemplateId: definition.sourceTemplateId ?? this._selectedTemplateId() ?? undefined,
+      patternId: resolvePatternIdForBlock(blockId),
     };
 
-    const insertAt =
-      insertAfterIndex == null || insertAfterIndex < 0
-        ? blocks.length
-        : Math.min(insertAfterIndex + 1, blocks.length);
-    blocks.splice(insertAt, 0, nextBlock);
-    homepage.blocks = blocks.map((block, order) => ({ ...block, order }));
-    this.commitHomepageStructure(pages);
+    const insertIndex =
+      insertAt == null || insertAt < 0 ? blocks.length : Math.min(insertAt, blocks.length);
+    blocks.splice(insertIndex, 0, nextBlock);
+    page.blocks = blocks.map((block, order) => ({ ...block, order }));
+    this.commitPageStructure(pages);
   }
 
-  removeHomepageBlock(blockInstanceId: string): void {
-    const block = this.findPageBlock(blockInstanceId);
+  addHomepageBlock(blockId: string, insertAfterIndex?: number): void {
+    const pageId = this.homepagePageId();
+    if (!pageId) return;
+    const insertAt =
+      insertAfterIndex == null || insertAfterIndex < 0
+        ? undefined
+        : insertAfterIndex + 1;
+    this.addPageBlock(pageId, blockId, insertAt);
+  }
+
+  removePageBlock(pageId: string, blockInstanceId: string): void {
+    const block = findPageBlockById(this._pages(), blockInstanceId);
     if (!block) return;
-    if (
-      block.blockId === 'wri-baseline-hero-life-proof' ||
-      block.blockId === 'wri-baseline-contract-bar' ||
-      block.blockId === 'sparky-baseline-hero-callout' ||
-      block.blockId === 'wilco-baseline-hero-split'
-    ) {
-      return;
-    }
+    if (isPinnedBaselineBlockId(block.blockId)) return;
 
     const pages = structuredClone(this._pages());
-    const homepage = pages.find((page) => page.kind === 'homepage');
-    if (!homepage) return;
+    const page = findPageById(pages, pageId);
+    if (!page) return;
 
-    homepage.blocks = homepage.blocks
+    page.blocks = page.blocks
       .filter((item) => item.id !== blockInstanceId)
       .sort((a, b) => a.order - b.order)
       .map((item, order) => ({ ...item, order }));
-    this.commitHomepageStructure(pages);
+    this.commitPageStructure(pages);
   }
 
-  private commitHomepageStructure(nextPages: BuildBookPage[]): void {
+  removeHomepageBlock(blockInstanceId: string): void {
+    const pageId = this.homepagePageId();
+    if (!pageId) return;
+    this.removePageBlock(pageId, blockInstanceId);
+  }
+
+  createLandingPage(label: string): BuildBookPage | null {
+    const pages = structuredClone(this._pages());
+    const slug = label
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    const base = slug || 'landing-page';
+    let id = `landing-${base}`;
+    let n = 1;
+    while (pages.some((page) => page.id === id)) {
+      n += 1;
+      id = `landing-${base}-${n}`;
+    }
+
+    const nextPage: BuildBookPage = {
+      id,
+      kind: 'landing-page',
+      label: label.trim() || 'Landing page',
+      slug: base,
+      blocks: [],
+    };
+    pages.push(nextPage);
+    this.commitPageStructure(pages);
+    return nextPage;
+  }
+
+  private commitPageStructure(nextPages: BuildBookPage[]): void {
     const templateId = this._selectedTemplateId() ?? 'wri-field-authority-v1';
     const draft = draftFromBuildBookPages(templateId, nextPages);
     this._pages.set(structuredClone(nextPages));
     this._draft.set(draft);
     this._dirty.set(true);
+  }
+
+  private commitHomepageStructure(nextPages: BuildBookPage[]): void {
+    this.commitPageStructure(nextPages);
   }
 
   updateHeroCopy(copy: BuildHeroPreviewCopy): void {
@@ -890,6 +1202,7 @@ export class ProtopipeBuildBookService {
       this._prospectContext.set(null);
       this._entryMode.set('template');
       this._selectedTemplateId.set(null);
+      this._siteTheme.set(null);
       this._pages.set([]);
       this._strategyNotes.set('');
       return;
@@ -913,10 +1226,20 @@ export class ProtopipeBuildBookService {
   }
 
   private applyShireBook(book: BuildBookShireDto): void {
+    const pendingTheme = this._siteTheme();
     this._prospectContext.set(book.prospectContext ? { ...book.prospectContext } : null);
     this._entryMode.set(book.entryMode);
     this._selectedTemplateId.set(book.selectedTemplateId ?? null);
-    this._pages.set(book.pages?.length ? structuredClone(book.pages) : []);
+    const incomingTheme = book.siteTheme ? structuredClone(book.siteTheme) : null;
+    if (
+      incomingTheme &&
+      pendingTheme?.typographyOverride &&
+      !incomingTheme.typographyOverride
+    ) {
+      incomingTheme.typographyOverride = structuredClone(pendingTheme.typographyOverride);
+    }
+    this._siteTheme.set(incomingTheme);
+    this._pages.set(book.pages?.length ? backfillPatternIdsOnPages(structuredClone(book.pages)) : []);
     this._strategyNotes.set(book.strategyNotes ?? '');
     if (book.sectionSelections.length > 0) {
       this._selections.set(
@@ -1051,6 +1374,7 @@ export class ProtopipeBuildBookService {
       prospectContext: this._prospectContext() ?? undefined,
       entryMode: this._entryMode(),
       selectedTemplateId: this._selectedTemplateId() ?? undefined,
+      siteTheme: this._siteTheme() ?? undefined,
       homepageStack,
       sectionSelections: sections
         .map((section) => {
@@ -1064,7 +1388,7 @@ export class ProtopipeBuildBookService {
           };
         })
         .filter((selection) => selection != null),
-      pages,
+      pages: backfillPatternIdsOnPages(pages),
       strategyNotes: this._strategyNotes(),
     };
   }

@@ -2,6 +2,9 @@ import { WRI_BASELINE_BLOCK_DEFINITIONS } from './build-book-baseline-block.cata
 import { SPARKY_BASELINE_BLOCK_DEFINITIONS } from './build-book-sparky-baseline-block.catalog';
 import { WILCO_BASELINE_BLOCK_DEFINITIONS } from './build-book-wilco-baseline-block.catalog';
 import { VEIL_BASELINE_BLOCK_DEFINITIONS } from './build-book-veil-baseline-block.catalog';
+import { HIL_BASELINE_BLOCK_DEFINITIONS } from './build-book-hil-baseline-block.catalog';
+import { enrichHilPages } from './build-book-hil-props.util';
+import { resolvePatternIdForBlock } from './build-book-block-registry.util';
 import type { BuildBookBlockDefinition, BuildBookBlockInstance, BuildBookPage } from './build-book.types';
 
 function instanceFromBlock(block: BuildBookBlockDefinition, order: number): BuildBookBlockInstance {
@@ -14,6 +17,7 @@ function instanceFromBlock(block: BuildBookBlockDefinition, order: number): Buil
     order,
     props: structuredClone(block.defaultProps),
     sourceTemplateId: block.sourceTemplateId,
+    patternId: resolvePatternIdForBlock(block.id),
   };
 }
 
@@ -70,10 +74,22 @@ const VEIL_STACK_BLOCK_IDS = [
   'veil-baseline-fold-inquire',
 ] as const;
 
+const BLACKSTONE_STACK_BLOCK_IDS = [
+  'hil-baseline-hero-canopy',
+  'hil-baseline-service-grid',
+  'hil-baseline-work-gallery',
+  'hil-baseline-before-after',
+  'hil-baseline-scheduler-embed',
+  'hil-baseline-quote-form',
+  'hil-baseline-faq',
+  'hil-baseline-cta-banner',
+] as const;
+
 const WRI_BLOCKS_BY_ID = new Map(WRI_BASELINE_BLOCK_DEFINITIONS.map((block) => [block.id, block]));
 const SPARKY_BLOCKS_BY_ID = new Map(SPARKY_BASELINE_BLOCK_DEFINITIONS.map((block) => [block.id, block]));
 const WILCO_BLOCKS_BY_ID = new Map(WILCO_BASELINE_BLOCK_DEFINITIONS.map((block) => [block.id, block]));
 const VEIL_BLOCKS_BY_ID = new Map(VEIL_BASELINE_BLOCK_DEFINITIONS.map((block) => [block.id, block]));
+const HIL_BLOCKS_BY_ID = new Map(HIL_BASELINE_BLOCK_DEFINITIONS.map((block) => [block.id, block]));
 
 export const BUILD_BOOK_BASELINE_PAGE_ASSEMBLIES: Record<string, BuildBookPage[]> = {
   'wri-field-authority-v1': [
@@ -128,12 +144,25 @@ export const BUILD_BOOK_BASELINE_PAGE_ASSEMBLIES: Record<string, BuildBookPage[]
       }),
     },
   ],
+  'blackstone-landscaping-v1': [
+    {
+      id: 'home',
+      kind: 'homepage',
+      label: 'Home',
+      slug: '/',
+      blocks: BLACKSTONE_STACK_BLOCK_IDS.map((blockId, order) => {
+        const block = HIL_BLOCKS_BY_ID.get(blockId);
+        if (!block) throw new Error(`Missing HIL baseline block: ${blockId}`);
+        return instanceFromBlock(block, order);
+      }),
+    },
+  ],
 };
 
 export function findBuildBookBaselineAssembly(templateId: string | null | undefined): BuildBookPage[] | undefined {
   if (!templateId) return undefined;
   const pages = BUILD_BOOK_BASELINE_PAGE_ASSEMBLIES[templateId];
-  return pages ? structuredClone(pages) : undefined;
+  return pages ? enrichHilPages(structuredClone(pages)) : undefined;
 }
 
 export function hasBuildBookBaselineAssembly(templateId: string | null | undefined): boolean {

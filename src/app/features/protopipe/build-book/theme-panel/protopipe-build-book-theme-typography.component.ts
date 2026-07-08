@@ -21,6 +21,7 @@ import {
   ensureSiteThemeGoogleFontCatalogLoaded,
   ensureSiteThemeGoogleFontsLoaded,
 } from '../../site-design/site-theme-google-fonts.util';
+import { SiteThemeFontDirective } from '../../site-design/site-theme-font.directive';
 
 @Component({
   selector: 'app-protopipe-build-book-theme-typography',

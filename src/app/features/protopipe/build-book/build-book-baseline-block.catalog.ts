@@ -11,7 +11,7 @@ export const WRI_BASELINE_BLOCK_DEFINITIONS: BuildBookBlockDefinition[] = [
     description: 'WRI Option 2B full-bleed life-theme hero with exact approved copy.',
     sourceTemplateId: 'wri-field-authority-v1',
     componentId: 'baseline-wri-hero',
-    astroComponent: 'sites/futureproof/src/components/wri/WriSite.astro',
+    astroComponent: 'sites/futureproof/src/components/wri/heroes/WriHeroFullbleedRig.astro',
     layout: 'fullbleed',
     navThumbKind: 'wri-hero-fullbleed',
     navThumbAspect: { width: 16, height: 16 },

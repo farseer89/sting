@@ -106,12 +106,14 @@ import { BuildBookPageBuilderRailComponent } from '../../build-book/page-builder
 import { BuildBookLandingPagesPanelComponent } from '../../build-book/landing-pages-panel/build-book-landing-pages-panel.component';
 import { BuildBookContentPostsPanelComponent } from '../../build-book/content-posts-panel/build-book-content-posts-panel.component';
 import { BuildBookSitesPanelComponent } from '../../build-book/sites-panel/build-book-sites-panel.component';
+import { ProtopipeHomeKeywordBookComponent } from './protopipe-home-keyword-book.component';
 import { ProtopipeBuildBookThemePanelComponent } from '../../build-book/theme-panel/protopipe-build-book-theme-panel.component';
 import { hasBuildBookBaselineAssembly } from '../../build-book/build-book-baseline-assemblies';
 import { hrefFieldsFromProps, altFieldsFromProps } from '../../build-book/fields/build-href-field.util';
 import { contentFieldsFromEditablePaths } from '../../build-book/fields/build-content-field.util';
 import { readProp } from '../../build-book/fields/build-field.util';
 import type { BuildPageImageEditEvent } from '../../build-book/canvas/build-page-canvas.component';
+import { ContentPlanStore } from '../../content-plan/content-plan.store';
 
 const SECTION_DECK: Record<BuildBookSection, string> = {
   hero: 'Pick a hero layout, then open Hero images & copy to generate photos and set headline text — same live preview as pitch prep.',
@@ -128,6 +130,7 @@ const HERO_PREVIEW_PLACEHOLDER_IMAGE =
 type BuildBookEntryMode = 'template' | 'blocks';
 type BuildBookInspectorTab = 'content' | 'layout' | 'media' | 'links';
 type BuildBookTab =
+  | 'strategy'
   | 'sites'
   | 'templates'
   | 'homepage'
@@ -163,6 +166,7 @@ interface BuildBookTabItem {
     BuildBookLandingPagesPanelComponent,
     BuildBookContentPostsPanelComponent,
     BuildBookSitesPanelComponent,
+    ProtopipeHomeKeywordBookComponent,
     ProtopipeBuildBookThemePanelComponent,
     ProtopipeBuildSiteImagesPanelComponent,
     ProtopipeBuildImageQuickPickerComponent,
@@ -179,6 +183,7 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
 
   readonly buildBook = inject(ProtopipeBuildBookService);
   readonly strategy = inject(ProtopipeStrategyService);
+  private readonly contentPlan = inject(ContentPlanStore);
   private readonly shireSitesApi = inject(ProtopipeShireSitesApiService);
   private readonly sanitizer = inject(DomSanitizer);
   readonly pageBuilderRail = viewChild(BuildBookPageBuilderRailComponent);
@@ -215,13 +220,14 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
   readonly pendingImageEdit = signal<{ blockInstanceId: string; propPath: string } | null>(null);
   readonly imagePickerOpen = signal(false);
   readonly bookTabs: BuildBookTabItem[] = [
+    { id: 'strategy', label: 'Strategy' },
     { id: 'sites', label: 'Sites' },
     { id: 'templates', label: 'Templates' },
     { id: 'homepage', label: 'Homepage' },
     { id: 'landing-pages', label: 'Landing Pages' },
     { id: 'blog-home', label: 'Blog Home' },
     { id: 'site-theme', label: 'Site theme' },
-    { id: 'seo-strategy', label: 'SEO Strategy' },
+    { id: 'seo-strategy', label: 'Media Library' },
     { id: 'content-posts', label: 'Content Posts' },
   ];
   readonly switchingSite = signal(false);
@@ -842,7 +848,23 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
     if (tab === 'sites') {
       void this.strategy.refreshSitesList().catch(() => undefined);
     }
+    if (tab === 'strategy' || tab === 'content-posts') {
+      const siteId = this.strategy.siteId();
+      if (siteId) {
+        this.contentPlan.setSiteId(siteId);
+        void this.contentPlan.loadLatest();
+      }
+    }
     this.syncWorkflowToUrl();
+  }
+
+  onStrategyConfirmed(): void {
+    const siteId = this.strategy.siteId();
+    if (siteId) {
+      this.contentPlan.setSiteId(siteId);
+      void this.contentPlan.loadLatest();
+    }
+    this.selectBookTab('content-posts');
   }
 
   async onEditSiteFromList(siteId: string): Promise<void> {

@@ -1193,7 +1193,15 @@ export class ProtopipeBuildBookService {
     return nextPage;
   }
 
-  createBlogPostPage(label: string): BuildBookPage | null {
+  createBlogPostPage(
+    label: string,
+    links?: {
+      contentPostId?: string;
+      contentPlanItemKey?: string;
+      suggestedKeyword?: string;
+      briefBody?: string;
+    },
+  ): BuildBookPage | null {
     const pages = structuredClone(this._pages());
     const slug = label
       .trim()
@@ -1213,6 +1221,9 @@ export class ProtopipeBuildBookService {
       kind: 'blog-post',
       label: label.trim() || 'Blog post template',
       slug: base,
+      contentPostId: links?.contentPostId,
+      contentPlanItemKey: links?.contentPlanItemKey,
+      suggestedKeyword: links?.suggestedKeyword,
       blocks: [],
     };
     pages.push(nextPage);
@@ -1223,7 +1234,53 @@ export class ProtopipeBuildBookService {
       this.addPageBlock(id, blockId);
     }
 
+    if (links?.suggestedKeyword || links?.briefBody) {
+      this.seedBlogPostCopyFromPlan(id, {
+        title: nextPage.label,
+        keyword: links.suggestedKeyword,
+        body: links.briefBody,
+      });
+    }
+
     return findPageById(this._pages(), id) ?? nextPage;
+  }
+
+  /** Find an existing blog page linked to a content-plan calendar row. */
+  findBlogPostByPlanItemKey(itemKey: string): BuildBookPage | null {
+    return (
+      this._pages().find(
+        (page) => page.kind === 'blog-post' && page.contentPlanItemKey === itemKey,
+      ) ?? null
+    );
+  }
+
+  private seedBlogPostCopyFromPlan(
+    pageId: string,
+    seed: { title: string; keyword?: string; body?: string },
+  ): void {
+    const pages = structuredClone(this._pages());
+    const page = findPageById(pages, pageId);
+    if (!page) return;
+
+    const kicker = seed.keyword?.trim() || 'Article';
+    const heading = seed.title.trim();
+    const body =
+      seed.body?.trim() ||
+      (seed.keyword
+        ? `Draft page for “${seed.keyword}” — refine blocks for the demo site.`
+        : 'Draft page from the content plan — refine blocks for the demo site.');
+
+    for (const block of page.blocks) {
+      const props = structuredClone(block.props ?? {});
+      if (typeof props['kicker'] === 'string') props['kicker'] = kicker;
+      if (typeof props['heading'] === 'string') props['heading'] = heading;
+      if (typeof props['body'] === 'string') props['body'] = body;
+      if (typeof props['eyebrow'] === 'string') props['eyebrow'] = kicker;
+      if (typeof props['title'] === 'string') props['title'] = heading;
+      block.props = props;
+    }
+
+    this.commitPageStructure(pages);
   }
 
   private resolveBlogSeedBlockIds(): string[] {

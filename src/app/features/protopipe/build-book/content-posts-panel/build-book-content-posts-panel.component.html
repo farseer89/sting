@@ -1,13 +1,69 @@
 <div class="bk-content-posts">
-  <aside class="bk-content-posts__list" aria-label="Blog post templates">
+  <aside class="bk-content-posts__list" aria-label="Blog posts and content plan">
     <div class="bk-content-posts__head">
       <strong>Content posts</strong>
       <p>
-        Theme blog profile for article generation — defaults, CTA, and allowed patterns. Strategy Write
-        still runs the Thought pipeline.
+        Add pages from the content plan for demo and management, or create a blank blog template.
       </p>
     </div>
+
+    @if (planError(); as err) {
+      <p class="bk-content-posts__error">{{ err }}</p>
+    }
+
+    <section class="bk-content-posts__plan" aria-label="Content plan calendar">
+      <div class="bk-content-posts__section-label">From content plan</div>
+      @if (planLoading()) {
+        <p class="bk-content-posts__hint">Loading content plan…</p>
+      } @else if (!planComplete() || calendarItems().length === 0) {
+        <p class="bk-content-posts__hint">
+          @if (!plan()) {
+            No content plan yet. Run Strategy → confirm keywords to generate a plan.
+          } @else if (!planComplete()) {
+            Content plan is still building. Check back when it completes.
+          } @else {
+            Plan has no calendar items yet.
+          }
+        </p>
+      } @else {
+        <ul class="bk-content-posts__items">
+          @for (item of calendarItems(); track itemKey(item)) {
+            <li>
+              @if (pageForPlanItem(item); as linked) {
+                <button
+                  type="button"
+                  class="bk-content-posts__item"
+                  [class.is-active]="selectedPageId() === linked.id"
+                  (click)="selectPage(linked.id)"
+                >
+                  <span>{{ planItemTitle(item) }}</span>
+                  <small>{{ planItemMeta(item) }}</small>
+                  <span class="bk-content-posts__count">On site · {{ linked.blocks.length }} blocks</span>
+                </button>
+              } @else {
+                <div class="bk-content-posts__plan-row">
+                  <div class="bk-content-posts__plan-copy">
+                    <span>{{ planItemTitle(item) }}</span>
+                    <small>{{ planItemMeta(item) }}</small>
+                  </div>
+                  <p-button
+                    label="Add to site"
+                    icon="pi pi-plus"
+                    size="small"
+                    [loading]="isAddingItem(item)"
+                    [disabled]="addingPlanKey() !== null"
+                    (onClick)="addFromPlan(item)"
+                  />
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
     <div class="bk-content-posts__create">
+      <div class="bk-content-posts__section-label">Blank template</div>
       <input
         type="text"
         [value]="newPageLabel()"
@@ -17,6 +73,8 @@
       />
       <p-button label="Add template" icon="pi pi-plus" size="small" (onClick)="createPage()" />
     </div>
+
+    <div class="bk-content-posts__section-label">Site blog pages</div>
     <ul class="bk-content-posts__items">
       @for (page of pages(); track page.id) {
         <li>
@@ -30,12 +88,15 @@
             @if (page.slug) {
               <small>/{{ page.slug }}</small>
             }
+            @if (page.suggestedKeyword) {
+              <small>{{ page.suggestedKeyword }}</small>
+            }
             <span class="bk-content-posts__count">{{ page.blocks.length }} blocks</span>
           </button>
         </li>
       } @empty {
         <li class="bk-content-posts__empty">
-          No blog templates yet. Add one to set the themed defaults article generation uses.
+          No blog pages yet. Add from the content plan above, or create a blank template.
         </li>
       }
     </ul>

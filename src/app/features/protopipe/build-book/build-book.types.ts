@@ -150,6 +150,11 @@ export interface BuildBookPage {
   kind: BuildBookPageKind;
   label: string;
   slug?: string;
+  /** Shire content-post id when this page was materialized from the content plan. */
+  contentPostId?: string;
+  /** Stable calendar row key: `${proposedPublishAt|backlog}|${workingTitle}`. */
+  contentPlanItemKey?: string;
+  suggestedKeyword?: string;
   blocks: BuildBookBlockInstance[];
 }
 

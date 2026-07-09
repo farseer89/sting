@@ -356,6 +356,14 @@ $bk-build: #0d9488;
       $bk-bg-subtle;
   }
 
+  &--strategy {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+    background: $bk-bg;
+  }
+
   &--seo,
   &--placeholder {
     padding: 1.5rem;
@@ -1343,10 +1351,17 @@ $bk-build: #0d9488;
   text-align: center;
 }
 
+.bk-content-posts__preview-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin: 0.75rem 1rem 0;
+}
+
 .bk-content-posts__modes {
   display: inline-flex;
   gap: 0.25rem;
-  margin: 0.75rem 1rem 0;
   padding: 0.2rem;
   border: 1px solid $bk-border;
   border-radius: 999px;
@@ -1369,6 +1384,13 @@ $bk-build: #0d9488;
 .bk-content-posts__mode.is-active {
   color: $bk-ink;
   background: color-mix(in srgb, $bk-ink 8%, transparent);
+}
+
+.bk-content-posts__preview-note {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: $bk-muted;
 }
 
 .bk-preview-rail__toggle {

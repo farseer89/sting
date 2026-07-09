@@ -195,7 +195,23 @@
     </div>
   } @else {
     <div class="bk-workspace">
-      @if (bookTab() === 'sites') {
+      @if (bookTab() === 'strategy') {
+        <div class="bk-tab-panel bk-tab-panel--strategy">
+          @if (!strategy.siteId()) {
+            <div class="bk-book-placeholder">
+              <div class="bk-stage-kicker">Strategy</div>
+              <h2>Select a site first</h2>
+              <p>Pick or create a site on the Sites tab, then run discovery and content planning here.</p>
+              <p-button label="Go to Sites" size="small" (onClick)="selectBookTab('sites')" />
+            </div>
+          } @else {
+            <app-protopipe-home-keyword-book
+              [siteLabel]="siteLabel()"
+              (confirmed)="onStrategyConfirmed()"
+            />
+          }
+        </div>
+      } @else if (bookTab() === 'sites') {
         <div class="bk-tab-panel bk-tab-panel--library">
           <app-build-book-sites-panel
             [activeSiteId]="strategy.siteId()"
@@ -204,6 +220,52 @@
             (openLive)="onOpenLiveSite($event)"
           />
         </div>
+      } @else if (bookTab() === 'content-posts') {
+        <app-build-book-content-posts-panel
+          [selectedPageId]="blogPostId()"
+          (selectedPageIdChange)="onBlogPostSelected($event)"
+        >
+          @if (blogPostId()) {
+            <div class="bk-content-posts__preview-bar">
+              <div class="bk-content-posts__modes" role="tablist" aria-label="Content post canvas mode">
+                <button
+                  type="button"
+                  role="tab"
+                  class="bk-content-posts__mode"
+                  [class.is-active]="contentPostsCanvasMode() === 'profile'"
+                  [attr.aria-selected]="contentPostsCanvasMode() === 'profile'"
+                  (click)="setContentPostsCanvasMode('profile')"
+                >
+                  Profile
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  class="bk-content-posts__mode"
+                  [class.is-active]="contentPostsCanvasMode() === 'article-preview'"
+                  [attr.aria-selected]="contentPostsCanvasMode() === 'article-preview'"
+                  (click)="setContentPostsCanvasMode('article-preview')"
+                >
+                  Article preview
+                </button>
+              </div>
+              @if (contentPostsCanvasMode() === 'article-preview') {
+                <p class="bk-content-posts__preview-note">
+                  Sample filled article — not your profile defaults. Editing is off in this view.
+                </p>
+              } @else {
+                <p class="bk-content-posts__preview-note">
+                  Theme skeleton Thought uses for generation. Switch to Article preview to see filled copy.
+                </p>
+              }
+            </div>
+            <ng-container *ngTemplateOutlet="pageEditorShell" />
+          } @else {
+            <div class="bk-content-posts__prompt">
+              Select a plan item or blog page from the list, or add a blank template to start building.
+            </div>
+          }
+        </app-build-book-content-posts-panel>
       } @else if (!buildBook.hasDraft() || bookTab() === 'templates') {
         <div class="bk-tab-panel bk-tab-panel--library">
           <div class="bk-start__head">
@@ -291,41 +353,6 @@
         </app-build-book-landing-pages-panel>
       } @else if (bookTab() === 'blog-home' && buildBook.hasDraft()) {
         <ng-container *ngTemplateOutlet="pageEditorShell" />
-      } @else if (bookTab() === 'content-posts' && buildBook.hasDraft()) {
-        <app-build-book-content-posts-panel
-          [selectedPageId]="blogPostId()"
-          (selectedPageIdChange)="onBlogPostSelected($event)"
-        >
-          @if (blogPostId()) {
-            <div class="bk-content-posts__modes" role="tablist" aria-label="Content post canvas mode">
-              <button
-                type="button"
-                role="tab"
-                class="bk-content-posts__mode"
-                [class.is-active]="contentPostsCanvasMode() === 'profile'"
-                [attr.aria-selected]="contentPostsCanvasMode() === 'profile'"
-                (click)="setContentPostsCanvasMode('profile')"
-              >
-                Profile
-              </button>
-              <button
-                type="button"
-                role="tab"
-                class="bk-content-posts__mode"
-                [class.is-active]="contentPostsCanvasMode() === 'article-preview'"
-                [attr.aria-selected]="contentPostsCanvasMode() === 'article-preview'"
-                (click)="setContentPostsCanvasMode('article-preview')"
-              >
-                Article preview
-              </button>
-            </div>
-            <ng-container *ngTemplateOutlet="pageEditorShell" />
-          } @else {
-            <div class="bk-content-posts__prompt">
-              Select a blog template from the list, or add one to set themed defaults for article generation.
-            </div>
-          }
-        </app-build-book-content-posts-panel>
       } @else if (isPageEditor()) {
         <ng-container *ngTemplateOutlet="pageEditorShell" />
       } @else if (bookTab() === 'site-theme') {

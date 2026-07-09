@@ -165,6 +165,36 @@ $bk-build: #0d9488;
   color: #b45309;
 }
 
+.bk-masthead__progress {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-top: 0.65rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.65rem;
+  background: rgb(14 116 144 / 0.08);
+  border: 1px solid rgb(14 116 144 / 0.16);
+}
+
+.bk-masthead__progress-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.bk-masthead__progress-title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #0f766e;
+}
+
+.bk-masthead__progress-detail {
+  margin: 0;
+  font-size: 0.76rem;
+  color: $bk-muted;
+}
+
 .bk-masthead__error {
   color: #dc2626;
 }

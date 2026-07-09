@@ -9,8 +9,18 @@
 
   @if (activeTypography(); as active) {
     <div class="bk-type__live-preview">
-      <p class="bk-type__live-serif" [attr.data-bk-font]="activeSerifId()">Trusted local headlines</p>
-      <p class="bk-type__live-sans" [attr.data-bk-font]="activeSansId()">
+      <p
+        class="bk-type__live-serif"
+        [siteThemeFont]="active.fontSerif"
+        [attr.data-bk-font]="activeSerifId()"
+      >
+        Trusted local headlines
+      </p>
+      <p
+        class="bk-type__live-sans"
+        [siteThemeFont]="active.fontSans"
+        [attr.data-bk-font]="activeSansId()"
+      >
         Body copy — Sphinx of black quartz, judge my vow.
       </p>
     </div>
@@ -36,14 +46,34 @@
           <span class="bk-type__pairing-stack">{{ pairing.serifLabel }} headlines · {{ pairing.sansLabel }} body</span>
           <span class="bk-type__pairing-preview">
             <span class="bk-type__pairing-glyphs" aria-hidden="true">
-              <span class="bk-type__pairing-serif-aa" [attr.data-bk-font]="pairing.serifId">Aa</span>
-              <span class="bk-type__pairing-sans-aa" [attr.data-bk-font]="pairing.sansId">Aa</span>
+              <span
+                class="bk-type__pairing-serif-aa"
+                [siteThemeFont]="pairing.fontSerif"
+                [attr.data-bk-font]="pairing.serifId"
+              >Aa</span>
+              <span
+                class="bk-type__pairing-sans-aa"
+                [siteThemeFont]="pairing.fontSans"
+                [attr.data-bk-font]="pairing.sansId"
+              >Aa</span>
             </span>
-            <span class="bk-type__pairing-headline" [attr.data-bk-font]="pairing.serifId">
+            <span
+              class="bk-type__pairing-headline"
+              [siteThemeFont]="pairing.fontSerif"
+              [attr.data-bk-font]="pairing.serifId"
+            >
               Trusted local service
             </span>
-            <span class="bk-type__pairing-sans-label" [attr.data-bk-font]="pairing.sansId">{{ pairing.sansLabel }}</span>
-            <span class="bk-type__pairing-body" [attr.data-bk-font]="pairing.sansId">
+            <span
+              class="bk-type__pairing-sans-label"
+              [siteThemeFont]="pairing.fontSans"
+              [attr.data-bk-font]="pairing.sansId"
+            >{{ pairing.sansLabel }}</span>
+            <span
+              class="bk-type__pairing-body"
+              [siteThemeFont]="pairing.fontSans"
+              [attr.data-bk-font]="pairing.sansId"
+            >
               Sphinx of black quartz, judge my vow.
             </span>
           </span>

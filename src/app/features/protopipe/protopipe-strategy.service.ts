@@ -30,6 +30,7 @@ export class ProtopipeStrategyService {
 
   private readonly _siteId = signal<string | null>(null);
   private readonly _site = signal<ProtopipeSite | null>(null);
+  private readonly _sites = signal<ProtopipeSite[]>([]);
   private readonly _summary = signal('');
   private readonly _onboardingProfile = signal<ProtopipeOnboardingProfile | null>(null);
   private readonly _defaultCognitivePackId = signal('none');
@@ -58,6 +59,7 @@ export class ProtopipeStrategyService {
   readonly marketRefreshing = this._marketRefreshing.asReadonly();
   readonly lastEnrichSummary = this._lastEnrichSummary.asReadonly();
   readonly site = this._site.asReadonly();
+  readonly sites = this._sites.asReadonly();
   readonly onboardingProfile = this._onboardingProfile.asReadonly();
   readonly defaultCognitivePackId = this._defaultCognitivePackId.asReadonly();
 
@@ -92,12 +94,14 @@ export class ProtopipeStrategyService {
     this._error.set(null);
     try {
       const boot = await this.api.bootstrap();
+      this._sites.set(boot.sites as ProtopipeSite[]);
       const siteIds = boot.sites.map((s) => s.id);
       if (siteIds.length === 0) {
         throw new Error('No site available for this account');
       }
 
-      const preferredId = resolveBootstrapSiteId(boot);
+      const preferredId =
+        this.readRememberedSiteId(siteIds) ?? resolveBootstrapSiteId(boot);
       const orderedSiteIds = [
         ...new Set([preferredId, ...siteIds].filter((id): id is string => Boolean(id))),
       ];
@@ -286,6 +290,32 @@ export class ProtopipeStrategyService {
     await this.reloadPlanOnly(siteId);
   }
 
+  /** Switch the active Build Book / strategy site and reload its plan. */
+  async selectSite(siteId: string): Promise<boolean> {
+    if (!siteId || this._siteId() === siteId) return true;
+
+    this._loading.set(true);
+    this._error.set(null);
+    try {
+      const plan = await this.api.getPlan(siteId);
+      this.applyPlan(plan);
+      this._initialized.set(true);
+      this._dirty.set(false);
+      return true;
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Could not switch site'));
+      return false;
+    } finally {
+      this._loading.set(false);
+    }
+  }
+
+  async refreshSitesList(): Promise<void> {
+    this.api.invalidateBootstrapCache();
+    const boot = await this.api.bootstrap();
+    this._sites.set(boot.sites as ProtopipeSite[]);
+  }
+
   private applyPlan(plan: ProtopipeStrategySummary): void {
     this._siteId.set(plan.site.id);
     this._site.set(plan.site);
@@ -294,6 +324,32 @@ export class ProtopipeStrategyService {
     this._defaultCognitivePackId.set(plan.defaultCognitivePackId ?? 'none');
     this._keywords.set(plan.keywords);
     this._updatedAt.set(plan.updatedAt);
+    this.rememberSiteId(plan.site.id);
+    this._sites.update((list) => {
+      const idx = list.findIndex((s) => s.id === plan.site.id);
+      if (idx < 0) return [...list, plan.site];
+      const next = [...list];
+      next[idx] = { ...next[idx], ...plan.site };
+      return next;
+    });
+  }
+
+  private rememberSiteId(siteId: string): void {
+    try {
+      localStorage.setItem('protopipe.activeSiteId', siteId);
+    } catch {
+      /* ignore quota / private mode */
+    }
+  }
+
+  private readRememberedSiteId(siteIds: string[]): string | null {
+    try {
+      const remembered = localStorage.getItem('protopipe.activeSiteId');
+      if (remembered && siteIds.includes(remembered)) return remembered;
+    } catch {
+      /* ignore */
+    }
+    return null;
   }
 
   /** Called after PATCH site default cognitive pack without full plan reload. */
@@ -310,6 +366,13 @@ export class ProtopipeStrategyService {
       delete next.provisioningError;
     }
     this._site.set(next);
+    this._sites.update((list) => {
+      const idx = list.findIndex((s) => s.id === next.id);
+      if (idx < 0) return list;
+      const copy = [...list];
+      copy[idx] = { ...copy[idx], ...next };
+      return copy;
+    });
   }
 
   private clampPhrase(value: string): string {

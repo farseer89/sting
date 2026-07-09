@@ -508,14 +508,14 @@ export class ProtopipeBuildBookService {
     });
   }
 
-  async publishSite(): Promise<boolean> {
+  async publishSite(): Promise<{ ok: boolean; message?: string }> {
     const siteId = this.strategy.siteId();
-    if (!siteId) return false;
+    if (!siteId) return { ok: false };
 
     const gate = this.validateForPublish();
     if (!gate.ok) {
       this._error.set(gate.issues[0]?.message ?? 'Cannot publish yet');
-      return false;
+      return { ok: false };
     }
 
     this._saving.set(true);
@@ -527,10 +527,10 @@ export class ProtopipeBuildBookService {
         publishStatus: res.publishStatus,
         provisioningError: undefined,
       });
-      return true;
+      return { ok: true, message: res.message };
     } catch (err) {
       this._error.set(parseProtopipeApiError(err, 'Could not publish site'));
-      return false;
+      return { ok: false };
     } finally {
       this._saving.set(false);
     }

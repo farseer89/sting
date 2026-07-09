@@ -89,6 +89,51 @@ The first implementation should:
 - Keep raw search candidates in `prospecting-campaigns`.
 - Promote a prospect into Build Book with `BuildBookProspectContext`.
 
+## Build Book shell (Protopipe)
+
+Top tabs beside the Books back control:
+
+| Tab | Purpose |
+| --- | ------- |
+| Templates | Template library only |
+| Homepage | Page editor (canvas + builder rail + inspector) |
+| Landing Pages | Page list + same editor shell per landing page |
+| SEO Strategy | Site images and strategy |
+| Content Posts | Placeholder |
+
+URL sync: `?view=build-book&tab=homepage` (legacy `chapter=homepage` and `subview=homepage` still read on load). Landing page selection adds `page=<pageId>`.
+
+Left builder rail (page editor): **Stack** shows the page TOC (reorder, select, remove). **+ Add block** swaps the same panel to a **pattern catalog** (patterns only — no insert). Picking a pattern enters **pending-add** mode: the canvas shows a ghost block at the insert position, the inspector opens **Layout**, and the user picks a variant/layout to commit. Esc or Back cancels pending-add and returns to Stack.
+
+Right inspector rail: **Content** | **Layout** | **Media** | **Links**. Layout is the variant picker for both new blocks (pending-add) and existing blocks (e.g. hero layout swap via `selectBaselineLayoutOption`).
+
+### Pending-add manual checks
+
+- **+ Add block** opens pattern catalog; clicking a pattern does not insert yet.
+- **Hero** (or other pattern) → Layout tab opens, canvas shows ghost at insert position.
+- **Pick layout/variant** → block inserts at correct index, ghost disappears, stack view returns.
+- **Esc / Back** cancels pending-add without mutating the page.
+- **Edit existing hero** → Layout tab still swaps via `selectBaselineLayoutOption`.
+- **Single-variant pattern** → Layout list shows one row; explicit click required to commit.
+
+Run `npm run validate:build-book` before merge when touching baseline catalogs or assemblies.
+
+## Site Design System
+
+Homepage, landing pages, and (future) blog-post page editors share one **site design context** resolved from the selected template, Media Studio assets, in-use block images across all pages, and Brand Book palette when present.
+
+- **Materialization:** `materializeBlockPropsForInsert()` powers pending-add ghost preview, commit insert, and Layout option cards — same inputs produce the same props.
+- **Media:** Slot assignment prefers page in-use → site-wide in-use → uploaded → generated → template stock → themed SVG placeholder.
+- **Theme tokens:** `--bb-*` CSS vars on the canvas host; pattern catalog and layout previews tint from site accent.
+- **Docs:** See [SITE_DESIGN_STANDARD.md](./SITE_DESIGN_STANDARD.md).
+
+### Site design manual checks
+
+- Add block on homepage with uploaded photos in SEO Strategy — ghost and commit use site library, not template stock.
+- Repeat on a landing page — current page images preferred over other pages.
+- Empty media library — themed placeholder, not Sparky aerial / WRI coast defaults.
+- Ghost media matches committed block after Layout variant pick.
+
 ## Verification
 
 - Unit test stores and mappers when logic is non-trivial.

@@ -1,6 +1,7 @@
-import { BUILD_BOOK_BASELINE_PAGE_ASSEMBLIES } from '../build-book-baseline-assemblies';
-import { compileBuildBookHomepage, stripEditorOnlyProps } from '../build-book-publish-compiler.util';
-import { validateBuildBookPublishGate } from '../build-book-publish-gate.util';
+import { describe, expect, it } from 'vitest';
+import { BUILD_BOOK_BASELINE_PAGE_ASSEMBLIES } from './build-book-baseline-assemblies';
+import { compileBuildBookHomepage, stripEditorOnlyProps } from './build-book-publish-compiler.util';
+import { validateBuildBookPublishGate } from './validation/build-book-publish-gate.util';
 
 describe('build-book publish compiler', () => {
   it('strips editor-only props', () => {

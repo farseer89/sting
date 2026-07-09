@@ -17,7 +17,7 @@ export const HIL_BASELINE_BLOCK_DEFINITIONS: BuildBookBlockDefinition[] = [
     description: 'Blackstone landscaping hero with primary estimate CTA.',
     sourceTemplateId: 'blackstone-landscaping-v1',
     componentId: 'baseline-hil-hero',
-    astroComponent: 'sites/futureproof/src/components/hil/HilPitchHero.astro',
+    astroComponent: 'sites/futureproof/src/components/hil/heroes/HilHeroCanopy.astro',
     layout: 'fullbleed',
     editableFields: ['eyebrow', 'heading', 'subhead', 'backgroundImageSrc', 'primaryCtaLabel', 'primaryCtaHref'],
     defaultProps: {
@@ -82,7 +82,7 @@ export const HIL_BASELINE_BLOCK_DEFINITIONS: BuildBookBlockDefinition[] = [
     description: 'Side-by-side transformation proof band.',
     sourceTemplateId: 'blackstone-landscaping-v1',
     componentId: 'before-after',
-    astroComponent: 'sites/futureproof/src/components/hil/site/HilSiteBeforeAfter.astro',
+    astroComponent: '@client-sites/theme/components/landing/BeforeAfter.astro',
     layout: 'split',
     editableFields: ['kicker', 'title', 'lede', 'before', 'after'],
     defaultProps: {
@@ -115,6 +115,7 @@ export const HIL_BASELINE_BLOCK_DEFINITIONS: BuildBookBlockDefinition[] = [
     description: 'Calendly scheduler embed for consultation booking.',
     sourceTemplateId: 'blackstone-landscaping-v1',
     componentId: 'scheduler-embed',
+    astroComponent: '@client-sites/theme/components/landing/SchedulerEmbed.astro',
     layout: 'close-form',
     editableFields: ['kicker', 'title', 'lede', 'url', 'embedHeight', 'connected', 'demoStatus'],
     defaultProps: {
@@ -182,11 +183,12 @@ export const HIL_BASELINE_BLOCK_DEFINITIONS: BuildBookBlockDefinition[] = [
     sourceTemplateId: 'blackstone-landscaping-v1',
     componentId: 'cta-banner',
     layout: 'band',
-    editableFields: ['heading', 'subhead', 'ctaLabel', 'ctaHref'],
+    editableFields: ['heading', 'body', 'subhead', 'ctaLabel', 'ctaHref'],
     defaultProps: {
       baselineRenderer: 'hil-site',
       heading: 'Ready for a free estimate?',
       subhead: 'Call (907) 306-6415 or send project photos through the quote form.',
+      body: 'Call (907) 306-6415 or send project photos through the quote form.',
       ctaLabel: 'Get my free estimate',
       ctaHref: '#quote',
     },

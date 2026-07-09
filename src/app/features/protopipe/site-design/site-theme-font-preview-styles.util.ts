@@ -5,7 +5,7 @@ const STYLE_ID = 'bk-site-theme-font-preview';
 /** CSS rules for [data-bk-font] preview chips — single source of truth from the catalog. */
 export function siteThemeFontPreviewStyleRules(): string {
   return SITE_THEME_FONT_STACK_OPTIONS.map(
-    (option) => `[data-bk-font="${option.id}"]{font-family:${option.stack}!important;}`,
+    (option) => `[data-bk-font="${option.id}"]{font-family:${option.stack} !important;}`,
   ).join('\n');
 }
 

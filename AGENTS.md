@@ -9,6 +9,7 @@ Any task touching Sting `src/app/features/protopipe/` or `docs/protopipe/`:
 1. **Read** [docs/protopipe/FEATURE_STANDARD.md](docs/protopipe/FEATURE_STANDARD.md) first.
 2. **Read** [ai_context/active/PROTOPYPE.md](ai_context/active/PROTOPYPE.md) for what must not merge to `main`.
 3. Follow [.cursor/rules/protopipe-standard.mdc](.cursor/rules/protopipe-standard.mdc) (auto-attached when those files are in scope).
+4. **Build Book blocks / publish:** read [docs/protopipe/BUILD_BOOK_PUBLISH_CONTRACT.md](docs/protopipe/BUILD_BOOK_PUBLISH_CONTRACT.md) and follow [.cursor/rules/build-book-publish.mdc](.cursor/rules/build-book-publish.mdc).
 
 Session workflow: [docs/SESSION_DEV_FLOW.md](docs/SESSION_DEV_FLOW.md).
 

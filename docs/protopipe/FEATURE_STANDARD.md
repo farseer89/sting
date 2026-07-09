@@ -224,6 +224,7 @@ Mock HTTP at `HttpClientTestingModule` — do not call real bagend in unit tests
 
 ## Related docs
 
+- [BUILD_BOOK_PUBLISH_CONTRACT.md](./BUILD_BOOK_PUBLISH_CONTRACT.md) — Build Book → client-sites publish targets (required for new blocks)
 - [SEO_ARTICLE_TEMPLATE.md](./SEO_ARTICLE_TEMPLATE.md) — structured article fields, validation rules (FAQ block deferred)
 - [AI_AGENT.md](./AI_AGENT.md) — agent knowledge layers, routes, env, Phase A scope
 - [SECURITY.md](../SECURITY.md) — Sting threat model

@@ -18,13 +18,10 @@ import {
   resolveVeilHeroPreviewBlockId,
   veilHeroLabPreviewProps,
 } from '../build-book-veil-hero.catalog';
-import { readHeroImageUrl } from '../build-hero-block.util';
+import { heroImageToProps, readHeroImageUrl } from '../build-hero-block.util';
 import { foldLabPreviewProps, resolveFoldWireLayout } from '../build-fold-block.util';
 import type { BuildBookOption, BuildBookSection, BuildBookWireLayout } from '../build-book.types';
-import {
-  materializeBlockPropsForInsert,
-  type SiteDesignContext,
-} from '../../site-design/public';
+import type { SiteDesignContext } from '../../site-design/public';
 
 export type BaselineRendererBrand = 'sparky' | 'wri' | 'wilco' | 'veil' | 'hil';
 
@@ -81,9 +78,40 @@ export function defaultPropsForLayoutOption(
   return def ? structuredClone(def.defaultProps) : {};
 }
 
+/**
+ * Rail option cards must keep each layout's catalog/stock image.
+ * Do not call materializeBlockPropsForInsert here — that strips stock URLs and
+ * assigns the same site-media pick to every card, so the chooser looks stuck.
+ */
+function optionRailPreviewProps(
+  option: BuildBookOption,
+  section: BuildBookSection,
+  blockId: string | null,
+  options?: { liveHeroImageUrl?: string | null; selected?: boolean },
+): Record<string, unknown> {
+  let props = blockId
+    ? defaultPropsForLayoutOption(blockId, section)
+    : defaultPropsForLayoutOption(option.id, section);
+
+  if (section === 'hero') {
+    const catalogImage =
+      option.previewImage ??
+      heroPreviewImageForLayout(option.id) ??
+      readHeroImageUrl(props, option.id);
+    if (catalogImage && !readHeroImageUrl(props, option.id)) {
+      props = { ...props, ...heroImageToProps(catalogImage) };
+    }
+
+    if (options?.selected && options.liveHeroImageUrl?.trim()) {
+      props = { ...props, ...heroImageToProps(options.liveHeroImageUrl.trim()) };
+    }
+  }
+
+  return props;
+}
+
 function resolveCatalogBaselinePreview(
   optionId: string,
-  designContext?: SiteDesignContext | null,
 ): BuildBookOptionPreviewTarget | null {
   const catalogBlock = findBuildBookBlockDefinition(optionId);
   if (!catalogBlock) return null;
@@ -95,50 +123,60 @@ function resolveCatalogBaselinePreview(
     kind: 'baseline',
     renderer,
     blockId: optionId,
-    props: designContext
-      ? materializeBlockPropsForInsert(optionId, designContext)
-      : structuredClone(catalogBlock.defaultProps),
+    props: structuredClone(catalogBlock.defaultProps),
   };
+}
+
+export interface ResolveOptionPreviewOptions {
+  /** When this card is the active layout, overlay the canvas hero image. */
+  liveHeroImageUrl?: string | null;
+  selected?: boolean;
 }
 
 export function resolveOptionPreviewTarget(
   option: BuildBookOption,
   section: BuildBookSection,
-  designContext?: SiteDesignContext | null,
+  _designContext?: SiteDesignContext | null,
+  resolveOptions?: ResolveOptionPreviewOptions,
 ): BuildBookOptionPreviewTarget {
+  const live = {
+    liveHeroImageUrl: resolveOptions?.liveHeroImageUrl,
+    selected: resolveOptions?.selected,
+  };
+
   if (section === 'hero') {
     if (isBaselineApprovedHeroLayout(option.id)) {
       const blockId = baselineHeroBlockIdForLayout(option.id);
+      const props = optionRailPreviewProps(option, 'hero', blockId, live);
       return {
         kind: 'baseline',
         renderer: baselineHeroRendererBrand(option.id),
         blockId,
-        props:
-          blockId && designContext
-            ? materializeBlockPropsForInsert(blockId, designContext)
-            : defaultPropsForLayoutOption(option.id, 'hero'),
+        props,
+        heroLayoutId: option.id,
+        heroImageUrl: readHeroImageUrl(props, option.id) ?? option.previewImage ?? undefined,
       };
     }
 
     if (isVeilHeroLabLayout(option.id)) {
       const blockId = resolveVeilHeroPreviewBlockId(option.id);
-      const baseProps =
-        blockId && designContext
-          ? materializeBlockPropsForInsert(blockId, designContext)
-          : defaultPropsForLayoutOption(option.id, 'hero');
+      const baseProps = optionRailPreviewProps(option, 'hero', blockId, live);
+      const props = veilHeroLabPreviewProps(option.id, baseProps);
+      if (live.selected && live.liveHeroImageUrl?.trim()) {
+        Object.assign(props, heroImageToProps(live.liveHeroImageUrl.trim()));
+      }
       return {
         kind: 'baseline',
         renderer: 'veil',
         blockId,
-        props: veilHeroLabPreviewProps(option.id, baseProps),
+        props,
+        heroLayoutId: option.id,
+        heroImageUrl: readHeroImageUrl(props, option.id) ?? option.previewImage ?? undefined,
       };
     }
 
-    const blockIdForHero = baselineHeroBlockIdForLayout(option.id);
-    const props =
-      blockIdForHero && designContext
-        ? materializeBlockPropsForInsert(blockIdForHero, designContext)
-        : defaultPropsForLayoutOption(option.id, 'hero');
+    const props = optionRailPreviewProps(option, 'hero', null, live);
+    const liveUrl = live.selected ? live.liveHeroImageUrl?.trim() : undefined;
     return {
       kind: 'hero-lab',
       renderer: null,
@@ -146,9 +184,10 @@ export function resolveOptionPreviewTarget(
       props,
       heroLayoutId: resolveHeroPreviewWireLayout(option.id),
       heroImageUrl:
-        option.previewImage ??
-        heroPreviewImageForLayout(option.id) ??
-        readHeroImageUrl(props, option.id) ??
+        liveUrl ||
+        option.previewImage ||
+        heroPreviewImageForLayout(option.id) ||
+        readHeroImageUrl(props, option.id) ||
         undefined,
     };
   }
@@ -158,13 +197,11 @@ export function resolveOptionPreviewTarget(
       kind: 'baseline',
       renderer: baselineFoldRendererBrand(option.id),
       blockId: option.id,
-      props: designContext
-        ? materializeBlockPropsForInsert(option.id, designContext)
-        : defaultPropsForLayoutOption(option.id, 'fold'),
+      props: optionRailPreviewProps(option, 'fold', option.id),
     };
   }
 
-  const catalogPreview = resolveCatalogBaselinePreview(option.id, designContext);
+  const catalogPreview = resolveCatalogBaselinePreview(option.id);
   if (catalogPreview) return catalogPreview;
 
   const foldLayoutId = option.id;

@@ -1,0 +1,105 @@
+<div class="bk-sites">
+  <div class="bk-sites__head">
+    <div>
+      <div class="bk-stage-kicker">Active sites</div>
+      <h2 class="bk-sites__title">Your sites</h2>
+      <p class="bk-sites__deck">
+        Open a site to edit its Build Book homepage, landing pages, theme, and publish status.
+      </p>
+    </div>
+    <p-button
+      label="Refresh"
+      icon="pi pi-refresh"
+      size="small"
+      severity="secondary"
+      [outlined]="true"
+      [loading]="loading()"
+      (onClick)="refresh()"
+    />
+  </div>
+
+  @if (loading() && sites().length === 0) {
+    <div class="bk-sites__loading">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Loading sites" />
+    </div>
+  } @else if (error(); as err) {
+    <p class="bk-sites__error">{{ err }}</p>
+  } @else if (sites().length === 0) {
+    <div class="bk-sites__empty">
+      <strong>No sites yet</strong>
+      <p>Create a site from Templates to start building and publishing.</p>
+    </div>
+  } @else {
+    <div class="bk-sites__grid">
+      @for (site of sites(); track site.id) {
+        <article
+          class="bk-site-card"
+          [class.is-active]="activeSiteId() === site.id"
+          [class.is-switching]="switchingSiteId() === site.id"
+        >
+          <div class="bk-site-card__top">
+            <div class="bk-site-card__identity">
+              <h3>{{ site.displayName }}</h3>
+              <p class="bk-site-card__slug">{{ site.clientSitesSlug || site.hostname || site.id }}</p>
+            </div>
+            <span class="bk-site-card__status" [attr.data-tone]="statusTone(site.publishStatus)">
+              {{ statusLabel(site) }}
+            </span>
+          </div>
+
+          <dl class="bk-site-card__meta">
+            <div>
+              <dt>Template</dt>
+              <dd>{{ templateLabel(site) }}</dd>
+            </div>
+            <div>
+              <dt>Host</dt>
+              <dd>{{ site.hostname || '—' }}</dd>
+            </div>
+            @if (site.previewBaseUrl) {
+              <div class="bk-site-card__meta-wide">
+                <dt>Live URL</dt>
+                <dd>{{ site.previewBaseUrl }}</dd>
+              </div>
+            }
+          </dl>
+
+          @if (site.publishStatus === 'failed' && site.provisioningError) {
+            <p class="bk-site-card__fail">{{ site.provisioningError }}</p>
+          }
+
+          <div class="bk-site-card__actions">
+            <p-button
+              [label]="activeSiteId() === site.id ? 'Editing' : 'Edit in Build Book'"
+              icon="pi pi-pencil"
+              size="small"
+              [disabled]="switching() || deletingId() !== null"
+              [loading]="switchingSiteId() === site.id"
+              (onClick)="onEdit(site.id)"
+            />
+            @if (site.previewBaseUrl) {
+              <p-button
+                label="View live"
+                icon="pi pi-external-link"
+                size="small"
+                severity="secondary"
+                [outlined]="true"
+                (onClick)="onOpenLive(site.previewBaseUrl!)"
+              />
+            }
+            <p-button
+              label="Delete"
+              icon="pi pi-trash"
+              size="small"
+              severity="danger"
+              [outlined]="true"
+              [loading]="deletingId() === site.id"
+              [disabled]="site.publishStatus === 'provisioning' || deletingId() !== null || switching()"
+              (onClick)="confirmDelete(site)"
+            />
+          </div>
+        </article>
+      }
+    </div>
+  }
+</div>

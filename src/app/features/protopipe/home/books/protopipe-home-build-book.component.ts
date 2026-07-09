@@ -102,6 +102,7 @@ import type {
 import { BUILD_BOOK_PENDING_ADD_BLOCK_ID } from '../../build-book/build-book.types';
 import { BuildBookPageBuilderRailComponent } from '../../build-book/page-builder-rail/build-book-page-builder-rail.component';
 import { BuildBookLandingPagesPanelComponent } from '../../build-book/landing-pages-panel/build-book-landing-pages-panel.component';
+import { BuildBookSitesPanelComponent } from '../../build-book/sites-panel/build-book-sites-panel.component';
 import { ProtopipeBuildBookThemePanelComponent } from '../../build-book/theme-panel/protopipe-build-book-theme-panel.component';
 import { hasBuildBookBaselineAssembly } from '../../build-book/build-book-baseline-assemblies';
 import { hrefFieldsFromProps, altFieldsFromProps } from '../../build-book/fields/build-href-field.util';
@@ -123,7 +124,14 @@ const HERO_PREVIEW_PLACEHOLDER_IMAGE =
 
 type BuildBookEntryMode = 'template' | 'blocks';
 type BuildBookInspectorTab = 'content' | 'layout' | 'media' | 'links';
-type BuildBookTab = 'templates' | 'homepage' | 'landing-pages' | 'seo-strategy' | 'site-theme' | 'content-posts';
+type BuildBookTab =
+  | 'sites'
+  | 'templates'
+  | 'homepage'
+  | 'landing-pages'
+  | 'seo-strategy'
+  | 'site-theme'
+  | 'content-posts';
 
 interface BuildBookTabItem {
   id: BuildBookTab;
@@ -147,6 +155,7 @@ interface BuildBookTabItem {
     ProtopipeBuildPageCanvasComponent,
     BuildBookPageBuilderRailComponent,
     BuildBookLandingPagesPanelComponent,
+    BuildBookSitesPanelComponent,
     ProtopipeBuildBookThemePanelComponent,
     ProtopipeBuildSiteImagesPanelComponent,
     ProtopipeBuildImageQuickPickerComponent,
@@ -174,6 +183,8 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
   readonly setupSaving = signal(false);
   readonly setupError = signal<string | null>(null);
   readonly publishing = signal(false);
+  readonly publishProgressMessage = signal<string | null>(null);
+  readonly publishStartedAt = signal<number | null>(null);
   readonly editingDisplayName = signal(false);
   readonly displayNameDraft = signal('');
   private publishPollTimer: ReturnType<typeof setInterval> | null = null;
@@ -196,6 +207,7 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
   readonly pendingImageEdit = signal<{ blockInstanceId: string; propPath: string } | null>(null);
   readonly imagePickerOpen = signal(false);
   readonly bookTabs: BuildBookTabItem[] = [
+    { id: 'sites', label: 'Sites' },
     { id: 'templates', label: 'Templates' },
     { id: 'homepage', label: 'Homepage' },
     { id: 'landing-pages', label: 'Landing Pages' },
@@ -203,6 +215,8 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
     { id: 'seo-strategy', label: 'SEO Strategy' },
     { id: 'content-posts', label: 'Content Posts', status: 'planned' },
   ];
+  readonly switchingSite = signal(false);
+  readonly switchingSiteId = signal<string | null>(null);
 
   readonly isPageEditor = computed(() => {
     if (!this.buildBook.hasDraft()) return false;
@@ -310,9 +324,32 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
     }),
   );
 
-  readonly canPublish = computed(
-    () => this.publishGate().ok && this.buildBook.hasDraft() && !this.publishing(),
+  readonly canPublish = computed(() => {
+    if (this.publishing()) return false;
+    if (this.publishInProgress() && !this.publishStale()) return false;
+    return this.publishGate().ok && this.buildBook.hasDraft();
+  });
+
+  readonly publishInProgress = computed(
+    () => this.publishStatus() === 'provisioning' || this.publishing(),
   );
+
+  readonly publishStale = computed(() => {
+    if (this.publishStatus() !== 'provisioning') return false;
+    const started = this.publishStartedAt();
+    if (!started) return false;
+    return Date.now() - started > 5 * 60 * 1000;
+  });
+
+  readonly publishButtonLabel = computed(() => {
+    if (this.publishing()) return 'Publishing…';
+    if (this.publishStatus() === 'provisioning') {
+      return this.publishStale() ? 'Retry publish' : 'Publishing…';
+    }
+    if (this.publishStatus() === 'failed') return 'Retry publish';
+    if (this.publishStatus() === 'live') return 'Publish updates';
+    return 'Publish';
+  });
 
   readonly lastSavedLabel = computed(() => {
     const updatedAt = this.buildBook.draft()?.updatedAt;
@@ -617,6 +654,10 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
       }
     }
     if (this.publishStatus() === 'provisioning') {
+      this.publishStartedAt.set(Date.now());
+      this.publishProgressMessage.set(
+        'Deploying your site to Cloudflare Pages. This usually takes a few minutes.',
+      );
       this.startPublishPolling();
     }
   }
@@ -739,7 +780,50 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
     } else if (tab !== 'homepage' && tab !== 'landing-pages') {
       this.closePreview();
     }
+    if (tab === 'sites') {
+      void this.strategy.refreshSitesList().catch(() => undefined);
+    }
     this.syncWorkflowToUrl();
+  }
+
+  async onEditSiteFromList(siteId: string): Promise<void> {
+    if (!siteId) return;
+    if (this.strategy.siteId() === siteId) {
+      this.selectBookTab(this.buildBook.hasDraft() ? 'homepage' : 'templates');
+      return;
+    }
+
+    if (this.buildBook.dirty()) {
+      const proceed = window.confirm(
+        'You have unsaved Build Book changes on the current site. Switch anyway and discard them?',
+      );
+      if (!proceed) return;
+    }
+
+    this.switchingSite.set(true);
+    this.switchingSiteId.set(siteId);
+    try {
+      const ok = await this.strategy.selectSite(siteId);
+      if (!ok) return;
+      this.landingPageId.set(null);
+      this.activeBlockId.set(null);
+      this.clearPendingAdd();
+      await this.buildBook.load();
+      this.entryMode.set(this.buildBook.entryMode());
+      const draft = this.buildBook.draft();
+      if (draft) {
+        this.syncHeroPreviewIndexFromDraft(draft);
+        this.syncDemoBrandFromDraft(draft);
+      }
+      this.selectBookTab(this.buildBook.hasDraft() ? 'homepage' : 'templates');
+    } finally {
+      this.switchingSite.set(false);
+      this.switchingSiteId.set(null);
+    }
+  }
+
+  onOpenLiveSite(url: string): void {
+    window.open(url, '_blank', 'noopener,noreferrer');
   }
 
   onLandingPageSelected(pageId: string | null): void {
@@ -1642,10 +1726,17 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
       if (!saved) return;
     }
     this.publishing.set(true);
+    this.publishStartedAt.set(Date.now());
+    this.publishProgressMessage.set('Preparing your site for deploy…');
     try {
-      const ok = await this.buildBook.publishSite();
-      if (ok) {
+      const result = await this.buildBook.publishSite();
+      if (result.ok) {
+        this.publishProgressMessage.set(
+          result.message ?? 'Deploying your site to Cloudflare Pages…',
+        );
         this.startPublishPolling();
+      } else {
+        this.publishProgressMessage.set(null);
       }
     } finally {
       this.publishing.set(false);
@@ -1696,10 +1787,17 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
 
   private startPublishPolling(): void {
     this.stopPublishPolling();
+    void this.buildBook.refreshSitePublishStatus();
     this.publishPollTimer = setInterval(() => {
       void this.buildBook.refreshSitePublishStatus().then(() => {
         const status = this.publishStatus();
-        if (status === 'live' || status === 'failed') {
+        if (status === 'live') {
+          this.publishProgressMessage.set('Your site is live.');
+          this.publishStartedAt.set(null);
+          this.stopPublishPolling();
+        } else if (status === 'failed') {
+          this.publishProgressMessage.set(null);
+          this.publishStartedAt.set(null);
           this.stopPublishPolling();
         }
       });

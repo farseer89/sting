@@ -19,6 +19,7 @@ import {
 } from '../../site-design/public';
 import { matchSiteThemeFontOptionId } from '../../site-design/site-theme-fonts.catalog';
 import { ensureSiteThemeFontPreviewStyles } from '../../site-design/site-theme-font-preview-styles.util';
+import { SiteThemeFontDirective } from '../../site-design/site-theme-font.directive';
 
 type ThemeColorField = keyof Pick<
   SiteThemeColorTokens,
@@ -43,6 +44,7 @@ const COLOR_FIELDS: { key: ThemeColorField; label: string; hint?: string }[] = [
   imports: [
     FormsModule,
     Button,
+    SiteThemeFontDirective,
     ProtopipeBuildBookThemePaletteComponent,
     ProtopipeBuildBookThemeTypographyComponent,
   ],

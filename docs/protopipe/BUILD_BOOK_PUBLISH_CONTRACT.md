@@ -1,0 +1,52 @@
+# Build Book publish contract
+
+Source of truth for wiring Build Book blocks and templates to client-sites provision. Read this before adding or editing a selectable block, baseline assembly, or `astroComponent` path.
+
+## One-line rule
+
+**If Build Book can edit it, the published Astro component must render those same flat props — or publish is not done.**
+
+## Valid publish targets
+
+Every user-selectable catalog block must have **one** of:
+
+1. `astroComponent` pointing at a **prop-aware** Astro file (accepts `Astro.props` for the catalog’s `editableFields` / `defaultProps`), or
+2. `componentId` present in client-sites [`LANDING_COMPONENT_MAP`](../../../client-sites/packages/theme/src/landing/componentMap.js) (and in Sting’s publish-gate allowlist).
+
+## Invalid publish targets
+
+- Lab shells that only import `*-content.ts` / hardcoded demo copy
+- Full-page mockup shells (e.g. `WriSite.astro`) used as a section
+- Bare names or demo-only paths (`FaqAccordion`, `consult-demo/projects-intro`) that provision cannot resolve
+- Gate-only `componentId`s with no map entry (renders `<!-- unknown component -->`)
+
+Hardcoded content modules may remain as **fallbacks** when props are omitted — never as the only source of truth.
+
+## Brand baselines (Sparky / WRI / Veil / HIL)
+
+When the brand needs its own CSS shell and header/footer:
+
+1. Prop-ify fold/hero components (flat props + content fallbacks).
+2. Add `*PublishedHome.astro` that switches on `componentId` and passes section props.
+3. Register `sourceTemplateId` in `BASELINE_TEMPLATE_INDEX_BUILDERS` in [`provision-from-template.mjs`](../../../client-sites/scripts/provision-from-template.mjs).
+4. Ensure `TEMPLATE_COMPONENT_DIRS` copies the brand folder.
+
+Reference: WRI — `WriPublishedHome.astro` + `buildWriBaselineIndexAstro`.
+
+Wilco/consult may use generic `BaseLayout` + theme Consult components without a PublishedHome.
+
+## Universal / SaaS / theme slots
+
+Prefer mapping to existing theme landing components. Add a new theme Astro file only when aliasing would lose a layout the editor promises. Keep the publish gate allowlist in sync with `LANDING_COMPONENT_MAP`.
+
+## Checklist before merge
+
+1. Catalog entry has `astroComponent` or allowlisted `componentId`.
+2. Target Astro accepts the flat props Build Book edits (or a compiler adapter remaps them).
+3. Brand baseline: PublishedHome + index builder updated if needed.
+4. Local smoke: provision → `astro build` succeeds.
+5. Live (or preview) HTML shows an **edited** string from Build Book, not only lab defaults.
+
+## CI
+
+Sting unit test `build-book-publish-contract.spec.ts` asserts every assembly + universal catalog block is publish-resolvable. Do not disable it to land a block.

@@ -21,8 +21,18 @@
         <span class="bk-theme__preview-accent">Accent CTA</span>
       </div>
       <div class="bk-theme__preview-body">
-        <h3 class="bk-theme__preview-serif" [attr.data-bk-font]="activeSerifId()">Serif display headline</h3>
-        <p class="bk-theme__preview-copy" [attr.data-bk-font]="activeSansId()">
+        <h3
+          class="bk-theme__preview-serif"
+          [siteThemeFont]="resolved.typography.fontSerif"
+          [attr.data-bk-font]="activeSerifId()"
+        >
+          Serif display headline
+        </h3>
+        <p
+          class="bk-theme__preview-copy"
+          [siteThemeFont]="resolved.typography.fontSans"
+          [attr.data-bk-font]="activeSansId()"
+        >
           Body sans sample — Sphinx of black quartz, judge my vow.
         </p>
       </div>

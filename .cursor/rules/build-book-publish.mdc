@@ -1,0 +1,22 @@
+---
+description: Build Book blocks must have a prop-aligned publish target before done
+globs: src/app/features/protopipe/build-book/**,docs/protopipe/BUILD_BOOK_PUBLISH_CONTRACT.md
+alwaysApply: false
+---
+
+# Build Book publish gate (new blocks)
+
+**Before** marking a Build Book block, baseline assembly, or `astroComponent` change done:
+
+1. Read [docs/protopipe/BUILD_BOOK_PUBLISH_CONTRACT.md](docs/protopipe/BUILD_BOOK_PUBLISH_CONTRACT.md).
+2. Ensure the block has a valid publish target (prop-aware `astroComponent` **or** `componentId` in `LANDING_COMPONENT_MAP` + publish-gate allowlist).
+
+## Hard stops
+
+- Do not finish a new selectable block without a publish target.
+- Do not point `astroComponent` at a component that only reads `*-content.ts` / hardcoded lab copy.
+- Do not use bare unresolved strings (`FaqAccordion`, `consult-demo/...`) as `astroComponent`.
+- Brand baselines (Sparky / WRI / Veil / HIL): update `*PublishedHome` switch + `BASELINE_TEMPLATE_INDEX_BUILDERS` when adding sections.
+- When adding a theme `componentId`, sync Sting `UNIVERSAL_PUBLISH_COMPONENT_IDS` with client-sites `LANDING_COMPONENT_MAP`.
+
+If the task conflicts with the publish contract, stop and ask the user before implementing.

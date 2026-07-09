@@ -57,6 +57,8 @@ export class ProtopipeBuildBookOptionPreviewComponent implements AfterViewInit, 
   readonly section = input.required<BuildBookSection>();
   readonly selected = input(false);
   readonly designContext = input<SiteDesignContext | null>(null);
+  /** Live canvas hero image — applied only when this card is selected. */
+  readonly liveHeroImageUrl = input<string | null>(null);
 
   readonly previewThemeStyle = computed(() => {
     const ctx = this.designContext();
@@ -69,7 +71,10 @@ export class ProtopipeBuildBookOptionPreviewComponent implements AfterViewInit, 
   readonly target = computed(() => {
     const section = this.section();
     if (section !== 'hero' && section !== 'fold') return null;
-    return resolveOptionPreviewTarget(this.option(), section, this.designContext());
+    return resolveOptionPreviewTarget(this.option(), section, this.designContext(), {
+      selected: this.selected(),
+      liveHeroImageUrl: this.liveHeroImageUrl(),
+    });
   });
   readonly heroCopy = computed(() => {
     const target = this.target();

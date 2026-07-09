@@ -3,7 +3,7 @@ import { findBuildBookBlockDefinition } from '../build-book-block.catalog';
 import type { BuildBookPage } from '../build-book.types';
 
 /** componentIds provisioned via LANDING_COMPONENT_MAP without template-specific astro paths. */
-const UNIVERSAL_PUBLISH_COMPONENT_IDS = new Set([
+export const UNIVERSAL_PUBLISH_COMPONENT_IDS = new Set([
   'hero-split',
   'hero-overlay',
   'stats-bar',
@@ -22,19 +22,39 @@ const UNIVERSAL_PUBLISH_COMPONENT_IDS = new Set([
   'page-intro',
   'prose-section',
   'scheduler-embed',
+  'image-duo',
+  'image-band',
+  'saas-hero-gradient',
+  'saas-metric-strip',
+  'saas-problem-split',
+  'saas-value-trio',
+  'saas-customer-metrics',
+  'saas-section-intro',
+  'saas-pillar-feature',
+  'saas-quote-highlight',
+  'saas-community-band',
+  'saas-cta-band',
   'consult-hero-split',
   'consult-hero-fullbleed',
   'consult-showcase-panel',
   'consult-stats-band',
   'consult-trusted-by',
   'consult-services-intro',
+  'consult-service-split',
+  'consult-core-services',
+  'consult-projects-intro',
+  'consult-call-cta',
 ]);
+
+export function isPublishResolvableComponentId(componentId: string): boolean {
+  return UNIVERSAL_PUBLISH_COMPONENT_IDS.has(componentId);
+}
 
 function isPublishableBlock(blockId: string, componentId: string): boolean {
   const definition = findBuildBookBlockDefinition(blockId);
   if (!definition) return false;
   if (definition.astroComponent) return true;
-  return UNIVERSAL_PUBLISH_COMPONENT_IDS.has(componentId);
+  return isPublishResolvableComponentId(componentId);
 }
 
 export interface BuildBookPublishGateIssue {
@@ -88,10 +108,6 @@ export function validateBuildBookPublishGate(
         ),
       );
     }
-  }
-
-  if (input.site?.publishStatus === 'provisioning') {
-    issues.push(issue('publish.provisioning', 'Publish is already in progress'));
   }
 
   return { ok: issues.length === 0, issues };

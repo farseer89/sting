@@ -63,6 +63,9 @@ jobs:
         run: npm test
         continue-on-error: true
 
+      - name: Validate Build Book baseline gate
+        run: npm run validate:build-book
+
       - name: Build
         run: npm run build
 

@@ -195,7 +195,16 @@
     </div>
   } @else {
     <div class="bk-workspace">
-      @if (!buildBook.hasDraft() || bookTab() === 'templates') {
+      @if (bookTab() === 'sites') {
+        <div class="bk-tab-panel bk-tab-panel--library">
+          <app-build-book-sites-panel
+            [activeSiteId]="strategy.siteId()"
+            [switchingSiteId]="switchingSiteId()"
+            (editSite)="onEditSiteFromList($event)"
+            (openLive)="onOpenLiveSite($event)"
+          />
+        </div>
+      } @else if (!buildBook.hasDraft() || bookTab() === 'templates') {
         <div class="bk-tab-panel bk-tab-panel--library">
           <div class="bk-start__head">
             <div class="bk-stage-kicker">Templates</div>
@@ -669,6 +678,7 @@
           [section]="heroPanelSection()"
           [selected]="isOptionSelected(heroPanelSection(), opt.id)"
           [designContext]="siteDesignContext()"
+          [liveHeroImageUrl]="heroPanelSection() === 'hero' ? activeHeroImageUrl() : null"
         />
       </div>
       <div [class]="heroPanelSection() === 'hero' ? 'bk-hero-card__meta' : 'bk-fold-card__meta'">

@@ -903,5 +903,233 @@
         </div>
       </section>
     }
+    @case ('universal-blog-masthead-centered') {
+      <section class="bb-uni-blog-masthead bb-uni-blog-masthead--centered">
+        <div class="bb-uni-blog-masthead__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('kicker', 'Stories')"
+              hostClass=""
+              ariaLabel="Blog masthead kicker"
+              (valueChange)="patch('kicker', $event)"
+            />
+          </p>
+          <h1 class="bb-uni-blog-masthead__title">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('title', 'Field notes & guides')"
+              hostClass=""
+              ariaLabel="Blog masthead title"
+              (valueChange)="patch('title', $event)"
+            />
+          </h1>
+          <p class="bb-uni-lede">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('subhead')"
+              hostClass=""
+              ariaLabel="Blog masthead subhead"
+              [multiline]="true"
+              (valueChange)="patch('subhead', $event)"
+            />
+          </p>
+        </div>
+      </section>
+    }
+    @case ('universal-blog-masthead-split') {
+      <section class="bb-uni-blog-masthead bb-uni-blog-masthead--split">
+        <div class="bb-uni-blog-masthead__wrap bb-uni-blog-masthead__wrap--split">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('kicker', 'Blog')"
+              hostClass=""
+              ariaLabel="Blog masthead kicker"
+              (valueChange)="patch('kicker', $event)"
+            />
+          </p>
+          <div class="bb-uni-blog-masthead__copy">
+            <h1 class="bb-uni-blog-masthead__title">
+              <app-protopipe-build-inline-text
+                [editable]="editable()"
+                [value]="str('title')"
+                hostClass=""
+                ariaLabel="Blog masthead title"
+                (valueChange)="patch('title', $event)"
+              />
+            </h1>
+            <p class="bb-uni-lede">
+              <app-protopipe-build-inline-text
+                [editable]="editable()"
+                [value]="str('subhead')"
+                hostClass=""
+                ariaLabel="Blog masthead subhead"
+                [multiline]="true"
+                (valueChange)="patch('subhead', $event)"
+              />
+            </p>
+          </div>
+        </div>
+      </section>
+    }
+    @case ('universal-blog-featured-split') {
+      <section class="bb-uni-blog-featured">
+        <div class="bb-uni-blog-featured__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('kicker', 'Featured')"
+              hostClass=""
+              ariaLabel="Featured kicker"
+              (valueChange)="patch('kicker', $event)"
+            />
+          </p>
+          @if (featuredPost(); as post) {
+            <article class="bb-uni-blog-featured__card">
+              <div class="bb-uni-blog-featured__media" aria-hidden="true">
+                @if (post.coverImage) {
+                  <img [src]="post.coverImage" [alt]="post.title" loading="lazy" />
+                } @else {
+                  <div class="bb-uni-blog-cover-ph"></div>
+                }
+              </div>
+              <div class="bb-uni-blog-featured__copy">
+                <span class="bb-uni-blog-meta">{{ post.category }} · {{ post.date }} · {{ post.readTime }}</span>
+                <h2 class="bb-uni-blog-title">{{ post.title }}</h2>
+                <p class="bb-uni-blog-excerpt">{{ post.excerpt }}</p>
+                <span class="bb-uni-blog-link">Read article</span>
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+    }
+    @case ('universal-blog-magazine-split') {
+      <section class="bb-uni-blog-magazine">
+        <div class="bb-uni-blog-magazine__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('kicker', 'Latest')"
+              hostClass=""
+              ariaLabel="Magazine kicker"
+              (valueChange)="patch('kicker', $event)"
+            />
+          </p>
+          <div class="bb-uni-blog-magazine__grid">
+            @if (magazineLead(); as lead) {
+              <article class="bb-uni-blog-magazine__lead">
+                <div class="bb-uni-blog-magazine__lead-media" aria-hidden="true">
+                  @if (lead.coverImage) {
+                    <img [src]="lead.coverImage" [alt]="lead.title" loading="lazy" />
+                  } @else {
+                    <div class="bb-uni-blog-cover-ph bb-uni-blog-cover-ph--tall"></div>
+                  }
+                </div>
+                <span class="bb-uni-blog-meta">{{ lead.category }} · {{ lead.date }}</span>
+                <h2 class="bb-uni-blog-title">{{ lead.title }}</h2>
+                <p class="bb-uni-blog-excerpt">{{ lead.excerpt }}</p>
+              </article>
+            }
+            <div class="bb-uni-blog-magazine__stack">
+              @for (post of magazineStack(); track post.id) {
+                <article class="bb-uni-blog-magazine__mini">
+                  <div class="bb-uni-blog-magazine__thumb" aria-hidden="true">
+                    @if (post.coverImage) {
+                      <img [src]="post.coverImage" [alt]="post.title" loading="lazy" />
+                    } @else {
+                      <div class="bb-uni-blog-cover-ph bb-uni-blog-cover-ph--sq"></div>
+                    }
+                  </div>
+                  <div>
+                    <span class="bb-uni-blog-meta">{{ post.date }} · {{ post.readTime }}</span>
+                    <h3 class="bb-uni-blog-title bb-uni-blog-title--sm">{{ post.title }}</h3>
+                  </div>
+                </article>
+              }
+            </div>
+          </div>
+        </div>
+      </section>
+    }
+    @case ('universal-blog-grid-3') {
+      <section class="bb-uni-blog-grid bb-uni-blog-grid--3">
+        <div class="bb-uni-blog-grid__wrap">
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('heading', 'More stories')"
+              hostClass=""
+              ariaLabel="Post grid heading"
+              (valueChange)="patch('heading', $event)"
+            />
+          </h2>
+          <div class="bb-uni-blog-grid__cards">
+            @for (post of gridPosts(); track post.id) {
+              <article class="bb-uni-blog-card">
+                <div class="bb-uni-blog-card__media" aria-hidden="true">
+                  @if (post.coverImage) {
+                    <img [src]="post.coverImage" [alt]="post.title" loading="lazy" />
+                  } @else {
+                    <div class="bb-uni-blog-cover-ph"></div>
+                  }
+                </div>
+                <span class="bb-uni-blog-meta">{{ post.category }} · {{ post.readTime }}</span>
+                <h3 class="bb-uni-blog-title bb-uni-blog-title--sm">{{ post.title }}</h3>
+                <p class="bb-uni-blog-excerpt">{{ post.excerpt }}</p>
+              </article>
+            }
+          </div>
+        </div>
+      </section>
+    }
+    @case ('universal-blog-grid-list') {
+      <section class="bb-uni-blog-grid bb-uni-blog-grid--list">
+        <div class="bb-uni-blog-grid__wrap">
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text
+              [editable]="editable()"
+              [value]="str('heading', 'All posts')"
+              hostClass=""
+              ariaLabel="Post list heading"
+              (valueChange)="patch('heading', $event)"
+            />
+          </h2>
+          <ul class="bb-uni-blog-list">
+            @for (post of gridPosts(); track post.id) {
+              <li class="bb-uni-blog-list__item">
+                <div>
+                  <span class="bb-uni-blog-meta">{{ post.category }} · {{ post.date }} · {{ post.readTime }}</span>
+                  <h3 class="bb-uni-blog-title bb-uni-blog-title--sm">{{ post.title }}</h3>
+                  <p class="bb-uni-blog-excerpt">{{ post.excerpt }}</p>
+                </div>
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+    }
+    @case ('universal-blog-topic-bar') {
+      <section class="bb-uni-blog-topics">
+        <div class="bb-uni-blog-topics__wrap">
+          <ul class="bb-uni-blog-topics__list">
+            @for (topic of blogTopics(); track $index) {
+              <li>
+                <span class="bb-uni-blog-topics__chip">
+                  <app-protopipe-build-inline-text
+                    [editable]="editable()"
+                    [value]="topic"
+                    hostClass=""
+                    ariaLabel="Topic chip"
+                    (valueChange)="patchTopic($index, $event)"
+                  />
+                </span>
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+    }
   }
 </div>

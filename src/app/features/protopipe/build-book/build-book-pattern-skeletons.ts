@@ -19,6 +19,11 @@ export type BuildBookPatternSkeletonKind =
   | 'pattern-faq'
   | 'pattern-availability'
   | 'pattern-prose'
+  | 'pattern-blog-masthead'
+  | 'pattern-blog-featured'
+  | 'pattern-blog-magazine'
+  | 'pattern-blog-grid'
+  | 'pattern-blog-topics'
   | 'pattern-cta'
   | 'pattern-inquiry'
   | 'pattern-interactive'
@@ -49,6 +54,11 @@ const SKELETON_BY_PATTERN: Record<string, BuildBookPatternSkeletonMeta> = {
   'faq-accordion': { kind: 'pattern-faq', aspect: { width: 16, height: 7 } },
   availability: { kind: 'pattern-availability', aspect: { width: 16, height: 5 } },
   'prose-band': { kind: 'pattern-prose', aspect: { width: 16, height: 5 } },
+  'blog-masthead': { kind: 'pattern-blog-masthead', aspect: { width: 16, height: 5 } },
+  'blog-featured': { kind: 'pattern-blog-featured', aspect: { width: 16, height: 8 } },
+  'blog-magazine-split': { kind: 'pattern-blog-magazine', aspect: { width: 16, height: 9 } },
+  'blog-post-grid': { kind: 'pattern-blog-grid', aspect: { width: 16, height: 9 } },
+  'blog-topic-bar': { kind: 'pattern-blog-topics', aspect: { width: 16, height: 3 } },
   'cta-banner': { kind: 'pattern-cta', aspect: { width: 16, height: 4 } },
   'inquiry-close': { kind: 'pattern-inquiry', aspect: { width: 16, height: 8 } },
   'lead-form': { kind: 'pattern-interactive', aspect: { width: 16, height: 9 } },

@@ -80,8 +80,10 @@ import {
   variantsForPattern,
   resolveBlockIdForHeroLayoutOption,
   patternLabelForId,
+  resolvePatternIdForBlock,
   type AddBlockCatalogFilter,
 } from '../../build-book/build-book-block-registry.util';
+import { articlePreviewPropsForPattern } from '../../build-book/build-book-blog-fixtures';
 import {
   ensureSiteThemeCatalogFontsReady,
   ensureSiteThemeGoogleFontCatalogLoaded,
@@ -130,9 +132,12 @@ type BuildBookTab =
   | 'templates'
   | 'homepage'
   | 'landing-pages'
+  | 'blog-home'
   | 'seo-strategy'
   | 'site-theme'
   | 'content-posts';
+
+type ContentPostsCanvasMode = 'profile' | 'article-preview';
 
 interface BuildBookTabItem {
   id: BuildBookTab;
@@ -214,17 +219,20 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
     { id: 'templates', label: 'Templates' },
     { id: 'homepage', label: 'Homepage' },
     { id: 'landing-pages', label: 'Landing Pages' },
+    { id: 'blog-home', label: 'Blog Home' },
     { id: 'site-theme', label: 'Site theme' },
     { id: 'seo-strategy', label: 'SEO Strategy' },
     { id: 'content-posts', label: 'Content Posts' },
   ];
   readonly switchingSite = signal(false);
   readonly switchingSiteId = signal<string | null>(null);
+  readonly contentPostsCanvasMode = signal<ContentPostsCanvasMode>('profile');
 
   readonly isPageEditor = computed(() => {
     if (!this.buildBook.hasDraft()) return false;
     if (this.bookTab() === 'homepage') return true;
     if (this.bookTab() === 'landing-pages') return Boolean(this.landingPageId());
+    if (this.bookTab() === 'blog-home') return Boolean(this.buildBook.blogHomePageId());
     if (this.bookTab() === 'content-posts') return Boolean(this.blogPostId());
     return false;
   });
@@ -232,12 +240,14 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
   readonly activePageId = computed(() => {
     if (this.bookTab() === 'homepage') return this.buildBook.homepagePageId();
     if (this.bookTab() === 'landing-pages') return this.landingPageId();
+    if (this.bookTab() === 'blog-home') return this.buildBook.blogHomePageId();
     if (this.bookTab() === 'content-posts') return this.blogPostId();
     return null;
   });
 
   readonly activePageKind = computed((): BuildBookPageKind => {
     if (this.bookTab() === 'landing-pages') return 'landing-page';
+    if (this.bookTab() === 'blog-home') return 'blog-home';
     if (this.bookTab() === 'content-posts') return 'blog-post';
     return 'homepage';
   });
@@ -246,6 +256,7 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
     () =>
       this.isBaselineMode() ||
       this.bookTab() === 'landing-pages' ||
+      this.bookTab() === 'blog-home' ||
       this.bookTab() === 'content-posts',
   );
 
@@ -605,24 +616,39 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
   });
 
   readonly pageBlockStates = computed((): BuildPageBlockState[] => {
-    const states: BuildPageBlockState[] = this.pageStackBlocks().map((block) => ({
-      id: block.id,
-      blockId: block.blockId,
-      section: block.section,
-      label: block.label ?? block.blockId,
-      layout: findBuildBookBlockDefinition(block.blockId)?.layout ?? 'grid',
-      props: structuredClone(block.props),
-      configured: true,
-      pendingPreview: false,
-    }));
+    const articlePreview =
+      this.bookTab() === 'content-posts' && this.contentPostsCanvasMode() === 'article-preview';
+    const states: BuildPageBlockState[] = this.pageStackBlocks().map((block) => {
+      const patternId = block.patternId ?? resolvePatternIdForBlock(block.blockId);
+      const props = articlePreview
+        ? articlePreviewPropsForPattern(patternId, structuredClone(block.props))
+        : structuredClone(block.props);
+      return {
+        id: block.id,
+        blockId: block.blockId,
+        section: block.section,
+        label: block.label ?? block.blockId,
+        layout: findBuildBookBlockDefinition(block.blockId)?.layout ?? 'grid',
+        props,
+        configured: true,
+        pendingPreview: false,
+      };
+    });
 
     const pending = this.pendingAdd();
-    if (!pending) return states;
+    if (!pending || articlePreview) return states;
 
     const ghost = this.buildPendingGhostState(pending);
     const insertAt = Math.min(Math.max(0, pending.insertAt), states.length);
     return [...states.slice(0, insertAt), ghost, ...states.slice(insertAt)];
   });
+
+  readonly canvasEditable = computed(
+    () =>
+      !(
+        this.bookTab() === 'content-posts' && this.contentPostsCanvasMode() === 'article-preview'
+      ),
+  );
 
   readonly pendingLayoutVariants = computed(() => {
     const pending = this.pendingAdd();
@@ -779,7 +805,12 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
   }
 
   selectBookTab(tab: BuildBookTab): void {
-    if (tab !== 'homepage' && tab !== 'landing-pages' && tab !== 'content-posts') {
+    if (
+      tab !== 'homepage' &&
+      tab !== 'landing-pages' &&
+      tab !== 'blog-home' &&
+      tab !== 'content-posts'
+    ) {
       this.clearPendingAdd();
       this.pageBuilderRail()?.dismissAddView();
     }
@@ -788,11 +819,24 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
       this.openPreview();
     } else if (tab === 'landing-pages' && this.landingPageId()) {
       this.openPreview();
+    } else if (tab === 'blog-home' && this.buildBook.hasDraft()) {
+      const page = this.buildBook.ensureBlogHomePage();
+      const first = this.buildBook.blocksForPage(page.id)[0];
+      if (first) {
+        this.activeBlockId.set(first.id);
+        this.section.set(first.section);
+      }
+      this.openPreview();
     } else if (tab === 'content-posts' && this.blogPostId()) {
       this.openPreview();
     } else if (tab === 'seo-strategy' && this.buildBook.hasDraft()) {
       this.closePreview();
-    } else if (tab !== 'homepage' && tab !== 'landing-pages' && tab !== 'content-posts') {
+    } else if (
+      tab !== 'homepage' &&
+      tab !== 'landing-pages' &&
+      tab !== 'blog-home' &&
+      tab !== 'content-posts'
+    ) {
       this.closePreview();
     }
     if (tab === 'sites') {
@@ -822,6 +866,7 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
       if (!ok) return;
       this.landingPageId.set(null);
       this.blogPostId.set(null);
+      this.contentPostsCanvasMode.set('profile');
       this.activeBlockId.set(null);
       this.clearPendingAdd();
       await this.buildBook.load();
@@ -863,6 +908,7 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
     this.clearPendingAdd();
     this.pageBuilderRail()?.dismissAddView();
     this.blogPostId.set(pageId);
+    this.contentPostsCanvasMode.set('profile');
     if (pageId) {
       const first = this.buildBook.blocksForPage(pageId)[0];
       if (first) {
@@ -876,10 +922,21 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
     this.syncWorkflowToUrl();
   }
 
+  setContentPostsCanvasMode(mode: ContentPostsCanvasMode): void {
+    this.contentPostsCanvasMode.set(mode);
+    if (mode === 'article-preview') {
+      this.clearPendingAdd();
+      this.pageBuilderRail()?.dismissAddView();
+    }
+  }
+
   activePageLabel(): string {
     if (this.bookTab() === 'landing-pages') {
       const page = this.buildBook.landingPages().find((item) => item.id === this.landingPageId());
       return page?.label ?? 'Landing page';
+    }
+    if (this.bookTab() === 'blog-home') {
+      return this.buildBook.blogHomePage()?.label ?? 'Blog';
     }
     if (this.bookTab() === 'content-posts') {
       const page = this.buildBook.blogPosts().find((item) => item.id === this.blogPostId());
@@ -1969,6 +2026,8 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
       this.bookTab.set('seo-strategy');
     } else if (chapter === 'landing-pages') {
       this.bookTab.set('landing-pages');
+    } else if (chapter === 'blog-home') {
+      this.bookTab.set('blog-home');
     } else if (chapter === 'blog-posts') {
       this.bookTab.set('content-posts');
     } else if (validSection) {
@@ -1977,6 +2036,10 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
 
     if (subview === 'homepage') {
       this.bookTab.set('homepage');
+    }
+
+    if (this.bookTab() === 'blog-home' && this.buildBook.hasDraft()) {
+      this.buildBook.ensureBlogHomePage();
     }
 
     if (pageId && this.buildBook.landingPages().some((page) => page.id === pageId)) {
@@ -2002,6 +2065,8 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
       url.searchParams.set('page', this.landingPageId()!);
     } else if (this.bookTab() === 'content-posts' && this.blogPostId()) {
       url.searchParams.set('page', this.blogPostId()!);
+    } else if (this.bookTab() === 'blog-home') {
+      url.searchParams.set('page', 'blog-home');
     } else {
       url.searchParams.delete('page');
     }

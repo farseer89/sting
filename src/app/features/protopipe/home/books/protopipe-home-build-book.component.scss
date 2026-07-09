@@ -1343,6 +1343,34 @@ $bk-build: #0d9488;
   text-align: center;
 }
 
+.bk-content-posts__modes {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin: 0.75rem 1rem 0;
+  padding: 0.2rem;
+  border: 1px solid $bk-border;
+  border-radius: 999px;
+  background: $bk-bg;
+  width: fit-content;
+}
+
+.bk-content-posts__mode {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: $bk-muted;
+  background: transparent;
+  cursor: pointer;
+}
+
+.bk-content-posts__mode.is-active {
+  color: $bk-ink;
+  background: color-mix(in srgb, $bk-ink 8%, transparent);
+}
+
 .bk-preview-rail__toggle {
   appearance: none;
   display: flex;

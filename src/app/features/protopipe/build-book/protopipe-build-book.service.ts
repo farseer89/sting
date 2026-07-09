@@ -974,6 +974,78 @@ export class ProtopipeBuildBookService {
     return this._pages().filter((page) => page.kind === 'blog-post');
   }
 
+  blogHomePage(): BuildBookPage | null {
+    return findPageByKind(this._pages(), 'blog-home') ?? null;
+  }
+
+  blogHomePageId(): string | null {
+    return this.blogHomePage()?.id ?? null;
+  }
+
+  /** Singleton blog index page — creates editorial magazine seed when missing. */
+  ensureBlogHomePage(): BuildBookPage {
+    const existing = this.blogHomePage();
+    if (existing) return existing;
+
+    const pages = structuredClone(this._pages());
+    const nextPage: BuildBookPage = {
+      id: 'blog-home',
+      kind: 'blog-home',
+      label: 'Blog',
+      slug: 'blog',
+      blocks: [],
+    };
+    pages.push(nextPage);
+    this.commitPageStructure(pages);
+
+    const seedBlockIds = this.resolveBlogHomeSeedBlockIds();
+    for (const blockId of seedBlockIds) {
+      this.addPageBlock('blog-home', blockId);
+    }
+
+    return findPageById(this._pages(), 'blog-home') ?? nextPage;
+  }
+
+  private resolveBlogHomeSeedBlockIds(): string[] {
+    const templateId = this._selectedTemplateId();
+    const patternIds = [
+      'blog-masthead',
+      'blog-magazine-split',
+      'blog-topic-bar',
+      'blog-post-grid',
+      'cta-banner',
+    ] as const;
+    const preferredBlockIds: Record<(typeof patternIds)[number], string> = {
+      'blog-masthead': 'universal-blog-masthead-centered',
+      'blog-magazine-split': 'universal-blog-magazine-split',
+      'blog-topic-bar': 'universal-blog-topic-bar',
+      'blog-post-grid': 'universal-blog-grid-list',
+      'cta-banner': 'universal-cta-band',
+    };
+    const blockIds: string[] = [];
+
+    for (const patternId of patternIds) {
+      const variants = variantsForPattern(patternId, 'blog-home', templateId, 'compatible');
+      const fallback = variantsForPattern(patternId, 'blog-home', templateId, 'all');
+      const preferred = preferredBlockIds[patternId];
+      const fromPreferred =
+        variants.find((v) => v.id === preferred) ?? fallback.find((v) => v.id === preferred);
+      const pick = fromPreferred ?? variants[0] ?? fallback[0];
+      if (pick) blockIds.push(pick.id);
+    }
+
+    if (blockIds.length === 0) {
+      return [
+        'universal-blog-masthead-centered',
+        'universal-blog-magazine-split',
+        'universal-blog-topic-bar',
+        'universal-blog-grid-list',
+        'universal-cta-band',
+      ];
+    }
+    return blockIds;
+  }
+
   blocksForPage(pageId: string): BuildBookBlockInstance[] {
     return blocksForPageUtil(this._pages(), pageId);
   }

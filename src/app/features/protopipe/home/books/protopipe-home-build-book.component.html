@@ -289,12 +289,36 @@
             <div class="bk-landing-pages__prompt">Select a landing page from the list, or add a new one to start building.</div>
           }
         </app-build-book-landing-pages-panel>
+      } @else if (bookTab() === 'blog-home' && buildBook.hasDraft()) {
+        <ng-container *ngTemplateOutlet="pageEditorShell" />
       } @else if (bookTab() === 'content-posts' && buildBook.hasDraft()) {
         <app-build-book-content-posts-panel
           [selectedPageId]="blogPostId()"
           (selectedPageIdChange)="onBlogPostSelected($event)"
         >
           @if (blogPostId()) {
+            <div class="bk-content-posts__modes" role="tablist" aria-label="Content post canvas mode">
+              <button
+                type="button"
+                role="tab"
+                class="bk-content-posts__mode"
+                [class.is-active]="contentPostsCanvasMode() === 'profile'"
+                [attr.aria-selected]="contentPostsCanvasMode() === 'profile'"
+                (click)="setContentPostsCanvasMode('profile')"
+              >
+                Profile
+              </button>
+              <button
+                type="button"
+                role="tab"
+                class="bk-content-posts__mode"
+                [class.is-active]="contentPostsCanvasMode() === 'article-preview'"
+                [attr.aria-selected]="contentPostsCanvasMode() === 'article-preview'"
+                (click)="setContentPostsCanvasMode('article-preview')"
+              >
+                Article preview
+              </button>
+            </div>
             <ng-container *ngTemplateOutlet="pageEditorShell" />
           } @else {
             <div class="bk-content-posts__prompt">
@@ -402,7 +426,7 @@
             [blocks]="pageBlockStates()"
             [activeSection]="section()"
             [activeBlockId]="activeBlockId()"
-            [editable]="true"
+            [editable]="canvasEditable()"
             [heroLayoutId]="heroLayoutId()"
             [heroImageUrl]="activeHeroImageUrl()"
             [heroPhotoDriftedBlockId]="baselineHeroPhotoDrifted() ? activeBlock()?.id ?? null : null"

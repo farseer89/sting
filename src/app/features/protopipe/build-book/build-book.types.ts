@@ -52,6 +52,7 @@ export interface BuildBookOption {
 export type BuildBookPageKind =
   | 'homepage'
   | 'landing-page'
+  | 'blog-home'
   | 'blog-post'
   | 'review-gate'
   | 'lead-form';

@@ -23,6 +23,16 @@ const POLICY_BY_PAGE_KIND: Record<BuildBookPageKind, readonly string[] | null> =
     'quote-request-form',
     'scheduler-embed',
   ],
+  'blog-home': [
+    'blog-masthead',
+    'blog-featured',
+    'blog-magazine-split',
+    'blog-post-grid',
+    'blog-topic-bar',
+    'section-intro',
+    'cta-banner',
+    'faq-accordion',
+  ],
   'blog-post': [
     'section-intro',
     'prose-band',

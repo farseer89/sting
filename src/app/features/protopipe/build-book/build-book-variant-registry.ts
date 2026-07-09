@@ -187,6 +187,41 @@ export const BUILD_BOOK_VARIANT_REGISTRY: Record<string, BuildBookVariantRegistr
     variantLabel: 'Stacked',
     compatibleTemplateIds: [...BUILD_BOOK_ALL_TEMPLATE_IDS],
   },
+  'universal-blog-masthead-centered': {
+    patternId: 'blog-masthead',
+    variantLabel: 'Centered',
+    compatibleTemplateIds: [...BUILD_BOOK_ALL_TEMPLATE_IDS],
+  },
+  'universal-blog-masthead-split': {
+    patternId: 'blog-masthead',
+    variantLabel: 'Split',
+    compatibleTemplateIds: [...BUILD_BOOK_ALL_TEMPLATE_IDS],
+  },
+  'universal-blog-featured-split': {
+    patternId: 'blog-featured',
+    variantLabel: 'Split feature',
+    compatibleTemplateIds: [...BUILD_BOOK_ALL_TEMPLATE_IDS],
+  },
+  'universal-blog-magazine-split': {
+    patternId: 'blog-magazine-split',
+    variantLabel: 'Feature + stack',
+    compatibleTemplateIds: [...BUILD_BOOK_ALL_TEMPLATE_IDS],
+  },
+  'universal-blog-grid-3': {
+    patternId: 'blog-post-grid',
+    variantLabel: 'Three columns',
+    compatibleTemplateIds: [...BUILD_BOOK_ALL_TEMPLATE_IDS],
+  },
+  'universal-blog-grid-list': {
+    patternId: 'blog-post-grid',
+    variantLabel: 'List',
+    compatibleTemplateIds: [...BUILD_BOOK_ALL_TEMPLATE_IDS],
+  },
+  'universal-blog-topic-bar': {
+    patternId: 'blog-topic-bar',
+    variantLabel: 'Chips',
+    compatibleTemplateIds: [...BUILD_BOOK_ALL_TEMPLATE_IDS],
+  },
 };
 
 export function variantRegistryEntry(blockId: string): BuildBookVariantRegistryEntry | undefined {

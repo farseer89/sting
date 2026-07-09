@@ -123,6 +123,28 @@
           <span class="bk-bt__quote"></span>
           <span class="bk-bt__avatar-row"><span></span><span></span><span></span></span>
         }
+        @case ('pattern-blog-masthead') {
+          <span class="bk-bt__line bk-bt__line--lg"></span>
+          <span class="bk-bt__line"></span>
+        }
+        @case ('pattern-blog-featured') {
+          <span class="bk-bt__split bk-bt__split--even">
+            <span class="bk-bt__photo bk-bt__photo--side"></span>
+            <span class="bk-bt__col"><span class="bk-bt__line bk-bt__line--md"></span><span class="bk-bt__line"></span></span>
+          </span>
+        }
+        @case ('pattern-blog-magazine') {
+          <span class="bk-bt__split bk-bt__split--even">
+            <span class="bk-bt__photo bk-bt__photo--side"></span>
+            <span class="bk-bt__col bk-bt__col--stack"><span></span><span></span><span></span></span>
+          </span>
+        }
+        @case ('pattern-blog-grid') {
+          <span class="bk-bt__grid bk-bt__grid--3"><span></span><span></span><span></span></span>
+        }
+        @case ('pattern-blog-topics') {
+          <span class="bk-bt__pill-row"><span></span><span></span><span></span><span></span></span>
+        }
         @default {
           <span class="bk-bt__line bk-bt__line--md"></span>
           <span class="bk-bt__line"></span>

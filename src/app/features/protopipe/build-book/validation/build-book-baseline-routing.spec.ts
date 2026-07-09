@@ -70,7 +70,7 @@ describe('baseline block routing', () => {
   });
 
   it('registers all universal variants for every template', () => {
-    expect(UNIVERSAL_BASELINE_BLOCK_DEFINITIONS.length).toBe(24);
+    expect(UNIVERSAL_BASELINE_BLOCK_DEFINITIONS.length).toBe(31);
 
     for (const def of UNIVERSAL_BASELINE_BLOCK_DEFINITIONS) {
       expect(isUniversalBaselineBlockId(def.id)).toBe(true);

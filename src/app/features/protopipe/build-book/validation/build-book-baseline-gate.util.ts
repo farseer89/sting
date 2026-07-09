@@ -70,7 +70,7 @@ export function validateBuildBookBaselineGate(): BuildBookBaselineGateResult {
     }
   }
 
-  for (const pageKind of ['homepage', 'landing-page', 'blog-post'] as const) {
+  for (const pageKind of ['homepage', 'landing-page', 'blog-home', 'blog-post'] as const) {
     for (const patternId of patternIdsForPageKind(pageKind)) {
       if (!BUILD_BOOK_BLOCK_PATTERNS.some((pattern) => pattern.id === patternId)) {
         issues.push(

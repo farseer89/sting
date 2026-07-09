@@ -6,6 +6,11 @@ import {
   input,
   output,
 } from '@angular/core';
+import {
+  blogFixtureFeatured,
+  blogFixturePosts,
+  type BuildBookBlogFixturePost,
+} from '../../build-book-blog-fixtures';
 import { readStatPairs } from '../../fields/build-field.util';
 import { ProtopipeBuildInlineCtaComponent } from '../../inline/build-inline-cta.component';
 import { ProtopipeBuildInlineTextComponent } from '../../inline/build-inline-text.component';
@@ -176,6 +181,30 @@ export class ProtopipeBuildUniversalBaselineBlockComponent {
     return this.readBeforeAfterPanel('after');
   });
 
+  readonly blogTopics = computed((): string[] => {
+    const raw = this.props()['topics'];
+    if (!Array.isArray(raw)) return ['All', 'Process', 'Field notes', 'Standards'];
+    return raw.map((item) => String(item));
+  });
+
+  readonly featuredPost = computed((): BuildBookBlogFixturePost => {
+    const rule = this.str('featuredRule', 'latest') === 'pinned' ? 'pinned' : 'latest';
+    const pinnedId = this.str('pinnedPostId');
+    return blogFixtureFeatured(rule, pinnedId || undefined);
+  });
+
+  readonly magazineLead = computed((): BuildBookBlogFixturePost => blogFixturePosts(1)[0]);
+
+  readonly magazineStack = computed((): BuildBookBlogFixturePost[] => {
+    const count = Number(this.props()['stackCount'] ?? 4);
+    return blogFixturePosts(Math.max(1, count) + 1).slice(1);
+  });
+
+  readonly gridPosts = computed((): BuildBookBlogFixturePost[] => {
+    const limit = Number(this.props()['limit'] ?? 6);
+    return blogFixturePosts(Math.max(1, limit));
+  });
+
   str(key: string, fallback = ''): string {
     const value = this.props()[key];
     return typeof value === 'string' ? value : fallback;
@@ -219,6 +248,10 @@ export class ProtopipeBuildUniversalBaselineBlockComponent {
 
   patchBeforeAfter(side: 'before' | 'after', field: keyof UniversalBeforeAfterPanel, value: string): void {
     this.propPathChange.emit({ path: `${side}.${field}`, value });
+  }
+
+  patchTopic(index: number, value: string): void {
+    this.propPathChange.emit({ path: `topics.${index}`, value });
   }
 
   onPhotoEdit(event: MouseEvent, propPath: string): void {

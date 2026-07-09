@@ -37,6 +37,12 @@ export const UNIVERSAL_PUBLISH_VARIANT_BY_COMPONENT_ID: Record<string, string> =
   'universal-before-after': 'side',
   'universal-before-after-stack': 'stack',
   'before-after': 'side',
+  'universal-intro-centered': 'centered',
+  'universal-intro-split': 'split',
+  'section-intro': 'centered',
+  'universal-case-featured': 'featured',
+  'universal-case-metrics': 'metrics',
+  'case-study': 'featured',
 };
 
 export function stripEditorOnlyProps(props: Record<string, unknown>): Record<string, unknown> {
@@ -110,7 +116,7 @@ export function adaptPublishProps(
     }
   }
 
-  if (componentId === 'universal-intro-centered' || componentId === 'page-intro') {
+  if (componentId === 'page-intro') {
     if (next['subheading'] == null && typeof next['subhead'] === 'string') {
       next['subheading'] = next['subhead'];
     }
@@ -127,10 +133,16 @@ export function adaptPublishProps(
   }
 
   if (
+    componentId === 'universal-intro-centered' ||
     componentId === 'universal-intro-split' ||
-    componentId.startsWith('universal-split') ||
-    componentId === 'content-split'
+    componentId === 'section-intro'
   ) {
+    if (next['body'] == null && typeof next['lede'] === 'string') {
+      next['body'] = next['lede'];
+    }
+  }
+
+  if (componentId.startsWith('universal-split') || componentId === 'content-split') {
     if (next['paragraphs'] == null) {
       if (typeof next['body'] === 'string' && (next['body'] as string).trim()) {
         next['paragraphs'] = [next['body']];
@@ -161,9 +173,11 @@ export function adaptPublishProps(
     if (next['images'] == null && Array.isArray(next['gallery'])) {
       next['images'] = (next['gallery'] as unknown[]).map((item) => {
         const row = asRecord(item) ?? {};
+        const caption = stringOrEmpty(row['caption']);
         return {
           src: stringOrEmpty(row['src'] ?? row['image']),
-          alt: stringOrEmpty(row['alt'] ?? row['imageAlt'] ?? row['caption']) || 'Gallery image',
+          alt: stringOrEmpty(row['alt'] ?? row['imageAlt'] ?? caption) || 'Gallery image',
+          ...(caption ? { caption } : {}),
         };
       });
     }
@@ -203,6 +217,12 @@ export function adaptPublishProps(
     if (next['title'] == null && typeof next['heading'] === 'string') {
       next['title'] = next['heading'];
     }
+    if (next['lede'] == null && typeof next['subhead'] === 'string') {
+      next['lede'] = next['subhead'];
+    }
+    if (next['lede'] == null && typeof next['body'] === 'string') {
+      next['lede'] = next['body'];
+    }
   }
 
   if (componentId.startsWith('universal-reviews-quote') || componentId === 'saas-quote-highlight') {
@@ -210,15 +230,27 @@ export function adaptPublishProps(
     if (Array.isArray(testimonials) && testimonials[0] && typeof testimonials[0] === 'object') {
       const first = testimonials[0] as Record<string, unknown>;
       if (next['quote'] == null) next['quote'] = first['quote'];
-      if (next['attribution'] == null) {
-        next['attribution'] = [first['name'], first['role']].filter(Boolean).join(' · ');
-      }
+      if (next['attribution'] == null) next['attribution'] = first['name'];
+      if (next['role'] == null && first['role'] != null) next['role'] = first['role'];
     }
   }
 
-  if (componentId.startsWith('universal-case-metrics') || componentId === 'saas-customer-metrics') {
+  if (
+    componentId.startsWith('universal-case') ||
+    componentId === 'case-study' ||
+    componentId === 'saas-customer-metrics'
+  ) {
     if (next['metrics'] == null && Array.isArray(next['stats'])) {
       next['metrics'] = next['stats'];
+    }
+    if (next['metrics'] == null && Array.isArray(next['cards'])) {
+      next['metrics'] = (next['cards'] as unknown[]).map((item) => {
+        const row = asRecord(item) ?? {};
+        return {
+          value: stringOrEmpty(row['value'] ?? row['metric']),
+          label: stringOrEmpty(row['label'] ?? row['company'] ?? row['detail']),
+        };
+      });
     }
   }
 

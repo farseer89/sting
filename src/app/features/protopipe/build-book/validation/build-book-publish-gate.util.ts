@@ -20,6 +20,8 @@ export const UNIVERSAL_PUBLISH_COMPONENT_IDS = new Set([
   'before-after',
   'content-split',
   'page-intro',
+  'section-intro',
+  'case-study',
   'prose-section',
   'scheduler-embed',
   'image-duo',

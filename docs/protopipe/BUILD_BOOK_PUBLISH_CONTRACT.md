@@ -53,7 +53,7 @@ Non-baseline `sourceTemplateId`s must generate `index.astro` as a **sections loo
 
 Prefer mapping to existing theme landing components and an explicit `variant`. Add a new theme Astro file only when aliasing would lose a layout the editor promises. Keep the publish gate allowlist in sync with `LANDING_COMPONENT_MAP`.
 
-Compiler adapters must remap editor shapes to theme props (e.g. `gallery` → `images`, logos `image`/`name` → `src`/`alt`, intro `body` → `paragraphs`).
+Compiler adapters must remap editor shapes to theme props (e.g. `gallery` → `images` + `caption`, logos `image`/`name` → `src`/`alt`, before-after `subhead` → `lede`). Section intros and case studies use dedicated `SectionIntro` / `CaseStudy` theme components — do not alias them to `PageIntro`, `ContentSplit`, `ConsultServiceSplit`, or `SaasCustomerMetrics`.
 
 ## Checklist before merge
 

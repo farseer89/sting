@@ -175,6 +175,17 @@ export function findPageBlockById(
   return null;
 }
 
+export function findPageContainingBlock(
+  pages: BuildBookPage[],
+  blockInstanceId: string,
+): BuildBookPage | undefined {
+  return pages.find((page) =>
+    page.blocks.some(
+      (item) => item.id === blockInstanceId || item.blockId === blockInstanceId,
+    ),
+  );
+}
+
 export function baselineVariantLabel(props: Record<string, unknown>): string | null {
   const variantId = props['option2VariantId'];
   if (variantId === '2b') return 'Option 2B · Life + Proof';

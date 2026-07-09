@@ -29,6 +29,7 @@ const POLICY_BY_PAGE_KIND: Record<BuildBookPageKind, readonly string[] | null> =
     'work-gallery',
     'video-reel',
     'content-split',
+    'faq-accordion',
     'cta-banner',
   ],
   'review-gate': ['section-intro', 'cta-banner', 'lead-form'],

@@ -21,7 +21,10 @@ import {
   findBuildBookBlockDefinition,
   findBuildBookBlockDefinitionForSection,
 } from './build-book-block.catalog';
-import { resolvePatternIdForBlock } from './build-book-block-registry.util';
+import {
+  resolvePatternIdForBlock,
+  variantsForPattern,
+} from './build-book-block-registry.util';
 import { enrichHilPages } from './build-book-hil-props.util';
 import {
   findBaselineApprovedHeroOption,
@@ -48,6 +51,7 @@ import {
   findPageBlockById,
   findPageById,
   findPageByKind,
+  findPageContainingBlock,
   blocksForPage as blocksForPageUtil,
   homepageBlocksFromPages,
   isBaselineBlockProps,
@@ -771,9 +775,17 @@ export class ProtopipeBuildBookService {
   }
 
   updateBlockPropPath(blockInstanceId: string, path: string, value: unknown): void {
-    const draft = this._draft();
     const block = this.findPageBlock(blockInstanceId);
-    if (!draft || !block) return;
+    if (!block) return;
+
+    const page = findPageContainingBlock(this._pages(), blockInstanceId);
+    if (page && page.kind !== 'homepage') {
+      this.patchNonHomepageBlockProps(blockInstanceId, (props) => patchProp(props, path, value));
+      return;
+    }
+
+    const draft = this._draft();
+    if (!draft) return;
 
     const nextDraft = structuredClone(draft);
     const target = findDraftSectionForBlock(nextDraft, block);
@@ -784,9 +796,27 @@ export class ProtopipeBuildBookService {
   }
 
   updateBlockProps(blockInstanceId: string, patch: Record<string, unknown>): void {
-    const draft = this._draft();
     const block = this.findPageBlock(blockInstanceId);
-    if (!draft || !block) return;
+    if (!block) return;
+
+    const page = findPageContainingBlock(this._pages(), blockInstanceId);
+    if (page && page.kind !== 'homepage') {
+      this.patchNonHomepageBlockProps(blockInstanceId, (props) => {
+        const next = { ...props };
+        for (const [key, value] of Object.entries(patch)) {
+          if (value === null || value === undefined) {
+            delete next[key];
+          } else {
+            next[key] = value;
+          }
+        }
+        return next;
+      });
+      return;
+    }
+
+    const draft = this._draft();
+    if (!draft) return;
 
     const nextDraft = structuredClone(draft);
     const target = findDraftSectionForBlock(nextDraft, block);
@@ -803,9 +833,17 @@ export class ProtopipeBuildBookService {
   }
 
   setBlockProps(blockInstanceId: string, props: Record<string, unknown>): void {
-    const draft = this._draft();
     const block = this.findPageBlock(blockInstanceId);
-    if (!draft || !block) return;
+    if (!block) return;
+
+    const page = findPageContainingBlock(this._pages(), blockInstanceId);
+    if (page && page.kind !== 'homepage') {
+      this.patchNonHomepageBlockProps(blockInstanceId, () => structuredClone(props));
+      return;
+    }
+
+    const draft = this._draft();
+    if (!draft) return;
 
     const nextDraft = structuredClone(draft);
     const target = findDraftSectionForBlock(nextDraft, block);
@@ -930,6 +968,10 @@ export class ProtopipeBuildBookService {
 
   landingPages(): BuildBookPage[] {
     return this._pages().filter((page) => page.kind === 'landing-page');
+  }
+
+  blogPosts(): BuildBookPage[] {
+    return this._pages().filter((page) => page.kind === 'blog-post');
   }
 
   blocksForPage(pageId: string): BuildBookBlockInstance[] {
@@ -1077,6 +1119,74 @@ export class ProtopipeBuildBookService {
     pages.push(nextPage);
     this.commitPageStructure(pages);
     return nextPage;
+  }
+
+  createBlogPostPage(label: string): BuildBookPage | null {
+    const pages = structuredClone(this._pages());
+    const slug = label
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    const base = slug || 'blog-post';
+    let id = `blog-${base}`;
+    let n = 1;
+    while (pages.some((page) => page.id === id)) {
+      n += 1;
+      id = `blog-${base}-${n}`;
+    }
+
+    const nextPage: BuildBookPage = {
+      id,
+      kind: 'blog-post',
+      label: label.trim() || 'Blog post template',
+      slug: base,
+      blocks: [],
+    };
+    pages.push(nextPage);
+    this.commitPageStructure(pages);
+
+    const seedBlockIds = this.resolveBlogSeedBlockIds();
+    for (const blockId of seedBlockIds) {
+      this.addPageBlock(id, blockId);
+    }
+
+    return findPageById(this._pages(), id) ?? nextPage;
+  }
+
+  private resolveBlogSeedBlockIds(): string[] {
+    const templateId = this._selectedTemplateId();
+    const patternIds = ['section-intro', 'prose-band', 'cta-banner'] as const;
+    const blockIds: string[] = [];
+
+    for (const patternId of patternIds) {
+      const variants = variantsForPattern(patternId, 'blog-post', templateId, 'compatible');
+      const fallback = variantsForPattern(patternId, 'blog-post', templateId, 'all');
+      const pick = variants[0] ?? fallback[0];
+      if (pick) blockIds.push(pick.id);
+    }
+
+    if (blockIds.length === 0) {
+      return ['universal-intro-centered', 'universal-cta-band'];
+    }
+    return blockIds;
+  }
+
+  private patchNonHomepageBlockProps(
+    blockInstanceId: string,
+    updater: (props: Record<string, unknown>) => Record<string, unknown>,
+  ): void {
+    const pages = structuredClone(this._pages());
+    const page = findPageContainingBlock(pages, blockInstanceId);
+    if (!page || page.kind === 'homepage') return;
+
+    const block = page.blocks.find(
+      (item) => item.id === blockInstanceId || item.blockId === blockInstanceId,
+    );
+    if (!block) return;
+
+    block.props = updater(structuredClone(block.props ?? {}));
+    this.commitPageStructure(pages);
   }
 
   private commitPageStructure(nextPages: BuildBookPage[]): void {

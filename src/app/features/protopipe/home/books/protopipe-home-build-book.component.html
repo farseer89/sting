@@ -289,6 +289,19 @@
             <div class="bk-landing-pages__prompt">Select a landing page from the list, or add a new one to start building.</div>
           }
         </app-build-book-landing-pages-panel>
+      } @else if (bookTab() === 'content-posts' && buildBook.hasDraft()) {
+        <app-build-book-content-posts-panel
+          [selectedPageId]="blogPostId()"
+          (selectedPageIdChange)="onBlogPostSelected($event)"
+        >
+          @if (blogPostId()) {
+            <ng-container *ngTemplateOutlet="pageEditorShell" />
+          } @else {
+            <div class="bk-content-posts__prompt">
+              Select a blog template from the list, or add one to set themed defaults for article generation.
+            </div>
+          }
+        </app-build-book-content-posts-panel>
       } @else if (isPageEditor()) {
         <ng-container *ngTemplateOutlet="pageEditorShell" />
       } @else if (bookTab() === 'site-theme') {
@@ -341,7 +354,7 @@
       [class.bk-binder--preview-open]="previewOpen()"
       [style.--bk-preview-w.px]="previewWidth()"
     >
-      @if (isBaselineMode() || bookTab() === 'landing-pages') {
+      @if (usesPageBuilderRail()) {
         <app-build-book-page-builder-rail
           #pageBuilderRail
           [pageKind]="activePageKind()"
@@ -384,7 +397,7 @@
       <div class="bk-stage bk-stage--preview">
         <div class="bk-main-preview" aria-label="Live site preview">
           <app-protopipe-build-page-canvas
-            [baselineMode]="isBaselineMode() || bookTab() === 'landing-pages'"
+            [baselineMode]="usesPageBuilderRail()"
             [sections]="pageSectionStates()"
             [blocks]="pageBlockStates()"
             [activeSection]="section()"
@@ -426,7 +439,7 @@
             <div class="bk-stack-rail__head-top">
               <span class="bk-stack-rail__title">
                 Inspector
-                @if (isBaselineMode() || bookTab() === 'landing-pages') {
+                @if (usesPageBuilderRail()) {
                   <small>{{ activeBlock()?.label ?? 'Select a block' }}</small>
                 } @else {
                   <small>Section {{ sectionNum(section()) }} · {{ sectionLabel(section()) }}</small>

@@ -1330,7 +1330,8 @@ $bk-build: #0d9488;
   background: $bk-bg;
 }
 
-.bk-landing-pages__prompt {
+.bk-landing-pages__prompt,
+.bk-content-posts__prompt {
   display: flex;
   align-items: center;
   justify-content: center;

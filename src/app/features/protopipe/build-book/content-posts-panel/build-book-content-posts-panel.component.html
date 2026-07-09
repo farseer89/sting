@@ -1,0 +1,46 @@
+<div class="bk-content-posts">
+  <aside class="bk-content-posts__list" aria-label="Blog post templates">
+    <div class="bk-content-posts__head">
+      <strong>Content posts</strong>
+      <p>
+        Theme blog profile for article generation — defaults, CTA, and allowed patterns. Strategy Write
+        still runs the Thought pipeline.
+      </p>
+    </div>
+    <div class="bk-content-posts__create">
+      <input
+        type="text"
+        [value]="newPageLabel()"
+        (input)="newPageLabel.set($any($event.target).value)"
+        placeholder="Template name"
+        aria-label="New blog template name"
+      />
+      <p-button label="Add template" icon="pi pi-plus" size="small" (onClick)="createPage()" />
+    </div>
+    <ul class="bk-content-posts__items">
+      @for (page of pages(); track page.id) {
+        <li>
+          <button
+            type="button"
+            class="bk-content-posts__item"
+            [class.is-active]="selectedPageId() === page.id"
+            (click)="selectPage(page.id)"
+          >
+            <span>{{ page.label }}</span>
+            @if (page.slug) {
+              <small>/{{ page.slug }}</small>
+            }
+            <span class="bk-content-posts__count">{{ page.blocks.length }} blocks</span>
+          </button>
+        </li>
+      } @empty {
+        <li class="bk-content-posts__empty">
+          No blog templates yet. Add one to set the themed defaults article generation uses.
+        </li>
+      }
+    </ul>
+  </aside>
+  <div class="bk-content-posts__editor">
+    <ng-content />
+  </div>
+</div>

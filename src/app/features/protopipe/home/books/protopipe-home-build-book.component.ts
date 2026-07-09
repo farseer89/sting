@@ -1801,7 +1801,7 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
           this.stopPublishPolling();
         }
       });
-    }, 4000);
+    }, 2000);
   }
 
   private stopPublishPolling(): void {

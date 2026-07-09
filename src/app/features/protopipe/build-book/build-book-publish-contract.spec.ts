@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { BUILD_BOOK_BASELINE_PAGE_ASSEMBLIES } from './build-book-baseline-assemblies';
 import { findBuildBookBlockDefinition } from './build-book-block.catalog';
 import { UNIVERSAL_BASELINE_BLOCK_DEFINITIONS } from './build-book-universal-block.catalog';
+import {
+  adaptPublishProps,
+  UNIVERSAL_PUBLISH_VARIANT_BY_COMPONENT_ID,
+} from './build-book-publish-compiler.util';
 import { isPublishResolvableComponentId } from './validation/build-book-publish-gate.util';
 
 const BROKEN_ASTRO_PATTERNS = [
@@ -48,6 +52,34 @@ describe('Build Book publish contract', () => {
   it('every universal catalog block has a resolvable publish target', () => {
     for (const def of UNIVERSAL_BASELINE_BLOCK_DEFINITIONS) {
       assertPublishTarget(def.id);
+    }
+  });
+
+  it('every mapped universal family emits variant and critical remaps from defaultProps', () => {
+    for (const def of UNIVERSAL_BASELINE_BLOCK_DEFINITIONS) {
+      const expectedVariant = UNIVERSAL_PUBLISH_VARIANT_BY_COMPONENT_ID[def.componentId];
+      if (!expectedVariant) continue;
+
+      const adapted = adaptPublishProps(def.componentId, structuredClone(def.defaultProps));
+      expect(adapted['variant'], def.id).toBe(expectedVariant);
+
+      if (def.componentId.startsWith('universal-gallery')) {
+        expect(Array.isArray(adapted['images']), `${def.id} images`).toBe(true);
+      }
+      if (def.componentId.startsWith('universal-logos')) {
+        const logos = adapted['logos'] as Array<{ src?: string; alt?: string }>;
+        expect(Array.isArray(logos), `${def.id} logos`).toBe(true);
+        expect(logos.every((l) => 'src' in l && 'alt' in l), `${def.id} logo shape`).toBe(true);
+      }
+      if (def.componentId === 'universal-intro-centered') {
+        expect(Array.isArray(adapted['paragraphs']), `${def.id} paragraphs`).toBe(true);
+      }
+      if (
+        def.componentId === 'universal-intro-split' ||
+        def.componentId.startsWith('universal-split')
+      ) {
+        expect(Array.isArray(adapted['paragraphs']), `${def.id} paragraphs`).toBe(true);
+      }
     }
   });
 });

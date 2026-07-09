@@ -304,7 +304,12 @@ export class ProtopipeStrategyService {
   mergeSite(patch: Partial<import('@hive/contracts').ProtopipeSite>): void {
     const current = this._site();
     if (!current) return;
-    this._site.set({ ...current, ...patch });
+    const next = { ...current, ...patch };
+    // Explicit undefined must clear sticky fields (spread keeps the old value).
+    if ('provisioningError' in patch && patch.provisioningError == null) {
+      delete next.provisioningError;
+    }
+    this._site.set(next);
   }
 
   private clampPhrase(value: string): string {

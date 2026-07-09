@@ -36,10 +36,10 @@
         (onClick)="save()"
       />
       <p-button
-        label="Publish"
+        [label]="publishButtonLabel()"
         icon="pi pi-cloud-upload"
         size="small"
-        [loading]="publishing()"
+        [loading]="publishing() || (publishInProgress() && !publishStale())"
         [disabled]="!canPublish()"
         (onClick)="publishSite()"
       />
@@ -92,10 +92,25 @@
           }
           <span class="bk-masthead__saved">{{ lastSavedLabel() }}</span>
         </div>
-        @if (!canPublish() && publishBlockers()) {
+        @if (!publishInProgress() && !canPublish() && publishBlockers()) {
           <p class="bk-masthead__blockers">{{ publishBlockers() }}</p>
         }
-        @if (strategy.site()?.provisioningError; as provisionErr) {
+        @if (publishInProgress()) {
+          <div class="bk-masthead__progress" role="status" aria-live="polite">
+            <p-progressSpinner strokeWidth="4" [style]="{ width: '1rem', height: '1rem' }" />
+            <div class="bk-masthead__progress-copy">
+              <p class="bk-masthead__progress-title">Publishing your site</p>
+              @if (publishProgressMessage(); as progressMsg) {
+                <p class="bk-masthead__progress-detail">{{ progressMsg }}</p>
+              }
+              <p class="bk-masthead__progress-detail">Checking deploy status every few seconds…</p>
+              @if (publishStale()) {
+                <p class="bk-masthead__progress-detail">Deploy is taking longer than expected. You can retry publish.</p>
+              }
+            </div>
+          </div>
+        }
+        @if (publishStatus() !== 'live' && strategy.site()?.provisioningError; as provisionErr) {
           <p class="bk-masthead__error">{{ provisionErr }}</p>
         }
       </div>

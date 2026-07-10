@@ -163,6 +163,7 @@ const STEP_TO_ARTIFACT_KEY: Record<ArticleGenerationStep, keyof ArticleGeneratio
   assemble: 'template',
   generate_images: 'imageGeneration',
   voice_pass: 'voicePass',
+  structure_pass: 'structurePass',
 };
 
 @Component({

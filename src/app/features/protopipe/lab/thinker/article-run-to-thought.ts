@@ -141,6 +141,12 @@ const STEP_META: Record<
     description:
       'Runs whole-document voice lint (clichés, em dashes, repetition, structural patterns) and rewrites flagged spans before review.',
   },
+  structure_pass: {
+    label: 'Structure',
+    summary: 'Break up prose blobs and order portable blocks for publish.',
+    description:
+      'Normalizes paragraph breaks, optional readability rewrites, moves hero to front, and adds related-link / FAQ / CTA block order for Astro, WordPress, and Build Book.',
+  },
 };
 
 function phaseStatus(
@@ -735,6 +741,24 @@ function buildArticleSubSteps(
         },
       ];
 
+    case 'structure_pass':
+      return [
+        {
+          id: 'structure:normalize',
+          label: 'Normalize paragraphs',
+          detail: a.structurePass?.metrics
+            ? `${a.structurePass.metrics.paragraphsNormalized ?? 0} block(s)`
+            : 'Blank lines and short paragraphs',
+          status: phaseStatus(0, 2, stepStatus),
+        },
+        {
+          id: 'structure:blocks',
+          label: 'Order portable blocks',
+          detail: a.structurePass?.summary ?? 'Hero, prose, FAQ, links, CTA',
+          status: phaseStatus(1, 2, stepStatus),
+        },
+      ];
+
     default:
       return [];
   }
@@ -1111,6 +1135,17 @@ function stepOutput(
               'Voice pass',
               a.voicePass,
               a.voicePass.summary ?? `${a.voicePass.hitCount ?? 0} hit(s)`,
+            ),
+          ]
+        : [];
+    case 'structure_pass':
+      return a.structurePass
+        ? [
+            json(
+              'structure-pass',
+              'Structure pass',
+              a.structurePass,
+              a.structurePass.summary ?? 'Readability + block order',
             ),
           ]
         : [];

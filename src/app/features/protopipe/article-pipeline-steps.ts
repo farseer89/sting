@@ -55,6 +55,7 @@ export const STEP_LABELS: Record<ArticleGenerationStep, string> = {
   assemble: 'Assemble',
   generate_images: 'Generate images',
   voice_pass: 'Voice pass',
+  structure_pass: 'Structure pass',
 };
 
 export const STEP_SHORT_LABELS: Record<ArticleGenerationStep, string> = {
@@ -76,4 +77,5 @@ export const STEP_SHORT_LABELS: Record<ArticleGenerationStep, string> = {
   assemble: 'Assemble',
   generate_images: 'Images',
   voice_pass: 'Voice',
+  structure_pass: 'Structure',
 };

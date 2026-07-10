@@ -127,6 +127,8 @@ export function buildArticleStepVisualizer(
       return sourceVoiceResearchVisualizer(a.sourceVoiceResearch);
     case 'voice_pass':
       return voicePassVisualizer(a.voicePass);
+    case 'structure_pass':
+      return structurePassVisualizer(a.structurePass);
     case 'infer_type':
       return {
         title: 'Article type',
@@ -211,6 +213,45 @@ function voicePassVisualizer(
         value: String(voicePass.hitCount ?? 0),
       },
     ],
+  };
+}
+
+function structurePassVisualizer(
+  structurePass: ArticleGenerationRunDto['artifacts']['structurePass'],
+): StepVisualizerView {
+  if (!structurePass) {
+    return {
+      title: 'Structure pass',
+      emptyMessage: 'Readability and block layout results will appear here after this step runs.',
+      blocks: [],
+    };
+  }
+  const m = structurePass.metrics;
+  const blocks: StepVisualizerView['blocks'] = [
+    {
+      kind: 'notice',
+      text: structurePass.summary ?? 'Structure pass complete',
+    },
+  ];
+  if (m) {
+    blocks.push(
+      { kind: 'meta-row', label: 'Blocks', value: String(m.blockCount ?? 0) },
+      {
+        kind: 'meta-row',
+        label: 'Normalized',
+        value: String(m.paragraphsNormalized ?? 0),
+      },
+      {
+        kind: 'meta-row',
+        label: 'Rewritten',
+        value: String(m.sectionsRewritten ?? 0),
+      },
+    );
+  }
+  return {
+    title: 'Structure pass',
+    subtitle: structurePass.promptVersion,
+    blocks,
   };
 }
 

@@ -31,6 +31,7 @@ const ARTICLE_PIPELINE_STEP_IDS = new Set<string>([
   'assemble',
   'generate_images',
   'voice_pass',
+  'structure_pass',
   'finalize',
 ]);
 

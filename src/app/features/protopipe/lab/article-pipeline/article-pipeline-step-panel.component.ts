@@ -84,6 +84,7 @@ const STEP_TITLES: Record<ArticleGenerationStep, string> = {
   assemble: 'Assembled post preview',
   generate_images: 'Generated images',
   voice_pass: 'Voice pass',
+  structure_pass: 'Structure pass',
 };
 
 interface ScoreRow {

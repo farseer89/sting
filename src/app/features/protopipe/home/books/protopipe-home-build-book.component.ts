@@ -978,7 +978,7 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
     return (value ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
   }
 
-  private calendarDateKey(value: string | undefined): string | null {
+  private calendarDateKey(value: string | null | undefined): string | null {
     if (!value) return null;
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return null;

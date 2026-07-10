@@ -122,7 +122,7 @@
               <p-button label="Go to Sites" size="small" (onClick)="selectBookTab('sites')" />
             </div>
           } @else {
-            <app-protopipe-content-plan [embedded]="true" />
+            <app-protopipe-content-plan />
           }
         </div>
       } @else if (bookTab() === 'calendar') {

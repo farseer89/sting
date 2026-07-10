@@ -19,6 +19,7 @@ const ARTICLE_PIPELINE_STEP_IDS = new Set<string>([
   'research',
   'build_brief',
   'compile_context',
+  'source_voice_research',
   'cognitive_pass',
   'outline',
   'draft',
@@ -29,6 +30,7 @@ const ARTICLE_PIPELINE_STEP_IDS = new Set<string>([
   'metadata',
   'assemble',
   'generate_images',
+  'voice_pass',
   'finalize',
 ]);
 

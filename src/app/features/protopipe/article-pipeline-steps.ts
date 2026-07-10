@@ -43,6 +43,7 @@ export const STEP_LABELS: Record<ArticleGenerationStep, string> = {
   research: 'Research',
   build_brief: 'Build brief',
   compile_context: 'Compile context',
+  source_voice_research: 'Source & voice research',
   cognitive_pass: 'Cognitive pass',
   outline: 'Outline',
   draft: 'Drafts',
@@ -53,6 +54,7 @@ export const STEP_LABELS: Record<ArticleGenerationStep, string> = {
   metadata: 'Metadata',
   assemble: 'Assemble',
   generate_images: 'Generate images',
+  voice_pass: 'Voice pass',
 };
 
 export const STEP_SHORT_LABELS: Record<ArticleGenerationStep, string> = {
@@ -62,6 +64,7 @@ export const STEP_SHORT_LABELS: Record<ArticleGenerationStep, string> = {
   research: 'Research',
   build_brief: 'Brief',
   compile_context: 'Context',
+  source_voice_research: 'Sources',
   cognitive_pass: 'Think',
   outline: 'Outline',
   draft: 'Draft',
@@ -72,4 +75,5 @@ export const STEP_SHORT_LABELS: Record<ArticleGenerationStep, string> = {
   metadata: 'Metadata',
   assemble: 'Assemble',
   generate_images: 'Images',
+  voice_pass: 'Voice',
 };

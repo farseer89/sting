@@ -151,6 +151,7 @@ const STEP_TO_ARTIFACT_KEY: Record<ArticleGenerationStep, keyof ArticleGeneratio
   research: 'research',
   build_brief: 'brief',
   compile_context: 'writingContext',
+  source_voice_research: 'sourceVoiceResearch',
   cognitive_pass: 'cognitiveRun',
   outline: 'outline',
   draft: 'sections',
@@ -161,6 +162,7 @@ const STEP_TO_ARTIFACT_KEY: Record<ArticleGenerationStep, keyof ArticleGeneratio
   metadata: 'metadata',
   assemble: 'template',
   generate_images: 'imageGeneration',
+  voice_pass: 'voicePass',
 };
 
 @Component({

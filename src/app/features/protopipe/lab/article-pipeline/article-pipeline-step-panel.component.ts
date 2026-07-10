@@ -72,6 +72,7 @@ const STEP_TITLES: Record<ArticleGenerationStep, string> = {
   research: 'Research bundle',
   build_brief: 'SEO brief',
   compile_context: 'Writing context',
+  source_voice_research: 'Source & voice research',
   cognitive_pass: 'Cognitive pass',
   outline: 'Outline',
   draft: 'Drafts',
@@ -82,6 +83,7 @@ const STEP_TITLES: Record<ArticleGenerationStep, string> = {
   metadata: 'Metadata',
   assemble: 'Assembled post preview',
   generate_images: 'Generated images',
+  voice_pass: 'Voice pass',
 };
 
 interface ScoreRow {

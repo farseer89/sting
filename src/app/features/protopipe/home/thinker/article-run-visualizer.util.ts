@@ -123,6 +123,10 @@ export function buildArticleStepVisualizer(
       return reviewVisualizer(a.review, a.selfHealProgress);
     case 'generate_images':
       return imageVisualizer(a.imageGeneration);
+    case 'source_voice_research':
+      return sourceVoiceResearchVisualizer(a.sourceVoiceResearch);
+    case 'voice_pass':
+      return voicePassVisualizer(a.voicePass);
     case 'infer_type':
       return {
         title: 'Article type',
@@ -137,6 +141,77 @@ export function buildArticleStepVisualizer(
         blocks: [],
       };
   }
+}
+
+function sourceVoiceResearchVisualizer(
+  research: ArticleGenerationRunDto['artifacts']['sourceVoiceResearch'],
+): StepVisualizerView {
+  if (!research) {
+    return {
+      title: 'Source & voice research',
+      emptyMessage: 'Research output will appear here after this step runs.',
+      blocks: [],
+    };
+  }
+  const blocks: VisualizerBlock[] = [];
+  if (research.summary) {
+    blocks.push({ kind: 'notice', text: research.summary });
+  }
+  if (research.citableSources?.length) {
+    blocks.push({ kind: 'kicker', text: 'Citable sources' });
+    for (const s of research.citableSources) {
+      blocks.push({
+        kind: 'meta-row',
+        label: s.publisher || s.title || 'Source',
+        value: s.claimTopic || s.title,
+        hint: s.url,
+      });
+    }
+  }
+  if (research.voiceReferences?.length) {
+    blocks.push({ kind: 'kicker', text: 'Voice references' });
+    for (const v of research.voiceReferences) {
+      blocks.push({ kind: 'paragraph', text: v.excerpt });
+      blocks.push({
+        kind: 'meta-row',
+        label: v.registerNote || 'Register',
+        value: v.url,
+      });
+    }
+  }
+  return {
+    title: 'Source & voice research',
+    subtitle: research.skipped ? 'Skipped' : undefined,
+    emptyMessage: 'No sources collected.',
+    blocks,
+  };
+}
+
+function voicePassVisualizer(
+  voicePass: ArticleGenerationRunDto['artifacts']['voicePass'],
+): StepVisualizerView {
+  if (!voicePass) {
+    return {
+      title: 'Voice pass',
+      emptyMessage: 'Voice polish results will appear here after this step runs.',
+      blocks: [],
+    };
+  }
+  return {
+    title: 'Voice pass',
+    subtitle: voicePass.promptVersion,
+    blocks: [
+      {
+        kind: 'notice',
+        text: voicePass.summary ?? `${voicePass.hitCount ?? 0} voice/structure hit(s)`,
+      },
+      {
+        kind: 'meta-row',
+        label: 'Hits',
+        value: String(voicePass.hitCount ?? 0),
+      },
+    ],
+  };
 }
 
 export function buildArticlePreviewVisualizer(
@@ -1276,10 +1351,14 @@ function formatSelfHealNotice(
 function imageVisualizer(
   ig: ArticleGenerationRunDto['artifacts']['imageGeneration'],
 ): StepVisualizerView {
-  if (!ig?.slots.length) {
+  if (!ig?.slots?.length) {
     return { title: 'Images', emptyMessage: 'Image slots will appear here.', blocks: [] };
   }
 
+  const plannedCount = ig.plannedCount ?? ig.slots.length;
+  const generatedCount =
+    ig.generatedCount ?? ig.slots.filter((s) => s.status === 'generated').length;
+  const mode = ig.mode ?? (ig.slots.some((s) => s.status === 'generated') ? 'live' : 'stub');
   const totalCost =
     ig.totalCostUsd ??
     ig.slots.reduce((sum, s) => sum + (s.costUsd ?? 0), 0);
@@ -1288,17 +1367,27 @@ function imageVisualizer(
   const blocks: VisualizerBlock[] = [
     {
       kind: 'notice',
-      text: `${ig.mode} mode · ${ig.generatedCount ?? 0}/${ig.plannedCount} generated${costLabel ? ` · ${costLabel}${ig.costEstimated ? ' est.' : ''}` : ''}`,
+      text: `${mode} mode · ${generatedCount}/${plannedCount} generated${costLabel ? ` · ${costLabel}${ig.costEstimated ? ' est.' : ''}` : ''}`,
     },
-    { kind: 'kicker', text: 'Style profile' },
-    { kind: 'paragraph', text: `${ig.styleProfile.label} — ${ig.styleProfile.promptSuffix}` },
   ];
+
+  if (ig.styleProfile?.label) {
+    blocks.push({ kind: 'kicker', text: 'Style profile' });
+    blocks.push({
+      kind: 'paragraph',
+      text: ig.styleProfile.promptSuffix
+        ? `${ig.styleProfile.label} — ${ig.styleProfile.promptSuffix}`
+        : ig.styleProfile.label,
+    });
+  }
 
   blocks.push(...imageSlotBlocks(ig.slots));
 
   return {
     title: 'Generated images',
-    subtitle: [ig.model ?? 'fal.ai', costLabel ? `${costLabel} total` : null].filter(Boolean).join(' · '),
+    subtitle: [ig.model ?? 'fal.ai', costLabel ? `${costLabel} total` : null]
+      .filter(Boolean)
+      .join(' · '),
     blocks,
   };
 }
@@ -1309,28 +1398,38 @@ function imageSlotBlocks(slots: ArticleGenerationImageSlot[] | undefined): Visua
   const blocks: VisualizerBlock[] = [{ kind: 'kicker', text: 'Image slots' }];
 
   for (const slot of slots) {
+    const label = slot.label?.trim() || slot.id || 'Image';
     const url = slot.publicUrl?.trim() || slot.sourceUrl?.trim();
+    const prompt =
+      slot.builtPrompt?.trim() ||
+      slot.promptHint?.trim() ||
+      slot.conceptPrompt?.trim() ||
+      (typeof (slot as { prompt?: string }).prompt === 'string'
+        ? (slot as { prompt?: string }).prompt!.trim()
+        : undefined);
     const costHint =
-      slot.costUsd != null ? `$${slot.costUsd.toFixed(4)}${slot.status === 'planned' ? ' est.' : ''}` : slot.imageSize;
+      slot.costUsd != null
+        ? `$${slot.costUsd.toFixed(4)}${slot.status === 'planned' || (slot.status as string) === 'pending' ? ' est.' : ''}`
+        : slot.imageSize;
 
     if (url) {
       blocks.push({
         kind: 'image',
-        label: slot.label,
+        label,
         imageUrl: url,
-        imageAlt: slot.altSuggestion ?? slot.label,
+        imageAlt: slot.altSuggestion ?? label,
         hint: costHint,
-        text: slot.builtPrompt,
+        text: prompt,
       });
     } else {
       blocks.push({
         kind: 'meta-row',
-        label: slot.label,
+        label,
         value: slot.status === 'failed' ? slot.error ?? 'Failed' : slot.status,
         hint: costHint,
       });
-      if (slot.builtPrompt) {
-        blocks.push({ kind: 'paragraph', text: slot.builtPrompt });
+      if (prompt) {
+        blocks.push({ kind: 'paragraph', text: prompt });
       }
     }
   }

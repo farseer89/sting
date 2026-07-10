@@ -69,6 +69,12 @@ const STEP_META: Record<
     description:
       'Loads the calendar post brief from your content plan, merges business intelligence, and compiles the v2 writing context.',
   },
+  source_voice_research: {
+    label: 'Sources',
+    summary: 'Find citable sources and authentic voice references.',
+    description:
+      'Searches for real citable sources and authentic non-corporate voice samples scoped to the topic and audience, then attaches them to the brief for drafting.',
+  },
   cognitive_pass: {
     label: 'Think',
     summary: 'Run the selected thought pack before outline and draft.',
@@ -128,6 +134,12 @@ const STEP_META: Record<
     summary: 'Plan hero and section images with consistent editorial style via fal.ai.',
     description:
       'Plans hero and section image slots with a shared style profile, then generates and uploads assets via fal.ai when live.',
+  },
+  voice_pass: {
+    label: 'Voice',
+    summary: 'Polish the full article against the avoid list and craft checklist.',
+    description:
+      'Runs whole-document voice lint (clichés, em dashes, repetition, structural patterns) and rewrites flagged spans before review.',
   },
 };
 
@@ -307,7 +319,7 @@ function buildImageSubSteps(
         : statusDetail;
       return {
         id: `img:${slot.id}`,
-        label: slot.label,
+        label: slot.label?.trim() || slot.id || 'Image',
         detail,
         costUsd: slot.costUsd,
         status:
@@ -480,6 +492,26 @@ function buildArticleSubSteps(
           label: 'Compile writing context',
           detail: 'Brief + voice + plan narrative',
           status: phaseStatus(2, 3, stepStatus),
+        },
+      ];
+
+    case 'source_voice_research':
+      return [
+        {
+          id: 'svr:queries',
+          label: 'Plan claim and voice queries',
+          detail: a.sourceVoiceResearch?.skipped ? 'Skipped (sources on brief)' : 'LLM query plan',
+          status: phaseStatus(0, 2, stepStatus),
+          isLlm: true,
+        },
+        {
+          id: 'svr:sources',
+          label: 'Collect sources and voice refs',
+          detail: a.sourceVoiceResearch
+            ? `${a.sourceVoiceResearch.citableSources?.length ?? 0} sources · ${a.sourceVoiceResearch.voiceReferences?.length ?? 0} voice refs`
+            : 'SERP + page fetch + structure',
+          status: phaseStatus(1, 2, stepStatus),
+          isLlm: true,
         },
       ];
 
@@ -684,6 +716,25 @@ function buildArticleSubSteps(
     case 'generate_images':
       return buildImageSubSteps(run, stepStatus);
 
+    case 'voice_pass':
+      return [
+        {
+          id: 'voice:lint',
+          label: 'Lint avoid list and structure',
+          detail: a.voicePass
+            ? `${a.voicePass.hitCount ?? 0} hit(s)`
+            : 'Deterministic counters',
+          status: phaseStatus(0, 2, stepStatus),
+        },
+        {
+          id: 'voice:rewrite',
+          label: 'Polish full article',
+          detail: a.voicePass?.summary ?? 'Whole-document rewrite when needed',
+          status: phaseStatus(1, 2, stepStatus),
+          isLlm: true,
+        },
+      ];
+
     default:
       return [];
   }
@@ -869,6 +920,18 @@ function stepOutput(
               : []),
           ]
         : [];
+    case 'source_voice_research':
+      return a.sourceVoiceResearch
+        ? [
+            json(
+              'source-voice-research',
+              'Source & voice research',
+              a.sourceVoiceResearch,
+              a.sourceVoiceResearch.summary ??
+                `${a.sourceVoiceResearch.citableSources?.length ?? 0} sources`,
+            ),
+          ]
+        : [];
     case 'cognitive_pass': {
       const outputs: ThoughtArtifact[] = [];
       if (a.cognitiveRun?.trains?.length) {
@@ -1040,6 +1103,17 @@ function stepOutput(
       }
       return outputs;
     }
+    case 'voice_pass':
+      return a.voicePass
+        ? [
+            json(
+              'voice-pass',
+              'Voice pass',
+              a.voicePass,
+              a.voicePass.summary ?? `${a.voicePass.hitCount ?? 0} hit(s)`,
+            ),
+          ]
+        : [];
     default:
       return [];
   }

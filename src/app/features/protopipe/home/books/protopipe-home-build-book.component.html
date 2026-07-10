@@ -25,106 +25,7 @@
         </nav>
       }
     </div>
-    <div class="bk-toolbar__actions">
-      @if (buildBook.dirty()) {
-        <span class="bk-badge bk-badge--dirty">Unsaved</span>
-      }
-      <p-button
-        [label]="buildBook.saving() ? 'Saving…' : buildBook.dirty() ? 'Save' : 'Saved'"
-        [disabled]="!buildBook.dirty() || buildBook.saving() || !buildBook.hasDraft()"
-        size="small"
-        (onClick)="save()"
-      />
-      <p-button
-        [label]="publishButtonLabel()"
-        icon="pi pi-cloud-upload"
-        size="small"
-        [loading]="publishing() || (publishInProgress() && !publishStale())"
-        [disabled]="!canPublish()"
-        (onClick)="publishSite()"
-      />
-      <p-button
-        [label]="previewOpen() ? 'Hide inspector' : 'Show inspector'"
-        icon="pi pi-sliders-h"
-        severity="secondary"
-        size="small"
-        [disabled]="!isPageEditor()"
-        (onClick)="toggleInspector()"
-      />
-      @if (isPageEditor() && isBaselineMode()) {
-        <p-button
-          [label]="canvasViewMode() === 'focus' ? 'Full page' : 'Focus block'"
-          icon="pi pi-window-maximize"
-          severity="secondary"
-          size="small"
-          (onClick)="toggleCanvasViewMode()"
-        />
-      }
-    </div>
   </header>
-
-  @if (buildBook.hasDraft()) {
-    <section class="bk-masthead" aria-label="Site project">
-      <div class="bk-masthead__main">
-        <div class="bk-masthead__title-row">
-          @if (editingDisplayName()) {
-            <input
-              pInputText
-              class="bk-masthead__name-input"
-              [ngModel]="displayNameDraft()"
-              (ngModelChange)="displayNameDraft.set($event)"
-            />
-            <p-button label="Save name" size="small" (onClick)="saveDisplayName()" />
-            <p-button label="Cancel" severity="secondary" size="small" (onClick)="cancelEditingDisplayName()" />
-          } @else {
-            <h1 class="bk-masthead__title">{{ siteLabel() }}</h1>
-            <button type="button" class="bk-masthead__edit" (click)="startEditingDisplayName()">Edit name</button>
-          }
-        </div>
-        <div class="bk-masthead__meta">
-          @if (selectedTemplateId(); as templateId) {
-            <span class="bk-masthead__badge">{{ variantBrandLabel(templateId) }}</span>
-          }
-          @if (siteSlug(); as slug) {
-            <span class="bk-masthead__slug">Slug: {{ slug }}</span>
-          } @else {
-            <span class="bk-masthead__slug bk-masthead__slug--missing">Slug not set</span>
-          }
-          <span class="bk-masthead__saved">{{ lastSavedLabel() }}</span>
-        </div>
-        @if (!publishInProgress() && !canPublish() && publishBlockers()) {
-          <p class="bk-masthead__blockers">{{ publishBlockers() }}</p>
-        }
-        @if (publishInProgress()) {
-          <div class="bk-masthead__progress" role="status" aria-live="polite">
-            <p-progressSpinner strokeWidth="4" [style]="{ width: '1rem', height: '1rem' }" />
-            <div class="bk-masthead__progress-copy">
-              <p class="bk-masthead__progress-title">Publishing your site</p>
-              @if (publishProgressMessage(); as progressMsg) {
-                <p class="bk-masthead__progress-detail">{{ progressMsg }}</p>
-              }
-              <p class="bk-masthead__progress-detail">Checking deploy status every few seconds…</p>
-              @if (publishStale()) {
-                <p class="bk-masthead__progress-detail">Deploy is taking longer than expected. You can retry publish.</p>
-              }
-            </div>
-          </div>
-        }
-        @if (publishStatus() !== 'live' && strategy.site()?.provisioningError; as provisionErr) {
-          <p class="bk-masthead__error">{{ provisionErr }}</p>
-        }
-      </div>
-      <div class="bk-masthead__actions">
-        <p-tag
-          [value]="publishStatusLabel(publishStatus())"
-          [severity]="publishStatusSeverity(publishStatus())"
-        />
-        @if (liveSiteUrl(); as liveUrl) {
-          <a class="bk-masthead__live" [href]="liveUrl" target="_blank" rel="noopener noreferrer">Open live site</a>
-        }
-      </div>
-    </section>
-  }
 
   <p-dialog
     header="Name your site"
@@ -195,19 +96,61 @@
     </div>
   } @else {
     <div class="bk-workspace">
-      @if (bookTab() === 'strategy') {
+      @if (bookTab() === 'research') {
         <div class="bk-tab-panel bk-tab-panel--strategy">
           @if (!strategy.siteId()) {
             <div class="bk-book-placeholder">
-              <div class="bk-stage-kicker">Strategy</div>
+              <div class="bk-stage-kicker">Research</div>
               <h2>Select a site first</h2>
-              <p>Pick or create a site on the Sites tab, then run discovery and content planning here.</p>
+              <p>Pick or create a site on the Sites tab, then run keyword discovery and confirm audiences here.</p>
               <p-button label="Go to Sites" size="small" (onClick)="selectBookTab('sites')" />
             </div>
           } @else {
             <app-protopipe-home-keyword-book
               [siteLabel]="siteLabel()"
-              (confirmed)="onStrategyConfirmed()"
+              (confirmed)="onResearchConfirmed()"
+            />
+          }
+        </div>
+      } @else if (bookTab() === 'strategy') {
+        <div class="bk-tab-panel bk-tab-panel--strategy bk-tab-panel--content-plan">
+          @if (!strategy.siteId()) {
+            <div class="bk-book-placeholder">
+              <div class="bk-stage-kicker">Strategy</div>
+              <h2>Select a site first</h2>
+              <p>Pick a site, then confirm keywords in Research to generate a content plan you can monitor here.</p>
+              <p-button label="Go to Sites" size="small" (onClick)="selectBookTab('sites')" />
+            </div>
+          } @else {
+            <app-protopipe-content-plan [embedded]="true" />
+          }
+        </div>
+      } @else if (bookTab() === 'calendar') {
+        <div class="bk-tab-panel bk-tab-panel--strategy bk-tab-panel--calendar">
+          @if (!strategy.siteId()) {
+            <div class="bk-book-placeholder">
+              <div class="bk-stage-kicker">Calendar</div>
+              <h2>Select a site first</h2>
+              <p>Pick a site and finish Strategy so scheduled articles appear on the content calendar.</p>
+              <p-button label="Go to Sites" size="small" (onClick)="selectBookTab('sites')" />
+            </div>
+          } @else if (!contentPlanPlan()) {
+            <div class="bk-book-placeholder">
+              <div class="bk-stage-kicker">Calendar</div>
+              <h2>No content plan yet</h2>
+              <p>Run Strategy to generate a calendar, then return here to review Planner and Week / Month / Quarter views.</p>
+              <p-button label="Open Strategy" size="small" (onClick)="selectBookTab('strategy')" />
+            </div>
+          } @else {
+            <app-strategy-binder-calendar-panel
+              [plan]="contentPlanPlan()!"
+              [items]="calendarItems()"
+              [deck]="calendarDeck()"
+              kicker="Build · Calendar"
+              [selectedKey]="selectedCalendarKey()"
+              [actionLabel]="calendarActionFn"
+              (selectItem)="onCalendarSelect($event)"
+              (runAction)="onCalendarAction($event)"
             />
           }
         </div>

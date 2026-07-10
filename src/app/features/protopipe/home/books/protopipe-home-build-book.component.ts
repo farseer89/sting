@@ -19,8 +19,7 @@ import { Dialog } from 'primeng/dialog';
 import { InputText } from 'primeng/inputtext';
 import { Message } from 'primeng/message';
 import { ProgressSpinner } from 'primeng/progressspinner';
-import { Tag } from 'primeng/tag';
-import type { ProtopipePublishStatus } from '@hive/contracts';
+import type { ProtopipeContentPlanCalendarItem, ProtopipeContentPost, ProtopipePublishStatus } from '@hive/contracts';
 import { ProtopipeBuildBookService, findDraftSectionForSlot } from '../../build-book/protopipe-build-book.service';
 import { ProtopipeShireSitesApiService } from '../../build-book/protopipe-shire-sites-api.service';
 import { validateBuildBookPublishGate } from '../../build-book/validation/build-book-publish-gate.util';
@@ -107,6 +106,12 @@ import { BuildBookLandingPagesPanelComponent } from '../../build-book/landing-pa
 import { BuildBookContentPostsPanelComponent } from '../../build-book/content-posts-panel/build-book-content-posts-panel.component';
 import { BuildBookSitesPanelComponent } from '../../build-book/sites-panel/build-book-sites-panel.component';
 import { ProtopipeHomeKeywordBookComponent } from './protopipe-home-keyword-book.component';
+import { ProtopipeContentPlanComponent } from '../../content-plan/protopipe-content-plan.component';
+import { StrategyBinderCalendarPanelComponent } from '../strategy-binder/strategy-binder-calendar-panel.component';
+import { mapStrategyBinderView } from '../strategy-binder/strategy-binder.mapper';
+import { ProtopipeHomeStrategyViewState } from '../strategy/protopipe-home-strategy-view.state';
+import { ProtopipeContentService } from '../../protopipe-content.service';
+import { calendarItemKey } from '../strategy/strategy.helpers';
 import { ProtopipeBuildBookThemePanelComponent } from '../../build-book/theme-panel/protopipe-build-book-theme-panel.component';
 import { hasBuildBookBaselineAssembly } from '../../build-book/build-book-baseline-assemblies';
 import { hrefFieldsFromProps, altFieldsFromProps } from '../../build-book/fields/build-href-field.util';
@@ -114,6 +119,7 @@ import { contentFieldsFromEditablePaths } from '../../build-book/fields/build-co
 import { readProp } from '../../build-book/fields/build-field.util';
 import type { BuildPageImageEditEvent } from '../../build-book/canvas/build-page-canvas.component';
 import { ContentPlanStore } from '../../content-plan/content-plan.store';
+import { ProtopipeHomeThinkerViewState } from '../protopipe-home-thinker-view.state';
 
 const SECTION_DECK: Record<BuildBookSection, string> = {
   hero: 'Pick a hero layout, then open Hero images & copy to generate photos and set headline text — same live preview as pitch prep.',
@@ -130,7 +136,9 @@ const HERO_PREVIEW_PLACEHOLDER_IMAGE =
 type BuildBookEntryMode = 'template' | 'blocks';
 type BuildBookInspectorTab = 'content' | 'layout' | 'media' | 'links';
 type BuildBookTab =
+  | 'research'
   | 'strategy'
+  | 'calendar'
   | 'sites'
   | 'templates'
   | 'homepage'
@@ -160,13 +168,14 @@ interface BuildBookTabItem {
     InputText,
     Message,
     ProgressSpinner,
-    Tag,
     ProtopipeBuildPageCanvasComponent,
     BuildBookPageBuilderRailComponent,
     BuildBookLandingPagesPanelComponent,
     BuildBookContentPostsPanelComponent,
     BuildBookSitesPanelComponent,
     ProtopipeHomeKeywordBookComponent,
+    ProtopipeContentPlanComponent,
+    StrategyBinderCalendarPanelComponent,
     ProtopipeBuildBookThemePanelComponent,
     ProtopipeBuildSiteImagesPanelComponent,
     ProtopipeBuildImageQuickPickerComponent,
@@ -184,6 +193,9 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
   readonly buildBook = inject(ProtopipeBuildBookService);
   readonly strategy = inject(ProtopipeStrategyService);
   private readonly contentPlan = inject(ContentPlanStore);
+  private readonly content = inject(ProtopipeContentService);
+  private readonly strategyView = inject(ProtopipeHomeStrategyViewState, { optional: true });
+  private readonly thinkerView = inject(ProtopipeHomeThinkerViewState, { optional: true });
   private readonly shireSitesApi = inject(ProtopipeShireSitesApiService);
   private readonly sanitizer = inject(DomSanitizer);
   readonly pageBuilderRail = viewChild(BuildBookPageBuilderRailComponent);
@@ -197,6 +209,7 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
   readonly publishing = signal(false);
   readonly publishProgressMessage = signal<string | null>(null);
   readonly publishStartedAt = signal<number | null>(null);
+  readonly publishErrorOpen = signal(false);
   readonly editingDisplayName = signal(false);
   readonly displayNameDraft = signal('');
   private publishPollTimer: ReturnType<typeof setInterval> | null = null;
@@ -220,7 +233,9 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
   readonly pendingImageEdit = signal<{ blockInstanceId: string; propPath: string } | null>(null);
   readonly imagePickerOpen = signal(false);
   readonly bookTabs: BuildBookTabItem[] = [
+    { id: 'research', label: 'Research' },
     { id: 'strategy', label: 'Strategy' },
+    { id: 'calendar', label: 'Calendar' },
     { id: 'sites', label: 'Sites' },
     { id: 'templates', label: 'Templates' },
     { id: 'homepage', label: 'Homepage' },
@@ -381,11 +396,22 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
     return 'Publish';
   });
 
+  readonly publishProgressTooltip = computed(() => {
+    const parts: string[] = [];
+    const msg = this.publishProgressMessage();
+    if (msg) parts.push(msg);
+    parts.push('Checking deploy status every few seconds…');
+    if (this.publishStale()) {
+      parts.push('Deploy is taking longer than expected. You can retry publish.');
+    }
+    return parts.join(' ');
+  });
+
   readonly lastSavedLabel = computed(() => {
     const updatedAt = this.buildBook.draft()?.updatedAt;
-    if (!updatedAt) return this.buildBook.dirty() ? 'Unsaved changes' : 'Not saved yet';
-    if (this.buildBook.dirty()) return 'Unsaved changes';
-    return `Saved · ${this.formatRelativeTime(updatedAt)}`;
+    if (!updatedAt) return this.buildBook.dirty() ? 'Unsaved' : 'Not saved';
+    if (this.buildBook.dirty()) return 'Unsaved';
+    return `Saved ${this.formatRelativeTime(updatedAt)}`;
   });
 
   readonly publishStatus = computed(
@@ -393,6 +419,37 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
   );
 
   readonly liveSiteUrl = computed(() => this.strategy.site()?.previewBaseUrl ?? null);
+
+  readonly canViewRunbook = computed(() => {
+    const siteId = this.strategy.siteId();
+    const plan = this.contentPlan.plan();
+    return Boolean(this.thinkerView && siteId && plan?.id && plan.siteId === siteId);
+  });
+
+  readonly contentPlanPlan = computed(() => {
+    const siteId = this.strategy.siteId();
+    const plan = this.contentPlan.plan();
+    if (!siteId || !plan || plan.siteId !== siteId) return null;
+    return plan;
+  });
+
+  readonly calendarVm = computed(() => {
+    const plan = this.contentPlanPlan();
+    if (!plan) return null;
+    return mapStrategyBinderView(plan, this.siteLabel(), '');
+  });
+
+  readonly calendarItems = computed(() => this.calendarVm()?.calendar ?? []);
+
+  readonly calendarDeck = computed(() => this.calendarVm()?.calendarDeck ?? '');
+
+  readonly selectedCalendarKey = computed(() => {
+    const article = this.strategyView?.selectedArticle() ?? null;
+    return article ? calendarItemKey(article) : null;
+  });
+
+  readonly calendarActionFn = (item: ProtopipeContentPlanCalendarItem): string =>
+    this.calendarActionLabel(item);
 
   readonly siteSlug = computed(() => this.strategy.site()?.clientSitesSlug ?? null);
 
@@ -848,23 +905,84 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
     if (tab === 'sites') {
       void this.strategy.refreshSitesList().catch(() => undefined);
     }
-    if (tab === 'strategy' || tab === 'content-posts') {
+    if (tab === 'strategy' || tab === 'content-posts' || tab === 'calendar') {
       const siteId = this.strategy.siteId();
       if (siteId) {
         this.contentPlan.setSiteId(siteId);
         void this.contentPlan.loadLatest();
       }
+      if (tab === 'calendar') {
+        this.content.ensureCatalogLoaded();
+      }
     }
     this.syncWorkflowToUrl();
   }
 
-  onStrategyConfirmed(): void {
+  /** Keyword discovery confirm → Strategy so the content-plan thinker run is visible. */
+  onResearchConfirmed(): void {
     const siteId = this.strategy.siteId();
     if (siteId) {
       this.contentPlan.setSiteId(siteId);
       void this.contentPlan.loadLatest();
     }
-    this.selectBookTab('content-posts');
+    this.selectBookTab('strategy');
+  }
+
+  onCalendarSelect(item: ProtopipeContentPlanCalendarItem): void {
+    this.strategyView?.selectArticle(item);
+  }
+
+  onCalendarAction(item: ProtopipeContentPlanCalendarItem): void {
+    const post = this.postForCalendarItem(item);
+    if (!this.strategyView) return;
+    if (post?.articleGenerationRunId) {
+      void this.strategyView.openInThinker({ ...item, contentPostId: post.id });
+      return;
+    }
+    if (post) {
+      void this.strategyView.openArticleInWriter({ ...item, contentPostId: post.id });
+      return;
+    }
+    void this.strategyView.openInWriter(item);
+  }
+
+  calendarActionLabel(item: ProtopipeContentPlanCalendarItem): string {
+    const post = this.postForCalendarItem(item);
+    if (post?.articleGenerationRunId && (post.template || post.bodyMarkdown.trim())) {
+      return 'View article';
+    }
+    if (post?.articleGenerationRunId) return 'View run';
+    if (post) return 'Open';
+    return 'Write';
+  }
+
+  private postForCalendarItem(item: ProtopipeContentPlanCalendarItem): ProtopipeContentPost | undefined {
+    const posts = this.content.posts();
+    if (item.contentPostId) {
+      const byId = posts.find((post) => post.id === item.contentPostId);
+      if (byId) return byId;
+    }
+    const title = this.normalizeCalendarTitle(item.workingTitle);
+    const editorial = this.normalizeCalendarTitle(item.editorialTitle);
+    if (!title && !editorial) return undefined;
+    const itemDate = this.calendarDateKey(item.proposedPublishAt);
+    return posts.find((post) => {
+      const postTitle = this.normalizeCalendarTitle(post.title);
+      if (postTitle !== title && (!editorial || postTitle !== editorial)) return false;
+      const postDate = this.calendarDateKey(post.publishAt);
+      return !itemDate || !postDate || itemDate === postDate;
+    });
+  }
+
+  private normalizeCalendarTitle(value: string | undefined): string {
+    return (value ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  private calendarDateKey(value: string | undefined): string | null {
+    if (!value) return null;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toISOString().slice(0, 10);
   }
 
   async onEditSiteFromList(siteId: string): Promise<void> {
@@ -1813,6 +1931,24 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
     this.exit.emit();
   }
 
+  /** Open the content-plan thinker runbook for the active site. */
+  async viewRunbook(): Promise<void> {
+    const thinker = this.thinkerView;
+    const siteId = this.strategy.siteId();
+    if (!thinker || !siteId) return;
+
+    let plan = this.contentPlan.plan();
+    if (!plan?.id || plan.siteId !== siteId) {
+      this.contentPlan.setSiteId(siteId);
+      await this.contentPlan.loadLatest();
+      plan = this.contentPlan.plan();
+    }
+    if (!plan?.id) return;
+
+    thinker.setFocusBackLabel('Back to Strategy');
+    thinker.openContentPlanRun(plan.siteId, plan);
+  }
+
   protected startEditingDisplayName(): void {
     this.displayNameDraft.set(this.strategy.site()?.displayName ?? this.siteLabel());
     this.editingDisplayName.set(true);
@@ -1835,7 +1971,7 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
     this.editingDisplayName.set(false);
   }
 
-  protected async publishSite(): Promise<void> {
+  async publishSite(): Promise<void> {
     if (!this.canPublish()) return;
     if (this.buildBook.dirty()) {
       const saved = await this.buildBook.save();
@@ -1859,24 +1995,7 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
     }
   }
 
-  protected publishStatusLabel(status: ProtopipePublishStatus): string {
-    if (status === 'draft') return 'Draft';
-    if (status === 'provisioning') return 'Publishing…';
-    if (status === 'live') return 'Live';
-    if (status === 'failed') return 'Failed';
-    return status;
-  }
-
-  protected publishStatusSeverity(
-    status: ProtopipePublishStatus,
-  ): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' | undefined {
-    if (status === 'live') return 'success';
-    if (status === 'provisioning') return 'info';
-    if (status === 'failed') return 'danger';
-    return 'secondary';
-  }
-
-  protected publishBlockers(): string {
+  publishBlockers(): string {
     return this.publishGate()
       .issues.map((item) => item.message)
       .join(' · ');
@@ -1895,10 +2014,12 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
     const delta = Date.now() - then;
     const minutes = Math.floor(delta / 60000);
     if (minutes < 1) return 'just now';
-    if (minutes < 60) return `${minutes}m ago`;
+    if (minutes < 60) return `${minutes}m`;
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return new Date(iso).toLocaleString();
+    if (hours < 24) return `${hours}h`;
+    const days = Math.floor(hours / 24);
+    if (days < 14) return `${days}d`;
+    return new Date(iso).toLocaleDateString();
   }
 
   private startPublishPolling(): void {
@@ -2046,6 +2167,8 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
       this.bookTab.set('templates');
     } else if (chapter === 'site-info-images' || chapter === 'image-tone') {
       this.bookTab.set('seo-strategy');
+    } else if (chapter === 'research' || chapter === 'discovery') {
+      this.bookTab.set('research');
     } else if (chapter === 'landing-pages') {
       this.bookTab.set('landing-pages');
     } else if (chapter === 'blog-home') {

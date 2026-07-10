@@ -21,7 +21,9 @@ The frontend title may differ from the Shire book name when the product language
 | Frontend title | Shire book | Purpose |
 | -------------- | ---------- | ------- |
 | Build Book | `build-book` | Site strategy and demo build state |
-| Build Book → Strategy | Discovery UI over `keywords` / `site-plans` + `content_plan` runs | Operator discovery + plan kickoff inside Build Book |
+| Build Book → Research | Discovery UI over `keywords` / `site-plans` | Keyword discovery + audience confirm |
+| Build Book → Strategy | `content_plan` runs + plan calendar | Finished plan and thinker run status |
+| Build Book → Calendar | same content-plan calendar UI | Planner + Week/Month/Quarter schedule |
 | Build Book → Content Posts | `build-book` pages + `content-posts` links | Blog page assemblies seeded from content plan |
 | Prospector | `prospecting-campaigns` | Campaign searches, source configs, candidate review |
 | Prospector | `prospects` | Canonical sales opportunities and call prep state |

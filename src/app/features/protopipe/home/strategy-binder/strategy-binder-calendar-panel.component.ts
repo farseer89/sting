@@ -35,6 +35,7 @@ export class StrategyBinderCalendarPanelComponent {
   readonly plan = input.required<ProtopipeSiteContentPlan>();
   readonly items = input.required<StrategyBinderCalendarItem[]>();
   readonly deck = input('');
+  readonly kicker = input('Strategy · Schedule');
   readonly selectedKey = input<string | null>(null);
   readonly actionLabel = input<(item: ProtopipeContentPlanCalendarItem) => string>(
     () => 'Write',

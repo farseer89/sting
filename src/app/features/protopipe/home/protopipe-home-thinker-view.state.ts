@@ -294,6 +294,16 @@ export class ProtopipeHomeThinkerViewState {
       this._postId.set(postId);
       this._runId.set(run.id);
       this._workingTitle.set(workingTitle || post.title || 'Article');
+
+      const status = isShireRunsEnabled()
+        ? (run as { status: string }).status
+        : (run as ArticleGenerationRunDto).status;
+      if (status === 'complete') {
+        // Recovered an existing complete run (or enqueue was a no-op) — open writer.
+        this.content.reload();
+        return 'writer';
+      }
+
       this.enterThinkerFocus?.();
       return 'thinker';
     } catch {

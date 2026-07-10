@@ -103,6 +103,12 @@ export class ProtopipeHomeStrategyBinderComponent {
       if (byId) return byId;
     }
 
+    const keyword = this.normalizeTitle(item.suggestedKeyword);
+    if (keyword) {
+      const byKeyword = posts.find((post) => this.postKeyword(post) === keyword);
+      if (byKeyword) return byKeyword;
+    }
+
     const title = this.normalizeTitle(item.workingTitle);
     const editorial = this.normalizeTitle(item.editorialTitle);
     if (!title && !editorial) return undefined;
@@ -184,6 +190,12 @@ export class ProtopipeHomeStrategyBinderComponent {
 
   private normalizeTitle(value: string | null | undefined): string {
     return (value ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+  }
+
+  private postKeyword(post: ProtopipeContentPost): string {
+    return this.normalizeTitle(
+      post.suggestedKeyword ?? post.brief?.primaryKeywordPhrase ?? '',
+    );
   }
 
   private dateKey(value: string | null | undefined): string | null {

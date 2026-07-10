@@ -119,6 +119,8 @@ export interface Thought {
   steps: ThoughtStep[];
   inputs: PortValue[];
   outputs: PortValue[];
+  /** Pipeline-owned working state (article brief/outline/template, etc.). */
+  artifacts?: Record<string, unknown>;
   startedAt?: string;
   finishedAt?: string;
   /** Sum of step costs when known (USD). */

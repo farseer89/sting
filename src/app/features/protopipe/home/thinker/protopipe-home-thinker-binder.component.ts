@@ -27,10 +27,9 @@ import {
 } from '../../article/article-run-rerun.util';
 import type { ArticleGenerationStep } from '@hive/contracts';
 import {
-  buildArticlePreviewVisualizer,
-  buildArticleStepVisualizer,
-  buildThoughtStepVisualizer,
-} from './article-run-visualizer.util';
+  buildArticlePreviewForSession,
+  buildArticleVisualizerForStep,
+} from './shire-article-visualizer.util';
 import {
   buildContentPlanStepVisualizer,
   type ContentPlanVisualizerStep,
@@ -72,25 +71,6 @@ import {
 import { ThinkerStepVisualizerComponent } from './thinker-step-visualizer.component';
 
 type ThinkerTab = 'visualizer' | 'article' | 'output' | 'steps' | 'prompt' | 'query' | 'events' | 'raw';
-
-const ARTICLE_PIPELINE_STEP_IDS = new Set<string>([
-  'infer_type',
-  'analyse_competition',
-  'content_plan',
-  'research',
-  'build_brief',
-  'compile_context',
-  'cognitive_pass',
-  'outline',
-  'draft',
-  'audience_review',
-  'draft_faq',
-  'layout_plan',
-  'review',
-  'metadata',
-  'assemble',
-  'generate_images',
-]);
 
 export interface BinderAspectNavItem {
   id: string;
@@ -277,17 +257,17 @@ export class ProtopipeHomeThinkerBinderComponent {
     }
 
     const run = this.run();
-    const thoughtStep = this.thought()?.steps.find((s) => s.id === step.id);
-    if (!run || !ARTICLE_PIPELINE_STEP_IDS.has(step.id)) {
-      return thoughtStep
-        ? buildThoughtStepVisualizer(thoughtStep)
-        : { title: 'Visualizer', emptyMessage: 'Select a pipeline step.', blocks: [] };
-    }
-    return buildArticleStepVisualizer(run, step.id as ArticleGenerationStep, step.status);
+    const thought = this.thought();
+    return buildArticleVisualizerForStep({
+      run,
+      thought,
+      stepId: step.id,
+      stepStatus: step.status,
+    });
   });
 
   readonly articlePreview = computed(() =>
-    buildArticlePreviewVisualizer({ run: this.run(), thought: this.thought() }),
+    buildArticlePreviewForSession({ run: this.run(), thought: this.thought() }),
   );
 
   /** Article compile-context tabs only — not used for strategy builds. */
@@ -426,11 +406,15 @@ export class ProtopipeHomeThinkerBinderComponent {
     return `Article generation · ${label} · started ${time}`;
   });
 
-  readonly showOpenWriter = computed(
-    () => this.runKind() === 'article' && this.run()?.status === 'complete',
-  );
+  readonly showOpenWriter = computed(() => {
+    if (this.runKind() !== 'article') return false;
+    if (this.run()?.status === 'complete') return true;
+    return this.thought()?.status === 'complete';
+  });
 
-  readonly showRerunArticleStep = computed(() => this.runKind() === 'article' && Boolean(this.run()));
+  readonly showRerunArticleStep = computed(
+    () => this.runKind() === 'article' && (Boolean(this.run()) || Boolean(this.thought())),
+  );
 
   readonly canRerunArticleStep = computed(
     () => !this.rerunning() && canRerunArticleRun(this.run()),

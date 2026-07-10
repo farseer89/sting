@@ -11,5 +11,6 @@ export function shireThoughtToUi(thought: ShireThought): Thought {
     })),
     inputs: thought.inputs ?? [],
     outputs: thought.outputs ?? [],
+    artifacts: thought.artifacts ?? {},
   };
 }

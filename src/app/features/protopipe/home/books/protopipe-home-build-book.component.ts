@@ -962,6 +962,16 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
       const byId = posts.find((post) => post.id === item.contentPostId);
       if (byId) return byId;
     }
+    const keyword = this.normalizeCalendarTitle(item.suggestedKeyword);
+    if (keyword) {
+      const byKeyword = posts.find((post) => {
+        const postKw = this.normalizeCalendarTitle(
+          post.suggestedKeyword ?? post.brief?.primaryKeywordPhrase ?? '',
+        );
+        return postKw === keyword;
+      });
+      if (byKeyword) return byKeyword;
+    }
     const title = this.normalizeCalendarTitle(item.workingTitle);
     const editorial = this.normalizeCalendarTitle(item.editorialTitle);
     if (!title && !editorial) return undefined;

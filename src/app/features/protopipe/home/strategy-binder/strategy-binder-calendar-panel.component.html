@@ -1,0 +1,201 @@
+<div class="sb-cal-panel" aria-label="Content calendar">
+  <div class="sb-panel-head">
+    <div class="sb-panel-kicker">Strategy · Schedule</div>
+    <h2 class="sb-panel-title">Content calendar</h2>
+    <p class="sb-panel-deck">{{ deck() }}</p>
+  </div>
+
+  <div class="sb-cal-panel__toolbar">
+    <div class="sb-cal-panel__modes" role="tablist" aria-label="Schedule view">
+      <button
+        type="button"
+        role="tab"
+        class="sb-cal-panel__mode"
+        [class.is-active]="mode() === 'planner'"
+        [attr.aria-selected]="mode() === 'planner'"
+        (click)="setMode('planner')"
+      >
+        Planner
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="sb-cal-panel__mode"
+        [class.is-active]="mode() === 'calendar'"
+        [attr.aria-selected]="mode() === 'calendar'"
+        (click)="setMode('calendar')"
+      >
+        Calendar
+      </button>
+    </div>
+
+    @if (mode() === 'calendar') {
+      <div class="sb-cal-panel__zooms" role="tablist" aria-label="Calendar range">
+        @for (z of zoomModes; track z.id) {
+          <button
+            type="button"
+            role="tab"
+            class="sb-cal-panel__zoom"
+            [class.is-active]="zoom() === z.id"
+            [attr.aria-selected]="zoom() === z.id"
+            (click)="setZoom(z.id)"
+          >
+            {{ z.label }}
+          </button>
+        }
+      </div>
+
+      <div class="sb-cal-panel__nav">
+        <button type="button" class="sb-cal-panel__nav-btn" (click)="prevPeriod()" aria-label="Previous period">
+          ‹
+        </button>
+        <span class="sb-cal-panel__period">{{ navLabel() }}</span>
+        <button type="button" class="sb-cal-panel__nav-btn" (click)="nextPeriod()" aria-label="Next period">
+          ›
+        </button>
+      </div>
+
+      <span class="sb-cal-panel__meta">{{ metaLabel() }}</span>
+    }
+  </div>
+
+  @if (mode() === 'planner') {
+    <div class="sb-cal-planner">
+      @for (item of items(); track item.key; let i = $index) {
+        <button
+          type="button"
+          class="sb-cal-note"
+          [class.sb-cal-note--high]="item.priority === 'high'"
+          [class.sb-cal-note--pillar]="item.type === 'pillar'"
+          [class.is-selected]="isSelected(item)"
+          (click)="openMapped(item)"
+        >
+          <div class="sb-cal-note__date">
+            <span class="sb-cal-note__seq">{{ (i + 1).toString().padStart(2, '0') }}</span>
+            <span class="sb-cal-note__day">{{ item.publishAt }}</span>
+          </div>
+          <div class="sb-cal-note__body">
+            <div class="sb-cal-note__chips">
+              <span class="sb-cal-note__type">{{ item.type }}</span>
+              <span class="sb-cal-note__cluster">{{ item.cluster }}</span>
+            </div>
+            <p class="sb-cal-note__title">{{ item.title }}</p>
+            <div class="sb-cal-note__meta">
+              <span class="sb-cal-note__intent">{{ item.intent }}</span>
+              <span class="sb-cal-note__funnel">{{ item.funnelStage }}</span>
+            </div>
+          </div>
+          <span
+            class="sb-cal-note__action"
+            role="button"
+            tabindex="0"
+            (click)="onAction(item, $event)"
+            (keydown.enter)="onAction(item, $event)"
+          >
+            {{ labelFor(item) }}
+          </span>
+        </button>
+      } @empty {
+        <p class="sb-cal-panel__empty">No articles scheduled yet.</p>
+      }
+    </div>
+  } @else {
+    <div class="sb-cal-grid-wrap">
+      @if (zoom() === 'week') {
+        @if (activeWeek(); as week) {
+          <div class="sb-cal-weekdays">
+            @for (wd of week.weekdays; track wd) {
+              <span class="sb-cal-weekday">{{ wd }}</span>
+            }
+          </div>
+          <div class="sb-cal-grid sb-cal-grid--week">
+            @for (cell of week.days; track cell.dateKey) {
+              <div
+                class="sb-cal-cell"
+                [class.sb-cal-cell--weekend]="cell.weekend"
+                [class.sb-cal-cell--posts]="cell.stickies.length > 0"
+                [class.sb-cal-cell--today]="cell.isToday"
+              >
+                <span class="sb-cal-daynum">{{ cell.day }}</span>
+                @for (sticky of cell.stickies; track sticky.itemKey) {
+                  <button
+                    type="button"
+                    class="sb-cal-sticky sb-cal-sticky--{{ sticky.status }}"
+                    [class.is-selected]="isSelected(sticky)"
+                    [title]="sticky.title"
+                    (click)="openSticky(sticky.itemKey)"
+                  >
+                    <span class="sb-cal-sticky__title">{{ sticky.title }}</span>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        }
+      } @else if (zoom() === 'month') {
+        @if (activeMonth(); as cal) {
+          <div class="sb-cal-weekdays">
+            @for (wd of cal.weekdays; track wd) {
+              <span class="sb-cal-weekday">{{ wd }}</span>
+            }
+          </div>
+          <div class="sb-cal-grid sb-cal-grid--month">
+            @for (week of cal.weeks; track $index) {
+              @for (cell of week; track $index) {
+                <div
+                  class="sb-cal-cell"
+                  [class.sb-cal-cell--empty]="cell.day == null"
+                  [class.sb-cal-cell--weekend]="cell.weekend"
+                  [class.sb-cal-cell--posts]="cell.stickies.length > 0"
+                  [class.sb-cal-cell--today]="cell.isToday"
+                >
+                  @if (cell.day != null) {
+                    <span class="sb-cal-daynum">{{ cell.day }}</span>
+                    @for (sticky of cell.stickies; track sticky.itemKey) {
+                      <button
+                        type="button"
+                        class="sb-cal-sticky sb-cal-sticky--{{ sticky.status }}"
+                        [class.is-selected]="isSelected(sticky)"
+                        [title]="sticky.title"
+                        (click)="openSticky(sticky.itemKey)"
+                      >
+                        <span class="sb-cal-sticky__title">{{ sticky.title }}</span>
+                      </button>
+                    }
+                  }
+                </div>
+              }
+            }
+          </div>
+        }
+      } @else if (activeQuarter(); as quarter) {
+        <div class="sb-cal-quarter">
+          @for (month of quarter.months; track month.monthKey) {
+            <section class="sb-cal-quarter__col">
+              <header class="sb-cal-quarter__head">
+                <h3 class="sb-cal-quarter__month">{{ month.shortLabel }}</h3>
+                <span class="sb-cal-quarter__count">{{ month.articleCount }}</span>
+              </header>
+              <div class="sb-cal-quarter__stack">
+                @for (sticky of month.stickies; track sticky.itemKey) {
+                  <button
+                    type="button"
+                    class="sb-cal-sticky sb-cal-sticky--{{ sticky.status }} sb-cal-sticky--quarter"
+                    [class.is-selected]="isSelected(sticky)"
+                    [title]="sticky.title"
+                    (click)="openSticky(sticky.itemKey)"
+                  >
+                    <span class="sb-cal-sticky__day">{{ sticky.dayLabel }}</span>
+                    <span class="sb-cal-sticky__title">{{ sticky.title }}</span>
+                  </button>
+                } @empty {
+                  <p class="sb-cal-quarter__empty">No posts</p>
+                }
+              </div>
+            </section>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

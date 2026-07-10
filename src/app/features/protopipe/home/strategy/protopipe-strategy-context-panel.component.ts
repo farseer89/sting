@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import type { ProtopipeContentPlanCalendarItem } from '@hive/contracts';
-import { buildArticlePanelContext, formatPublishDate } from './strategy.helpers';
+import { buildArticlePanelContext, calendarDisplayTitle, formatPublishDate } from './strategy.helpers';
 import { ProtopipeHomeStrategyViewState } from './protopipe-home-strategy-view.state';
 
 @Component({
@@ -23,6 +23,7 @@ export class ProtopipeStrategyContextPanelComponent {
   });
 
   formatDate = formatPublishDate;
+  displayTitle = calendarDisplayTitle;
 
   articleStatus(item: ProtopipeContentPlanCalendarItem): 'scheduled' | 'published' | 'draft' {
     if (item.kind === 'refresh-existing') {

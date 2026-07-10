@@ -158,12 +158,13 @@ export class ProtopipeHomeThinkerViewState {
     this._contentPlanLoadError.set(null);
     this._contentPlanRun.set(plan);
     this.content.setEditingSiteId(siteId);
+    // Plan DTO powers the content-plan runbook (visualizer + step I/O). Keep it fresh
+    // even when Shire is primary for Thought polling.
     if (isShireRunsEnabled()) {
       void this.shireSession.loadRun(siteId, plan.id);
-    } else {
-      this.maybePollContentPlan(plan);
-      void this.reloadContentPlanRun();
     }
+    this.maybePollContentPlan(plan);
+    void this.reloadContentPlanRun();
     this.enterThinkerFocus?.();
   }
 

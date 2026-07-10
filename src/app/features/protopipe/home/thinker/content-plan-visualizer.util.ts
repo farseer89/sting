@@ -22,7 +22,8 @@ export type StrategyResultTabId =
   | 'clusters'
   | 'audience'
   | 'thesis'
-  | 'backlog';
+  | 'backlog'
+  | 'raw';
 
 function avatarLabel(plan: ProtopipeSiteContentPlan, avatarId: string): string {
   const avatar = plan.keywordStrategySnapshot?.confirmedAvatars?.find((a) => a.id === avatarId);
@@ -403,6 +404,33 @@ function pickDefaultStrategyTab(plan: ProtopipeSiteContentPlan): StrategyResultT
   return 'plan';
 }
 
+function buildRawResultTabBlocks(plan: ProtopipeSiteContentPlan): VisualizerBlock[] {
+  const payload = {
+    narrative: plan.narrative ?? null,
+    pillars: plan.pillars,
+    calendar: plan.calendar,
+    backlog: plan.backlog ?? [],
+    focusStrategies: plan.focusStrategies,
+    strategyIntel: plan.strategyIntel ?? null,
+    keywordTiers: plan.keywordTiers,
+    clusters: plan.clusters,
+    existingContent: plan.existingContent ?? null,
+  };
+  let code: string;
+  try {
+    code = JSON.stringify(payload, null, 2);
+  } catch {
+    code = '{}';
+  }
+  return [
+    {
+      kind: 'code',
+      label: 'Full strategy output',
+      code,
+    },
+  ];
+}
+
 /** Bottom-of-runner strategy result — one tab per warmed aspect of the build. */
 export function buildStrategyRunResultView(
   plan: ProtopipeSiteContentPlan,
@@ -453,6 +481,12 @@ export function buildStrategyRunResultView(
       label: 'Backlog',
       emptyMessage: 'Harvested topic backlog appears at the end of Strategy intel.',
       blocks: buildBacklogTabBlocks(plan),
+    },
+    {
+      id: 'raw' as const,
+      label: 'Raw',
+      emptyMessage: 'Raw strategy JSON appears when the plan has output.',
+      blocks: buildRawResultTabBlocks(plan),
     },
   ];
 
@@ -509,11 +543,11 @@ function buildStrategyIntelPhaseVisualizer(
   stepStatus: BinderStepStatus,
 ): StepVisualizerView {
   const meta = STRATEGY_INTEL_VISUAL_META[phase];
-  if (stepStatus === 'pending') {
+  const blocks = meta.build(plan);
+  if (stepStatus === 'pending' && blocks.length === 0) {
     return pendingView(meta.title);
   }
 
-  const blocks = meta.build(plan);
   return {
     title: meta.title,
     subtitle: blocks.length ? `${blocks.length} item(s)` : undefined,

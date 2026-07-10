@@ -5,6 +5,7 @@ import type {
 } from '@hive/contracts';
 import {
   calendarDateRange,
+  calendarDisplayTitle,
   calendarItemKey,
   compareCalendarPublishAt,
   formatPublishDate,
@@ -132,7 +133,7 @@ function mapCalendarItem(
   return {
     key: calendarItemKey(item),
     source: item,
-    title: item.workingTitle,
+    title: calendarDisplayTitle(item),
     keyword: item.suggestedKeyword,
     type: item.clusterRole,
     cluster: item.clusterName ?? 'Unassigned',
@@ -164,7 +165,7 @@ export function mapStrategyBinderView(
       angle: pillar.angle ?? cluster?.subtopic ?? cluster?.audienceLabel ?? '—',
       intent: cluster?.audienceLabel ?? mapIntent(clusterItems[0]?.intent),
       supportingCount: pillar.supportingCount,
-      articles: clusterItems.map((item) => item.workingTitle),
+      articles: clusterItems.map((item) => calendarDisplayTitle(item)),
     };
   });
 
@@ -177,7 +178,7 @@ export function mapStrategyBinderView(
     return {
       key: calendarItemKey(item),
       source: item,
-      title: item.workingTitle,
+      title: calendarDisplayTitle(item),
       keyword: item.suggestedKeyword,
       cluster: item.clusterName ?? 'Unassigned',
       volume: kw ? keywordVolume(kw) : 0,

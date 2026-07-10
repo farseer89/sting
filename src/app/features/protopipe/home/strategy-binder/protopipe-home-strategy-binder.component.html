@@ -216,47 +216,15 @@
 
         <!-- ── CALENDAR ── -->
         @case ('calendar') {
-          <div class="sb-panel-head">
-            <div class="sb-panel-kicker">Strategy · Schedule</div>
-            <h2 class="sb-panel-title">Content calendar</h2>
-            <p class="sb-panel-deck">{{ calendarDeck() }}</p>
-          </div>
-
-          <div class="sb-cal-list">
-            @for (item of calendar(); track item.key; let i = $index) {
-              <div
-                class="sb-cal-row"
-                [class.sb-cal-row--high]="item.priority === 'high'"
-                (click)="openCalendarItem(item.source)"
-              >
-                <div class="sb-cal-row__date">
-                  <span class="sb-cal-row__week">Wk {{ i + 1 }}</span>
-                  <span class="sb-cal-row__day">{{ item.publishAt }}</span>
-                </div>
-                <div class="sb-cal-row__body">
-                  <div class="sb-cal-row__head">
-                    <span class="sb-type-chip sb-type-chip--{{ item.type }}">{{ item.type }}</span>
-                    <span class="sb-cal-row__cluster">{{ item.cluster }}</span>
-                  </div>
-                  <p class="sb-cal-row__title">{{ item.title }}</p>
-                  <div class="sb-cal-row__meta">
-                    <span class="sb-kw-inline">{{ item.keyword }}</span>
-                    <span class="sb-cal-row__intent">{{ item.intent }}</span>
-                    <span class="sb-funnel-chip sb-funnel-chip--{{ item.funnelStage }}">{{ item.funnelStage }}</span>
-                  </div>
-                </div>
-                <div class="sb-cal-row__actions">
-                  <button
-                    type="button"
-                    class="sb-btn sb-btn--primary sb-btn--xs"
-                    (click)="runCalendarAction(item.source, $event)"
-                  >
-                    {{ calendarActionLabel(item.source) }}
-                  </button>
-                </div>
-              </div>
-            }
-          </div>
+          <app-strategy-binder-calendar-panel
+            [plan]="plan()"
+            [items]="calendar()"
+            [deck]="calendarDeck()"
+            [selectedKey]="selectedCalendarKey()"
+            [actionLabel]="calendarActionFn"
+            (selectItem)="openCalendarItem($event)"
+            (runAction)="onCalendarPanelAction($event)"
+          />
         }
 
         <!-- ── BACKLOG ── -->

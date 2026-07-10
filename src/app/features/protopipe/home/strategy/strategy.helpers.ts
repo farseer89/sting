@@ -60,6 +60,17 @@ export function calendarItemKey(item: ProtopipeContentPlanCalendarItem): string 
   return `${item.proposedPublishAt ?? 'backlog'}|${item.workingTitle}`;
 }
 
+/** Client-facing article title — prefer editorial title from strategy intel. */
+export function calendarDisplayTitle(item: ProtopipeContentPlanCalendarItem): string {
+  const editorial = item.editorialTitle?.trim();
+  if (editorial) return editorial;
+  const working = item.workingTitle?.trim();
+  if (working) return working;
+  const keyword = item.suggestedKeyword?.trim();
+  if (keyword) return keyword;
+  return 'Untitled';
+}
+
 export function formatPublishDate(iso: string | null | undefined): string {
   if (!iso) return 'Backlog';
   const d = new Date(iso);

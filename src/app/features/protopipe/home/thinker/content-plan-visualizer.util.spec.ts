@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import type { ProtopipeSiteContentPlan } from '@hive/contracts';
 import {
   buildContentPlanStepVisualizer,
@@ -106,9 +107,11 @@ describe('content-plan-visualizer.util', () => {
       'audience',
       'thesis',
       'backlog',
+      'raw',
     ]);
     expect(view.defaultTabId).toBe('plan');
     expect(view.tabs?.find((t) => t.id === 'thesis')?.blocks.length).toBeGreaterThan(0);
+    expect(view.tabs?.find((t) => t.id === 'raw')?.blocks[0]?.kind).toBe('code');
   });
 
   it('buildContentPlanStepVisualizer returns detailed blocks for keyword intel phase', () => {
@@ -149,7 +152,7 @@ describe('content-plan-visualizer.util', () => {
       narrative: { headline: 'Win local search', why: 'Sequence pillars before long-tail.' },
     });
     const view = buildContentPlanStepVisualizer(plan, 'strategy_result', 'running');
-    expect(view.tabs?.length).toBe(7);
+    expect(view.tabs?.length).toBe(8);
     expect(view.title).toBe('Strategy Result');
   });
 });

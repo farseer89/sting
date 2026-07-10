@@ -2,7 +2,7 @@ import type {
   ProtopipeContentPlanCalendarItem,
   ProtopipeSiteContentPlan,
 } from '@hive/contracts';
-import { calendarItemKey } from './strategy.helpers';
+import { calendarDisplayTitle, calendarItemKey } from './strategy.helpers';
 
 export type StrategyCalendarStatus = 'draft' | 'scheduled' | 'published' | 'research';
 
@@ -15,11 +15,19 @@ export interface StrategyCalendarSticky {
   isGap?: boolean;
 }
 
-export type StrategyCalendarViewMode = 'week' | 'month';
+export type StrategyCalendarViewMode = 'week' | 'month' | 'quarter';
 
-export const STRATEGY_CALENDAR_VIEW_MODES: { id: StrategyCalendarViewMode; label: string }[] = [
+/** Legacy map calendar — week + month only. */
+export const STRATEGY_CALENDAR_VIEW_MODES: { id: 'week' | 'month'; label: string }[] = [
   { id: 'week', label: 'This week' },
   { id: 'month', label: 'Month' },
+];
+
+/** Binder client calendar — week / month / quarter. */
+export const BINDER_CALENDAR_ZOOM_MODES: { id: StrategyCalendarViewMode; label: string }[] = [
+  { id: 'week', label: 'Week' },
+  { id: 'month', label: 'Month' },
+  { id: 'quarter', label: 'Quarter' },
 ];
 
 export interface StrategyWeekCalendar {
@@ -44,6 +52,21 @@ export interface StrategyContentCalendar {
   monthKey: string;
   weekdays: string[];
   weeks: StrategyCalendarCell[][];
+  articleCount: number;
+}
+
+export interface StrategyQuarterMonthColumn {
+  month: string;
+  monthKey: string;
+  shortLabel: string;
+  stickies: Array<StrategyCalendarSticky & { dayLabel: string }>;
+  articleCount: number;
+}
+
+export interface StrategyQuarterCalendar {
+  label: string;
+  quarterKey: string;
+  months: StrategyQuarterMonthColumn[];
   articleCount: number;
 }
 
@@ -152,7 +175,7 @@ function indexPostsByDate(
     const dayPosts = byDate.get(key) ?? [];
     dayPosts.push({
       itemKey: calendarItemKey(item),
-      title: item.workingTitle,
+      title: calendarDisplayTitle(item),
       status: calendarStatus(item, now),
       clusterName: item.clusterName ?? 'Unassigned',
       hint: stickyHint(plan, item),
@@ -297,4 +320,116 @@ export function buildWeekCalendarFromPlan(
 ): StrategyWeekCalendar {
   const postsByDate = indexPostsByDate(plan, now.getTime());
   return buildWeekCalendar(postsByDate, parseDateKey(weekStartKey), now);
+}
+
+function quarterKey(year: number, quarter: number): string {
+  return `${year}-Q${quarter}`;
+}
+
+function parseQuarterKey(key: string): { year: number; quarter: number } {
+  const match = /^(\d{4})-Q([1-4])$/.exec(key);
+  if (!match) {
+    const now = new Date();
+    return { year: now.getFullYear(), quarter: Math.floor(now.getMonth() / 3) + 1 };
+  }
+  return { year: Number(match[1]), quarter: Number(match[2]) };
+}
+
+function quarterLabel(year: number, quarter: number): string {
+  return `Q${quarter} ${year}`;
+}
+
+function shiftQuarterKey(key: string, delta: number): string {
+  const { year, quarter } = parseQuarterKey(key);
+  const absolute = year * 4 + (quarter - 1) + delta;
+  const nextYear = Math.floor(absolute / 4);
+  const nextQuarter = (absolute % 4) + 1;
+  return quarterKey(nextYear, nextQuarter);
+}
+
+export function initialQuarterKey(now = new Date()): string {
+  return quarterKey(now.getFullYear(), Math.floor(now.getMonth() / 3) + 1);
+}
+
+export function shiftWeekStartKey(weekStartKey: string, deltaWeeks: number): string {
+  const d = parseDateKey(weekStartKey);
+  d.setDate(d.getDate() + deltaWeeks * 7);
+  return toDateKey(d);
+}
+
+export function shiftMonthKey(key: string, deltaMonths: number): string {
+  const { year, month } = parseMonthKey(key);
+  const absolute = year * 12 + (month - 1) + deltaMonths;
+  const nextYear = Math.floor(absolute / 12);
+  const nextMonth = (absolute % 12) + 1;
+  return monthKey(nextYear, nextMonth);
+}
+
+export { shiftQuarterKey };
+
+/** Build a quarter overview: three month columns with dated stickies. */
+export function buildQuarterCalendarFromPlan(
+  plan: ProtopipeSiteContentPlan,
+  activeQuarterKey: string,
+  now = new Date(),
+): StrategyQuarterCalendar {
+  const postsByDate = indexPostsByDate(plan, now.getTime());
+  const { year, quarter } = parseQuarterKey(activeQuarterKey);
+  const startMonth = (quarter - 1) * 3 + 1;
+  const months: StrategyQuarterMonthColumn[] = [];
+  let articleCount = 0;
+
+  for (let i = 0; i < 3; i += 1) {
+    const month = startMonth + i;
+    const key = monthKey(year, month);
+    const stickies: Array<StrategyCalendarSticky & { dayLabel: string }> = [];
+
+    for (const [dateKey, dayStickies] of postsByDate) {
+      if (!dateKey.startsWith(key)) continue;
+      const day = Number(dateKey.slice(-2));
+      const dayLabel = new Date(year, month - 1, day).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      });
+      for (const sticky of dayStickies) {
+        stickies.push({ ...sticky, dayLabel });
+      }
+    }
+
+    stickies.sort((a, b) => a.dayLabel.localeCompare(b.dayLabel));
+    articleCount += stickies.length;
+    months.push({
+      month: monthLabel(year, month),
+      monthKey: key,
+      shortLabel: new Date(year, month - 1, 1).toLocaleDateString('en-US', { month: 'short' }),
+      stickies,
+      articleCount: stickies.length,
+    });
+  }
+
+  return {
+    label: quarterLabel(year, quarter),
+    quarterKey: activeQuarterKey,
+    months,
+    articleCount,
+  };
+}
+
+/** Build a single month grid even when that month has no posts yet. */
+export function buildMonthCalendarFromPlan(
+  plan: ProtopipeSiteContentPlan,
+  activeMonthKey: string,
+  now = new Date(),
+): StrategyContentCalendar {
+  const postsByDate = indexPostsByDate(plan, now.getTime());
+  const { year, month } = parseMonthKey(activeMonthKey);
+  const byDay = new Map<number, StrategyCalendarSticky[]>();
+
+  for (const [dateKey, stickies] of postsByDate) {
+    if (!dateKey.startsWith(activeMonthKey)) continue;
+    const day = Number(dateKey.slice(-2));
+    byDay.set(day, stickies);
+  }
+
+  return buildMonthGrid(year, month, byDay, now);
 }

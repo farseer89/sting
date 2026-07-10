@@ -28,7 +28,8 @@ export type VisualizerBlockKind =
   | 'notice'
   | 'image'
   | 'context-panel'
-  | 'lead-table';
+  | 'lead-table'
+  | 'code';
 
 export type LeadPriority = 'critical' | 'high' | 'medium' | 'monitor';
 
@@ -65,6 +66,8 @@ export interface VisualizerBlock {
   tone?: ContextPanelTone;
   /** Rows for lead-table blocks */
   leads?: LeadTableRow[];
+  /** Preformatted JSON / text for code blocks */
+  code?: string;
 }
 
 export interface StepVisualizerView {

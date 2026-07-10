@@ -21,7 +21,7 @@
         <span class="stratctx__status stratctx__status--{{ articleStatus(article) }}">
           {{ articleStatusLabel(article) }}
         </span>
-        <h2 class="stratctx__title">{{ article.workingTitle }}</h2>
+        <h2 class="stratctx__title">{{ displayTitle(article) }}</h2>
         <p class="stratctx__lede">
           {{ article.rationale ?? ctx.focusIdea?.rationale ?? 'Scheduled from your content strategy.' }}
         </p>

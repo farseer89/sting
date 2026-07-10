@@ -264,6 +264,15 @@
           }
         </figure>
       }
+
+      @case ('code') {
+        <div class="viz__code-wrap">
+          @if (block.label) {
+            <div class="viz__code-label">{{ block.label }}</div>
+          }
+          <pre class="viz__code">{{ block.code ?? block.text ?? '' }}</pre>
+        </div>
+      }
     }
   }
 </ng-template>

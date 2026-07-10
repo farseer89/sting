@@ -511,22 +511,37 @@ function buildStrategyIntelSubSteps(
   plan: ProtopipeSiteContentPlan,
   stepStatus: ThoughtStepStatus,
 ): ThoughtSubStep[] {
-  if (plan.strategyIntel && stepStatus === 'complete') {
-    return STRATEGY_INTEL_PHASES.map((phase) => ({
-      id: phase.id,
-      label: phase.label,
-      detail:
+  if (stepStatus === 'complete' || stepStatus === 'skipped') {
+    return STRATEGY_INTEL_PHASES.map((phase) => {
+      const detail =
         phase.id === 'intel:keyword'
-          ? `${plan.strategyIntel!.keywordIntel?.length ?? 0} keyword intel row(s)`
+          ? `${plan.strategyIntel?.keywordIntel?.length ?? 0} keyword intel row(s)`
           : phase.id === 'intel:cluster'
-            ? `${plan.strategyIntel!.clusterIntel?.length ?? 0} cluster theme(s)`
+            ? `${plan.strategyIntel?.clusterIntel?.length ?? 0} cluster theme(s)`
             : phase.id === 'intel:journey'
-              ? `${plan.strategyIntel!.avatarIntel?.length ?? 0} audience journey(s)`
+              ? `${plan.strategyIntel?.avatarIntel?.length ?? 0} audience journey(s)`
               : phase.id === 'intel:thesis'
-                ? `${plan.strategyIntel!.thesisSeeds?.length ?? 0} thesis seed(s)`
-                : `${plan.backlog?.length ?? 0} backlog candidate(s)`,
-      status: 'complete' as ThoughtStepStatus,
-    }));
+                ? `${plan.strategyIntel?.thesisSeeds?.length ?? 0} thesis seed(s)`
+                : `${plan.backlog?.length ?? 0} backlog candidate(s)`;
+
+      const hasContent =
+        phase.id === 'intel:keyword'
+          ? (plan.strategyIntel?.keywordIntel?.length ?? 0) > 0
+          : phase.id === 'intel:cluster'
+            ? (plan.strategyIntel?.clusterIntel?.length ?? 0) > 0
+            : phase.id === 'intel:journey'
+              ? (plan.strategyIntel?.avatarIntel?.length ?? 0) > 0
+              : phase.id === 'intel:thesis'
+                ? (plan.strategyIntel?.thesisSeeds?.length ?? 0) > 0
+                : (plan.backlog?.length ?? 0) > 0;
+
+      return {
+        id: phase.id,
+        label: phase.label,
+        detail,
+        status: (hasContent ? 'complete' : 'pending') as ThoughtStepStatus,
+      };
+    });
   }
 
   return STRATEGY_INTEL_PHASES.map((_, index) =>

@@ -18,12 +18,15 @@ import {
   mapStrategyBinderView,
   type StrategyBinderKeyword,
 } from './strategy-binder.mapper';
+import { StrategyBinderCalendarPanelComponent } from './strategy-binder-calendar-panel.component';
+import { calendarItemKey } from '../strategy/strategy.helpers';
 
 export type StrategySection = 'overview' | 'pillars' | 'calendar' | 'backlog' | 'keywords' | 'tune';
 
 @Component({
   selector: 'app-protopipe-home-strategy-binder',
   standalone: true,
+  imports: [StrategyBinderCalendarPanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './protopipe-home-strategy-binder.component.html',
   styleUrl: './protopipe-home-strategy-binder.component.scss',
@@ -52,6 +55,14 @@ export class ProtopipeHomeStrategyBinderComponent {
   readonly backlog = computed(() => this.vm().backlog);
   readonly keywords = computed(() => this.vm().keywords);
   readonly existingWins = computed(() => this.vm().existingWins);
+
+  readonly selectedCalendarKey = computed(() => {
+    const article = this.viewState.selectedArticle();
+    return article ? calendarItemKey(article) : null;
+  });
+
+  readonly calendarActionFn = (item: ProtopipeContentPlanCalendarItem): string =>
+    this.calendarActionLabel(item);
 
   readonly immediateFocus = computed(() =>
     this.keywords().filter((k) => k.tier === 'immediate'),
@@ -93,11 +104,13 @@ export class ProtopipeHomeStrategyBinderComponent {
     }
 
     const title = this.normalizeTitle(item.workingTitle);
-    if (!title) return undefined;
+    const editorial = this.normalizeTitle(item.editorialTitle);
+    if (!title && !editorial) return undefined;
     const itemDate = this.dateKey(item.proposedPublishAt);
 
     return posts.find((post) => {
-      if (this.normalizeTitle(post.title) !== title) return false;
+      const postTitle = this.normalizeTitle(post.title);
+      if (postTitle !== title && (!editorial || postTitle !== editorial)) return false;
       const postDate = this.dateKey(post.publishAt);
       return !itemDate || !postDate || itemDate === postDate;
     });
@@ -119,6 +132,14 @@ export class ProtopipeHomeStrategyBinderComponent {
 
   runCalendarAction(item: ProtopipeContentPlanCalendarItem, event: Event): void {
     event.stopPropagation();
+    this.executeCalendarAction(item);
+  }
+
+  onCalendarPanelAction(item: ProtopipeContentPlanCalendarItem): void {
+    this.executeCalendarAction(item);
+  }
+
+  private executeCalendarAction(item: ProtopipeContentPlanCalendarItem): void {
     const post = this.postForItem(item);
     if (post?.articleGenerationRunId) {
       void this.viewState.openInThinker({ ...item, contentPostId: post.id });

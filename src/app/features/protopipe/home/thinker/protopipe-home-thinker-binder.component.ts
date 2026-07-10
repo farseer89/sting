@@ -134,12 +134,14 @@ export class ProtopipeHomeThinkerBinderComponent {
   readonly isActive = this.thinkerView.isActive;
 
   readonly thought = computed(() => {
-    if (isShireRunsEnabled() && this.runKind() !== 'prospector') {
-      return this.thinkerView.shireThought();
-    }
+    // Content-plan runbook projects from the plan DTO (outputs, intel phases), not the
+    // flat Shire Thought — Shire steps lack subSteps / per-step artifacts.
     if (this.runKind() === 'content-plan') {
       const plan = this.thinkerView.contentPlanRun();
       return plan ? contentPlanRunToThought(plan) : null;
+    }
+    if (isShireRunsEnabled() && this.runKind() !== 'prospector') {
+      return this.thinkerView.shireThought();
     }
     if (this.runKind() === 'keyword-discovery') {
       const run = this.thinkerView.discoveryRun();

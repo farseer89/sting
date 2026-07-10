@@ -36,17 +36,16 @@ const ARTICLE_PIPELINE_STEP_IDS = new Set<string>([
 export function articleRunFromThought(thought: Thought | null | undefined): ArticleGenerationRunDto | null {
   if (!thought || thought.thinkerKind !== 'article_generation') return null;
 
-  const fromArtifacts = (thought.artifacts ?? {}) as Partial<ArticleGenerationArtifacts>;
+  const fromArtifacts = (thought.artifacts ?? {}) as Record<string, unknown>;
   const fromOutput = articleOutputFromThought(thought);
-  const artifacts: ArticleGenerationArtifacts = {
+  const artifacts = {
     ...fromOutput,
     ...fromArtifacts,
   } as ArticleGenerationArtifacts;
 
+  const articleTypeRaw = fromArtifacts['articleType'] ?? fromOutput['articleType'];
   const articleType =
-    (typeof artifacts.articleType === 'string' && artifacts.articleType) ||
-    (typeof fromOutput.articleType === 'string' && fromOutput.articleType) ||
-    'pillar';
+    (typeof articleTypeRaw === 'string' && articleTypeRaw) || 'pillar';
 
   return {
     id: thought.id,
@@ -63,11 +62,11 @@ export function articleRunFromThought(thought: Thought | null | undefined): Arti
   };
 }
 
-function articleOutputFromThought(thought: Thought): Partial<ArticleGenerationArtifacts> {
+function articleOutputFromThought(thought: Thought): Record<string, unknown> {
   const port = thought.outputs?.find((o) => o.portId === 'article');
   const data = port?.artifact?.data;
   if (!data || typeof data !== 'object') return {};
-  return data as Partial<ArticleGenerationArtifacts>;
+  return data as Record<string, unknown>;
 }
 
 export function buildArticleVisualizerForStep(options: {

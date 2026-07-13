@@ -70,7 +70,7 @@ export function parseProtopipeApiError(err: unknown, fallback: string): string {
       return 'You do not have access to this resource.';
     }
     if (err.status === 404) {
-      return 'Plan not found.';
+      return 'Not found.';
     }
     if (err.status === 409) {
       const publishBody = body as { message?: string; seoValidation?: SeoValidationResult } | null;

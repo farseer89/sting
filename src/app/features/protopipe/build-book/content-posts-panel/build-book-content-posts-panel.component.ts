@@ -17,6 +17,7 @@ import { ProtopipeApiService } from '../../protopipe-api.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import type { BuildBookPage } from '../build-book.types';
 import { ProtopipeBuildBookService } from '../protopipe-build-book.service';
+import { parseProtopipeApiError } from '../../protopipe-http.util';
 
 function calendarItemKey(item: ProtopipeContentPlanCalendarItem): string {
   return `${item.proposedPublishAt ?? 'backlog'}|${item.workingTitle}`;
@@ -124,6 +125,8 @@ export class BuildBookContentPostsPanelComponent implements OnInit {
         title,
         slug: slugifyTitle(title),
         status: 'draft',
+        description: `${title} — draft post.`,
+        bodyMarkdown: `Draft for “${title}”. Generate the article from the writer.`,
       });
       const contentPostId = created.post?.id;
       const page = this.buildBook.createBlogPostPage(title, { contentPostId });
@@ -134,8 +137,8 @@ export class BuildBookContentPostsPanelComponent implements OnInit {
       if (contentPostId) {
         this.openWriter(contentPostId);
       }
-    } catch {
-      this.planError.set('Could not create a portable draft post.');
+    } catch (err) {
+      this.planError.set(parseProtopipeApiError(err, 'Could not create a portable draft post.'));
     } finally {
       this.creatingDraft.set(false);
     }
@@ -210,8 +213,25 @@ export class BuildBookContentPostsPanelComponent implements OnInit {
           slug: slugifyTitle(title),
           status: 'draft',
           publishAt: item.proposedPublishAt ?? undefined,
+          description:
+            item.rationale?.trim().slice(0, 300) ||
+            `${title} — draft from the content plan.`,
+          bodyMarkdown: [
+            item.keyQuestionToAnswer ? `Key question: ${item.keyQuestionToAnswer}` : null,
+            item.rationale,
+            `Draft for “${title}”. Generate the article from the writer.`,
+          ]
+            .filter(Boolean)
+            .join('\n\n'),
+          ...(item.suggestedKeyword
+            ? ({ suggestedKeyword: item.suggestedKeyword } as { suggestedKeyword: string })
+            : {}),
         });
         contentPostId = created.post?.id;
+      }
+
+      if (!contentPostId) {
+        throw new Error('Content post was not created for this plan item.');
       }
 
       const page = this.buildBook.createBlogPostPage(title, {
@@ -222,8 +242,12 @@ export class BuildBookContentPostsPanelComponent implements OnInit {
       if (page) {
         this.selectedPageIdChange.emit(page.id);
       }
-    } catch {
-      this.planError.set('Could not add this plan item as a blog page.');
+    } catch (err) {
+      const fromConfirm = this.contentPlan.error();
+      this.planError.set(
+        fromConfirm ||
+          parseProtopipeApiError(err, 'Could not add this plan item as a blog page.'),
+      );
     } finally {
       this.addingPlanKey.set(null);
     }

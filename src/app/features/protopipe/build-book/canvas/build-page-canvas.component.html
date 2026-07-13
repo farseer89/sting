@@ -218,7 +218,7 @@
           }
         </main>
       </div>
-    } @else {
+    } @else if (baselineSiteRenderer() === 'wri-site') {
       <div class="wri-page wri-page--site bb-page-canvas__wri-shell">
         <div class="wri-site">
           <app-protopipe-build-wri-site-header [editable]="editable()" />
@@ -292,6 +292,38 @@
           <app-protopipe-build-wri-site-footer [editable]="editable()" />
         </div>
       </div>
+    } @else {
+      <!-- No brand shell until a site template/baseline is bound (do not default to WRI). -->
+      <main class="bb-page-canvas__neutral-shell">
+        @for (block of blocks(); track block.id) {
+          <app-protopipe-build-block-section
+            [attr.data-block-id]="block.id"
+            [attr.data-focus-active]="isFocusBlockActive(block.id)"
+            [section]="block.section"
+            [blockInstanceId]="block.id"
+            [baselineBlockId]="block.blockId"
+            [blockId]="block.blockId"
+            [layout]="block.layout"
+            [props]="block.props"
+            [configured]="block.configured"
+            [editable]="editable()"
+            [active]="activeBlockId() === block.id"
+            [heroLayoutId]="heroLayoutId()"
+            [heroImageUrl]="heroImageUrl()"
+            [blockLabel]="block.label"
+            [showBlockChrome]="editable() && !block.pendingPreview"
+            [pendingPreview]="block.pendingPreview ?? false"
+            [heroPhotoDrifted]="heroPhotoDriftedBlockId() === block.id"
+            (sectionClick)="onBlockClick(block.id)"
+            (propPathChange)="onBlockPropPathChange(block.id, $event.path, $event.value)"
+            (propsChange)="onBlockPropsChange(block.id, $event)"
+            (copyChange)="copyChange.emit($event)"
+            (imageEdit)="onBlockImageEdit(block.id, $event)"
+            (inspectorNavigate)="inspectorNavigate.emit($event)"
+            (resetHeroPhoto)="resetHeroPhoto.emit(block.id)"
+          />
+        }
+      </main>
     }
   } @else {
     @for (slot of sectionSlots; track slot) {

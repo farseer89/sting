@@ -180,8 +180,16 @@
 
   p {
     margin: 0;
+    flex: 1 1 12rem;
     color: #0f766e;
     font-size: 0.75rem;
     line-height: 1.4;
   }
+}
+
+.bk-content-posts__writer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
 }

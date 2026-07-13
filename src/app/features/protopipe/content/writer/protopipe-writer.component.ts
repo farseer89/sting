@@ -51,6 +51,7 @@ import {
 } from '../../protopipe.constants';
 import { ProtopipeApiService } from '../../protopipe-api.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
+import { ProtopipeBuildBookService } from '../../build-book/protopipe-build-book.service';
 import { ProtopipeThoughtPacksService } from '../../thought-packs/protopipe-thought-packs.service';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 import {
@@ -304,6 +305,7 @@ export class ProtopipeWriterComponent implements OnDestroy {
   protected readonly content = inject(ProtopipeContentService);
   private readonly api = inject(ProtopipeApiService);
   private readonly strategy = inject(ProtopipeStrategyService);
+  private readonly buildBook = inject(ProtopipeBuildBookService);
   private readonly thoughtPacks = inject(ProtopipeThoughtPacksService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -314,6 +316,10 @@ export class ProtopipeWriterComponent implements OnDestroy {
   private readonly homeThinkerView = inject(ProtopipeHomeThinkerViewState, { optional: true });
   private readonly imageFileInput = viewChild<ElementRef<HTMLInputElement>>('imageFileInput');
   private readonly articleBlockCanvas = viewChild(ProtopipeArticleBlockCanvasComponent);
+
+  readonly writerSiteTheme = computed(
+    () => this.buildBook.resolveSiteDesignContext(null, 'blog-post')?.theme ?? null,
+  );
 
   readonly imageUploading = signal(false);
   readonly imageUploadSectionIndex = signal<number | null>(null);

@@ -4,6 +4,21 @@
   gap: 1.25rem;
   max-width: 80rem;
 
+  &--embedded {
+    max-width: none;
+    gap: 1rem;
+
+    .cp__header {
+      padding: 1rem 1.15rem;
+      box-shadow: none;
+      border: 1px solid var(--surface-border);
+    }
+
+    h1 {
+      font-size: 1.25rem;
+    }
+  }
+
   &__header {
     display: flex;
     align-items: flex-start;

@@ -9,6 +9,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import type { Editor } from '@tiptap/core';
 import type { ProtopipeArticleBlock, ProtopipeContentTemplate } from '@hive/contracts';
+import type { SiteThemeTokens } from '../../../site-design/site-design.types';
 import {
   imagePlaceholderHint,
   patchBlock,
@@ -54,6 +55,7 @@ export class ProtopipeArticleBlockCanvasComponent {
     | { kind: 'prose'; blockId: string; imageIndex: number }
     | null
   >(null);
+  readonly siteTheme = input<SiteThemeTokens | null>(null);
 
   readonly templateChange = output<ProtopipeContentTemplate>();
   readonly editorReady = output<ArticleCanvasEditorReady>();

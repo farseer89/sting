@@ -11,13 +11,125 @@
         <span class="void-topnav__tab">Analytics</span>
         <span class="void-topnav__tab">Settings</span>
       } @else if (isWriterFocus()) {
-        <span class="void-topnav__focus-label">Writing</span>
-      } @else if (isBuildBookFocus()) {
-        <span class="void-topnav__focus-label">Build book</span>
+        <span class="void-topnav__focus-quiet">Writing</span>
       }
     </nav>
 
     <div class="void-topnav__right">
+      @if (isBuildBookFocus()) {
+        @if (buildBookCmp(); as bb) {
+          <div class="void-topnav__build" aria-label="Build book actions">
+            <button
+              type="button"
+              class="void-topnav__runbook"
+              [disabled]="!bb.canViewRunbook()"
+              [attr.title]="
+                bb.canViewRunbook()
+                  ? 'Open the strategy build runbook'
+                  : 'Confirm research and generate a content plan first'
+              "
+              (click)="bb.viewRunbook()"
+            >
+              <i class="pi pi-book" aria-hidden="true"></i>
+              <span>View runbook</span>
+            </button>
+
+            @if (bb.buildBook.hasDraft()) {
+              @if (bb.publishInProgress()) {
+                <span
+                  class="void-topnav__chip void-topnav__chip--publishing"
+                  role="status"
+                  [pTooltip]="bb.publishProgressTooltip()"
+                  tooltipPosition="bottom"
+                >
+                  <p-progressSpinner strokeWidth="4" [style]="{ width: '0.7rem', height: '0.7rem' }" />
+                  Publishing…
+                </span>
+              } @else if (bb.publishStatus() === 'failed') {
+                <button
+                  type="button"
+                  class="void-topnav__chip void-topnav__chip--failed"
+                  (click)="publishErrorPopover.toggle($event)"
+                  [attr.aria-expanded]="bb.publishErrorOpen()"
+                >
+                  Failed
+                  <i class="pi pi-angle-down" aria-hidden="true"></i>
+                </button>
+                <p-popover
+                  #publishErrorPopover
+                  (onShow)="bb.publishErrorOpen.set(true)"
+                  (onHide)="bb.publishErrorOpen.set(false)"
+                >
+                  <div class="void-topnav__popover">
+                    <p class="void-topnav__popover-title">Publish failed</p>
+                    <p class="void-topnav__popover-body">
+                      {{ bb.strategy.site()?.provisioningError || 'Deploy failed. Retry publish when ready.' }}
+                    </p>
+                  </div>
+                </p-popover>
+              } @else if (bb.publishStatus() === 'live') {
+                <span class="void-topnav__chip void-topnav__chip--live">Live</span>
+              }
+
+              @if (bb.liveSiteUrl(); as liveUrl) {
+                <a
+                  class="void-topnav__icon-btn"
+                  [href]="liveUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open live site"
+                  pTooltip="Open live site"
+                  tooltipPosition="bottom"
+                >
+                  <i class="pi pi-external-link" aria-hidden="true"></i>
+                </a>
+              }
+            }
+
+            @if (bb.buildBook.dirty()) {
+              <span class="void-topnav__dirty">Unsaved</span>
+            }
+            <p-button
+              [label]="bb.buildBook.saving() ? 'Saving…' : bb.buildBook.dirty() ? 'Save' : 'Saved'"
+              [disabled]="!bb.buildBook.dirty() || bb.buildBook.saving() || !bb.buildBook.hasDraft()"
+              size="small"
+              (onClick)="bb.save()"
+            />
+            <span
+              class="void-topnav__publish-wrap"
+              [pTooltip]="!bb.canPublish() && !bb.publishInProgress() ? bb.publishBlockers() : undefined"
+              tooltipPosition="bottom"
+            >
+              <p-button
+                [label]="bb.publishButtonLabel()"
+                icon="pi pi-cloud-upload"
+                size="small"
+                [loading]="bb.publishing() || (bb.publishInProgress() && !bb.publishStale())"
+                [disabled]="!bb.canPublish()"
+                (onClick)="bb.publishSite()"
+              />
+            </span>
+            <p-button
+              [label]="bb.previewOpen() ? 'Hide inspector' : 'Show inspector'"
+              icon="pi pi-sliders-h"
+              severity="secondary"
+              size="small"
+              [disabled]="!bb.isPageEditor()"
+              (onClick)="bb.toggleInspector()"
+            />
+            @if (bb.isPageEditor() && bb.isBaselineMode()) {
+              <p-button
+                [label]="bb.canvasViewMode() === 'focus' ? 'Full page' : 'Focus block'"
+                icon="pi pi-window-maximize"
+                severity="secondary"
+                size="small"
+                (onClick)="bb.toggleCanvasViewMode()"
+              />
+            }
+          </div>
+        }
+      }
+
       <div class="void-topnav__user-menu">
         <button
           type="button"

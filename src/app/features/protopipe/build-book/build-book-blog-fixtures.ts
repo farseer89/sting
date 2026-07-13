@@ -111,63 +111,99 @@ export function blogFixtureFeatured(
   return BUILD_BOOK_BLOG_FIXTURE_POSTS[0];
 }
 
-/** Props overlay for Content Posts article preview — fills empty skeleton chrome. */
+/**
+ * Props overlay for Content Posts article preview.
+ * Always overwrites display copy with fixture article content so preview
+ * reads as a filled post — not the empty/default profile chrome.
+ */
 export function articlePreviewPropsForPattern(
   patternId: string,
   existing: Record<string, unknown>,
 ): Record<string, unknown> {
   const post = BUILD_BOOK_BLOG_FIXTURE_POSTS[0];
+  const related = BUILD_BOOK_BLOG_FIXTURE_POSTS.slice(0, 3).map((item) => ({
+    category: item.category,
+    title: item.title,
+    image: item.coverImage || '',
+  }));
+
   switch (patternId) {
     case 'section-intro':
       return {
         ...existing,
-        kicker: String(existing['kicker'] || post.category),
-        heading: String(existing['heading'] || post.title),
-        body: String(existing['body'] || post.excerpt),
+        kicker: post.category,
+        heading: post.title,
+        body: `${post.excerpt}\n\n${post.date} · ${post.readTime}`,
       };
     case 'prose-band':
       return {
         ...existing,
-        kicker: String(existing['kicker'] || 'Article'),
-        heading: String(existing['heading'] || post.title),
-        body: String(existing['body'] || post.body),
+        kicker: post.category,
+        heading: post.title,
+        // Universal / generic prose
+        body: post.body,
+        // Sparky field-notes band uses lede + article cards
+        lede: post.body,
+        articles: related,
       };
     case 'faq-accordion':
       return {
         ...existing,
-        kicker: String(existing['kicker'] || 'FAQ'),
-        heading: String(existing['heading'] || 'Common questions'),
-        items: Array.isArray(existing['items']) && (existing['items'] as unknown[]).length
-          ? existing['items']
-          : [
-              {
-                q: 'How long does a typical project take?',
-                a: 'Most residential jobs wrap in one to three days once materials are staged — we confirm the schedule in writing before we start.',
-              },
-              {
-                q: 'Do you handle permits?',
-                a: 'When the scope requires it, yes. We flag permit needs during scoping so timelines stay honest.',
-              },
-            ],
+        kicker: 'FAQ',
+        heading: `Questions about “${post.title}”`,
+        subhead: 'Sample questions a published article might answer.',
+        items: [
+          {
+            q: 'How long does a typical project take?',
+            a: 'Most residential jobs wrap in one to three days once materials are staged — we confirm the schedule in writing before we start.',
+          },
+          {
+            q: 'Do you handle permits?',
+            a: 'When the scope requires it, yes. We flag permit needs during scoping so timelines stay honest.',
+          },
+          {
+            q: 'What should I prepare before the site visit?',
+            a: 'Clear access to the work area, share any prior plans or photos, and note constraints like HOA rules or shared walls.',
+          },
+        ],
       };
     case 'cta-banner':
+    case 'inquiry-close':
       return {
         ...existing,
-        heading: String(existing['heading'] || 'Ready to talk through your project?'),
-        body: String(
-          existing['body'] || 'Tell us what you are planning — we will reply with clear next steps.',
-        ),
+        heading: 'Ready to talk through your project?',
+        body: 'This is how the article CTA reads after generation — clear next step, same theme as your profile.',
         ctaLabel: String(existing['ctaLabel'] || existing['label'] || 'Get in touch'),
         ctaHref: String(existing['ctaHref'] || existing['href'] || '/contact'),
+        primaryCtaLabel: String(
+          existing['primaryCtaLabel'] || existing['ctaLabel'] || 'Get in touch',
+        ),
+        primaryCtaHref: String(existing['primaryCtaHref'] || existing['ctaHref'] || '/contact'),
       };
     case 'content-split':
       return {
         ...existing,
-        kicker: String(existing['kicker'] || post.category),
-        heading: String(existing['heading'] || post.title),
-        body: String(existing['body'] || post.body),
+        kicker: post.category,
+        heading: post.title,
+        body: post.body,
+      };
+    case 'work-gallery':
+    case 'video-reel':
+      return {
+        ...existing,
+        kicker: post.category,
+        heading: `Visuals for “${post.title}”`,
+        subhead: post.excerpt,
       };
     default:
-      return { ...existing };
+      return {
+        ...existing,
+        ...(typeof existing['heading'] === 'string' || existing['heading'] == null
+          ? { heading: post.title }
+          : {}),
+        ...(typeof existing['body'] === 'string' || existing['body'] == null
+          ? { body: post.body }
+          : {}),
+      };
   }
 }

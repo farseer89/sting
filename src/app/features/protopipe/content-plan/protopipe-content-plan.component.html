@@ -1,13 +1,21 @@
-<div class="cp">
+<div class="cp" [class.cp--embedded]="embedded()">
   <header class="cp__header surface-card border-round shadow-2">
     <div>
-      <p class="cp__eyebrow m-0">
-        <a routerLink="/protopipe" class="cp__back">Dashboard</a>
-        <span class="mx-1">/</span> Content plan
-      </p>
-      <h1 class="m-0 mt-1">Site content plan</h1>
+      @if (!embedded()) {
+        <p class="cp__eyebrow m-0">
+          <a routerLink="/protopipe" class="cp__back">Dashboard</a>
+          <span class="mx-1">/</span> Content plan
+        </p>
+      } @else {
+        <p class="cp__eyebrow m-0">Content plan</p>
+      }
+      <h1 class="m-0 mt-1">{{ embedded() ? 'Strategy' : 'Site content plan' }}</h1>
       <p class="m-0 mt-2 text-color-secondary">
-        Top-keyword research, SERP analysis, clusters and a scheduled calendar — unified.
+        @if (embedded()) {
+          Finished plan, calendar, and thinker run status for this site.
+        } @else {
+          Top-keyword research, SERP analysis, clusters and a scheduled calendar — unified.
+        }
       </p>
     </div>
     <div class="cp__header-actions">
@@ -20,6 +28,22 @@
       }
       @if (plan()?.llmModel; as model) {
         <p-tag [value]="model" severity="secondary" />
+      }
+      @if (hasThinkerShell()) {
+        <p-button
+          label="View runbook"
+          icon="pi pi-book"
+          severity="secondary"
+          [outlined]="true"
+          [disabled]="!canViewRunbook()"
+          [pTooltip]="
+            canViewRunbook()
+              ? 'Open the strategy build runbook'
+              : 'Generate a content plan first to view the runbook'
+          "
+          tooltipPosition="bottom"
+          (onClick)="viewRunbook()"
+        />
       }
       <p-button
         [label]="isRunning() ? 'Running…' : plan() ? 'Regenerate plan' : 'Generate plan'"

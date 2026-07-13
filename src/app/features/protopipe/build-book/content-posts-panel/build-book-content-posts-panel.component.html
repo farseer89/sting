@@ -113,15 +113,31 @@
     </ul>
   </aside>
   <div class="bk-content-posts__editor">
-    @if (selectedPage()?.contentPostId; as postId) {
+    @if (selectedPage(); as page) {
       <div class="bk-content-posts__writer-bar">
-        <p>Portable content post linked — edit, preview, and publish to Astro from the writer.</p>
-        <p-button
-          label="Open writer / publish"
-          icon="pi pi-external-link"
-          size="small"
-          (onClick)="openWriter(postId)"
-        />
+        @if (page.contentPostId; as postId) {
+          <p>Portable content post linked — edit, preview, and publish to Astro from the writer.</p>
+        } @else {
+          <p>Blog profile stack for this page — reset to the default beautiful template if needed.</p>
+        }
+        <div class="bk-content-posts__writer-actions">
+          @if (page.contentPostId; as postId) {
+            <p-button
+              label="Open writer / publish"
+              icon="pi pi-external-link"
+              size="small"
+              (onClick)="openWriter(postId)"
+            />
+          }
+          <p-button
+            label="Reset to default template"
+            icon="pi pi-refresh"
+            size="small"
+            severity="secondary"
+            [outlined]="true"
+            (onClick)="resetSelectedToDefaultTemplate()"
+          />
+        </div>
       </div>
     }
     <ng-content />

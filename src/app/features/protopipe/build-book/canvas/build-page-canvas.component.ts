@@ -182,7 +182,13 @@ export class ProtopipeBuildPageCanvasComponent {
     const renderer = this.baselineSiteRenderer();
     if (renderer === 'sparky-site') return this.sparkyRenderSegments();
     if (renderer === 'veil-site') return this.veilRenderSegments();
-    return this.wriRenderSegments();
+    if (renderer === 'wri-site') return this.wriRenderSegments();
+    // wilco / hil / unset — flat stack (never treat null as WRI)
+    return this.blocks().map((block) => ({
+      key: block.id,
+      type: 'single' as const,
+      blocks: [block],
+    }));
   });
 
   stateFor(section: BuildBookSection): BuildPageSectionState {

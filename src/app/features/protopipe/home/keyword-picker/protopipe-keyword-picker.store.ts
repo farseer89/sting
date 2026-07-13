@@ -38,7 +38,9 @@ const IDLE_POOL_PREVIEW = 25;
 const SEED_PHRASE_COUNT = 3;
 const DISCOVERY_POLL_MS = 1500;
 const DISCOVERY_POLL_MAX = 120;
-const MAX_AVATARS = 3;
+/** Max audiences allowed when confirming a keyword strategy (matches bagend confirm). */
+export const MAX_KEYWORD_PICKER_AVATARS = 3;
+const MAX_AVATARS = MAX_KEYWORD_PICKER_AVATARS;
 
 export type KeywordPickerWizardStep = 'keywords' | 'avatars' | 'build';
 
@@ -267,8 +269,27 @@ export class ProtopipeKeywordPickerStore {
   }
 
   goToBuildStep(): boolean {
-    const count = this._selectedAvatarIds().size;
-    if (count === 0 || count > MAX_AVATARS) return false;
+    const selected = this._selectedAvatarIds();
+    if (selected.size === 0) {
+      this._error.set(`Select at least one audience (up to ${MAX_AVATARS}).`);
+      return false;
+    }
+    if (selected.size > MAX_AVATARS) {
+      const keep = new Set<string>();
+      for (const av of this._suggestedAvatars()) {
+        if (!selected.has(av.id)) continue;
+        keep.add(av.id);
+        if (keep.size >= MAX_AVATARS) break;
+      }
+      if (keep.size < MAX_AVATARS) {
+        for (const id of selected) {
+          if (keep.has(id)) continue;
+          keep.add(id);
+          if (keep.size >= MAX_AVATARS) break;
+        }
+      }
+      this._selectedAvatarIds.set(keep);
+    }
     this._wizardStep.set('build');
     this._error.set(null);
     return true;
@@ -673,8 +694,12 @@ export class ProtopipeKeywordPickerStore {
   private applySuggestedAvatars(avatars: ProtopipeSuggestedAvatar[]): void {
     this._suggestedAvatars.set(avatars);
     const preselected = new Set<string>();
+    // Discovery may mark every onboarding avatar as preselected (often > MAX).
+    // Cap so "Continue to review" is not a silent no-op.
     for (const av of avatars) {
-      if (av.preselected) preselected.add(av.id);
+      if (!av.preselected) continue;
+      preselected.add(av.id);
+      if (preselected.size >= MAX_AVATARS) break;
     }
     if (preselected.size === 0 && avatars.length > 0) {
       preselected.add(avatars[0].id);

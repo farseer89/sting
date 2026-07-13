@@ -663,7 +663,7 @@ function buildContentPlanSubSteps(
           ...plan.clusters.map((c) => ({
             id: `cluster:${c.name}`,
             label: c.name,
-            detail: `${c.members.length} member(s) · pillar “${c.pillarKeyword}”`,
+            detail: `${c.members?.length ?? 0} member(s) · pillar “${c.pillarKeyword}”`,
             status: 'complete' as ThoughtStepStatus,
           })),
         ];

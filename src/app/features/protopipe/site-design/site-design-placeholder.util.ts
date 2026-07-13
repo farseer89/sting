@@ -18,7 +18,7 @@ export function themedPlaceholderImageUrl(theme: SiteThemeTokens, label = 'Photo
       <rect width="1600" height="1000" fill="url(%23g)"/>
       <rect x="620" y="420" width="360" height="160" rx="24" fill="${accent}" fill-opacity="0.18"/>
       <text x="800" y="510" text-anchor="middle" font-family="system-ui,sans-serif" font-size="42" font-weight="700" fill="${ink}">${label}</text>
-      <text x="800" y="560" text-anchor="middle" font-family="system-ui,sans-serif" font-size="24" fill="${muted}">Add photos in SEO Strategy</text>
+      <text x="800" y="560" text-anchor="middle" font-family="system-ui,sans-serif" font-size="24" fill="${muted}">Add photos in Media Library</text>
     </svg>
   `.trim();
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;

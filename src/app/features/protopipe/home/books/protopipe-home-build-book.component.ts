@@ -84,6 +84,11 @@ import {
 } from '../../build-book/build-book-block-registry.util';
 import { articlePreviewPropsForPattern } from '../../build-book/build-book-blog-fixtures';
 import {
+  articleFillFingerprint,
+  fillBlogPostBlockProps,
+  fillSourceFromProtopipeTemplate,
+} from '../../build-book/build-book-article-fill.util';
+import {
   ensureSiteThemeCatalogFontsReady,
   ensureSiteThemeGoogleFontCatalogLoaded,
   ensureSiteThemeGoogleFontsLoaded,
@@ -248,6 +253,8 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
   readonly switchingSite = signal(false);
   readonly switchingSiteId = signal<string | null>(null);
   readonly contentPostsCanvasMode = signal<ContentPostsCanvasMode>('profile');
+  /** pageId → article fill fingerprint — avoid re-writing Profile on every tick. */
+  private readonly articleFillApplied = new Map<string, string>();
 
   readonly isPageEditor = computed(() => {
     if (!this.buildBook.hasDraft()) return false;
@@ -310,6 +317,38 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
       void ensureSiteThemeCatalogFontsReady();
       const ctx = this.siteDesignContext();
       if (ctx) ensureSiteThemeGoogleFontsLoaded(ctx.theme.typography);
+    });
+
+    effect(() => {
+      if (this.bookTab() !== 'content-posts') return;
+      const pageId = this.blogPostId();
+      if (!pageId) return;
+      // Touch posts catalog so return-from-writer refresh re-runs fill.
+      void this.content.posts();
+      const page = this.buildBook.blogPosts().find((item) => item.id === pageId);
+      const postId = page?.contentPostId;
+      if (!postId) return;
+      const post = this.content.postById(postId);
+      const template = post?.template;
+      if (!template) return;
+      const hasBody =
+        Boolean(template.intro?.trim()) ||
+        (template.sections?.length ?? 0) > 0 ||
+        (template.blocks?.length ?? 0) > 0;
+      if (!hasBody) return;
+
+      const source = fillSourceFromProtopipeTemplate(template, {
+        kicker: page?.suggestedKeyword,
+      });
+      const fingerprint = articleFillFingerprint(source);
+      if (this.articleFillApplied.get(pageId) === fingerprint) return;
+
+      // Defer write so we do not mutate Build Book signals synchronously inside the effect.
+      queueMicrotask(() => {
+        if (this.articleFillApplied.get(pageId) === fingerprint) return;
+        this.buildBook.applyArticleFillToBlogPage(pageId, source);
+        this.articleFillApplied.set(pageId, fingerprint);
+      });
     });
   }
 
@@ -681,11 +720,29 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
   readonly pageBlockStates = computed((): BuildPageBlockState[] => {
     const articlePreview =
       this.bookTab() === 'content-posts' && this.contentPostsCanvasMode() === 'article-preview';
-    const states: BuildPageBlockState[] = this.pageStackBlocks().map((block) => {
+    const stack = this.pageStackBlocks();
+    const linkedTemplate = articlePreview ? this.linkedContentPostTemplate() : null;
+    const filledPropsById = linkedTemplate
+      ? new Map(
+          fillBlogPostBlockProps(
+            stack,
+            fillSourceFromProtopipeTemplate(linkedTemplate, {
+              kicker: this.activeBlogPostKeyword(),
+            }),
+          ).map((block) => [block.id, block.props] as const),
+        )
+      : null;
+
+    const states: BuildPageBlockState[] = stack.map((block) => {
       const patternId = block.patternId ?? resolvePatternIdForBlock(block.blockId);
-      const props = articlePreview
-        ? articlePreviewPropsForPattern(patternId, structuredClone(block.props))
-        : structuredClone(block.props);
+      let props: Record<string, unknown>;
+      if (filledPropsById) {
+        props = structuredClone(filledPropsById.get(block.id) ?? block.props);
+      } else if (articlePreview) {
+        props = articlePreviewPropsForPattern(patternId, structuredClone(block.props));
+      } else {
+        props = structuredClone(block.props);
+      }
       return {
         id: block.id,
         blockId: block.blockId,
@@ -705,6 +762,28 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
     const insertAt = Math.min(Math.max(0, pending.insertAt), states.length);
     return [...states.slice(0, insertAt), ghost, ...states.slice(insertAt)];
   });
+
+  private linkedContentPostTemplate(): ProtopipeContentPost['template'] | null {
+    const pageId = this.blogPostId();
+    if (!pageId) return null;
+    const page = this.buildBook.blogPosts().find((item) => item.id === pageId);
+    const postId = page?.contentPostId;
+    if (!postId) return null;
+    const post = this.content.postById(postId);
+    const template = post?.template;
+    if (!template) return null;
+    const hasBody =
+      Boolean(template.intro?.trim()) ||
+      (template.sections?.length ?? 0) > 0 ||
+      (template.blocks?.length ?? 0) > 0;
+    return hasBody ? template : null;
+  }
+
+  private activeBlogPostKeyword(): string | undefined {
+    const pageId = this.blogPostId();
+    if (!pageId) return undefined;
+    return this.buildBook.blogPosts().find((item) => item.id === pageId)?.suggestedKeyword;
+  }
 
   readonly canvasEditable = computed(
     () =>
@@ -798,7 +877,10 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
         return;
       }
     }
-    this.bookTab.set('homepage');
+    // Homepage section nav only — keep landing/blog/content page editors on their tab.
+    if (!this.usesPageBuilderRail()) {
+      this.bookTab.set('homepage');
+    }
     this.section.set(id);
     this.scrollToSection.set(id);
     this.syncWorkflowToUrl();
@@ -811,7 +893,9 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
   selectBlock(blockInstanceId: string): void {
     const block = this.pageStackBlocks().find((item) => item.id === blockInstanceId);
     if (!block) return;
-    if (this.bookTab() !== 'landing-pages' && this.bookTab() !== 'content-posts') {
+    // Page-builder tabs (landing / blog-home / content-posts) must stay put when
+    // selecting or inserting a block — previously blog-home bounced to homepage.
+    if (!this.usesPageBuilderRail()) {
       this.bookTab.set('homepage');
     }
     this.activeBlockId.set(block.id);
@@ -1014,6 +1098,7 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
   async onEditSiteFromList(siteId: string): Promise<void> {
     if (!siteId) return;
     if (this.strategy.siteId() === siteId) {
+      await this.buildBook.ensureHostedSiteBaseline();
       this.selectBookTab(this.buildBook.hasDraft() ? 'homepage' : 'templates');
       return;
     }
@@ -1086,6 +1171,15 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
       this.openPreview();
     }
     this.syncWorkflowToUrl();
+  }
+
+  onBlogProfileReset(pageId: string): void {
+    this.articleFillApplied.delete(pageId);
+    const first = this.buildBook.blocksForPage(pageId)[0];
+    if (first) {
+      this.activeBlockId.set(first.id);
+      this.section.set(first.section);
+    }
   }
 
   setContentPostsCanvasMode(mode: ContentPostsCanvasMode): void {

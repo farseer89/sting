@@ -31,6 +31,7 @@ import type { KeywordPickerOption } from './keyword-picker.types';
 import { ProtopipeHomeSidePanelService } from '../protopipe-home-side-panel.service';
 import { ProtopipeAvatarSuggestionPanelComponent } from './protopipe-avatar-suggestion-panel.component';
 import {
+  MAX_KEYWORD_PICKER_AVATARS,
   ProtopipeKeywordPickerStore,
   type KeywordPickerWizardStep,
 } from './protopipe-keyword-picker.store';
@@ -48,6 +49,7 @@ export class ProtopipeKeywordPickerComponent implements OnInit {
 
   readonly store = inject(ProtopipeKeywordPickerStore);
   readonly sidePanel = inject(ProtopipeHomeSidePanelService);
+  readonly maxAvatars = MAX_KEYWORD_PICKER_AVATARS;
 
   readonly explorerAnchor = viewChild<ElementRef<HTMLElement>>('explorerAnchor');
 

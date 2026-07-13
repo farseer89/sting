@@ -28,7 +28,7 @@ export type StrategyResultTabId =
 function avatarLabel(plan: ProtopipeSiteContentPlan, avatarId: string): string {
   const avatar = plan.keywordStrategySnapshot?.confirmedAvatars?.find((a) => a.id === avatarId);
   if (!avatar) return avatarId;
-  return avatar.intentCluster || avatar.description.slice(0, 48);
+  return avatar.intentCluster || avatar.description?.slice(0, 48) || avatarId;
 }
 
 function tierLabel(tier: string): string {
@@ -64,9 +64,9 @@ function buildKeywordIntelDetailBlocks(plan: ProtopipeSiteContentPlan): Visualiz
   }
 
   for (const kw of intel) {
-    const gapItems = kw.gapClusters.flatMap((gap) => [
-      `${gap.theme}: ${gap.gaps.join(' · ') || 'gap identified'}`,
-      ...gap.competitorBlindSpots.map((spot) => `Blind spot: ${spot}`),
+    const gapItems = (kw.gapClusters ?? []).flatMap((gap) => [
+      `${gap.theme}: ${(gap.gaps ?? []).join(' · ') || 'gap identified'}`,
+      ...(gap.competitorBlindSpots ?? []).map((spot) => `Blind spot: ${spot}`),
     ]);
     blocks.push({
       kind: 'context-panel',
@@ -77,8 +77,8 @@ function buildKeywordIntelDetailBlocks(plan: ProtopipeSiteContentPlan): Visualiz
         : undefined,
       items: [
         ...gapItems,
-        ...(kw.unansweredQuestions.length
-          ? ['Unanswered questions:', ...kw.unansweredQuestions]
+        ...((kw.unansweredQuestions?.length ?? 0)
+          ? ['Unanswered questions:', ...(kw.unansweredQuestions ?? [])]
           : []),
       ],
     });
@@ -95,7 +95,7 @@ function buildClustersDetailBlocks(plan: ProtopipeSiteContentPlan): VisualizerBl
     const items: string[] = [];
     if (cluster.zeitgeistFrame) items.push(`SERP angle: ${cluster.zeitgeistFrame}`);
     if (cluster.transferredFrame) items.push(`Transferred frame: ${cluster.transferredFrame}`);
-    if (cluster.adjacentDomains.length) {
+    if (cluster.adjacentDomains?.length) {
       items.push(
         ...cluster.adjacentDomains.slice(0, 2).map((d) => `${d.domain}: ${d.pattern}`),
       );
@@ -105,7 +105,7 @@ function buildClustersDetailBlocks(plan: ProtopipeSiteContentPlan): VisualizerBl
       kind: 'context-panel',
       tone: 'strategy',
       label: cluster.clusterName,
-      text: cluster.novelMechanism,
+      text: cluster.novelMechanism ?? undefined,
       items: items.length ? items : undefined,
     });
   }
@@ -118,9 +118,9 @@ function buildAudienceDetailBlocks(plan: ProtopipeSiteContentPlan): VisualizerBl
   const blocks: VisualizerBlock[] = [];
 
   for (const avatar of intel) {
-    const stageLines = avatar.journeyStages.map(
+    const stageLines = (avatar.journeyStages ?? []).map(
       (stage) =>
-        `${stage.stageName} (${stage.emotionalState}): ${stage.keyQuestion} → serves ${stage.contentThatServes.join(', ')}`,
+        `${stage.stageName} (${stage.emotionalState}): ${stage.keyQuestion} → serves ${(stage.contentThatServes ?? []).join(', ')}`,
     );
     blocks.push({
       kind: 'context-panel',
@@ -284,8 +284,8 @@ function buildKeywordIntelTabBlocks(plan: ProtopipeSiteContentPlan): VisualizerB
   const blocks: VisualizerBlock[] = [];
 
   for (const kw of intel) {
-    const gapLines = kw.gapClusters.slice(0, 3).map((gap) => {
-      const gaps = gap.gaps.slice(0, 2).join(' · ');
+    const gapLines = (kw.gapClusters ?? []).slice(0, 3).map((gap) => {
+      const gaps = (gap.gaps ?? []).slice(0, 2).join(' · ');
       return gaps ? `${gap.theme}: ${gaps}` : gap.theme;
     });
     blocks.push({
@@ -297,8 +297,8 @@ function buildKeywordIntelTabBlocks(plan: ProtopipeSiteContentPlan): VisualizerB
         : undefined,
       items: [
         ...gapLines,
-        ...(kw.unansweredQuestions.length
-          ? [`${kw.unansweredQuestions.length} unanswered question(s) harvested`]
+        ...((kw.unansweredQuestions?.length ?? 0)
+          ? [`${kw.unansweredQuestions!.length} unanswered question(s) harvested`]
           : []),
       ],
     });
@@ -316,7 +316,7 @@ function buildAudienceTabBlocks(plan: ProtopipeSiteContentPlan): VisualizerBlock
   const blocks: VisualizerBlock[] = [];
 
   for (const avatar of intel) {
-    const stageLines = avatar.journeyStages.slice(0, 5).map(
+    const stageLines = (avatar.journeyStages ?? []).slice(0, 5).map(
       (stage) => `${stage.stageName}: ${stage.keyQuestion}`,
     );
     blocks.push({
@@ -669,7 +669,7 @@ export function buildContentPlanStepVisualizer(
           text: cluster.name,
           value: cluster.pillarKeyword,
           hint: cluster.audienceLabel,
-          items: cluster.members.slice(0, 6).map((m) => m.phrase),
+          items: (cluster.members ?? []).slice(0, 6).map((m) => m.phrase),
         })),
       };
     }

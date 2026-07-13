@@ -5,7 +5,9 @@ import {
   DestroyRef,
   OnInit,
   computed,
+  effect,
   inject,
+  input,
   signal,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -26,6 +28,7 @@ import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { Tag } from 'primeng/tag';
 import { Tooltip } from 'primeng/tooltip';
+import { ProtopipeHomeThinkerViewState } from '../home/protopipe-home-thinker-view.state';
 import { prioritySeverity } from '../protopipe-keyword-display';
 import { ProtopipeStrategyService } from '../protopipe-strategy.service';
 import { ContentPlanStore } from './content-plan.store';
@@ -98,6 +101,11 @@ export class ProtopipeContentPlanComponent implements OnInit {
   private readonly store = inject(ContentPlanStore);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
+  /** Present inside home shell; absent on the standalone content-plan route. */
+  private readonly thinkerView = inject(ProtopipeHomeThinkerViewState, { optional: true });
+
+  /** When true (Build Book Strategy tab), hide dashboard chrome and prefer Process while running. */
+  readonly embedded = input(false);
 
   readonly activeTab = signal<PlanSection>('overview');
   readonly sections: PlanSectionDef[] = [
@@ -121,12 +129,31 @@ export class ProtopipeContentPlanComponent implements OnInit {
   readonly isComplete = this.store.isComplete;
   readonly hasFailed = this.store.hasFailed;
 
+  /** True when the home Thinker shell can open this plan as a runbook. */
+  readonly canViewRunbook = computed(() => this.thinkerView != null && this.plan()?.id != null);
+
+  /** Home shell present — show View runbook even before a plan exists (disabled until then). */
+  readonly hasThinkerShell = computed(() => this.thinkerView != null);
+
   /** Transient success note after confirming a plan. */
   readonly confirmMessage = signal<string | null>(null);
   readonly runs = this.store.runs;
   readonly selectedRunId = this.store.selectedRunId;
   readonly currentStep = this.store.currentStep;
   readonly events = this.store.events;
+
+  constructor() {
+    effect(() => {
+      if (!this.embedded()) return;
+      if (this.isRunning() || this.starting()) {
+        this.activeTab.set('process');
+        const step = this.currentStep();
+        if (step && step !== 'done' && PLAN_STEPS.some((s) => s.step === step)) {
+          this.processStep.set(step);
+        }
+      }
+    });
+  }
 
   readonly tiers = computed(() => this.plan()?.keywordTiers);
   readonly clusters = computed(() => this.plan()?.clusters ?? []);
@@ -257,6 +284,17 @@ export class ProtopipeContentPlanComponent implements OnInit {
 
   selectProcessStep(step: ProtopipeContentPlanStep): void {
     this.processStep.set(step);
+  }
+
+  /** Open the content-plan thinker runbook (step log + artifacts). */
+  viewRunbook(): void {
+    const plan = this.plan();
+    const thinker = this.thinkerView;
+    if (!plan?.id || !thinker) return;
+    if (this.embedded()) {
+      thinker.setFocusBackLabel('Back to Strategy');
+    }
+    thinker.openContentPlanRun(plan.siteId, plan);
   }
 
   selectRun(planId: string | null): void {

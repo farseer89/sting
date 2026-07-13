@@ -213,13 +213,15 @@ function keywordIntelKeywordSubSteps(
       id: `intel:kw:${kw.phrase}`,
       num: String(index + 1).padStart(2, '0'),
       label: kw.phrase,
-      detail: kw.highestLeverageQuestion || `${kw.unansweredQuestions.length} UQ(s)`,
+      detail:
+        kw.highestLeverageQuestion ||
+        `${kw.unansweredQuestions?.length ?? 0} UQ(s)`,
       status: 'done' as BinderStepStatus,
     }));
   }
 
-  if (parentStatus === 'running' && plan.calendar.length > 0) {
-    return plan.calendar.slice(0, 12).map((item, index) => ({
+  if (parentStatus === 'running' && (plan.calendar?.length ?? 0) > 0) {
+    return (plan.calendar ?? []).slice(0, 12).map((item, index) => ({
       id: `intel:kw:${item.suggestedKeyword}`,
       num: String(index + 1).padStart(2, '0'),
       label: item.suggestedKeyword,
@@ -237,7 +239,7 @@ function clusterIntelSubSteps(plan: ProtopipeSiteContentPlan): BinderStepView['s
     id: `intel:cluster:${cluster.clusterName}`,
     num: String(index + 1).padStart(2, '0'),
     label: cluster.clusterName,
-    detail: cluster.novelMechanism.slice(0, 72),
+    detail: (cluster.novelMechanism ?? cluster.zeitgeistFrame ?? cluster.clusterName).slice(0, 72),
     status: 'done' as BinderStepStatus,
   }));
 }
@@ -254,7 +256,7 @@ function journeyIntelSubSteps(
       id: `intel:avatar:${avatar.avatarId}`,
       num: String(index + 1).padStart(2, '0'),
       label,
-      detail: `${avatar.journeyStages.length} stage(s)`,
+      detail: `${avatar.journeyStages?.length ?? 0} stage(s)`,
       status: 'done' as BinderStepStatus,
     };
   });

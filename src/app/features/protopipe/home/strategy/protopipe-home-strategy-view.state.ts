@@ -269,6 +269,7 @@ export class ProtopipeHomeStrategyViewState {
   openStrategyBuildRun(): void {
     const plan = this.contentPlan.plan();
     if (!plan?.id) return;
+    this.thinkerView.setFocusBackLabel('Back to strategy');
     this.thinkerView.openContentPlanRun(plan.siteId, plan);
   }
 

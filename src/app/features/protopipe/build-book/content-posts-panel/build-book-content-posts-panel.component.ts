@@ -56,6 +56,8 @@ export class BuildBookContentPostsPanelComponent implements OnInit {
 
   readonly selectedPageId = input<string | null>(null);
   readonly selectedPageIdChange = output<string | null>();
+  /** Emitted when the active blog profile stack is reset to the default template. */
+  readonly profileReset = output<string>();
 
   readonly newPageLabel = signal('Default blog template');
   readonly addingPlanKey = signal<string | null>(null);
@@ -90,6 +92,16 @@ export class BuildBookContentPostsPanelComponent implements OnInit {
 
   selectPage(pageId: string): void {
     this.selectedPageIdChange.emit(pageId);
+  }
+
+  resetSelectedToDefaultTemplate(): void {
+    const id = this.selectedPageId();
+    if (!id) return;
+    const page = this.buildBook.resetBlogPostToDefaultTemplate(id);
+    if (page) {
+      this.selectedPageIdChange.emit(page.id);
+      this.profileReset.emit(page.id);
+    }
   }
 
   createPage(): void {
@@ -202,17 +214,10 @@ export class BuildBookContentPostsPanelComponent implements OnInit {
         contentPostId = created.post?.id;
       }
 
-      const briefParts = [
-        item.rationale,
-        item.keyQuestionToAnswer ? `Key question: ${item.keyQuestionToAnswer}` : null,
-        item.strategyNarrative,
-      ].filter(Boolean);
-
       const page = this.buildBook.createBlogPostPage(title, {
         contentPostId,
         contentPlanItemKey: itemKey,
         suggestedKeyword: item.suggestedKeyword,
-        briefBody: briefParts.join('\n\n') || undefined,
       });
       if (page) {
         this.selectedPageIdChange.emit(page.id);

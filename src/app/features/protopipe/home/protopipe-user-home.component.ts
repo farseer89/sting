@@ -21,6 +21,10 @@ import { ThoughtPackDetailComponent } from '../thought-packs/thought-pack-detail
 import { ThoughtPackStoreComponent } from '../thought-packs/thought-pack-store.component';
 import { ProtopipeThoughtPacksService } from '../thought-packs/protopipe-thought-packs.service';
 import { AuthService } from '../../../core/auth/auth.service';
+import { Button } from 'primeng/button';
+import { Popover } from 'primeng/popover';
+import { ProgressSpinner } from 'primeng/progressspinner';
+import { Tooltip } from 'primeng/tooltip';
 import { ContentPlanStore } from '../content-plan/content-plan.store';
 import { ProtopipeOnboardingStateService } from '../onboarding/protopipe-onboarding-state.service';
 import { ProtopipeStrategyService } from '../protopipe-strategy.service';
@@ -121,6 +125,10 @@ type HomeFocusHistoryKind = 'thinker' | 'writer';
     ThoughtRunSession,
   ],
   imports: [
+    Button,
+    Popover,
+    ProgressSpinner,
+    Tooltip,
     ProtopipeHomeKeywordBookComponent,
     ProtopipeHomeStrategyComponent,
     ProtopipeHomeSharpenComponent,
@@ -168,6 +176,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   private readonly keywordStore = inject(ProtopipeKeywordPickerStore);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly homeWorkspaceEl = viewChild<ElementRef<HTMLElement>>('homeWorkspace');
+  readonly buildBookCmp = viewChild(ProtopipeHomeBuildBookComponent);
 
   private focusReturnContext: HomeFocusReturnContext | null = null;
   private focusHistoryEntry: HomeFocusHistoryKind | null = null;
@@ -465,6 +474,11 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.buildBookProspectContext.set(context);
     this.activeNavId.set('books-build');
     this.activeView.set('build-book');
+    const siteId = this.strategy.siteId();
+    if (siteId) {
+      this.contentPlan.setSiteId(siteId);
+      void this.contentPlan.loadLatest();
+    }
   }
 
   leaveWriterFocus(options: { syncHistory?: boolean } = {}): void {
@@ -682,6 +696,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
     switch (view) {
       case 'strategy':
         return 'Strategy';
+      case 'build-book':
+        return 'Back to Strategy';
       case 'keywords':
         return 'Keywords';
       case 'writer':
@@ -715,11 +731,12 @@ export class ProtopipeUserHomeComponent implements OnInit {
     });
   }
 
-  private restoreFocusReturnContext(runKind?: string): void {
+  private restoreFocusReturnContext(_runKind?: string): void {
     const ctx = this.focusReturnContext;
     this.focusReturnContext = null;
 
-    if (!ctx || runKind === 'content-plan') {
+    // Legacy: content-plan runs opened with no return ctx (old Strategy binder).
+    if (!ctx) {
       this.activeView.set('strategy');
       this.activeNavId.set('start-strategy');
       this.sidePanel.setOpen(false);

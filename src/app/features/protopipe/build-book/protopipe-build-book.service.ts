@@ -41,6 +41,7 @@ import {
   resolveBaselineFoldLayoutId,
 } from './build-book-baseline-fold.catalog';
 import { findBuildBookBaselineAssembly } from './build-book-baseline-assemblies';
+import { buildBookTemplateIdForSlug } from './agency-pilot-sites';
 import {
   blocksFromBaselineNavEntries,
   baselineNavEntriesFromBlocks,
@@ -88,6 +89,10 @@ import {
 } from './protopipe-build-book-shire-api.service';
 import { ProtopipeShireSitesApiService } from './protopipe-shire-sites-api.service';
 import { compileBuildBookHomepage } from './build-book-publish-compiler.util';
+import {
+  fillBlogPostBlockProps,
+  type BlogArticleFillSource,
+} from './build-book-article-fill.util';
 import {
   validateBuildBookPublishGate,
   type BuildBookPublishGateResult,
@@ -603,6 +608,7 @@ export class ProtopipeBuildBookService {
     this._error.set(null);
     try {
       await this.loadShireBook(siteId);
+      await this.ensureHostedSiteBaseline();
       this._dirty.set(false);
     } catch (err) {
       this._error.set(parseProtopipeApiError(err, 'Could not load build book'));
@@ -612,6 +618,40 @@ export class ProtopipeBuildBookService {
     } finally {
       this._loading.set(false);
     }
+  }
+
+  /**
+   * Registered hosted pilots (DWP / Sparky / WRI) should edit their live baseline,
+   * not land on a blank "view template" state that later falls through to WRI chrome.
+   */
+  async ensureHostedSiteBaseline(): Promise<boolean> {
+    const siteId = this.strategy.siteId();
+    const mappedTemplateId = buildBookTemplateIdForSlug(
+      this.strategy.site()?.clientSitesSlug,
+    );
+    if (!siteId || !mappedTemplateId) return false;
+
+    const alreadyBound = this._selectedTemplateId() === mappedTemplateId;
+    if (!alreadyBound) {
+      this._selectedTemplateId.set(mappedTemplateId);
+    }
+
+    if (!this.hasDraft() || this._pages().length === 0) {
+      return this.initializeStarterDraft();
+    }
+
+    if (!alreadyBound) {
+      // Keep existing pages (content posts, etc.) but persist the correct template binding.
+      const draft = this._draft();
+      if (draft) {
+        draft.templateId = mappedTemplateId;
+        this._draft.set(structuredClone(draft));
+      }
+      this._dirty.set(true);
+      return this.save();
+    }
+
+    return false;
   }
 
   async initializeStarterDraft(): Promise<boolean> {
@@ -1234,11 +1274,10 @@ export class ProtopipeBuildBookService {
       this.addPageBlock(id, blockId);
     }
 
-    if (links?.suggestedKeyword || links?.briefBody) {
+    if (links?.suggestedKeyword || links?.briefBody || links?.contentPlanItemKey) {
       this.seedBlogPostCopyFromPlan(id, {
         title: nextPage.label,
         keyword: links.suggestedKeyword,
-        body: links.briefBody,
       });
     }
 
@@ -1254,9 +1293,54 @@ export class ProtopipeBuildBookService {
     );
   }
 
+  /**
+   * Replace a blog-post page stack with the default beautiful template
+   * (intro → prose → image-right → prose → image-left → FAQ → CTA).
+   */
+  resetBlogPostToDefaultTemplate(pageId: string): BuildBookPage | null {
+    const pages = structuredClone(this._pages());
+    const page = findPageById(pages, pageId);
+    if (!page || page.kind !== 'blog-post') return null;
+
+    const label = page.label;
+    const keyword = page.suggestedKeyword;
+    page.blocks = [];
+    this.commitPageStructure(pages);
+
+    for (const blockId of this.resolveBlogSeedBlockIds()) {
+      this.addPageBlock(pageId, blockId);
+    }
+    this.seedBlogPostCopyFromPlan(pageId, { title: label, keyword });
+    return findPageById(this._pages(), pageId) ?? null;
+  }
+
+  /**
+   * Persist generated article copy onto the linked blog-post profile blocks.
+   * Returns true when props changed.
+   */
+  applyArticleFillToBlogPage(
+    pageId: string,
+    source: BlogArticleFillSource,
+  ): boolean {
+    const pages = structuredClone(this._pages());
+    const page = findPageById(pages, pageId);
+    if (!page || page.kind !== 'blog-post') return false;
+
+    const nextBlocks = fillBlogPostBlockProps(page.blocks, source);
+    const changed = nextBlocks.some((block, index) => {
+      const prev = page.blocks[index];
+      return JSON.stringify(prev?.props ?? {}) !== JSON.stringify(block.props ?? {});
+    });
+    if (!changed) return false;
+
+    page.blocks = nextBlocks;
+    this.commitPageStructure(pages);
+    return true;
+  }
+
   private seedBlogPostCopyFromPlan(
     pageId: string,
-    seed: { title: string; keyword?: string; body?: string },
+    seed: { title: string; keyword?: string },
   ): void {
     const pages = structuredClone(this._pages());
     const page = findPageById(pages, pageId);
@@ -1264,19 +1348,33 @@ export class ProtopipeBuildBookService {
 
     const kicker = seed.keyword?.trim() || 'Article';
     const heading = seed.title.trim();
-    const body =
-      seed.body?.trim() ||
-      (seed.keyword
-        ? `Draft page for “${seed.keyword}” — refine blocks for the demo site.`
-        : 'Draft page from the content plan — refine blocks for the demo site.');
+    const placeholder =
+      'Article copy will appear here after generation.';
+    let bodySeeded = false;
 
     for (const block of page.blocks) {
+      const patternId = block.patternId ?? '';
       const props = structuredClone(block.props ?? {});
-      if (typeof props['kicker'] === 'string') props['kicker'] = kicker;
-      if (typeof props['heading'] === 'string') props['heading'] = heading;
-      if (typeof props['body'] === 'string') props['body'] = body;
-      if (typeof props['eyebrow'] === 'string') props['eyebrow'] = kicker;
-      if (typeof props['title'] === 'string') props['title'] = heading;
+      const isCopyBlock =
+        patternId === 'section-intro' ||
+        patternId === 'prose-band' ||
+        patternId === 'content-split';
+
+      if (isCopyBlock) {
+        if (typeof props['kicker'] === 'string') props['kicker'] = kicker;
+        if (typeof props['heading'] === 'string') props['heading'] = heading;
+        if (typeof props['eyebrow'] === 'string') props['eyebrow'] = kicker;
+        if (typeof props['title'] === 'string') props['title'] = heading;
+      }
+      // Never paste the plan brief into bodies — placeholder on first intro/prose only.
+      if (
+        !bodySeeded &&
+        typeof props['body'] === 'string' &&
+        (patternId === 'section-intro' || patternId === 'prose-band')
+      ) {
+        props['body'] = placeholder;
+        bodySeeded = true;
+      }
       block.props = props;
     }
 
@@ -1285,23 +1383,23 @@ export class ProtopipeBuildBookService {
 
   private resolveBlogSeedBlockIds(): string[] {
     const templateId = this._selectedTemplateId();
-    const patternIds = ['section-intro', 'prose-band', 'cta-banner'] as const;
-    const preferredBlockIds: Partial<Record<(typeof patternIds)[number], string>> = {
-      'section-intro': 'universal-intro-centered',
-      'prose-band': 'universal-prose-band',
-      'cta-banner': 'universal-cta-band',
-    };
+    const seedSlots: ReadonlyArray<{ patternId: string; preferredBlockId: string }> = [
+      { patternId: 'section-intro', preferredBlockId: 'universal-intro-centered' },
+      { patternId: 'prose-band', preferredBlockId: 'universal-prose-band' },
+      { patternId: 'content-split', preferredBlockId: 'universal-split-image-right' },
+      { patternId: 'prose-band', preferredBlockId: 'universal-prose-band' },
+      { patternId: 'content-split', preferredBlockId: 'universal-split-image-left' },
+      { patternId: 'faq-accordion', preferredBlockId: 'universal-faq-accordion' },
+      { patternId: 'cta-banner', preferredBlockId: 'universal-cta-band' },
+    ];
     const blockIds: string[] = [];
 
-    for (const patternId of patternIds) {
-      const variants = variantsForPattern(patternId, 'blog-post', templateId, 'compatible');
-      const fallback = variantsForPattern(patternId, 'blog-post', templateId, 'all');
-      const preferred = preferredBlockIds[patternId];
+    for (const slot of seedSlots) {
+      const variants = variantsForPattern(slot.patternId, 'blog-post', templateId, 'compatible');
+      const fallback = variantsForPattern(slot.patternId, 'blog-post', templateId, 'all');
       const fromPreferred =
-        preferred != null
-          ? (variants.find((v) => v.id === preferred) ?? fallback.find((v) => v.id === preferred))
-          : undefined;
-      // Prefer universal / non-baseline variants when prose has no universal yet.
+        variants.find((v) => v.id === slot.preferredBlockId) ??
+        fallback.find((v) => v.id === slot.preferredBlockId);
       const universalPick =
         variants.find((v) => v.id.startsWith('universal-')) ??
         fallback.find((v) => v.id.startsWith('universal-'));
@@ -1310,7 +1408,15 @@ export class ProtopipeBuildBookService {
     }
 
     if (blockIds.length === 0) {
-      return ['universal-intro-centered', 'universal-cta-band'];
+      return [
+        'universal-intro-centered',
+        'universal-prose-band',
+        'universal-split-image-right',
+        'universal-prose-band',
+        'universal-split-image-left',
+        'universal-faq-accordion',
+        'universal-cta-band',
+      ];
     }
     return blockIds;
   }
@@ -1333,11 +1439,20 @@ export class ProtopipeBuildBookService {
   }
 
   private commitPageStructure(nextPages: BuildBookPage[]): void {
-    const templateId = this._selectedTemplateId() ?? 'wri-field-authority-v1';
+    const templateId = this.resolveTemplateIdForCommit();
     const draft = draftFromBuildBookPages(templateId, nextPages);
     this._pages.set(structuredClone(nextPages));
     this._draft.set(draft);
     this._dirty.set(true);
+  }
+
+  /** Prefer explicit selection, then hosted-pilot slug map — never invent WRI for other sites. */
+  private resolveTemplateIdForCommit(): string {
+    return (
+      this._selectedTemplateId() ??
+      buildBookTemplateIdForSlug(this.strategy.site()?.clientSitesSlug) ??
+      ''
+    );
   }
 
   private commitHomepageStructure(nextPages: BuildBookPage[]): void {

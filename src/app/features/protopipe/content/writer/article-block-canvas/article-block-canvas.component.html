@@ -223,6 +223,7 @@
                   <app-infographic-composition-preview
                     [composition]="prose.infographic"
                     [slotId]="prose.slotId"
+                    [siteTheme]="siteTheme()"
                   />
                 } @else if (firstProseImage(prose); as img) {
                   <app-protopipe-image-placeholder
@@ -421,6 +422,7 @@
             <app-infographic-composition-preview
               [composition]="infographic.infographic"
               [slotId]="infographic.slotId"
+              [siteTheme]="siteTheme()"
             />
           } @else if (infographic.url?.trim()) {
             <app-protopipe-image-placeholder

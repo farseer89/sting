@@ -94,27 +94,46 @@ describe('content-plan-binder.util', () => {
     expect(steps.every((s) => s.status === 'pending')).toBe(true);
   });
 
-  it('exposes full strategy payload on Strategy Result output/raw', () => {
+  it('tolerates null cluster novelMechanism when mapping intel nav', () => {
     const plan = minimalPlan({
       strategyIntel: {
         version: 1,
-        keywordIntel: [
+        keywordIntel: [],
+        clusterIntel: [
           {
-            phrase: 'widgets guide',
-            gapClusters: [],
-            unansweredQuestions: [],
-            highestLeverageQuestion: 'Budget?',
+            clusterName: 'Widgets',
+            zeitgeistFrame: 'Budget framing',
+            transferredFrame: null as unknown as string,
+            adjacentDomains: null as unknown as [],
+            novelMechanism: null as unknown as string,
           },
         ],
-        clusterIntel: [],
-        avatarIntel: [],
+        avatarIntel: [
+          {
+            avatarId: 'av-1',
+            emotionalArc: 'anxious → confident',
+            voiceTheyRespondTo: 'plain talk',
+            journeyStages: null as unknown as [],
+          },
+        ],
         thesisSeeds: [],
       },
     });
-    const result = mapStrategyResultNavStep(plan, []);
-    expect(result.status).toBe('done');
-    expect(result.outputArtifact?.preview).toContain('strategyIntel');
-    expect(result.rawJson).toContain('widgets guide');
-    expect(result.subSteps?.some((s) => s.id === 'raw' && s.status === 'done')).toBe(true);
+    const intelMapped = {
+      id: 'strategy_intel',
+      num: '06',
+      label: 'Strategy intel',
+      status: 'done',
+      subSteps: [],
+      events: [],
+      llmCalls: [],
+      rawJson: '{}',
+    } as BinderStepView;
+
+    const steps = mapStrategyIntelNavSteps(plan, undefined, intelMapped);
+    const cluster = steps.find((s) => s.id === 'intel:cluster');
+    expect(cluster?.status).toBe('done');
+    expect(cluster?.subSteps?.[0]?.detail).toContain('Budget framing');
+    expect(steps.find((s) => s.id === 'intel:journey')?.subSteps?.[0]?.detail).toBe('0 stage(s)');
   });
 });

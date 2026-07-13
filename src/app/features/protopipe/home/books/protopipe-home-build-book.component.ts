@@ -892,6 +892,22 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
       this.openPreview();
     } else if (tab === 'content-posts' && this.blogPostId()) {
       this.openPreview();
+    } else if (tab === 'content-posts' && this.buildBook.hasDraft()) {
+      const existing = this.buildBook.blogPosts()[0];
+      if (existing) {
+        this.blogPostId.set(existing.id);
+      } else {
+        const page = this.buildBook.createBlogPostPage('Default blog template');
+        if (page) this.blogPostId.set(page.id);
+      }
+      if (this.blogPostId()) {
+        const first = this.buildBook.blocksForPage(this.blogPostId()!)[0];
+        if (first) {
+          this.activeBlockId.set(first.id);
+          this.section.set(first.section);
+        }
+        this.openPreview();
+      }
     } else if (tab === 'seo-strategy' && this.buildBook.hasDraft()) {
       this.closePreview();
     } else if (

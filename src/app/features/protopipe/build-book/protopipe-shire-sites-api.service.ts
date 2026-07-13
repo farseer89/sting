@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
   ShireEndpoints,
+  type CreateShireSiteRequest,
   type PatchShireSiteRequest,
   type ShirePublishSiteCompleteRequest,
   type ShirePublishSiteRequest,
@@ -14,6 +15,12 @@ import { shireApiUrl } from '../shire/shire-http.util';
 @Injectable({ providedIn: 'root' })
 export class ProtopipeShireSitesApiService {
   private readonly http = inject(HttpClient);
+
+  create(body: CreateShireSiteRequest): Promise<ShireSiteResponse> {
+    return firstValueFrom(
+      this.http.post<ShireSiteResponse>(shireApiUrl(ShireEndpoints.sites.create), body),
+    );
+  }
 
   get(siteId: string): Promise<ShireSiteResponse> {
     return firstValueFrom(

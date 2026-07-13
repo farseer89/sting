@@ -3,14 +3,17 @@ import {
   Component,
   OnInit,
   computed,
+  effect,
   inject,
   input,
   output,
   signal,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import type { ProtopipeContentPlanCalendarItem } from '@hive/contracts';
 import { ContentPlanStore } from '../../content-plan/content-plan.store';
+import { ProtopipeApiService } from '../../protopipe-api.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import type { BuildBookPage } from '../build-book.types';
 import { ProtopipeBuildBookService } from '../protopipe-build-book.service';
@@ -26,6 +29,16 @@ function formatPublishDate(iso: string | null | undefined): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+function slugifyTitle(title: string): string {
+  return (
+    title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 72) || 'draft-post'
+  );
+}
+
 @Component({
   selector: 'app-build-book-content-posts-panel',
   standalone: true,
@@ -38,12 +51,15 @@ export class BuildBookContentPostsPanelComponent implements OnInit {
   readonly buildBook = inject(ProtopipeBuildBookService);
   private readonly contentPlan = inject(ContentPlanStore);
   private readonly strategy = inject(ProtopipeStrategyService);
+  private readonly api = inject(ProtopipeApiService);
+  private readonly router = inject(Router);
 
   readonly selectedPageId = input<string | null>(null);
   readonly selectedPageIdChange = output<string | null>();
 
   readonly newPageLabel = signal('Default blog template');
   readonly addingPlanKey = signal<string | null>(null);
+  readonly creatingDraft = signal(false);
   readonly planError = signal<string | null>(null);
 
   readonly plan = this.contentPlan.plan;
@@ -51,6 +67,15 @@ export class BuildBookContentPostsPanelComponent implements OnInit {
   readonly planComplete = this.contentPlan.isComplete;
 
   readonly calendarItems = computed(() => this.plan()?.calendar ?? []);
+
+  constructor() {
+    effect(() => {
+      const siteId = this.strategy.siteId();
+      if (!siteId) return;
+      this.contentPlan.setSiteId(siteId);
+      void this.contentPlan.loadLatest();
+    });
+  }
 
   pages(): BuildBookPage[] {
     return this.buildBook.blogPosts();
@@ -72,6 +97,35 @@ export class BuildBookContentPostsPanelComponent implements OnInit {
     if (page) {
       this.selectedPageIdChange.emit(page.id);
       this.newPageLabel.set('Default blog template');
+    }
+  }
+
+  /** Blank portable ContentTemplate draft + linked blog-post profile page (US-A5 path). */
+  async createPortableDraft(): Promise<void> {
+    const siteId = this.strategy.siteId();
+    if (!siteId) return;
+    const title = this.newPageLabel().trim() || 'Draft post';
+    this.creatingDraft.set(true);
+    this.planError.set(null);
+    try {
+      const created = await this.api.createContent(siteId, {
+        title,
+        slug: slugifyTitle(title),
+        status: 'draft',
+      });
+      const contentPostId = created.post?.id;
+      const page = this.buildBook.createBlogPostPage(title, { contentPostId });
+      if (page) {
+        this.selectedPageIdChange.emit(page.id);
+        this.newPageLabel.set('Default blog template');
+      }
+      if (contentPostId) {
+        this.openWriter(contentPostId);
+      }
+    } catch {
+      this.planError.set('Could not create a portable draft post.');
+    } finally {
+      this.creatingDraft.set(false);
     }
   }
 
@@ -100,6 +154,20 @@ export class BuildBookContentPostsPanelComponent implements OnInit {
     return parts.join(' · ');
   }
 
+  openWriter(contentPostId: string): void {
+    const siteId = this.strategy.siteId();
+    if (!siteId || !contentPostId) return;
+    void this.router.navigate(['/protopipe/content', contentPostId], {
+      queryParams: { siteId },
+    });
+  }
+
+  selectedPage(): BuildBookPage | null {
+    const id = this.selectedPageId();
+    if (!id) return null;
+    return this.pages().find((p) => p.id === id) ?? null;
+  }
+
   async addFromPlan(item: ProtopipeContentPlanCalendarItem): Promise<void> {
     const siteId = this.strategy.siteId();
     if (!siteId) return;
@@ -115,7 +183,6 @@ export class BuildBookContentPostsPanelComponent implements OnInit {
     this.planError.set(null);
     try {
       let contentPostId = item.contentPostId;
-      // confirm-item requires a non-empty proposedPublishAt; backlog rows skip materialize.
       if (!contentPostId && item.proposedPublishAt) {
         const confirmed = await this.contentPlan.confirmCalendarItem({
           proposedPublishAt: item.proposedPublishAt,
@@ -125,6 +192,16 @@ export class BuildBookContentPostsPanelComponent implements OnInit {
       }
 
       const title = this.planItemTitle(item);
+      if (!contentPostId) {
+        const created = await this.api.createContent(siteId, {
+          title,
+          slug: slugifyTitle(title),
+          status: 'draft',
+          publishAt: item.proposedPublishAt ?? undefined,
+        });
+        contentPostId = created.post?.id;
+      }
+
       const briefParts = [
         item.rationale,
         item.keyQuestionToAnswer ? `Key question: ${item.keyQuestionToAnswer}` : null,

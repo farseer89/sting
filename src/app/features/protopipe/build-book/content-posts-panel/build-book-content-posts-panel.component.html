@@ -18,7 +18,7 @@
       } @else if (!planComplete() || calendarItems().length === 0) {
         <p class="bk-content-posts__hint">
           @if (!plan()) {
-            No content plan yet. Run Strategy → confirm keywords to generate a plan.
+            No content plan yet. Run Research → confirm keywords to generate a plan, then open Strategy.
           } @else if (!planComplete()) {
             Content plan is still building. Check back when it completes.
           } @else {
@@ -71,7 +71,18 @@
         placeholder="Template name"
         aria-label="New blog template name"
       />
-      <p-button label="Add template" icon="pi pi-plus" size="small" (onClick)="createPage()" />
+      <div class="bk-content-posts__create-actions">
+        <p-button label="Add template" icon="pi pi-plus" size="small" (onClick)="createPage()" />
+        <p-button
+          label="New portable draft"
+          icon="pi pi-file-edit"
+          size="small"
+          severity="secondary"
+          [outlined]="true"
+          [loading]="creatingDraft()"
+          (onClick)="createPortableDraft()"
+        />
+      </div>
     </div>
 
     <div class="bk-content-posts__section-label">Site blog pages</div>
@@ -102,6 +113,17 @@
     </ul>
   </aside>
   <div class="bk-content-posts__editor">
+    @if (selectedPage()?.contentPostId; as postId) {
+      <div class="bk-content-posts__writer-bar">
+        <p>Portable content post linked — edit, preview, and publish to Astro from the writer.</p>
+        <p-button
+          label="Open writer / publish"
+          icon="pi pi-external-link"
+          size="small"
+          (onClick)="openWriter(postId)"
+        />
+      </div>
+    }
     <ng-content />
   </div>
 </div>

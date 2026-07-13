@@ -396,6 +396,27 @@ export const UNIVERSAL_BASELINE_BLOCK_DEFINITIONS: BuildBookBlockDefinition[] = 
     seoRole: 'Supports topical relevance with bridge copy before service or proof blocks.',
     conversionRole: 'Sets expectations before visitors compare options.',
   },
+  // —— Editorial / prose band (portable blog profile middle) ——
+  {
+    id: 'universal-prose-band',
+    section: 'fold',
+    label: 'Editorial band',
+    description:
+      'Cross-template prose middle for Content Posts profiles — portable article body stand-in (not Sparky field-notes).',
+    componentId: 'universal-prose-band',
+    astroComponent: '@client-sites/theme/components/landing/SectionIntro.astro',
+    layout: 'band',
+    navThumbKind: 'generic',
+    navThumbAspect: { width: 16, height: 5 },
+    editableFields: ['kicker', 'heading', 'body'],
+    defaultProps: {
+      kicker: 'Article',
+      heading: 'What readers need to know',
+      body: 'Replace this band with the portable article body when publishing. Keep the surrounding intro and CTA as the hosted Astro presentation profile.',
+    },
+    seoRole: 'Holds the long-form topical body for blog posts.',
+    conversionRole: 'Educates before the closing CTA.',
+  },
   // —— Service grid ——
   {
     id: 'universal-services-grid',

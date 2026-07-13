@@ -1286,12 +1286,26 @@ export class ProtopipeBuildBookService {
   private resolveBlogSeedBlockIds(): string[] {
     const templateId = this._selectedTemplateId();
     const patternIds = ['section-intro', 'prose-band', 'cta-banner'] as const;
+    const preferredBlockIds: Partial<Record<(typeof patternIds)[number], string>> = {
+      'section-intro': 'universal-intro-centered',
+      'prose-band': 'universal-prose-band',
+      'cta-banner': 'universal-cta-band',
+    };
     const blockIds: string[] = [];
 
     for (const patternId of patternIds) {
       const variants = variantsForPattern(patternId, 'blog-post', templateId, 'compatible');
       const fallback = variantsForPattern(patternId, 'blog-post', templateId, 'all');
-      const pick = variants[0] ?? fallback[0];
+      const preferred = preferredBlockIds[patternId];
+      const fromPreferred =
+        preferred != null
+          ? (variants.find((v) => v.id === preferred) ?? fallback.find((v) => v.id === preferred))
+          : undefined;
+      // Prefer universal / non-baseline variants when prose has no universal yet.
+      const universalPick =
+        variants.find((v) => v.id.startsWith('universal-')) ??
+        fallback.find((v) => v.id.startsWith('universal-'));
+      const pick = fromPreferred ?? universalPick ?? variants[0] ?? fallback[0];
       if (pick) blockIds.push(pick.id);
     }
 

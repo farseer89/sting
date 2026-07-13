@@ -127,6 +127,11 @@ export const BUILD_BOOK_VARIANT_REGISTRY: Record<string, BuildBookVariantRegistr
     variantLabel: 'Split with rule',
     compatibleTemplateIds: [...BUILD_BOOK_ALL_TEMPLATE_IDS],
   },
+  'universal-prose-band': {
+    patternId: 'prose-band',
+    variantLabel: 'Editorial band',
+    compatibleTemplateIds: [...BUILD_BOOK_ALL_TEMPLATE_IDS],
+  },
   'universal-services-grid': {
     patternId: 'service-grid',
     variantLabel: 'Photo grid',

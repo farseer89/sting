@@ -1,22 +1,106 @@
 <div class="bk-sites">
   <div class="bk-sites__head">
     <div>
-      <div class="bk-stage-kicker">Active sites</div>
-      <h2 class="bk-sites__title">Your sites</h2>
+      <div class="bk-stage-kicker">Agency portfolio</div>
+      <h2 class="bk-sites__title">Managed sites</h2>
       <p class="bk-sites__deck">
-        Open a site to edit its Build Book homepage, landing pages, theme, and publish status.
+        Register hosted Cloudflare sites, switch context, and track plan → blog → publish readiness.
       </p>
     </div>
-    <p-button
-      label="Refresh"
-      icon="pi pi-refresh"
-      size="small"
-      severity="secondary"
-      [outlined]="true"
-      [loading]="loading()"
-      (onClick)="refresh()"
-    />
+    <div class="bk-sites__head-actions">
+      @if (missingPilots().length > 0) {
+        <p-button
+          label="Register pilots ({{ missingPilots().length }})"
+          icon="pi pi-briefcase"
+          size="small"
+          [loading]="registeringPilots()"
+          [disabled]="registering() || deletingId() !== null"
+          (onClick)="registerMissingPilots()"
+        />
+      }
+      <p-button
+        label="Register hosted site"
+        icon="pi pi-plus"
+        size="small"
+        severity="secondary"
+        [outlined]="true"
+        [disabled]="registeringPilots()"
+        (onClick)="toggleRegister()"
+      />
+      <p-button
+        label="Refresh"
+        icon="pi pi-refresh"
+        size="small"
+        severity="secondary"
+        [outlined]="true"
+        [loading]="loading()"
+        (onClick)="refresh()"
+      />
+    </div>
   </div>
+
+  @if (showRegister()) {
+    <section class="bk-sites__register" aria-label="Register hosted site">
+      <div class="bk-sites__register-head">
+        <strong>Register hosted site</strong>
+        <p>Link an existing Cloudflare Astro site — no template provision.</p>
+      </div>
+      <div class="bk-sites__presets" role="group" aria-label="Pilot presets">
+        @for (pilot of missingPilots(); track pilot.id) {
+          <button type="button" class="bk-sites__preset" (click)="applyPilotPreset(pilot)">
+            {{ pilot.displayName }}
+          </button>
+        }
+      </div>
+      <div class="bk-sites__register-fields">
+        <label>
+          <span>Display name</span>
+          <input
+            type="text"
+            [ngModel]="regDisplayName()"
+            (ngModelChange)="regDisplayName.set($event)"
+            placeholder="Destination Wedding Painter"
+          />
+        </label>
+        <label>
+          <span>Live URL</span>
+          <input
+            type="url"
+            [ngModel]="regUrl()"
+            (ngModelChange)="regUrl.set($event)"
+            placeholder="https://destinationweddingpainter.com"
+          />
+        </label>
+        <label>
+          <span>clientSitesSlug</span>
+          <input
+            type="text"
+            [ngModel]="regSlug()"
+            (ngModelChange)="regSlug.set($event)"
+            placeholder="destinationweddingpainter"
+          />
+        </label>
+      </div>
+      <div class="bk-sites__register-actions">
+        <p-button
+          label="Register"
+          icon="pi pi-check"
+          size="small"
+          [loading]="registering()"
+          [disabled]="registeringPilots()"
+          (onClick)="registerHostedSite()"
+        />
+        <p-button
+          label="Cancel"
+          size="small"
+          severity="secondary"
+          [outlined]="true"
+          [disabled]="registering()"
+          (onClick)="toggleRegister()"
+        />
+      </div>
+    </section>
+  }
 
   @if (loading() && sites().length === 0) {
     <div class="bk-sites__loading">
@@ -27,7 +111,7 @@
   } @else if (sites().length === 0) {
     <div class="bk-sites__empty">
       <strong>No sites yet</strong>
-      <p>Create a site from Templates to start building and publishing.</p>
+      <p>Register a hosted site or create one from Templates to start building and publishing.</p>
     </div>
   } @else {
     <div class="bk-sites__grid">
@@ -47,6 +131,17 @@
             </span>
           </div>
 
+          @if (portfolioFor(site.id); as portfolio) {
+            <div class="bk-site-card__chips" aria-label="Portfolio status">
+              @for (chip of portfolio.chips; track chip.id) {
+                <span class="bk-site-chip" [attr.data-tone]="chip.tone">{{ chip.label }}</span>
+              }
+            </div>
+            @if (portfolio.nextStep) {
+              <p class="bk-site-card__next">Next: {{ portfolio.nextStep }}</p>
+            }
+          }
+
           <dl class="bk-site-card__meta">
             <div>
               <dt>Template</dt>
@@ -56,10 +151,10 @@
               <dt>Host</dt>
               <dd>{{ site.hostname || '—' }}</dd>
             </div>
-            @if (site.previewBaseUrl) {
+            @if (liveUrl(site); as url) {
               <div class="bk-site-card__meta-wide">
                 <dt>Live URL</dt>
-                <dd>{{ site.previewBaseUrl }}</dd>
+                <dd>{{ url }}</dd>
               </div>
             }
           </dl>
@@ -77,14 +172,14 @@
               [loading]="switchingSiteId() === site.id"
               (onClick)="onEdit(site.id)"
             />
-            @if (site.previewBaseUrl) {
+            @if (liveUrl(site); as url) {
               <p-button
                 label="View live"
                 icon="pi pi-external-link"
                 size="small"
                 severity="secondary"
                 [outlined]="true"
-                (onClick)="onOpenLive(site.previewBaseUrl!)"
+                (onClick)="onOpenLive(url)"
               />
             }
             <p-button

@@ -37,7 +37,7 @@ import { ProtopipeHomeStrategyViewState } from './strategy/protopipe-home-strate
 import { ProtopipeHomeWriterComponent } from './protopipe-home-writer.component';
 import { ProtopipeHomeWriterViewState } from './protopipe-home-writer-view.state';
 import { ProtopipeHomeThinkerViewState } from './protopipe-home-thinker-view.state';
-import { ProtopipeBuildBookNavState } from './protopipe-build-book-nav.state';
+import { ProtopipeBlogPreviewNavState } from './protopipe-blog-preview-nav.state';
 import { ArticleGenerationRunSession } from '../article/article-generation-run-session.service';
 import { ThoughtRunSession } from '../runs/thought-run-session.service';
 import { ProtopipeHomeKeywordBookComponent } from './books/protopipe-home-keyword-book.component';
@@ -47,6 +47,7 @@ import { ProtopipeMediaStudioComponent } from '../admin/media-studio/protopipe-m
 import { ProtopipeHomeBrandBookComponent } from './books/protopipe-home-brand-book.component';
 import { ProtopipeHomeAudienceBookComponent } from './books/protopipe-home-audience-book.component';
 import { ProtopipeHomeBuildBookComponent } from './books/protopipe-home-build-book.component';
+import { ProtopipeHomeBlogPreviewComponent } from './blog-preview/protopipe-home-blog-preview.component';
 import { ProtopipeHomeBusinessDetailsComponent } from './books/protopipe-home-business-details.component';
 import { ProtopipeHomeGoalsComponent } from './books/protopipe-home-goals.component';
 import { ProtopipeHomeAdsBookComponent } from './books/protopipe-home-ads-book.component';
@@ -83,6 +84,7 @@ export type ProtopipeHomeView =
   | 'brand-book'
   | 'audience-book'
   | 'build-book'
+  | 'blog-preview'
   | 'ads-book'
   | 'research-book'
   | 'merch-book'
@@ -143,6 +145,7 @@ type HomeFocusHistoryKind = 'thinker' | 'writer';
     ProtopipeHomeBrandBookComponent,
     ProtopipeHomeAudienceBookComponent,
     ProtopipeHomeBuildBookComponent,
+    ProtopipeHomeBlogPreviewComponent,
     ProtopipeHomeBusinessDetailsComponent,
     ProtopipeHomeGoalsComponent,
     ProtopipeHomeAdsBookComponent,
@@ -174,7 +177,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   readonly strategyViewState = inject(ProtopipeHomeStrategyViewState);
   readonly writerViewState = inject(ProtopipeHomeWriterViewState);
   readonly thinkerViewState = inject(ProtopipeHomeThinkerViewState);
-  private readonly buildBookNav = inject(ProtopipeBuildBookNavState);
+  private readonly blogPreviewNav = inject(ProtopipeBlogPreviewNavState);
   private readonly keywordStore = inject(ProtopipeKeywordPickerStore);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly homeWorkspaceEl = viewChild<ElementRef<HTMLElement>>('homeWorkspace');
@@ -255,12 +258,22 @@ export class ProtopipeUserHomeComponent implements OnInit {
   readonly isWriterFocus = computed(() => this.activeView() === 'writer');
   readonly isThinkerFocus = computed(() => this.activeView() === 'thinker');
   readonly isBuildBookFocus = computed(() => this.activeView() === 'build-book');
+  readonly isBlogPreviewFocus = computed(() => this.activeView() === 'blog-preview');
   /** Temporarily reveal site nav while in immersive Writing book. */
   readonly writerRailPeek = signal(false);
   readonly isRailHidden = computed(() => {
     if (this.isWriterFocus() && this.writerRailPeek()) return false;
-    return this.isWriterFocus() || this.isBuildBookFocus() || this.isThinkerFocus();
+    return (
+      this.isWriterFocus() ||
+      this.isBuildBookFocus() ||
+      this.isThinkerFocus() ||
+      this.isBlogPreviewFocus()
+    );
   });
+  readonly blogPreviewContentPostId = computed(
+    () => this.blogPreviewNav.request()?.contentPostId ?? '',
+  );
+  readonly blogPreviewTitleHint = computed(() => this.blogPreviewNav.request()?.title);
 
   ngOnInit(): void {
     this.destroyRef.onDestroy(() => this.sidePanel.detachResizeListeners());
@@ -268,7 +281,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.thinkerViewState.setEnterThinkerHandler(() => this.enterThinkerFocus());
     this.thinkerViewState.setEnterWriterHandler(() => this.enterWriterFocus());
     this.thinkerViewState.setReviewOnBlogHandler((contentPostId, title) =>
-      this.enterBuildBookArticlePreview(contentPostId, title),
+      this.enterBlogPreviewFocus(contentPostId, title),
     );
     this.thinkerViewState.setPublishToSiteHandler((contentPostId) =>
       this.enterWriterPublishFocus(contentPostId),
@@ -276,7 +289,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.thinkerViewState.setExitHandler(() => this.leaveThinkerFocus({ syncHistory: true }));
     this.strategyViewState.setEnterWriterHandler(() => this.enterWriterFocus());
     this.strategyViewState.setReviewOnBlogHandler((contentPostId, title) =>
-      this.enterBuildBookArticlePreview(contentPostId, title),
+      this.enterBlogPreviewFocus(contentPostId, title),
     );
     this.strategyViewState.setPublishToSiteHandler((contentPostId) =>
       this.enterWriterPublishFocus(contentPostId),
@@ -499,15 +512,32 @@ export class ProtopipeUserHomeComponent implements OnInit {
     }
   }
 
-  /** Calendar / Thinker → Content Posts article preview for a portable content post. */
-  enterBuildBookArticlePreview(contentPostId: string, title?: string): void {
+  /** Calendar / Thinker → dedicated Blog Preview (selected template + filled article). */
+  enterBlogPreviewFocus(contentPostId: string, title?: string): void {
+    const id = contentPostId.trim();
+    if (!id) return;
     this.content.reload();
-    this.buildBookNav.requestArticlePreview(contentPostId, title);
+    this.blogPreviewNav.open(id, title);
     if (this.activeView() === 'thinker') {
       this.thinkerViewState.clearSession();
       this.clearFocusHistory(true);
     }
-    this.enterBuildBookFocus(null);
+    this.leaveWriterFocus();
+    this.sidePanel.setOpen(false);
+    this.activeView.set('blog-preview');
+  }
+
+  leaveBlogPreviewFocus(): void {
+    this.blogPreviewNav.clear();
+    if (this.activeView() !== 'blog-preview') return;
+    this.sidePanel.setOpen(false);
+    this.activeView.set('strategy');
+    this.activeNavId.set('start-strategy');
+  }
+
+  /** @deprecated Prefer enterBlogPreviewFocus — kept for Build Book internal deep-links. */
+  enterBuildBookArticlePreview(contentPostId: string, title?: string): void {
+    this.enterBlogPreviewFocus(contentPostId, title);
   }
 
   /** Open Writing Book on a draft with Publish guidance in the SEO panel. */
@@ -559,6 +589,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.leaveThinkerFocus({ syncHistory: true });
     } else if (this.activeView() === 'build-book') {
       this.leaveBuildBookFocus();
+    } else if (this.activeView() === 'blog-preview') {
+      this.leaveBlogPreviewFocus();
     }
   }
 

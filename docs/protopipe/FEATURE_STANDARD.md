@@ -95,7 +95,7 @@ features/protopipe/
 
 Book-style workspaces must also follow [BOOK_UI_STANDARD.md](./BOOK_UI_STANDARD.md). Shire books own persisted state; Sting book UIs own the operator workflow, draft state, and explicit Save.
 
-**Build Book blog pages:** `role: 'template-profile'` pages are presentation stacks (2–3 per site for variety). `role: 'article'` pages are instances linked to a `contentPostId`. Portable copy stays on the content post **ContentTemplate**; generation selects a profile id, then preview clones that stack and applies fill. Calendar funnel CTAs resolve only via `calendar[].contentPostId` → post stage (not fuzzy title/keyword joins).
+**Build Book blog pages:** `role: 'template-profile'` pages are presentation stacks (2–3 per site for variety). `role: 'article'` pages are instances linked to a `contentPostId`. Portable copy stays on the content post **ContentTemplate**; generation selects a profile id. Operator payoff is the dedicated **Blog Preview** surface (**View on Blog** from calendar/Thinker): display-only clone of the selected template filled with the article — not Build Book Content Posts editing.
 
 **Injection rule:** Components inject `ProtopipeStrategyService` only — never `ProtopipeApiService` (keeps agent UI and human UI on the same boundary).
 

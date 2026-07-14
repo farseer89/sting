@@ -78,7 +78,7 @@ describe('calendar-article-action.util', () => {
       posts,
     );
     expect(next.stage).toBe('review');
-    expect(next.label).toBe('Review on blog');
+    expect(next.label).toBe('View on Blog');
     expect(next.statusLabel).toBe('Ready');
     expect(next.postId).toBe('p1');
   });
@@ -90,7 +90,7 @@ describe('calendar-article-action.util', () => {
       posts,
     );
     expect(next.stage).toBe('published');
-    expect(next.label).toBe('Review on blog');
+    expect(next.label).toBe('View on Blog');
   });
 
   it('does not fuzzy-match by keyword or title', () => {

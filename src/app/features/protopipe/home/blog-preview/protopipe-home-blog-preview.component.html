@@ -1,0 +1,38 @@
+<div class="bp-shell">
+  <header class="bp-masthead">
+    <button type="button" class="bp-back" (click)="onBack()">
+      <span aria-hidden="true">←</span>
+      <span>Back</span>
+    </button>
+    <div class="bp-masthead__identity">
+      <p class="bp-kicker">Blog preview</p>
+      <h1 class="bp-title">{{ postTitle() }}</h1>
+      <p class="bp-subtitle">{{ subtitle() }}</p>
+    </div>
+    @if (!hasArticleBody() && !loading() && !error()) {
+      <p class="bp-banner" role="status">Article copy is not ready yet — showing the selected template empty.</p>
+    }
+  </header>
+
+  @if (loading()) {
+    <div class="bp-empty">
+      <p>Loading blog preview…</p>
+    </div>
+  } @else if (error(); as err) {
+    <div class="bp-empty">
+      <h2>Could not open preview</h2>
+      <p>{{ err }}</p>
+      <button type="button" class="bp-retry" (click)="retry()">Retry</button>
+    </div>
+  } @else {
+    <div class="bp-stage" aria-label="Filled blog article preview">
+      <app-protopipe-build-page-canvas
+        [baselineMode]="true"
+        [blocks]="blockStates()"
+        [editable]="false"
+        [themeCssVars]="siteThemeCssVars()"
+        [siteBaselineRenderer]="siteDesignContext()?.baselineRenderer ?? null"
+      />
+    </div>
+  }
+</div>

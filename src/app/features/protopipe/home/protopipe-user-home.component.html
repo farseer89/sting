@@ -428,6 +428,17 @@
                     />
                   </section>
                 }
+                @case ('blog-preview') {
+                  <section class="glass glass--full glass--premiere glass--writer" aria-label="Blog preview">
+                    @if (blogPreviewContentPostId(); as postId) {
+                      <app-protopipe-home-blog-preview
+                        [contentPostId]="postId"
+                        [titleHint]="blogPreviewTitleHint()"
+                        (exit)="leaveBlogPreviewFocus()"
+                      />
+                    }
+                  </section>
+                }
                 @case ('ads-book') {
                   <section class="glass glass--full glass--premiere" aria-label="Ads book">
                     <app-protopipe-home-ads-book />

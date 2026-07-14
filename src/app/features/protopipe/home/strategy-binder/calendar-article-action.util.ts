@@ -47,8 +47,8 @@ export function findPostForCalendarItem(
  * Single source of truth for calendar row CTAs.
  *
  * Write → not started (no linked post, or linked post not generated)
- * Review on blog → generated (run linked and/or body present)
- * Review on blog + Published → already published
+ * View on Blog → generated (run linked and/or body present)
+ * View on Blog + Published → already published
  */
 export function resolveCalendarNextAction(
   item: ProtopipeContentPlanCalendarItem,
@@ -60,7 +60,7 @@ export function resolveCalendarNextAction(
   if (post?.status === 'published') {
     return {
       stage: 'published',
-      label: 'Review on blog',
+      label: 'View on Blog',
       statusLabel: 'Published',
       post,
       postId,
@@ -71,7 +71,7 @@ export function resolveCalendarNextAction(
   if (post && (postHasArticleBody(post) || Boolean(post.articleGenerationRunId))) {
     return {
       stage: 'review',
-      label: 'Review on blog',
+      label: 'View on Blog',
       statusLabel: 'Ready',
       post,
       postId,

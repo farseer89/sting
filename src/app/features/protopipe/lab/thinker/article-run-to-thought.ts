@@ -105,6 +105,12 @@ const STEP_META: Record<
     description:
       'Drafts FAQ Q&A blocks from people-also-ask and brief questions — required for pillar guides, skipped for other types.',
   },
+  select_blog_template: {
+    label: 'Select blog template',
+    summary: 'Pick a site blog presentation profile for variety.',
+    description:
+      'Chooses among the account Build Book template-profile stacks so layout and images fill the selected skeleton.',
+  },
   layout_plan: {
     label: 'Layout',
     summary: 'Assign visual presentation per section.',
@@ -594,6 +600,20 @@ function buildArticleSubSteps(
         },
       ];
 
+    case 'select_blog_template':
+      return [
+        {
+          id: 'blog-template:select',
+          label: 'Select presentation profile',
+          detail: a.blogTemplateProfileId
+            ? `Profile ${a.blogTemplateProfileId}${a.blogProfile?.varietyKey ? ` · ${a.blogProfile.varietyKey}` : ''}`
+            : a.blogProfile?.varietyKey
+              ? a.blogProfile.varietyKey
+              : 'Pick among site blog template profiles',
+          status: phaseStatus(0, 1, stepStatus),
+        },
+      ];
+
     case 'review': {
       const heal = run.artifacts.selfHealProgress;
       const reviewArtifact = a.review;
@@ -1026,6 +1046,20 @@ function stepOutput(
               'FAQ',
               a.faqItems,
               `${a.faqItems.length} question(s)`,
+            ),
+          ]
+        : [];
+    case 'select_blog_template':
+      return a.blogProfile || a.blogTemplateProfileId
+        ? [
+            json(
+              'blog-template',
+              'Blog template',
+              {
+                blogTemplateProfileId: a.blogTemplateProfileId,
+                blogProfile: a.blogProfile,
+              },
+              a.blogProfile?.varietyKey ?? a.blogTemplateProfileId ?? 'Selected',
             ),
           ]
         : [];

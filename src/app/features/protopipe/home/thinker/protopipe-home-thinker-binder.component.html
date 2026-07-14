@@ -103,7 +103,9 @@
         </button>
       }
       @if (showOpenWriter()) {
-        <button type="button" class="tb-btn tb-btn--primary tb-btn--xs" (click)="openInWriter()">Open in writer</button>
+        <button type="button" class="tb-btn tb-btn--primary tb-btn--xs" (click)="reviewOnBlog()">Review on blog</button>
+        <button type="button" class="tb-btn tb-btn--ghost tb-btn--xs" (click)="publishToSite()">Publish</button>
+        <button type="button" class="tb-btn tb-btn--ghost tb-btn--xs" (click)="openInWriter()">Open in writer</button>
       }
     </div>
   </header>

@@ -8,7 +8,6 @@ import {
 } from '@angular/core';
 import type {
   ProtopipeContentPlanCalendarItem,
-  ProtopipeContentPost,
   ProtopipeSiteContentPlan,
 } from '@hive/contracts';
 import { ContentPlanStore } from '../../content-plan/content-plan.store';
@@ -20,6 +19,10 @@ import {
 } from './strategy-binder.mapper';
 import { StrategyBinderCalendarPanelComponent } from './strategy-binder-calendar-panel.component';
 import { calendarItemKey } from '../strategy/strategy.helpers';
+import {
+  buildCalendarNextActionMap,
+  findPostForCalendarItem,
+} from './calendar-article-action.util';
 
 export type StrategySection = 'overview' | 'pillars' | 'calendar' | 'backlog' | 'keywords' | 'tune';
 
@@ -61,8 +64,13 @@ export class ProtopipeHomeStrategyBinderComponent {
     return article ? calendarItemKey(article) : null;
   });
 
-  readonly calendarActionFn = (item: ProtopipeContentPlanCalendarItem): string =>
-    this.calendarActionLabel(item);
+  /** Live store plan wins over input so confirm() back-links show immediately. */
+  readonly livePlan = computed(() => this.contentPlan.plan() ?? this.plan());
+
+  /** Calendar SoT: one stage + one CTA per row. */
+  readonly calendarNextActions = computed(() =>
+    buildCalendarNextActionMap(this.livePlan(), this.content.posts()),
+  );
 
   readonly immediateFocus = computed(() =>
     this.keywords().filter((k) => k.tier === 'immediate'),
@@ -96,49 +104,8 @@ export class ProtopipeHomeStrategyBinderComponent {
     void this.viewState.openInThinker(item);
   }
 
-  postForItem(item: ProtopipeContentPlanCalendarItem): ProtopipeContentPost | undefined {
-    const posts = this.content.posts();
-    if (item.contentPostId) {
-      const byId = posts.find((post) => post.id === item.contentPostId);
-      if (byId) return byId;
-    }
-
-    const keyword = this.normalizeTitle(item.suggestedKeyword);
-    if (keyword) {
-      const byKeyword = posts.find((post) => this.postKeyword(post) === keyword);
-      if (byKeyword) return byKeyword;
-    }
-
-    const title = this.normalizeTitle(item.workingTitle);
-    const editorial = this.normalizeTitle(item.editorialTitle);
-    if (!title && !editorial) return undefined;
-    const itemDate = this.dateKey(item.proposedPublishAt);
-
-    return posts.find((post) => {
-      const postTitle = this.normalizeTitle(post.title);
-      if (postTitle !== title && (!editorial || postTitle !== editorial)) return false;
-      const postDate = this.dateKey(post.publishAt);
-      return !itemDate || !postDate || itemDate === postDate;
-    });
-  }
-
-  calendarActionLabel(item: ProtopipeContentPlanCalendarItem): string {
-    const post = this.postForItem(item);
-    if (post?.articleGenerationRunId && (post.template || post.bodyMarkdown.trim())) {
-      return 'View article';
-    }
-    if (post?.articleGenerationRunId) {
-      return 'View run';
-    }
-    if (post) {
-      return 'Open';
-    }
-    return 'Write';
-  }
-
-  runCalendarAction(item: ProtopipeContentPlanCalendarItem, event: Event): void {
-    event.stopPropagation();
-    this.executeCalendarAction(item);
+  postForItem(item: ProtopipeContentPlanCalendarItem) {
+    return findPostForCalendarItem(item, this.content.posts());
   }
 
   onCalendarPanelAction(item: ProtopipeContentPlanCalendarItem): void {
@@ -146,13 +113,13 @@ export class ProtopipeHomeStrategyBinderComponent {
   }
 
   private executeCalendarAction(item: ProtopipeContentPlanCalendarItem): void {
-    const post = this.postForItem(item);
-    if (post?.articleGenerationRunId) {
-      void this.viewState.openInThinker({ ...item, contentPostId: post.id });
-      return;
-    }
-    if (post) {
-      void this.viewState.openArticleInWriter({ ...item, contentPostId: post.id });
+    const key = calendarItemKey(item);
+    const next = this.calendarNextActions()[key];
+    if (next && (next.stage === 'review' || next.stage === 'published') && next.postId) {
+      this.viewState.reviewOnBlog(
+        next.postId,
+        item.workingTitle || item.editorialTitle || next.post?.title,
+      );
       return;
     }
     void this.viewState.openInWriter(item);
@@ -186,22 +153,5 @@ export class ProtopipeHomeStrategyBinderComponent {
   formatVolume(n: number): string {
     if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
     return String(n);
-  }
-
-  private normalizeTitle(value: string | null | undefined): string {
-    return (value ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
-  }
-
-  private postKeyword(post: ProtopipeContentPost): string {
-    return this.normalizeTitle(
-      post.suggestedKeyword ?? post.brief?.primaryKeywordPhrase ?? '',
-    );
-  }
-
-  private dateKey(value: string | null | undefined): string | null {
-    if (!value) return null;
-    const ms = new Date(value).getTime();
-    if (!Number.isFinite(ms)) return null;
-    return new Date(ms).toISOString().slice(0, 10);
   }
 }

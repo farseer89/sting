@@ -217,14 +217,14 @@
         <!-- ── CALENDAR ── -->
         @case ('calendar') {
           <app-strategy-binder-calendar-panel
-            [plan]="plan()"
-            [items]="calendar()"
-            [deck]="calendarDeck()"
-            [selectedKey]="selectedCalendarKey()"
-            [actionLabel]="calendarActionFn"
-            (selectItem)="openCalendarItem($event)"
-            (runAction)="onCalendarPanelAction($event)"
-          />
+              [plan]="plan()"
+              [items]="calendar()"
+              [deck]="calendarDeck()"
+              [selectedKey]="selectedCalendarKey()"
+              [nextActions]="calendarNextActions()"
+              (selectItem)="openCalendarItem($event)"
+              (runAction)="onCalendarPanelAction($event)"
+            />
         }
 
         <!-- ── BACKLOG ── -->

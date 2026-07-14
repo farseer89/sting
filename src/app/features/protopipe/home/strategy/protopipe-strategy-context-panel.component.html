@@ -121,9 +121,25 @@
             type="button"
             class="stratctx__writer-btn"
             [disabled]="view.openingWriter() || !view.canWriteArticle()"
+            (click)="reviewOnBlog(article)"
+          >
+            Review on blog
+          </button>
+          <button
+            type="button"
+            class="stratctx__writer-btn stratctx__writer-btn--secondary"
+            [disabled]="view.openingWriter() || !view.canWriteArticle()"
+            (click)="publishToSite(article)"
+          >
+            Publish
+          </button>
+          <button
+            type="button"
+            class="stratctx__writer-btn stratctx__writer-btn--secondary"
+            [disabled]="view.openingWriter() || !view.canWriteArticle()"
             (click)="openArticleInWriter(article)"
           >
-            {{ view.openingWriter() ? 'Opening…' : 'Open writer' }}
+            Open writer
           </button>
           <button
             type="button"

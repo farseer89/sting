@@ -9,6 +9,7 @@ export class ProtopipeHomeWriterViewState {
   private readonly _activePostId = signal<string | null>(null);
   private readonly _createMode = signal(false);
   private readonly _autoStartPipeline = signal(false);
+  private readonly _pendingPublish = signal(false);
   private readonly _pendingCognitivePackId = signal<string | null>(null);
   private exitHandler: (() => void) | null = null;
 
@@ -16,6 +17,7 @@ export class ProtopipeHomeWriterViewState {
   readonly activePostId = this._activePostId.asReadonly();
   readonly createMode = this._createMode.asReadonly();
   readonly autoStartPipeline = this._autoStartPipeline.asReadonly();
+  readonly pendingPublish = this._pendingPublish.asReadonly();
 
   setExitHandler(handler: () => void): void {
     this.exitHandler = handler;
@@ -37,6 +39,7 @@ export class ProtopipeHomeWriterViewState {
     this._createMode.set(false);
     this._activePostId.set(postId);
     this._autoStartPipeline.set(false);
+    this._pendingPublish.set(false);
     this._activePanel.set('canvas');
   }
 
@@ -45,13 +48,31 @@ export class ProtopipeHomeWriterViewState {
     this._createMode.set(false);
     this._activePostId.set(postId);
     this._autoStartPipeline.set(true);
+    this._pendingPublish.set(false);
     this._activePanel.set('behind');
+  }
+
+  /** Open a completed draft so the user can publish from Writing Book. */
+  openPostForPublish(postId: string): void {
+    this._createMode.set(false);
+    this._activePostId.set(postId);
+    this._autoStartPipeline.set(false);
+    this._pendingPublish.set(true);
+    this._activePanel.set('canvas');
   }
 
   consumeAutoStartPipeline(): boolean {
     const pending = this._autoStartPipeline();
     if (pending) {
       this._autoStartPipeline.set(false);
+    }
+    return pending;
+  }
+
+  consumePendingPublish(): boolean {
+    const pending = this._pendingPublish();
+    if (pending) {
+      this._pendingPublish.set(false);
     }
     return pending;
   }
@@ -83,6 +104,7 @@ export class ProtopipeHomeWriterViewState {
     this._activePostId.set(null);
     this._createMode.set(false);
     this._autoStartPipeline.set(false);
+    this._pendingPublish.set(false);
     this._pendingCognitivePackId.set(null);
     this._activePanel.set('canvas');
   }

@@ -21,6 +21,7 @@ import {
 } from '../strategy/strategy-content-calendar';
 import { calendarItemKey } from '../strategy/strategy.helpers';
 import type { StrategyBinderCalendarItem } from './strategy-binder.mapper';
+import type { CalendarNextAction } from './calendar-article-action.util';
 
 export type BinderCalendarMode = 'planner' | 'calendar';
 
@@ -37,9 +38,11 @@ export class StrategyBinderCalendarPanelComponent {
   readonly deck = input('');
   readonly kicker = input('Strategy · Schedule');
   readonly selectedKey = input<string | null>(null);
-  readonly actionLabel = input<(item: ProtopipeContentPlanCalendarItem) => string>(
-    () => 'Write',
-  );
+  /**
+   * Prefetched SoT map (itemKey → next action). When present, labels/status
+   * come from here — parent recomputes when posts/plan change.
+   */
+  readonly nextActions = input<Readonly<Record<string, CalendarNextAction>>>({});
 
   readonly selectItem = output<ProtopipeContentPlanCalendarItem>();
   readonly runAction = output<ProtopipeContentPlanCalendarItem>();
@@ -146,8 +149,14 @@ export class StrategyBinderCalendarPanelComponent {
     this.runAction.emit(item.source);
   }
 
-  labelFor(item: StrategyBinderCalendarItem): string {
-    return this.actionLabel()(item.source);
+  nextFor(item: StrategyBinderCalendarItem): CalendarNextAction {
+    return (
+      this.nextActions()[item.key] ?? {
+        stage: 'write',
+        label: 'Write',
+        statusLabel: 'Not written',
+      }
+    );
   }
 
   itemKey = calendarItemKey;

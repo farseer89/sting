@@ -556,6 +556,14 @@ export class ProtopipeHomeThinkerBinderComponent {
     this.thinkerView.openInWriter();
   }
 
+  reviewOnBlog(): void {
+    this.thinkerView.reviewOnBlog();
+  }
+
+  publishToSite(): void {
+    this.thinkerView.publishToSite();
+  }
+
   rerunActiveStep(): void {
     if (this.runKind() !== 'article' || this.rerunning() || !this.canRerunArticleStep()) return;
 

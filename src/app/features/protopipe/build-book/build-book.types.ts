@@ -145,11 +145,26 @@ export interface BuildBookBlockInstance {
   patternId?: string;
 }
 
+export type BuildBookPageRole = 'article' | 'template-profile';
+
+export type BlogTemplateVarietyKey = 'editorial-split' | 'proof-heavy' | 'faq-led';
+
+export interface BuildBookTemplateProfileMeta {
+  varietyKey: BlogTemplateVarietyKey;
+}
+
 export interface BuildBookPage {
   id: string;
   kind: BuildBookPageKind;
   label: string;
   slug?: string;
+  /**
+   * `template-profile` = reusable presentation stack (account has 2–3).
+   * `article` = instance filled for a content post (default when contentPostId set).
+   */
+  role?: BuildBookPageRole;
+  /** Selection hints for generation variety. */
+  templateProfileMeta?: BuildBookTemplateProfileMeta;
   /** Shire content-post id when this page was materialized from the content plan. */
   contentPostId?: string;
   /** Stable calendar row key: `${proposedPublishAt|backlog}|${workingTitle}`. */

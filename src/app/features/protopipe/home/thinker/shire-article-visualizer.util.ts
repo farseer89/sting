@@ -26,6 +26,7 @@ const ARTICLE_PIPELINE_STEP_IDS = new Set<string>([
   'audience_review',
   'draft_faq',
   'layout_plan',
+  'select_blog_template',
   'review',
   'metadata',
   'assemble',

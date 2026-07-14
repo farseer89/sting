@@ -1,15 +1,50 @@
 <div class="bk-content-posts">
-  <aside class="bk-content-posts__list" aria-label="Blog posts and content plan">
+  <aside class="bk-content-posts__list" aria-label="Blog templates and posts">
     <div class="bk-content-posts__head">
       <strong>Content posts</strong>
       <p>
-        Add pages from the content plan for demo and management, or create a blank blog template.
+        Account blog templates give generation variety (2–3 stacks). Article pages are filled
+        instances linked to portable content posts.
       </p>
     </div>
 
     @if (planError(); as err) {
       <p class="bk-content-posts__error">{{ err }}</p>
     }
+
+    <section class="bk-content-posts__plan" aria-label="Blog template profiles">
+      <div class="bk-content-posts__section-label">Templates</div>
+      <ul class="bk-content-posts__items">
+        @for (page of templateProfiles(); track page.id) {
+          <li>
+            <button
+              type="button"
+              class="bk-content-posts__item"
+              [class.is-active]="selectedPageId() === page.id"
+              (click)="selectPage(page.id)"
+            >
+              <span>{{ page.label }}</span>
+              @if (page.templateProfileMeta?.varietyKey; as key) {
+                <small>{{ key }}</small>
+              }
+              <span class="bk-content-posts__count">{{ page.blocks.length }} blocks</span>
+            </button>
+          </li>
+        } @empty {
+          <li class="bk-content-posts__empty">No templates yet — they seed when the Build Book loads.</li>
+        }
+      </ul>
+      <div class="bk-content-posts__create">
+        <input
+          type="text"
+          [value]="newPageLabel()"
+          (input)="newPageLabel.set($any($event.target).value)"
+          placeholder="Template name"
+          aria-label="New blog template name"
+        />
+        <p-button label="Add template" icon="pi pi-plus" size="small" (onClick)="createPage()" />
+      </div>
+    </section>
 
     <section class="bk-content-posts__plan" aria-label="Content plan calendar">
       <div class="bk-content-posts__section-label">From content plan</div>
@@ -63,29 +98,19 @@
     </section>
 
     <div class="bk-content-posts__create">
-      <div class="bk-content-posts__section-label">Blank template</div>
-      <input
-        type="text"
-        [value]="newPageLabel()"
-        (input)="newPageLabel.set($any($event.target).value)"
-        placeholder="Template name"
-        aria-label="New blog template name"
+      <div class="bk-content-posts__section-label">New portable draft</div>
+      <p-button
+        label="New portable draft"
+        icon="pi pi-file-edit"
+        size="small"
+        severity="secondary"
+        [outlined]="true"
+        [loading]="creatingDraft()"
+        (onClick)="createPortableDraft()"
       />
-      <div class="bk-content-posts__create-actions">
-        <p-button label="Add template" icon="pi pi-plus" size="small" (onClick)="createPage()" />
-        <p-button
-          label="New portable draft"
-          icon="pi pi-file-edit"
-          size="small"
-          severity="secondary"
-          [outlined]="true"
-          [loading]="creatingDraft()"
-          (onClick)="createPortableDraft()"
-        />
-      </div>
     </div>
 
-    <div class="bk-content-posts__section-label">Site blog pages</div>
+    <div class="bk-content-posts__section-label">Article pages</div>
     <ul class="bk-content-posts__items">
       @for (page of pages(); track page.id) {
         <li>
@@ -107,7 +132,7 @@
         </li>
       } @empty {
         <li class="bk-content-posts__empty">
-          No blog pages yet. Add from the content plan above, or create a blank template.
+          No article pages yet. Add from the content plan, or create a portable draft.
         </li>
       }
     </ul>
@@ -115,10 +140,12 @@
   <div class="bk-content-posts__editor">
     @if (selectedPage(); as page) {
       <div class="bk-content-posts__writer-bar">
-        @if (page.contentPostId; as postId) {
+        @if (page.role === 'template-profile') {
+          <p>Template profile — generation picks one of these stacks, then fills copy and images.</p>
+        } @else if (page.contentPostId; as postId) {
           <p>Portable content post linked — edit, preview, and publish to Astro from the writer.</p>
         } @else {
-          <p>Blog profile stack for this page — reset to the default beautiful template if needed.</p>
+          <p>Article page stack — reset to the default beautiful template if needed.</p>
         }
         <div class="bk-content-posts__writer-actions">
           @if (page.contentPostId; as postId) {

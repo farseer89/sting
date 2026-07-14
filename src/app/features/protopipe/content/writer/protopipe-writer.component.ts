@@ -1253,6 +1253,15 @@ export class ProtopipeWriterComponent implements OnDestroy {
             this.openInspectorPanel('behind');
           }
         }
+        if (this.embedded() && this.homeWriterView?.consumePendingPublish()) {
+          this.openInspectorPanel('seo');
+          this.messages.add({
+            severity: 'info',
+            summary: 'Ready to publish',
+            detail: 'Review the draft, then hit Publish to push this article to your site.',
+            life: 6000,
+          });
+        }
       },
       error: () => {
         this.loadingPost.set(false);

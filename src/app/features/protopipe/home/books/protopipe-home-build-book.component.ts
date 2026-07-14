@@ -117,6 +117,9 @@ import { mapStrategyBinderView } from '../strategy-binder/strategy-binder.mapper
 import { ProtopipeHomeStrategyViewState } from '../strategy/protopipe-home-strategy-view.state';
 import { ProtopipeContentService } from '../../protopipe-content.service';
 import { calendarItemKey } from '../strategy/strategy.helpers';
+import {
+  buildCalendarNextActionMap,
+} from '../strategy-binder/calendar-article-action.util';
 import { ProtopipeBuildBookThemePanelComponent } from '../../build-book/theme-panel/protopipe-build-book-theme-panel.component';
 import { hasBuildBookBaselineAssembly } from '../../build-book/build-book-baseline-assemblies';
 import { hrefFieldsFromProps, altFieldsFromProps } from '../../build-book/fields/build-href-field.util';
@@ -125,6 +128,7 @@ import { readProp } from '../../build-book/fields/build-field.util';
 import type { BuildPageImageEditEvent } from '../../build-book/canvas/build-page-canvas.component';
 import { ContentPlanStore } from '../../content-plan/content-plan.store';
 import { ProtopipeHomeThinkerViewState } from '../protopipe-home-thinker-view.state';
+import { ProtopipeBuildBookNavState } from '../protopipe-build-book-nav.state';
 
 const SECTION_DECK: Record<BuildBookSection, string> = {
   hero: 'Pick a hero layout, then open Hero images & copy to generate photos and set headline text — same live preview as pitch prep.',
@@ -201,6 +205,7 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
   private readonly content = inject(ProtopipeContentService);
   private readonly strategyView = inject(ProtopipeHomeStrategyViewState, { optional: true });
   private readonly thinkerView = inject(ProtopipeHomeThinkerViewState, { optional: true });
+  private readonly buildBookNav = inject(ProtopipeBuildBookNavState);
   private readonly shireSitesApi = inject(ProtopipeShireSitesApiService);
   private readonly sanitizer = inject(DomSanitizer);
   readonly pageBuilderRail = viewChild(BuildBookPageBuilderRailComponent);
@@ -337,17 +342,37 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
         (template.blocks?.length ?? 0) > 0;
       if (!hasBody) return;
 
+      const profileId = post?.blogTemplateProfileId?.trim();
       const source = fillSourceFromProtopipeTemplate(template, {
         kicker: page?.suggestedKeyword,
       });
-      const fingerprint = articleFillFingerprint(source);
+      const fingerprint = `${profileId ?? ''}|${articleFillFingerprint(source)}`;
       if (this.articleFillApplied.get(pageId) === fingerprint) return;
 
       // Defer write so we do not mutate Build Book signals synchronously inside the effect.
       queueMicrotask(() => {
         if (this.articleFillApplied.get(pageId) === fingerprint) return;
+        if (profileId) {
+          this.buildBook.cloneTemplateProfileOntoArticlePage(
+            profileId,
+            postId,
+            page?.label ?? post?.title ?? 'Blog post',
+          );
+        }
         this.buildBook.applyArticleFillToBlogPage(pageId, source);
         this.articleFillApplied.set(pageId, fingerprint);
+      });
+    });
+
+    effect(() => {
+      const request = this.buildBookNav.articlePreviewRequest();
+      if (!request) return;
+      // Wait until draft/pages are available before consuming the handoff.
+      if (!this.buildBook.hasDraft()) return;
+      queueMicrotask(() => {
+        const pending = this.buildBookNav.consumeArticlePreviewRequest();
+        if (!pending) return;
+        this.openArticlePreviewForContentPost(pending.contentPostId, pending.title);
       });
     });
   }
@@ -487,8 +512,24 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
     return article ? calendarItemKey(article) : null;
   });
 
-  readonly calendarActionFn = (item: ProtopipeContentPlanCalendarItem): string =>
-    this.calendarActionLabel(item);
+  /** Plan-item key → contentPostId from Build Book blog pages. */
+  readonly blogPagePostLinks = computed(() => {
+    const links: Record<string, string> = {};
+    for (const page of this.buildBook.blogPosts()) {
+      const key = page.contentPlanItemKey?.trim();
+      const postId = page.contentPostId?.trim();
+      if (key && postId) links[key] = postId;
+    }
+    return links;
+  });
+
+  readonly calendarNextActions = computed(() =>
+    buildCalendarNextActionMap(
+      this.contentPlanPlan(),
+      this.content.posts(),
+      this.blogPagePostLinks(),
+    ),
+  );
 
   readonly siteSlug = computed(() => this.strategy.site()?.clientSitesSlug ?? null);
 
@@ -1013,6 +1054,8 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
       }
       if (tab === 'calendar') {
         this.content.ensureCatalogLoaded();
+        this.content.reload();
+        void this.contentPlan.loadLatest();
       }
     }
     this.syncWorkflowToUrl();
@@ -1033,66 +1076,17 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
   }
 
   onCalendarAction(item: ProtopipeContentPlanCalendarItem): void {
-    const post = this.postForCalendarItem(item);
     if (!this.strategyView) return;
-    if (post?.articleGenerationRunId) {
-      void this.strategyView.openInThinker({ ...item, contentPostId: post.id });
-      return;
-    }
-    if (post) {
-      void this.strategyView.openArticleInWriter({ ...item, contentPostId: post.id });
+    const key = calendarItemKey(item);
+    const next = this.calendarNextActions()[key];
+    if (next && (next.stage === 'review' || next.stage === 'published') && next.postId) {
+      this.strategyView.reviewOnBlog(
+        next.postId,
+        item.workingTitle || item.editorialTitle || next.post?.title,
+      );
       return;
     }
     void this.strategyView.openInWriter(item);
-  }
-
-  calendarActionLabel(item: ProtopipeContentPlanCalendarItem): string {
-    const post = this.postForCalendarItem(item);
-    if (post?.articleGenerationRunId && (post.template || post.bodyMarkdown.trim())) {
-      return 'View article';
-    }
-    if (post?.articleGenerationRunId) return 'View run';
-    if (post) return 'Open';
-    return 'Write';
-  }
-
-  private postForCalendarItem(item: ProtopipeContentPlanCalendarItem): ProtopipeContentPost | undefined {
-    const posts = this.content.posts();
-    if (item.contentPostId) {
-      const byId = posts.find((post) => post.id === item.contentPostId);
-      if (byId) return byId;
-    }
-    const keyword = this.normalizeCalendarTitle(item.suggestedKeyword);
-    if (keyword) {
-      const byKeyword = posts.find((post) => {
-        const postKw = this.normalizeCalendarTitle(
-          post.suggestedKeyword ?? post.brief?.primaryKeywordPhrase ?? '',
-        );
-        return postKw === keyword;
-      });
-      if (byKeyword) return byKeyword;
-    }
-    const title = this.normalizeCalendarTitle(item.workingTitle);
-    const editorial = this.normalizeCalendarTitle(item.editorialTitle);
-    if (!title && !editorial) return undefined;
-    const itemDate = this.calendarDateKey(item.proposedPublishAt);
-    return posts.find((post) => {
-      const postTitle = this.normalizeCalendarTitle(post.title);
-      if (postTitle !== title && (!editorial || postTitle !== editorial)) return false;
-      const postDate = this.calendarDateKey(post.publishAt);
-      return !itemDate || !postDate || itemDate === postDate;
-    });
-  }
-
-  private normalizeCalendarTitle(value: string | undefined): string {
-    return (value ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
-  }
-
-  private calendarDateKey(value: string | null | undefined): string | null {
-    if (!value) return null;
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return null;
-    return d.toISOString().slice(0, 10);
   }
 
   async onEditSiteFromList(siteId: string): Promise<void> {
@@ -1188,6 +1182,38 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
       this.clearPendingAdd();
       this.pageBuilderRail()?.dismissAddView();
     }
+  }
+
+  /** Deep-link / Thinker handoff: Content Posts → clone profile stack → Article preview. */
+  openArticlePreviewForContentPost(contentPostId: string, title?: string): void {
+    if (!this.buildBook.hasDraft()) return;
+    void this.buildBook.ensureBlogTemplateProfiles();
+
+    const post = this.content.postById(contentPostId);
+    const profileId = post?.blogTemplateProfileId?.trim() || undefined;
+    const label = title?.trim() || post?.title?.trim() || 'Blog post';
+    const page = profileId
+      ? this.buildBook.cloneTemplateProfileOntoArticlePage(profileId, contentPostId, label)
+      : this.buildBook.ensureBlogPostForContentPost(contentPostId, label);
+    if (!page) return;
+
+    // Force fill effect to re-apply after cloning a different stack.
+    this.articleFillApplied.delete(page.id);
+
+    this.clearPendingAdd();
+    this.pageBuilderRail()?.dismissAddView();
+    this.bookTab.set('content-posts');
+    this.blogPostId.set(page.id);
+    this.contentPostsCanvasMode.set('article-preview');
+    const first = this.buildBook.blocksForPage(page.id)[0];
+    if (first) {
+      this.activeBlockId.set(first.id);
+      this.section.set(first.section);
+    } else {
+      this.activeBlockId.set(null);
+    }
+    this.openPreview();
+    this.syncWorkflowToUrl();
   }
 
   activePageLabel(): string {
@@ -2311,6 +2337,9 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
       this.landingPageId.set(pageId);
     } else if (pageId && this.buildBook.blogPosts().some((page) => page.id === pageId)) {
       this.blogPostId.set(pageId);
+      if (params.get('mode') === 'article-preview') {
+        this.contentPostsCanvasMode.set('article-preview');
+      }
     }
 
     if (this.isPageEditor()) {
@@ -2330,10 +2359,17 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
       url.searchParams.set('page', this.landingPageId()!);
     } else if (this.bookTab() === 'content-posts' && this.blogPostId()) {
       url.searchParams.set('page', this.blogPostId()!);
+      if (this.contentPostsCanvasMode() === 'article-preview') {
+        url.searchParams.set('mode', 'article-preview');
+      } else {
+        url.searchParams.delete('mode');
+      }
     } else if (this.bookTab() === 'blog-home') {
       url.searchParams.set('page', 'blog-home');
+      url.searchParams.delete('mode');
     } else {
       url.searchParams.delete('page');
+      url.searchParams.delete('mode');
     }
     if (this.isPageEditor()) {
       url.searchParams.set('section', this.section());

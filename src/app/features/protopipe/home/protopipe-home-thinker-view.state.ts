@@ -52,6 +52,8 @@ export class ProtopipeHomeThinkerViewState {
   private enterThinkerFocus: (() => void) | null = null;
   private enterWriterFocus: (() => void) | null = null;
   private exitThinkerFocus: (() => void) | null = null;
+  private reviewOnBlogHandler: ((contentPostId: string, title?: string) => void) | null = null;
+  private publishToSiteHandler: ((contentPostId: string) => void) | null = null;
 
   private readonly _focusBackLabel = signal('Back');
   readonly focusBackLabel = this._focusBackLabel.asReadonly();
@@ -131,6 +133,14 @@ export class ProtopipeHomeThinkerViewState {
 
   setEnterWriterHandler(handler: () => void): void {
     this.enterWriterFocus = handler;
+  }
+
+  setReviewOnBlogHandler(handler: (contentPostId: string, title?: string) => void): void {
+    this.reviewOnBlogHandler = handler;
+  }
+
+  setPublishToSiteHandler(handler: (contentPostId: string) => void): void {
+    this.publishToSiteHandler = handler;
   }
 
   setExitHandler(handler: () => void): void {
@@ -316,6 +326,20 @@ export class ProtopipeHomeThinkerViewState {
     if (postId) {
       this.enterWriterFocus?.();
     }
+  }
+
+  /** After article generation: open Build Book Content Posts in article preview. */
+  reviewOnBlog(): void {
+    const postId = this._postId();
+    if (!postId) return;
+    this.reviewOnBlogHandler?.(postId, this._workingTitle() || undefined);
+  }
+
+  /** Open Writing Book on the post so the user can publish to the site. */
+  publishToSite(): void {
+    const postId = this._postId();
+    if (!postId) return;
+    this.publishToSiteHandler?.(postId);
   }
 
   /** Open a prospector run in the thinker binder (fullscreen immersive). */

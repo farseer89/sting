@@ -148,7 +148,7 @@
               [deck]="calendarDeck()"
               kicker="Build · Calendar"
               [selectedKey]="selectedCalendarKey()"
-              [actionLabel]="calendarActionFn"
+              [nextActions]="calendarNextActions()"
               (selectItem)="onCalendarSelect($event)"
               (runAction)="onCalendarAction($event)"
             />

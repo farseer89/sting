@@ -609,7 +609,14 @@ export class ProtopipeBuildBookService {
     try {
       await this.loadShireBook(siteId);
       await this.ensureHostedSiteBaseline();
-      this._dirty.set(false);
+      const profileIdsBefore = new Set(this.blogTemplateProfiles().map((p) => p.id));
+      this.ensureBlogTemplateProfiles();
+      const profilesAdded = this.blogTemplateProfiles().some((p) => !profileIdsBefore.has(p.id));
+      if (profilesAdded) {
+        await this.save();
+      } else {
+        this._dirty.set(false);
+      }
     } catch (err) {
       this._error.set(parseProtopipeApiError(err, 'Could not load build book'));
       this._saved.set(null);
@@ -1014,6 +1021,20 @@ export class ProtopipeBuildBookService {
     return this._pages().filter((page) => page.kind === 'blog-post');
   }
 
+  /** Reusable presentation stacks (2–3 per site). */
+  blogTemplateProfiles(): BuildBookPage[] {
+    return this.blogPosts().filter((page) => this.isTemplateProfile(page));
+  }
+
+  /** Article instance pages (linked or unbound drafts — not template profiles). */
+  blogArticlePages(): BuildBookPage[] {
+    return this.blogPosts().filter((page) => !this.isTemplateProfile(page));
+  }
+
+  isTemplateProfile(page: BuildBookPage): boolean {
+    return page.role === 'template-profile';
+  }
+
   blogHomePage(): BuildBookPage | null {
     return findPageByKind(this._pages(), 'blog-home') ?? null;
   }
@@ -1240,6 +1261,9 @@ export class ProtopipeBuildBookService {
       contentPlanItemKey?: string;
       suggestedKeyword?: string;
       briefBody?: string;
+      role?: BuildBookPage['role'];
+      templateProfileMeta?: BuildBookPage['templateProfileMeta'];
+      seedSlots?: ReadonlyArray<{ patternId: string; preferredBlockId: string }>;
     },
   ): BuildBookPage | null {
     const pages = structuredClone(this._pages());
@@ -1256,31 +1280,171 @@ export class ProtopipeBuildBookService {
       id = `blog-${base}-${n}`;
     }
 
+    const isProfile = links?.role === 'template-profile';
     const nextPage: BuildBookPage = {
       id,
       kind: 'blog-post',
-      label: label.trim() || 'Blog post template',
+      label: label.trim() || (isProfile ? 'Blog template' : 'Blog post'),
       slug: base,
-      contentPostId: links?.contentPostId,
-      contentPlanItemKey: links?.contentPlanItemKey,
-      suggestedKeyword: links?.suggestedKeyword,
+      role: links?.role ?? (links?.contentPostId ? 'article' : undefined),
+      templateProfileMeta: links?.templateProfileMeta,
+      contentPostId: isProfile ? undefined : links?.contentPostId,
+      contentPlanItemKey: isProfile ? undefined : links?.contentPlanItemKey,
+      suggestedKeyword: isProfile ? undefined : links?.suggestedKeyword,
       blocks: [],
     };
     pages.push(nextPage);
     this.commitPageStructure(pages);
 
-    const seedBlockIds = this.resolveBlogSeedBlockIds();
+    const seedBlockIds = this.resolveBlogSeedBlockIds(links?.seedSlots);
     for (const blockId of seedBlockIds) {
       this.addPageBlock(id, blockId);
     }
 
-    if (links?.suggestedKeyword || links?.briefBody || links?.contentPlanItemKey) {
+    if (!isProfile && (links?.suggestedKeyword || links?.briefBody || links?.contentPlanItemKey)) {
       this.seedBlogPostCopyFromPlan(id, {
         title: nextPage.label,
         keyword: links.suggestedKeyword,
       });
     }
 
+    return findPageById(this._pages(), id) ?? nextPage;
+  }
+
+  /**
+   * Ensure this site has 2–3 named blog template profiles for generation variety.
+   * Idempotent — does not duplicate existing varietyKeys.
+   */
+  ensureBlogTemplateProfiles(): BuildBookPage[] {
+    if (!this.hasDraft()) return [];
+
+    const defs: ReadonlyArray<{
+      varietyKey: NonNullable<BuildBookPage['templateProfileMeta']>['varietyKey'];
+      label: string;
+      seedSlots: ReadonlyArray<{ patternId: string; preferredBlockId: string }>;
+    }> = [
+      {
+        varietyKey: 'editorial-split',
+        label: 'Editorial split',
+        seedSlots: [
+          { patternId: 'section-intro', preferredBlockId: 'universal-intro-centered' },
+          { patternId: 'prose-band', preferredBlockId: 'universal-prose-band' },
+          { patternId: 'content-split', preferredBlockId: 'universal-split-image-right' },
+          { patternId: 'prose-band', preferredBlockId: 'universal-prose-band' },
+          { patternId: 'content-split', preferredBlockId: 'universal-split-image-left' },
+          { patternId: 'faq-accordion', preferredBlockId: 'universal-faq-accordion' },
+          { patternId: 'cta-banner', preferredBlockId: 'universal-cta-band' },
+        ],
+      },
+      {
+        varietyKey: 'proof-heavy',
+        label: 'Proof-heavy',
+        seedSlots: [
+          { patternId: 'section-intro', preferredBlockId: 'universal-intro-centered' },
+          { patternId: 'content-split', preferredBlockId: 'universal-split-image-right' },
+          { patternId: 'content-split', preferredBlockId: 'universal-split-image-left' },
+          { patternId: 'prose-band', preferredBlockId: 'universal-prose-band' },
+          { patternId: 'content-split', preferredBlockId: 'universal-split-image-right' },
+          { patternId: 'cta-banner', preferredBlockId: 'universal-cta-band' },
+        ],
+      },
+      {
+        varietyKey: 'faq-led',
+        label: 'FAQ-led',
+        seedSlots: [
+          { patternId: 'section-intro', preferredBlockId: 'universal-intro-centered' },
+          { patternId: 'prose-band', preferredBlockId: 'universal-prose-band' },
+          { patternId: 'faq-accordion', preferredBlockId: 'universal-faq-accordion' },
+          { patternId: 'prose-band', preferredBlockId: 'universal-prose-band' },
+          { patternId: 'content-split', preferredBlockId: 'universal-split-image-right' },
+          { patternId: 'cta-banner', preferredBlockId: 'universal-cta-band' },
+        ],
+      },
+    ];
+
+    const existing = this.blogTemplateProfiles();
+    const have = new Set(
+      existing
+        .map((p) => p.templateProfileMeta?.varietyKey)
+        .filter((k): k is NonNullable<typeof k> => Boolean(k)),
+    );
+
+    for (const def of defs) {
+      if (have.has(def.varietyKey)) continue;
+      // Cap at 3 profiles total.
+      if (this.blogTemplateProfiles().length >= 3) break;
+      this.createBlogPostPage(def.label, {
+        role: 'template-profile',
+        templateProfileMeta: { varietyKey: def.varietyKey },
+        seedSlots: def.seedSlots,
+      });
+      have.add(def.varietyKey);
+    }
+
+    return this.blogTemplateProfiles();
+  }
+
+  /**
+   * Clone a template profile stack onto an article page (or create the page),
+   * then leave fill to applyArticleFillToBlogPage.
+   */
+  cloneTemplateProfileOntoArticlePage(
+    profilePageId: string,
+    contentPostId: string,
+    label: string,
+    links?: { contentPlanItemKey?: string; suggestedKeyword?: string },
+  ): BuildBookPage | null {
+    const profile = findPageById(this._pages(), profilePageId);
+    if (!profile || profile.kind !== 'blog-post' || !this.isTemplateProfile(profile)) {
+      return this.ensureBlogPostForContentPost(contentPostId, label, links);
+    }
+
+    const existing = this.findBlogPostByContentPostId(contentPostId);
+    if (existing) {
+      const pages = structuredClone(this._pages());
+      const page = findPageById(pages, existing.id);
+      if (!page) return existing;
+      page.role = 'article';
+      page.label = label.trim() || page.label;
+      page.blocks = structuredClone(profile.blocks).map((block, index) => ({
+        ...block,
+        id: `${page.id}-b${index + 1}`,
+      }));
+      if (links?.contentPlanItemKey) page.contentPlanItemKey = links.contentPlanItemKey;
+      if (links?.suggestedKeyword) page.suggestedKeyword = links.suggestedKeyword;
+      this.commitPageStructure(pages);
+      return findPageById(this._pages(), page.id) ?? page;
+    }
+
+    const pages = structuredClone(this._pages());
+    const slug = label
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    const base = slug || 'blog-post';
+    let id = `blog-${base}`;
+    let n = 1;
+    while (pages.some((page) => page.id === id)) {
+      n += 1;
+      id = `blog-${base}-${n}`;
+    }
+    const nextPage: BuildBookPage = {
+      id,
+      kind: 'blog-post',
+      label: label.trim() || 'Blog post',
+      slug: base,
+      role: 'article',
+      contentPostId,
+      contentPlanItemKey: links?.contentPlanItemKey,
+      suggestedKeyword: links?.suggestedKeyword,
+      blocks: structuredClone(profile.blocks).map((block, index) => ({
+        ...block,
+        id: `${id}-b${index + 1}`,
+      })),
+    };
+    pages.push(nextPage);
+    this.commitPageStructure(pages);
     return findPageById(this._pages(), id) ?? nextPage;
   }
 
@@ -1291,6 +1455,32 @@ export class ProtopipeBuildBookService {
         (page) => page.kind === 'blog-post' && page.contentPlanItemKey === itemKey,
       ) ?? null
     );
+  }
+
+  /** Find a blog-post page linked to a portable content post. */
+  findBlogPostByContentPostId(contentPostId: string): BuildBookPage | null {
+    const id = contentPostId.trim();
+    if (!id) return null;
+    return (
+      this._pages().find((page) => page.kind === 'blog-post' && page.contentPostId === id) ?? null
+    );
+  }
+
+  /**
+   * Ensure a blog-post page exists for a content post (creates default beautiful stack if missing).
+   */
+  ensureBlogPostForContentPost(
+    contentPostId: string,
+    label: string,
+    links?: { contentPlanItemKey?: string; suggestedKeyword?: string },
+  ): BuildBookPage | null {
+    const existing = this.findBlogPostByContentPostId(contentPostId);
+    if (existing) return existing;
+    return this.createBlogPostPage(label.trim() || 'Blog post', {
+      contentPostId,
+      contentPlanItemKey: links?.contentPlanItemKey,
+      suggestedKeyword: links?.suggestedKeyword,
+    });
   }
 
   /**
@@ -1381,9 +1571,11 @@ export class ProtopipeBuildBookService {
     this.commitPageStructure(pages);
   }
 
-  private resolveBlogSeedBlockIds(): string[] {
+  private resolveBlogSeedBlockIds(
+    seedSlots?: ReadonlyArray<{ patternId: string; preferredBlockId: string }>,
+  ): string[] {
     const templateId = this._selectedTemplateId();
-    const seedSlots: ReadonlyArray<{ patternId: string; preferredBlockId: string }> = [
+    const slots: ReadonlyArray<{ patternId: string; preferredBlockId: string }> = seedSlots ?? [
       { patternId: 'section-intro', preferredBlockId: 'universal-intro-centered' },
       { patternId: 'prose-band', preferredBlockId: 'universal-prose-band' },
       { patternId: 'content-split', preferredBlockId: 'universal-split-image-right' },
@@ -1394,7 +1586,7 @@ export class ProtopipeBuildBookService {
     ];
     const blockIds: string[] = [];
 
-    for (const slot of seedSlots) {
+    for (const slot of slots) {
       const variants = variantsForPattern(slot.patternId, 'blog-post', templateId, 'compatible');
       const fallback = variantsForPattern(slot.patternId, 'blog-post', templateId, 'all');
       const fromPreferred =
@@ -1408,15 +1600,7 @@ export class ProtopipeBuildBookService {
     }
 
     if (blockIds.length === 0) {
-      return [
-        'universal-intro-centered',
-        'universal-prose-band',
-        'universal-split-image-right',
-        'universal-prose-band',
-        'universal-split-image-left',
-        'universal-faq-accordion',
-        'universal-cta-band',
-      ];
+      return slots.map((s) => s.preferredBlockId);
     }
     return blockIds;
   }

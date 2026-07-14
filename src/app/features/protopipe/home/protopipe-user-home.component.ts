@@ -37,6 +37,7 @@ import { ProtopipeHomeStrategyViewState } from './strategy/protopipe-home-strate
 import { ProtopipeHomeWriterComponent } from './protopipe-home-writer.component';
 import { ProtopipeHomeWriterViewState } from './protopipe-home-writer-view.state';
 import { ProtopipeHomeThinkerViewState } from './protopipe-home-thinker-view.state';
+import { ProtopipeBuildBookNavState } from './protopipe-build-book-nav.state';
 import { ArticleGenerationRunSession } from '../article/article-generation-run-session.service';
 import { ThoughtRunSession } from '../runs/thought-run-session.service';
 import { ProtopipeHomeKeywordBookComponent } from './books/protopipe-home-keyword-book.component';
@@ -173,6 +174,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   readonly strategyViewState = inject(ProtopipeHomeStrategyViewState);
   readonly writerViewState = inject(ProtopipeHomeWriterViewState);
   readonly thinkerViewState = inject(ProtopipeHomeThinkerViewState);
+  private readonly buildBookNav = inject(ProtopipeBuildBookNavState);
   private readonly keywordStore = inject(ProtopipeKeywordPickerStore);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly homeWorkspaceEl = viewChild<ElementRef<HTMLElement>>('homeWorkspace');
@@ -265,8 +267,20 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.writerViewState.setExitHandler(() => this.leaveWriterFocus({ syncHistory: true }));
     this.thinkerViewState.setEnterThinkerHandler(() => this.enterThinkerFocus());
     this.thinkerViewState.setEnterWriterHandler(() => this.enterWriterFocus());
+    this.thinkerViewState.setReviewOnBlogHandler((contentPostId, title) =>
+      this.enterBuildBookArticlePreview(contentPostId, title),
+    );
+    this.thinkerViewState.setPublishToSiteHandler((contentPostId) =>
+      this.enterWriterPublishFocus(contentPostId),
+    );
     this.thinkerViewState.setExitHandler(() => this.leaveThinkerFocus({ syncHistory: true }));
     this.strategyViewState.setEnterWriterHandler(() => this.enterWriterFocus());
+    this.strategyViewState.setReviewOnBlogHandler((contentPostId, title) =>
+      this.enterBuildBookArticlePreview(contentPostId, title),
+    );
+    this.strategyViewState.setPublishToSiteHandler((contentPostId) =>
+      this.enterWriterPublishFocus(contentPostId),
+    );
     this.syncPacksFromRoute();
     this.syncPitchPrepFromRoute();
     this.syncLeadsFromRoute();
@@ -453,6 +467,10 @@ export class ProtopipeUserHomeComponent implements OnInit {
     const syncHistory = options.syncHistory !== false;
     const wasThinker = this.activeView() === 'thinker';
     const runKind = this.thinkerViewState.runKind();
+    // After an article run, refresh catalog so calendar shows Review (not Write).
+    if (wasThinker && runKind === 'article') {
+      this.content.reload();
+    }
     this.thinkerViewState.clearSession();
     if (wasThinker) {
       this.restoreFocusReturnContext(runKind);
@@ -479,6 +497,23 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.contentPlan.setSiteId(siteId);
       void this.contentPlan.loadLatest();
     }
+  }
+
+  /** Calendar / Thinker → Content Posts article preview for a portable content post. */
+  enterBuildBookArticlePreview(contentPostId: string, title?: string): void {
+    this.content.reload();
+    this.buildBookNav.requestArticlePreview(contentPostId, title);
+    if (this.activeView() === 'thinker') {
+      this.thinkerViewState.clearSession();
+      this.clearFocusHistory(true);
+    }
+    this.enterBuildBookFocus(null);
+  }
+
+  /** Open Writing Book on a draft with Publish guidance in the SEO panel. */
+  enterWriterPublishFocus(contentPostId: string): void {
+    this.writerViewState.openPostForPublish(contentPostId);
+    this.enterWriterFocus();
   }
 
   leaveWriterFocus(options: { syncHistory?: boolean } = {}): void {

@@ -81,18 +81,25 @@
             </div>
             <p class="sb-cal-note__title">{{ item.title }}</p>
             <div class="sb-cal-note__meta">
+              <span
+                class="sb-cal-note__stage"
+                [attr.data-stage]="nextFor(item).stage"
+              >
+                {{ nextFor(item).statusLabel }}
+              </span>
               <span class="sb-cal-note__intent">{{ item.intent }}</span>
               <span class="sb-cal-note__funnel">{{ item.funnelStage }}</span>
             </div>
           </div>
           <span
             class="sb-cal-note__action"
+            [attr.data-stage]="nextFor(item).stage"
             role="button"
             tabindex="0"
             (click)="onAction(item, $event)"
             (keydown.enter)="onAction(item, $event)"
           >
-            {{ labelFor(item) }}
+            {{ nextFor(item).label }}
           </span>
         </button>
       } @empty {

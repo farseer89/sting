@@ -64,4 +64,16 @@ export class ProtopipeStrategyContextPanelComponent {
   openInThinker(article: ProtopipeContentPlanCalendarItem): void {
     void this.view.openInThinker(article);
   }
+
+  reviewOnBlog(article: ProtopipeContentPlanCalendarItem): void {
+    const postId = article.contentPostId?.trim();
+    if (!postId) return;
+    this.view.reviewOnBlog(postId, article.workingTitle || article.editorialTitle);
+  }
+
+  publishToSite(article: ProtopipeContentPlanCalendarItem): void {
+    const postId = article.contentPostId?.trim();
+    if (!postId) return;
+    this.view.publishToSite(postId);
+  }
 }

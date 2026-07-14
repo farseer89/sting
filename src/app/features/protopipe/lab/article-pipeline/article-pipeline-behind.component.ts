@@ -157,6 +157,7 @@ const STEP_TO_ARTIFACT_KEY: Record<ArticleGenerationStep, keyof ArticleGeneratio
   draft: 'sections',
   audience_review: 'audienceReview',
   draft_faq: 'faqItems',
+  select_blog_template: 'blogProfile',
   layout_plan: 'layoutPlan',
   review: 'review',
   metadata: 'metadata',

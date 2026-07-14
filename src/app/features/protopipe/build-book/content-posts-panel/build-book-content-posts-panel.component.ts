@@ -60,7 +60,7 @@ export class BuildBookContentPostsPanelComponent implements OnInit {
   /** Emitted when the active blog profile stack is reset to the default template. */
   readonly profileReset = output<string>();
 
-  readonly newPageLabel = signal('Default blog template');
+  readonly newPageLabel = signal('Custom template');
   readonly addingPlanKey = signal<string | null>(null);
   readonly creatingDraft = signal(false);
   readonly planError = signal<string | null>(null);
@@ -81,7 +81,11 @@ export class BuildBookContentPostsPanelComponent implements OnInit {
   }
 
   pages(): BuildBookPage[] {
-    return this.buildBook.blogPosts();
+    return this.buildBook.blogArticlePages();
+  }
+
+  templateProfiles(): BuildBookPage[] {
+    return this.buildBook.blogTemplateProfiles();
   }
 
   ngOnInit(): void {
@@ -89,6 +93,7 @@ export class BuildBookContentPostsPanelComponent implements OnInit {
     if (!siteId) return;
     this.contentPlan.setSiteId(siteId);
     void this.contentPlan.loadLatest();
+    this.buildBook.ensureBlogTemplateProfiles();
   }
 
   selectPage(pageId: string): void {
@@ -106,14 +111,17 @@ export class BuildBookContentPostsPanelComponent implements OnInit {
   }
 
   createPage(): void {
-    const page = this.buildBook.createBlogPostPage(this.newPageLabel());
+    const page = this.buildBook.createBlogPostPage(this.newPageLabel(), {
+      role: 'template-profile',
+      templateProfileMeta: { varietyKey: 'editorial-split' },
+    });
     if (page) {
       this.selectedPageIdChange.emit(page.id);
-      this.newPageLabel.set('Default blog template');
+      this.newPageLabel.set('Custom template');
     }
   }
 
-  /** Blank portable ContentTemplate draft + linked blog-post profile page (US-A5 path). */
+  /** Blank portable ContentTemplate draft + linked blog-post article page. */
   async createPortableDraft(): Promise<void> {
     const siteId = this.strategy.siteId();
     if (!siteId) return;
@@ -129,10 +137,13 @@ export class BuildBookContentPostsPanelComponent implements OnInit {
         bodyMarkdown: `Draft for “${title}”. Generate the article from the writer.`,
       });
       const contentPostId = created.post?.id;
-      const page = this.buildBook.createBlogPostPage(title, { contentPostId });
+      const page = this.buildBook.createBlogPostPage(title, {
+        contentPostId,
+        role: 'article',
+      });
       if (page) {
         this.selectedPageIdChange.emit(page.id);
-        this.newPageLabel.set('Default blog template');
+        this.newPageLabel.set('Custom template');
       }
       if (contentPostId) {
         this.openWriter(contentPostId);
@@ -238,6 +249,7 @@ export class BuildBookContentPostsPanelComponent implements OnInit {
         contentPostId,
         contentPlanItemKey: itemKey,
         suggestedKeyword: item.suggestedKeyword,
+        role: 'article',
       });
       if (page) {
         this.selectedPageIdChange.emit(page.id);

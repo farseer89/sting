@@ -38,6 +38,8 @@ export class ProtopipeHomeStrategyViewState {
   private readonly content = inject(ProtopipeContentService);
 
   private enterWriterFocus: (() => void) | null = null;
+  private reviewOnBlogHandler: ((contentPostId: string, title?: string) => void) | null = null;
+  private publishToSiteHandler: ((contentPostId: string) => void) | null = null;
 
   private readonly _plan = signal<ProtopipeSiteContentPlan | null>(null);
   private readonly _openingWriter = signal(false);
@@ -62,6 +64,14 @@ export class ProtopipeHomeStrategyViewState {
 
   setEnterWriterHandler(handler: () => void): void {
     this.enterWriterFocus = handler;
+  }
+
+  setReviewOnBlogHandler(handler: (contentPostId: string, title?: string) => void): void {
+    this.reviewOnBlogHandler = handler;
+  }
+
+  setPublishToSiteHandler(handler: (contentPostId: string) => void): void {
+    this.publishToSiteHandler = handler;
   }
 
   setPlan(plan: ProtopipeSiteContentPlan | null): void {
@@ -254,8 +264,8 @@ export class ProtopipeHomeStrategyViewState {
       );
 
       if (outcome === 'writer') {
-        this.writerView.openPost(postId);
-        this.enterWriterFocus?.();
+        // Draft already complete — land on blog article preview (funnel: Review → Publish).
+        this.reviewOnBlog(postId, article.workingTitle || article.editorialTitle);
       } else if (outcome === 'failed') {
         this.writerView.openPostForWriting(postId);
         this.enterWriterFocus?.();
@@ -271,6 +281,20 @@ export class ProtopipeHomeStrategyViewState {
     if (!plan?.id) return;
     this.thinkerView.setFocusBackLabel('Back to strategy');
     this.thinkerView.openContentPlanRun(plan.siteId, plan);
+  }
+
+  /** Content Posts article preview for a plan-backed post. */
+  reviewOnBlog(contentPostId: string, title?: string): void {
+    const id = contentPostId.trim();
+    if (!id) return;
+    this.reviewOnBlogHandler?.(id, title?.trim() || undefined);
+  }
+
+  /** Writing Book with publish guidance for a completed draft. */
+  publishToSite(contentPostId: string): void {
+    const id = contentPostId.trim();
+    if (!id) return;
+    this.publishToSiteHandler?.(id);
   }
 
   setVisualView(view: StrategyVisualView): void {

@@ -25,6 +25,44 @@
       <button type="button" class="bp-retry" (click)="retry()">Retry</button>
     </div>
   } @else {
+    @if (articlePackage(); as pkg) {
+      <section class="bp-package" aria-label="Published article package">
+        <div class="bp-package__url">
+          <span class="bp-package__label">URL</span>
+          <code>{{ packageUrl() }}</code>
+        </div>
+        <div class="bp-package__grid">
+          <div>
+            <span class="bp-package__label">Primary keyword</span>
+            <strong>{{ pkg.primaryKeyword }}</strong>
+          </div>
+          <div>
+            <span class="bp-package__label">Search intent</span>
+            <strong>{{ pkg.searchIntent }}</strong>
+          </div>
+          <div>
+            <span class="bp-package__label">SEO title</span>
+            <strong>{{ pkg.seoTitle }}</strong>
+            <small>{{ pkg.seoTitle.length }} chars</small>
+          </div>
+          <div>
+            <span class="bp-package__label">Meta description</span>
+            <strong>{{ pkg.metaDescription }}</strong>
+            <small>{{ packageMetaLength() }} chars</small>
+          </div>
+          <div>
+            <span class="bp-package__label">H1</span>
+            <strong>{{ pkg.h1 }}</strong>
+          </div>
+          <div>
+            <span class="bp-package__label">Publish chrome</span>
+            <strong>{{ pkg.authorLine }} · {{ pkg.pubDate }} · {{ pkg.readTime }}</strong>
+          </div>
+        </div>
+        <p class="bp-package__excerpt">{{ pkg.excerpt }}</p>
+      </section>
+    }
+
     <div class="bp-stage" aria-label="Filled blog article preview">
       <app-protopipe-build-page-canvas
         [baselineMode]="true"

@@ -606,10 +606,18 @@ function buildArticleSubSteps(
           id: 'blog-template:select',
           label: 'Select presentation profile',
           detail: a.blogTemplateProfileId
-            ? `Profile ${a.blogTemplateProfileId}${a.blogProfile?.varietyKey ? ` · ${a.blogProfile.varietyKey}` : ''}`
-            : a.blogProfile?.varietyKey
-              ? a.blogProfile.varietyKey
-              : 'Pick among site blog template profiles',
+            ? `Profile ${a.blogTemplateProfileId}${
+                a.blogProfile?.articleTemplateKey
+                  ? ` · ${a.blogProfile.articleTemplateKey}`
+                  : a.blogProfile?.varietyKey
+                    ? ` · legacy · ${a.blogProfile.varietyKey}`
+                    : ''
+              }`
+            : a.blogProfile?.articleTemplateKey
+              ? a.blogProfile.articleTemplateKey
+              : a.blogProfile?.varietyKey
+                ? `legacy · ${a.blogProfile.varietyKey}`
+                : 'Pick among site blog template profiles',
           status: phaseStatus(0, 1, stepStatus),
         },
       ];
@@ -1059,7 +1067,10 @@ function stepOutput(
                 blogTemplateProfileId: a.blogTemplateProfileId,
                 blogProfile: a.blogProfile,
               },
-              a.blogProfile?.varietyKey ?? a.blogTemplateProfileId ?? 'Selected',
+              a.blogProfile?.articleTemplateKey ??
+                a.blogProfile?.varietyKey ??
+                a.blogTemplateProfileId ??
+                'Selected',
             ),
           ]
         : [];

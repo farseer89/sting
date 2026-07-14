@@ -66,6 +66,22 @@ interface UniversalBeforeAfterPanel {
   detail?: string;
 }
 
+interface UniversalComparisonColumn {
+  key: string;
+  label: string;
+}
+
+interface UniversalComparisonRow {
+  label: string;
+  values: Record<string, string>;
+  highlight?: boolean;
+}
+
+interface UniversalRelatedLink {
+  label: string;
+  href: string;
+}
+
 @Component({
   selector: 'app-protopipe-build-universal-baseline-block',
   standalone: true,
@@ -173,6 +189,50 @@ export class ProtopipeBuildUniversalBaselineBlockComponent {
 
   readonly caseMetrics = computed(() => readStatPairs(this.props(), 'metrics'));
 
+  readonly comparisonColumns = computed((): UniversalComparisonColumn[] => {
+    const raw = this.props()['columns'];
+    if (!Array.isArray(raw)) return [];
+    return raw.map((item) => {
+      const record = item as Record<string, unknown>;
+      return {
+        key: String(record['key'] ?? ''),
+        label: String(record['label'] ?? ''),
+      };
+    });
+  });
+
+  readonly comparisonRows = computed((): UniversalComparisonRow[] => {
+    const raw = this.props()['rows'];
+    if (!Array.isArray(raw)) return [];
+    return raw.map((item) => {
+      const record = item as Record<string, unknown>;
+      const valuesRaw = record['values'];
+      const values: Record<string, string> = {};
+      if (valuesRaw && typeof valuesRaw === 'object' && !Array.isArray(valuesRaw)) {
+        for (const [key, value] of Object.entries(valuesRaw as Record<string, unknown>)) {
+          values[key] = String(value ?? '');
+        }
+      }
+      return {
+        label: String(record['label'] ?? ''),
+        values,
+        highlight: Boolean(record['highlight']),
+      };
+    });
+  });
+
+  readonly relatedLinks = computed((): UniversalRelatedLink[] => {
+    const raw = this.props()['links'];
+    if (!Array.isArray(raw)) return [];
+    return raw.map((item) => {
+      const record = item as Record<string, unknown>;
+      return {
+        label: String(record['label'] ?? ''),
+        href: String(record['href'] ?? '#'),
+      };
+    });
+  });
+
   readonly beforePanel = computed((): UniversalBeforeAfterPanel | null => {
     return this.readBeforeAfterPanel('before');
   });
@@ -244,6 +304,10 @@ export class ProtopipeBuildUniversalBaselineBlockComponent {
 
   patchCaseMetric(index: number, field: 'value' | 'label', value: string): void {
     this.propPathChange.emit({ path: `metrics.${index}.${field}`, value });
+  }
+
+  patchRelatedLink(index: number, field: keyof UniversalRelatedLink, value: string): void {
+    this.propPathChange.emit({ path: `links.${index}.${field}`, value });
   }
 
   patchBeforeAfter(side: 'before' | 'after', field: keyof UniversalBeforeAfterPanel, value: string): void {

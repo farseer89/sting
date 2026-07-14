@@ -77,6 +77,71 @@
   font-size: 0.85rem;
 }
 
+.bp-package {
+  margin: 0 1.25rem;
+  padding: 0.9rem 1rem 1rem;
+  border: 1px solid rgba(30, 40, 50, 0.12);
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.bp-package__url {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.75rem;
+  align-items: baseline;
+  margin-bottom: 0.85rem;
+}
+
+.bp-package__url code {
+  font-size: 0.9rem;
+  color: #16324a;
+}
+
+.bp-package__grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 900px) {
+  .bp-package__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.bp-package__grid > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.bp-package__label {
+  font-size: 0.68rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #667484;
+}
+
+.bp-package__grid strong {
+  font-size: 0.92rem;
+  font-weight: 650;
+  color: #182430;
+  line-height: 1.35;
+}
+
+.bp-package__grid small {
+  color: #667484;
+  font-size: 0.75rem;
+}
+
+.bp-package__excerpt {
+  margin: 0.85rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(30, 40, 50, 0.08);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #314050;
+}
+
 .bp-stage {
   flex: 1;
   min-height: 0;

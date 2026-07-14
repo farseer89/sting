@@ -36,6 +36,10 @@ const POLICY_BY_PAGE_KIND: Record<BuildBookPageKind, readonly string[] | null> =
   'blog-post': [
     'section-intro',
     'prose-band',
+    'quick-answer',
+    'comparison-table',
+    'case-snapshot',
+    'related-links',
     'work-gallery',
     'video-reel',
     'content-split',

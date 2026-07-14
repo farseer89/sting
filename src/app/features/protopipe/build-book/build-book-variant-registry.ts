@@ -227,6 +227,26 @@ export const BUILD_BOOK_VARIANT_REGISTRY: Record<string, BuildBookVariantRegistr
     variantLabel: 'Chips',
     compatibleTemplateIds: [...BUILD_BOOK_ALL_TEMPLATE_IDS],
   },
+  'universal-quick-answer': {
+    patternId: 'quick-answer',
+    variantLabel: 'Answer callout',
+    compatibleTemplateIds: [...BUILD_BOOK_ALL_TEMPLATE_IDS],
+  },
+  'universal-comparison-table': {
+    patternId: 'comparison-table',
+    variantLabel: 'Criteria table',
+    compatibleTemplateIds: [...BUILD_BOOK_ALL_TEMPLATE_IDS],
+  },
+  'universal-case-snapshot': {
+    patternId: 'case-snapshot',
+    variantLabel: 'Project snapshot',
+    compatibleTemplateIds: [...BUILD_BOOK_ALL_TEMPLATE_IDS],
+  },
+  'universal-related-links': {
+    patternId: 'related-links',
+    variantLabel: 'Internal links',
+    compatibleTemplateIds: [...BUILD_BOOK_ALL_TEMPLATE_IDS],
+  },
 };
 
 export function variantRegistryEntry(blockId: string): BuildBookVariantRegistryEntry | undefined {

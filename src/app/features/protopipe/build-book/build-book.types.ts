@@ -147,10 +147,17 @@ export interface BuildBookBlockInstance {
 
 export type BuildBookPageRole = 'article' | 'template-profile';
 
+/** Legacy Content Posts template-profile variety (older seeded stacks). */
 export type BlogTemplateVarietyKey = 'editorial-split' | 'proof-heavy' | 'faq-led';
 
+/** Approved core deliverable article templates. */
+export type BlogArticleTemplateKey = 'answer-guide' | 'decision-comparison' | 'story-case-study';
+
 export interface BuildBookTemplateProfileMeta {
-  varietyKey: BlogTemplateVarietyKey;
+  /** Approved deliverable template key (preferred). */
+  articleTemplateKey?: BlogArticleTemplateKey;
+  /** Legacy variety — kept for older seeded profiles. */
+  varietyKey?: BlogTemplateVarietyKey;
 }
 
 export interface BuildBookPage {

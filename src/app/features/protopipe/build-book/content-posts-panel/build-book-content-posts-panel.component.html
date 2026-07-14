@@ -3,8 +3,9 @@
     <div class="bk-content-posts__head">
       <strong>Content posts</strong>
       <p>
-        Account blog templates give generation variety (2–3 stacks). Article pages are filled
-        instances linked to portable content posts.
+        Account blog templates give generation variety. Approved Answer Guide, Decision Comparison,
+        and Story Case Study stacks seed automatically; article pages are filled instances linked to
+        portable content posts.
       </p>
     </div>
 
@@ -24,8 +25,10 @@
               (click)="selectPage(page.id)"
             >
               <span>{{ page.label }}</span>
-              @if (page.templateProfileMeta?.varietyKey; as key) {
+              @if (page.templateProfileMeta?.articleTemplateKey; as key) {
                 <small>{{ key }}</small>
+              } @else if (page.templateProfileMeta?.varietyKey; as key) {
+                <small>legacy · {{ key }}</small>
               }
               <span class="bk-content-posts__count">{{ page.blocks.length }} blocks</span>
             </button>

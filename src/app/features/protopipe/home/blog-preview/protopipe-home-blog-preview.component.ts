@@ -10,6 +10,8 @@ import {
 } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import type { ProtopipeContentPost } from '@hive/contracts';
+import type { BlogArticlePackagePreview } from '../../build-book/build-book-blog-template.catalog';
+import type { BlogArticleTemplateKey } from '../../build-book/build-book.types';
 import { ProtopipeBuildBookService } from '../../build-book/protopipe-build-book.service';
 import {
   ProtopipeBuildPageCanvasComponent,
@@ -19,7 +21,11 @@ import { ProtopipeContentService } from '../../protopipe-content.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { siteThemeTokensToCssVars } from '../../site-design/site-theme.util';
 import { ProtopipeBlogPreviewNavState } from '../protopipe-blog-preview-nav.state';
-import { resolveBlogPreviewStack } from './resolve-blog-preview-stack.util';
+import {
+  blogArticleTemplatePreviewTitle,
+  resolveBlogPreviewStack,
+  resolveBlogArticleTemplatePreviewStack,
+} from './resolve-blog-preview-stack.util';
 
 @Component({
   selector: 'app-protopipe-home-blog-preview',
@@ -30,7 +36,8 @@ import { resolveBlogPreviewStack } from './resolve-blog-preview-stack.util';
   styleUrl: './protopipe-home-blog-preview.component.scss',
 })
 export class ProtopipeHomeBlogPreviewComponent implements OnInit {
-  readonly contentPostId = input.required<string>();
+  readonly contentPostId = input<string | null | undefined>(undefined);
+  readonly articleTemplateKey = input<BlogArticleTemplateKey | null>(null);
   readonly titleHint = input<string | undefined>(undefined);
   readonly exit = output<void>();
 
@@ -43,7 +50,9 @@ export class ProtopipeHomeBlogPreviewComponent implements OnInit {
   readonly error = signal<string | null>(null);
   readonly blockStates = signal<BuildPageBlockState[]>([]);
   readonly profileLabel = signal<string | null>(null);
+  readonly templateLabel = signal<string | null>(null);
   readonly varietyKey = signal<string | null>(null);
+  readonly articlePackage = signal<BlogArticlePackagePreview | null>(null);
   readonly hasArticleBody = signal(false);
   readonly postTitle = signal<string>('Blog article');
 
@@ -57,12 +66,25 @@ export class ProtopipeHomeBlogPreviewComponent implements OnInit {
   });
 
   readonly subtitle = computed(() => {
+    const articleTemplate = this.templateLabel();
+    if (articleTemplate) return articleTemplate;
+
     const label = this.profileLabel();
     const variety = this.varietyKey();
-    if (label && variety) return `${label} · ${variety}`;
+    if (label && variety) return `${label} · legacy · ${variety}`;
     if (label) return label;
-    if (variety) return variety;
+    if (variety) return `legacy · ${variety}`;
     return 'Selected blog template';
+  });
+
+  readonly packageMetaLength = computed(() => {
+    const meta = this.articlePackage()?.metaDescription?.trim() ?? '';
+    return meta.length;
+  });
+
+  readonly packageUrl = computed(() => {
+    const slug = this.articlePackage()?.slug?.trim();
+    return slug ? `/blog/${slug}` : null;
   });
 
   ngOnInit(): void {
@@ -79,7 +101,13 @@ export class ProtopipeHomeBlogPreviewComponent implements OnInit {
   }
 
   private async loadPreview(): Promise<void> {
-    const postId = this.contentPostId().trim();
+    const templateKey = this.articleTemplateKey();
+    if (templateKey) {
+      await this.loadArticleTemplatePreview(templateKey);
+      return;
+    }
+
+    const postId = this.contentPostId()?.trim() ?? '';
     if (!postId) {
       this.error.set('Missing content post.');
       this.loading.set(false);
@@ -95,6 +123,10 @@ export class ProtopipeHomeBlogPreviewComponent implements OnInit {
       }
       this.content.reload();
       await this.buildBook.load();
+      if (!this.buildBook.hasDraft()) {
+        await this.buildBook.initializeStarterDraft();
+      }
+      this.buildBook.ensureBlogTemplateProfiles();
 
       let post = this.content.postById(postId);
       if (!post) {
@@ -118,18 +150,52 @@ export class ProtopipeHomeBlogPreviewComponent implements OnInit {
     }
   }
 
+  private async loadArticleTemplatePreview(templateKey: BlogArticleTemplateKey): Promise<void> {
+    this.loading.set(true);
+    this.error.set(null);
+    try {
+      if (!this.strategy.siteId()) {
+        await this.strategy.ensureLoaded();
+      }
+      await this.buildBook.load();
+      if (!this.buildBook.hasDraft()) {
+        await this.buildBook.initializeStarterDraft();
+      }
+      const resolved = resolveBlogArticleTemplatePreviewStack(templateKey);
+      this.postTitle.set(this.titleHint()?.trim() || blogArticleTemplatePreviewTitle(templateKey));
+      this.templateLabel.set(resolved.templateLabel ?? null);
+      this.profileLabel.set(null);
+      this.varietyKey.set(null);
+      this.articlePackage.set(resolved.articlePackage ?? null);
+      this.hasArticleBody.set(true);
+      this.blockStates.set(resolved.blockStates);
+      if (!resolved.blockStates.length) {
+        this.error.set('Could not build this blog template design preview.');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not load blog template preview.';
+      this.error.set(message);
+      this.blockStates.set([]);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
   private applyResolved(post: ProtopipeContentPost): void {
     this.postTitle.set(this.titleHint()?.trim() || post.title || 'Blog article');
     const resolved = resolveBlogPreviewStack({
       post,
       profiles: this.buildBook.blogTemplateProfiles(),
+      blogPages: this.buildBook.blogPosts(),
     });
     this.profileLabel.set(resolved.profileLabel ?? null);
+    this.templateLabel.set(resolved.templateLabel ?? null);
     this.varietyKey.set(resolved.varietyKey ?? null);
+    this.articlePackage.set(null);
     this.hasArticleBody.set(resolved.hasArticleBody);
     this.blockStates.set(resolved.blockStates);
     if (!resolved.blockStates.length) {
-      this.error.set('No blog template stack is available for this site yet.');
+      this.error.set('Could not build a blog template stack for preview.');
     }
   }
 }

@@ -89,4 +89,22 @@ describe('resolveBlogPreviewStack', () => {
     expect(resolved.profileId).toBe('blog-faq');
     expect(resolved.hasArticleBody).toBe(true);
   });
+
+  it('uses the hardcoded default stack when no profiles exist', () => {
+    const resolved = resolveBlogPreviewStack({
+      post: post({
+        template: {
+          version: 1,
+          title: 'Solo',
+          intro: 'Intro only.',
+          sections: [],
+          blocks: [],
+        },
+      }),
+      profiles: [],
+    });
+    expect(resolved.profileId).toBeUndefined();
+    expect(resolved.blockStates.length).toBeGreaterThan(3);
+    expect(resolved.hasArticleBody).toBe(true);
+  });
 });

@@ -60,6 +60,7 @@ import {
 } from './build-book-baseline.util';
 import { isPinnedBaselineBlockId } from './build-book-pinned-blocks.util';
 import { findBuildBookTemplate } from './build-book-template.catalog';
+import { BLOG_ARTICLE_TEMPLATE_CATALOG } from './build-book-blog-template.catalog';
 import type {
   BuildBookBlockDefinition,
   BuildBookBlockInstance,
@@ -1264,6 +1265,8 @@ export class ProtopipeBuildBookService {
       role?: BuildBookPage['role'];
       templateProfileMeta?: BuildBookPage['templateProfileMeta'];
       seedSlots?: ReadonlyArray<{ patternId: string; preferredBlockId: string }>;
+      /** Prefer a stable page id (e.g. blog-answer-guide). */
+      preferredId?: string;
     },
   ): BuildBookPage | null {
     const pages = structuredClone(this._pages());
@@ -1272,7 +1275,8 @@ export class ProtopipeBuildBookService {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
-    const base = slug || 'blog-post';
+    const preferred = links?.preferredId?.trim().replace(/^blog-/, '') || '';
+    const base = preferred || slug || 'blog-post';
     let id = `blog-${base}`;
     let n = 1;
     while (pages.some((page) => page.id === id)) {
@@ -1312,73 +1316,34 @@ export class ProtopipeBuildBookService {
   }
 
   /**
-   * Ensure this site has 2–3 named blog template profiles for generation variety.
-   * Idempotent — does not duplicate existing varietyKeys.
+   * Ensure approved Blog Article Templates are seeded as Build Book template-profile pages.
+   * Idempotent by `articleTemplateKey`. Leaves legacy varietyKey profiles untouched.
    */
   ensureBlogTemplateProfiles(): BuildBookPage[] {
     if (!this.hasDraft()) return [];
 
-    const defs: ReadonlyArray<{
-      varietyKey: NonNullable<BuildBookPage['templateProfileMeta']>['varietyKey'];
-      label: string;
-      seedSlots: ReadonlyArray<{ patternId: string; preferredBlockId: string }>;
-    }> = [
-      {
-        varietyKey: 'editorial-split',
-        label: 'Editorial split',
-        seedSlots: [
-          { patternId: 'section-intro', preferredBlockId: 'universal-intro-centered' },
-          { patternId: 'prose-band', preferredBlockId: 'universal-prose-band' },
-          { patternId: 'content-split', preferredBlockId: 'universal-split-image-right' },
-          { patternId: 'prose-band', preferredBlockId: 'universal-prose-band' },
-          { patternId: 'content-split', preferredBlockId: 'universal-split-image-left' },
-          { patternId: 'faq-accordion', preferredBlockId: 'universal-faq-accordion' },
-          { patternId: 'cta-banner', preferredBlockId: 'universal-cta-band' },
-        ],
-      },
-      {
-        varietyKey: 'proof-heavy',
-        label: 'Proof-heavy',
-        seedSlots: [
-          { patternId: 'section-intro', preferredBlockId: 'universal-intro-centered' },
-          { patternId: 'content-split', preferredBlockId: 'universal-split-image-right' },
-          { patternId: 'content-split', preferredBlockId: 'universal-split-image-left' },
-          { patternId: 'prose-band', preferredBlockId: 'universal-prose-band' },
-          { patternId: 'content-split', preferredBlockId: 'universal-split-image-right' },
-          { patternId: 'cta-banner', preferredBlockId: 'universal-cta-band' },
-        ],
-      },
-      {
-        varietyKey: 'faq-led',
-        label: 'FAQ-led',
-        seedSlots: [
-          { patternId: 'section-intro', preferredBlockId: 'universal-intro-centered' },
-          { patternId: 'prose-band', preferredBlockId: 'universal-prose-band' },
-          { patternId: 'faq-accordion', preferredBlockId: 'universal-faq-accordion' },
-          { patternId: 'prose-band', preferredBlockId: 'universal-prose-band' },
-          { patternId: 'content-split', preferredBlockId: 'universal-split-image-right' },
-          { patternId: 'cta-banner', preferredBlockId: 'universal-cta-band' },
-        ],
-      },
-    ];
-
     const existing = this.blogTemplateProfiles();
-    const have = new Set(
+    const haveKeys = new Set(
       existing
-        .map((p) => p.templateProfileMeta?.varietyKey)
+        .map((p) => p.templateProfileMeta?.articleTemplateKey)
         .filter((k): k is NonNullable<typeof k> => Boolean(k)),
     );
 
-    for (const def of defs) {
-      if (have.has(def.varietyKey)) continue;
-      // Cap at 3 profiles total.
-      if (this.blogTemplateProfiles().length >= 3) break;
-      this.createBlogPostPage(def.label, {
+    for (const template of BLOG_ARTICLE_TEMPLATE_CATALOG) {
+      if (haveKeys.has(template.id)) continue;
+
+      const seedSlots = template.blockIds.map((blockId) => ({
+        patternId: resolvePatternIdForBlock(blockId),
+        preferredBlockId: blockId,
+      }));
+
+      this.createBlogPostPage(template.label, {
         role: 'template-profile',
-        templateProfileMeta: { varietyKey: def.varietyKey },
-        seedSlots: def.seedSlots,
+        preferredId: template.id,
+        templateProfileMeta: { articleTemplateKey: template.id },
+        seedSlots,
       });
-      have.add(def.varietyKey);
+      haveKeys.add(template.id);
     }
 
     return this.blogTemplateProfiles();

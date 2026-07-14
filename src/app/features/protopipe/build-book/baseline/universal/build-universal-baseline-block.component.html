@@ -484,6 +484,136 @@
         </div>
       </section>
     }
+    @case ('universal-prose-band') {
+      <section class="bb-uni-prose">
+        <div class="bb-uni-prose__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Prose kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Prose heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <p class="bb-uni-lede">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('body')" hostClass="" ariaLabel="Prose body" [multiline]="true" (valueChange)="patch('body', $event)" />
+          </p>
+        </div>
+      </section>
+    }
+    @case ('universal-quick-answer') {
+      <section class="bb-uni-answer">
+        <div class="bb-uni-answer__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Answer kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Answer heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <p class="bb-uni-answer__body">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('body')" hostClass="" ariaLabel="Quick answer" [multiline]="true" (valueChange)="patch('body', $event)" />
+          </p>
+        </div>
+      </section>
+    }
+    @case ('universal-comparison-table') {
+      <section class="bb-uni-compare">
+        <div class="bb-uni-compare__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Comparison kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Comparison heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          @if (str('subhead')) {
+            <p class="bb-uni-lede">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('subhead')" hostClass="" ariaLabel="Comparison subhead" [multiline]="true" (valueChange)="patch('subhead', $event)" />
+            </p>
+          }
+          <div class="bb-uni-compare__table-wrap">
+            <table class="bb-uni-compare__table">
+              <thead>
+                <tr>
+                  <th scope="col">Criteria</th>
+                  @for (column of comparisonColumns(); track column.key) {
+                    <th scope="col">{{ column.label }}</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of comparisonRows(); track $index) {
+                  <tr [class.bb-uni-compare__row--highlight]="row.highlight">
+                    <th scope="row">{{ row.label }}</th>
+                    @for (column of comparisonColumns(); track column.key) {
+                      <td>{{ row.values[column.key] || '—' }}</td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    }
+    @case ('universal-case-snapshot') {
+      <section class="bb-uni-snapshot">
+        <div class="bb-uni-snapshot__wrap">
+          <div class="bb-uni-snapshot__head">
+            <p class="bb-uni-kicker">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Snapshot kicker" (valueChange)="patch('kicker', $event)" />
+            </p>
+            <h2 class="bb-uni-heading">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Snapshot heading" (valueChange)="patch('heading', $event)" />
+            </h2>
+          </div>
+          <dl class="bb-uni-snapshot__grid">
+            <div>
+              <dt>Location</dt>
+              <dd>
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('location')" hostClass="" ariaLabel="Location" (valueChange)="patch('location', $event)" />
+              </dd>
+            </div>
+            <div>
+              <dt>Service</dt>
+              <dd>
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('service')" hostClass="" ariaLabel="Service" (valueChange)="patch('service', $event)" />
+              </dd>
+            </div>
+            <div>
+              <dt>Challenge</dt>
+              <dd>
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('challenge')" hostClass="" ariaLabel="Challenge" [multiline]="true" (valueChange)="patch('challenge', $event)" />
+              </dd>
+            </div>
+            <div>
+              <dt>Result</dt>
+              <dd>
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('result')" hostClass="" ariaLabel="Result" [multiline]="true" (valueChange)="patch('result', $event)" />
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+    }
+    @case ('universal-related-links') {
+      <section class="bb-uni-related">
+        <div class="bb-uni-related__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Related kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Related heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <ul class="bb-uni-related__list">
+            @for (link of relatedLinks(); track $index) {
+              <li>
+                <a [href]="link.href" class="bb-uni-related__link">
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="link.label" hostClass="" ariaLabel="Related link label" (valueChange)="patchRelatedLink($index, 'label', $event)" />
+                </a>
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+    }
     @case ('universal-intro-split') {
       <section class="bb-uni-intro bb-uni-intro--split">
         <div class="bb-uni-intro__split">
@@ -501,6 +631,134 @@
               <app-protopipe-build-inline-text [editable]="editable()" [value]="str('body')" hostClass="" ariaLabel="Intro body" [multiline]="true" (valueChange)="patch('body', $event)" />
             </p>
           </div>
+        </div>
+      </section>
+    }
+    @case ('universal-prose-band') {
+      <section class="bb-uni-intro bb-uni-intro--centered bb-uni-prose">
+        <div class="bb-uni-intro__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Prose kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Prose heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <p class="bb-uni-lede">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('body')" hostClass="" ariaLabel="Prose body" [multiline]="true" (valueChange)="patch('body', $event)" />
+          </p>
+        </div>
+      </section>
+    }
+    @case ('universal-quick-answer') {
+      <section class="bb-uni-quick-answer">
+        <div class="bb-uni-quick-answer__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Quick answer kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Quick answer heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <p class="bb-uni-quick-answer__body">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('body')" hostClass="" ariaLabel="Quick answer body" [multiline]="true" (valueChange)="patch('body', $event)" />
+          </p>
+        </div>
+      </section>
+    }
+    @case ('universal-comparison-table') {
+      <section class="bb-uni-compare">
+        <div class="bb-uni-compare__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Comparison kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Comparison heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <p class="bb-uni-lede">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('subhead')" hostClass="" ariaLabel="Comparison subhead" [multiline]="true" (valueChange)="patch('subhead', $event)" />
+          </p>
+          <div class="bb-uni-compare__table-wrap">
+            <table class="bb-uni-compare__table">
+              <thead>
+                <tr>
+                  <th scope="col">Criteria</th>
+                  @for (column of comparisonColumns(); track column.key) {
+                    <th scope="col">{{ column.label }}</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of comparisonRows(); track $index) {
+                  <tr [class.bb-uni-compare__row--highlight]="row.highlight">
+                    <th scope="row">{{ row.label }}</th>
+                    @for (column of comparisonColumns(); track column.key) {
+                      <td>{{ row.values[column.key] || '—' }}</td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    }
+    @case ('universal-case-snapshot') {
+      <section class="bb-uni-snapshot">
+        <div class="bb-uni-snapshot__wrap">
+          <div class="bb-uni-snapshot__head">
+            <p class="bb-uni-kicker">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Snapshot kicker" (valueChange)="patch('kicker', $event)" />
+            </p>
+            <h2 class="bb-uni-heading">
+              <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Snapshot heading" (valueChange)="patch('heading', $event)" />
+            </h2>
+          </div>
+          <dl class="bb-uni-snapshot__grid">
+            <div>
+              <dt>Location</dt>
+              <dd>
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('location')" hostClass="" ariaLabel="Snapshot location" (valueChange)="patch('location', $event)" />
+              </dd>
+            </div>
+            <div>
+              <dt>Service</dt>
+              <dd>
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('service')" hostClass="" ariaLabel="Snapshot service" (valueChange)="patch('service', $event)" />
+              </dd>
+            </div>
+            <div>
+              <dt>Challenge</dt>
+              <dd>
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('challenge')" hostClass="" ariaLabel="Snapshot challenge" [multiline]="true" (valueChange)="patch('challenge', $event)" />
+              </dd>
+            </div>
+            <div>
+              <dt>Result</dt>
+              <dd>
+                <app-protopipe-build-inline-text [editable]="editable()" [value]="str('result')" hostClass="" ariaLabel="Snapshot result" [multiline]="true" (valueChange)="patch('result', $event)" />
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+    }
+    @case ('universal-related-links') {
+      <section class="bb-uni-related">
+        <div class="bb-uni-related__wrap">
+          <p class="bb-uni-kicker">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('kicker')" hostClass="" ariaLabel="Related links kicker" (valueChange)="patch('kicker', $event)" />
+          </p>
+          <h2 class="bb-uni-heading">
+            <app-protopipe-build-inline-text [editable]="editable()" [value]="str('heading')" hostClass="" ariaLabel="Related links heading" (valueChange)="patch('heading', $event)" />
+          </h2>
+          <ul class="bb-uni-related__list">
+            @for (link of relatedLinks(); track $index) {
+              <li>
+                <a [href]="link.href" class="bb-uni-related__link">
+                  <app-protopipe-build-inline-text [editable]="editable()" [value]="link.label" hostClass="" ariaLabel="Related link label" (valueChange)="patchRelatedLink($index, 'label', $event)" />
+                </a>
+              </li>
+            }
+          </ul>
         </div>
       </section>
     }

@@ -163,6 +163,80 @@
             (openLive)="onOpenLiveSite($event)"
           />
         </div>
+      } @else if (bookTab() === 'blog-templates') {
+        <div class="bk-tab-panel bk-tab-panel--library bk-blog-templates">
+          <div class="bk-start__head">
+            <div class="bk-stage-kicker">Blog Templates</div>
+            <h2 class="bk-start__title">Core post shapes for generated content</h2>
+            <p class="bk-start__deck">
+              These three presentation profiles show how portable article packages will render
+              before we wire generation, image controls, and publish targets.
+            </p>
+          </div>
+
+          <div class="bk-blog-templates__grid">
+            @for (template of blogArticleTemplates; track template.id) {
+              <article class="bk-blog-template-card">
+                <div class="bk-blog-template-card__preview">
+                  <div class="bk-blog-template-card__browser">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                  <div class="bk-blog-template-card__hero">
+                    <small>{{ template.id }}</small>
+                    <h3>{{ template.label }}</h3>
+                    <p>{{ template.deck }}</p>
+                    <span class="bk-blog-template-card__image-slot">Hero image slot</span>
+                  </div>
+                  <div class="bk-blog-template-card__stack" aria-label="Template stack preview">
+                    @for (blockId of template.blockIds; track blockId + $index) {
+                      <app-protopipe-build-block-nav-thumb [blockId]="blockId" density="catalog" />
+                    }
+                  </div>
+                </div>
+
+                <div class="bk-blog-template-card__body">
+                  <div class="bk-blog-template-card__eyebrow">{{ template.useCase }}</div>
+                  <p>{{ template.lorem }}</p>
+
+                  <div class="bk-blog-template-card__section">
+                    <strong>Required content blocks</strong>
+                    <div class="bk-blog-template-card__chips">
+                      @for (block of template.requiredBlocks; track block) {
+                        <span>{{ block }}</span>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="bk-blog-template-card__section">
+                    <strong>Ready for renderers</strong>
+                    <div class="bk-blog-template-card__targets">
+                      @for (target of template.renderTargets; track target) {
+                        <span>{{ target }}</span>
+                      }
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="bk-blog-template-card__action"
+                    (click)="openBlogTemplatePreview(template.id)"
+                  >
+                    Open finished preview
+                  </button>
+                </div>
+              </article>
+            }
+          </div>
+
+          <div class="bk-blog-templates__note">
+            <strong>Next wiring:</strong>
+            generation fills a structured article package, then this selected profile renders it
+            into Blog Preview, client-sites Astro, WordPress blocks, Shopify article HTML, or
+            generic CMS JSON.
+          </div>
+        </div>
       } @else if (bookTab() === 'content-posts') {
         <app-build-book-content-posts-panel
           [selectedPageId]="blogPostId()"

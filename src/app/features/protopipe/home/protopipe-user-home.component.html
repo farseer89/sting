@@ -424,15 +424,17 @@
                   <section class="glass glass--full glass--premiere glass--writer" aria-label="Build book">
                     <app-protopipe-home-build-book
                       [prospectContext]="buildBookProspectContext()"
+                      (previewBlogArticleTemplate)="enterBlogArticleTemplatePreview($event)"
                       (exit)="leaveBuildBookFocus()"
                     />
                   </section>
                 }
                 @case ('blog-preview') {
                   <section class="glass glass--full glass--premiere glass--writer" aria-label="Blog preview">
-                    @if (blogPreviewContentPostId(); as postId) {
+                    @if (blogPreviewContentPostId() || blogPreviewArticleTemplateKey()) {
                       <app-protopipe-home-blog-preview
-                        [contentPostId]="postId"
+                        [contentPostId]="blogPreviewContentPostId()"
+                        [articleTemplateKey]="blogPreviewArticleTemplateKey()"
                         [titleHint]="blogPreviewTitleHint()"
                         (exit)="leaveBlogPreviewFocus()"
                       />

@@ -16,6 +16,24 @@ export interface BlogArticleFillImage {
   alt: string;
 }
 
+export interface BlogArticleFillComparisonColumn {
+  key: string;
+  label: string;
+}
+
+export interface BlogArticleFillComparisonRow {
+  label: string;
+  values: Record<string, string>;
+  highlight?: boolean;
+}
+
+export interface BlogArticleFillSnapshot {
+  location: string;
+  service: string;
+  challenge: string;
+  result: string;
+}
+
 export interface BlogArticleFillSource {
   title: string;
   intro?: string;
@@ -24,6 +42,15 @@ export interface BlogArticleFillSource {
   faqItems?: Array<{ question: string; answer: string }>;
   cta?: { label: string; href: string };
   images: BlogArticleFillImage[];
+  quickAnswer?: string;
+  recommendationSummary?: string;
+  comparisonColumns?: BlogArticleFillComparisonColumn[];
+  comparisonRows?: BlogArticleFillComparisonRow[];
+  decisionCriteria?: string[];
+  snapshot?: BlogArticleFillSnapshot;
+  outcome?: string;
+  takeaways?: string[];
+  internalLinks?: Array<{ label: string; href: string }>;
 }
 
 /** Fingerprint so we re-fill Profile only when the portable template changes. */
@@ -163,6 +190,65 @@ export function fillBlogPostBlockProps(
           imageIndex += 1;
           props['imageSrc'] = image.url;
           props['imageAlt'] = image.alt;
+        }
+        break;
+      }
+      case 'quick-answer': {
+        const answer =
+          source.quickAnswer?.trim() ||
+          source.recommendationSummary?.trim() ||
+          source.intro?.trim() ||
+          '';
+        if (answer) {
+          if (kicker) props['kicker'] = kicker;
+          if (source.recommendationSummary?.trim() && !source.quickAnswer?.trim()) {
+            props['kicker'] =
+              typeof props['kicker'] === 'string' && props['kicker']
+                ? props['kicker']
+                : 'Recommendation';
+            props['heading'] =
+              typeof props['heading'] === 'string' && props['heading']
+                ? props['heading']
+                : 'Best-fit recommendation';
+          }
+          props['body'] = answer;
+        }
+        break;
+      }
+      case 'comparison-table': {
+        if (source.comparisonColumns?.length) {
+          props['columns'] = source.comparisonColumns.map((column) => ({ ...column }));
+        }
+        if (source.comparisonRows?.length) {
+          props['rows'] = source.comparisonRows.map((row) => ({
+            label: row.label,
+            values: { ...row.values },
+            highlight: Boolean(row.highlight),
+          }));
+        }
+        if (source.decisionCriteria?.length && typeof props['subhead'] === 'string') {
+          props['subhead'] = source.decisionCriteria.join(' · ');
+        }
+        if (kicker) props['kicker'] = kicker;
+        break;
+      }
+      case 'case-snapshot': {
+        if (source.snapshot) {
+          props['location'] = source.snapshot.location;
+          props['service'] = source.snapshot.service;
+          props['challenge'] = source.snapshot.challenge;
+          props['result'] = source.snapshot.result;
+        }
+        if (kicker) props['kicker'] = kicker;
+        break;
+      }
+      case 'related-links': {
+        if (source.internalLinks?.length) {
+          props['heading'] =
+            typeof props['heading'] === 'string' && props['heading']
+              ? props['heading']
+              : 'Related on this site';
+          props['links'] = source.internalLinks.map((link) => ({ ...link }));
         }
         break;
       }

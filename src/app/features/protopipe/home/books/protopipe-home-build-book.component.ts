@@ -52,7 +52,12 @@ import {
   BASELINE_APPROVED_FOLD_LIBRARY,
   resolveBaselineFoldLayoutId,
 } from '../../build-book/build-book-baseline-fold.catalog';
-import type { BuildBookDemoBrand, BuildBookTemplateDefinition } from '../../build-book/build-book.types';
+import type {
+  BlogArticleTemplateKey,
+  BuildBookDemoBrand,
+  BuildBookTemplateDefinition,
+} from '../../build-book/build-book.types';
+import { BLOG_ARTICLE_TEMPLATE_CATALOG } from '../../build-book/build-book-blog-template.catalog';
 import { ProtopipeBuildSiteImagesPanelComponent } from '../../build-book/build-site-images-panel/protopipe-build-site-images-panel.component';
 import { ProtopipeBuildImageQuickPickerComponent } from '../../build-book/image-picker/build-image-quick-picker.component';
 import { ProtopipeBuildMediaSlotsPanelComponent } from '../../build-book/build-media-slots-panel/protopipe-build-media-slots-panel.component';
@@ -153,6 +158,7 @@ type BuildBookTab =
   | 'homepage'
   | 'landing-pages'
   | 'blog-home'
+  | 'blog-templates'
   | 'seo-strategy'
   | 'site-theme'
   | 'content-posts';
@@ -198,6 +204,7 @@ interface BuildBookTabItem {
 export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
   readonly prospectContext = input<BuildBookProspectContext | null>(null);
   readonly exit = output<void>();
+  readonly previewBlogArticleTemplate = output<BlogArticleTemplateKey>();
 
   readonly buildBook = inject(ProtopipeBuildBookService);
   readonly strategy = inject(ProtopipeStrategyService);
@@ -251,6 +258,7 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
     { id: 'homepage', label: 'Homepage' },
     { id: 'landing-pages', label: 'Landing Pages' },
     { id: 'blog-home', label: 'Blog Home' },
+    { id: 'blog-templates', label: 'Blog Templates' },
     { id: 'site-theme', label: 'Site theme' },
     { id: 'seo-strategy', label: 'Media Library' },
     { id: 'content-posts', label: 'Content Posts' },
@@ -649,6 +657,7 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
   });
 
   readonly starterTemplates = BUILD_BOOK_TEMPLATE_DEFINITIONS;
+  readonly blogArticleTemplates = BLOG_ARTICLE_TEMPLATE_CATALOG;
 
   readonly activeProspectContext = computed(
     () => this.prospectContext() ?? this.buildBook.prospectContext(),
@@ -2235,6 +2244,10 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
 
   openTemplatePreview(template: BuildBookTemplateDefinition): void {
     window.open(template.previewUrl, '_blank', 'noopener,noreferrer');
+  }
+
+  openBlogTemplatePreview(templateId: BlogArticleTemplateKey): void {
+    this.previewBlogArticleTemplate.emit(templateId);
   }
 
   toggleInspector(): void {

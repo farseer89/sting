@@ -70,6 +70,7 @@ import { resolveBootstrapSiteId } from '../resolve-bootstrap-site-id';
 import { calendarItemKey } from './strategy/strategy.helpers';
 import type { StrategyVisualView } from './strategy/strategy-visual-view';
 import type { BuildBookProspectContext } from '../build-book/build-book-context';
+import type { BlogArticleTemplateKey } from '../build-book/build-book.types';
 
 export type ProtopipeHomeView =
   | 'keywords'
@@ -270,10 +271,15 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.isBlogPreviewFocus()
     );
   });
-  readonly blogPreviewContentPostId = computed(
-    () => this.blogPreviewNav.request()?.contentPostId ?? '',
-  );
+  readonly blogPreviewContentPostId = computed(() => {
+    const request = this.blogPreviewNav.request();
+    return request?.kind === 'content-post' ? request.contentPostId : '';
+  });
   readonly blogPreviewTitleHint = computed(() => this.blogPreviewNav.request()?.title);
+  readonly blogPreviewArticleTemplateKey = computed(() => {
+    const request = this.blogPreviewNav.request();
+    return request?.kind === 'template-design' ? request.templateKey : null;
+  });
 
   ngOnInit(): void {
     this.destroyRef.onDestroy(() => this.sidePanel.detachResizeListeners());
@@ -527,10 +533,23 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.activeView.set('blog-preview');
   }
 
+  enterBlogArticleTemplatePreview(templateKey: BlogArticleTemplateKey): void {
+    this.blogPreviewNav.openArticleTemplate(templateKey);
+    this.leaveWriterFocus();
+    this.sidePanel.setOpen(false);
+    this.activeView.set('blog-preview');
+  }
+
   leaveBlogPreviewFocus(): void {
+    const request = this.blogPreviewNav.request();
     this.blogPreviewNav.clear();
     if (this.activeView() !== 'blog-preview') return;
     this.sidePanel.setOpen(false);
+    if (request?.kind === 'template-design') {
+      this.activeView.set('build-book');
+      this.activeNavId.set('books-build');
+      return;
+    }
     this.activeView.set('strategy');
     this.activeNavId.set('start-strategy');
   }

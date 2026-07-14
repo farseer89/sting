@@ -85,7 +85,10 @@ export class BuildBookContentPostsPanelComponent implements OnInit {
   }
 
   templateProfiles(): BuildBookPage[] {
-    return this.buildBook.blogTemplateProfiles();
+    const pages = this.buildBook.blogTemplateProfiles();
+    const approved = pages.filter((page) => page.templateProfileMeta?.articleTemplateKey);
+    const legacy = pages.filter((page) => !page.templateProfileMeta?.articleTemplateKey);
+    return [...approved, ...legacy];
   }
 
   ngOnInit(): void {
@@ -113,7 +116,15 @@ export class BuildBookContentPostsPanelComponent implements OnInit {
   createPage(): void {
     const page = this.buildBook.createBlogPostPage(this.newPageLabel(), {
       role: 'template-profile',
-      templateProfileMeta: { varietyKey: 'editorial-split' },
+      preferredId: 'answer-guide-custom',
+      templateProfileMeta: { articleTemplateKey: 'answer-guide' },
+      seedSlots: [
+        { patternId: 'section-intro', preferredBlockId: 'universal-intro-centered' },
+        { patternId: 'quick-answer', preferredBlockId: 'universal-quick-answer' },
+        { patternId: 'prose-band', preferredBlockId: 'universal-prose-band' },
+        { patternId: 'related-links', preferredBlockId: 'universal-related-links' },
+        { patternId: 'cta-banner', preferredBlockId: 'universal-cta-band' },
+      ],
     });
     if (page) {
       this.selectedPageIdChange.emit(page.id);

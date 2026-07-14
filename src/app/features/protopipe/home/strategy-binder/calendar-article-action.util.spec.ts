@@ -78,7 +78,9 @@ describe('calendar-article-action.util', () => {
       posts,
     );
     expect(next.stage).toBe('review');
-    expect(next.label).toBe('View on Blog');
+    expect(next.label).toBe('Open in Blog Preview');
+    expect(next.secondaryLabel).toBe('Open in Writer');
+    expect(next.secondaryAction).toBe('writer');
     expect(next.statusLabel).toBe('Ready');
     expect(next.postId).toBe('p1');
   });
@@ -90,7 +92,8 @@ describe('calendar-article-action.util', () => {
       posts,
     );
     expect(next.stage).toBe('published');
-    expect(next.label).toBe('View on Blog');
+    expect(next.label).toBe('Open in Blog Preview');
+    expect(next.secondaryLabel).toBe('Open in Writer');
   });
 
   it('does not fuzzy-match by keyword or title', () => {

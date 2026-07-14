@@ -16,6 +16,37 @@
   width: 100%;
 }
 
+:where(.bb-inline-text--md) {
+  display: block;
+  width: 100%;
+  white-space: normal;
+
+  :where(p) {
+    margin: 0 0 0.75em;
+  }
+
+  :where(p:last-child) {
+    margin-bottom: 0;
+  }
+
+  :where(ul),
+  :where(ol) {
+    margin: 0 0 0.75em;
+    padding-left: 1.25em;
+  }
+
+  :where(h3),
+  :where(h4) {
+    margin: 0.85em 0 0.4em;
+    font-size: 1.05em;
+    font-weight: 650;
+  }
+
+  :where(code) {
+    font-size: 0.92em;
+  }
+}
+
 :where(.bb-inline-text:empty)::before {
   content: attr(data-placeholder);
   opacity: 0.45;

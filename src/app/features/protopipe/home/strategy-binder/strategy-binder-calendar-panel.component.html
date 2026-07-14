@@ -91,16 +91,29 @@
               <span class="sb-cal-note__funnel">{{ item.funnelStage }}</span>
             </div>
           </div>
-          <span
-            class="sb-cal-note__action"
-            [attr.data-stage]="nextFor(item).stage"
-            role="button"
-            tabindex="0"
-            (click)="onAction(item, $event)"
-            (keydown.enter)="onAction(item, $event)"
-          >
-            {{ nextFor(item).label }}
-          </span>
+          <div class="sb-cal-note__actions">
+            <span
+              class="sb-cal-note__action"
+              [attr.data-stage]="nextFor(item).stage"
+              role="button"
+              tabindex="0"
+              (click)="onAction(item, $event, 'primary')"
+              (keydown.enter)="onAction(item, $event, 'primary')"
+            >
+              {{ nextFor(item).label }}
+            </span>
+            @if (nextFor(item).secondaryLabel; as secondaryLabel) {
+              <span
+                class="sb-cal-note__action sb-cal-note__action--secondary"
+                role="button"
+                tabindex="0"
+                (click)="onAction(item, $event, nextFor(item).secondaryAction ?? 'writer')"
+                (keydown.enter)="onAction(item, $event, nextFor(item).secondaryAction ?? 'writer')"
+              >
+                {{ secondaryLabel }}
+              </span>
+            }
+          </div>
         </button>
       } @empty {
         <p class="sb-cal-panel__empty">No articles scheduled yet.</p>

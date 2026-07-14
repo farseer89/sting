@@ -153,28 +153,49 @@ export function mergeRunPreviewTemplate(
   };
 
   const drafted = run.artifacts?.sections ?? [];
+  const layoutSlots = run.artifacts?.layoutPlan?.slots ?? [];
+  const slotById = new Map(layoutSlots.map((slot) => [slot.slotId, slot]));
+
   if (drafted.length && merged.blocks?.length) {
-    const introDraft = drafted[0];
-    const bodyDrafts = drafted.slice(1);
-    let bodyIndex = 0;
+    // Prefer assembled/base intro — drafted[0] is the first H2 section, not intro.
+    const introCopy = merged.intro?.trim() || assembled?.intro?.trim() || '';
+    if (introCopy) {
+      merged.intro = introCopy;
+    }
+
+    let sequentialBodyIndex = 0;
     for (const block of merged.blocks) {
       if (block.kind === 'prose' && block.slotId === 'intro') {
-        if (introDraft?.prose?.trim()) {
-          block.body = introDraft.prose;
+        if (introCopy) {
+          block.body = introCopy;
         }
         continue;
       }
       if (block.kind !== 'prose' || block.slotId === 'hero') continue;
-      const draft = bodyDrafts[bodyIndex];
+
+      const layoutSlot = slotById.get(block.slotId);
+      const sectionIndex =
+        typeof layoutSlot?.sectionIndex === 'number'
+          ? layoutSlot.sectionIndex
+          : sequentialBodyIndex;
+      sequentialBodyIndex += 1;
+
+      const draft = drafted[sectionIndex];
       if (draft?.prose?.trim()) {
         block.body = draft.prose;
         if (draft.section.h2) block.h2 = draft.section.h2;
       }
-      bodyIndex += 1;
+    }
+
+    // Keep flat sections[] aligned with drafted outline sections when present.
+    if (!assembled?.sections?.length) {
+      merged.sections = drafted.map((d) => ({
+        h2: d.section.h2,
+        body: d.prose,
+      }));
     }
   }
 
-  const layoutSlots = run.artifacts?.layoutPlan?.slots ?? [];
   if (layoutSlots.length && merged.blocks?.length) {
     const bySlot = new Map(layoutSlots.map((slot) => [slot.slotId, slot.presentation]));
     merged.blocks = merged.blocks.map((block) => ({

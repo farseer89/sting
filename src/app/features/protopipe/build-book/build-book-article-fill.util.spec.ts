@@ -121,4 +121,58 @@ describe('build-book-article-fill.util', () => {
     expect((filled[5].props['items'] as Array<{ q: string }>)[0].q).toContain('How long');
     expect(filled[6].props['ctaLabel']).toBe('Check my date');
   });
+
+  it('does not duplicate section 0 into intro when intro is missing', () => {
+    const source = fillSourceFromProtopipeTemplate({
+      ...template,
+      intro: '',
+      blocks: template.blocks?.filter((b) => b.kind !== 'faq_list'),
+    });
+    expect(source.intro).toBe('');
+
+    const filled = fillBlogPostBlockProps(
+      [
+        block('a', 'universal-intro-centered', 'section-intro', {
+          heading: '',
+          body: 'placeholder',
+        }),
+        block('b', 'universal-split-image-right', 'content-split', {
+          heading: '',
+          body: '',
+          imageSrc: '',
+          imageAlt: '',
+        }),
+      ],
+      source,
+    );
+
+    expect(filled[0].props['body']).toBe('');
+    expect(filled[1].props['heading']).toBe('What to expect');
+    expect(filled[1].props['body']).toContain('painter works');
+  });
+
+  it('strips a leading markdown H2 that duplicates the section heading', () => {
+    const filled = fillBlogPostBlockProps(
+      [
+        block('b', 'universal-prose-band', 'prose-band', {
+          heading: '',
+          body: '',
+        }),
+      ],
+      {
+        title: 'Article',
+        sections: [
+          {
+            h2: 'Why painted portraits differ',
+            body: '## Why painted portraits differ\n\nMost couples leave with photos.',
+          },
+        ],
+        images: [],
+      },
+    );
+
+    expect(filled[0].props['heading']).toBe('Why painted portraits differ');
+    expect(String(filled[0].props['body'])).toBe('Most couples leave with photos.');
+    expect(String(filled[0].props['body'])).not.toContain('##');
+  });
 });

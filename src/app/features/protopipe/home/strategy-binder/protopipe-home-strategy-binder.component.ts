@@ -18,6 +18,7 @@ import {
   type StrategyBinderKeyword,
 } from './strategy-binder.mapper';
 import { StrategyBinderCalendarPanelComponent } from './strategy-binder-calendar-panel.component';
+import type { CalendarPanelActionEvent } from './strategy-binder-calendar-panel.component';
 import { calendarItemKey } from '../strategy/strategy.helpers';
 import {
   buildCalendarNextActionMap,
@@ -108,13 +109,20 @@ export class ProtopipeHomeStrategyBinderComponent {
     return findPostForCalendarItem(item, this.content.posts());
   }
 
-  onCalendarPanelAction(item: ProtopipeContentPlanCalendarItem): void {
-    this.executeCalendarAction(item);
+  onCalendarPanelAction(event: CalendarPanelActionEvent): void {
+    this.executeCalendarAction(event);
   }
 
-  private executeCalendarAction(item: ProtopipeContentPlanCalendarItem): void {
+  private executeCalendarAction(event: CalendarPanelActionEvent): void {
+    const { item, action } = event;
     const key = calendarItemKey(item);
     const next = this.calendarNextActions()[key];
+
+    if (action === 'writer') {
+      void this.viewState.openArticleInWriter(item);
+      return;
+    }
+
     if (next && (next.stage === 'review' || next.stage === 'published') && next.postId) {
       this.viewState.reviewOnBlog(
         next.postId,

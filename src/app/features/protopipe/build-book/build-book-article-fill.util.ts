@@ -5,6 +5,7 @@ import type {
 } from '@hive/contracts';
 import type { BuildBookBlockInstance } from './build-book.types';
 import { resolvePatternIdForBlock } from './build-book-block-registry.util';
+import { stripLeadingMarkdownHeading } from './inline/markdown-preview.util';
 
 export interface BlogArticleFillSection {
   h2?: string;
@@ -156,8 +157,8 @@ export function fillBlogPostBlockProps(
         if ('heading' in props || props['heading'] == null) props['heading'] = source.title;
         if ('title' in props) props['title'] = source.title;
         if ('body' in props || props['body'] == null) {
-          props['body'] = source.intro?.trim() || nextSectionBody(source, sectionIndex);
-          if (!source.intro?.trim()) sectionIndex += 1;
+          // Never borrow sections[0] — that duplicates the first body block.
+          props['body'] = source.intro?.trim() || '';
           introUsed = true;
         }
         break;
@@ -167,9 +168,10 @@ export function fillBlogPostBlockProps(
         sectionIndex += 1;
         if (kicker && typeof props['kicker'] === 'string') props['kicker'] = kicker;
         if (section) {
-          props['heading'] = section.h2?.trim() || source.title;
-          props['body'] = section.body;
-          if ('lede' in props) props['lede'] = section.body;
+          const heading = section.h2?.trim() || source.title;
+          props['heading'] = heading;
+          props['body'] = stripLeadingMarkdownHeading(section.body, heading);
+          if ('lede' in props) props['lede'] = props['body'];
         } else if (!introUsed && source.intro?.trim()) {
           props['heading'] = source.title;
           props['body'] = source.intro;
@@ -182,8 +184,9 @@ export function fillBlogPostBlockProps(
         sectionIndex += 1;
         if (kicker && typeof props['kicker'] === 'string') props['kicker'] = kicker;
         if (section) {
-          props['heading'] = section.h2?.trim() || source.title;
-          props['body'] = section.body;
+          const heading = section.h2?.trim() || source.title;
+          props['heading'] = heading;
+          props['body'] = stripLeadingMarkdownHeading(section.body, heading);
         }
         const image = source.images[imageIndex];
         if (image) {
@@ -290,10 +293,6 @@ export function fillBlogPostBlockProps(
 
     return { ...block, props };
   });
-}
-
-function nextSectionBody(source: BlogArticleFillSource, index: number): string {
-  return source.sections[index]?.body?.trim() || '';
 }
 
 function isIntroProse(block: Extract<ProtopipeArticleBlock, { kind: 'prose' }>): boolean {

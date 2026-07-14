@@ -21,9 +21,19 @@ import {
 } from '../strategy/strategy-content-calendar';
 import { calendarItemKey } from '../strategy/strategy.helpers';
 import type { StrategyBinderCalendarItem } from './strategy-binder.mapper';
-import type { CalendarNextAction } from './calendar-article-action.util';
+import type {
+  CalendarNextAction,
+  CalendarSecondaryAction,
+} from './calendar-article-action.util';
 
 export type BinderCalendarMode = 'planner' | 'calendar';
+
+export type CalendarPanelActionKind = 'primary' | CalendarSecondaryAction;
+
+export interface CalendarPanelActionEvent {
+  item: ProtopipeContentPlanCalendarItem;
+  action: CalendarPanelActionKind;
+}
 
 @Component({
   selector: 'app-strategy-binder-calendar-panel',
@@ -45,7 +55,9 @@ export class StrategyBinderCalendarPanelComponent {
   readonly nextActions = input<Readonly<Record<string, CalendarNextAction>>>({});
 
   readonly selectItem = output<ProtopipeContentPlanCalendarItem>();
+  /** @deprecated Prefer runPanelAction — kept for transitional parent wiring. */
   readonly runAction = output<ProtopipeContentPlanCalendarItem>();
+  readonly runPanelAction = output<CalendarPanelActionEvent>();
 
   readonly mode = signal<BinderCalendarMode>('planner');
   readonly zoom = signal<StrategyCalendarViewMode>('month');
@@ -144,9 +156,16 @@ export class StrategyBinderCalendarPanelComponent {
     if (match) this.selectItem.emit(match.source);
   }
 
-  onAction(item: StrategyBinderCalendarItem, event: Event): void {
+  onAction(
+    item: StrategyBinderCalendarItem,
+    event: Event,
+    action: CalendarPanelActionKind = 'primary',
+  ): void {
     event.stopPropagation();
-    this.runAction.emit(item.source);
+    this.runPanelAction.emit({ item: item.source, action });
+    if (action === 'primary') {
+      this.runAction.emit(item.source);
+    }
   }
 
   nextFor(item: StrategyBinderCalendarItem): CalendarNextAction {

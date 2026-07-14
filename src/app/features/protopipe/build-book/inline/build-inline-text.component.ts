@@ -5,11 +5,14 @@ import {
   ElementRef,
   computed,
   effect,
+  inject,
   input,
   output,
   viewChild,
 } from '@angular/core';
+import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
 import { readPlainText, stripRichPaste, syncTextContent } from './build-inline-edit.util';
+import { markdownToPreviewHtml } from './markdown-preview.util';
 
 @Component({
   selector: 'app-protopipe-build-inline-text',
@@ -47,6 +50,8 @@ import { readPlainText, stripRichPaste, syncTextContent } from './build-inline-e
           (keydown)="onKeydown($event)"
         ></span>
       }
+    } @else if (multiline() && renderMarkdown()) {
+      <div [class]="hostClass()" class="bb-inline-text--md" [innerHTML]="markdownHtml()"></div>
     } @else if (multiline() && asHtml()) {
       <span [class]="hostClass()" [innerHTML]="displayHtml()"></span>
     } @else {
@@ -56,10 +61,14 @@ import { readPlainText, stripRichPaste, syncTextContent } from './build-inline-e
   styleUrl: './build-inline-text.component.scss',
 })
 export class ProtopipeBuildInlineTextComponent implements AfterViewInit {
+  private readonly sanitizer = inject(DomSanitizer);
+
   readonly value = input('');
   readonly editable = input(false);
   readonly multiline = input(false);
   readonly asHtml = input(false);
+  /** When true (default for multiline read-only), render markdown as safe HTML. */
+  readonly renderMarkdown = input(true);
   readonly hostClass = input('');
   readonly ariaLabel = input('Editable text');
   readonly placeholder = input('');
@@ -69,7 +78,6 @@ export class ProtopipeBuildInlineTextComponent implements AfterViewInit {
   private readonly editableEl = viewChild<ElementRef<HTMLElement>>('editableEl');
   private focused = false;
   private inputTimer: ReturnType<typeof setTimeout> | null = null;
-
 
   readonly editableClasses = computed(() => {
     const base = this.multiline()
@@ -86,6 +94,10 @@ export class ProtopipeBuildInlineTextComponent implements AfterViewInit {
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/&lt;br&gt;/g, '<br>'),
+  );
+
+  readonly markdownHtml = computed((): SafeHtml =>
+    this.sanitizer.bypassSecurityTrustHtml(markdownToPreviewHtml(this.value())),
   );
 
   constructor() {

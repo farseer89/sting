@@ -67,14 +67,15 @@ export class ProtopipeHomeBlogPreviewComponent implements OnInit {
 
   readonly subtitle = computed(() => {
     const articleTemplate = this.templateLabel();
-    if (articleTemplate) return articleTemplate;
-
     const label = this.profileLabel();
     const variety = this.varietyKey();
-    if (label && variety) return `${label} · legacy · ${variety}`;
-    if (label) return label;
-    if (variety) return `legacy · ${variety}`;
-    return 'Selected blog template';
+    const stack =
+      articleTemplate ||
+      (label && variety ? `${label} · legacy · ${variety}` : null) ||
+      label ||
+      (variety ? `legacy · ${variety}` : null) ||
+      'Selected blog template';
+    return `${stack} · Layout mock — live publish uses the Writer article (portable markdown)`;
   });
 
   readonly packageMetaLength = computed(() => {

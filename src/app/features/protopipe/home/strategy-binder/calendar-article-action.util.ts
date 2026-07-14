@@ -8,12 +8,18 @@ import { calendarItemKey } from '../strategy/strategy.helpers';
 /** Funnel stage for a calendar row — drives label + click. */
 export type CalendarArticleStage = 'write' | 'review' | 'published';
 
+/** Secondary CTA when an article is already written. */
+export type CalendarSecondaryAction = 'writer';
+
 export interface CalendarNextAction {
   stage: CalendarArticleStage;
   /** Primary CTA on the row */
   label: string;
   /** Status chip beside the title */
   statusLabel: string;
+  /** Optional secondary CTA (written / published rows). */
+  secondaryLabel?: string;
+  secondaryAction?: CalendarSecondaryAction;
   postId?: string;
   post?: ProtopipeContentPost;
 }
@@ -47,8 +53,8 @@ export function findPostForCalendarItem(
  * Single source of truth for calendar row CTAs.
  *
  * Write → not started (no linked post, or linked post not generated)
- * View on Blog → generated (run linked and/or body present)
- * View on Blog + Published → already published
+ * Open in Blog Preview + Open in Writer → generated (run linked and/or body present)
+ * Same dual CTAs + Published chip → already published
  */
 export function resolveCalendarNextAction(
   item: ProtopipeContentPlanCalendarItem,
@@ -60,8 +66,10 @@ export function resolveCalendarNextAction(
   if (post?.status === 'published') {
     return {
       stage: 'published',
-      label: 'View on Blog',
+      label: 'Open in Blog Preview',
       statusLabel: 'Published',
+      secondaryLabel: 'Open in Writer',
+      secondaryAction: 'writer',
       post,
       postId,
     };
@@ -71,8 +79,10 @@ export function resolveCalendarNextAction(
   if (post && (postHasArticleBody(post) || Boolean(post.articleGenerationRunId))) {
     return {
       stage: 'review',
-      label: 'View on Blog',
+      label: 'Open in Blog Preview',
       statusLabel: 'Ready',
+      secondaryLabel: 'Open in Writer',
+      secondaryAction: 'writer',
       post,
       postId,
     };

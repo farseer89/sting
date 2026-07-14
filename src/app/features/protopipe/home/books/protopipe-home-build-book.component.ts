@@ -118,6 +118,7 @@ import { BuildBookSitesPanelComponent } from '../../build-book/sites-panel/build
 import { ProtopipeHomeKeywordBookComponent } from './protopipe-home-keyword-book.component';
 import { ProtopipeContentPlanComponent } from '../../content-plan/protopipe-content-plan.component';
 import { StrategyBinderCalendarPanelComponent } from '../strategy-binder/strategy-binder-calendar-panel.component';
+import type { CalendarPanelActionEvent } from '../strategy-binder/strategy-binder-calendar-panel.component';
 import { mapStrategyBinderView } from '../strategy-binder/strategy-binder.mapper';
 import { ProtopipeHomeStrategyViewState } from '../strategy/protopipe-home-strategy-view.state';
 import { ProtopipeContentService } from '../../protopipe-content.service';
@@ -1084,10 +1085,17 @@ export class ProtopipeHomeBuildBookComponent implements OnInit, OnDestroy {
     this.strategyView?.selectArticle(item);
   }
 
-  onCalendarAction(item: ProtopipeContentPlanCalendarItem): void {
+  onCalendarAction(event: CalendarPanelActionEvent): void {
     if (!this.strategyView) return;
+    const { item, action } = event;
     const key = calendarItemKey(item);
     const next = this.calendarNextActions()[key];
+
+    if (action === 'writer') {
+      void this.strategyView.openArticleInWriter(item);
+      return;
+    }
+
     if (next && (next.stage === 'review' || next.stage === 'published') && next.postId) {
       this.strategyView.reviewOnBlog(
         next.postId,

@@ -295,6 +295,14 @@
                     />
                   </section>
                 }
+                @case ('mentions-book') {
+                  <section class="glass glass--full glass--premiere home-mentions" aria-label="AI Mentions book">
+                    <app-protopipe-home-mentions-book
+                      [siteLabel]="siteHostname() || siteDisplayName()"
+                      (openSharpen)="openSharpenFromMentions()"
+                    />
+                  </section>
+                }
                 @case ('strategy') {
                   <section class="glass glass--full glass--premiere" aria-label="Your strategy">
                     <app-protopipe-home-strategy />
@@ -302,7 +310,10 @@
                 }
                 @case ('sharpen') {
                   <section class="glass glass--full glass--premiere" aria-label="Sharpen">
-                    <app-protopipe-home-sharpen />
+                    <app-protopipe-home-sharpen
+                      [initialTab]="sharpenInitialTab()"
+                      (initialTabConsumed)="onSharpenTabConsumed()"
+                    />
                   </section>
                 }
                 @case ('writer') {

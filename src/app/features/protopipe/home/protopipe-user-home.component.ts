@@ -41,6 +41,8 @@ import { ProtopipeBlogPreviewNavState } from './protopipe-blog-preview-nav.state
 import { ArticleGenerationRunSession } from '../article/article-generation-run-session.service';
 import { ThoughtRunSession } from '../runs/thought-run-session.service';
 import { ProtopipeHomeKeywordBookComponent } from './books/protopipe-home-keyword-book.component';
+import { ProtopipeHomeMentionsBookComponent } from './books/mentions-book/protopipe-home-mentions-book.component';
+import type { SharpenTab } from './sharpen/protopipe-home-sharpen.component';
 import { ProtopipeHomeRunbooksComponent } from './runbooks/protopipe-home-runbooks.component';
 import { ProtopipeHomeIntakeDemoComponent } from './intake-demo/protopipe-home-intake-demo.component';
 import { ProtopipeMediaStudioComponent } from '../admin/media-studio/protopipe-media-studio.component';
@@ -74,6 +76,7 @@ import type { BlogArticleTemplateKey } from '../build-book/build-book.types';
 
 export type ProtopipeHomeView =
   | 'keywords'
+  | 'mentions-book'
   | 'strategy'
   | 'sharpen'
   | 'writer'
@@ -134,6 +137,7 @@ type HomeFocusHistoryKind = 'thinker' | 'writer';
     ProgressSpinner,
     Tooltip,
     ProtopipeHomeKeywordBookComponent,
+    ProtopipeHomeMentionsBookComponent,
     ProtopipeHomeStrategyComponent,
     ProtopipeHomeSharpenComponent,
     ProtopipeHomeWriterComponent,
@@ -234,6 +238,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   readonly loading = signal(true);
   readonly activeView = signal<ProtopipeHomeView>('keywords');
   readonly activeNavId = signal('start-keywords');
+  readonly sharpenInitialTab = signal<SharpenTab | null>(null);
   readonly packDetailId = signal<string | null>(null);
   readonly pitchPrepProspectId = signal<string | null>(null);
   readonly thoughtPacksCatalog = this.thoughtPacks.catalog;
@@ -339,6 +344,18 @@ export class ProtopipeUserHomeComponent implements OnInit {
     }
   }
 
+  openSharpenFromMentions(): void {
+    this.sharpenInitialTab.set('ai-search');
+    this.leaveWriterFocus();
+    this.sidePanel.setOpen(false);
+    this.activeNavId.set('start-sharpen');
+    this.activeView.set('sharpen');
+  }
+
+  onSharpenTabConsumed(): void {
+    this.sharpenInitialTab.set(null);
+  }
+
   toggleNavCollapse(): void {
     this.navCollapsed.update((v) => !v);
   }
@@ -349,6 +366,12 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.leaveWriterFocus();
       this.activeNavId.set(item.id);
       this.activeView.set('keywords');
+      this.navigateHomeRoot();
+    } else if (item.id === 'start-mentions') {
+      this.leaveWriterFocus();
+      this.leaveThinkerFocus();
+      this.activeNavId.set(item.id);
+      this.activeView.set('mentions-book');
       this.navigateHomeRoot();
     } else if (item.id === 'start-strategy') {
       this.leaveWriterFocus();
@@ -786,6 +809,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
         return 'Back to Strategy';
       case 'keywords':
         return 'Keywords';
+      case 'mentions-book':
+        return 'AI Mentions';
       case 'writer':
         return 'Writer';
       default:

@@ -4,7 +4,9 @@ import {
   ChangeDetectionStrategy,
   Component,
   inject,
+  input,
   OnInit,
+  output,
   signal,
 } from '@angular/core';
 import type { ProtopipeContextCard } from '@hive/contracts';
@@ -43,6 +45,9 @@ export class ProtopipeHomeSharpenComponent implements OnInit {
   private readonly api = inject(ProtopipeApiService);
   readonly strategy = inject(ProtopipeStrategyService);
 
+  readonly initialTab = input<SharpenTab | null>(null);
+  readonly initialTabConsumed = output<void>();
+
   readonly activeTab = signal<SharpenTab>('questions');
   readonly hasActiveOffer = signal(false);
   readonly activeProjectCount = signal(0);
@@ -65,6 +70,11 @@ export class ProtopipeHomeSharpenComponent implements OnInit {
   readonly pendingTotal = () => this.questionTotal() + this.claimTotal();
 
   ngOnInit(): void {
+    const tab = this.initialTab();
+    if (tab) {
+      this.activeTab.set(tab);
+      this.initialTabConsumed.emit();
+    }
     this.reload();
   }
 

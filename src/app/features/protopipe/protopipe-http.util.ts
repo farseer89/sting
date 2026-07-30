@@ -46,6 +46,8 @@ const PROTOPIPE_API_ERROR_MESSAGES: Record<string, string> = {
     'Analysis ran recently. Click Run again to refresh results.',
   'GEO discovery was run recently. Use Run again to refresh results.':
     'Analysis ran recently. Click Run again to refresh results.',
+  'Mention check ran recently. Pass force to run again.':
+    'Mention check ran recently. Click Run again to refresh results.',
 };
 
 /** User-safe message from bagend error body — never surface stack traces. */

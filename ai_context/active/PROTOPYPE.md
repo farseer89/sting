@@ -12,6 +12,7 @@ Product prototype on sting branch **`protopipe`** + dedicated Firebase. Platform
 - DB: MongoDB database **`protopipe`** (`MONGO_URI=.../protopipe`)
 - Standards: [docs/protopipe/FEATURE_STANDARD.md](../../docs/protopipe/FEATURE_STANDARD.md) — **required read for every agent** (enforced via `.cursor/rules/protopipe-standard.mdc`, [AGENTS.md](../../AGENTS.md))
 - Deploy: [docs/protopipe/DEPLOY.md](../../docs/protopipe/DEPLOY.md) — bagend push (DO) + **separate Firebase project** (not `stingbase`)
+- **Product focus:** [PRODUCT_TIERS.md](./PRODUCT_TIERS.md) · [PLATFORM_SPINE.md](./PLATFORM_SPINE.md) · [CAPABILITY_ROADMAP.md](./CAPABILITY_ROADMAP.md)
 
 ## Session log
 

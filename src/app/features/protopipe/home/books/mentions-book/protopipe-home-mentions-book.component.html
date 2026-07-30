@@ -1,0 +1,175 @@
+<div class="mb-shell">
+  <header class="mb-masthead">
+    <div class="mb-masthead__left">
+      <h1 class="mb-masthead__title">AI Mentions book</h1>
+      <p class="mb-masthead__deck">
+        @if (siteLabel()) {
+          {{ siteLabel() }} ·
+        }
+        Sampled Gemini visibility — not a literal picture of every user session.
+      </p>
+      @if (store.error(); as err) {
+        <p class="mb-masthead__error">{{ err }}</p>
+      }
+    </div>
+    <div class="mb-masthead__actions">
+      <button
+        type="button"
+        class="mb-btn mb-btn--primary"
+        [disabled]="store.running() || store.isRunning()"
+        (click)="onRunCheck(store.forceAvailable())"
+      >
+        @if (store.running() || store.isRunning()) {
+          Running check…
+        } @else if (store.forceAvailable()) {
+          Run again (force)
+        } @else {
+          Run check now
+        }
+      </button>
+    </div>
+  </header>
+
+  @if (store.loading()) {
+    <div class="mb-loading">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Loading mentions" />
+    </div>
+  } @else {
+    <div class="mb-binder">
+      <nav class="mb-binder-nav" aria-label="Mentions book sections">
+        @for (section of sections; track section.id) {
+          <button
+            type="button"
+            class="mb-binder-nav__item"
+            [class.is-active]="activeSection() === section.id"
+            (click)="selectSection(section.id)"
+          >
+            {{ section.label }}
+          </button>
+        }
+      </nav>
+
+      <div class="mb-panel">
+        @switch (activeSection()) {
+          @case ('overview') {
+            <div class="mb-panel__head">
+              <span class="mb-panel-kicker">Overview</span>
+              <h2 class="mb-panel-title">AI mention visibility</h2>
+              <p class="mb-panel-deck">
+                We run natural-language prompts derived from your onboarding profile against Gemini
+                twice per prompt and score consistency. Results are a sampled estimate — not what
+                every logged-in user sees. Google AI Overviews are not covered in v1.
+              </p>
+            </div>
+
+            @if (store.isRunning()) {
+              <div class="mb-progress">
+                <p-progressSpinner strokeWidth="3" ariaLabel="Running mention check" />
+                <p>Step: {{ store.currentStep() ?? 'starting' }}…</p>
+              </div>
+            }
+
+            @if (!store.output() && !store.isRunning()) {
+              <div class="mb-empty">
+                <p>No mention check yet. Run your first visibility check to see where Gemini mentions you.</p>
+              </div>
+            }
+
+            @if (summaryByType(); as summary) {
+              <div class="mb-type-grid">
+                @for (type of promptTypes; track type) {
+                  <button type="button" class="mb-type-card" (click)="selectType(type)">
+                    <span class="mb-type-card__label">{{ typeLabels[type] }}</span>
+                    <span class="mb-type-card__rate">
+                      {{ summary[type].mentionRate | percent: '1.0-0' }}
+                    </span>
+                    <span class="mb-type-card__meta">
+                      {{ summary[type].promptCount }} prompts ·
+                      consistency {{ summary[type].consistencyScore | percent: '1.0-0' }}
+                    </span>
+                    @if (summary[type].topGap) {
+                      <span class="mb-type-card__gap">Gap: {{ summary[type].topGap }}</span>
+                    }
+                  </button>
+                }
+              </div>
+            }
+
+            @if (store.snapshot()?.updatedAt; as updatedAt) {
+              <p class="mb-meta">Last run: {{ updatedAt | date: 'medium' }}</p>
+            }
+          }
+
+          @case ('by-type') {
+            <div class="mb-panel__head">
+              <span class="mb-panel-kicker">By type</span>
+              <h2 class="mb-panel-title">Prompt results</h2>
+            </div>
+
+            <div class="mb-type-tabs">
+              @for (type of promptTypes; track type) {
+                <button
+                  type="button"
+                  class="mb-type-tab"
+                  [class.is-active]="selectedType() === type"
+                  (click)="selectedType.set(type)"
+                >
+                  {{ typeLabels[type] }}
+                </button>
+              }
+            </div>
+
+            @if (promptsForSelectedType().length === 0) {
+              <p class="mb-empty-inline">No prompts in this category yet — complete onboarding with services and location.</p>
+            } @else {
+              <ul class="mb-prompt-list">
+                @for (row of promptsForSelectedType(); track row.id) {
+                  <li class="mb-prompt-row" [class.is-gap]="!row.brandMentioned">
+                    <div class="mb-prompt-row__head">
+                      <span class="mb-prompt-row__text">{{ row.text }}</span>
+                      <span class="mb-prompt-row__badge" [class.is-mentioned]="row.brandMentioned">
+                        {{ row.brandMentioned ? 'Mentioned' : 'Not mentioned' }}
+                        · {{ row.mentionRate | percent: '1.0-0' }}
+                      </span>
+                    </div>
+                    @if (row.snippet) {
+                      <p class="mb-prompt-row__snippet">{{ row.snippet }}…</p>
+                    }
+                    @if (row.citedDomains.length) {
+                      <p class="mb-prompt-row__cites">Cited: {{ row.citedDomains.join(', ') }}</p>
+                    }
+                    @if (!row.brandMentioned) {
+                      <button type="button" class="mb-link-btn" (click)="onImproveFacts()">
+                        Improve facts in Sharpen
+                      </button>
+                    }
+                  </li>
+                }
+              </ul>
+            }
+          }
+
+          @case ('history') {
+            <div class="mb-panel__head">
+              <span class="mb-panel-kicker">History</span>
+              <h2 class="mb-panel-title">Past runs</h2>
+            </div>
+
+            @if (store.runs().length === 0) {
+              <p class="mb-empty-inline">No completed runs yet.</p>
+            } @else {
+              <ul class="mb-history-list">
+                @for (run of store.runs(); track run.id) {
+                  <li class="mb-history-row">
+                    <span>{{ run.createdAt | date: 'medium' }}</span>
+                    <span class="mb-history-row__status">{{ run.status }}</span>
+                  </li>
+                }
+              </ul>
+            }
+          }
+        }
+      </div>
+    </div>
+  }
+</div>

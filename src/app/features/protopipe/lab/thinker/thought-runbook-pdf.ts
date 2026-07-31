@@ -261,6 +261,54 @@ function writeStepSection(w: PdfWriter, step: ThoughtStep, index: number, total:
   }
 }
 
+function artifactByPort(thought: Thought, portId: string): ThoughtArtifact | undefined {
+  return thought.outputs.find((port) => port.portId === portId)?.artifact;
+}
+
+function writeArtifactBlock(w: PdfWriter, artifact: ThoughtArtifact): void {
+  writeSubheading(w, artifact.label);
+  writeWrapped(w, truncateArtifactText(artifactToRunbookText(artifact)), 'courier', MONO_SIZE, MONO_LINE_H);
+  w.y += 8;
+}
+
+function writeMentionReportOverview(w: PdfWriter, thought: Thought): void {
+  const brief = artifactByPort(thought, 'visibility-brief');
+  const opportunities = artifactByPort(thought, 'opportunity-backlog');
+  const promptPerformance = artifactByPort(thought, 'prompt-performance');
+  const sourceMap = artifactByPort(thought, 'source-map');
+
+  if (!brief && !opportunities && !promptPerformance && !sourceMap) return;
+
+  newPage(w);
+  writeHeading(w, 'AI Visibility Brief');
+  if (brief) {
+    writeWrapped(w, truncateArtifactText(String(brief.data ?? '')), 'helvetica', BODY_SIZE, LINE_H);
+    w.y += 8;
+  }
+
+  if (opportunities) {
+    newPage(w);
+    writeHeading(w, 'Action Plan');
+    writeWrapped(w, truncateArtifactText(String(opportunities.data ?? '')), 'helvetica', BODY_SIZE, LINE_H);
+    w.y += 8;
+  }
+
+  if (promptPerformance || sourceMap) {
+    newPage(w);
+    writeHeading(w, 'Performance & Sources');
+    if (promptPerformance) {
+      writeArtifactBlock(w, promptPerformance);
+    }
+    if (sourceMap) {
+      writeArtifactBlock(w, sourceMap);
+    }
+  }
+}
+
+function isMentionAppendixStep(step: ThoughtStep): boolean {
+  return step.id === 'capture_responses' || step.id === 'finalize';
+}
+
 function writeFinalDeliverables(w: PdfWriter, thought: Thought): void {
   newPage(w);
   writeHeading(w, 'Final deliverables');
@@ -268,6 +316,19 @@ function writeFinalDeliverables(w: PdfWriter, thought: Thought): void {
   if (thought.outputs.length) {
     writeSubheading(w, 'Run outputs');
     for (const port of thought.outputs) {
+      if (
+        thought.thinkerKind === 'mention_tracking' &&
+        [
+          'snapshot',
+          'visibility-brief',
+          'opportunity-backlog',
+          'prompt-performance',
+          'source-map',
+          'visibility-report',
+        ].includes(port.portId)
+      ) {
+        continue;
+      }
       writeParagraph(w, port.label);
       if (port.artifact) {
         writeWrapped(w, truncateArtifactText(artifactToRunbookText(port.artifact)), 'courier', MONO_SIZE, MONO_LINE_H);
@@ -372,13 +433,40 @@ export async function exportThoughtRunbookPdf(
   if (meta.siteId) writeParagraph(w, `Site ID: ${meta.siteId}`);
   writeParagraph(w, `${thought.steps.length} steps recorded in this run.`);
 
-  writeTableOfContents(w, thought);
-
-  for (let i = 0; i < thought.steps.length; i++) {
-    writeStepSection(w, thought.steps[i], i, thought.steps.length);
+  if (thought.thinkerKind === 'mention_tracking') {
+    writeMentionReportOverview(w, thought);
   }
 
-  writeFinalDeliverables(w, thought);
+  writeTableOfContents(w, thought);
+
+  const primarySteps =
+    thought.thinkerKind === 'mention_tracking'
+      ? thought.steps.filter((step) => !isMentionAppendixStep(step))
+      : thought.steps;
+  for (const step of primarySteps) {
+    const index = thought.steps.findIndex((s) => s.id === step.id);
+    writeStepSection(w, step, index, thought.steps.length);
+  }
+
+  if (thought.thinkerKind !== 'mention_tracking') {
+    writeFinalDeliverables(w, thought);
+  }
+
+  if (thought.thinkerKind === 'mention_tracking') {
+    const appendixSteps = thought.steps.filter(isMentionAppendixStep);
+    if (appendixSteps.length) {
+      newPage(w);
+      writeHeading(w, 'Evidence Appendix', 18);
+      writeParagraph(
+        w,
+        'Full raw Gemini responses and the raw run payload are included for auditability after the customer-facing brief and action plan.',
+      );
+      for (const step of appendixSteps) {
+        const index = thought.steps.findIndex((s) => s.id === step.id);
+        writeStepSection(w, step, index, thought.steps.length);
+      }
+    }
+  }
 
   doc.save(buildRunbookFilename(thought, meta.runId));
 }

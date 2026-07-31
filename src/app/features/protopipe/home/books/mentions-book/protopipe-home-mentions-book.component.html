@@ -6,7 +6,7 @@
         @if (siteLabel()) {
           {{ siteLabel() }} ·
         }
-        Sampled Gemini visibility — not a literal picture of every user session.
+        Track where AI engines mention your brand — sampled prompts, not every user session.
       </p>
       @if (store.error(); as err) {
         <p class="mb-masthead__error">{{ err }}</p>
@@ -63,11 +63,10 @@
           @case ('overview') {
             <div class="mb-panel__head">
               <span class="mb-panel-kicker">Overview</span>
-              <h2 class="mb-panel-title">AI mention visibility</h2>
+              <h2 class="mb-panel-title">AI visibility dashboard</h2>
               <p class="mb-panel-deck">
-                We run natural-language prompts derived from your onboarding profile against Gemini
-                twice per prompt and score consistency. Results are a sampled estimate — not what
-                every logged-in user sees. Google AI Overviews are not covered in v1.
+                See where AI engines mention your brand across prompt types. Gemini is live today;
+                ChatGPT, Perplexity, Claude, and Google AI Overviews are on the roadmap.
               </p>
             </div>
 
@@ -80,32 +79,140 @@
 
             @if (!store.output() && !store.isRunning()) {
               <div class="mb-empty">
-                <p>No mention check yet. Run your first visibility check to see where Gemini mentions you.</p>
+                <p class="mb-empty__title">No visibility check yet</p>
+                <p class="mb-empty__body">
+                  Run your first check to see how Gemini mentions you across generic, local,
+                  comparison, and brand-defense prompts.
+                </p>
               </div>
             }
 
-            @if (summaryByType(); as summary) {
-              <div class="mb-type-grid">
-                @for (type of promptTypes; track type) {
-                  <button type="button" class="mb-type-card" (click)="selectType(type)">
-                    <span class="mb-type-card__label">{{ typeLabels[type] }}</span>
-                    <span class="mb-type-card__rate">
-                      {{ summary[type].mentionRate | percent: '1.0-0' }}
-                    </span>
-                    <span class="mb-type-card__meta">
-                      {{ summary[type].promptCount }} prompts ·
-                      consistency {{ summary[type].consistencyScore | percent: '1.0-0' }}
-                    </span>
-                    @if (summary[type].topGap) {
-                      <span class="mb-type-card__gap">Gap: {{ summary[type].topGap }}</span>
+            <!-- Engine coverage (comparable to Searchable / Mentionova multi-engine strip) -->
+            <section class="mb-engines" aria-label="AI engine coverage">
+              <div class="mb-section-head">
+                <h3 class="mb-section-title">AI engines</h3>
+                <p class="mb-section-deck">Mention rate per platform · updated each run</p>
+              </div>
+              <div class="mb-engine-grid">
+                @for (engine of engineCards(); track engine.id) {
+                  <article
+                    class="mb-engine-card"
+                    [class.is-active]="engine.status === 'active'"
+                    [class.is-soon]="engine.status === 'coming_soon'"
+                  >
+                    <div class="mb-engine-card__head">
+                      <span class="mb-engine-card__name">{{ engine.shortLabel }}</span>
+                      @if (engine.status === 'active') {
+                        <span class="mb-engine-card__badge mb-engine-card__badge--live">Live</span>
+                      } @else {
+                        <span class="mb-engine-card__badge mb-engine-card__badge--soon">
+                          Coming {{ engine.eta }}
+                        </span>
+                      }
+                    </div>
+                    @if (engine.mentionRate != null) {
+                      <span class="mb-engine-card__rate">
+                        {{ engine.mentionRate | percent: '1.0-0' }}
+                      </span>
+                      <span class="mb-engine-card__meta">
+                        {{ engine.promptCount }} prompts ·
+                        consistency {{ engine.consistencyScore | percent: '1.0-0' }}
+                      </span>
+                    } @else {
+                      <span class="mb-engine-card__rate mb-engine-card__rate--placeholder">—</span>
+                      <span class="mb-engine-card__meta">{{ engine.note }}</span>
                     }
-                  </button>
+                  </article>
                 }
               </div>
-            }
+            </section>
 
-            @if (store.snapshot()?.updatedAt; as updatedAt) {
-              <p class="mb-meta">Last run: {{ updatedAt | date: 'medium' }}</p>
+            @if (store.output()) {
+              <!-- Score + KPI row (Searchable-style visibility score) -->
+              <section class="mb-kpi-row" aria-label="Visibility summary">
+                <div class="mb-score-card">
+                  <span class="mb-score-card__label">Gemini visibility score</span>
+                  @if (visibilityScore(); as score) {
+                    <span class="mb-score-card__value">{{ score }}</span>
+                    <span class="mb-score-card__hint">0–100 · sampled estimate</span>
+                  } @else {
+                    <span class="mb-score-card__value mb-score-card__value--muted">—</span>
+                  }
+                </div>
+                @if (promptStats(); as stats) {
+                  <div class="mb-stat-card">
+                    <span class="mb-stat-card__value">{{ stats.total }}</span>
+                    <span class="mb-stat-card__label">Prompts tracked</span>
+                  </div>
+                  <div class="mb-stat-card">
+                    <span class="mb-stat-card__value">{{ stats.mentioned }}</span>
+                    <span class="mb-stat-card__label">With mentions</span>
+                  </div>
+                  <div class="mb-stat-card mb-stat-card--warn">
+                    <span class="mb-stat-card__value">{{ stats.gaps }}</span>
+                    <span class="mb-stat-card__label">Gaps found</span>
+                  </div>
+                }
+              </section>
+
+              @if (topCompetitors().length) {
+                <section class="mb-competitors" aria-label="Competitor share of voice">
+                  <div class="mb-section-head">
+                    <h3 class="mb-section-title">Competitor mentions</h3>
+                    <p class="mb-section-deck">
+                      Who AI cites instead of you in comparison &amp; generic prompts
+                    </p>
+                  </div>
+                  <ul class="mb-competitor-list">
+                    @for (comp of topCompetitors(); track comp.name) {
+                      <li class="mb-competitor-row">
+                        <span class="mb-competitor-row__name">{{ comp.name }}</span>
+                        <span class="mb-competitor-row__bar-wrap">
+                          <span
+                            class="mb-competitor-row__bar"
+                            [style.width.%]="comp.shareOfVoice * 100"
+                          ></span>
+                        </span>
+                        <span class="mb-competitor-row__pct">
+                          {{ comp.shareOfVoice | percent: '1.0-0' }}
+                        </span>
+                      </li>
+                    }
+                  </ul>
+                </section>
+              }
+
+              @if (summaryByType(); as summary) {
+                <section class="mb-by-type" aria-label="Visibility by prompt type">
+                  <div class="mb-section-head">
+                    <h3 class="mb-section-title">By prompt type</h3>
+                    <p class="mb-section-deck">
+                      Generic, local, comparison, and brand-defense — never one global score
+                    </p>
+                  </div>
+                  <div class="mb-type-grid">
+                    @for (type of promptTypes; track type) {
+                      <button type="button" class="mb-type-card" (click)="selectType(type)">
+                        <span class="mb-type-card__label">{{ typeLabels[type] }}</span>
+                        <span class="mb-type-card__rate">
+                          {{ summary[type].mentionRate | percent: '1.0-0' }}
+                        </span>
+                        <span class="mb-type-card__meta">
+                          {{ summary[type].promptCount }} prompts ·
+                          consistency {{ summary[type].consistencyScore | percent: '1.0-0' }}
+                        </span>
+                        @if (summary[type].topGap) {
+                          <span class="mb-type-card__gap">Gap: {{ summary[type].topGap }}</span>
+                        }
+                      </button>
+                    }
+                  </div>
+                </section>
+              }
+
+              @if (store.snapshot()?.updatedAt; as updatedAt) {
+                <p class="mb-meta">Last run: {{ updatedAt | date: 'medium' }}</p>
+              }
             }
           }
 
@@ -113,6 +220,9 @@
             <div class="mb-panel__head">
               <span class="mb-panel-kicker">By type</span>
               <h2 class="mb-panel-title">Prompt results</h2>
+              <p class="mb-panel-deck">
+                Each prompt run twice in Gemini for consistency. Green = mentioned at least once.
+              </p>
             </div>
 
             <div class="mb-type-tabs">
@@ -121,7 +231,7 @@
                   type="button"
                   class="mb-type-tab"
                   [class.is-active]="selectedType() === type"
-                  (click)="selectedType.set(type)"
+                  (click)="selectPromptType(type)"
                 >
                   {{ typeLabels[type] }}
                 </button>
@@ -129,26 +239,87 @@
             </div>
 
             @if (promptsForSelectedType().length === 0) {
-              <p class="mb-empty-inline">No prompts in this category yet — complete onboarding with services and location.</p>
+              <p class="mb-empty-inline">
+                No prompts in this category yet — complete onboarding with services and location.
+              </p>
             } @else {
               <ul class="mb-prompt-list">
                 @for (row of promptsForSelectedType(); track row.id) {
-                  <li class="mb-prompt-row" [class.is-gap]="!row.brandMentioned">
-                    <div class="mb-prompt-row__head">
+                  <li
+                    class="mb-prompt-row"
+                    [class.is-gap]="!row.brandMentioned"
+                    [class.is-expanded]="isPromptExpanded(row.id)"
+                  >
+                    <button
+                      type="button"
+                      class="mb-prompt-row__head"
+                      [attr.aria-expanded]="hasExpandableContent(row) ? isPromptExpanded(row.id) : null"
+                      [disabled]="!hasExpandableContent(row)"
+                      (click)="togglePromptExpanded(row.id)"
+                    >
+                      <span
+                        class="mb-prompt-row__indicator"
+                        [class.is-mentioned]="row.brandMentioned"
+                        aria-hidden="true"
+                      ></span>
                       <span class="mb-prompt-row__text">{{ row.text }}</span>
                       <span class="mb-prompt-row__badge" [class.is-mentioned]="row.brandMentioned">
                         {{ row.brandMentioned ? 'Mentioned' : 'Not mentioned' }}
                         · {{ row.mentionRate | percent: '1.0-0' }}
                       </span>
-                    </div>
-                    @if (row.snippet) {
-                      <p class="mb-prompt-row__snippet">{{ row.snippet }}…</p>
+                      @if (hasExpandableContent(row)) {
+                        <span class="mb-prompt-row__chevron" aria-hidden="true"></span>
+                      }
+                    </button>
+
+                    @if (row.responses.length) {
+                      <div class="mb-prompt-row__body">
+                        @if (isPromptExpanded(row.id)) {
+                          @for (resp of row.responses; track resp.runIndex) {
+                            <div class="mb-prompt-response">
+                              @if (row.responses.length > 1) {
+                                <div class="mb-prompt-response__head">
+                                  <span class="mb-prompt-response__label">
+                                    Run {{ resp.runIndex + 1 }}
+                                  </span>
+                                  <span
+                                    class="mb-prompt-response__status"
+                                    [class.is-mentioned]="resp.brandMentioned"
+                                  >
+                                    {{ resp.brandMentioned ? 'Mentioned' : 'Not mentioned' }}
+                                  </span>
+                                </div>
+                              }
+                              <p class="mb-prompt-response__text">{{ resp.text }}</p>
+                            </div>
+                          }
+                        } @else if (row.responses[0]; as preview) {
+                          <div class="mb-prompt-response">
+                            <p class="mb-prompt-response__text is-clamped">{{ preview.text }}</p>
+                            @if (row.responses.length > 1) {
+                              <p class="mb-prompt-row__more-runs">
+                                + {{ row.responses.length - 1 }} more run(s)
+                              </p>
+                            }
+                          </div>
+                        }
+                        @if (hasExpandableContent(row)) {
+                          <button
+                            type="button"
+                            class="mb-link-btn mb-prompt-row__toggle"
+                            (click)="togglePromptExpanded(row.id)"
+                          >
+                            {{ isPromptExpanded(row.id) ? 'Show less' : 'Show full response' }}
+                          </button>
+                        }
+                      </div>
                     }
+
                     @if (row.citedDomains.length) {
                       <p class="mb-prompt-row__cites">Cited: {{ row.citedDomains.join(', ') }}</p>
                     }
                     @if (!row.brandMentioned) {
-                      <button type="button" class="mb-link-btn" (click)="onImproveFacts()">
+                      <button type="button" class="mb-link-btn mb-prompt-row__action" (click)="onImproveFacts()">
                         Improve facts in Sharpen
                       </button>
                     }
@@ -162,6 +333,9 @@
             <div class="mb-panel__head">
               <span class="mb-panel-kicker">History</span>
               <h2 class="mb-panel-title">Past runs</h2>
+              <p class="mb-panel-deck">
+                Track visibility over time. Runs are available every 14 days unless forced.
+              </p>
             </div>
 
             @if (store.runs().length === 0) {

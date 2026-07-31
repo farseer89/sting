@@ -13,6 +13,15 @@
       }
     </div>
     <div class="mb-masthead__actions">
+      @if (store.snapshot()?.id) {
+        <button
+          type="button"
+          class="mb-btn mb-btn--secondary"
+          (click)="onViewRun()"
+        >
+          View run
+        </button>
+      }
       <button
         type="button"
         class="mb-btn mb-btn--primary"

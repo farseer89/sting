@@ -21,7 +21,7 @@ import { ProtopipeContentService } from '../protopipe-content.service';
 import { ProtopipeProspectorService } from '../prospector/protopipe-prospector.service';
 import type { ProspectorRunDto } from '../prospector/prospector-run.model';
 
-export type ThinkerRunKind = 'article' | 'content-plan' | 'keyword-discovery' | 'prospector';
+export type ThinkerRunKind = 'article' | 'content-plan' | 'keyword-discovery' | 'prospector' | 'mention-tracking';
 
 const CONTENT_PLAN_POLL_MS = ARTICLE_RUN_POLL_MS;
 const DISCOVERY_POLL_MS = 1800;
@@ -206,6 +206,22 @@ export class ProtopipeHomeThinkerViewState {
     if (options?.enterFocus !== false) {
       this.enterThinkerFocus?.();
     }
+  }
+
+  /** Open a mention tracking run from the mentions book. */
+  openMentionTrackingRun(siteId: string, runId: string): void {
+    this.clearArticleSession();
+    this.clearContentPlanSession();
+    this.clearDiscoverySession();
+    this._runKind.set('mention-tracking');
+    this._siteId.set(siteId);
+    this._postId.set(null);
+    this._runId.set(runId);
+    this._workingTitle.set('AI Mentions tracking');
+    this.content.setEditingSiteId(siteId);
+    this.setFocusBackLabel('Back to AI Mentions');
+    void this.shireSession.loadRun(siteId, runId);
+    this.enterThinkerFocus?.();
   }
 
   /** Refresh discovery run snapshot from the picker store poll loop. */

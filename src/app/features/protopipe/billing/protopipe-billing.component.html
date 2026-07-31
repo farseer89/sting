@@ -1,66 +1,125 @@
-<div class="billing">
-  <header class="billing__hero">
+<div class="billing-book">
+  <header class="billing-book__masthead">
     <div>
-      <span class="billing__kicker">Account & billing</span>
-      <h1>Manage your {{ product.displayName }} subscription</h1>
+      <h1>Billing book</h1>
       <p>
-        Review the current account stage, update payment details, change plan, or cancel through Stripe.
+        Manage {{ product.displayName }} account stages, tier upgrades, cards, invoices, and cancellation through Stripe.
       </p>
     </div>
-    <span class="billing__badge" [class.is-readonly]="accessState().isReadOnly">
+    <span class="billing-book__badge" [class.is-readonly]="accessState().isReadOnly">
       {{ summary().statusTitle }}
     </span>
   </header>
 
-  <div class="billing__grid">
-    <section class="billing-card billing-card--primary" aria-label="Subscription status">
-      <span class="billing-card__label">Current access</span>
-      <h2>{{ summary().planLabel }}</h2>
-      <p>{{ summary().statusDetail }}</p>
-      @if (summary().trialWindowLabel; as trialWindow) {
-        <span class="billing-card__meta">{{ trialWindow }}</span>
+  <div class="billing-book__binder">
+    <nav class="billing-book__nav" aria-label="Billing book sections">
+      <span class="billing-book__nav-label">Account</span>
+      <span class="billing-book__nav-item is-active">Status</span>
+      <span class="billing-book__nav-item">Plans</span>
+      <span class="billing-book__nav-item">Stripe</span>
+    </nav>
+
+    <div class="billing-book__panel">
+      <div class="billing-book__panel-head">
+        <span class="billing-book__kicker">Account · Subscription</span>
+        <h2>{{ summary().planLabel }}</h2>
+        <p>{{ summary().statusDetail }}</p>
+      </div>
+
+      <section class="billing-ledger" aria-label="Current billing status">
+        <div class="billing-ledger__row">
+          <span>Status</span>
+          <strong>{{ summary().statusTitle }}</strong>
+        </div>
+        <div class="billing-ledger__row">
+          <span>Current access</span>
+          <strong>{{ summary().planLabel }}</strong>
+        </div>
+        <div class="billing-ledger__row">
+          <span>Stripe profile</span>
+          <strong>{{ stripeCustomerLabel() }}</strong>
+        </div>
+        @if (summary().trialWindowLabel; as trialWindow) {
+          <div class="billing-ledger__row">
+            <span>Trial window</span>
+            <strong>{{ trialWindow }}</strong>
+          </div>
+        }
+      </section>
+
+      <section class="billing-section" aria-label="Plan options">
+        <div class="billing-section__head">
+          <span class="billing-book__kicker">Plans</span>
+          <h3>Choose the tier you want to test next</h3>
+          <p>
+            These cards mirror the product entitlement model. Stripe handles the actual payment, plan change,
+            and cancellation screens.
+          </p>
+        </div>
+
+        <div class="tier-grid">
+          @for (tier of tierOptions; track tier.id) {
+            @let state = tierState(tier);
+            <article class="tier-card" [class.is-current]="state.isCurrent">
+              <div class="tier-card__head">
+                <span class="tier-card__eyebrow">{{ tier.eyebrow }}</span>
+                <h4>{{ tier.name }}</h4>
+                @if (state.isCurrent) {
+                  <span class="tier-card__badge">Current</span>
+                }
+              </div>
+              <p class="tier-card__description">{{ tier.description }}</p>
+              <ul class="tier-card__list">
+                @for (item of tier.included; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+              <p class="tier-card__note">{{ tier.note }}</p>
+              <button
+                type="button"
+                class="tier-card__action"
+                [disabled]="state.isCurrent || portalLoading()"
+                (click)="manageTier(tier)"
+              >
+                {{ state.actionLabel }}
+              </button>
+            </article>
+          }
+        </div>
+      </section>
+
+      <section class="billing-section billing-section--stripe" aria-label="Stripe self-service">
+        <div>
+          <span class="billing-book__kicker">Stripe portal</span>
+          <h3>Cards, invoices, plan changes, and cancellation</h3>
+          <p>{{ summary().nextStep }}</p>
+        </div>
+        <div class="billing-actions__buttons">
+          <p-button
+            label="Open Stripe portal"
+            icon="pi pi-credit-card"
+            size="small"
+            [loading]="portalLoading()"
+            (onClick)="manageBilling()"
+          />
+          <p-button
+            label="Refresh status"
+            icon="pi pi-refresh"
+            severity="secondary"
+            size="small"
+            [loading]="refreshLoading()"
+            (onClick)="refreshStatus()"
+          />
+        </div>
+      </section>
+
+      @if (portalError(); as error) {
+        <p class="billing-alert billing-alert--error" role="alert">{{ error }}</p>
       }
-    </section>
 
-    <section class="billing-card" aria-label="Stripe billing profile">
-      <span class="billing-card__label">Stripe profile</span>
-      <h2>Self-service portal</h2>
-      <p>{{ summary().nextStep }}</p>
-      <span class="billing-card__meta">{{ stripeCustomerLabel() }}</span>
-    </section>
+      @if (refreshMessage(); as message) {
+        <p class="billing-alert" role="status">{{ message }}</p>
+      }
+    </div>
   </div>
-
-  <section class="billing-actions" aria-label="Billing actions">
-    <div>
-      <h2>Billing actions</h2>
-      <p>
-        Stripe handles sensitive payment-method, invoice, plan, and cancellation changes. Return here after
-        making changes to refresh the workspace stage.
-      </p>
-    </div>
-
-    <div class="billing-actions__buttons">
-      <p-button
-        label="Manage billing in Stripe"
-        icon="pi pi-credit-card"
-        [loading]="portalLoading()"
-        (onClick)="manageBilling()"
-      />
-      <p-button
-        label="Refresh status"
-        icon="pi pi-refresh"
-        severity="secondary"
-        [loading]="refreshLoading()"
-        (onClick)="refreshStatus()"
-      />
-    </div>
-  </section>
-
-  @if (portalError(); as error) {
-    <p class="billing-alert billing-alert--error" role="alert">{{ error }}</p>
-  }
-
-  @if (refreshMessage(); as message) {
-    <p class="billing-alert" role="status">{{ message }}</p>
-  }
 </div>

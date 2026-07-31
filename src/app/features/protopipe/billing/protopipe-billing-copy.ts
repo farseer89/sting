@@ -1,5 +1,5 @@
 import type { SubscriptionState } from '@hive/contracts';
-import type { ProtopipeAccessState } from '../access/protopipe-access.model';
+import type { ProtopipeAccessState, ProtopipePlanTier } from '../access/protopipe-access.model';
 
 export interface ProtopipeBillingSummary {
   planLabel: string;
@@ -8,6 +8,58 @@ export interface ProtopipeBillingSummary {
   nextStep: string;
   trialWindowLabel: string | null;
 }
+
+export interface ProtopipeBillingTierOption {
+  id: ProtopipePlanTier;
+  name: string;
+  eyebrow: string;
+  description: string;
+  included: readonly string[];
+  note: string;
+}
+
+export interface ProtopipeBillingTierState {
+  isCurrent: boolean;
+  actionLabel: string;
+}
+
+const TIER_RANK: Record<ProtopipePlanTier, number> = {
+  basic: 1,
+  advanced: 2,
+  pro: 3,
+};
+
+export const PROTOPIPE_BILLING_TIER_OPTIONS: readonly ProtopipeBillingTierOption[] = [
+  {
+    id: 'basic',
+    name: 'Basic',
+    eyebrow: 'AI Visibility + Plan',
+    description: 'See where AI mentions you, where it misses you, and what to publish next.',
+    included: [
+      'Discovery book onboarding',
+      'Keyword discovery and confirmation',
+      'AI Mentions book',
+      'Content calendar and brief export',
+    ],
+    note: 'Best for validating the visibility loop before writing inside the product.',
+  },
+  {
+    id: 'advanced',
+    name: 'Advanced',
+    eyebrow: 'Write with AI',
+    description: 'Everything in Basic, plus the tools to fix AI visibility gaps inside the workspace.',
+    included: ['Writing book', 'Sharpen gap cards', 'Thought packs', 'Advanced trial access'],
+    note: 'Best for hands-on teams that want to turn plan items into drafts.',
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    eyebrow: 'Done for you',
+    description: 'Everything in Advanced, plus generated article runs and publishing-oriented workflows.',
+    included: ['One-click article generation', 'Batch article runs', 'Publishing workflows', 'Future QA tier'],
+    note: 'Best for testing the paid action path and higher-touch content production.',
+  },
+];
 
 const DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
   month: 'short',
@@ -85,5 +137,35 @@ export function buildProtopipeBillingSummary(
       'This subscription is not currently active. Billing self-service stays available for recovery and cancellation testing.',
     nextStep: 'Open Stripe to manage the subscription, then refresh billing status after returning.',
     trialWindowLabel,
+  };
+}
+
+export function resolveProtopipeBillingTierState(
+  access: ProtopipeAccessState,
+  tier: ProtopipeBillingTierOption,
+): ProtopipeBillingTierState {
+  const currentTier = access.isTrialing ? 'advanced' : access.planTier;
+  const isCurrent =
+    tier.id === currentTier && (access.isTrialing || access.billingStatus === 'active');
+
+  if (isCurrent) {
+    return {
+      isCurrent: true,
+      actionLabel: access.isTrialing ? 'Included in trial' : 'Current plan',
+    };
+  }
+
+  if (access.isReadOnly) {
+    return {
+      isCurrent: false,
+      actionLabel: `Choose ${tier.name}`,
+    };
+  }
+
+  const targetRank = TIER_RANK[tier.id];
+  const currentRank = TIER_RANK[currentTier];
+  return {
+    isCurrent: false,
+    actionLabel: targetRank > currentRank ? `Upgrade to ${tier.name}` : `Change to ${tier.name}`,
   };
 }

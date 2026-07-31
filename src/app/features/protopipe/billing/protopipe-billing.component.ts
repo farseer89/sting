@@ -3,7 +3,12 @@ import { Button } from 'primeng/button';
 import { PRODUCT_CONFIG } from '../../../core/config/product-config';
 import { buildProtopipeAccessState } from '../access/protopipe-access.model';
 import { ProtopipeStrategyService } from '../protopipe-strategy.service';
-import { buildProtopipeBillingSummary } from './protopipe-billing-copy';
+import {
+  PROTOPIPE_BILLING_TIER_OPTIONS,
+  type ProtopipeBillingTierOption,
+  buildProtopipeBillingSummary,
+  resolveProtopipeBillingTierState,
+} from './protopipe-billing-copy';
 import { ProtopipeBillingPortalService } from './protopipe-billing-portal.service';
 
 @Component({
@@ -22,6 +27,7 @@ export class ProtopipeBillingComponent {
   readonly subscription = this.strategy.subscription;
   readonly accessState = computed(() => buildProtopipeAccessState(this.subscription()));
   readonly summary = computed(() => buildProtopipeBillingSummary(this.subscription(), this.accessState()));
+  readonly tierOptions = PROTOPIPE_BILLING_TIER_OPTIONS;
   readonly portalLoading = this.portal.loading;
   readonly portalError = this.portal.error;
   readonly refreshLoading = signal(false);
@@ -32,6 +38,16 @@ export class ProtopipeBillingComponent {
     if (!customerId) return 'Stripe customer pending';
     return `Stripe customer ${customerId.slice(-8)}`;
   });
+
+  tierState(tier: ProtopipeBillingTierOption) {
+    return resolveProtopipeBillingTierState(this.accessState(), tier);
+  }
+
+  async manageTier(tier: ProtopipeBillingTierOption): Promise<void> {
+    const state = this.tierState(tier);
+    if (state.isCurrent) return;
+    await this.manageBilling();
+  }
 
   async manageBilling(): Promise<void> {
     this.refreshMessage.set(null);

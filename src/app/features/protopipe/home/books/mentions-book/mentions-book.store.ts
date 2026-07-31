@@ -10,7 +10,7 @@ import { MentionTrackingService } from '../../../mention-tracking/mention-tracki
 const POLL_INTERVAL_MS = 1500;
 const POLL_MAX = 120;
 
-export type MentionsBookSection = 'overview' | 'by-type' | 'history';
+export type MentionsBookSection = 'overview' | 'brief' | 'by-type' | 'history';
 
 export const MENTION_PROMPT_TYPE_LABELS: Record<ProtopipeMentionPromptType, string> = {
   generic: 'Generic',
@@ -25,6 +25,7 @@ export class MentionsBookStore {
 
   private readonly _siteId = signal<string | null>(null);
   private readonly _snapshot = signal<ProtopipeSiteMentionSnapshot | null>(null);
+  private readonly _previousSnapshot = signal<ProtopipeSiteMentionSnapshot | null>(null);
   private readonly _runs = signal<ProtopipeMentionTrackingRunSummary[]>([]);
   private readonly _loading = signal(false);
   private readonly _running = signal(false);
@@ -33,6 +34,7 @@ export class MentionsBookStore {
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly snapshot = this._snapshot.asReadonly();
+  readonly previousSnapshot = this._previousSnapshot.asReadonly();
   readonly runs = this._runs.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly running = this._running.asReadonly();
@@ -77,6 +79,7 @@ export class MentionsBookStore {
     try {
       const res = await this.api.listRuns(siteId);
       this._runs.set(res.runs);
+      await this.loadPreviousCompleteRun(res.runs);
     } catch {
       // History is best-effort.
     }
@@ -143,6 +146,33 @@ export class MentionsBookStore {
     if (this.pollTimer) {
       clearTimeout(this.pollTimer);
       this.pollTimer = null;
+    }
+  }
+
+  private async loadPreviousCompleteRun(
+    runs: ProtopipeMentionTrackingRunSummary[],
+  ): Promise<void> {
+    const siteId = this._siteId();
+    const currentId = this._snapshot()?.id;
+    if (!siteId || !currentId) {
+      this._previousSnapshot.set(null);
+      return;
+    }
+
+    const previousRun = runs
+      .filter((run) => run.status === 'complete' && run.id !== currentId)
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
+
+    if (!previousRun) {
+      this._previousSnapshot.set(null);
+      return;
+    }
+
+    try {
+      const res = await this.api.getRun(siteId, previousRun.id);
+      this._previousSnapshot.set(res.snapshot?.output ? res.snapshot : null);
+    } catch {
+      this._previousSnapshot.set(null);
     }
   }
 }

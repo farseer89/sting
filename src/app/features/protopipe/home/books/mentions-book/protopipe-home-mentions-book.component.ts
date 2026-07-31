@@ -9,7 +9,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { DatePipe, PercentPipe } from '@angular/common';
+import { DatePipe, DecimalPipe, PercentPipe } from '@angular/common';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import type { ProtopipeMentionPromptType } from '@hive/contracts';
 import { ProtopipeStrategyService } from '../../../protopipe-strategy.service';
@@ -19,7 +19,11 @@ import {
   type MentionsBookSection,
 } from './mentions-book.store';
 import { MENTION_ENGINES, type MentionEngineUiConfig } from './mention-engines.config';
-import { mentionSnapshotToThought } from '../../../lab/mention-tracking/mention-tracking-run-to-thought';
+import {
+  buildMentionVisibilityReport,
+  mentionSnapshotToThought,
+  type MentionRecommendedActionKind,
+} from '../../../lab/mention-tracking/mention-tracking-run-to-thought';
 import { exportThoughtRunbookPdf } from '../../../lab/thinker/thought-runbook-pdf';
 
 const PROMPT_TYPES: ProtopipeMentionPromptType[] = [
@@ -28,6 +32,19 @@ const PROMPT_TYPES: ProtopipeMentionPromptType[] = [
   'comparison',
   'brand_defense',
 ];
+
+const ACTION_KIND_LABELS: Record<MentionRecommendedActionKind, string> = {
+  create_context_card: 'Create context card',
+  update_site_facts: 'Update site facts',
+  create_service_page: 'Create service page',
+  create_location_page: 'Create location page',
+  create_comparison_page: 'Create comparison page',
+  create_faq: 'Create FAQ',
+  improve_profile_listing: 'Improve profile listing',
+  add_schema: 'Add schema',
+  write_article: 'Write article',
+  monitor_next_run: 'Monitor next run',
+};
 
 export interface MentionEngineCardView extends MentionEngineUiConfig {
   mentionRate: number | null;
@@ -61,7 +78,7 @@ export interface MentionPromptRowView {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [MentionsBookStore],
-  imports: [DatePipe, PercentPipe, ProgressSpinner],
+  imports: [DatePipe, DecimalPipe, PercentPipe, ProgressSpinner],
   templateUrl: './protopipe-home-mentions-book.component.html',
   styleUrl: './protopipe-home-mentions-book.component.scss',
 })
@@ -75,6 +92,7 @@ export class ProtopipeHomeMentionsBookComponent implements OnInit, OnDestroy {
 
   readonly sections: { id: MentionsBookSection; label: string }[] = [
     { id: 'overview', label: 'Overview' },
+    { id: 'brief', label: 'Brief' },
     { id: 'by-type', label: 'By type' },
     { id: 'history', label: 'History' },
   ];
@@ -86,10 +104,19 @@ export class ProtopipeHomeMentionsBookComponent implements OnInit, OnDestroy {
   readonly exportError = signal<string | null>(null);
 
   readonly typeLabels = MENTION_PROMPT_TYPE_LABELS;
+  readonly actionKindLabels = ACTION_KIND_LABELS;
   readonly promptTypes = PROMPT_TYPES;
   readonly engines = MENTION_ENGINES;
 
   readonly summaryByType = computed(() => this.store.output()?.summaryByType ?? null);
+  readonly visibilityReport = computed(() => {
+    const output = this.store.output();
+    return output ? buildMentionVisibilityReport(output) : null;
+  });
+  readonly previousVisibilityReport = computed(() => {
+    const output = this.store.previousSnapshot()?.output;
+    return output ? buildMentionVisibilityReport(output) : null;
+  });
 
   readonly canExportRunbook = computed(
     () => this.store.isComplete() && Boolean(this.store.snapshot()?.output),
@@ -97,8 +124,29 @@ export class ProtopipeHomeMentionsBookComponent implements OnInit, OnDestroy {
 
   /** 0–100 visibility score derived from Gemini mention rate (single-engine v1). */
   readonly visibilityScore = computed(() => {
+    const report = this.visibilityReport();
+    if (report) return report.visibilityScore;
     const rate = this.overallMentionRate();
     return rate == null ? null : Math.round(rate * 100);
+  });
+
+  readonly topRecommendedActions = computed(
+    () => this.visibilityReport()?.recommendedActions.slice(0, 4) ?? [],
+  );
+
+  readonly topSourceInsights = computed(
+    () => this.visibilityReport()?.sourceInsights.slice(0, 6) ?? [],
+  );
+
+  readonly visibilityTrend = computed(() => {
+    const current = this.visibilityReport();
+    const previous = this.previousVisibilityReport();
+    if (!current || !previous) return null;
+    return {
+      scoreDelta: current.visibilityScore - previous.visibilityScore,
+      presenceDelta: current.presenceRate - previous.presenceRate,
+      runMentionDelta: current.runMentionRate - previous.runMentionRate,
+    };
   });
 
   readonly overallMentionRate = computed(() => {
@@ -255,6 +303,15 @@ export class ProtopipeHomeMentionsBookComponent implements OnInit, OnDestroy {
 
   hasExpandableContent(row: MentionPromptRowView): boolean {
     return row.responses.length > 1 || row.responses.some((r) => r.text.length > 280);
+  }
+
+  formatScoreDelta(delta: number): string {
+    return delta > 0 ? `+${delta}` : String(delta);
+  }
+
+  formatRateDelta(delta: number): string {
+    const points = `${Math.round(delta * 100)} pts`;
+    return delta > 0 ? `+${points}` : points;
   }
 
   async onRunCheck(force = false): Promise<void> {

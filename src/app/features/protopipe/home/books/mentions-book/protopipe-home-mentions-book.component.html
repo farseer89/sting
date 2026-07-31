@@ -168,6 +168,24 @@
                 }
               </section>
 
+              @if (visibilityReport(); as report) {
+                <section class="mb-brief-teaser" aria-label="AI visibility brief preview">
+                  <div>
+                    <span class="mb-brief-teaser__kicker">Best next move</span>
+                    <p class="mb-brief-teaser__text">
+                      @if (report.recommendedActions[0]; as action) {
+                        {{ action.recommendedFix }}
+                      } @else {
+                        Keep strengthening entity facts and monitor the next run for movement.
+                      }
+                    </p>
+                  </div>
+                  <button type="button" class="mb-link-btn" (click)="selectSection('brief')">
+                    Open brief
+                  </button>
+                </section>
+              }
+
               @if (topCompetitors().length) {
                 <section class="mb-competitors" aria-label="Competitor share of voice">
                   <div class="mb-section-head">
@@ -226,6 +244,211 @@
               @if (store.snapshot()?.updatedAt; as updatedAt) {
                 <p class="mb-meta">Last run: {{ updatedAt | date: 'medium' }}</p>
               }
+            }
+          }
+
+          @case ('brief') {
+            <div class="mb-panel__head">
+              <span class="mb-panel-kicker">Brief</span>
+              <h2 class="mb-panel-title">AI visibility brief & action plan</h2>
+              <p class="mb-panel-deck">
+                Customer-facing interpretation of the latest Gemini run: what it means, what to fix,
+                and which sources AI is using.
+              </p>
+            </div>
+
+            @if (!visibilityReport()) {
+              <div class="mb-empty">
+                <p class="mb-empty__title">No brief yet</p>
+                <p class="mb-empty__body">
+                  Run an AI Mentions check to generate the visibility brief and action plan.
+                </p>
+              </div>
+            } @else if (visibilityReport(); as report) {
+              <section class="mb-brief-scorecard" aria-label="Executive visibility scorecard">
+                <div class="mb-brief-scorecard__hero">
+                  <span class="mb-score-card__label">Visibility score</span>
+                  <span class="mb-score-card__value">{{ report.visibilityScore }}</span>
+                  <span class="mb-score-card__hint">0–100 · Gemini sampled estimate</span>
+                </div>
+                <div class="mb-brief-metric">
+                  <span class="mb-brief-metric__value">{{ report.presenceRate | percent: '1.0-0' }}</span>
+                  <span class="mb-brief-metric__label">Prompt presence</span>
+                </div>
+                <div class="mb-brief-metric">
+                  <span class="mb-brief-metric__value">{{ report.runMentionRate | percent: '1.0-0' }}</span>
+                  <span class="mb-brief-metric__label">Run mention rate</span>
+                </div>
+                <div class="mb-brief-metric">
+                  <span class="mb-brief-metric__value">
+                    @if (report.averageMentionPosition != null) {
+                      {{ report.averageMentionPosition | number: '1.1-1' }}
+                    } @else {
+                      —
+                    }
+                  </span>
+                  <span class="mb-brief-metric__label">Avg position</span>
+                </div>
+              </section>
+
+              @if (visibilityTrend(); as trend) {
+                <section class="mb-trend-strip" aria-label="Movement since previous run">
+                  <div>
+                    <span class="mb-brief-teaser__kicker">What changed</span>
+                    <p class="mb-brief-teaser__text">
+                      Compared with the previous complete run, visibility moved
+                      {{ formatScoreDelta(trend.scoreDelta) }} score point(s).
+                    </p>
+                  </div>
+                  <div class="mb-trend-metrics">
+                    <span>Presence {{ formatRateDelta(trend.presenceDelta) }}</span>
+                    <span>Mentions {{ formatRateDelta(trend.runMentionDelta) }}</span>
+                  </div>
+                </section>
+              } @else {
+                <section class="mb-trend-strip is-muted" aria-label="Baseline run">
+                  <div>
+                    <span class="mb-brief-teaser__kicker">Current baseline</span>
+                    <p class="mb-brief-teaser__text">
+                      This run is the baseline. Future runs will show wins, losses, and persistent gaps here.
+                    </p>
+                  </div>
+                </section>
+              }
+
+              <section class="mb-brief-grid" aria-label="AI visibility interpretation">
+                <article class="mb-brief-card">
+                  <div class="mb-section-head">
+                    <h3 class="mb-section-title">What this means</h3>
+                    <p class="mb-section-deck">Plain-language diagnosis from the run</p>
+                  </div>
+                  @if (report.interpretation.length) {
+                    <ul class="mb-insight-list">
+                      @for (line of report.interpretation; track line) {
+                        <li>{{ line }}</li>
+                      }
+                    </ul>
+                  } @else {
+                    <p class="mb-empty-inline">No interpretation available yet.</p>
+                  }
+                </article>
+
+                <article class="mb-brief-card">
+                  <div class="mb-section-head">
+                    <h3 class="mb-section-title">Current baseline</h3>
+                    <p class="mb-section-deck">Strongest and weakest prompt families</p>
+                  </div>
+                  <dl class="mb-baseline-list">
+                    <div>
+                      <dt>Strongest</dt>
+                      <dd>
+                        @if (report.bestPromptType) {
+                          {{ typeLabels[report.bestPromptType] }}
+                        } @else {
+                          —
+                        }
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Weakest</dt>
+                      <dd>
+                        @if (report.weakestPromptType) {
+                          {{ typeLabels[report.weakestPromptType] }}
+                        } @else {
+                          —
+                        }
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Biggest gap</dt>
+                      <dd>{{ report.biggestGap ?? 'No major gap detected' }}</dd>
+                    </div>
+                  </dl>
+                </article>
+              </section>
+
+              <section class="mb-actions" aria-label="Recommended action backlog">
+                <div class="mb-section-head">
+                  <h3 class="mb-section-title">Opportunity backlog</h3>
+                  <p class="mb-section-deck">
+                    Prioritized fixes that connect this visibility gap to site, profile, and content work.
+                  </p>
+                </div>
+                @if (topRecommendedActions().length) {
+                  <div class="mb-action-grid">
+                    @for (action of topRecommendedActions(); track action.id) {
+                      <article class="mb-action-card" [class.is-high]="action.priority === 'high'">
+                        <div class="mb-action-card__head">
+                          <span class="mb-action-card__type">{{ typeLabels[action.promptType] }}</span>
+                          <span class="mb-action-card__priority">{{ action.priority }} priority</span>
+                        </div>
+                        <h4>{{ action.prompt }}</h4>
+                        <p class="mb-action-card__problem">{{ action.problem }}</p>
+                        <p>{{ action.recommendedFix }}</p>
+                        <div class="mb-action-card__meta">
+                          <span>{{ actionKindLabels[action.kind] }}</span>
+                          <span>{{ action.targetSurface }}</span>
+                        </div>
+                        <button type="button" class="mb-link-btn" (click)="onImproveFacts()">
+                          Improve facts in Sharpen
+                        </button>
+                      </article>
+                    }
+                  </div>
+                } @else {
+                  <p class="mb-empty-inline">
+                    No high-priority gap actions were generated. Monitor the next run for movement.
+                  </p>
+                }
+              </section>
+
+              <section class="mb-source-map" aria-label="Citation and source map">
+                <div class="mb-section-head">
+                  <h3 class="mb-section-title">Citation & source map</h3>
+                  <p class="mb-section-deck">Domains AI cited and how to treat them</p>
+                </div>
+                @if (topSourceInsights().length) {
+                  <ul class="mb-source-list">
+                    @for (source of topSourceInsights(); track source.domain) {
+                      <li class="mb-source-row">
+                        <span class="mb-source-row__domain">{{ source.domain }}</span>
+                        <span class="mb-source-row__class">{{ source.classification.replace('_', ' ') }}</span>
+                        <span class="mb-source-row__count">{{ source.mentionCount }} mention(s)</span>
+                        <span class="mb-source-row__rec">{{ source.recommendation }}</span>
+                      </li>
+                    }
+                  </ul>
+                } @else {
+                  <p class="mb-empty-inline">
+                    No citation domains were found. Source-building should be a priority.
+                  </p>
+                }
+              </section>
+
+              <section class="mb-performance" aria-label="Prompt performance matrix">
+                <div class="mb-section-head">
+                  <h3 class="mb-section-title">Prompt performance matrix</h3>
+                  <p class="mb-section-deck">Quick scan of wins, partial wins, and gaps</p>
+                </div>
+                <div class="mb-performance-list">
+                  @for (prompt of report.promptPerformance; track prompt.promptId) {
+                    <button
+                      type="button"
+                      class="mb-performance-row"
+                      [class.is-gap]="prompt.status === 'gap'"
+                      [class.is-partial]="prompt.status === 'partial'"
+                      (click)="selectType(prompt.type)"
+                    >
+                      <span class="mb-performance-row__type">{{ typeLabels[prompt.type] }}</span>
+                      <span class="mb-performance-row__prompt">{{ prompt.prompt }}</span>
+                      <span class="mb-performance-row__status">{{ prompt.status }}</span>
+                      <span class="mb-performance-row__rate">
+                        {{ prompt.mentionRate | percent: '1.0-0' }}
+                      </span>
+                    </button>
+                  }
+                </div>
+              </section>
             }
           }
 

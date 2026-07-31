@@ -73,6 +73,11 @@ import { calendarItemKey } from './strategy/strategy.helpers';
 import type { StrategyVisualView } from './strategy/strategy-visual-view';
 import type { BuildBookProspectContext } from '../build-book/build-book-context';
 import type { BlogArticleTemplateKey } from '../build-book/build-book.types';
+import {
+  buildProtopipeAccessState,
+  hasProtopipeCapability,
+  type ProtopipeAccessState,
+} from '../access/protopipe-access.model';
 
 export type ProtopipeHomeView =
   | 'keywords'
@@ -228,13 +233,15 @@ export class ProtopipeUserHomeComponent implements OnInit {
     });
   }
 
-  readonly navItems = PROTOPIPE_HOME_NAV;
+  readonly accessState = computed(() => buildProtopipeAccessState(this.strategy.subscription()));
+  readonly navItems = computed(() => this.gateNavItems(PROTOPIPE_HOME_NAV, this.accessState()));
   readonly navCollapsed = signal(false);
   readonly openNavGroupIds = signal<string[]>([...PROTOPIPE_HOME_NAV_DEFAULT_OPEN]);
   readonly siteDisplayName = signal('');
   readonly siteHostname = signal('');
   readonly siteId = signal<string | null>(null);
   readonly subscriptionLabel = signal('Workspace');
+  readonly accessNotice = signal<string | null>(null);
   readonly loading = signal(true);
   readonly activeView = signal<ProtopipeHomeView>('keywords');
   readonly activeNavId = signal('start-keywords');
@@ -259,6 +266,40 @@ export class ProtopipeUserHomeComponent implements OnInit {
   readonly userPhotoUrl = computed(() => {
     const photo = this.auth.getCurrentUserPhoto();
     return photo.includes('avatar-f-1.png') ? '' : photo;
+  });
+
+  readonly firstRunSteps = computed(() => {
+    const profile = this.strategy.onboardingProfile();
+    return [
+      {
+        id: 'profile',
+        label: 'Complete business profile',
+        done: Boolean(profile),
+        action: 'Open Discovery',
+        navId: 'start-keywords',
+      },
+      {
+        id: 'mentions',
+        label: 'Run AI Mentions',
+        done: false,
+        action: 'Open Mentions',
+        navId: 'start-mentions',
+      },
+      {
+        id: 'brief',
+        label: 'Review the visibility brief',
+        done: false,
+        action: 'Open Mentions',
+        navId: 'start-mentions',
+      },
+      {
+        id: 'fix-gap',
+        label: 'Fix one gap with Sharpen or Writer',
+        done: false,
+        action: this.accessState().entitlements.includes('writer') ? 'Open Writer' : 'Open Sharpen',
+        navId: this.accessState().entitlements.includes('writer') ? 'content-writer' : 'start-sharpen',
+      },
+    ];
   });
 
   readonly isWriterFocus = computed(() => this.activeView() === 'writer');
@@ -367,6 +408,10 @@ export class ProtopipeUserHomeComponent implements OnInit {
   }
 
   selectNavItem(item: ProtopipeHomeNavItem): void {
+    if (item.locked) {
+      this.showLockedNotice(item);
+      return;
+    }
     if (item.disabled) return;
     if (item.id === 'start-keywords') {
       this.leaveWriterFocus();
@@ -655,7 +700,14 @@ export class ProtopipeUserHomeComponent implements OnInit {
   }
 
   isNavItemActive(item: ProtopipeHomeNavItem): boolean {
-    return !item.disabled && this.activeNavId() === item.id;
+    return !item.disabled && !item.locked && this.activeNavId() === item.id;
+  }
+
+  onFirstRunStep(navId: string): void {
+    const item = this.findNavItemById(this.navItems(), navId);
+    if (item) {
+      this.selectNavItem(item);
+    }
   }
 
   openPackDetail(pack: CognitivePackCatalogItem): void {
@@ -970,6 +1022,70 @@ export class ProtopipeUserHomeComponent implements OnInit {
     void this.thoughtPacks.ensureCatalogLoaded();
   }
 
+  private gateNavItems(
+    items: readonly ProtopipeHomeNavItem[],
+    access: ProtopipeAccessState,
+  ): ProtopipeHomeNavItem[] {
+    const gated = items
+      .map((item) => {
+        if (item.separator) {
+          return item;
+        }
+
+        const hasCapability = hasProtopipeCapability(access, item.capability);
+        if (!hasCapability && item.hiddenWhenLocked) {
+          return null;
+        }
+
+        const children = item.children ? this.gateNavItems(item.children, access) : undefined;
+        if (item.children && (!children || children.length === 0)) {
+          return null;
+        }
+
+        return {
+          ...item,
+          children,
+          locked: !hasCapability,
+        };
+      })
+      .filter((item): item is ProtopipeHomeNavItem => item !== null);
+
+    return gated.filter((item, index, list) => {
+      if (!item.separator) return true;
+      const previous = list[index - 1];
+      const next = list[index + 1];
+      return Boolean(previous && next && !previous.separator && !next.separator);
+    });
+  }
+
+  private findNavItemById(
+    items: readonly ProtopipeHomeNavItem[],
+    id: string,
+  ): ProtopipeHomeNavItem | null {
+    for (const item of items) {
+      if (item.id === id) return item;
+      if (item.children) {
+        const child = this.findNavItemById(item.children, id);
+        if (child) return child;
+      }
+    }
+    return null;
+  }
+
+  private showLockedNotice(item: ProtopipeHomeNavItem): void {
+    const access = this.accessState();
+    const upgrade = item.lockedLabel ?? access.upgradeLabel.replace('Upgrade to ', '');
+    if (access.isReadOnly) {
+      this.accessNotice.set(
+        `${item.label} is locked while this workspace is ${access.statusLabel.toLowerCase()}. Choose a plan to keep going.`,
+      );
+      return;
+    }
+    this.accessNotice.set(
+      `${item.label} is included with ${upgrade}. Your current access is ${access.statusLabel}.`,
+    );
+  }
+
   private async loadBootstrap(): Promise<void> {
     try {
       const boot = await this.onboarding.load();
@@ -977,14 +1093,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
       const site = siteId ? boot.sites.find((s) => s.id === siteId) ?? null : null;
       this.siteDisplayName.set(site?.displayName?.trim() || site?.hostname || 'Your site');
       this.siteHostname.set(site?.hostname || '');
-      const status = boot.subscription?.subscriptionStatus;
-      if (status === 'trialing') {
-        this.subscriptionLabel.set('Trial');
-      } else if (status === 'active') {
-        this.subscriptionLabel.set('Pro');
-      } else {
-        this.subscriptionLabel.set('Workspace');
-      }
+      this.subscriptionLabel.set(buildProtopipeAccessState(boot.subscription).statusLabel);
 
       if (site?.id) {
         this.siteId.set(site.id);

@@ -16,6 +16,21 @@
     </nav>
 
     <div class="void-topnav__right">
+      @if (accessState(); as access) {
+        <div
+          class="void-topnav__access"
+          [class.is-trial]="access.isTrialing"
+          [class.is-readonly]="access.isReadOnly"
+        >
+          <span>{{ access.statusLabel }}</span>
+          @if (!access.isTrialing) {
+            <button type="button" class="void-topnav__access-link" (click)="accessNotice.set(access.upgradeLabel)">
+              {{ access.upgradeLabel }}
+            </button>
+          }
+        </div>
+      }
+
       @if (isBuildBookFocus()) {
         @if (buildBookCmp(); as bb) {
           <div class="void-topnav__build" aria-label="Build book actions">
@@ -190,7 +205,7 @@
         }
 
         <ul class="void-rail__tree">
-          @for (item of navItems; track item.id) {
+          @for (item of navItems(); track item.id) {
             @if (item.separator) {
               <li class="void-rail__sep" aria-hidden="true"></li>
             } @else if (item.children) {
@@ -217,14 +232,19 @@
                           type="button"
                           class="void-rail__row void-rail__row--sub"
                           [class.is-disabled]="child.disabled"
+                          [class.is-locked]="child.locked"
                           [class.is-active]="isNavItemActive(child)"
-                          [disabled]="child.disabled"
+                          [disabled]="child.disabled && !child.locked"
                           (click)="selectNavItem(child)"
                         >
                           <span class="void-rail__sub-mark" aria-hidden="true"></span>
                           <span class="void-rail__label">{{ child.label }}</span>
-                          @if (child.disabled) {
-                            <span class="void-rail__lock" aria-label="Coming soon">◌</span>
+                          @if (child.locked) {
+                            <span class="void-rail__lock" [attr.aria-label]="child.lockedLabel ?? 'Upgrade required'">
+                              {{ child.lockedLabel ?? 'Locked' }}
+                            </span>
+                          } @else if (child.disabled) {
+                            <span class="void-rail__lock" aria-label="Coming soon">Soon</span>
                           }
                         </button>
                       </li>
@@ -238,6 +258,7 @@
                   type="button"
                   class="void-rail__row"
                   [class.is-active]="isNavItemActive(item)"
+                  [class.is-locked]="item.locked"
                   (click)="selectNavItem(item)"
                 >
                   <span class="void-rail__icon" aria-hidden="true">
@@ -245,6 +266,11 @@
                   </span>
                   @if (!navCollapsed()) {
                     <span class="void-rail__label">{{ item.label }}</span>
+                    @if (item.locked) {
+                      <span class="void-rail__lock" [attr.aria-label]="item.lockedLabel ?? 'Upgrade required'">
+                        {{ item.lockedLabel ?? 'Locked' }}
+                      </span>
+                    }
                   }
                 </button>
               </li>
@@ -286,6 +312,39 @@
                 <p class="home-welcome__loading">Loading workspace…</p>
               </section>
             } @else {
+              @if (accessNotice(); as notice) {
+                <section class="home-access-notice" aria-live="polite">
+                  <span>{{ notice }}</span>
+                  <button type="button" class="home-access-notice__close" (click)="accessNotice.set(null)">
+                    Dismiss
+                  </button>
+                </section>
+              }
+
+              <section class="home-trial-card" aria-label="Getting started checklist">
+                <div class="home-trial-card__main">
+                  <span class="home-trial-card__kicker">{{ accessState().statusLabel }}</span>
+                  <h2>Start with the AI visibility loop</h2>
+                  <p>
+                    Finish setup, run discovery, check AI Mentions, then fix the first gap before the trial clock runs out.
+                  </p>
+                </div>
+                <div class="home-trial-card__steps">
+                  @for (step of firstRunSteps(); track step.id) {
+                    <button
+                      type="button"
+                      class="home-trial-step"
+                      [class.is-done]="step.done"
+                      (click)="onFirstRunStep(step.navId)"
+                    >
+                      <span class="home-trial-step__dot" aria-hidden="true"></span>
+                      <span class="home-trial-step__label">{{ step.label }}</span>
+                      <span class="home-trial-step__action">{{ step.done ? 'Done' : step.action }}</span>
+                    </button>
+                  }
+                </div>
+              </section>
+
               @switch (activeView()) {
                 @case ('keywords') {
                   <section class="glass glass--full glass--premiere home-keywords" aria-label="Discovery book">

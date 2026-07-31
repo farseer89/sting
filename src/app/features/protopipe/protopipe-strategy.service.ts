@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import type { ProtopipeDataForSeoStatusResponse } from '@hive/contracts';
+import type { ProtopipeDataForSeoStatusResponse, SubscriptionState } from '@hive/contracts';
 import type { ProtopipeOnboardingProfile } from '@hive/contracts';
 import type {
   KeywordIntent,
@@ -33,6 +33,7 @@ export class ProtopipeStrategyService {
   private readonly _sites = signal<ProtopipeSite[]>([]);
   private readonly _summary = signal('');
   private readonly _onboardingProfile = signal<ProtopipeOnboardingProfile | null>(null);
+  private readonly _subscription = signal<SubscriptionState | null>(null);
   private readonly _defaultCognitivePackId = signal('none');
   private readonly _keywords = signal<ProtopipeKeywordDto[]>([]);
   private readonly _marketRefreshing = signal(false);
@@ -61,6 +62,7 @@ export class ProtopipeStrategyService {
   readonly site = this._site.asReadonly();
   readonly sites = this._sites.asReadonly();
   readonly onboardingProfile = this._onboardingProfile.asReadonly();
+  readonly subscription = this._subscription.asReadonly();
   readonly defaultCognitivePackId = this._defaultCognitivePackId.asReadonly();
 
   readonly strategy = computed<ProtopipeStrategySummary>(() => ({
@@ -95,6 +97,7 @@ export class ProtopipeStrategyService {
     try {
       const boot = await this.api.bootstrap();
       this._sites.set(boot.sites as ProtopipeSite[]);
+      this._subscription.set(boot.subscription ?? null);
       const siteIds = boot.sites.map((s) => s.id);
       if (siteIds.length === 0) {
         throw new Error('No site available for this account');

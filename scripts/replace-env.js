@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const appName = process.env.STING_APP_NAME || 'SearchClimber.ai';
+const appName = process.env.STING_APP_NAME || 'SearchClimber.io';
 const microUrl = process.env.STING_MICRO_URL || 'https://droppin.shop';
 const shireUrl = process.env.STING_SHIRE_URL || 'https://shire.droppin.shop';
 

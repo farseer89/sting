@@ -21,6 +21,7 @@ import { ThoughtPackDetailComponent } from '../thought-packs/thought-pack-detail
 import { ThoughtPackStoreComponent } from '../thought-packs/thought-pack-store.component';
 import { ProtopipeThoughtPacksService } from '../thought-packs/protopipe-thought-packs.service';
 import { AuthService } from '../../../core/auth/auth.service';
+import { PRODUCT_CONFIG } from '../../../core/config/product-config';
 import { Button } from 'primeng/button';
 import { Popover } from 'primeng/popover';
 import { ProgressSpinner } from 'primeng/progressspinner';
@@ -62,6 +63,8 @@ import { ProtopipeHomeThinkerBinderComponent } from './thinker/protopipe-home-th
 import { ProtopipeHomeAnalyticsBinderComponent } from './analytics-binder/protopipe-home-analytics-binder.component';
 import { ProtopipeProspectorComponent } from '../prospector/protopipe-prospector.component';
 import { ProtopipeColdCallerComponent } from '../cold-caller/protopipe-cold-caller.component';
+import { ProtopipeBillingComponent } from '../billing/protopipe-billing.component';
+import { ProtopipeBillingPortalService } from '../billing/protopipe-billing-portal.service';
 import { ProtopipeHomeSidePanelService } from './protopipe-home-side-panel.service';
 import {
   PROTOPIPE_HOME_NAV,
@@ -104,7 +107,8 @@ export type ProtopipeHomeView =
   | 'strategy-binder'
   | 'analytics-binder'
   | 'prospector'
-  | 'cold-caller';
+  | 'cold-caller'
+  | 'billing';
 
 function initialsFromName(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -168,6 +172,7 @@ type HomeFocusHistoryKind = 'thinker' | 'writer';
     ProtopipeHomeAnalyticsBinderComponent,
     ProtopipeProspectorComponent,
     ProtopipeColdCallerComponent,
+    ProtopipeBillingComponent,
   ],
   templateUrl: './protopipe-user-home.component.html',
   styleUrl: './protopipe-user-home.component.scss',
@@ -177,6 +182,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly auth = inject(AuthService);
+  readonly product = inject(PRODUCT_CONFIG);
+  private readonly billingPortal = inject(ProtopipeBillingPortalService);
   private readonly onboarding = inject(ProtopipeOnboardingStateService);
   private readonly strategy = inject(ProtopipeStrategyService);
   private readonly content = inject(ProtopipeContentService);
@@ -240,8 +247,9 @@ export class ProtopipeUserHomeComponent implements OnInit {
   readonly siteDisplayName = signal('');
   readonly siteHostname = signal('');
   readonly siteId = signal<string | null>(null);
-  readonly subscriptionLabel = signal('Workspace');
+  readonly subscriptionLabel = computed(() => this.accessState().statusLabel);
   readonly accessNotice = signal<string | null>(null);
+  readonly billingPortalLoading = this.billingPortal.loading;
   readonly loading = signal(true);
   readonly activeView = signal<ProtopipeHomeView>('keywords');
   readonly activeNavId = signal('start-keywords');
@@ -301,6 +309,16 @@ export class ProtopipeUserHomeComponent implements OnInit {
       },
     ];
   });
+  readonly showFirstRunCard = computed(() => {
+    const view = this.activeView();
+    return (
+      view !== 'billing' &&
+      view !== 'writer' &&
+      view !== 'thinker' &&
+      view !== 'build-book' &&
+      view !== 'blog-preview'
+    );
+  });
 
   readonly isWriterFocus = computed(() => this.activeView() === 'writer');
   readonly isThinkerFocus = computed(() => this.activeView() === 'thinker');
@@ -351,6 +369,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.syncLeadsFromRoute();
     this.syncProspectorFromRoute();
     this.syncColdCallerFromRoute();
+    this.syncBillingFromRoute();
     this.syncViewFromQuery();
     this.router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
@@ -360,6 +379,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
         this.syncLeadsFromRoute();
         this.syncProspectorFromRoute();
         this.syncColdCallerFromRoute();
+        this.syncBillingFromRoute();
         this.syncViewFromQuery();
       });
     void this.loadBootstrap();
@@ -463,6 +483,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.activeNavId.set(item.id);
       this.activeView.set('cold-caller');
       void this.router.navigate(['/home/cold-caller']);
+    } else if (item.id === 'account-billing') {
+      this.openBillingView();
     } else if (item.id === 'dev-runbooks') {
       this.leaveWriterFocus();
       this.sidePanel.setOpen(false);
@@ -666,6 +688,24 @@ export class ProtopipeUserHomeComponent implements OnInit {
 
   closeUserMenu(): void {
     this.userMenuOpen.set(false);
+  }
+
+  openBillingView(): void {
+    this.leaveWriterFocus();
+    this.leaveThinkerFocus();
+    this.sidePanel.setOpen(false);
+    this.activeNavId.set('account-billing');
+    this.activeView.set('billing');
+    this.closeUserMenu();
+    void this.router.navigate([this.product.routes.billing]);
+  }
+
+  async openBillingPortal(): Promise<void> {
+    try {
+      await this.billingPortal.openPortal(this.product.routes.billing);
+    } catch {
+      this.accessNotice.set(this.billingPortal.error() ?? 'Could not open Stripe billing.');
+    }
   }
 
   logout(): void {
@@ -952,6 +992,16 @@ export class ProtopipeUserHomeComponent implements OnInit {
     }
   }
 
+  private syncBillingFromRoute(): void {
+    const path = this.router.url.split('?')[0] ?? '';
+    if (path === '/home/billing' || path.startsWith('/home/billing')) {
+      this.leaveWriterFocus();
+      this.sidePanel.setOpen(false);
+      this.activeView.set('billing');
+      this.activeNavId.set('account-billing');
+    }
+  }
+
   private showLeadsView(): void {
     this.leaveWriterFocus();
     this.sidePanel.setOpen(false);
@@ -1093,7 +1143,6 @@ export class ProtopipeUserHomeComponent implements OnInit {
       const site = siteId ? boot.sites.find((s) => s.id === siteId) ?? null : null;
       this.siteDisplayName.set(site?.displayName?.trim() || site?.hostname || 'Your site');
       this.siteHostname.set(site?.hostname || '');
-      this.subscriptionLabel.set(buildProtopipeAccessState(boot.subscription).statusLabel);
 
       if (site?.id) {
         this.siteId.set(site.id);
@@ -1111,6 +1160,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
         const currentPath = this.router.url.split('?')[0] ?? '';
         const onProspectorRoute = currentPath.startsWith('/home/prospector');
         const onColdCallerRoute = currentPath.startsWith('/home/cold-caller');
+        const onBillingRoute = currentPath.startsWith('/home/billing');
         const explicitView = this.currentHomeViewParam();
         const hasExplicitHomeView =
           explicitView === 'brand-book' ||
@@ -1123,6 +1173,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
           !onLeadsRoute &&
           !onProspectorRoute &&
           !onColdCallerRoute &&
+          !onBillingRoute &&
           !hasExplicitHomeView &&
           (planStatus === 'running' || planStatus === 'pending' || planStatus === 'complete')
         ) {

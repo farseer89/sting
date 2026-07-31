@@ -3,7 +3,7 @@
   <div class="void__veil" aria-hidden="true"></div>
 
   <header class="void-topnav">
-    <span class="void-topnav__brand">futureproof<span class="void-topnav__brand-dot">.</span></span>
+    <span class="void-topnav__brand">{{ product.displayName }}</span>
     <nav class="void-topnav__links" aria-label="Primary">
       @if (!isRailHidden()) {
         <span class="void-topnav__tab void-topnav__tab--active">Content</span>
@@ -24,7 +24,12 @@
         >
           <span>{{ access.statusLabel }}</span>
           @if (!access.isTrialing) {
-            <button type="button" class="void-topnav__access-link" (click)="accessNotice.set(access.upgradeLabel)">
+            <button
+              type="button"
+              class="void-topnav__access-link"
+              [disabled]="billingPortalLoading()"
+              (click)="openBillingPortal()"
+            >
               {{ access.upgradeLabel }}
             </button>
           }
@@ -164,6 +169,9 @@
         @if (userMenuOpen()) {
           <div class="void-topnav__user-dropdown" role="menu" (click)="$event.stopPropagation()">
             <span class="void-topnav__user-dropdown-name">{{ userName() }}</span>
+            <button type="button" class="void-topnav__user-dropdown-action" role="menuitem" (click)="openBillingView()">
+              Billing
+            </button>
             <button type="button" class="void-topnav__user-dropdown-action" role="menuitem" (click)="logout()">
               Log out
             </button>
@@ -321,29 +329,31 @@
                 </section>
               }
 
-              <section class="home-trial-card" aria-label="Getting started checklist">
-                <div class="home-trial-card__main">
-                  <span class="home-trial-card__kicker">{{ accessState().statusLabel }}</span>
-                  <h2>Start with the AI visibility loop</h2>
-                  <p>
-                    Finish setup, run discovery, check AI Mentions, then fix the first gap before the trial clock runs out.
-                  </p>
-                </div>
-                <div class="home-trial-card__steps">
-                  @for (step of firstRunSteps(); track step.id) {
-                    <button
-                      type="button"
-                      class="home-trial-step"
-                      [class.is-done]="step.done"
-                      (click)="onFirstRunStep(step.navId)"
-                    >
-                      <span class="home-trial-step__dot" aria-hidden="true"></span>
-                      <span class="home-trial-step__label">{{ step.label }}</span>
-                      <span class="home-trial-step__action">{{ step.done ? 'Done' : step.action }}</span>
-                    </button>
-                  }
-                </div>
-              </section>
+              @if (showFirstRunCard()) {
+                <section class="home-trial-card" aria-label="Getting started checklist">
+                  <div class="home-trial-card__main">
+                    <span class="home-trial-card__kicker">{{ accessState().statusLabel }}</span>
+                    <h2>Start with the AI visibility loop</h2>
+                    <p>
+                      Finish setup, run discovery, check AI Mentions, then fix the first gap before the trial clock runs out.
+                    </p>
+                  </div>
+                  <div class="home-trial-card__steps">
+                    @for (step of firstRunSteps(); track step.id) {
+                      <button
+                        type="button"
+                        class="home-trial-step"
+                        [class.is-done]="step.done"
+                        (click)="onFirstRunStep(step.navId)"
+                      >
+                        <span class="home-trial-step__dot" aria-hidden="true"></span>
+                        <span class="home-trial-step__label">{{ step.label }}</span>
+                        <span class="home-trial-step__action">{{ step.done ? 'Done' : step.action }}</span>
+                      </button>
+                    }
+                  </div>
+                </section>
+              }
 
               @switch (activeView()) {
                 @case ('keywords') {
@@ -474,6 +484,11 @@
                 @case ('cold-caller') {
                   <section class="glass glass--full glass--premiere" aria-label="Cold Caller">
                     <app-protopipe-cold-caller (buildDemo)="openBuildBookForProspect($event)" />
+                  </section>
+                }
+                @case ('billing') {
+                  <section class="glass glass--full glass--premiere" aria-label="Billing">
+                    <app-protopipe-billing />
                   </section>
                 }
                 @case ('thinker') {

@@ -2,9 +2,9 @@ import type { ProductConfig } from '../../../core/config/product-config';
 
 export const protopipeProductConfig: ProductConfig = {
   id: 'protopipe',
-  displayName: 'SearchClimber.ai',
+  displayName: 'SearchClimber.io',
   auth: {
-    loginWelcome: 'Welcome to SearchClimber.ai',
+    loginWelcome: 'Welcome to SearchClimber.io',
     loginTagline: 'Sign in to your SEO workspace',
     signupCta: 'Start 3-day free trial',
     loginHeroTitle: 'Time to Climb',
@@ -23,6 +23,7 @@ export const protopipeProductConfig: ProductConfig = {
     postSignupRedirect: '/home',
     login: '/login',
     home: '/home',
+    billing: '/home/billing',
   },
   onboarding: {
     bypassLegacyWizard: true,

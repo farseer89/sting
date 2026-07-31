@@ -202,6 +202,12 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
       },
     ],
   },
+  {
+    id: 'account',
+    label: 'Account',
+    icon: 'users',
+    children: [{ id: 'account-billing', label: 'Billing', icon: 'link' }],
+  },
   { id: 'premiere-separator', label: '', separator: true },
   {
     id: 'prospector',
@@ -295,4 +301,11 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
   },
 ];
 
-export const PROTOPIPE_HOME_NAV_DEFAULT_OPEN = ['books', 'start', 'content', 'analytics', 'inbox'] as const;
+export const PROTOPIPE_HOME_NAV_DEFAULT_OPEN = [
+  'books',
+  'start',
+  'content',
+  'analytics',
+  'account',
+  'inbox',
+] as const;

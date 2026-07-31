@@ -1,0 +1,55 @@
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { Button } from 'primeng/button';
+import { PRODUCT_CONFIG } from '../../../core/config/product-config';
+import { buildProtopipeAccessState } from '../access/protopipe-access.model';
+import { ProtopipeStrategyService } from '../protopipe-strategy.service';
+import { buildProtopipeBillingSummary } from './protopipe-billing-copy';
+import { ProtopipeBillingPortalService } from './protopipe-billing-portal.service';
+
+@Component({
+  selector: 'app-protopipe-billing',
+  standalone: true,
+  imports: [Button],
+  templateUrl: './protopipe-billing.component.html',
+  styleUrl: './protopipe-billing.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class ProtopipeBillingComponent {
+  private readonly strategy = inject(ProtopipeStrategyService);
+  private readonly portal = inject(ProtopipeBillingPortalService);
+  readonly product = inject(PRODUCT_CONFIG);
+
+  readonly subscription = this.strategy.subscription;
+  readonly accessState = computed(() => buildProtopipeAccessState(this.subscription()));
+  readonly summary = computed(() => buildProtopipeBillingSummary(this.subscription(), this.accessState()));
+  readonly portalLoading = this.portal.loading;
+  readonly portalError = this.portal.error;
+  readonly refreshLoading = signal(false);
+  readonly refreshMessage = signal<string | null>(null);
+
+  readonly stripeCustomerLabel = computed(() => {
+    const customerId = this.subscription()?.stripeCustomerId;
+    if (!customerId) return 'Stripe customer pending';
+    return `Stripe customer ${customerId.slice(-8)}`;
+  });
+
+  async manageBilling(): Promise<void> {
+    this.refreshMessage.set(null);
+    try {
+      await this.portal.openPortal(this.product.routes.billing);
+    } catch {
+      // Error message is exposed by the shared portal service.
+    }
+  }
+
+  async refreshStatus(): Promise<void> {
+    if (this.refreshLoading()) return;
+    this.refreshLoading.set(true);
+    this.refreshMessage.set(null);
+    this.portal.error.set(null);
+
+    await this.strategy.reload();
+    this.refreshMessage.set('Billing status refreshed from your account.');
+    this.refreshLoading.set(false);
+  }
+}

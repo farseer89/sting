@@ -23,6 +23,7 @@ export interface ProductRoutesConfig {
   postSignupRedirect: string;
   login: string;
   home: string;
+  billing: string;
 }
 
 /** Protopipe-only: route onboarding through Discovery book instead of the legacy wizard. */
@@ -67,5 +68,6 @@ export const defaultProductConfig: ProductConfig = {
     postSignupRedirect: '/home',
     login: '/login',
     home: '/home',
+    billing: '/home/billing',
   },
 };

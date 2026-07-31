@@ -4,7 +4,7 @@ const shireBaseUrl = 'https://shire.droppin.shop';
 export const environment = {
   production: true,
   enableDevRoutes: false,
-  appName: 'SearchClimber.ai',
+  appName: 'SearchClimber.io',
   MICRO_BASE_URL: microserviceBaseUrl,
   MICRO_SOCKET_ENDPOINT: microserviceBaseUrl,
   MICRO_USER_SIGNIN: `${microserviceBaseUrl}/api/v2/auth/signin`,

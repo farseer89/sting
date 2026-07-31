@@ -1,0 +1,66 @@
+<div class="billing">
+  <header class="billing__hero">
+    <div>
+      <span class="billing__kicker">Account & billing</span>
+      <h1>Manage your {{ product.displayName }} subscription</h1>
+      <p>
+        Review the current account stage, update payment details, change plan, or cancel through Stripe.
+      </p>
+    </div>
+    <span class="billing__badge" [class.is-readonly]="accessState().isReadOnly">
+      {{ summary().statusTitle }}
+    </span>
+  </header>
+
+  <div class="billing__grid">
+    <section class="billing-card billing-card--primary" aria-label="Subscription status">
+      <span class="billing-card__label">Current access</span>
+      <h2>{{ summary().planLabel }}</h2>
+      <p>{{ summary().statusDetail }}</p>
+      @if (summary().trialWindowLabel; as trialWindow) {
+        <span class="billing-card__meta">{{ trialWindow }}</span>
+      }
+    </section>
+
+    <section class="billing-card" aria-label="Stripe billing profile">
+      <span class="billing-card__label">Stripe profile</span>
+      <h2>Self-service portal</h2>
+      <p>{{ summary().nextStep }}</p>
+      <span class="billing-card__meta">{{ stripeCustomerLabel() }}</span>
+    </section>
+  </div>
+
+  <section class="billing-actions" aria-label="Billing actions">
+    <div>
+      <h2>Billing actions</h2>
+      <p>
+        Stripe handles sensitive payment-method, invoice, plan, and cancellation changes. Return here after
+        making changes to refresh the workspace stage.
+      </p>
+    </div>
+
+    <div class="billing-actions__buttons">
+      <p-button
+        label="Manage billing in Stripe"
+        icon="pi pi-credit-card"
+        [loading]="portalLoading()"
+        (onClick)="manageBilling()"
+      />
+      <p-button
+        label="Refresh status"
+        icon="pi pi-refresh"
+        severity="secondary"
+        [loading]="refreshLoading()"
+        (onClick)="refreshStatus()"
+      />
+    </div>
+  </section>
+
+  @if (portalError(); as error) {
+    <p class="billing-alert billing-alert--error" role="alert">{{ error }}</p>
+  }
+
+  @if (refreshMessage(); as message) {
+    <p class="billing-alert" role="status">{{ message }}</p>
+  }
+</div>

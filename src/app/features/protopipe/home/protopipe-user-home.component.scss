@@ -72,14 +72,13 @@
 
 .void-topnav__brand {
   align-self: center;
-  min-width: 10.45rem;
+  min-width: 10.75rem;
   margin-bottom: 0.45rem;
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1;
   color: var(--shell-rail-ink);
-  text-transform: lowercase;
   flex-shrink: 0;
 }
 
@@ -142,6 +141,11 @@
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.62;
+  }
 }
 
 .void-topnav__build {

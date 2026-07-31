@@ -278,6 +278,24 @@ function writeFinalDeliverables(w: PdfWriter, thought: Thought): void {
     }
   }
 
+  if (thought.thinkerKind === 'mention_tracking') {
+    const snapshot = thought.outputs.find((port) => port.portId === 'snapshot')?.artifact?.data as
+      | { summaryByType?: Record<string, { mentionRate?: number; topGap?: string }> }
+      | undefined;
+    if (snapshot?.summaryByType) {
+      writeSubheading(w, 'Visibility summary');
+      for (const [type, summary] of Object.entries(snapshot.summaryByType)) {
+        const rate =
+          summary.mentionRate != null
+            ? `${Math.round(summary.mentionRate * 100)}% mention rate`
+            : '—';
+        const gap = summary.topGap ? ` · gap: ${summary.topGap}` : '';
+        writeParagraph(w, `${type}: ${rate}${gap}`);
+      }
+    }
+    return;
+  }
+
   const assemble = thought.steps.find((s) => s.id === 'assemble');
   const draft = thought.steps.find((s) => s.id === 'draft');
   const review = thought.steps.find((s) => s.id === 'review');
@@ -338,7 +356,11 @@ export async function exportThoughtRunbookPdf(
 
   // Cover
   const coverTitle =
-    thought.thinkerKind === 'content-plan' ? 'Strategy Runbook' : 'Article Runbook';
+    thought.thinkerKind === 'content-plan'
+      ? 'Strategy Runbook'
+      : thought.thinkerKind === 'mention_tracking'
+        ? 'AI Mentions Runbook'
+        : 'Article Runbook';
   writeHeading(w, coverTitle, 20);
   writeParagraph(w, thought.title);
   if (thought.summary) writeParagraph(w, thought.summary);

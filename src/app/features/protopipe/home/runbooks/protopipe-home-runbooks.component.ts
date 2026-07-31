@@ -11,9 +11,11 @@ import type {
   ArticleGenerationRunSummary,
   ProtopipeContentPlanRunSummary,
   ProtopipeKeywordDiscoveryRunDto,
+  ProtopipeMentionTrackingRunSummary,
 } from '@hive/contracts';
 import { ProtopipeApiService } from '../../protopipe-api.service';
 import { ContentPlanService } from '../../content-plan/content-plan.service';
+import { MentionTrackingService } from '../../mention-tracking/mention-tracking.service';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 import type { RunbookKind } from './protopipe-runbook-viewer.component';
 import { ProtopipeRunbookViewerComponent } from './protopipe-runbook-viewer.component';
@@ -24,7 +26,7 @@ export interface RunbookSelection {
   label: string;
 }
 
-type RunbookSection = 'discovery' | 'content-plan' | 'articles';
+type RunbookSection = 'discovery' | 'content-plan' | 'mentions' | 'articles';
 
 function formatWhen(iso?: string): string {
   if (!iso) return '—';
@@ -53,11 +55,13 @@ function statusClass(status: string): string {
 export class ProtopipeHomeRunbooksComponent implements OnInit {
   private readonly api = inject(ProtopipeApiService);
   private readonly contentPlanApi = inject(ContentPlanService);
+  private readonly mentionTrackingApi = inject(MentionTrackingService);
 
   readonly siteId = input.required<string>();
 
   readonly discoveryRun = signal<ProtopipeKeywordDiscoveryRunDto | null>(null);
   readonly contentPlanRuns = signal<ProtopipeContentPlanRunSummary[]>([]);
+  readonly mentionRuns = signal<ProtopipeMentionTrackingRunSummary[]>([]);
   readonly articleRuns = signal<ArticleGenerationRunSummary[]>([]);
   readonly loading = signal(true);
   readonly loadError = signal<string | null>(null);
@@ -65,6 +69,7 @@ export class ProtopipeHomeRunbooksComponent implements OnInit {
   readonly binderSection = signal<RunbookSection>('discovery');
 
   readonly latestContentPlan = computed(() => this.contentPlanRuns()[0] ?? null);
+  readonly latestMentionRun = computed(() => this.mentionRuns()[0] ?? null);
 
   ngOnInit(): void {
     void this.reload();
@@ -78,13 +83,15 @@ export class ProtopipeHomeRunbooksComponent implements OnInit {
     this.loadError.set(null);
 
     try {
-      const [discoveryRes, planRunsRes, articleRunsRes] = await Promise.all([
+      const [discoveryRes, planRunsRes, mentionRunsRes, articleRunsRes] = await Promise.all([
         this.api.getLatestKeywordDiscoveryRun(siteId),
         this.contentPlanApi.listRuns(siteId),
+        this.mentionTrackingApi.listRuns(siteId),
         this.api.listArticleGenerationRuns(siteId),
       ]);
       this.discoveryRun.set(discoveryRes.run);
       this.contentPlanRuns.set(planRunsRes.runs);
+      this.mentionRuns.set(mentionRunsRes.runs);
       this.articleRuns.set(articleRunsRes.runs);
     } catch (err) {
       this.loadError.set(parseProtopipeApiError(err, 'Could not load runbooks.'));
@@ -108,6 +115,14 @@ export class ProtopipeHomeRunbooksComponent implements OnInit {
       kind: 'content-plan',
       runId: run.id,
       label: `Content plan v${run.version}`,
+    });
+  }
+
+  openMentionRun(run: ProtopipeMentionTrackingRunSummary): void {
+    this.selection.set({
+      kind: 'mention-tracking',
+      runId: run.id,
+      label: 'AI Mentions',
     });
   }
 

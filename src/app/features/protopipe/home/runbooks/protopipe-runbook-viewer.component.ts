@@ -21,7 +21,11 @@ import { exportThoughtRunbookPdf } from '../../lab/thinker/thought-runbook-pdf';
 import { ThinkerComponent, type ThinkerMode } from '../../lab/thinker/thinker.component';
 import type { Thought } from '../../lab/thinker/thought.model';
 
-export type RunbookKind = 'keyword-discovery' | 'content-plan' | 'article';
+import { mentionSnapshotToThought } from '../../lab/mention-tracking/mention-tracking-run-to-thought';
+import type { ProtopipeSiteMentionSnapshot } from '@hive/contracts';
+import { MentionTrackingService } from '../../mention-tracking/mention-tracking.service';
+
+export type RunbookKind = 'keyword-discovery' | 'content-plan' | 'article' | 'mention-tracking';
 
 const POLL_MS = 1800;
 const MAX_POLL_FAILURES = 6;
@@ -43,6 +47,7 @@ type Connection = 'idle' | 'live' | 'reconnecting' | 'lost';
 export class ProtopipeRunbookViewerComponent implements OnInit {
   private readonly api = inject(ProtopipeApiService);
   private readonly contentPlanApi = inject(ContentPlanService);
+  private readonly mentionTrackingApi = inject(MentionTrackingService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly siteId = input.required<string>();
@@ -61,6 +66,7 @@ export class ProtopipeRunbookViewerComponent implements OnInit {
   private readonly discoveryRun = signal<KeywordDiscoveryRunDto | null>(null);
   private readonly contentPlanRun = signal<ProtopipeSiteContentPlan | null>(null);
   private readonly articleRun = signal<ArticleGenerationRunDto | null>(null);
+  private readonly mentionSnapshot = signal<ProtopipeSiteMentionSnapshot | null>(null);
 
   readonly thought = computed((): Thought | null => {
     const kind = this.kind();
@@ -71,6 +77,10 @@ export class ProtopipeRunbookViewerComponent implements OnInit {
     if (kind === 'content-plan') {
       const plan = this.contentPlanRun();
       return plan ? contentPlanRunToThought(plan) : null;
+    }
+    if (kind === 'mention-tracking') {
+      const snapshot = this.mentionSnapshot();
+      return snapshot ? mentionSnapshotToThought(snapshot) : null;
     }
     const run = this.articleRun();
     return run ? articleRunToThought(run) : null;
@@ -112,6 +122,22 @@ export class ProtopipeRunbookViewerComponent implements OnInit {
           return plan.status;
       }
     }
+    if (kind === 'mention-tracking') {
+      const snapshot = this.mentionSnapshot();
+      if (!snapshot) return null;
+      switch (snapshot.status) {
+        case 'pending':
+          return 'Queued';
+        case 'running':
+          return 'Running';
+        case 'complete':
+          return 'Complete';
+        case 'failed':
+          return 'Failed';
+        default:
+          return snapshot.status;
+      }
+    }
     const run = this.articleRun();
     if (!run) return null;
     switch (run.status) {
@@ -138,6 +164,10 @@ export class ProtopipeRunbookViewerComponent implements OnInit {
       const s = this.contentPlanRun()?.status;
       return s === 'pending' || s === 'running';
     }
+    if (kind === 'mention-tracking') {
+      const s = this.mentionSnapshot()?.status;
+      return s === 'pending' || s === 'running';
+    }
     const s = this.articleRun()?.status;
     return s === 'pending' || s === 'running';
   });
@@ -162,6 +192,11 @@ export class ProtopipeRunbookViewerComponent implements OnInit {
       const plan = this.contentPlanRun();
       if (!plan || plan.status !== 'failed') return null;
       return { step: plan.currentStep ?? null, message: plan.error ?? 'Content plan failed.' };
+    }
+    if (kind === 'mention-tracking') {
+      const snapshot = this.mentionSnapshot();
+      if (!snapshot || snapshot.status !== 'failed') return null;
+      return { step: snapshot.currentStep ?? null, message: snapshot.error ?? 'Mention check failed.' };
     }
     const run = this.articleRun();
     if (!run || run.status !== 'failed') return null;
@@ -280,6 +315,26 @@ export class ProtopipeRunbookViewerComponent implements OnInit {
       return;
     }
 
+    if (kind === 'mention-tracking') {
+      void this.mentionTrackingApi.getRun(siteId, runId).then(
+        ({ snapshot }) => {
+          if (!snapshot) {
+            this.loadError.set('Mention tracking run not found.');
+            return;
+          }
+          this.loadError.set(null);
+          this.pollFailures = 0;
+          this.mentionSnapshot.set(snapshot);
+          this.maybePoll();
+        },
+        (err) => {
+          this.connection.set('idle');
+          this.loadError.set(parseProtopipeApiError(err, 'Could not load mention tracking run.'));
+        },
+      );
+      return;
+    }
+
     this.api.getArticleRun$(siteId, runId).subscribe({
       next: ({ run }) => {
         this.loadError.set(null);
@@ -332,6 +387,20 @@ export class ProtopipeRunbookViewerComponent implements OnInit {
           if (plan) {
             this.pollFailures = 0;
             this.contentPlanRun.set(plan);
+          }
+          this.maybePoll();
+        },
+        () => this.onPollError(),
+      );
+      return;
+    }
+
+    if (kind === 'mention-tracking') {
+      void this.mentionTrackingApi.getRun(siteId, runId).then(
+        ({ snapshot }) => {
+          if (snapshot) {
+            this.pollFailures = 0;
+            this.mentionSnapshot.set(snapshot);
           }
           this.maybePoll();
         },

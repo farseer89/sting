@@ -11,8 +11,21 @@
       @if (store.error(); as err) {
         <p class="mb-masthead__error">{{ err }}</p>
       }
+      @if (exportError(); as exportErr) {
+        <p class="mb-masthead__error">{{ exportErr }}</p>
+      }
     </div>
     <div class="mb-masthead__actions">
+      @if (canExportRunbook()) {
+        <button
+          type="button"
+          class="mb-btn mb-btn--secondary"
+          [disabled]="exportingRunbook()"
+          (click)="onExportRunbook()"
+        >
+          {{ exportingRunbook() ? 'Exporting…' : 'Download runbook' }}
+        </button>
+      }
       @if (store.snapshot()?.id) {
         <button
           type="button"

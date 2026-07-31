@@ -69,6 +69,22 @@
       <button
         type="button"
         class="rb-binder-nav__item"
+        [class.is-active]="binderSection() === 'mentions'"
+        (click)="binderSection.set('mentions')"
+      >
+        <svg class="rb-binder-nav__icon" viewBox="0 0 16 16" fill="none">
+          <path d="M3 4.5h10M3 8h8M3 11.5h6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          <circle cx="12.5" cy="11.5" r="2" stroke="currentColor" stroke-width="1.1"/>
+        </svg>
+        AI Mentions
+        @if (latestMentionRun(); as run) {
+          <span class="rb-binder-nav__status rb-binder-nav__status--{{ statusClass(run.status) }}"></span>
+        }
+      </button>
+
+      <button
+        type="button"
+        class="rb-binder-nav__item"
         [class.is-active]="binderSection() === 'articles'"
         (click)="binderSection.set('articles')"
       >
@@ -201,6 +217,46 @@
                 <svg class="rb-empty__icon" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
                 <p>No content plan run yet.</p>
                 <span>Confirm keywords to generate a plan.</span>
+              </div>
+            }
+          }
+
+          <!-- ── AI MENTIONS ── -->
+          @case ('mentions') {
+            <div class="rb-panel-head">
+              <div class="rb-panel-kicker">Thinker · AI visibility</div>
+              <h2 class="rb-panel-title">AI Mentions</h2>
+              <p class="rb-panel-deck">
+                Sampled Gemini visibility checks — prompts, raw responses, parse results, and summary by type.
+              </p>
+            </div>
+
+            @if (mentionRuns().length) {
+              <ul class="rb-article-list">
+                @for (run of mentionRuns(); track run.id) {
+                  <li class="rb-article-row">
+                    <div class="rb-article-row__info">
+                      <span class="rb-article-row__type">Visibility check</span>
+                      <span class="rb-run-status rb-run-status--{{ statusClass(run.status) }}">
+                        <span class="rb-run-status__dot"></span>{{ run.status }}
+                      </span>
+                    </div>
+                    <div class="rb-article-row__meta">
+                      <span>{{ run.currentStep ?? '—' }}</span>
+                      <span>{{ formatWhen(run.updatedAt) }}</span>
+                    </div>
+                    <button type="button" class="rb-article-row__open" (click)="openMentionRun(run)">
+                      Open
+                      <svg viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <div class="rb-empty">
+                <svg class="rb-empty__icon" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 10h12M4 14h9M4 18h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                <p>No AI Mentions runs yet.</p>
+                <span>Run a visibility check from the AI Mentions book.</span>
               </div>
             }
           }

@@ -18,6 +18,7 @@ import {
 import { articleRunToThought } from '../../lab/thinker/article-run-to-thought';
 import { formatThinkerCostUsd, sumCosts } from '../../lab/thinker/thinker-cost';
 import { exportThoughtRunbookPdf } from '../../lab/thinker/thought-runbook-pdf';
+import { mentionTrackingToThought } from '../../lab/mention-tracking/mention-tracking-run-to-thought';
 import { ProtopipeHomeThinkerViewState } from '../protopipe-home-thinker-view.state';
 import { isShireRunsEnabled } from '../../shire/shire-http.util';
 import { ProtopipeHomeWriterViewState } from '../protopipe-home-writer-view.state';
@@ -119,6 +120,10 @@ export class ProtopipeHomeThinkerBinderComponent {
     if (this.runKind() === 'content-plan') {
       const plan = this.thinkerView.contentPlanRun();
       return plan ? contentPlanRunToThought(plan) : null;
+    }
+    if (this.runKind() === 'mention-tracking') {
+      const base = this.thinkerView.shireThought();
+      return base ? mentionTrackingToThought(base) : null;
     }
     if (isShireRunsEnabled() && this.runKind() !== 'prospector') {
       return this.thinkerView.shireThought();

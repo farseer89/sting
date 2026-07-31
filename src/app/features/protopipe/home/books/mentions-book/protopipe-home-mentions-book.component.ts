@@ -19,6 +19,8 @@ import {
   type MentionsBookSection,
 } from './mentions-book.store';
 import { MENTION_ENGINES, type MentionEngineUiConfig } from './mention-engines.config';
+import { mentionSnapshotToThought } from '../../../lab/mention-tracking/mention-tracking-run-to-thought';
+import { exportThoughtRunbookPdf } from '../../../lab/thinker/thought-runbook-pdf';
 
 const PROMPT_TYPES: ProtopipeMentionPromptType[] = [
   'generic',
@@ -80,12 +82,18 @@ export class ProtopipeHomeMentionsBookComponent implements OnInit, OnDestroy {
   readonly activeSection = signal<MentionsBookSection>('overview');
   readonly selectedType = signal<ProtopipeMentionPromptType>('generic');
   readonly expandedPromptIds = signal<ReadonlySet<string>>(new Set());
+  readonly exportingRunbook = signal(false);
+  readonly exportError = signal<string | null>(null);
 
   readonly typeLabels = MENTION_PROMPT_TYPE_LABELS;
   readonly promptTypes = PROMPT_TYPES;
   readonly engines = MENTION_ENGINES;
 
   readonly summaryByType = computed(() => this.store.output()?.summaryByType ?? null);
+
+  readonly canExportRunbook = computed(
+    () => this.store.isComplete() && Boolean(this.store.snapshot()?.output),
+  );
 
   /** 0–100 visibility score derived from Gemini mention rate (single-engine v1). */
   readonly visibilityScore = computed(() => {
@@ -261,6 +269,23 @@ export class ProtopipeHomeMentionsBookComponent implements OnInit, OnDestroy {
     const snapshotId = this.store.snapshot()?.id;
     if (snapshotId) {
       this.viewRun.emit(snapshotId);
+    }
+  }
+
+  async onExportRunbook(): Promise<void> {
+    const snapshot = this.store.snapshot();
+    const siteId = this.strategy.siteId();
+    if (!snapshot?.output || !siteId || this.exportingRunbook()) return;
+
+    this.exportingRunbook.set(true);
+    this.exportError.set(null);
+    try {
+      const thought = mentionSnapshotToThought(snapshot);
+      await exportThoughtRunbookPdf(thought, { runId: snapshot.id, siteId });
+    } catch {
+      this.exportError.set('Could not export runbook PDF. Try again in a moment.');
+    } finally {
+      this.exportingRunbook.set(false);
     }
   }
 

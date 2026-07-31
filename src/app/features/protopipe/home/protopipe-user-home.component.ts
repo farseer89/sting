@@ -42,7 +42,6 @@ import { ArticleGenerationRunSession } from '../article/article-generation-run-s
 import { ThoughtRunSession } from '../runs/thought-run-session.service';
 import { ProtopipeHomeKeywordBookComponent } from './books/protopipe-home-keyword-book.component';
 import { ProtopipeHomeMentionsBookComponent } from './books/mentions-book/protopipe-home-mentions-book.component';
-import { MentionsBookStore } from './books/mentions-book/mentions-book.store';
 import type { SharpenTab } from './sharpen/protopipe-home-sharpen.component';
 import { ProtopipeHomeRunbooksComponent } from './runbooks/protopipe-home-runbooks.component';
 import { ProtopipeHomeIntakeDemoComponent } from './intake-demo/protopipe-home-intake-demo.component';
@@ -185,7 +184,6 @@ export class ProtopipeUserHomeComponent implements OnInit {
   readonly thinkerViewState = inject(ProtopipeHomeThinkerViewState);
   private readonly blogPreviewNav = inject(ProtopipeBlogPreviewNavState);
   private readonly keywordStore = inject(ProtopipeKeywordPickerStore);
-  private readonly mentionsBookStore = inject(MentionsBookStore);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly homeWorkspaceEl = viewChild<ElementRef<HTMLElement>>('homeWorkspace');
   readonly buildBookCmp = viewChild(ProtopipeHomeBuildBookComponent);
@@ -354,11 +352,10 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.activeView.set('sharpen');
   }
 
-  viewMentionTrackingRun(): void {
-    const snapshot = this.mentionsBookStore.snapshot();
+  viewMentionTrackingRun(runId: string): void {
     const siteId = this.siteId();
-    if (!snapshot?.id || !siteId) return;
-    this.thinkerViewState.openMentionTrackingRun(siteId, snapshot.id);
+    if (!siteId) return;
+    this.thinkerViewState.openMentionTrackingRun(siteId, runId);
   }
 
   onSharpenTabConsumed(): void {

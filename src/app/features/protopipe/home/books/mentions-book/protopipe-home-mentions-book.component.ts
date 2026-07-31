@@ -41,7 +41,7 @@ export class ProtopipeHomeMentionsBookComponent implements OnInit, OnDestroy {
 
   readonly siteLabel = input('');
   readonly openSharpen = output<void>();
-  readonly viewRun = output<void>();
+  readonly viewRun = output<string>();
 
   readonly sections: { id: MentionsBookSection; label: string }[] = [
     { id: 'overview', label: 'Overview' },
@@ -103,7 +103,10 @@ export class ProtopipeHomeMentionsBookComponent implements OnInit, OnDestroy {
   }
 
   onViewRun(): void {
-    this.viewRun.emit();
+    const snapshotId = this.store.snapshot()?.id;
+    if (snapshotId) {
+      this.viewRun.emit(snapshotId);
+    }
   }
 
   private async bootstrap(): Promise<void> {

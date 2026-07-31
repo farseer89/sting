@@ -300,7 +300,7 @@
                     <app-protopipe-home-mentions-book
                       [siteLabel]="siteHostname() || siteDisplayName()"
                       (openSharpen)="openSharpenFromMentions()"
-                      (viewRun)="viewMentionTrackingRun()"
+                      (viewRun)="viewMentionTrackingRun($event)"
                     />
                   </section>
                 }

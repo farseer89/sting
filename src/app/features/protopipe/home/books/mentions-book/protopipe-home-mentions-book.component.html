@@ -168,6 +168,24 @@
                 }
               </section>
 
+              @if (promptStats(); as stats) {
+                <section class="mb-prompts-teaser" aria-label="Tracked prompts preview">
+                  <div>
+                    <span class="mb-brief-teaser__kicker">Tracked prompts</span>
+                    <p class="mb-brief-teaser__text">
+                      {{ stats.total }} prompts this run
+                      @if (stats.paa > 0) {
+                        · {{ stats.paa }} expanded from People Also Ask
+                      }
+                      · {{ stats.profile }} from onboarding profile
+                    </p>
+                  </div>
+                  <button type="button" class="mb-link-btn" (click)="selectSection('prompts')">
+                    View all prompts
+                  </button>
+                </section>
+              }
+
               @if (visibilityReport(); as report) {
                 <section class="mb-brief-teaser" aria-label="AI visibility brief preview">
                   <div>
@@ -449,6 +467,151 @@
                   }
                 </div>
               </section>
+            }
+          }
+
+          @case ('prompts') {
+            <div class="mb-panel__head">
+              <span class="mb-panel-kicker">Prompts</span>
+              <h2 class="mb-panel-title">Tracked prompt matrix</h2>
+              <p class="mb-panel-deck">
+                Every prompt Gemini sampled this run — from onboarding profile and keyword-discovery
+                People Also Ask expansion.
+              </p>
+            </div>
+
+            @if (allTrackedPrompts().length === 0) {
+              <div class="mb-empty">
+                <p class="mb-empty__title">No prompts tracked yet</p>
+                <p class="mb-empty__body">
+                  Run an AI Mentions check after onboarding (and ideally keyword discovery) to build
+                  the prompt matrix.
+                </p>
+              </div>
+            } @else {
+              @if (promptStats(); as stats) {
+                <section class="mb-prompts-summary" aria-label="Prompt source breakdown">
+                  <div class="mb-prompts-summary__metric">
+                    <span class="mb-prompts-summary__value">{{ stats.total }}</span>
+                    <span class="mb-prompts-summary__label">Total tracked</span>
+                  </div>
+                  <div class="mb-prompts-summary__metric">
+                    <span class="mb-prompts-summary__value">{{ stats.profile }}</span>
+                    <span class="mb-prompts-summary__label">From profile</span>
+                  </div>
+                  <div class="mb-prompts-summary__metric">
+                    <span class="mb-prompts-summary__value">{{ stats.paa }}</span>
+                    <span class="mb-prompts-summary__label">From PAA</span>
+                  </div>
+                  <div class="mb-prompts-summary__metric">
+                    <span class="mb-prompts-summary__value">{{ stats.mentioned }}</span>
+                    <span class="mb-prompts-summary__label">With mentions</span>
+                  </div>
+                </section>
+              }
+
+              <ul class="mb-prompt-list">
+                @for (row of allTrackedPrompts(); track row.id) {
+                  <li
+                    class="mb-prompt-row"
+                    [class.is-gap]="!row.brandMentioned"
+                    [class.is-expanded]="isPromptExpanded(row.id)"
+                  >
+                    <button
+                      type="button"
+                      class="mb-prompt-row__head"
+                      [attr.aria-expanded]="hasExpandableContent(row) ? isPromptExpanded(row.id) : null"
+                      [disabled]="!hasExpandableContent(row)"
+                      (click)="togglePromptExpanded(row.id)"
+                    >
+                      <span
+                        class="mb-prompt-row__indicator"
+                        [class.is-mentioned]="row.brandMentioned"
+                        aria-hidden="true"
+                      ></span>
+                      <span class="mb-prompt-row__main">
+                        <span class="mb-prompt-row__text">{{ row.text }}</span>
+                        <span class="mb-prompt-row__meta">
+                          <span class="mb-prompt-tag">{{ typeLabels[row.promptType] }}</span>
+                          <span class="mb-prompt-tag" [class.is-paa]="row.promptOrigin === 'paa'">
+                            {{ originLabels[row.promptOrigin] }}
+                          </span>
+                          @if (row.serviceRef) {
+                            <span class="mb-prompt-tag is-muted">Service: {{ row.serviceRef }}</span>
+                          }
+                          @if (row.competitorRef) {
+                            <span class="mb-prompt-tag is-muted">Competitor: {{ row.competitorRef }}</span>
+                          }
+                        </span>
+                      </span>
+                      <span class="mb-prompt-row__badge" [class.is-mentioned]="row.brandMentioned">
+                        {{ row.brandMentioned ? 'Mentioned' : 'Not mentioned' }}
+                        · {{ row.mentionRate | percent: '1.0-0' }}
+                      </span>
+                      @if (hasExpandableContent(row)) {
+                        <span class="mb-prompt-row__chevron" aria-hidden="true"></span>
+                      }
+                    </button>
+
+                    @if (row.responses.length) {
+                      <div class="mb-prompt-row__body">
+                        @if (isPromptExpanded(row.id)) {
+                          @for (resp of row.responses; track resp.runIndex) {
+                            <div class="mb-prompt-response">
+                              @if (row.responses.length > 1) {
+                                <div class="mb-prompt-response__head">
+                                  <span class="mb-prompt-response__label">
+                                    Run {{ resp.runIndex + 1 }}
+                                  </span>
+                                  <span
+                                    class="mb-prompt-response__status"
+                                    [class.is-mentioned]="resp.brandMentioned"
+                                  >
+                                    {{ resp.brandMentioned ? 'Mentioned' : 'Not mentioned' }}
+                                  </span>
+                                </div>
+                              }
+                              <p class="mb-prompt-response__text">{{ resp.text }}</p>
+                            </div>
+                          }
+                        } @else if (row.responses[0]; as preview) {
+                          <div class="mb-prompt-response">
+                            <p class="mb-prompt-response__text is-clamped">{{ preview.text }}</p>
+                            @if (row.responses.length > 1) {
+                              <p class="mb-prompt-row__more-runs">
+                                + {{ row.responses.length - 1 }} more run(s)
+                              </p>
+                            }
+                          </div>
+                        }
+                        @if (hasExpandableContent(row)) {
+                          <button
+                            type="button"
+                            class="mb-link-btn mb-prompt-row__toggle"
+                            (click)="togglePromptExpanded(row.id)"
+                          >
+                            {{ isPromptExpanded(row.id) ? 'Show less' : 'Show full response' }}
+                          </button>
+                        }
+                      </div>
+                    }
+
+                    @if (row.citedDomains.length) {
+                      <p class="mb-prompt-row__cites">Cited: {{ row.citedDomains.join(', ') }}</p>
+                    }
+                    <div class="mb-prompt-row__actions">
+                      <button type="button" class="mb-link-btn" (click)="selectType(row.promptType)">
+                        View in {{ typeLabels[row.promptType] }}
+                      </button>
+                      @if (!row.brandMentioned) {
+                        <button type="button" class="mb-link-btn" (click)="onImproveFacts()">
+                          Improve facts in Sharpen
+                        </button>
+                      }
+                    </div>
+                  </li>
+                }
+              </ul>
             }
           }
 

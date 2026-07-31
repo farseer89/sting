@@ -11,9 +11,10 @@ import {
 } from '@angular/core';
 import { DatePipe, DecimalPipe, PercentPipe } from '@angular/common';
 import { ProgressSpinner } from 'primeng/progressspinner';
-import type { ProtopipeMentionPromptType } from '@hive/contracts';
+import type { ProtopipeMentionPromptType, ProtopipeMentionPromptOrigin } from '@hive/contracts';
 import { ProtopipeStrategyService } from '../../../protopipe-strategy.service';
 import {
+  MENTION_PROMPT_ORIGIN_LABELS,
   MENTION_PROMPT_TYPE_LABELS,
   MentionsBookStore,
   type MentionsBookSection,
@@ -67,6 +68,10 @@ export interface MentionPromptResponseView {
 export interface MentionPromptRowView {
   id: string;
   text: string;
+  promptType: ProtopipeMentionPromptType;
+  promptOrigin: ProtopipeMentionPromptOrigin;
+  serviceRef?: string;
+  competitorRef?: string;
   mentionRate: number;
   brandMentioned: boolean;
   responses: MentionPromptResponseView[];
@@ -93,6 +98,7 @@ export class ProtopipeHomeMentionsBookComponent implements OnInit, OnDestroy {
   readonly sections: { id: MentionsBookSection; label: string }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'brief', label: 'Brief' },
+    { id: 'prompts', label: 'Prompts' },
     { id: 'by-type', label: 'By type' },
     { id: 'history', label: 'History' },
   ];
@@ -104,6 +110,7 @@ export class ProtopipeHomeMentionsBookComponent implements OnInit, OnDestroy {
   readonly exportError = signal<string | null>(null);
 
   readonly typeLabels = MENTION_PROMPT_TYPE_LABELS;
+  readonly originLabels = MENTION_PROMPT_ORIGIN_LABELS;
   readonly actionKindLabels = ACTION_KIND_LABELS;
   readonly promptTypes = PROMPT_TYPES;
   readonly engines = MENTION_ENGINES;
@@ -170,6 +177,15 @@ export class ProtopipeHomeMentionsBookComponent implements OnInit, OnDestroy {
     const promptIds = new Set(output.prompts.map((p) => p.id));
     let mentionedPrompts = 0;
     let gapPrompts = 0;
+    let paaPrompts = 0;
+    let profilePrompts = 0;
+    for (const prompt of output.prompts) {
+      if (prompt.promptOrigin === 'paa') {
+        paaPrompts += 1;
+      } else {
+        profilePrompts += 1;
+      }
+    }
     for (const id of promptIds) {
       const runs = output.results.filter((r) => r.promptId === id);
       if (!runs.length) continue;
@@ -183,6 +199,8 @@ export class ProtopipeHomeMentionsBookComponent implements OnInit, OnDestroy {
       total: output.prompts.length,
       mentioned: mentionedPrompts,
       gaps: gapPrompts,
+      paa: paaPrompts,
+      profile: profilePrompts,
     };
   });
 
@@ -232,35 +250,50 @@ export class ProtopipeHomeMentionsBookComponent implements OnInit, OnDestroy {
       }));
   });
 
+  readonly allTrackedPrompts = computed((): MentionPromptRowView[] => {
+    const output = this.store.output();
+    if (!output) return [];
+    return output.prompts.map((prompt) => this.toPromptRowView(prompt, output));
+  });
+
   readonly promptsForSelectedType = computed((): MentionPromptRowView[] => {
     const output = this.store.output();
     if (!output) return [];
     const type = this.selectedType();
     const prompts = output.prompts.filter((p) => p.promptType === type);
-    return prompts.map((prompt) => {
-      const results = output.results.filter((r) => r.promptId === prompt.id);
-      const mentioned = results.filter((r) => r.brandMentioned).length;
-      const captures = output.captures
-        .filter((c) => c.promptId === prompt.id)
-        .sort((a, b) => a.runIndex - b.runIndex);
-      const responses: MentionPromptResponseView[] = captures.map((capture) => {
-        const result = results.find((r) => r.runIndex === capture.runIndex);
-        return {
-          runIndex: capture.runIndex,
-          text: capture.rawResponse ?? '',
-          brandMentioned: result?.brandMentioned ?? false,
-        };
-      });
+    return prompts.map((prompt) => this.toPromptRowView(prompt, output));
+  });
+
+  private toPromptRowView(
+    prompt: NonNullable<ReturnType<typeof this.store.output>>['prompts'][number],
+    output: NonNullable<ReturnType<typeof this.store.output>>,
+  ): MentionPromptRowView {
+    const results = output.results.filter((r) => r.promptId === prompt.id);
+    const mentioned = results.filter((r) => r.brandMentioned).length;
+    const captures = output.captures
+      .filter((c) => c.promptId === prompt.id)
+      .sort((a, b) => a.runIndex - b.runIndex);
+    const responses: MentionPromptResponseView[] = captures.map((capture) => {
+      const result = results.find((r) => r.runIndex === capture.runIndex);
       return {
-        id: prompt.id,
-        text: prompt.text,
-        mentionRate: results.length ? mentioned / results.length : 0,
-        brandMentioned: mentioned > 0,
-        responses,
-        citedDomains: [...new Set(results.flatMap((r) => r.citedDomains))],
+        runIndex: capture.runIndex,
+        text: capture.rawResponse ?? '',
+        brandMentioned: result?.brandMentioned ?? false,
       };
     });
-  });
+    return {
+      id: prompt.id,
+      text: prompt.text,
+      promptType: prompt.promptType,
+      promptOrigin: prompt.promptOrigin ?? 'profile',
+      serviceRef: prompt.serviceRef,
+      competitorRef: prompt.competitorRef,
+      mentionRate: results.length ? mentioned / results.length : 0,
+      brandMentioned: mentioned > 0,
+      responses,
+      citedDomains: [...new Set(results.flatMap((r) => r.citedDomains))],
+    };
+  }
 
   ngOnInit(): void {
     void this.bootstrap();

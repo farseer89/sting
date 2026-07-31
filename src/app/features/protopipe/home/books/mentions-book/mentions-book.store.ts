@@ -10,7 +10,12 @@ import { MentionTrackingService } from '../../../mention-tracking/mention-tracki
 const POLL_INTERVAL_MS = 1500;
 const POLL_MAX = 120;
 
-export type MentionsBookSection = 'overview' | 'brief' | 'by-type' | 'history';
+export type MentionsBookSection = 'overview' | 'brief' | 'prompts' | 'by-type' | 'history';
+
+export const MENTION_PROMPT_ORIGIN_LABELS = {
+  profile: 'Profile',
+  paa: 'People Also Ask',
+} as const;
 
 export const MENTION_PROMPT_TYPE_LABELS: Record<ProtopipeMentionPromptType, string> = {
   generic: 'Generic',

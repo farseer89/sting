@@ -25,6 +25,8 @@ export interface ProtopipeAccessState {
   isTrialing: boolean;
   isTrialExpired: boolean;
   isReadOnly: boolean;
+  /** Bypasses tier gating — full product + internal nav. */
+  isInternalAdmin?: boolean;
   statusLabel: string;
   upgradeLabel: string;
 }
@@ -48,6 +50,22 @@ const PRO_CAPABILITIES: readonly ProtopipeCapability[] = [
   'article_generation',
   'publish',
 ];
+
+const INTERNAL_ADMIN_CAPABILITIES: readonly ProtopipeCapability[] = [
+  ...PRO_CAPABILITIES,
+  'admin_internal',
+];
+
+/** Platform operators who bypass subscription tier gating in the home dashboard. */
+export const PROTOPIPE_INTERNAL_ADMIN_EMAILS: readonly string[] = [
+  'michaeldempsey89@gmail.com',
+];
+
+export function isProtopipeInternalAdminEmail(email: string | null | undefined): boolean {
+  const normalized = email?.trim().toLowerCase();
+  if (!normalized) return false;
+  return PROTOPIPE_INTERNAL_ADMIN_EMAILS.some((allowed) => allowed === normalized);
+}
 
 const ACTIVE_STATUSES = new Set<SubscriptionStatus>(['trialing', 'active']);
 
@@ -86,7 +104,24 @@ function statusLabel(
 
 export function buildProtopipeAccessState(
   subscription?: SubscriptionState | null,
+  options?: { isInternalAdmin?: boolean },
 ): ProtopipeAccessState {
+  if (options?.isInternalAdmin) {
+    return {
+      planTier: 'pro',
+      billingStatus: 'active',
+      trialEndsAt: subscription?.trialEndsAt,
+      trialDaysRemaining: trialDaysRemaining(subscription?.trialEndsAt),
+      entitlements: INTERNAL_ADMIN_CAPABILITIES,
+      isTrialing: false,
+      isTrialExpired: false,
+      isReadOnly: false,
+      isInternalAdmin: true,
+      statusLabel: 'Internal admin',
+      upgradeLabel: 'Manage plan',
+    };
+  }
+
   const subscriptionStatus = subscription?.subscriptionStatus ?? 'none';
   const daysRemaining = trialDaysRemaining(subscription?.trialEndsAt);
   const isTrialExpired = subscriptionStatus === 'trialing' && daysRemaining === 0;
@@ -117,6 +152,7 @@ export function hasProtopipeCapability(
   capability?: ProtopipeCapability,
 ): boolean {
   if (!capability) return true;
+  if (access.isInternalAdmin) return true;
   if (capability === 'admin_internal') return false;
   return access.entitlements.includes(capability);
 }

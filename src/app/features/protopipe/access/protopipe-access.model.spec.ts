@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildProtopipeAccessState, hasProtopipeCapability } from './protopipe-access.model';
+import { buildProtopipeAccessState, hasProtopipeCapability, isProtopipeInternalAdminEmail } from './protopipe-access.model';
 
 describe('buildProtopipeAccessState', () => {
   it('treats active trials as advanced access', () => {
@@ -34,5 +34,21 @@ describe('buildProtopipeAccessState', () => {
     expect(access.isReadOnly).toBe(true);
     expect(hasProtopipeCapability(access, 'ai_mentions')).toBe(true);
     expect(hasProtopipeCapability(access, 'writer')).toBe(false);
+  });
+
+  it('grants full product and internal nav for internal admin emails', () => {
+    expect(isProtopipeInternalAdminEmail('michaeldempsey89@gmail.com')).toBe(true);
+    expect(isProtopipeInternalAdminEmail('other@example.com')).toBe(false);
+
+    const access = buildProtopipeAccessState(
+      { subscriptionStatus: 'none' },
+      { isInternalAdmin: true },
+    );
+
+    expect(access.isReadOnly).toBe(false);
+    expect(access.isInternalAdmin).toBe(true);
+    expect(hasProtopipeCapability(access, 'admin_internal')).toBe(true);
+    expect(hasProtopipeCapability(access, 'publish')).toBe(true);
+    expect(hasProtopipeCapability(access, 'writer')).toBe(true);
   });
 });

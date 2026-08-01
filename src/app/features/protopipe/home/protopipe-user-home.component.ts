@@ -79,6 +79,7 @@ import type { BlogArticleTemplateKey } from '../build-book/build-book.types';
 import {
   buildProtopipeAccessState,
   hasProtopipeCapability,
+  isProtopipeInternalAdminEmail,
   type ProtopipeAccessState,
 } from '../access/protopipe-access.model';
 
@@ -240,7 +241,13 @@ export class ProtopipeUserHomeComponent implements OnInit {
     });
   }
 
-  readonly accessState = computed(() => buildProtopipeAccessState(this.strategy.subscription()));
+  readonly accessState = computed(() => {
+    const email =
+      this.auth.currentUserEmail || this.auth.getStoredProfile()?.email || '';
+    return buildProtopipeAccessState(this.strategy.subscription(), {
+      isInternalAdmin: isProtopipeInternalAdminEmail(email),
+    });
+  });
   readonly navItems = computed(() => this.gateNavItems(PROTOPIPE_HOME_NAV, this.accessState()));
   readonly navCollapsed = signal(false);
   readonly openNavGroupIds = signal<string[]>([...PROTOPIPE_HOME_NAV_DEFAULT_OPEN]);
@@ -310,6 +317,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
     ];
   });
   readonly showFirstRunCard = computed(() => {
+    if (this.accessState().isInternalAdmin) return false;
     const view = this.activeView();
     return (
       view !== 'billing' &&

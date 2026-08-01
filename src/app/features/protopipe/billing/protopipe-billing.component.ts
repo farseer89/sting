@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Button } from 'primeng/button';
 import { PRODUCT_CONFIG } from '../../../core/config/product-config';
-import { buildProtopipeAccessState } from '../access/protopipe-access.model';
+import { buildProtopipeAccessState, isProtopipeInternalAdminEmail } from '../access/protopipe-access.model';
+import { AuthService } from '../../../core/auth/auth.service';
 import { ProtopipeStrategyService } from '../protopipe-strategy.service';
 import {
   PROTOPIPE_BILLING_COMPARISON_GROUPS,
@@ -27,10 +28,17 @@ import { ProtopipeBillingPortalService } from './protopipe-billing-portal.servic
 export class ProtopipeBillingComponent {
   private readonly strategy = inject(ProtopipeStrategyService);
   private readonly portal = inject(ProtopipeBillingPortalService);
+  private readonly auth = inject(AuthService);
   readonly product = inject(PRODUCT_CONFIG);
 
   readonly subscription = this.strategy.subscription;
-  readonly accessState = computed(() => buildProtopipeAccessState(this.subscription()));
+  readonly accessState = computed(() => {
+    const email =
+      this.auth.currentUserEmail || this.auth.getStoredProfile()?.email || '';
+    return buildProtopipeAccessState(this.subscription(), {
+      isInternalAdmin: isProtopipeInternalAdminEmail(email),
+    });
+  });
   readonly summary = computed(() => buildProtopipeBillingSummary(this.subscription(), this.accessState()));
   readonly tierOptions = PROTOPIPE_BILLING_TIER_OPTIONS;
   readonly navSections = PROTOPIPE_BILLING_NAV_SECTIONS;

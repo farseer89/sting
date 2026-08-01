@@ -2,18 +2,24 @@
   <div class="void__backdrop" aria-hidden="true"></div>
   <div class="void__veil" aria-hidden="true"></div>
 
-  <header class="void-topnav">
-    @if (product.logoUrl) {
-      <img
-        class="void-topnav__brand-logo"
-        [src]="product.logoUrl"
-        [alt]="product.displayName"
-        width="541"
-        height="209"
-      />
-    } @else {
-      <span class="void-topnav__brand">{{ product.displayName }}</span>
-    }
+  <header
+    class="void-topnav"
+    [class.void-topnav--rail-collapsed]="navCollapsed() && !isRailHidden()"
+    [class.void-topnav--rail-hidden]="isRailHidden()"
+  >
+    <div class="void-topnav__brand-slot">
+      @if (product.logoUrl) {
+        <img
+          class="void-topnav__brand-logo"
+          [src]="product.logoUrl"
+          [alt]="product.displayName"
+          width="541"
+          height="209"
+        />
+      } @else {
+        <span class="void-topnav__brand">{{ product.displayName }}</span>
+      }
+    </div>
     <nav class="void-topnav__links" aria-label="Primary">
       @if (!isRailHidden()) {
         <span class="void-topnav__tab void-topnav__tab--active">Content</span>

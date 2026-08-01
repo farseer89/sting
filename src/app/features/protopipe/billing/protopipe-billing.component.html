@@ -45,7 +45,7 @@
       }
     </nav>
 
-    <div class="bl-binder-panel">
+    <div class="bl-binder-panel" [class.bl-binder-panel--plans]="section() === 'plans'">
       @switch (section()) {
         @case ('overview') {
           <div class="bl-panel-head">
@@ -98,37 +98,46 @@
         }
 
         @case ('plans') {
-          <div class="bl-panel-head">
-            <div class="bl-panel-kicker">Billing · Plans</div>
-            <h2 class="bl-panel-title">Compare tiers</h2>
-            <p class="bl-panel-deck">
-              Three plans, one visibility loop. Advanced is the recommended starting point for
-              teams that want to write inside the workspace.
-            </p>
-          </div>
+          <div
+            class="bl-pricing"
+            [style.--bl-tier-count]="tierOptions.length"
+            aria-label="Plan comparison"
+          >
+            <div class="bl-panel-head bl-panel-head--center">
+              <div class="bl-panel-kicker">Billing · Plans</div>
+              <h2 class="bl-panel-title">Choose your tier</h2>
+              <p class="bl-panel-deck">
+                All plans include the visibility loop. Advanced is the best starting point for teams
+                writing inside SearchClimber.
+              </p>
+            </div>
 
-          <div class="bl-plan-matrix" aria-label="Plan comparison">
-            <div class="bl-plan-matrix__head">
-              <div class="bl-plan-matrix__corner" aria-hidden="true"></div>
+            <div class="bl-pricing-cards">
               @for (tier of tierOptions; track tier.id) {
                 @let state = tierState(tier);
                 <article
-                  class="bl-plan-matrix__col"
+                  class="bl-pricing-card"
                   [class.is-current]="state.isCurrent"
                   [class.is-recommended]="tier.id === recommendedTier"
                 >
-                  @if (tier.id === recommendedTier) {
-                    <span class="bl-plan-matrix__ribbon">Recommended</span>
-                  }
-                  <span class="bl-plan-matrix__eyebrow">{{ tier.eyebrow }}</span>
-                  <h3 class="bl-plan-matrix__name">{{ tier.name }}</h3>
-                  @if (state.isCurrent) {
-                    <span class="bl-plan-matrix__badge">Current</span>
-                  }
-                  <p class="bl-plan-matrix__deck">{{ tier.description }}</p>
+                  <div class="bl-pricing-card__top">
+                    @if (tier.id === recommendedTier) {
+                      <span class="bl-pricing-card__tag">Recommended</span>
+                    } @else if (state.isCurrent) {
+                      <span class="bl-pricing-card__tag bl-pricing-card__tag--current">Current</span>
+                    }
+                    <span class="bl-pricing-card__eyebrow">{{ tier.eyebrow }}</span>
+                    <h3 class="bl-pricing-card__name">{{ tier.name }}</h3>
+                    <p class="bl-pricing-card__price">
+                      <span class="bl-pricing-card__amount">{{ tier.priceLabel }}</span>
+                      <span class="bl-pricing-card__cadence">{{ tier.priceCadence }}</span>
+                    </p>
+                    <p class="bl-pricing-card__deck">{{ tier.description }}</p>
+                  </div>
                   <button
                     type="button"
-                    class="bl-plan-matrix__cta"
+                    class="bl-pricing-card__cta"
+                    [class.bl-pricing-card__cta--secondary]="tier.id !== recommendedTier && !state.isCurrent"
                     [disabled]="state.isCurrent || portalLoading()"
                     (click)="manageTier(tier)"
                   >
@@ -138,41 +147,55 @@
               }
             </div>
 
-            @for (group of comparisonGroups; track group.id) {
-              <div class="bl-plan-matrix__group">
-                <div class="bl-plan-matrix__group-label">{{ group.label }}</div>
-                @for (row of comparisonRows(group.id); track row.id) {
-                  <div class="bl-plan-matrix__row">
-                    <div class="bl-plan-matrix__feature">{{ row.label }}</div>
-                    @for (tier of tierOptions; track tier.id) {
-                      <div
-                        class="bl-plan-matrix__cell"
-                        [class.is-recommended]="tier.id === recommendedTier"
-                        [class.is-current]="tierState(tier).isCurrent"
-                      >
-                        @if (row.availability[tier.id]) {
-                          <span class="bl-plan-matrix__mark bl-plan-matrix__mark--yes" aria-label="Included">
-                            <i class="pi pi-check" aria-hidden="true"></i>
-                          </span>
-                        } @else {
-                          <span class="bl-plan-matrix__mark bl-plan-matrix__mark--no" aria-label="Not included">
-                            <i class="pi pi-minus" aria-hidden="true"></i>
-                          </span>
+            <div class="bl-pricing-table-wrap">
+              <div class="bl-pricing-table" role="table" aria-label="Feature comparison">
+                <div class="bl-pricing-table__head" role="row">
+                  <div class="bl-pricing-table__feature-col" role="columnheader">Features</div>
+                  @for (tier of tierOptions; track tier.id) {
+                    <div
+                      class="bl-pricing-table__tier-col"
+                      role="columnheader"
+                      [class.is-recommended]="tier.id === recommendedTier"
+                      [class.is-current]="tierState(tier).isCurrent"
+                    >
+                      {{ tier.name }}
+                    </div>
+                  }
+                </div>
+
+                @for (group of comparisonGroups; track group.id) {
+                  <div class="bl-pricing-table__group">
+                    <div class="bl-pricing-table__group-label">{{ group.label }}</div>
+                    @for (row of comparisonRows(group.id); track row.id) {
+                      <div class="bl-pricing-table__row" role="row">
+                        <div class="bl-pricing-table__feature-col" role="cell">{{ row.label }}</div>
+                        @for (tier of tierOptions; track tier.id) {
+                          <div
+                            class="bl-pricing-table__tier-col"
+                            role="cell"
+                            [class.is-recommended]="tier.id === recommendedTier"
+                            [class.is-current]="tierState(tier).isCurrent"
+                            [attr.data-tier]="tier.name"
+                          >
+                            @if (row.availability[tier.id]) {
+                              <span class="bl-pricing-table__mark bl-pricing-table__mark--yes" aria-label="Included">
+                                <i class="pi pi-check" aria-hidden="true"></i>
+                              </span>
+                            } @else {
+                              <span class="bl-pricing-table__mark bl-pricing-table__mark--no" aria-label="Not included">—</span>
+                            }
+                          </div>
                         }
                       </div>
                     }
                   </div>
                 }
               </div>
-            }
-
-            <div class="bl-plan-matrix__notes">
-              @for (tier of tierOptions; track tier.id) {
-                <p class="bl-plan-matrix__note">
-                  <strong>{{ tier.name }}:</strong> {{ tier.note }}
-                </p>
-              }
             </div>
+
+            <p class="bl-pricing-footnote">
+              Plan changes open in Stripe. Refresh billing status after returning to update access.
+            </p>
           </div>
         }
 

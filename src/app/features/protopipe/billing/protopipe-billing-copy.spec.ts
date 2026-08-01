@@ -50,12 +50,22 @@ describe('buildProtopipeBillingSummary', () => {
 describe('PROTOPIPE_BILLING_COMPARISON_ROWS', () => {
   it('groups writing features as Advanced+ only', () => {
     const writer = comparisonRowsForGroup('writing').find((row) => row.id === 'writer');
-    expect(writer?.availability).toEqual({ basic: false, advanced: true, pro: true });
+    expect(writer?.availability).toEqual({
+      basic: false,
+      advanced: true,
+      pro: true,
+      agency_pro: true,
+    });
   });
 
   it('groups production features as Pro only', () => {
     const batch = comparisonRowsForGroup('production').find((row) => row.id === 'batch-runs');
-    expect(batch?.availability).toEqual({ basic: false, advanced: false, pro: true });
+    expect(batch?.availability).toEqual({
+      basic: false,
+      advanced: false,
+      pro: true,
+      agency_pro: true,
+    });
   });
 });
 

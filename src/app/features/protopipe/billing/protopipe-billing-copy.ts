@@ -13,6 +13,8 @@ export interface ProtopipeBillingTierOption {
   id: ProtopipePlanTier;
   name: string;
   eyebrow: string;
+  priceLabel: string;
+  priceCadence: string;
   description: string;
   included: readonly string[];
   note: string;
@@ -61,49 +63,49 @@ export const PROTOPIPE_BILLING_COMPARISON_ROWS: readonly ProtopipeBillingCompari
     id: 'discovery',
     groupId: 'visibility',
     label: 'Discovery book onboarding',
-    availability: { basic: true, advanced: true, pro: true },
+    availability: { basic: true, advanced: true, pro: true, agency_pro: true },
   },
   {
     id: 'mentions',
     groupId: 'visibility',
     label: 'AI Mentions and content calendar',
-    availability: { basic: true, advanced: true, pro: true },
+    availability: { basic: true, advanced: true, pro: true, agency_pro: true },
   },
   {
     id: 'brief-export',
     groupId: 'visibility',
     label: 'Brief export from calendar items',
-    availability: { basic: true, advanced: true, pro: true },
+    availability: { basic: true, advanced: true, pro: true, agency_pro: true },
   },
   {
     id: 'writer',
     groupId: 'writing',
     label: 'Writing book and draft assistant',
-    availability: { basic: false, advanced: true, pro: true },
+    availability: { basic: false, advanced: true, pro: true, agency_pro: true },
   },
   {
     id: 'sharpen',
     groupId: 'writing',
     label: 'Sharpen gap cards and thought packs',
-    availability: { basic: false, advanced: true, pro: true },
+    availability: { basic: false, advanced: true, pro: true, agency_pro: true },
   },
   {
     id: 'article-gen',
     groupId: 'production',
     label: 'One-click article generation',
-    availability: { basic: false, advanced: false, pro: true },
+    availability: { basic: false, advanced: false, pro: true, agency_pro: true },
   },
   {
     id: 'batch-runs',
     groupId: 'production',
     label: 'Batch article runs',
-    availability: { basic: false, advanced: false, pro: true },
+    availability: { basic: false, advanced: false, pro: true, agency_pro: true },
   },
   {
     id: 'publishing',
     groupId: 'production',
     label: 'Publishing-oriented workflows',
-    availability: { basic: false, advanced: false, pro: true },
+    availability: { basic: false, advanced: false, pro: true, agency_pro: true },
   },
 ];
 
@@ -117,6 +119,7 @@ const TIER_RANK: Record<ProtopipePlanTier, number> = {
   basic: 1,
   advanced: 2,
   pro: 3,
+  agency_pro: 4,
 };
 
 export const PROTOPIPE_BILLING_TIER_OPTIONS: readonly ProtopipeBillingTierOption[] = [
@@ -124,7 +127,9 @@ export const PROTOPIPE_BILLING_TIER_OPTIONS: readonly ProtopipeBillingTierOption
     id: 'basic',
     name: 'Basic',
     eyebrow: 'AI Visibility + Plan',
-    description: 'See where AI mentions you, where it misses you, and what to publish next.',
+    priceLabel: '$99',
+    priceCadence: 'per month',
+    description: 'See where AI mentions you and what to publish next.',
     included: [
       'Discovery book onboarding',
       'Keyword discovery and confirmation',
@@ -137,7 +142,9 @@ export const PROTOPIPE_BILLING_TIER_OPTIONS: readonly ProtopipeBillingTierOption
     id: 'advanced',
     name: 'Advanced',
     eyebrow: 'Write with AI',
-    description: 'Everything in Basic, plus the tools to fix AI visibility gaps inside the workspace.',
+    priceLabel: '$199',
+    priceCadence: 'per month',
+    description: 'Everything in Basic, plus writing tools inside the workspace.',
     included: ['Writing book', 'Sharpen gap cards', 'Thought packs', 'Advanced trial access'],
     note: 'Best for hands-on teams that want to turn plan items into drafts.',
   },
@@ -145,7 +152,9 @@ export const PROTOPIPE_BILLING_TIER_OPTIONS: readonly ProtopipeBillingTierOption
     id: 'pro',
     name: 'Pro',
     eyebrow: 'Done for you',
-    description: 'Everything in Advanced, plus generated article runs and publishing-oriented workflows.',
+    priceLabel: '$399',
+    priceCadence: 'per month',
+    description: 'Everything in Advanced, plus article runs and publishing workflows.',
     included: ['One-click article generation', 'Batch article runs', 'Publishing workflows', 'Future QA tier'],
     note: 'Best for testing the paid action path and higher-touch content production.',
   },
@@ -165,6 +174,7 @@ function formatDate(value?: string): string | null {
 }
 
 function titleCasePlan(planTier: ProtopipeAccessState['planTier']): string {
+  if (planTier === 'agency_pro') return 'Agency Pro';
   return `${planTier.charAt(0).toUpperCase()}${planTier.slice(1)}`;
 }
 

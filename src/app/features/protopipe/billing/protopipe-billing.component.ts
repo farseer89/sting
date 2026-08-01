@@ -63,13 +63,13 @@ export class ProtopipeBillingComponent {
   async manageTier(tier: ProtopipeBillingTierOption): Promise<void> {
     const state = this.tierState(tier);
     if (state.isCurrent) return;
-    await this.manageBilling();
+    await this.manageBilling(tier.id);
   }
 
-  async manageBilling(): Promise<void> {
+  async manageBilling(planTier?: ProtopipeBillingTierOption['id']): Promise<void> {
     this.refreshMessage.set(null);
     try {
-      await this.portal.openPortal(this.product.routes.billing);
+      await this.portal.openPortal(this.product.routes.billing, planTier);
     } catch {
       // Error message is exposed by the shared portal service.
     }

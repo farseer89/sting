@@ -11,7 +11,7 @@ export class ProtopipeBillingPortalService {
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
 
-  async openPortal(returnPath: string): Promise<void> {
+  async openPortal(returnPath: string, planTier?: string): Promise<void> {
     if (this.loading()) return;
     this.loading.set(true);
     this.error.set(null);
@@ -20,6 +20,7 @@ export class ProtopipeBillingPortalService {
       const session = await this.billing.createPortalSession({
         productKey: this.product.billing.productKey,
         returnUrl: new URL(returnPath, window.location.origin).toString(),
+        ...(planTier ? { planTier: planTier as 'basic' | 'advanced' | 'pro' | 'agency_pro' } : {}),
       });
       window.location.href = session.url;
     } catch (err) {

@@ -1,6 +1,6 @@
 import type { SubscriptionState, SubscriptionStatus } from '@hive/contracts';
 
-export type ProtopipePlanTier = 'basic' | 'advanced' | 'pro';
+export type ProtopipePlanTier = 'basic' | 'advanced' | 'pro' | 'agency_pro';
 
 export type ProtopipeBillingStatus = SubscriptionStatus | 'expired';
 
@@ -52,7 +52,7 @@ const PRO_CAPABILITIES: readonly ProtopipeCapability[] = [
 const ACTIVE_STATUSES = new Set<SubscriptionStatus>(['trialing', 'active']);
 
 function normalizePlanTier(value?: string): ProtopipePlanTier {
-  if (value === 'advanced' || value === 'pro') return value;
+  if (value === 'advanced' || value === 'pro' || value === 'agency_pro') return value;
   return 'basic';
 }
 
@@ -65,7 +65,7 @@ function trialDaysRemaining(trialEndsAt?: string): number | undefined {
 }
 
 function capabilitiesForTier(tier: ProtopipePlanTier): readonly ProtopipeCapability[] {
-  if (tier === 'pro') return PRO_CAPABILITIES;
+  if (tier === 'agency_pro' || tier === 'pro') return PRO_CAPABILITIES;
   if (tier === 'advanced') return ADVANCED_CAPABILITIES;
   return BASIC_CAPABILITIES;
 }
@@ -105,7 +105,10 @@ export function buildProtopipeAccessState(
     isTrialExpired,
     isReadOnly,
     statusLabel: statusLabel(billingStatus, planTier, daysRemaining),
-    upgradeLabel: planTier === 'pro' ? 'Manage plan' : `Upgrade to ${planTier === 'basic' ? 'Advanced' : 'Pro'}`,
+    upgradeLabel:
+      planTier === 'agency_pro' || planTier === 'pro'
+        ? 'Manage plan'
+        : `Upgrade to ${planTier === 'basic' ? 'Advanced' : 'Pro'}`,
   };
 }
 

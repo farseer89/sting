@@ -11,24 +11,34 @@ export class ProtopipeBillingPortalService {
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
 
-  async openPortal(returnPath: string, planTier?: string): Promise<void> {
-    if (this.loading()) return;
+  /** Opens Stripe billing. Returns true when navigating away to Stripe. */
+  async openPortal(returnPath: string, planTier?: string): Promise<boolean> {
+    if (this.loading()) return false;
     this.loading.set(true);
     this.error.set(null);
 
     try {
+      const returnUrl = new URL(returnPath, window.location.origin).toString();
       const session = await this.billing.createPortalSession({
         productKey: this.product.billing.productKey,
-        returnUrl: new URL(returnPath, window.location.origin).toString(),
+        returnUrl,
         ...(planTier ? { planTier: planTier as 'basic' | 'advanced' | 'pro' | 'agency_pro' } : {}),
       });
-      window.location.href = session.url;
+
+      const target = new URL(session.url, window.location.origin);
+      const current = new URL(window.location.href);
+      if (target.origin === current.origin && target.pathname === current.pathname) {
+        this.loading.set(false);
+        return false;
+      }
+
+      window.location.assign(session.url);
+      return true;
     } catch (err) {
       const message = parseBillingApiError(err, 'Could not open Stripe billing. Please try again.');
       this.error.set(message);
-      throw new Error(message);
-    } finally {
       this.loading.set(false);
+      throw new Error(message);
     }
   }
 }

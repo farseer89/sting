@@ -69,7 +69,11 @@ export class ProtopipeBillingComponent {
   async manageBilling(planTier?: ProtopipeBillingTierOption['id']): Promise<void> {
     this.refreshMessage.set(null);
     try {
-      await this.portal.openPortal(this.product.routes.billing, planTier);
+      const navigated = await this.portal.openPortal(this.product.routes.billing, planTier);
+      if (!navigated) {
+        await this.strategy.reload();
+        this.refreshMessage.set('Billing status refreshed.');
+      }
     } catch {
       // Error message is exposed by the shared portal service.
     }

@@ -64,37 +64,38 @@
 }
 
 .void-topnav {
-  display: flex;
-  align-items: flex-end;
+  display: grid;
+  grid-template-columns: var(--shell-rail-width) minmax(0, 1fr) auto;
+  grid-template-areas: 'brand tabs right';
+  align-items: end;
   gap: 0;
   flex-shrink: 0;
-  padding: 0.45rem 0.85rem 0;
+  padding: 0.45rem 0.85rem 0 0;
   font-family: var(--shell-font);
 }
 
-// Logo column — same width as void-rail so folder tabs sit above the main pane
+.void-topnav--rail-collapsed {
+  grid-template-columns: var(--shell-rail-width-collapsed) minmax(0, 1fr) auto;
+}
+
+.void-topnav--rail-hidden {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+// Logo column — locked to rail width so it centers over the sidebar below
 .void-topnav__brand-slot {
-  flex: 0 0 var(--shell-rail-width);
-  width: var(--shell-rail-width);
+  grid-area: brand;
   display: flex;
   align-items: center;
   justify-content: center;
-  align-self: center;
-  padding: 0 0.35rem;
+  width: 100%;
+  min-width: 0;
   margin-bottom: 0.45rem;
   box-sizing: border-box;
 }
 
-.void-topnav--rail-collapsed .void-topnav__brand-slot {
-  flex-basis: var(--shell-rail-width-collapsed);
-  width: var(--shell-rail-width-collapsed);
-}
-
 .void-topnav--rail-hidden .void-topnav__brand-slot {
-  flex: 0 0 auto;
   width: auto;
-  min-width: 0;
-  padding-left: 0;
 }
 
 .void-topnav__brand {
@@ -111,14 +112,15 @@
   display: block;
   height: 2.125rem;
   width: auto;
-  max-width: calc(var(--shell-rail-width) - 1.25rem);
+  max-width: calc(100% - 0.5rem);
+  margin-inline: auto;
   object-fit: contain;
   object-position: center center;
   user-select: none;
 }
 
 .void-topnav--rail-collapsed .void-topnav__brand-logo {
-  max-width: calc(var(--shell-rail-width-collapsed) - 0.5rem);
+  max-width: calc(100% - 0.25rem);
 }
 
 .void-topnav__brand-dot {
@@ -127,14 +129,16 @@
 }
 
 .void-topnav__links {
+  grid-area: tabs;
   display: flex;
   align-items: flex-end;
   gap: 0;
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .void-topnav__right {
-  margin-left: auto;
+  grid-area: right;
   align-self: center;
   margin-bottom: 0.45rem;
   flex-shrink: 0;

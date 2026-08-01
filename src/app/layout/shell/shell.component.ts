@@ -9,6 +9,7 @@ import { Toast } from 'primeng/toast';
 import { Tooltip } from 'primeng/tooltip';
 import { filter, Subscription } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
+import { PRODUCT_CONFIG } from '../../core/config/product-config';
 import { NavMenuItem, NavigationService } from '../../core/config/navigation.service';
 import {
   MAX_ROOT_FONT_PX,
@@ -50,6 +51,7 @@ export class ShellComponent implements OnInit, OnDestroy {
   private readonly messages = inject(MessageService);
   private readonly content = inject(ProtopipeContentService);
   private readonly themeService = inject(ThemeService);
+  private readonly product = inject(PRODUCT_CONFIG);
 
   readonly currentThemeId = this.themeService.themeId;
 
@@ -80,7 +82,9 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   private routerSub?: Subscription;
 
-  readonly logoSrc = 'assets/images/blocks/logos/fieldwave.png';
+  readonly logoSrc =
+    this.product.logoUrl ?? 'assets/images/blocks/logos/fieldwave.png';
+  readonly logoAlt = this.product.displayName;
   readonly defaultAvatar = 'assets/images/blocks/avatars/circle/avatar-f-1.png';
 
   navigationItems: NavMenuItem[] = [];

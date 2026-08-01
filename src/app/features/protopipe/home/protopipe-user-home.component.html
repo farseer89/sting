@@ -3,7 +3,17 @@
   <div class="void__veil" aria-hidden="true"></div>
 
   <header class="void-topnav">
-    <span class="void-topnav__brand">{{ product.displayName }}</span>
+    @if (product.logoUrl) {
+      <img
+        class="void-topnav__brand-logo"
+        [src]="product.logoUrl"
+        [alt]="product.displayName"
+        width="541"
+        height="209"
+      />
+    } @else {
+      <span class="void-topnav__brand">{{ product.displayName }}</span>
+    }
     <nav class="void-topnav__links" aria-label="Primary">
       @if (!isRailHidden()) {
         <span class="void-topnav__tab void-topnav__tab--active">Content</span>

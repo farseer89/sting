@@ -18,7 +18,7 @@
         class="flex align-items-center justify-content-between sidebar-logo-wrap flex-shrink-0"
         style="height: 60px"
       >
-        <img [src]="logoSrc" alt="Fieldwave" height="30" />
+        <img class="sidebar-brand-logo" [src]="logoSrc" [alt]="logoAlt" />
         <button
           pRipple
           type="button"
@@ -195,7 +195,7 @@
       </div>
 
       <div class="top-logo-center" [class.hidden]="mobileMenuOpen">
-        <img [src]="logoSrc" alt="Fieldwave" height="26" />
+        <img class="top-brand-logo" [src]="logoSrc" [alt]="logoAlt" />
       </div>
 
       <div class="flex align-items-center">

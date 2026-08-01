@@ -3,6 +3,7 @@ import type { ProductConfig } from '../../../core/config/product-config';
 export const protopipeProductConfig: ProductConfig = {
   id: 'protopipe',
   displayName: 'SearchClimber.io',
+  logoUrl: 'assets/images/logos/searchclimber-logo.png',
   auth: {
     loginWelcome: 'Welcome to SearchClimber.io',
     loginTagline: 'Sign in to your SEO workspace',

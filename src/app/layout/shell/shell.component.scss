@@ -38,9 +38,26 @@
   color: var(--text-color);
 }
 
-// Sidebar logo wrapper – center the Fieldwave logo nicely in the header strip
+// Sidebar logo wrapper – align product logo in the header strip
 .sidebar-logo-wrap {
   padding: 0 1rem;
+}
+
+.sidebar-brand-logo {
+  display: block;
+  height: 2rem;
+  width: auto;
+  max-width: calc(100% - 2.5rem);
+  object-fit: contain;
+  object-position: left center;
+}
+
+.top-brand-logo {
+  display: block;
+  height: 1.75rem;
+  width: auto;
+  max-width: 11rem;
+  object-fit: contain;
 }
 
 // Top nav centered logo when sidebar is hidden/collapsed

@@ -35,6 +35,8 @@ export interface ProductOnboardingConfig {
 export interface ProductConfig {
   id: string;
   displayName: string;
+  /** Transparent PNG for sidebar / top-nav branding. Falls back to displayName text when unset. */
+  logoUrl?: string;
   auth: ProductAuthConfig;
   billing: ProductBillingConfig;
   routes: ProductRoutesConfig;

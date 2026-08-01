@@ -992,6 +992,15 @@
   overflow: hidden;
 }
 
+.home-billing {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
 .home-welcome {
   align-items: center;
   justify-content: center;

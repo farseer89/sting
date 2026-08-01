@@ -4,9 +4,14 @@ import { PRODUCT_CONFIG } from '../../../core/config/product-config';
 import { buildProtopipeAccessState } from '../access/protopipe-access.model';
 import { ProtopipeStrategyService } from '../protopipe-strategy.service';
 import {
+  PROTOPIPE_BILLING_COMPARISON_GROUPS,
+  PROTOPIPE_BILLING_NAV_SECTIONS,
+  PROTOPIPE_BILLING_RECOMMENDED_TIER,
   PROTOPIPE_BILLING_TIER_OPTIONS,
+  type ProtopipeBillingSection,
   type ProtopipeBillingTierOption,
   buildProtopipeBillingSummary,
+  comparisonRowsForGroup,
   resolveProtopipeBillingTierState,
 } from './protopipe-billing-copy';
 import { ProtopipeBillingPortalService } from './protopipe-billing-portal.service';
@@ -28,6 +33,10 @@ export class ProtopipeBillingComponent {
   readonly accessState = computed(() => buildProtopipeAccessState(this.subscription()));
   readonly summary = computed(() => buildProtopipeBillingSummary(this.subscription(), this.accessState()));
   readonly tierOptions = PROTOPIPE_BILLING_TIER_OPTIONS;
+  readonly navSections = PROTOPIPE_BILLING_NAV_SECTIONS;
+  readonly comparisonGroups = PROTOPIPE_BILLING_COMPARISON_GROUPS;
+  readonly recommendedTier = PROTOPIPE_BILLING_RECOMMENDED_TIER;
+  readonly section = signal<ProtopipeBillingSection>('overview');
   readonly portalLoading = this.portal.loading;
   readonly portalError = this.portal.error;
   readonly refreshLoading = signal(false);
@@ -41,6 +50,14 @@ export class ProtopipeBillingComponent {
 
   tierState(tier: ProtopipeBillingTierOption) {
     return resolveProtopipeBillingTierState(this.accessState(), tier);
+  }
+
+  selectSection(section: ProtopipeBillingSection): void {
+    this.section.set(section);
+  }
+
+  comparisonRows(groupId: string) {
+    return comparisonRowsForGroup(groupId);
   }
 
   async manageTier(tier: ProtopipeBillingTierOption): Promise<void> {

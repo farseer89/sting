@@ -23,6 +23,96 @@ export interface ProtopipeBillingTierState {
   actionLabel: string;
 }
 
+export type ProtopipeBillingSection = 'overview' | 'plans' | 'stripe';
+
+export interface ProtopipeBillingNavSection {
+  id: ProtopipeBillingSection;
+  navLabel: string;
+}
+
+export interface ProtopipeBillingComparisonGroup {
+  id: string;
+  label: string;
+}
+
+export interface ProtopipeBillingComparisonRow {
+  id: string;
+  groupId: string;
+  label: string;
+  availability: Record<ProtopipePlanTier, boolean>;
+}
+
+export const PROTOPIPE_BILLING_NAV_SECTIONS: readonly ProtopipeBillingNavSection[] = [
+  { id: 'overview', navLabel: 'Overview' },
+  { id: 'plans', navLabel: 'Compare plans' },
+  { id: 'stripe', navLabel: 'Stripe portal' },
+];
+
+export const PROTOPIPE_BILLING_RECOMMENDED_TIER: ProtopipePlanTier = 'advanced';
+
+export const PROTOPIPE_BILLING_COMPARISON_GROUPS: readonly ProtopipeBillingComparisonGroup[] = [
+  { id: 'visibility', label: 'Visibility & plan' },
+  { id: 'writing', label: 'Write with AI' },
+  { id: 'production', label: 'Done for you' },
+];
+
+export const PROTOPIPE_BILLING_COMPARISON_ROWS: readonly ProtopipeBillingComparisonRow[] = [
+  {
+    id: 'discovery',
+    groupId: 'visibility',
+    label: 'Discovery book onboarding',
+    availability: { basic: true, advanced: true, pro: true },
+  },
+  {
+    id: 'mentions',
+    groupId: 'visibility',
+    label: 'AI Mentions and content calendar',
+    availability: { basic: true, advanced: true, pro: true },
+  },
+  {
+    id: 'brief-export',
+    groupId: 'visibility',
+    label: 'Brief export from calendar items',
+    availability: { basic: true, advanced: true, pro: true },
+  },
+  {
+    id: 'writer',
+    groupId: 'writing',
+    label: 'Writing book and draft assistant',
+    availability: { basic: false, advanced: true, pro: true },
+  },
+  {
+    id: 'sharpen',
+    groupId: 'writing',
+    label: 'Sharpen gap cards and thought packs',
+    availability: { basic: false, advanced: true, pro: true },
+  },
+  {
+    id: 'article-gen',
+    groupId: 'production',
+    label: 'One-click article generation',
+    availability: { basic: false, advanced: false, pro: true },
+  },
+  {
+    id: 'batch-runs',
+    groupId: 'production',
+    label: 'Batch article runs',
+    availability: { basic: false, advanced: false, pro: true },
+  },
+  {
+    id: 'publishing',
+    groupId: 'production',
+    label: 'Publishing-oriented workflows',
+    availability: { basic: false, advanced: false, pro: true },
+  },
+];
+
+export function comparisonRowsForGroup(
+  groupId: string,
+): readonly ProtopipeBillingComparisonRow[] {
+  return PROTOPIPE_BILLING_COMPARISON_ROWS.filter((row) => row.groupId === groupId);
+}
+
 const TIER_RANK: Record<ProtopipePlanTier, number> = {
   basic: 1,
   advanced: 2,

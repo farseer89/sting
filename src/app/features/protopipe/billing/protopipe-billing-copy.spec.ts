@@ -4,6 +4,7 @@ import { buildProtopipeAccessState } from '../access/protopipe-access.model';
 import {
   PROTOPIPE_BILLING_TIER_OPTIONS,
   buildProtopipeBillingSummary,
+  comparisonRowsForGroup,
   resolveProtopipeBillingTierState,
 } from './protopipe-billing-copy';
 
@@ -43,6 +44,18 @@ describe('buildProtopipeBillingSummary', () => {
 
     expect(summary.statusDetail).toContain('not currently active');
     expect(summary.nextStep).toContain('manage the subscription');
+  });
+});
+
+describe('PROTOPIPE_BILLING_COMPARISON_ROWS', () => {
+  it('groups writing features as Advanced+ only', () => {
+    const writer = comparisonRowsForGroup('writing').find((row) => row.id === 'writer');
+    expect(writer?.availability).toEqual({ basic: false, advanced: true, pro: true });
+  });
+
+  it('groups production features as Pro only', () => {
+    const batch = comparisonRowsForGroup('production').find((row) => row.id === 'batch-runs');
+    expect(batch?.availability).toEqual({ basic: false, advanced: false, pro: true });
   });
 });
 

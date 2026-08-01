@@ -38,9 +38,16 @@
   color: var(--text-color);
 }
 
-// Sidebar logo wrapper – align product logo in the header strip
+// Sidebar logo wrapper – center product logo over the nav column
 .sidebar-logo-wrap {
   padding: 0 1rem;
+  justify-content: center !important;
+}
+
+@media (max-width: 991px) {
+  .sidebar-logo-wrap {
+    justify-content: space-between !important;
+  }
 }
 
 .sidebar-brand-logo {
@@ -49,7 +56,7 @@
   width: auto;
   max-width: calc(100% - 2.5rem);
   object-fit: contain;
-  object-position: left center;
+  object-position: center center;
 }
 
 .top-brand-logo {

@@ -759,13 +759,13 @@ export class DiscoveryBookOnboardingStore {
   }
 
   async save(): Promise<string | null> {
+    this.flushDraftInputs();
+    
     const validation = this.fullValidationError();
     if (validation) {
       this.saveError.set(validation);
       return null;
     }
-
-    this.flushDraftInputs();
 
     const siteId = this.strategy.siteId();
     if (!siteId) {

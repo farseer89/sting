@@ -5,55 +5,57 @@
   <div class="kb-onboarding-body">
     @switch (stepId()) {
     @case ('onboarding:getting-started') {
-      <section class="kb-start-card" aria-labelledby="kb-start-heading">
-        <div class="kb-start-card__intro">
-          <span class="kb-start-card__badge">Discovery setup</span>
-          <h3 id="kb-start-heading" class="kb-start-card__title">Pick the starting point for this book.</h3>
-          <p class="kb-start-card__body">
-            SearchClimber can begin with an existing site scan or a clean strategy brief. Choose the path that matches where this project is today.
-          </p>
-        </div>
+      <div class="kb-wizard">
+        <section class="kb-wizard__main">
+          <div class="kb-start-intro">
+            <span class="kb-start-intro__badge">Getting started</span>
+            <h3 class="kb-start-intro__title">Tell us about your business</h3>
+            <p class="kb-start-intro__body">
+              We'll help you discover keyword opportunities and content gaps. Choose how you'd like to start.
+            </p>
+          </div>
 
-        <div class="kb-scope-picker" role="radiogroup" aria-label="Onboarding path">
-          @for (option of onboardingModeOptions; track option.id) {
-            <button
-              type="button"
-              class="kb-scope-option"
-              role="radio"
-              [class.kb-scope-option--active]="draft().onboardingMode === option.id"
-              [attr.aria-checked]="draft().onboardingMode === option.id"
-              (click)="store.selectMode(option.id)"
-            >
-              <span class="kb-scope-option__icon" aria-hidden="true">
-                <i [class]="option.icon"></i>
-              </span>
-              <span class="kb-scope-option__body">
-                <span class="kb-scope-option__title">{{ option.label }}</span>
-                <span class="kb-scope-option__desc">{{ option.description }}</span>
-              </span>
-              <span class="kb-scope-option__check" aria-hidden="true">
-                <i class="pi pi-check-circle"></i>
-              </span>
-            </button>
+          <div class="kb-start-options" role="radiogroup" aria-label="Starting point">
+            @for (option of onboardingModeOptions; track option.id) {
+              <button
+                type="button"
+                class="kb-start-option"
+                role="radio"
+                [class.kb-start-option--active]="draft().onboardingMode === option.id"
+                [attr.aria-checked]="draft().onboardingMode === option.id"
+                (click)="store.selectMode(option.id)"
+              >
+                <span class="kb-start-option__icon" aria-hidden="true">
+                  <i [class]="option.icon"></i>
+                </span>
+                <span class="kb-start-option__body">
+                  <span class="kb-start-option__title">{{ option.label }}</span>
+                  <span class="kb-start-option__desc">{{ option.description }}</span>
+                </span>
+                <span class="kb-start-option__check" aria-hidden="true">
+                  <i class="pi pi-check-circle"></i>
+                </span>
+              </button>
+            }
+          </div>
+
+          @if (draft().onboardingMode === 'existing_site') {
+            <label class="kb-wizard__field">
+              <span class="kb-wizard__label">Your website</span>
+              <input
+                id="discoveryBookWebsiteUrl"
+                type="url"
+                pInputText
+                [ngModel]="draft().websiteUrl"
+                (ngModelChange)="store.setWebsiteUrl($event)"
+                placeholder="mauielectric.com"
+                autocomplete="url"
+              />
+              <p class="kb-wizard__hint">We'll scan your site to pre-fill services and find keyword opportunities.</p>
+            </label>
           }
-        </div>
-      </section>
-
-      @if (draft().onboardingMode === 'existing_site') {
-        <div class="kb-site-field">
-          <label class="kb-field__label" for="discoveryBookWebsiteUrl">Your website</label>
-          <input
-            id="discoveryBookWebsiteUrl"
-            type="url"
-            pInputText
-            [ngModel]="draft().websiteUrl"
-            (ngModelChange)="store.setWebsiteUrl($event)"
-            placeholder="mauielectric.com"
-            autocomplete="url"
-          />
-          <p class="kb-site-field__hint">We'll scan it to pre-fill your services and find ranking gaps.</p>
-        </div>
-      }
+        </section>
+      </div>
     }
 
     @case ('onboarding:offer') {

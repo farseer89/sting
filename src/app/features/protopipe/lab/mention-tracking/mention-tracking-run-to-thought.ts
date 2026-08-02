@@ -49,7 +49,7 @@ const STEP_META: Record<MentionTrackingStepId, { label: string; summary: string 
   },
   capture_responses: {
     label: 'Capture responses',
-    summary: 'Run prompts against Gemini (2 runs per prompt)',
+    summary: 'Run prompts against configured AI engines',
   },
   parse_mentions: {
     label: 'Parse mentions',
@@ -638,7 +638,7 @@ function capturesMarkdown(
   for (const prompt of output.prompts) {
     const captures = output.captures
       .filter((c) => c.promptId === prompt.id)
-      .sort((a, b) => a.runIndex - b.runIndex);
+      .sort((a, b) => a.runIndex - b.runIndex || a.engine.localeCompare(b.engine));
     if (!captures.length) continue;
 
     sections.push(`## ${TYPE_LABELS[prompt.promptType]} · ${prompt.text}`);
@@ -649,11 +649,14 @@ function capturesMarkdown(
     sections.push('');
   }
 
+  const engines = [...new Set(output.captures.map((c) => c.engine))].sort();
+  const engineLabel = engines.join(', ') || 'AI engines';
+
   return {
-    id: 'gemini-captures',
-    label: 'Gemini raw responses',
+    id: 'ai-captures',
+    label: 'AI engine raw responses',
     kind: 'markdown',
-    summary: `${output.captures.length} capture(s) across ${output.prompts.length} prompt(s)`,
+    summary: `${output.captures.length} capture(s) across ${output.prompts.length} prompt(s) · ${engineLabel}`,
     data: sections.join('\n'),
   };
 }
@@ -701,7 +704,7 @@ function summaryByTypeTable(output: ProtopipeMentionTrackingOutput): ThoughtArti
     'Visibility by prompt type',
     ['Type', 'Prompts', 'Mention rate', 'Consistency', 'Top gap'],
     rows,
-    'Sampled estimate — Gemini only',
+    'Sampled estimate across configured AI engines',
   );
 }
 
@@ -728,7 +731,7 @@ function stepOutput(
         text(
           'disclaimer',
           'Methodology',
-          'Sampled estimate from Gemini v1. Prompts run twice per check for consistency. Not user session data or Google AI Overviews.',
+          'Sampled estimate across configured AI engines. Prompts run twice per engine per check for consistency. Not user session data or Google AI Overviews.',
         ),
       ];
     default:
@@ -789,14 +792,19 @@ export function mentionSnapshotToThought(snapshot: ProtopipeSiteMentionSnapshot)
   const mentionRate =
     totalRuns > 0 ? Math.round((mentionedRuns / totalRuns) * 100) : null;
 
+  const engines = output
+    ? [...new Set(output.captures.map((c) => c.engine))].sort()
+    : [];
+  const engineLabel = engines.length ? engines.join(', ') : 'Gemini';
+
   return {
     id: snapshot.id,
     thinkerKind: 'mention_tracking',
     title: 'AI Mentions tracking',
     summary:
       output && mentionRate != null
-        ? `${output.prompts.length} prompts · ${mentionRate}% mention rate · Gemini sampled estimate`
-        : 'AI visibility check across Gemini',
+        ? `${output.prompts.length} prompts · ${mentionRate}% mention rate · ${engineLabel}`
+        : `AI visibility check across configured engines`,
     status: runStatus,
     currentStepId: snapshot.currentStep,
     steps,
@@ -823,13 +831,18 @@ export function mentionTrackingToThought(base: Thought): Thought {
   const mentionRate =
     totalRuns > 0 ? Math.round((mentionedRuns / totalRuns) * 100) : null;
 
+  const engines = output
+    ? [...new Set(output.captures.map((c) => c.engine))].sort()
+    : [];
+  const engineLabel = engines.length ? engines.join(', ') : 'Gemini';
+
   return {
     ...base,
     thinkerKind: 'mention_tracking',
     title: base.title?.trim() ? base.title : 'AI Mentions tracking',
     summary:
       output && mentionRate != null
-        ? `${output.prompts.length} prompts · ${mentionRate}% mention rate · Gemini sampled estimate`
+        ? `${output.prompts.length} prompts · ${mentionRate}% mention rate · ${engineLabel}`
         : base.summary,
     steps,
     outputs: output
@@ -843,8 +856,7 @@ export function mentionTrackingToThought(base: Thought): Thought {
                 'source-map',
                 'visibility-report',
               ].includes(port.portId),
-          ),
-          ...outputPorts(output).filter(
+          ),          ...outputPorts(output).filter(
             (port) => port.portId !== 'snapshot' || !base.outputs.some((p) => p.portId === 'snapshot'),
           ),
         ]

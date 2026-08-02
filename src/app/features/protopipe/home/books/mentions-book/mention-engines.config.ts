@@ -24,16 +24,14 @@ export const MENTION_ENGINES: MentionEngineUiConfig[] = [
     id: 'chatgpt',
     label: 'ChatGPT',
     shortLabel: 'ChatGPT',
-    status: 'coming_soon',
-    eta: 'v1.1',
+    status: 'active',
     note: 'OpenAI answers & recommendations',
   },
   {
     id: 'perplexity',
     label: 'Perplexity',
     shortLabel: 'Perplexity',
-    status: 'coming_soon',
-    eta: 'v1.1',
+    status: 'active',
     note: 'Sonar Pro citation snapshots',
   },
   {

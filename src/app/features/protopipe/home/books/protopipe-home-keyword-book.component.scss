@@ -233,9 +233,10 @@ $kb-accent: #2563eb;
 }
 
 .kb-panel app-protopipe-discovery-book-onboarding-panel {
-  display: flex;
-  flex: 1 1 auto;
-  min-height: 0;
+  display: block;
+  flex: none;
+  min-height: auto;
+  width: 100%;
 }
 
 .kb-panel-kicker {

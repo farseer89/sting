@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   effect,
+  HostBinding,
   inject,
   input,
   output,
@@ -18,11 +19,6 @@ import {
   MARKET_SCOPE_OPTIONS,
   ONBOARDING_MODE_OPTIONS,
 } from '../../onboarding/onboarding-market.constants';
-import {
-  customerProfileInitials,
-  customerProfileSubtitle,
-  customerProfileTitle,
-} from './discovery-book-customer-profile.util';
 import { DiscoveryBookOnboardingStore } from './discovery-book-onboarding.store';
 import {
   isFirstOnboardingStep,
@@ -52,6 +48,11 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
 
   readonly draft = this.store.draftSnapshot;
 
+  @HostBinding('class.kb-onboarding-panel--wizard')
+  get wizardPanelHost(): boolean {
+    return this.isCoreWizardStep();
+  }
+
   constructor() {
     effect(() => {
       if (this.stepId() === 'onboarding:offer') {
@@ -76,6 +77,7 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
   isCoreWizardStep(): boolean {
     const id = this.stepId();
     return (
+      id === 'onboarding:getting-started' ||
       id === 'onboarding:offer' ||
       id === 'onboarding:customers' ||
       id === 'onboarding:competition' ||
@@ -113,26 +115,6 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
       'Needs emergency help after a panel issue',
     ];
     return samples[index] ?? 'What does this person want?';
-  }
-
-  isCustomerCardFilled(slot: number): boolean {
-    return (this.draft().customerAvatars[slot] ?? '').trim().length > 0;
-  }
-
-  customerText(slot: number): string {
-    return this.draft().customerAvatars[slot] ?? '';
-  }
-
-  profileInitials(slot: number): string {
-    return customerProfileInitials(this.customerText(slot));
-  }
-
-  profileTitle(slot: number): string {
-    return customerProfileTitle(this.customerText(slot), slot);
-  }
-
-  profileSubtitle(slot: number): string {
-    return customerProfileSubtitle(this.customerText(slot), slot);
   }
 
   continue(): void {

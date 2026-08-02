@@ -215,35 +215,70 @@
         }
 
         <section class="kb-wizard__main">
-          <div class="kb-wizard__profiles" role="group" aria-label="Customer profiles">
-            @for (slot of avatarSlots(); track slot) {
-              <article class="kb-wizard__profile" [class.kb-wizard__profile--primary]="slot === 0">
-                <header class="kb-wizard__profile-head">
-                  <span class="kb-wizard__profile-badge">{{ slot === 0 ? 'Primary' : 'Profile ' + (slot + 1) }}</span>
-                  @if (slot > 0) {
-                    <button
-                      type="button"
-                      class="kb-wizard__chip-remove"
-                      (click)="store.removeCustomerAvatar(slot)"
-                      [attr.aria-label]="'Remove profile ' + (slot + 1)"
-                    >
-                      <i class="pi pi-times" aria-hidden="true"></i>
-                    </button>
-                  }
-                </header>
+          <label class="kb-wizard__field">
+            <span class="kb-wizard__label">Primary customer</span>
+            <textarea
+              rows="3"
+              class="kb-wizard__textarea"
+              [ngModel]="draft().customerAvatars[0]"
+              (ngModelChange)="store.updateCustomerAvatar(0, $event)"
+              [placeholder]="avatarPlaceholder(0)"
+              aria-label="Primary customer description"
+              aria-required="true"
+            ></textarea>
+          </label>
 
+          @if (store.avatarEnrichmentFor(0); as pending) {
+            <div class="kb-wizard__enrich" aria-live="polite">
+              <p class="kb-wizard__hint">Suggested detail</p>
+              <p class="kb-wizard__enrich-text">{{ pending.enriched }}</p>
+              <div class="kb-wizard__enrich-actions">
+                <button type="button" class="kb-wizard__input-btn" (click)="store.confirmAvatarEnrichment(0)">
+                  Use this
+                </button>
+                <button type="button" class="kb-wizard__link-btn" (click)="store.dismissAvatarEnrichment(0)">
+                  Keep mine
+                </button>
+              </div>
+            </div>
+          } @else if (store.canEnrichCustomerAvatar(0)) {
+            <button
+              type="button"
+              class="kb-wizard__link-btn"
+              (click)="store.enrichCustomerAvatar(0)"
+              [disabled]="store.avatarEnrichingSlot() === 0"
+            >
+              @if (store.avatarEnrichingSlot() === 0) {
+                <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                Adding detail…
+              } @else {
+                Add detail with AI
+              }
+            </button>
+          }
+
+          @for (slot of avatarSlots(); track slot) {
+            @if (slot > 0) {
+              <div class="kb-wizard__field-group">
                 <label class="kb-wizard__field">
-                  <span class="kb-wizard__label">{{ slot === 0 ? 'Describe your ideal customer' : 'Another customer type' }}</span>
+                  <span class="kb-wizard__label">Customer {{ slot + 1 }}</span>
                   <textarea
                     rows="3"
                     class="kb-wizard__textarea"
                     [ngModel]="draft().customerAvatars[slot]"
                     (ngModelChange)="store.updateCustomerAvatar(slot, $event)"
                     [placeholder]="avatarPlaceholder(slot)"
-                    [attr.aria-label]="profileTitle(slot) + ': what they want'"
-                    [attr.aria-required]="slot === 0"
+                    [attr.aria-label]="'Customer ' + (slot + 1) + ' description'"
                   ></textarea>
                 </label>
+                <button
+                  type="button"
+                  class="kb-wizard__field-remove"
+                  (click)="store.removeCustomerAvatar(slot)"
+                  [attr.aria-label]="'Remove customer ' + (slot + 1)"
+                >
+                  Remove
+                </button>
 
                 @if (store.avatarEnrichmentFor(slot); as pending) {
                   <div class="kb-wizard__enrich" aria-live="polite">
@@ -273,9 +308,9 @@
                     }
                   </button>
                 }
-              </article>
+              </div>
             }
-          </div>
+          }
 
           @if (store.avatarEnrichError(); as enrichErr) {
             <p class="kb-wizard__status kb-wizard__status--error">{{ enrichErr }}</p>

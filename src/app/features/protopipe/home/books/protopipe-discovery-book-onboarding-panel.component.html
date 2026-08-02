@@ -15,17 +15,25 @@
             [attr.aria-checked]="draft().onboardingMode === option.id"
             (click)="store.selectMode(option.id)"
           >
-            <i [class]="option.icon" aria-hidden="true"></i>
-            <span class="kb-scope-option__title">{{ option.label }}</span>
-            <span class="kb-scope-option__desc">{{ option.description }}</span>
+            <span class="kb-scope-option__icon" aria-hidden="true">
+              <i [class]="option.icon"></i>
+            </span>
+            <span class="kb-scope-option__body">
+              <span class="kb-scope-option__title">{{ option.label }}</span>
+              <span class="kb-scope-option__desc">{{ option.description }}</span>
+            </span>
+            <span class="kb-scope-option__check" aria-hidden="true">
+              <i class="pi pi-check-circle"></i>
+            </span>
           </button>
         }
       </div>
 
       @if (draft().onboardingMode === 'existing_site') {
-        <label class="kb-field">
-          <span class="kb-field__label">Website</span>
+        <div class="kb-site-field">
+          <label class="kb-field__label" for="discoveryBookWebsiteUrl">Your website</label>
           <input
+            id="discoveryBookWebsiteUrl"
             type="url"
             pInputText
             [ngModel]="draft().websiteUrl"
@@ -33,7 +41,8 @@
             placeholder="mauielectric.com"
             autocomplete="url"
           />
-        </label>
+          <p class="kb-site-field__hint">We'll scan it to pre-fill your services and find ranking gaps.</p>
+        </div>
       }
     }
 
@@ -58,16 +67,18 @@
           }
 
           @if (draft().services.length > 0) {
-            <ul class="kb-service-list" aria-label="Selected services">
+            <ul class="kb-service-chips" aria-label="Selected services">
               @for (svc of draft().services; track svc) {
-                <li class="kb-service-row">
-                  <span class="kb-service-row__name">{{ svc }}</span>
+                <li class="kb-service-chip">
+                  <span class="kb-service-chip__name">{{ svc }}</span>
                   @if (store.siteFoundInServices().includes(svc)) {
-                    <span class="kb-service-row__source">site</span>
+                    <span class="kb-service-chip__source" title="Found on your site">
+                      <i class="pi pi-check" aria-hidden="true"></i>
+                    </span>
                   }
                   <button
                     type="button"
-                    class="kb-service-row__remove"
+                    class="kb-service-chip__remove"
                     (click)="removeServiceByName(svc)"
                     [attr.aria-label]="'Remove ' + svc"
                   >
@@ -78,8 +89,11 @@
             </ul>
           } @else {
             <div class="kb-offer-empty">
-              <p class="kb-offer-empty__title">No services selected yet</p>
-              <p class="kb-offer-empty__body">Add one manually or tap a suggestion to start shaping the discovery run.</p>
+              <span class="kb-offer-empty__icon" aria-hidden="true">
+                <i class="pi pi-briefcase"></i>
+              </span>
+              <p class="kb-offer-empty__title">No services yet</p>
+              <p class="kb-offer-empty__body">Tap a suggestion on the right, or type your first service below.</p>
             </div>
           }
 

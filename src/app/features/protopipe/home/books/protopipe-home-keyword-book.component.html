@@ -183,12 +183,22 @@
           }
           @default {
             @if (activeOnboardingMeta(); as meta) {
+              <div class="kb-mobile-steps" aria-hidden="true">
+                @for (step of onboardingSteps; track step.id) {
+                  <span
+                    class="kb-mobile-step"
+                    [class.is-done]="step.onboardingStep < meta.onboardingStep"
+                    [class.is-active]="step.onboardingStep === meta.onboardingStep"
+                  ></span>
+                }
+              </div>
+
               <div class="kb-panel__head">
                 <span class="kb-panel-kicker">{{ meta.kicker }}</span>
                 <h2 class="kb-panel-title">{{ meta.title }}</h2>
                 <p class="kb-panel-deck">{{ meta.helper }}</p>
                 <p class="kb-onboarding-trace">
-                  Onboarding step {{ meta.onboardingStep }} of {{ onboardingSteps.length }}
+                  Step {{ meta.onboardingStep }} of {{ onboardingSteps.length }}
                 </p>
               </div>
 

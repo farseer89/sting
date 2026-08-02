@@ -26,8 +26,8 @@ export const DISCOVERY_BOOK_ONBOARDING_STEPS: readonly DiscoveryBookOnboardingSt
     id: 'onboarding:getting-started',
     navLabel: 'Getting started',
     kicker: 'Getting started',
-    title: 'How are you starting?',
-    helper: "We'll tailor keyword research to your situation.",
+    title: 'Tell us about your business',
+    helper: "We'll help you discover keyword opportunities and content gaps. Choose how you'd like to start.",
   },
   {
     onboardingStep: 2,

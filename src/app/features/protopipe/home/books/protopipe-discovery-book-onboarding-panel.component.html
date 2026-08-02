@@ -7,14 +7,6 @@
     @case ('onboarding:getting-started') {
       <div class="kb-wizard">
         <section class="kb-wizard__main">
-          <div class="kb-start-intro">
-            <span class="kb-start-intro__badge">Getting started</span>
-            <h3 class="kb-start-intro__title">Tell us about your business</h3>
-            <p class="kb-start-intro__body">
-              We'll help you discover keyword opportunities and content gaps. Choose how you'd like to start.
-            </p>
-          </div>
-
           <div class="kb-start-options" role="radiogroup" aria-label="Starting point">
             @for (option of onboardingModeOptions; track option.id) {
               <button

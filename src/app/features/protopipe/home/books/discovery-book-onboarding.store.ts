@@ -1,6 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import type {
-  GooglePlaceLocationOption,
   ProtopipeFanOutCompetitorSuggestion,
   ProtopipeSerpLocationOption,
 } from '@hive/contracts';
@@ -15,8 +14,6 @@ import {
 } from '../../onboarding/onboarding-market.constants';
 import { ProtopipeKeywordPickerStore } from '../keyword-picker/protopipe-keyword-picker.store';
 import { ProtopipeOnboardingStateService } from '../../onboarding/protopipe-onboarding-state.service';
-import { ProtopipeProspectorShireApiService } from '../../prospector/protopipe-prospector-shire-api.service';
-import { isShirePrimary } from '../../shire/shire-http.util';
 import type { DiscoveryBookOnboardingStepId } from './discovery-book-onboarding.steps';
 import {
   draftFingerprint,
@@ -39,11 +36,9 @@ export interface AvatarEnrichmentPending {
 @Injectable()
 export class DiscoveryBookOnboardingStore {
   private readonly api = inject(ProtopipeApiService);
-  private readonly shireApi = inject(ProtopipeProspectorShireApiService);
   private readonly strategy = inject(ProtopipeStrategyService);
   private readonly keywordStore = inject(ProtopipeKeywordPickerStore);
   private readonly onboardingState = inject(ProtopipeOnboardingStateService);
-  private readonly shirePrimary = isShirePrimary();
 
   private readonly baselineFingerprint = signal('');
   private readonly draft = signal<DiscoveryBookOnboardingDraft>(draftFromStrategy(null, null));
@@ -52,7 +47,7 @@ export class DiscoveryBookOnboardingStore {
   readonly saveError = signal<string | null>(null);
   readonly saveStatus = signal<string | null>(null);
   readonly stepError = signal<string | null>(null);
-  readonly locationSuggestions = signal<Array<GooglePlaceLocationOption | ProtopipeSerpLocationOption>>([]);
+  readonly locationSuggestions = signal<ProtopipeSerpLocationOption[]>([]);
   readonly countrySuggestions = signal<MarketCountryOption[]>([]);
   readonly isSearchingLocations = signal(false);
 
@@ -558,7 +553,7 @@ export class DiscoveryBookOnboardingStore {
     }));
   }
 
-  selectLocation(option: GooglePlaceLocationOption | ProtopipeSerpLocationOption | null): void {
+  selectLocation(option: ProtopipeSerpLocationOption | null): void {
     if (!option) {
       const d = this.draft();
       if (
@@ -578,40 +573,20 @@ export class DiscoveryBookOnboardingStore {
       }));
       return;
     }
-    
-    // Type guard: ProtopipeSerpLocationOption has 'code' property
-    const isSerpLocation = 'code' in option;
-    
+
     const parts = option.name.split(',').map((p) => p.trim());
     const d = this.draft();
-    
-    if (isSerpLocation) {
-      const serpOption = option as ProtopipeSerpLocationOption;
-      if (d.serpLocationCode === serpOption.code && d.serpLocationName === serpOption.name) {
-        return;
-      }
-      this.draft.update((d) => ({
-        ...d,
-        serpLocationCode: serpOption.code,
-        serpLocationName: serpOption.name,
-        city: parts[0] || d.city,
-        state: parts[1] || d.state,
-        countryIso: serpOption.country || d.countryIso,
-      }));
-    } else {
-      // Google Places location - use name directly, no location code
-      if (d.serpLocationName === option.name) {
-        return;
-      }
-      this.draft.update((d) => ({
-        ...d,
-        serpLocationCode: undefined,
-        serpLocationName: option.name,
-        city: parts[0] || d.city,
-        state: parts[1] || d.state,
-        countryIso: d.countryIso,
-      }));
+    if (d.serpLocationCode === option.code && d.serpLocationName === option.name) {
+      return;
     }
+    this.draft.update((d) => ({
+      ...d,
+      serpLocationCode: option.code,
+      serpLocationName: option.name,
+      city: parts[0] || d.city,
+      state: parts[1] || d.state,
+      countryIso: option.country || d.countryIso,
+    }));
   }
 
   selectCountry(option: MarketCountryOption | null): void {
@@ -654,9 +629,7 @@ export class DiscoveryBookOnboardingStore {
     }
     this.isSearchingLocations.set(true);
     try {
-      const res = this.shirePrimary
-        ? await this.shireApi.searchPlaceLocations(q, 8)
-        : await this.api.searchSerpLocations(q, 8);
+      const res = await this.api.searchSerpLocations(q, 8);
       this.locationSuggestions.set(res.locations);
     } catch {
       this.locationSuggestions.set([]);
@@ -701,10 +674,10 @@ export class DiscoveryBookOnboardingStore {
         return null;
       case 'onboarding:market':
         if (!d.marketScope) return 'Choose local, national, or worldwide.';
-        if (d.marketScope === 'local' && !d.serpLocationName) {
+        if (d.marketScope === 'local' && d.serpLocationCode == null) {
           return 'Pick your town or city.';
         }
-        if (d.marketScope === 'national' && !d.serpLocationName) {
+        if (d.marketScope === 'national' && d.serpLocationCode == null) {
           return 'Pick a country.';
         }
         return null;

@@ -701,10 +701,10 @@ export class DiscoveryBookOnboardingStore {
         return null;
       case 'onboarding:market':
         if (!d.marketScope) return 'Choose local, national, or worldwide.';
-        if (d.marketScope === 'local' && d.serpLocationCode == null) {
+        if (d.marketScope === 'local' && !d.serpLocationName) {
           return 'Pick your town or city.';
         }
-        if (d.marketScope === 'national' && d.serpLocationCode == null) {
+        if (d.marketScope === 'national' && !d.serpLocationName) {
           return 'Pick a country.';
         }
         return null;

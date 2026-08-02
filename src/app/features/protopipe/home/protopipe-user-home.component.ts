@@ -69,6 +69,7 @@ import { ProtopipeHomeSidePanelService } from './protopipe-home-side-panel.servi
 import {
   PROTOPIPE_HOME_NAV,
   PROTOPIPE_HOME_NAV_DEFAULT_OPEN,
+  type ProtopipeHomeNavIcon,
   type ProtopipeHomeNavItem,
 } from './protopipe-home-nav';
 import { resolveBootstrapSiteId } from '../resolve-bootstrap-site-id';
@@ -127,6 +128,13 @@ interface HomeFocusReturnContext {
 }
 
 type HomeFocusHistoryKind = 'thinker' | 'writer';
+
+interface MobileHomeTab {
+  id: string;
+  label: string;
+  icon: ProtopipeHomeNavIcon;
+  item: ProtopipeHomeNavItem | null;
+}
 
 @Component({
   selector: 'app-protopipe-user-home',
@@ -270,6 +278,28 @@ export class ProtopipeUserHomeComponent implements OnInit {
   readonly savingSiteDefault = this.thoughtPacks.saving;
   readonly siteDefaultMessage = this.thoughtPacks.saveMessage;
   readonly userMenuOpen = signal(false);
+  readonly mobileMoreOpen = signal(false);
+
+  readonly mobilePrimaryTabs = computed<MobileHomeTab[]>(() => {
+    const items = this.navItems();
+    const configs: Array<{ id: string; label: string; icon: ProtopipeHomeNavIcon }> = [
+      { id: 'start-keywords', label: 'Discover', icon: 'search' },
+      { id: 'start-strategy', label: 'Strategy', icon: 'sitemap' },
+      { id: 'content-writer', label: 'Write', icon: 'write' },
+      { id: 'books-build', label: 'Build', icon: 'globe' },
+    ];
+
+    return configs
+      .map((config) => ({
+        ...config,
+        item: this.findNavItemById(items, config.id),
+      }))
+      .filter((tab) => tab.item !== null);
+  });
+
+  readonly mobileMoreNavItems = computed(() =>
+    this.navItems().filter((item) => !item.separator),
+  );
 
   readonly userName = computed(() => {
     const full = this.auth.getCurrentUserFullName()?.trim();
@@ -436,6 +466,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   }
 
   selectNavItem(item: ProtopipeHomeNavItem): void {
+    this.mobileMoreOpen.set(false);
     if (item.locked) {
       this.showLockedNotice(item);
       return;
@@ -541,6 +572,20 @@ export class ProtopipeUserHomeComponent implements OnInit {
     } else if (item.id === 'sms-contacts') {
       void this.router.navigate(['/protopipe/settings/contacts']);
     }
+  }
+
+  selectMobileTab(tab: MobileHomeTab): void {
+    if (!tab.item) return;
+    this.selectNavItem(tab.item);
+  }
+
+  toggleMobileMore(event?: Event): void {
+    event?.stopPropagation();
+    this.mobileMoreOpen.update((open) => !open);
+  }
+
+  closeMobileMore(): void {
+    this.mobileMoreOpen.set(false);
   }
 
   toggleWriterRailPeek(): void {
@@ -691,11 +736,13 @@ export class ProtopipeUserHomeComponent implements OnInit {
 
   toggleUserMenu(event: Event): void {
     event.stopPropagation();
+    this.mobileMoreOpen.set(false);
     this.userMenuOpen.update((open) => !open);
   }
 
   closeUserMenu(): void {
     this.userMenuOpen.set(false);
+    this.mobileMoreOpen.set(false);
   }
 
   openBillingView(): void {
@@ -724,6 +771,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   @HostListener('document:keydown.escape')
   onEscape(): void {
     this.closeUserMenu();
+    this.closeMobileMore();
     if (this.activeView() === 'writer') {
       this.leaveWriterFocus({ syncHistory: true });
     } else if (this.activeView() === 'thinker') {

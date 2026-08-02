@@ -197,6 +197,63 @@
     </div>
   </header>
 
+  <header class="void-mobile-topbar">
+    <div class="void-mobile-topbar__brand">
+      @if (product.logoUrl) {
+        <img
+          class="void-mobile-topbar__logo"
+          [src]="product.logoUrl"
+          [alt]="product.displayName"
+          width="541"
+          height="209"
+        />
+      } @else {
+        <span class="void-mobile-topbar__name">{{ product.displayName }}</span>
+      }
+      <span class="void-mobile-topbar__site">{{ siteHostname() || siteDisplayName() || 'Workspace' }}</span>
+    </div>
+
+    <div class="void-mobile-topbar__actions">
+      @if (accessState(); as access) {
+        <span
+          class="void-mobile-topbar__status"
+          [class.is-trial]="access.isTrialing"
+          [class.is-readonly]="access.isReadOnly"
+        >
+          {{ access.statusLabel }}
+        </span>
+      }
+      <div class="void-topnav__user-menu void-mobile-topbar__user-menu">
+        <button
+          type="button"
+          class="void-topnav__user-trigger"
+          [attr.aria-expanded]="userMenuOpen()"
+          aria-haspopup="menu"
+          [attr.aria-label]="'Account menu for ' + userName()"
+          (click)="toggleUserMenu($event)"
+        >
+          @if (userPhotoUrl()) {
+            <img class="void-topnav__user-photo" [src]="userPhotoUrl()" alt="" />
+          } @else {
+            <span class="void-topnav__user-initials">{{ userInitials() }}</span>
+          }
+        </button>
+
+        @if (userMenuOpen()) {
+          <div class="void-topnav__user-dropdown" role="menu" (click)="$event.stopPropagation()">
+            <span class="void-topnav__user-dropdown-name">{{ userName() }}</span>
+            <button type="button" class="void-topnav__user-dropdown-action" role="menuitem" (click)="openBillingView()">
+              Billing
+            </button>
+            <button type="button" class="void-topnav__user-dropdown-action" role="menuitem" (click)="logout()">
+              Log out
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  </header>
+
   <div class="void__frame">
     @if (isWriterFocus()) {
       <button
@@ -596,6 +653,111 @@
       </div>
     </div>
   </div>
+
+  <nav class="void-mobile-tabs" aria-label="Primary mobile navigation">
+    @for (tab of mobilePrimaryTabs(); track tab.id) {
+      <button
+        type="button"
+        class="void-mobile-tab"
+        [class.is-active]="tab.item && isNavItemActive(tab.item)"
+        (click)="selectMobileTab(tab)"
+      >
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <use [attr.href]="'#void-icon-' + tab.icon" />
+        </svg>
+        <span>{{ tab.label }}</span>
+      </button>
+    }
+    <button
+      type="button"
+      class="void-mobile-tab"
+      [class.is-active]="mobileMoreOpen()"
+      [attr.aria-expanded]="mobileMoreOpen()"
+      aria-controls="void-mobile-more"
+      (click)="toggleMobileMore($event)"
+    >
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <use href="#void-icon-grid" />
+      </svg>
+      <span>More</span>
+    </button>
+  </nav>
+
+  @if (mobileMoreOpen()) {
+    <button
+      type="button"
+      class="void-mobile-more-backdrop"
+      aria-label="Close navigation"
+      (click)="closeMobileMore()"
+    ></button>
+
+    <aside id="void-mobile-more" class="void-mobile-more" aria-label="More navigation" (click)="$event.stopPropagation()">
+      <header class="void-mobile-more__head">
+        <div>
+          <p class="void-mobile-more__kicker">Workspace</p>
+          <h2>Jump to</h2>
+        </div>
+        <button type="button" class="void-mobile-more__close" aria-label="Close navigation" (click)="closeMobileMore()">
+          ×
+        </button>
+      </header>
+
+      <div class="void-mobile-more__scroll">
+        @for (item of mobileMoreNavItems(); track item.id) {
+          @if (item.children) {
+            <section class="void-mobile-more__group">
+              <h3>
+                @if (item.icon) {
+                  <svg viewBox="0 0 16 16" aria-hidden="true">
+                    <use [attr.href]="'#void-icon-' + item.icon" />
+                  </svg>
+                }
+                {{ item.label }}
+              </h3>
+              <div class="void-mobile-more__items">
+                @for (child of item.children; track child.id) {
+                  <button
+                    type="button"
+                    class="void-mobile-more__item"
+                    [class.is-active]="isNavItemActive(child)"
+                    [class.is-locked]="child.locked"
+                    [disabled]="child.disabled && !child.locked"
+                    (click)="selectNavItem(child)"
+                  >
+                    <span>{{ child.label }}</span>
+                    @if (child.locked) {
+                      <small>{{ child.lockedLabel ?? 'Locked' }}</small>
+                    } @else if (child.disabled) {
+                      <small>Soon</small>
+                    }
+                  </button>
+                }
+              </div>
+            </section>
+          } @else {
+            <button
+              type="button"
+              class="void-mobile-more__item void-mobile-more__item--top"
+              [class.is-active]="isNavItemActive(item)"
+              [class.is-locked]="item.locked"
+              [disabled]="item.disabled && !item.locked"
+              (click)="selectNavItem(item)"
+            >
+              @if (item.icon) {
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <use [attr.href]="'#void-icon-' + item.icon" />
+                </svg>
+              }
+              <span>{{ item.label }}</span>
+              @if (item.locked) {
+                <small>{{ item.lockedLabel ?? 'Locked' }}</small>
+              }
+            </button>
+          }
+        }
+      </div>
+    </aside>
+  }
 
   <svg class="void-icons" aria-hidden="true" focusable="false">
     <symbol id="void-icon-globe" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="0.9" /><path d="M2.5 8h11M8 2.5c1.8 1.6 2.8 3.6 2.8 5.5S9.8 11.9 8 13.5C6.2 11.9 5.2 9.9 5.2 8S6.2 4.1 8 2.5z" fill="none" stroke="currentColor" stroke-width="0.75" /></symbol>

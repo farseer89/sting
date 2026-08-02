@@ -5,29 +5,39 @@
   <div class="kb-onboarding-body">
     @switch (stepId()) {
     @case ('onboarding:getting-started') {
-      <div class="kb-scope-picker" role="radiogroup" aria-label="Onboarding path">
-        @for (option of onboardingModeOptions; track option.id) {
-          <button
-            type="button"
-            class="kb-scope-option"
-            role="radio"
-            [class.kb-scope-option--active]="draft().onboardingMode === option.id"
-            [attr.aria-checked]="draft().onboardingMode === option.id"
-            (click)="store.selectMode(option.id)"
-          >
-            <span class="kb-scope-option__icon" aria-hidden="true">
-              <i [class]="option.icon"></i>
-            </span>
-            <span class="kb-scope-option__body">
-              <span class="kb-scope-option__title">{{ option.label }}</span>
-              <span class="kb-scope-option__desc">{{ option.description }}</span>
-            </span>
-            <span class="kb-scope-option__check" aria-hidden="true">
-              <i class="pi pi-check-circle"></i>
-            </span>
-          </button>
-        }
-      </div>
+      <section class="kb-start-card" aria-labelledby="kb-start-heading">
+        <div class="kb-start-card__intro">
+          <span class="kb-start-card__badge">Discovery setup</span>
+          <h3 id="kb-start-heading" class="kb-start-card__title">Pick the starting point for this book.</h3>
+          <p class="kb-start-card__body">
+            SearchClimber can begin with an existing site scan or a clean strategy brief. Choose the path that matches where this project is today.
+          </p>
+        </div>
+
+        <div class="kb-scope-picker" role="radiogroup" aria-label="Onboarding path">
+          @for (option of onboardingModeOptions; track option.id) {
+            <button
+              type="button"
+              class="kb-scope-option"
+              role="radio"
+              [class.kb-scope-option--active]="draft().onboardingMode === option.id"
+              [attr.aria-checked]="draft().onboardingMode === option.id"
+              (click)="store.selectMode(option.id)"
+            >
+              <span class="kb-scope-option__icon" aria-hidden="true">
+                <i [class]="option.icon"></i>
+              </span>
+              <span class="kb-scope-option__body">
+                <span class="kb-scope-option__title">{{ option.label }}</span>
+                <span class="kb-scope-option__desc">{{ option.description }}</span>
+              </span>
+              <span class="kb-scope-option__check" aria-hidden="true">
+                <i class="pi pi-check-circle"></i>
+              </span>
+            </button>
+          }
+        </div>
+      </section>
 
       @if (draft().onboardingMode === 'existing_site') {
         <div class="kb-site-field">
@@ -118,6 +128,9 @@
 
         <aside class="kb-offer-card kb-offer-card--assist" aria-labelledby="kb-offer-assist-heading">
           <div class="kb-offer-card__head">
+            <span class="kb-offer-card__icon" aria-hidden="true">
+              <i class="pi pi-sparkles"></i>
+            </span>
             <div>
               <h3 id="kb-offer-assist-heading" class="kb-offer-card__title">Suggestions</h3>
               <p class="kb-offer-card__deck">Use these to round out the offer list without making it noisy.</p>
@@ -126,6 +139,18 @@
 
           @if (store.tradeLabel(); as trade) {
             <p class="kb-offer-context">Detected trade: <strong>{{ trade }}</strong></p>
+          }
+
+          @if (
+            store.availableTradeSuggestions().length === 0 &&
+            store.availableExpandedSuggestions().length === 0
+          ) {
+            <div class="kb-suggestion-empty">
+              <p class="kb-suggestion-empty__title">Suggestions will appear here</p>
+              <p class="kb-suggestion-empty__body">
+                Add your website on Getting Started or type one service to unlock related ideas.
+              </p>
+            </div>
           }
 
           @if (store.availableTradeSuggestions().length > 0) {

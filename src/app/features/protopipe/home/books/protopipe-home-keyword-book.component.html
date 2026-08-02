@@ -56,6 +56,67 @@
       </p>
     </div>
   } @else {
+    <nav class="kb-mobile-section-nav" aria-label="Discovery book sections">
+      <div class="kb-mobile-section-nav__group" aria-label="Onboarding steps">
+        @for (step of onboardingSteps; track step.id) {
+          <button
+            type="button"
+            class="kb-mobile-section-nav__pill"
+            [class.is-active]="isOnboardingStepActive(step.id)"
+            (click)="selectSection(step.id)"
+          >
+            <span>{{ step.onboardingStep }}</span>
+            {{ step.navLabel }}
+          </button>
+        }
+      </div>
+
+      @if (showDiscoveryNav() || showKeywordNav() || showAudiencesNav() || showBuildNav()) {
+        <div class="kb-mobile-section-nav__group kb-mobile-section-nav__group--pipeline" aria-label="Discovery pipeline">
+          @if (showDiscoveryNav()) {
+            <button
+              type="button"
+              class="kb-mobile-section-nav__pill"
+              [class.is-active]="isPipelineSectionActive('discovery')"
+              (click)="selectSection('discovery')"
+            >
+              Discovery run
+            </button>
+          }
+          @if (showKeywordNav()) {
+            <button
+              type="button"
+              class="kb-mobile-section-nav__pill"
+              [class.is-active]="isPipelineSectionActive('keywords')"
+              (click)="selectSection('keywords')"
+            >
+              Keywords
+            </button>
+          }
+          @if (showAudiencesNav()) {
+            <button
+              type="button"
+              class="kb-mobile-section-nav__pill"
+              [class.is-active]="isPipelineSectionActive('audiences')"
+              (click)="selectSection('audiences')"
+            >
+              Audiences
+            </button>
+          }
+          @if (showBuildNav()) {
+            <button
+              type="button"
+              class="kb-mobile-section-nav__pill"
+              [class.is-active]="isPipelineSectionActive('build')"
+              (click)="selectSection('build')"
+            >
+              Build
+            </button>
+          }
+        </div>
+      }
+    </nav>
+
     <div class="kb-binder">
       <nav class="kb-binder-nav" aria-label="Discovery book sections">
         <div class="kb-binder-nav__label">Onboarding</div>
@@ -183,16 +244,6 @@
           }
           @default {
             @if (activeOnboardingMeta(); as meta) {
-              <div class="kb-mobile-steps" aria-hidden="true">
-                @for (step of onboardingSteps; track step.id) {
-                  <span
-                    class="kb-mobile-step"
-                    [class.is-done]="step.onboardingStep < meta.onboardingStep"
-                    [class.is-active]="step.onboardingStep === meta.onboardingStep"
-                  ></span>
-                }
-              </div>
-
               <div class="kb-panel__head">
                 <span class="kb-panel-kicker">{{ meta.kicker }}</span>
                 <h2 class="kb-panel-title">{{ meta.title }}</h2>

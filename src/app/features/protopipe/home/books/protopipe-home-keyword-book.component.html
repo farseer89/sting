@@ -244,13 +244,19 @@
           }
           @default {
             @if (activeOnboardingMeta(); as meta) {
-              <div class="kb-panel__head">
-                <span class="kb-panel-kicker">{{ meta.kicker }}</span>
-                <h2 class="kb-panel-title">{{ meta.title }}</h2>
-                <p class="kb-panel-deck">{{ meta.helper }}</p>
+              <div class="kb-panel__head kb-panel__head--wizard">
+                <div class="kb-wizard-progress" aria-hidden="true">
+                  <span
+                    class="kb-wizard-progress__bar"
+                    [style.width.%]="(meta.onboardingStep / onboardingSteps.length) * 100"
+                  ></span>
+                </div>
                 <p class="kb-onboarding-trace">
                   Step {{ meta.onboardingStep }} of {{ onboardingSteps.length }}
                 </p>
+                <span class="kb-panel-kicker">{{ meta.kicker }}</span>
+                <h2 class="kb-panel-title">{{ meta.title }}</h2>
+                <p class="kb-panel-deck">{{ meta.helper }}</p>
               </div>
 
               <app-protopipe-discovery-book-onboarding-panel

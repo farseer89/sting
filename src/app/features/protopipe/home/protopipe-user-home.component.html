@@ -402,32 +402,6 @@
                 </section>
               }
 
-              @if (showFirstRunCard()) {
-                <section class="home-trial-card" aria-label="Getting started checklist">
-                  <div class="home-trial-card__main">
-                    <span class="home-trial-card__kicker">{{ accessState().statusLabel }}</span>
-                    <h2>Start with the AI visibility loop</h2>
-                    <p>
-                      Finish setup, run discovery, check AI Mentions, then fix the first gap before the trial clock runs out.
-                    </p>
-                  </div>
-                  <div class="home-trial-card__steps">
-                    @for (step of firstRunSteps(); track step.id) {
-                      <button
-                        type="button"
-                        class="home-trial-step"
-                        [class.is-done]="step.done"
-                        (click)="onFirstRunStep(step.navId)"
-                      >
-                        <span class="home-trial-step__dot" aria-hidden="true"></span>
-                        <span class="home-trial-step__label">{{ step.label }}</span>
-                        <span class="home-trial-step__action">{{ step.done ? 'Done' : step.action }}</span>
-                      </button>
-                    }
-                  </div>
-                </section>
-              }
-
               @switch (activeView()) {
                 @case ('keywords') {
                   <section class="glass glass--full glass--premiere home-keywords" aria-label="Discovery book">

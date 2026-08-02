@@ -1412,6 +1412,8 @@
   }
 
   .void__panel-stack {
+    flex: none;
+    min-height: auto;
     overflow: visible;
   }
 
@@ -1423,11 +1425,12 @@
     background: transparent;
   }
 
-  .home-trial-card {
-    margin: 0.75rem;
-    border-radius: 1rem;
-    background: #fff;
-    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+  .glass--full,
+  .home-keywords,
+  .home-mentions {
+    flex: none;
+    min-height: auto;
+    overflow: visible;
   }
 
   .void__side-splitter,

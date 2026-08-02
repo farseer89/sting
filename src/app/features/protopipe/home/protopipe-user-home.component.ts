@@ -313,51 +313,6 @@ export class ProtopipeUserHomeComponent implements OnInit {
     return photo.includes('avatar-f-1.png') ? '' : photo;
   });
 
-  readonly firstRunSteps = computed(() => {
-    const profile = this.strategy.onboardingProfile();
-    return [
-      {
-        id: 'profile',
-        label: 'Complete business profile',
-        done: Boolean(profile),
-        action: 'Open Discovery',
-        navId: 'start-keywords',
-      },
-      {
-        id: 'mentions',
-        label: 'Run AI Mentions',
-        done: false,
-        action: 'Open Mentions',
-        navId: 'start-mentions',
-      },
-      {
-        id: 'brief',
-        label: 'Review the visibility brief',
-        done: false,
-        action: 'Open Mentions',
-        navId: 'start-mentions',
-      },
-      {
-        id: 'fix-gap',
-        label: 'Fix one gap with Sharpen or Writer',
-        done: false,
-        action: this.accessState().entitlements.includes('writer') ? 'Open Writer' : 'Open Sharpen',
-        navId: this.accessState().entitlements.includes('writer') ? 'content-writer' : 'start-sharpen',
-      },
-    ];
-  });
-  readonly showFirstRunCard = computed(() => {
-    if (this.accessState().isInternalAdmin) return false;
-    const view = this.activeView();
-    return (
-      view !== 'billing' &&
-      view !== 'writer' &&
-      view !== 'thinker' &&
-      view !== 'build-book' &&
-      view !== 'blog-preview'
-    );
-  });
-
   readonly isWriterFocus = computed(() => this.activeView() === 'writer');
   readonly isThinkerFocus = computed(() => this.activeView() === 'thinker');
   readonly isBuildBookFocus = computed(() => this.activeView() === 'build-book');
@@ -797,13 +752,6 @@ export class ProtopipeUserHomeComponent implements OnInit {
 
   isNavItemActive(item: ProtopipeHomeNavItem): boolean {
     return !item.disabled && !item.locked && this.activeNavId() === item.id;
-  }
-
-  onFirstRunStep(navId: string): void {
-    const item = this.findNavItemById(this.navItems(), navId);
-    if (item) {
-      this.selectNavItem(item);
-    }
   }
 
   openPackDetail(pack: CognitivePackCatalogItem): void {

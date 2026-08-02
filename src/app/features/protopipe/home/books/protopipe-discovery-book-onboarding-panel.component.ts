@@ -73,6 +73,17 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
     return isLastOnboardingStep(this.stepId());
   }
 
+  isCoreWizardStep(): boolean {
+    const id = this.stepId();
+    return (
+      id === 'onboarding:offer' ||
+      id === 'onboarding:customers' ||
+      id === 'onboarding:competition' ||
+      id === 'onboarding:market' ||
+      id === 'onboarding:business-name'
+    );
+  }
+
   otherServices(): string[] {
     const found = new Set(this.store.siteFoundServices().map((s) => s.toLowerCase()));
     return this.draft().services.filter((s) => !found.has(s.toLowerCase()));

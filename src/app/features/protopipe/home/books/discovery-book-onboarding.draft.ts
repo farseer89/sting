@@ -43,7 +43,7 @@ export function draftFromStrategy(
     services: [...(profile?.services ?? [])],
     customerAvatars: profile?.customerAvatars?.length
       ? [...profile.customerAvatars]
-      : ['', '', ''],
+      : [''],
     targetCustomerSites: [...(profile?.targetCustomerSites ?? [])],
     competitors: [...(profile?.competitors ?? [])],
     marketScope: profile?.marketScope ?? null,

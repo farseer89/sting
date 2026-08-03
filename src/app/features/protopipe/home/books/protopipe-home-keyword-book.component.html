@@ -1,4 +1,4 @@
-<div class="kb-shell">
+<div class="kb-shell" [class.kb-shell--onboarding-wizard]="!!activeOnboardingMeta()">
 
   <header class="kb-masthead">
     <div class="kb-masthead__left">
@@ -56,28 +56,11 @@
       </p>
     </div>
   } @else {
-    <nav class="kb-mobile-section-nav" aria-label="Discovery book sections">
-      @if (activeOnboardingMeta(); as mobileMeta) {
-        <div class="kb-mobile-step-summary">
-          <span>Step {{ mobileMeta.onboardingStep }} of {{ onboardingSteps.length }}</span>
-          <strong>{{ mobileMeta.navLabel }}</strong>
-        </div>
-      }
-      <div class="kb-mobile-step-dots" aria-label="Onboarding steps">
-        @for (step of onboardingSteps; track step.id) {
-          <button
-            type="button"
-            class="kb-mobile-step-dot"
-            [class.is-active]="isOnboardingStepActive(step.id)"
-            (click)="selectSection(step.id)"
-            [attr.aria-label]="'Go to step ' + step.onboardingStep + ': ' + step.navLabel"
-          >
-            {{ step.onboardingStep }}
-          </button>
-        }
-      </div>
-
-      @if (showDiscoveryNav() || showKeywordNav() || showAudiencesNav() || showBuildNav()) {
+    @if (
+      !activeOnboardingMeta() &&
+      (showDiscoveryNav() || showKeywordNav() || showAudiencesNav() || showBuildNav())
+    ) {
+      <nav class="kb-mobile-section-nav" aria-label="Discovery book sections">
         <div class="kb-mobile-section-nav__group kb-mobile-section-nav__group--pipeline" aria-label="Discovery pipeline">
           @if (showDiscoveryNav()) {
             <button
@@ -120,8 +103,8 @@
             </button>
           }
         </div>
-      }
-    </nav>
+      </nav>
+    }
 
     <div class="kb-binder">
       <nav class="kb-binder-nav" aria-label="Discovery book sections">
@@ -260,9 +243,8 @@
                       ></span>
                     </div>
                     <p class="kb-onboarding-trace">
-                      Step {{ meta.onboardingStep }} of {{ onboardingSteps.length }}
+                      Step {{ meta.onboardingStep }} of {{ onboardingSteps.length }} · {{ meta.navLabel }}
                     </p>
-                    <span class="kb-panel-kicker">{{ meta.kicker }}</span>
                     <h2 id="discoveryBookOnboardingTitle" class="kb-panel-title">{{ meta.title }}</h2>
                     <p class="kb-panel-deck">{{ meta.helper }}</p>
                     <button type="button" class="kb-help-trigger" (click)="openHelp()">

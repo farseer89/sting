@@ -546,7 +546,7 @@
             [ngModel]="draft().businessName"
             (ngModelChange)="store.setBusinessName($event)"
             (keydown.enter)="onPrimaryKeydown($event)"
-            placeholder="{{ onboardingStore.scanUiContext().businessNameHint ?? 'Your business name' }}"
+            placeholder="{{ store.scanUiContext().businessNameHint ?? 'Your business name' }}"
             autocomplete="organization"
           />
         </label>

@@ -54,6 +54,72 @@ interface AvatarEnrichmentPending {
   enriched: string;
 }
 
+interface StepHelpContent {
+  label: string;
+  title: string;
+  body: string;
+  example: string;
+}
+
+const STEP_HELP: Record<Step, StepHelpContent> = {
+  1: {
+    label: 'Start',
+    title: 'Start with the strongest signal you have.',
+    body:
+      'A website lets us scan real pages and pre-fill the next steps. If you are pre-launch, we can still build a strategy from your offer and customer intent.',
+    example: 'Use your website for an existing business. Choose no website yet for a new idea or offer.',
+  },
+  2: {
+    label: 'Offer',
+    title: 'Services become seed topics.',
+    body:
+      'The services you choose tell Discovery which keyword neighborhoods to explore first. Keep only the work you actually want more customers to find.',
+    example: 'An electrician might choose emergency repairs, EV chargers, and panel upgrades.',
+  },
+  3: {
+    label: 'Customers',
+    title: 'Customer moments make the keywords sharper.',
+    body:
+      'Search terms change based on who is searching and what they are trying to do. Describe the buying moment, not a generic persona.',
+    example: 'Homeowners comparing EV charger installers is more useful than homeowners.',
+  },
+  4: {
+    label: 'Examples',
+    title: 'Examples are optional, but useful.',
+    body:
+      'If you sell to businesses, example customer websites help us understand the kinds of companies you want to reach. Skip this for consumer-focused businesses.',
+    example: 'A B2B shop might add restaurants, clinics, or local contractors they want more of.',
+  },
+  5: {
+    label: 'Competition',
+    title: 'Competitors reveal proven search demand.',
+    body:
+      'Competitor sites help Discovery find terms that already work in your market. Add direct competitors or businesses whose SEO you admire.',
+    example: 'For a local service, add one or two nearby providers ranking for similar jobs.',
+  },
+  6: {
+    label: 'Market',
+    title: 'Location controls search intent.',
+    body:
+      'Local, national, and worldwide searches behave differently. Choose where customers are when they are likely to buy.',
+    example: 'Emergency electrician is local. Digital templates may be national or worldwide.',
+  },
+  7: {
+    label: 'Name',
+    title: 'Name the workspace.',
+    body:
+      'This name appears across your dashboard and helps keep the generated strategy organized.',
+    example: 'Use your business name for a live company or a project name for a new idea.',
+  },
+};
+
+const FALLBACK_CUSTOMER_MOMENTS = [
+  'Homeowners with an urgent problem',
+  'Customers comparing options before they buy',
+  'Businesses planning a larger project',
+  'People looking for a trusted local provider',
+] as const;
+
 @Component({
   selector: 'app-protopipe-onboarding',
   standalone: true,
@@ -87,6 +153,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
   readonly locationSuggestions = signal<ProtopipeSerpLocationOption[]>([]);
   readonly selectedLocation = signal<ProtopipeSerpLocationOption | null>(null);
   readonly isSearchingLocations = signal(false);
+  readonly helpOpen = signal(false);
 
   readonly marketScopeOptions = MARKET_SCOPE_OPTIONS;
   readonly customerScope = signal<CustomerMarketScope | null>(null);
@@ -182,6 +249,20 @@ export class ProtopipeOnboardingComponent implements OnInit {
   });
 
   readonly scheduleCallUrl = computed(() => this.product.scheduleCallUrl?.trim() || '');
+  readonly currentStepHelp = computed(() => STEP_HELP[this.step()]);
+  readonly currentStepLabel = computed(() => this.currentStepHelp().label);
+  readonly customerMomentSuggestions = computed(() => {
+    const used = new Set(
+      this.customerAvatars()
+        .map((a) => a.trim().toLowerCase())
+        .filter(Boolean),
+    );
+    const source =
+      this.customerAvatarSuggestions().length > 0
+        ? this.customerAvatarSuggestions()
+        : [...FALLBACK_CUSTOMER_MOMENTS];
+    return source.filter((item) => !used.has(item.trim().toLowerCase())).slice(0, 6);
+  });
 
   readonly summaryChips = computed<readonly { label: string; value: string }[]>(() => {
     const v = this.formValue();
@@ -301,6 +382,26 @@ export class ProtopipeOnboardingComponent implements OnInit {
     if (current > 1) {
       this.step.set((current - 1) as Step);
     }
+  }
+
+  openHelp(): void {
+    this.helpOpen.set(true);
+  }
+
+  closeHelp(): void {
+    this.helpOpen.set(false);
+  }
+
+  selectModeFromKeyboard(event: KeyboardEvent, mode: OnboardingModeId): void {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    this.selectMode(mode);
+  }
+
+  selectMarketScopeFromKeyboard(event: KeyboardEvent, scope: CustomerMarketScope): void {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    this.selectMarketScope(scope);
   }
 
   selectMode(mode: OnboardingModeId): void {

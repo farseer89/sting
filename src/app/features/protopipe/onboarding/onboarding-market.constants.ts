@@ -14,14 +14,14 @@ export interface OnboardingModeOption {
 export const ONBOARDING_MODE_OPTIONS: readonly OnboardingModeOption[] = [
   {
     id: 'existing_site',
-    label: 'I have a website',
-    description: 'Scan my site for keywords I rank for and gaps to fill',
+    label: 'Use my website',
+    description: 'Scan my site and start with what Google already understands',
     icon: 'pi pi-globe',
   },
   {
     id: 'strategy_only',
-    label: 'Planning or testing an idea',
-    description: 'Research demand before you launch — no site needed',
+    label: 'No website yet',
+    description: 'Build a keyword strategy from what I sell and who I want',
     icon: 'pi pi-lightbulb',
   },
 ];

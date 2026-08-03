@@ -20,7 +20,8 @@
       @if (isComplete()) {
         <span class="indicator-pill"><i class="pi pi-check"></i> Complete</span>
       } @else {
-        Step {{ step() }} of {{ totalSteps }}
+        <span class="step-indicator__count">Step {{ step() }} of {{ totalSteps }}</span>
+        <span class="step-indicator__label">{{ currentStepLabel() }}</span>
       }
     </div>
   </header>
@@ -80,6 +81,12 @@
         </div>
       </section>
     } @else {
+    <div class="onboarding-workspace">
+      <div class="onboarding-stage">
+        <button type="button" class="help-trigger" (click)="openHelp()">
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          Why this matters
+        </button>
     @if (step() === 1) {
       <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
         <p class="eyebrow">{{ copy().step1Eyebrow }}</p>
@@ -88,39 +95,46 @@
 
         <div class="scope-picker mode-picker" role="radiogroup" aria-label="Onboarding path">
           @for (option of onboardingModeOptions; track option.id) {
-            <button
-              type="button"
+            <div
               class="scope-option"
+              [class.scope-option--with-field]="option.id === 'existing_site'"
               role="radio"
+              tabindex="0"
               [class.scope-option--active]="onboardingMode() === option.id"
               [attr.aria-checked]="onboardingMode() === option.id"
               (click)="selectMode(option.id)"
+              (keydown)="selectModeFromKeyboard($event, option.id)"
             >
-              <i [class]="option.icon" aria-hidden="true"></i>
-              <span class="scope-option__title">{{ option.label }}</span>
-              <span class="scope-option__desc">{{ option.description }}</span>
-            </button>
+              <div class="scope-option__head">
+                <i [class]="option.icon" aria-hidden="true"></i>
+                <span class="scope-option__copy">
+                  <span class="scope-option__title">{{ option.label }}</span>
+                  <span class="scope-option__desc">{{ option.description }}</span>
+                </span>
+              </div>
+
+              @if (option.id === 'existing_site') {
+                <div class="field mode-detail mode-detail--inside">
+                  <label class="field-label" for="websiteUrl">Website</label>
+                  <input
+                    #urlInput
+                    id="websiteUrl"
+                    type="url"
+                    formControlName="websiteUrl"
+                    pInputText
+                    autocomplete="url"
+                    inputmode="url"
+                    placeholder="mauielectric.com"
+                    (focus)="selectMode('existing_site')"
+                  />
+                  <small class="helper-inline">
+                    We'll scan your site to understand what you do.
+                  </small>
+                </div>
+              }
+            </div>
           }
         </div>
-
-        @if (onboardingMode() === 'existing_site') {
-          <div class="field mode-detail">
-            <input
-              #urlInput
-              id="websiteUrl"
-              type="url"
-              formControlName="websiteUrl"
-              pInputText
-              autocomplete="url"
-              inputmode="url"
-              placeholder="mauielectric.com"
-            />
-            <small class="helper-inline">
-              We'll scan your site to understand what you do and tailor your
-              keyword suggestions.
-            </small>
-          </div>
-        }
 
         @if (onboardingMode() === 'strategy_only') {
           <p class="mode-callout">
@@ -337,41 +351,46 @@
     @if (step() === 3) {
       <form [formGroup]="form" class="step" (ngSubmit)="nextStep()">
         <p class="eyebrow">Your customers</p>
-        <h1 class="question">Who are your perfect customers?</h1>
-        <p class="helper">Describe what each person wants — then add detail to sharpen the profile.</p>
+        <h1 class="question">Who are you trying to get found by?</h1>
+        <p class="helper">
+          Choose a few customer moments. Think about what they need when they search.
+        </p>
 
-        @if (availableAvatarSuggestions().length > 0) {
-          <section class="offer-section" aria-labelledby="customer-suggest-heading">
-            <h2 id="customer-suggest-heading" class="offer-section__title">
-              Suggested from your site — tap to add
-            </h2>
-            <ul class="offer-suggestions" aria-label="Suggested customer profiles">
-              @for (avatar of availableAvatarSuggestions(); track avatar) {
-                <li>
-                  <button
-                    type="button"
-                    class="offer-suggestion offer-suggestion--avatar"
-                    (click)="applyAvatarSuggestion(avatar)"
-                  >
-                    <i class="pi pi-plus" aria-hidden="true"></i>
-                    {{ avatar }}
-                  </button>
-                </li>
-              }
-            </ul>
-          </section>
-        }
+        <section class="customer-suggestion-panel" aria-labelledby="customer-suggest-heading">
+          <h2 id="customer-suggest-heading" class="offer-section__title">
+            Tap suggestions to add
+          </h2>
+          <ul class="customer-suggestion-list" aria-label="Suggested customer moments">
+            @for (avatar of customerMomentSuggestions(); track avatar) {
+              <li>
+                <button
+                  type="button"
+                  class="customer-suggestion"
+                  (click)="applyAvatarSuggestion(avatar)"
+                >
+                  <i class="pi pi-plus" aria-hidden="true"></i>
+                  <span>{{ avatar }}</span>
+                </button>
+              </li>
+            }
+          </ul>
+        </section>
 
-        <div class="avatar-list" role="group" aria-label="Customer avatars">
+        <div class="customer-moment-list" role="group" aria-label="Customer moments">
           @for (slot of avatarSlots(); track slot) {
-            <div class="avatar-block">
+            <article class="customer-moment-card">
+              <header class="customer-moment-card__header">
+                <span class="customer-moment-card__step">{{ slot + 1 }}</span>
+                <div>
+                  <h2>Customer moment</h2>
+                  <p>Who they are and what they are trying to do.</p>
+                </div>
+              </header>
+
               <div
                 class="avatar-row"
                 [class.avatar-row--filled]="customerAvatars()[slot].trim().length > 0"
               >
-                <span class="avatar-head" aria-hidden="true">
-                  <i class="pi pi-user"></i>
-                </span>
                 @if (slot === 0) {
                   <input
                     #avatarInput0
@@ -382,7 +401,7 @@
                     [value]="customerAvatars()[slot]"
                     (input)="updateCustomerAvatar(slot, $any($event.target).value)"
                     [placeholder]="avatarPlaceholder(slot)"
-                    aria-label="Customer 1: what they want"
+                    aria-label="Customer moment 1"
                     aria-required="true"
                   />
                 } @else {
@@ -394,7 +413,7 @@
                     [value]="customerAvatars()[slot]"
                     (input)="updateCustomerAvatar(slot, $any($event.target).value)"
                     [placeholder]="avatarPlaceholder(slot)"
-                    [attr.aria-label]="'Customer ' + (slot + 1) + ': what they want'"
+                    [attr.aria-label]="'Customer moment ' + (slot + 1)"
                   />
                 }
               </div>
@@ -436,7 +455,7 @@
                   }
                 </button>
               }
-            </div>
+            </article>
           }
         </div>
 
@@ -452,7 +471,7 @@
             (click)="addCustomerAvatarSlot()"
           >
             <i class="pi pi-plus" aria-hidden="true"></i>
-            Add more
+            Add another customer
           </button>
         </div>
 
@@ -669,6 +688,7 @@
               [class.scope-option--active]="customerScope() === option.id"
               [attr.aria-checked]="customerScope() === option.id"
               (click)="selectMarketScope(option.id)"
+              (keydown)="selectMarketScopeFromKeyboard($event, option.id)"
             >
               <i [class]="option.icon" aria-hidden="true"></i>
               <span class="scope-option__title">{{ option.label }}</span>
@@ -765,8 +785,46 @@
         </div>
       </form>
     }
+      </div>
+
+      <aside class="onboarding-help" aria-label="Step guidance">
+        <p class="onboarding-help__eyebrow">Guide</p>
+        <h2 class="onboarding-help__title">{{ currentStepHelp().title }}</h2>
+        <p class="onboarding-help__body">{{ currentStepHelp().body }}</p>
+        <div class="onboarding-help__example">
+          <span>Example</span>
+          <p>{{ currentStepHelp().example }}</p>
+        </div>
+      </aside>
+    </div>
     }
   </main>
 </div>
+
+@if (helpOpen()) {
+  <button
+    type="button"
+    class="help-sheet-backdrop"
+    aria-label="Close step guidance"
+    (click)="closeHelp()"
+  ></button>
+  <aside class="help-sheet" role="dialog" aria-modal="true" aria-label="Step guidance">
+    <div class="help-sheet__handle" aria-hidden="true"></div>
+    <header class="help-sheet__header">
+      <div>
+        <p class="onboarding-help__eyebrow">Guide</p>
+        <h2 class="help-sheet__title">{{ currentStepHelp().title }}</h2>
+      </div>
+      <button type="button" class="help-sheet__close" aria-label="Close" (click)="closeHelp()">
+        ×
+      </button>
+    </header>
+    <p class="onboarding-help__body">{{ currentStepHelp().body }}</p>
+    <div class="onboarding-help__example">
+      <span>Example</span>
+      <p>{{ currentStepHelp().example }}</p>
+    </div>
+  </aside>
+}
 
 <p-toast />

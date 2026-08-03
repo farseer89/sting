@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   HostBinding,
   inject,
@@ -26,6 +27,13 @@ import {
   type DiscoveryBookOnboardingStepId,
 } from './discovery-book-onboarding.steps';
 
+const FALLBACK_CUSTOMER_MOMENTS = [
+  'Homeowners with an urgent problem',
+  'Customers comparing options before they buy',
+  'Businesses planning a larger project',
+  'People looking for a trusted local provider',
+] as const;
+
 @Component({
   selector: 'app-protopipe-discovery-book-onboarding-panel',
   standalone: true,
@@ -47,6 +55,18 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
   readonly marketScopeOptions = MARKET_SCOPE_OPTIONS;
 
   readonly draft = this.store.draftSnapshot;
+  readonly customerMomentSuggestions = computed(() => {
+    const selected = new Set(
+      this.draft()
+        .customerAvatars.map((avatar) => avatar.trim().toLowerCase())
+        .filter(Boolean),
+    );
+    const suggestions =
+      this.store.availableAvatarSuggestions().length > 0
+        ? this.store.availableAvatarSuggestions()
+        : [...FALLBACK_CUSTOMER_MOMENTS];
+    return suggestions.filter((suggestion) => !selected.has(suggestion.trim().toLowerCase()));
+  });
 
   @HostBinding('class.kb-onboarding-panel--wizard')
   get wizardPanelHost(): boolean {
@@ -115,6 +135,20 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
       'Needs emergency help after a panel issue',
     ];
     return samples[index] ?? 'What does this person want?';
+  }
+
+  onModeKeydown(event: Event, mode: (typeof ONBOARDING_MODE_OPTIONS)[number]['id']): void {
+    if (!(event instanceof KeyboardEvent)) return;
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    this.store.selectMode(mode);
+  }
+
+  onMarketScopeKeydown(event: Event, scope: (typeof MARKET_SCOPE_OPTIONS)[number]['id']): void {
+    if (!(event instanceof KeyboardEvent)) return;
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    this.store.selectMarketScope(scope);
   }
 
   continue(): void {

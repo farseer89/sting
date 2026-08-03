@@ -35,6 +35,58 @@ import { ProtopipeOnboardingStateService } from '../../onboarding/protopipe-onbo
 
 export type { DiscoveryBookSection };
 
+interface DiscoveryBookStepHelp {
+  readonly label: string;
+  readonly title: string;
+  readonly body: string;
+  readonly example: string;
+}
+
+const DISCOVERY_BOOK_STEP_HELP: Record<DiscoveryBookOnboardingStepId, DiscoveryBookStepHelp> = {
+  'onboarding:getting-started': {
+    label: 'Start',
+    title: 'Start with the strongest signal you have.',
+    body:
+      'A website lets Discovery scan real pages and pre-fill the next steps. If this is pre-launch, we can still build the strategy from your offer and customer intent.',
+    example: 'Use your website for an existing business. Choose no website yet for a new idea or offer.',
+  },
+  'onboarding:offer': {
+    label: 'Offer',
+    title: 'Services become seed topics.',
+    body:
+      'The services you choose tell Discovery which keyword neighborhoods to explore first. Keep only the work you actually want more customers to find.',
+    example: 'An electrician might choose emergency repairs, EV chargers, and panel upgrades.',
+  },
+  'onboarding:customers': {
+    label: 'Customers',
+    title: 'Customer moments make keywords sharper.',
+    body:
+      'Search terms change based on who is searching and what they are trying to do. Describe the buying moment, not a generic persona.',
+    example: 'Homeowners comparing EV charger installers is more useful than just homeowners.',
+  },
+  'onboarding:competition': {
+    label: 'Competition',
+    title: 'Competitors reveal proven search demand.',
+    body:
+      'Competitor sites help Discovery find terms that already work in your market. Add direct competitors or businesses whose SEO you admire.',
+    example: 'For a local service, add one or two nearby providers ranking for similar jobs.',
+  },
+  'onboarding:market': {
+    label: 'Market',
+    title: 'Location controls search intent.',
+    body:
+      'Local, national, and worldwide searches behave differently. Choose where customers are when they are likely to buy.',
+    example: 'Emergency electrician is local. Digital templates may be national or worldwide.',
+  },
+  'onboarding:business-name': {
+    label: 'Name',
+    title: 'Name the workspace.',
+    body:
+      'This name appears across your dashboard and helps keep the generated strategy organized.',
+    example: 'Use your business name for a live company or a project name for a new idea.',
+  },
+};
+
 @Component({
   selector: 'app-protopipe-home-keyword-book',
   standalone: true,
@@ -123,6 +175,12 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
     if (!isOnboardingSection(section)) return null;
     return onboardingStepMeta(section);
   });
+  readonly activeStepHelp = computed(() => {
+    const section = this.activeSection();
+    if (!isOnboardingSection(section)) return null;
+    return DISCOVERY_BOOK_STEP_HELP[section];
+  });
+  readonly helpOpen = signal(false);
 
   constructor() {
     this.thinkerView.setFocusBackLabel('Back to keywords');
@@ -222,6 +280,14 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
         this.onDiscoveryStarted();
       }
     });
+  }
+
+  openHelp(): void {
+    this.helpOpen.set(true);
+  }
+
+  closeHelp(): void {
+    this.helpOpen.set(false);
   }
 
   goToNextOnboardingStep(): void {

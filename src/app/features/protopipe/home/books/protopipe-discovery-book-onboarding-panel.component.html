@@ -9,13 +9,14 @@
         <section class="kb-wizard__main">
           <div class="kb-start-options" role="radiogroup" aria-label="Starting point">
             @for (option of onboardingModeOptions; track option.id) {
-              <button
-                type="button"
+              <div
                 class="kb-start-option"
                 role="radio"
+                tabindex="0"
                 [class.kb-start-option--active]="draft().onboardingMode === option.id"
                 [attr.aria-checked]="draft().onboardingMode === option.id"
                 (click)="store.selectMode(option.id)"
+                (keydown)="onModeKeydown($event, option.id)"
               >
                 <span class="kb-start-option__icon" aria-hidden="true">
                   <i [class]="option.icon"></i>
@@ -27,25 +28,28 @@
                 <span class="kb-start-option__check" aria-hidden="true">
                   <i class="pi pi-check-circle"></i>
                 </span>
-              </button>
+
+                @if (option.id === 'existing_site' && draft().onboardingMode === 'existing_site') {
+                  <label class="kb-start-option__site">
+                    <span class="kb-wizard__label">Your website</span>
+                    <input
+                      id="discoveryBookWebsiteUrl"
+                      type="url"
+                      pInputText
+                      [ngModel]="draft().websiteUrl"
+                      (ngModelChange)="store.setWebsiteUrl($event)"
+                      (keydown.enter)="$event.stopPropagation()"
+                      placeholder="mauielectric.com"
+                      autocomplete="url"
+                    />
+                    <span class="kb-wizard__hint">
+                      We'll scan your site to pre-fill services and find keyword opportunities.
+                    </span>
+                  </label>
+                }
+              </div>
             }
           </div>
-
-          @if (draft().onboardingMode === 'existing_site') {
-            <label class="kb-wizard__field">
-              <span class="kb-wizard__label">Your website</span>
-              <input
-                id="discoveryBookWebsiteUrl"
-                type="url"
-                pInputText
-                [ngModel]="draft().websiteUrl"
-                (ngModelChange)="store.setWebsiteUrl($event)"
-                placeholder="mauielectric.com"
-                autocomplete="url"
-              />
-              <p class="kb-wizard__hint">We'll scan your site to pre-fill services and find keyword opportunities.</p>
-            </label>
-          }
         </section>
       </div>
     }
@@ -187,16 +191,17 @@
     }
 
     @case ('onboarding:customers') {
-      <div class="kb-wizard">
-        @if (store.availableAvatarSuggestions().length > 0) {
+      <div class="kb-wizard kb-wizard--customers">
+        @if (customerMomentSuggestions().length > 0) {
           <section class="kb-wizard__aside kb-wizard__aside--flush" aria-label="Suggested customer profiles">
-            <p class="kb-wizard__aside-label">Tap to add a profile</p>
-            <ul class="kb-wizard__suggestions">
-              @for (avatar of store.availableAvatarSuggestions(); track avatar) {
+            <p class="kb-wizard__aside-label">Tap a customer moment</p>
+            <p class="kb-wizard__hint">Use buying moments, problems, or jobs-to-be-done instead of generic personas.</p>
+            <ul class="kb-wizard__suggestions kb-wizard__suggestions--moments">
+              @for (avatar of customerMomentSuggestions(); track avatar) {
                 <li>
                   <button
                     type="button"
-                    class="kb-wizard__suggestion kb-wizard__suggestion--block"
+                    class="kb-wizard__suggestion"
                     (click)="store.applyAvatarSuggestion(avatar)"
                   >
                     <i class="pi pi-plus" aria-hidden="true"></i>
@@ -209,80 +214,57 @@
         }
 
         <section class="kb-wizard__main">
-          <label class="kb-wizard__field">
-            <span class="kb-wizard__label">Primary customer</span>
-            <textarea
-              rows="3"
-              class="kb-wizard__textarea"
-              [ngModel]="draft().customerAvatars[0]"
-              (ngModelChange)="store.updateCustomerAvatar(0, $event)"
-              [placeholder]="avatarPlaceholder(0)"
-              aria-label="Primary customer description"
-              aria-required="true"
-            ></textarea>
-          </label>
+          <div class="kb-person-grid" aria-label="Customer moments">
+            @for (slot of avatarSlots(); track slot) {
+              <article
+                class="kb-person-card"
+                [class.kb-person-card--primary]="slot === 0"
+                [class.kb-person-card--filled]="(draft().customerAvatars[slot] ?? '').trim().length > 0"
+              >
+                <div class="kb-person-card__profile">
+                  <span class="kb-person-card__portrait" aria-hidden="true">{{ slot + 1 }}</span>
+                  <div class="kb-person-card__identity">
+                    <h3 class="kb-person-card__name">
+                      {{ slot === 0 ? 'Primary customer moment' : 'Customer moment ' + (slot + 1) }}
+                    </h3>
+                    <p class="kb-person-card__subtitle">
+                      Describe what this customer is trying to solve or compare.
+                    </p>
+                  </div>
+                  @if (slot > 0) {
+                    <button
+                      type="button"
+                      class="kb-person-card__remove"
+                      (click)="store.removeCustomerAvatar(slot)"
+                      [attr.aria-label]="'Remove customer moment ' + (slot + 1)"
+                    >
+                      <i class="pi pi-times" aria-hidden="true"></i>
+                    </button>
+                  }
+                </div>
 
-          @if (store.avatarEnrichmentFor(0); as pending) {
-            <div class="kb-wizard__enrich" aria-live="polite">
-              <p class="kb-wizard__hint">Suggested detail</p>
-              <p class="kb-wizard__enrich-text">{{ pending.enriched }}</p>
-              <div class="kb-wizard__enrich-actions">
-                <button type="button" class="kb-wizard__input-btn" (click)="store.confirmAvatarEnrichment(0)">
-                  Use this
-                </button>
-                <button type="button" class="kb-wizard__link-btn" (click)="store.dismissAvatarEnrichment(0)">
-                  Keep mine
-                </button>
-              </div>
-            </div>
-          } @else if (store.canEnrichCustomerAvatar(0)) {
-            <button
-              type="button"
-              class="kb-wizard__link-btn"
-              (click)="store.enrichCustomerAvatar(0)"
-              [disabled]="store.avatarEnrichingSlot() === 0"
-            >
-              @if (store.avatarEnrichingSlot() === 0) {
-                <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
-                Adding detail…
-              } @else {
-                Add detail with AI
-              }
-            </button>
-          }
-
-          @for (slot of avatarSlots(); track slot) {
-            @if (slot > 0) {
-              <div class="kb-wizard__field-group">
-                <label class="kb-wizard__field">
-                  <span class="kb-wizard__label">Customer {{ slot + 1 }}</span>
+                <label class="kb-person-card__bio">
+                  <span class="kb-person-card__bio-label">Moment</span>
                   <textarea
                     rows="3"
-                    class="kb-wizard__textarea"
+                    class="kb-person-card__bio-input"
                     [ngModel]="draft().customerAvatars[slot]"
                     (ngModelChange)="store.updateCustomerAvatar(slot, $event)"
                     [placeholder]="avatarPlaceholder(slot)"
-                    [attr.aria-label]="'Customer ' + (slot + 1) + ' description'"
+                    [attr.aria-label]="'Customer moment ' + (slot + 1)"
+                    [attr.aria-required]="slot === 0 ? 'true' : null"
                   ></textarea>
                 </label>
-                <button
-                  type="button"
-                  class="kb-wizard__field-remove"
-                  (click)="store.removeCustomerAvatar(slot)"
-                  [attr.aria-label]="'Remove customer ' + (slot + 1)"
-                >
-                  Remove
-                </button>
 
                 @if (store.avatarEnrichmentFor(slot); as pending) {
-                  <div class="kb-wizard__enrich" aria-live="polite">
-                    <p class="kb-wizard__hint">Suggested detail</p>
-                    <p class="kb-wizard__enrich-text">{{ pending.enriched }}</p>
-                    <div class="kb-wizard__enrich-actions">
-                      <button type="button" class="kb-wizard__input-btn" (click)="store.confirmAvatarEnrichment(slot)">
+                  <div class="kb-person-enrich" aria-live="polite">
+                    <p class="kb-person-enrich__label">Suggested detail</p>
+                    <p class="kb-person-enrich__text">{{ pending.enriched }}</p>
+                    <div class="kb-person-enrich__actions">
+                      <button type="button" class="kb-person-enrich__confirm" (click)="store.confirmAvatarEnrichment(slot)">
                         Use this
                       </button>
-                      <button type="button" class="kb-wizard__link-btn" (click)="store.dismissAvatarEnrichment(slot)">
+                      <button type="button" class="kb-person-enrich__dismiss" (click)="store.dismissAvatarEnrichment(slot)">
                         Keep mine
                       </button>
                     </div>
@@ -290,7 +272,7 @@
                 } @else if (store.canEnrichCustomerAvatar(slot)) {
                   <button
                     type="button"
-                    class="kb-wizard__link-btn"
+                    class="kb-person-enrich__trigger"
                     (click)="store.enrichCustomerAvatar(slot)"
                     [disabled]="store.avatarEnrichingSlot() === slot"
                   >
@@ -298,30 +280,45 @@
                       <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
                       Adding detail…
                     } @else {
+                      <i class="pi pi-sparkles" aria-hidden="true"></i>
                       Add detail with AI
                     }
                   </button>
                 }
-              </div>
+
+                <div class="kb-person-card__foot">
+                  <span class="kb-person-card__badge" [class.kb-person-card__badge--primary]="slot === 0">
+                    {{ slot === 0 ? 'Required' : 'Optional' }}
+                  </span>
+                  <span
+                    class="kb-person-card__status"
+                    [class.kb-person-card__status--empty]="!(draft().customerAvatars[slot] ?? '').trim()"
+                  >
+                    {{ (draft().customerAvatars[slot] ?? '').trim() ? 'Ready' : 'Empty' }}
+                  </span>
+                </div>
+              </article>
             }
-          }
+          </div>
 
           @if (store.avatarEnrichError(); as enrichErr) {
             <p class="kb-wizard__status kb-wizard__status--error">{{ enrichErr }}</p>
           }
 
-          <button
-            type="button"
-            class="kb-wizard__link-btn"
-            [disabled]="!canAddCustomerAvatar()"
-            (click)="store.addCustomerAvatarSlot()"
-          >
-            <i class="pi pi-plus" aria-hidden="true"></i>
-            Add another customer
-          </button>
-          @if (!canAddCustomerAvatar() && (draft().customerAvatars[0] ?? '').trim().length < 5) {
-            <p class="kb-wizard__hint">Describe your primary customer first (5+ characters).</p>
-          }
+          <div class="kb-customer-add">
+            <button
+              type="button"
+              class="kb-customer-add__btn"
+              [disabled]="!canAddCustomerAvatar()"
+              (click)="store.addCustomerAvatarSlot()"
+            >
+              <i class="pi pi-plus" aria-hidden="true"></i>
+              Add another customer moment
+            </button>
+            @if (!canAddCustomerAvatar() && (draft().customerAvatars[0] ?? '').trim().length < 5) {
+              <p class="kb-customer-add__hint">Describe your primary customer moment first (5+ characters).</p>
+            }
+          </div>
         </section>
 
         <details class="kb-wizard__optional">
@@ -473,6 +470,7 @@
                   [class.kb-wizard__choice--active]="draft().marketScope === option.id"
                   [attr.aria-checked]="draft().marketScope === option.id"
                   (click)="store.selectMarketScope(option.id)"
+                  (keydown)="onMarketScopeKeydown($event, option.id)"
                 >
                   <i [class]="option.icon" aria-hidden="true"></i>
                   <span class="kb-wizard__choice-copy">

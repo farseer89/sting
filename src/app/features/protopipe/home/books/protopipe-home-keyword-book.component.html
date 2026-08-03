@@ -57,16 +57,22 @@
     </div>
   } @else {
     <nav class="kb-mobile-section-nav" aria-label="Discovery book sections">
-      <div class="kb-mobile-section-nav__group" aria-label="Onboarding steps">
+      @if (activeOnboardingMeta(); as mobileMeta) {
+        <div class="kb-mobile-step-summary">
+          <span>Step {{ mobileMeta.onboardingStep }} of {{ onboardingSteps.length }}</span>
+          <strong>{{ mobileMeta.navLabel }}</strong>
+        </div>
+      }
+      <div class="kb-mobile-step-dots" aria-label="Onboarding steps">
         @for (step of onboardingSteps; track step.id) {
           <button
             type="button"
-            class="kb-mobile-section-nav__pill"
+            class="kb-mobile-step-dot"
             [class.is-active]="isOnboardingStepActive(step.id)"
             (click)="selectSection(step.id)"
+            [attr.aria-label]="'Go to step ' + step.onboardingStep + ': ' + step.navLabel"
           >
-            <span>{{ step.onboardingStep }}</span>
-            {{ step.navLabel }}
+            {{ step.onboardingStep }}
           </button>
         }
       </div>
@@ -244,28 +250,73 @@
           }
           @default {
             @if (activeOnboardingMeta(); as meta) {
-              <div class="kb-panel__head kb-panel__head--wizard">
-                <div class="kb-wizard-progress" aria-hidden="true">
-                  <span
-                    class="kb-wizard-progress__bar"
-                    [style.width.%]="(meta.onboardingStep / onboardingSteps.length) * 100"
-                  ></span>
-                </div>
-                <p class="kb-onboarding-trace">
-                  Step {{ meta.onboardingStep }} of {{ onboardingSteps.length }}
-                </p>
-                <span class="kb-panel-kicker">{{ meta.kicker }}</span>
-                <h2 class="kb-panel-title">{{ meta.title }}</h2>
-                <p class="kb-panel-deck">{{ meta.helper }}</p>
+              <div class="kb-onboarding-workspace">
+                <section class="kb-onboarding-stage" aria-labelledby="discoveryBookOnboardingTitle">
+                  <div class="kb-panel__head kb-panel__head--wizard">
+                    <div class="kb-wizard-progress" aria-hidden="true">
+                      <span
+                        class="kb-wizard-progress__bar"
+                        [style.width.%]="(meta.onboardingStep / onboardingSteps.length) * 100"
+                      ></span>
+                    </div>
+                    <p class="kb-onboarding-trace">
+                      Step {{ meta.onboardingStep }} of {{ onboardingSteps.length }}
+                    </p>
+                    <span class="kb-panel-kicker">{{ meta.kicker }}</span>
+                    <h2 id="discoveryBookOnboardingTitle" class="kb-panel-title">{{ meta.title }}</h2>
+                    <p class="kb-panel-deck">{{ meta.helper }}</p>
+                    <button type="button" class="kb-help-trigger" (click)="openHelp()">
+                      <i class="pi pi-info-circle" aria-hidden="true"></i>
+                      Why this matters
+                    </button>
+                  </div>
+
+                  <app-protopipe-discovery-book-onboarding-panel
+                    [stepId]="meta.id"
+                    [onboardingCompleted]="onboardingCompleted()"
+                    (discoveryStarted)="onDiscoveryStarted()"
+                    (stepAdvance)="goToNextOnboardingStep()"
+                    (stepBack)="goToPreviousOnboardingStep()"
+                  />
+                </section>
+
+                @if (activeStepHelp(); as help) {
+                  <aside class="kb-onboarding-help" aria-label="Why this step matters">
+                    <span class="kb-onboarding-help__eyebrow">{{ help.label }}</span>
+                    <h3>{{ help.title }}</h3>
+                    <p>{{ help.body }}</p>
+                    <div class="kb-onboarding-help__example">
+                      <span>Example</span>
+                      <p>{{ help.example }}</p>
+                    </div>
+                  </aside>
+                }
               </div>
 
-              <app-protopipe-discovery-book-onboarding-panel
-                [stepId]="meta.id"
-                [onboardingCompleted]="onboardingCompleted()"
-                (discoveryStarted)="onDiscoveryStarted()"
-                (stepAdvance)="goToNextOnboardingStep()"
-                (stepBack)="goToPreviousOnboardingStep()"
-              />
+              @if (helpOpen()) {
+                @if (activeStepHelp(); as help) {
+                  <div class="kb-help-sheet" role="dialog" aria-modal="true" aria-labelledby="discoveryBookHelpTitle">
+                    <button
+                      type="button"
+                      class="kb-help-sheet__backdrop"
+                      aria-label="Close help"
+                      (click)="closeHelp()"
+                    ></button>
+                    <section class="kb-help-sheet__panel">
+                      <button type="button" class="kb-help-sheet__close" aria-label="Close help" (click)="closeHelp()">
+                        <i class="pi pi-times" aria-hidden="true"></i>
+                      </button>
+                      <span class="kb-onboarding-help__eyebrow">{{ help.label }}</span>
+                      <h3 id="discoveryBookHelpTitle">{{ help.title }}</h3>
+                      <p>{{ help.body }}</p>
+                      <div class="kb-onboarding-help__example">
+                        <span>Example</span>
+                        <p>{{ help.example }}</p>
+                      </div>
+                    </section>
+                  </div>
+                }
+              }
             }
           }
         }

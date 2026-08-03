@@ -16,8 +16,11 @@ import {
 import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
 import {
-  MARKET_SCOPE_OPTIONS,
+  MARKET_REACH_OPTIONS,
+  marketReachNeedsCountry,
+  marketReachNeedsLocal,
   ONBOARDING_MODE_OPTIONS,
+  type MarketReachMode,
 } from '../../onboarding/onboarding-market.constants';
 import { DiscoveryBookOnboardingStore } from './discovery-book-onboarding.store';
 import {
@@ -51,7 +54,9 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
   readonly stepBack = output<void>();
 
   readonly onboardingModeOptions = ONBOARDING_MODE_OPTIONS;
-  readonly marketScopeOptions = MARKET_SCOPE_OPTIONS;
+  readonly marketReachOptions = MARKET_REACH_OPTIONS;
+  readonly marketReachNeedsLocal = marketReachNeedsLocal;
+  readonly marketReachNeedsCountry = marketReachNeedsCountry;
 
   readonly draft = this.store.draftSnapshot;
   readonly scanUiContext = this.store.scanUiContext;
@@ -65,6 +70,12 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
     effect(() => {
       this.stepId();
       this.store.clearStepError();
+    });
+
+    effect(() => {
+      if (this.stepId() === 'onboarding:market') {
+        this.store.ensureMarketDefaults();
+      }
     });
 
     effect(() => {
@@ -133,11 +144,11 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
     this.store.selectMode(mode);
   }
 
-  onMarketScopeKeydown(event: Event, scope: (typeof MARKET_SCOPE_OPTIONS)[number]['id']): void {
+  onMarketReachKeydown(event: Event, reach: MarketReachMode): void {
     if (!(event instanceof KeyboardEvent)) return;
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
-    this.store.selectMarketScope(scope);
+    this.store.selectMarketReach(reach);
   }
 
   continue(): void {

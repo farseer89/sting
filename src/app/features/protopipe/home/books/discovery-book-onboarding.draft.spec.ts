@@ -41,6 +41,19 @@ describe('discovery-book-onboarding.draft', () => {
       customerAvatars: ['A', 'B', 'C', 'D'],
       targetCustomerSites: [],
       competitors: [],
+      marketReach: 'local_and_national',
+      localMarket: {
+        serpLocationCode: 1234,
+        serpLocationName: 'Maui, Hawaii, United States',
+        city: 'Maui',
+        state: 'Hawaii',
+        countryIso: 'US',
+      },
+      nationalMarket: {
+        serpLocationCode: 2840,
+        serpLocationName: 'United States',
+        countryIso: 'US',
+      },
       marketScope: 'local',
       serpLocationCode: 1234,
       serpLocationName: 'Maui, Hawaii, United States',
@@ -50,6 +63,14 @@ describe('discovery-book-onboarding.draft', () => {
     });
 
     expect(body.profile?.customerAvatars).toHaveLength(4);
+    expect(body.profile?.marketReach).toBe('local_and_national');
+    expect(body.profile?.marketTiers).toEqual(['local', 'national']);
     expect(body.websiteUrl).toBe('https://mauielectric.com');
+  });
+
+  it('defaults new drafts to nationwide United States', () => {
+    const draft = draftFromStrategy(null, null);
+    expect(draft.marketReach).toBe('national');
+    expect(draft.nationalMarket?.countryIso).toBe('US');
   });
 });

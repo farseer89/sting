@@ -77,8 +77,8 @@ const DISCOVERY_BOOK_STEP_HELP: Record<DiscoveryBookOnboardingStepId, DiscoveryB
     label: 'Market',
     title: 'Location controls search intent.',
     body:
-      'Local, national, and worldwide searches behave differently. Choose where customers are when they are likely to buy.',
-    example: 'Local, national, and worldwide searches behave differently — match where customers buy.',
+      'Choose nationwide reach, or compare your local area with national or worldwide demand. Keyword volume can differ sharply by market — we store both when you pick local + nationwide.',
+    example: 'Nationwide defaults to the United States; add your town for local + nationwide tracking.',
   },
   'onboarding:business-name': {
     label: 'Name',

@@ -236,45 +236,6 @@
             }
           </div>
         </section>
-
-        <details class="kb-wizard__optional">
-          <summary>Example customer websites <span class="kb-wizard__optional-tag">Optional</span></summary>
-          <div class="kb-wizard__optional-body">
-            <p class="kb-wizard__hint">Paste sites for customers you want more of — discovery uses them as extra context.</p>
-            <label class="kb-wizard__field" for="discoveryBookTargetCustomerDraft">
-              <span class="kb-wizard__label">Customer example URL</span>
-              <div class="kb-wizard__input-row">
-                <input
-                  id="discoveryBookTargetCustomerDraft"
-                  type="text"
-                  pInputText
-                  [ngModel]="store.targetCustomerDraft()"
-                  (ngModelChange)="store.onTargetCustomerDraftInput($event)"
-                  (keydown.enter)="store.addTargetCustomer(); $event.preventDefault()"
-                  placeholder="customer-site.com"
-                />
-                <button type="button" class="kb-wizard__input-btn" (click)="store.addTargetCustomer()">Add</button>
-              </div>
-            </label>
-            @if (draft().targetCustomerSites.length > 0) {
-              <ul class="kb-wizard__chips" aria-label="Target customer examples">
-                @for (site of draft().targetCustomerSites; track site; let i = $index) {
-                  <li class="kb-wizard__chip">
-                    <span>{{ site }}</span>
-                    <button
-                      type="button"
-                      class="kb-wizard__chip-remove"
-                      (click)="store.removeTargetCustomer(i)"
-                      [attr.aria-label]="'Remove ' + site"
-                    >
-                      <i class="pi pi-times" aria-hidden="true"></i>
-                    </button>
-                  </li>
-                }
-              </ul>
-            }
-          </div>
-        </details>
       </div>
     }
 
@@ -336,16 +297,16 @@
         <section class="kb-wizard__main">
           <fieldset class="kb-wizard__choices">
             <legend class="kb-wizard__label">Market reach</legend>
-            <div class="kb-wizard__choice-list" role="radiogroup" aria-label="Customer market scope">
-              @for (option of marketScopeOptions; track option.id) {
+            <div class="kb-wizard__choice-list" role="radiogroup" aria-label="Customer market reach">
+              @for (option of marketReachOptions; track option.id) {
                 <button
                   type="button"
                   class="kb-wizard__choice"
                   role="radio"
-                  [class.kb-wizard__choice--active]="draft().marketScope === option.id"
-                  [attr.aria-checked]="draft().marketScope === option.id"
-                  (click)="store.selectMarketScope(option.id)"
-                  (keydown)="onMarketScopeKeydown($event, option.id)"
+                  [class.kb-wizard__choice--active]="draft().marketReach === option.id"
+                  [attr.aria-checked]="draft().marketReach === option.id"
+                  (click)="store.selectMarketReach(option.id)"
+                  (keydown)="onMarketReachKeydown($event, option.id)"
                 >
                   <i [class]="option.icon" aria-hidden="true"></i>
                   <span class="kb-wizard__choice-copy">
@@ -357,50 +318,52 @@
             </div>
           </fieldset>
 
-          @if (draft().marketScope === 'local') {
-            <label class="kb-wizard__field" for="discoveryBookLocationSearch">
-              <span class="kb-wizard__label">Your town or city</span>
-              @if (draft().serpLocationName; as locationName) {
-                <p class="kb-wizard__selected">Selected: {{ locationName }}</p>
-              }
-              <p-autocomplete
-                inputId="discoveryBookLocationSearch"
-                [suggestions]="store.locationSuggestions()"
-                (completeMethod)="searchLocations($event)"
-                (onSelect)="onLocationSelected($event)"
-                (onClear)="onLocationCleared()"
-                field="name"
-                optionLabel="name"
-                placeholder="Start typing (e.g. Maui)"
-                [forceSelection]="false"
-                [minLength]="2"
-                [delay]="250"
-                appendTo="body"
-              />
-            </label>
-          }
+          @if (draft().marketReach; as reach) {
+            @if (marketReachNeedsLocal(reach)) {
+              <label class="kb-wizard__field" for="discoveryBookLocationSearch">
+                <span class="kb-wizard__label">Your town or city</span>
+                @if (draft().localMarket?.serpLocationName; as locationName) {
+                  <p class="kb-wizard__selected">Selected: {{ locationName }}</p>
+                }
+                <p-autocomplete
+                  inputId="discoveryBookLocationSearch"
+                  [suggestions]="store.locationSuggestions()"
+                  (completeMethod)="searchLocations($event)"
+                  (onSelect)="onLocationSelected($event)"
+                  (onClear)="onLocationCleared()"
+                  field="name"
+                  optionLabel="name"
+                  placeholder="Start typing (e.g. Maui)"
+                  [forceSelection]="false"
+                  [minLength]="2"
+                  [delay]="250"
+                  appendTo="body"
+                />
+              </label>
+            }
 
-          @if (draft().marketScope === 'national') {
-            <label class="kb-wizard__field" for="discoveryBookCountrySearch">
-              <span class="kb-wizard__label">Country</span>
-              @if (draft().serpLocationName; as countryName) {
-                <p class="kb-wizard__selected">Selected: {{ countryName }}</p>
-              }
-              <p-autocomplete
-                inputId="discoveryBookCountrySearch"
-                [suggestions]="store.countrySuggestions()"
-                (completeMethod)="searchCountries($event)"
-                (onSelect)="onCountrySelected($event)"
-                (onClear)="onCountryCleared()"
-                field="name"
-                optionLabel="name"
-                placeholder="Search countries"
-                [forceSelection]="true"
-                [minLength]="0"
-                [delay]="0"
-                appendTo="body"
-              />
-            </label>
+            @if (marketReachNeedsCountry(reach)) {
+              <label class="kb-wizard__field" for="discoveryBookCountrySearch">
+                <span class="kb-wizard__label">Country</span>
+                @if (draft().nationalMarket?.serpLocationName; as countryName) {
+                  <p class="kb-wizard__selected">Selected: {{ countryName }}</p>
+                }
+                <p-autocomplete
+                  inputId="discoveryBookCountrySearch"
+                  [suggestions]="store.countrySuggestions()"
+                  (completeMethod)="searchCountries($event)"
+                  (onSelect)="onCountrySelected($event)"
+                  (onClear)="onCountryCleared()"
+                  field="name"
+                  optionLabel="name"
+                  placeholder="Search countries"
+                  [forceSelection]="true"
+                  [minLength]="0"
+                  [delay]="0"
+                  appendTo="body"
+                />
+              </label>
+            }
           }
         </section>
       </div>

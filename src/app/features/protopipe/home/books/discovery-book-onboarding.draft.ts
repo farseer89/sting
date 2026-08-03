@@ -1,13 +1,26 @@
 import type {
+  MarketLocationRef,
   ProtopipeOnboardingProfile,
   ProtopipeOnboardingRequest,
   ProtopipeSerpLocationOption,
 } from '@hive/contracts';
+import {
+  defaultNationalMarket,
+  inferMarketReach,
+  legacyMarketScopeForReach,
+  marketTiersForReach,
+  primarySerpLocation,
+  resolveLocalMarket,
+  resolveNationalMarket,
+} from './discovery-book-market.utils';
 import type { ProtopipeSite } from '../../protopipe.models';
 import {
   MARKET_COUNTRIES,
+  marketReachNeedsCountry,
+  marketReachNeedsLocal,
   type CustomerMarketScope,
   type MarketCountryOption,
+  type MarketReachMode,
   type OnboardingModeId,
 } from '../../onboarding/onboarding-market.constants';
 
@@ -21,12 +34,59 @@ export interface DiscoveryBookOnboardingDraft {
   customerAvatars: string[];
   targetCustomerSites: string[];
   competitors: string[];
+  marketReach: MarketReachMode | null;
+  localMarket: MarketLocationRef | null;
+  nationalMarket: MarketLocationRef | null;
   marketScope: CustomerMarketScope | null;
   serpLocationCode?: number;
   serpLocationName?: string;
   city?: string;
   state?: string;
   countryIso?: string;
+}
+
+export function defaultMarketDraft(): Pick<
+  DiscoveryBookOnboardingDraft,
+  | 'marketReach'
+  | 'localMarket'
+  | 'nationalMarket'
+  | 'marketScope'
+  | 'serpLocationCode'
+  | 'serpLocationName'
+  | 'countryIso'
+> {
+  const nationalMarket = defaultNationalMarket();
+  return {
+    marketReach: 'national',
+    localMarket: null,
+    nationalMarket,
+    marketScope: 'national',
+    serpLocationCode: nationalMarket.serpLocationCode,
+    serpLocationName: nationalMarket.serpLocationName,
+    countryIso: nationalMarket.countryIso,
+  };
+}
+
+export function syncLegacyMarketFields(
+  draft: DiscoveryBookOnboardingDraft,
+): DiscoveryBookOnboardingDraft {
+  if (!draft.marketReach) return draft;
+  const localMarket = marketReachNeedsLocal(draft.marketReach) ? draft.localMarket : null;
+  const nationalMarket = marketReachNeedsCountry(draft.marketReach)
+    ? (draft.nationalMarket ?? defaultNationalMarket())
+    : null;
+  const primary = primarySerpLocation({ localMarket, nationalMarket });
+  return {
+    ...draft,
+    localMarket,
+    nationalMarket,
+    marketScope: legacyMarketScopeForReach(draft.marketReach),
+    serpLocationCode: primary?.serpLocationCode,
+    serpLocationName: primary?.serpLocationName,
+    city: localMarket?.city,
+    state: localMarket?.state,
+    countryIso: nationalMarket?.countryIso ?? localMarket?.countryIso,
+  };
 }
 
 export function draftFromStrategy(
@@ -36,7 +96,14 @@ export function draftFromStrategy(
   const mode = profile?.onboardingMode ?? 'existing_site';
   const rawWebsite = site?.url?.trim() || site?.hostname?.trim() || '';
   const websiteUrl = isPendingSiteHostname(rawWebsite) ? '' : stripUrlProtocol(rawWebsite);
-  return {
+
+  const reach = profile ? inferMarketReach(profile) : null;
+  const localMarket = profile ? resolveLocalMarket(profile) ?? null : null;
+  const nationalMarket = profile
+    ? resolveNationalMarket(profile) ?? (reach === 'national' ? defaultNationalMarket() : null)
+    : null;
+
+  const base: DiscoveryBookOnboardingDraft = {
     onboardingMode: mode,
     websiteUrl,
     businessName: site?.displayName?.trim() ?? '',
@@ -46,6 +113,9 @@ export function draftFromStrategy(
       : [''],
     targetCustomerSites: [...(profile?.targetCustomerSites ?? [])],
     competitors: [...(profile?.competitors ?? [])],
+    marketReach: reach,
+    localMarket,
+    nationalMarket,
     marketScope: profile?.marketScope ?? null,
     serpLocationCode: profile?.serpLocationCode,
     serpLocationName: profile?.serpLocationName,
@@ -53,6 +123,12 @@ export function draftFromStrategy(
     state: profile?.state,
     countryIso: profile?.countryIso,
   };
+
+  if (!base.marketReach) {
+    return { ...base, ...defaultMarketDraft() };
+  }
+
+  return syncLegacyMarketFields(base);
 }
 
 export function draftFingerprint(draft: DiscoveryBookOnboardingDraft): string {
@@ -62,51 +138,60 @@ export function draftFingerprint(draft: DiscoveryBookOnboardingDraft): string {
     competitors: [...draft.competitors].sort(),
     targetCustomerSites: [...draft.targetCustomerSites].sort(),
     customerAvatars: draft.customerAvatars.map((a) => a.trim()).filter(Boolean),
+    localMarket: draft.localMarket,
+    nationalMarket: draft.nationalMarket,
   });
 }
 
 export function draftToOnboardingRequest(
   draft: DiscoveryBookOnboardingDraft,
 ): ProtopipeOnboardingRequest {
-  const scope = draft.marketScope;
-  if (!scope) {
-    throw new Error('Market scope is required');
+  const synced = syncLegacyMarketFields(draft);
+  const reach = synced.marketReach;
+  if (!reach) {
+    throw new Error('Market reach is required');
   }
 
   const profile: ProtopipeOnboardingProfile = {
-    onboardingMode: draft.onboardingMode,
-    services: draft.services.map((s) => s.trim()).filter(Boolean),
-    customerAvatars: draft.customerAvatars.map((a) => a.trim()).filter(Boolean),
-    targetCustomerSites: draft.targetCustomerSites.map((s) => s.trim()).filter(Boolean),
-    competitors: draft.competitors.map((c) => c.trim()).filter(Boolean),
-    marketScope: scope,
-    serpLocationCode: draft.serpLocationCode,
-    serpLocationName: draft.serpLocationName?.trim() || undefined,
-    city: draft.city?.trim() || undefined,
-    state: draft.state?.trim() || undefined,
-    countryIso: draft.countryIso?.trim().toUpperCase() || undefined,
+    onboardingMode: synced.onboardingMode,
+    services: synced.services.map((s) => s.trim()).filter(Boolean),
+    customerAvatars: synced.customerAvatars.map((a) => a.trim()).filter(Boolean),
+    targetCustomerSites: synced.targetCustomerSites.map((s) => s.trim()).filter(Boolean),
+    competitors: synced.competitors.map((c) => c.trim()).filter(Boolean),
+    marketReach: reach,
+    marketTiers: marketTiersForReach(reach),
+    localMarket: synced.localMarket ?? undefined,
+    nationalMarket: synced.nationalMarket ?? undefined,
+    marketScope: synced.marketScope!,
+    serpLocationCode: synced.serpLocationCode,
+    serpLocationName: synced.serpLocationName?.trim() || undefined,
+    city: synced.city?.trim() || undefined,
+    state: synced.state?.trim() || undefined,
+    countryIso: synced.countryIso?.trim().toUpperCase() || undefined,
   };
 
   return {
-    businessName: draft.businessName.trim(),
-    websiteUrl: draft.onboardingMode === 'strategy_only' ? '' : normalizeUrl(draft.websiteUrl),
+    businessName: synced.businessName.trim(),
+    websiteUrl: synced.onboardingMode === 'strategy_only' ? '' : normalizeUrl(synced.websiteUrl),
     profile,
   };
 }
 
 export function countryFromDraft(draft: DiscoveryBookOnboardingDraft): MarketCountryOption | null {
-  if (!draft.countryIso) return null;
-  return MARKET_COUNTRIES.find((c) => c.iso === draft.countryIso) ?? null;
+  const iso = draft.nationalMarket?.countryIso ?? draft.countryIso;
+  if (!iso) return null;
+  return MARKET_COUNTRIES.find((c) => c.iso === iso) ?? null;
 }
 
 export function locationFromDraft(
   draft: DiscoveryBookOnboardingDraft,
 ): ProtopipeSerpLocationOption | null {
-  if (!draft.serpLocationName || draft.serpLocationCode == null) return null;
+  const local = draft.localMarket;
+  if (!local?.serpLocationName || local.serpLocationCode == null) return null;
   return {
-    code: draft.serpLocationCode,
-    name: draft.serpLocationName,
-    country: draft.countryIso ?? '',
+    code: local.serpLocationCode,
+    name: local.serpLocationName,
+    country: local.countryIso ?? '',
   };
 }
 

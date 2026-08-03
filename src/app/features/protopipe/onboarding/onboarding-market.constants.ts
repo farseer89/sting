@@ -1,5 +1,8 @@
-/** Where the business's customers are — drives step 5 of onboarding. */
+/** Where the business's customers are — drives onboarding market step. */
 export type CustomerMarketScope = 'local' | 'national' | 'worldwide';
+
+/** Primary market reach preset (replaces exclusive local/national/worldwide pick). */
+export type MarketReachMode = 'national' | 'local_and_national' | 'local_and_worldwide';
 
 /** How the user started onboarding — step 1 fork. */
 export type OnboardingModeId = 'existing_site' | 'strategy_only';
@@ -26,6 +29,14 @@ export const ONBOARDING_MODE_OPTIONS: readonly OnboardingModeOption[] = [
   },
 ];
 
+export interface MarketReachOption {
+  id: MarketReachMode;
+  label: string;
+  description: string;
+  icon: string;
+}
+
+/** @deprecated Use {@link MARKET_REACH_OPTIONS} */
 export interface MarketScopeOption {
   id: CustomerMarketScope;
   label: string;
@@ -39,6 +50,34 @@ export interface MarketCountryOption {
   iso: string;
 }
 
+export const DEFAULT_US_COUNTRY: MarketCountryOption = {
+  code: 2840,
+  name: 'United States',
+  iso: 'US',
+};
+
+export const MARKET_REACH_OPTIONS: readonly MarketReachOption[] = [
+  {
+    id: 'national',
+    label: 'Nationwide',
+    description: 'Search demand across a country (United States by default)',
+    icon: 'pi pi-flag',
+  },
+  {
+    id: 'local_and_national',
+    label: 'Local + nationwide',
+    description: 'Your town or city and national volume side by side',
+    icon: 'pi pi-map-marker',
+  },
+  {
+    id: 'local_and_worldwide',
+    label: 'Local + worldwide',
+    description: 'Your area plus global search interest',
+    icon: 'pi pi-globe',
+  },
+];
+
+/** @deprecated Legacy single-scope options — kept for readouts/migration labels. */
 export const MARKET_SCOPE_OPTIONS: readonly MarketScopeOption[] = [
   {
     id: 'local',
@@ -62,7 +101,7 @@ export const MARKET_SCOPE_OPTIONS: readonly MarketScopeOption[] = [
 
 /** DataForSEO country-level SERP location codes (common markets). */
 export const MARKET_COUNTRIES: readonly MarketCountryOption[] = [
-  { code: 2840, name: 'United States', iso: 'US' },
+  DEFAULT_US_COUNTRY,
   { code: 2124, name: 'Canada', iso: 'CA' },
   { code: 2826, name: 'United Kingdom', iso: 'GB' },
   { code: 2036, name: 'Australia', iso: 'AU' },
@@ -83,3 +122,16 @@ export const MARKET_COUNTRIES: readonly MarketCountryOption[] = [
   { code: 2056, name: 'Belgium', iso: 'BE' },
   { code: 2616, name: 'Poland', iso: 'PL' },
 ];
+
+export function marketReachNeedsLocal(reach: MarketReachMode): boolean {
+  return reach === 'local_and_national' || reach === 'local_and_worldwide';
+}
+
+export function marketReachNeedsCountry(reach: MarketReachMode): boolean {
+  return reach === 'national' || reach === 'local_and_national';
+}
+
+export function marketReachLabel(reach: MarketReachMode | null | undefined): string {
+  if (!reach) return '—';
+  return MARKET_REACH_OPTIONS.find((o) => o.id === reach)?.label ?? reach;
+}

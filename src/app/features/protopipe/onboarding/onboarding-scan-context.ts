@@ -1,7 +1,5 @@
-import type {
-  CustomerMarketScope,
-  ProtopipeScanOfferResponse,
-} from '@hive/contracts';
+import type { ProtopipeScanOfferResponse } from '@hive/contracts';
+import type { CustomerMarketScope, MarketReachMode } from './onboarding-market.constants';
 
 export interface OnboardingScanUiContext {
   businessNameHint: string | null;
@@ -76,15 +74,25 @@ function formatServiceList(services: string[], max = 3): string {
   return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
 }
 
-function marketExample(service: string, scope: CustomerMarketScope | null | undefined): string {
+function marketExample(
+  service: string,
+  reach: MarketReachMode | null | undefined,
+  scope: CustomerMarketScope | null | undefined,
+): string {
   const label = service.trim() || 'your main service';
-  if (scope === 'national' || scope === 'worldwide') {
+  if (reach === 'local_and_national') {
+    return `${label} might get 10 searches/month locally and 1,000+ nationwide — we track both.`;
+  }
+  if (reach === 'local_and_worldwide') {
+    return `${label} can differ between your town and global search interest.`;
+  }
+  if (reach === 'national' || scope === 'national' || scope === 'worldwide') {
     return `${label} may reach customers nationally; some guides still skew local.`;
   }
   if (scope === 'local') {
     return `${label} usually behaves like a local search — customers nearby when they need help.`;
   }
-  return `${label} is often local; broader guides may be national or worldwide.`;
+  return 'Nationwide defaults to the United States — add your city for local + nationwide tracking.';
 }
 
 function buildStandaloneExamples(input: {
@@ -93,6 +101,7 @@ function buildStandaloneExamples(input: {
   avatars: string[];
   businessNameHint: string | null;
   marketScope: CustomerMarketScope | null | undefined;
+  marketReach?: MarketReachMode | null | undefined;
   isStrategyOnly: boolean;
 }): StandaloneStepHelpExamples {
   const trade = tradeName(input.tradeLabel, input.services);
@@ -115,7 +124,7 @@ function buildStandaloneExamples(input: {
       ? `Add nearby or online competitors also offering ${services[0].toLowerCase()}.`
       : DEFAULT_STANDALONE_EXAMPLES[5];
 
-  const marketEx = marketExample(services[0] ?? trade, input.marketScope);
+  const marketEx = marketExample(services[0] ?? trade, input.marketReach, input.marketScope);
   const nameExample = input.businessNameHint
     ? `We detected "${input.businessNameHint}" from your site — adjust if needed.`
     : DEFAULT_STANDALONE_EXAMPLES[7];
@@ -154,6 +163,7 @@ export function buildOnboardingScanUiContext(input: {
   tradeLabel?: string | null;
   isStrategyOnly?: boolean;
   marketScope?: CustomerMarketScope | null;
+  marketReach?: MarketReachMode | null;
 }): OnboardingScanUiContext {
   const services =
     input.services && input.services.length > 0
@@ -174,6 +184,7 @@ export function buildOnboardingScanUiContext(input: {
     avatars,
     businessNameHint,
     marketScope: input.marketScope ?? null,
+    marketReach: input.marketReach ?? null,
     isStrategyOnly: input.isStrategyOnly ?? false,
   });
 

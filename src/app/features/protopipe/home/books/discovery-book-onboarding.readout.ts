@@ -1,8 +1,8 @@
 import type { ProtopipeOnboardingProfile } from '@hive/contracts';
 import type { ProtopipeSite } from '../../protopipe.models';
 import {
-  MARKET_SCOPE_OPTIONS,
   ONBOARDING_MODE_OPTIONS,
+  marketReachLabel,
 } from '../../onboarding/onboarding-market.constants';
 import type { DiscoveryBookOnboardingStepId } from './discovery-book-onboarding.steps';
 
@@ -22,19 +22,22 @@ function modeLabel(mode: ProtopipeOnboardingProfile['onboardingMode'] | undefine
   return ONBOARDING_MODE_OPTIONS.find((o) => o.id === id)?.label ?? id;
 }
 
-function scopeLabel(scope: ProtopipeOnboardingProfile['marketScope'] | undefined): string {
-  if (!scope) return '—';
-  return MARKET_SCOPE_OPTIONS.find((o) => o.id === scope)?.label ?? scope;
-}
-
 function marketDetail(profile: ProtopipeOnboardingProfile): string {
-  const scope = profile.marketScope;
-  if (scope === 'worldwide') return 'Worldwide';
-  if (profile.serpLocationName?.trim()) return profile.serpLocationName.trim();
-  if (scope === 'local') {
-    const parts = [profile.city, profile.state].filter((p) => p?.trim());
-    if (parts.length > 0) return parts.join(', ');
+  const parts: string[] = [];
+  if (profile.localMarket?.serpLocationName) {
+    parts.push(profile.localMarket.serpLocationName);
+  } else if (profile.marketScope === 'local' && profile.serpLocationName) {
+    parts.push(profile.serpLocationName);
   }
+  if (profile.nationalMarket?.serpLocationName) {
+    parts.push(profile.nationalMarket.serpLocationName);
+  } else if (profile.marketScope === 'national' && profile.serpLocationName) {
+    parts.push(profile.serpLocationName);
+  }
+  if (profile.marketReach === 'local_and_worldwide' && parts.length === 1) {
+    parts.push('Worldwide');
+  }
+  if (parts.length > 0) return parts.join(' · ');
   if (profile.countryIso?.trim()) return profile.countryIso.trim();
   return '—';
 }
@@ -99,8 +102,11 @@ export function buildDiscoveryBookOnboardingReadout(
     case 'onboarding:market':
       return {
         fields: [
-          field('Market scope', scopeLabel(p?.marketScope)),
-          field('Location', p ? marketDetail(p) : '—'),
+          field(
+            'Market reach',
+            p?.marketReach ? marketReachLabel(p.marketReach) : '—',
+          ),
+          field('Locations', p ? marketDetail(p) : '—'),
         ],
       };
     case 'onboarding:business-name':

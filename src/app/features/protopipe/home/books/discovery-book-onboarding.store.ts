@@ -8,8 +8,10 @@ import { ProtopipeApiService } from '../../protopipe-api.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import {
   MARKET_COUNTRIES,
-  type CustomerMarketScope,
+  marketReachNeedsCountry,
+  marketReachNeedsLocal,
   type MarketCountryOption,
+  type MarketReachMode,
   type OnboardingModeId,
 } from '../../onboarding/onboarding-market.constants';
 import { ProtopipeKeywordPickerStore } from '../keyword-picker/protopipe-keyword-picker.store';
@@ -19,10 +21,13 @@ import {
   draftFingerprint,
   draftFromStrategy,
   draftToOnboardingRequest,
+  defaultMarketDraft,
   isPendingSiteHostname,
   normalizeUrl,
+  syncLegacyMarketFields,
   type DiscoveryBookOnboardingDraft,
 } from './discovery-book-onboarding.draft';
+import { defaultNationalMarket } from './discovery-book-market.utils';
 import { buildOnboardingScanUiContext } from '../../onboarding/onboarding-scan-context';
 
 const MAX_SERVICES = 8;
@@ -95,6 +100,7 @@ export class DiscoveryBookOnboardingStore {
       tradeLabel: this.tradeLabel(),
       isStrategyOnly: draft.onboardingMode === 'strategy_only',
       marketScope: draft.marketScope,
+      marketReach: draft.marketReach,
     });
   });
 
@@ -606,84 +612,80 @@ export class DiscoveryBookOnboardingStore {
     this.competitorDraft.set(value);
   }
 
-  selectMarketScope(scope: CustomerMarketScope): void {
-    this.draft.update((d) => ({
-      ...d,
-      marketScope: scope,
-      serpLocationCode: scope === 'worldwide' ? undefined : d.serpLocationCode,
-      serpLocationName: scope === 'worldwide' ? undefined : d.serpLocationName,
-      city: scope === 'worldwide' ? undefined : d.city,
-      state: scope === 'worldwide' ? undefined : d.state,
-      countryIso: scope === 'national' ? d.countryIso : scope === 'worldwide' ? undefined : d.countryIso,
-    }));
+  selectMarketReach(reach: MarketReachMode): void {
+    this.draft.update((d) => {
+      const next: DiscoveryBookOnboardingDraft = {
+        ...d,
+        marketReach: reach,
+        localMarket: marketReachNeedsLocal(reach) ? d.localMarket : null,
+        nationalMarket: marketReachNeedsCountry(reach)
+          ? (d.nationalMarket ?? defaultNationalMarket())
+          : null,
+      };
+      return syncLegacyMarketFields(next);
+    });
+  }
+
+  ensureMarketDefaults(): void {
+    this.draft.update((d) => {
+      if (d.marketReach) return syncLegacyMarketFields(d);
+      return { ...d, ...defaultMarketDraft() };
+    });
   }
 
   selectLocation(option: ProtopipeSerpLocationOption | null): void {
     if (!option) {
-      const d = this.draft();
-      if (
-        d.serpLocationCode == null &&
-        !d.serpLocationName &&
-        !d.city &&
-        !d.state
-      ) {
-        return;
-      }
-      this.draft.update((d) => ({
-        ...d,
-        serpLocationCode: undefined,
-        serpLocationName: undefined,
-        city: undefined,
-        state: undefined,
-      }));
+      this.draft.update((d) => {
+        if (!d.localMarket) return d;
+        const next = { ...d, localMarket: null };
+        return syncLegacyMarketFields(next);
+      });
       return;
     }
 
     const parts = option.name.split(',').map((p) => p.trim());
-    const d = this.draft();
-    if (d.serpLocationCode === option.code && d.serpLocationName === option.name) {
-      return;
-    }
-    this.draft.update((d) => ({
-      ...d,
-      serpLocationCode: option.code,
-      serpLocationName: option.name,
-      city: parts[0] || d.city,
-      state: parts[1] || d.state,
-      countryIso: option.country || d.countryIso,
-    }));
+    this.draft.update((d) => {
+      const localMarket = {
+        serpLocationCode: option.code,
+        serpLocationName: option.name,
+        city: parts[0] || d.localMarket?.city,
+        state: parts[1] || d.localMarket?.state,
+        countryIso: option.country || d.localMarket?.countryIso || d.nationalMarket?.countryIso,
+      };
+      if (
+        d.localMarket?.serpLocationCode === localMarket.serpLocationCode &&
+        d.localMarket?.serpLocationName === localMarket.serpLocationName
+      ) {
+        return d;
+      }
+      return syncLegacyMarketFields({ ...d, localMarket });
+    });
   }
 
   selectCountry(option: MarketCountryOption | null): void {
     if (!option) {
-      const d = this.draft();
-      if (d.serpLocationCode == null && !d.serpLocationName && !d.countryIso) {
-        return;
+      this.draft.update((d) => {
+        if (!d.nationalMarket) return d;
+        const next = { ...d, nationalMarket: defaultNationalMarket() };
+        return syncLegacyMarketFields(next);
+      });
+      return;
+    }
+    this.draft.update((d) => {
+      const nationalMarket = {
+        serpLocationCode: option.code,
+        serpLocationName: option.name,
+        countryIso: option.iso,
+      };
+      if (
+        d.nationalMarket?.serpLocationCode === nationalMarket.serpLocationCode &&
+        d.nationalMarket?.serpLocationName === nationalMarket.serpLocationName &&
+        d.nationalMarket?.countryIso === nationalMarket.countryIso
+      ) {
+        return d;
       }
-      this.draft.update((d) => ({
-        ...d,
-        serpLocationCode: undefined,
-        serpLocationName: undefined,
-        countryIso: undefined,
-      }));
-      return;
-    }
-    const d = this.draft();
-    if (
-      d.serpLocationCode === option.code &&
-      d.serpLocationName === option.name &&
-      d.countryIso === option.iso
-    ) {
-      return;
-    }
-    this.draft.update((d) => ({
-      ...d,
-      serpLocationCode: option.code,
-      serpLocationName: option.name,
-      countryIso: option.iso,
-      city: undefined,
-      state: undefined,
-    }));
+      return syncLegacyMarketFields({ ...d, nationalMarket });
+    });
   }
 
   async searchLocations(query: string): Promise<void> {
@@ -738,12 +740,12 @@ export class DiscoveryBookOnboardingStore {
         }
         return null;
       case 'onboarding:market':
-        if (!d.marketScope) return 'Choose local, national, or worldwide.';
-        if (d.marketScope === 'local' && d.serpLocationCode == null) {
-          return 'Pick your town or city.';
-        }
-        if (d.marketScope === 'national' && d.serpLocationCode == null) {
+        if (!d.marketReach) return 'Choose where customers search for you.';
+        if (marketReachNeedsCountry(d.marketReach) && !d.nationalMarket?.serpLocationCode) {
           return 'Pick a country.';
+        }
+        if (marketReachNeedsLocal(d.marketReach) && !d.localMarket?.serpLocationCode) {
+          return 'Pick your town or city.';
         }
         return null;
       case 'onboarding:business-name':

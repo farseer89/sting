@@ -30,6 +30,8 @@ export interface ProductRoutesConfig {
 export interface ProductOnboardingConfig {
   /** When true, home is reachable without legacy wizard completion; /protopipe/onboarding redirects home. */
   bypassLegacyWizard?: boolean;
+  /** Dev polish: hide Discovery book masthead on desktop (mobile already omits it). */
+  hideDiscoveryBookMasthead?: boolean;
 }
 
 export interface ProductConfig {

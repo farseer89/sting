@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   OnInit,
   computed,
@@ -40,6 +41,7 @@ import {
   type MarketCountryOption,
   type OnboardingModeId,
 } from './onboarding-market.constants';
+import { buildOnboardingScanUiContext } from './onboarding-scan-context';
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 const TOTAL_STEPS = 7 as const;
@@ -74,14 +76,14 @@ const STEP_HELP: Record<Step, StepHelpContent> = {
     title: 'Services become seed topics.',
     body:
       'The services you choose tell Discovery which keyword neighborhoods to explore first. Keep only the work you actually want more customers to find.',
-    example: 'An electrician might choose emergency repairs, EV chargers, and panel upgrades.',
+    example: 'Add the services you actually want more customers to find.',
   },
   3: {
     label: 'Customers',
     title: 'Customer moments make the keywords sharper.',
     body:
       'Search terms change based on who is searching and what they are trying to do. Describe the buying moment, not a generic persona.',
-    example: 'Homeowners comparing EV charger installers is more useful than homeowners.',
+    example: 'Describe the buying moment, not a generic persona.',
   },
   4: {
     label: 'Examples',
@@ -95,14 +97,14 @@ const STEP_HELP: Record<Step, StepHelpContent> = {
     title: 'Competitors reveal proven search demand.',
     body:
       'Competitor sites help Discovery find terms that already work in your market. Add direct competitors or businesses whose SEO you admire.',
-    example: 'For a local service, add one or two nearby providers ranking for similar jobs.',
+    example: 'Add direct competitors or businesses whose SEO you admire in your market.',
   },
   6: {
     label: 'Market',
     title: 'Location controls search intent.',
     body:
       'Local, national, and worldwide searches behave differently. Choose where customers are when they are likely to buy.',
-    example: 'Emergency electrician is local. Digital templates may be national or worldwide.',
+    example: 'Local, national, and worldwide searches behave differently — match where customers buy.',
   },
   7: {
     label: 'Name',
@@ -136,7 +138,9 @@ export class ProtopipeOnboardingComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly messages = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
   readonly product = inject(PRODUCT_CONFIG);
+  private offerScanDebounce: ReturnType<typeof setTimeout> | null = null;
 
   readonly onboardingModeOptions = ONBOARDING_MODE_OPTIONS;
   readonly onboardingMode = signal<OnboardingModeId | null>(null);
@@ -171,6 +175,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
   readonly tradeLabel = signal<string | null>(null);
   readonly tradeSuggestions = signal<string[]>([]);
   readonly customerAvatarSuggestions = signal<string[]>([]);
+  readonly businessNameHint = signal<string | null>(null);
   readonly expandedSuggestions = signal<string[]>([]);
   readonly offerExpanding = signal(false);
   readonly offerExpandError = signal<string | null>(null);
@@ -211,8 +216,29 @@ export class ProtopipeOnboardingComponent implements OnInit {
     this.isComplete() ? 100 : Math.round((this.step() / this.totalSteps) * 100),
   );
 
+  readonly scanUiContext = computed(() =>
+    buildOnboardingScanUiContext({
+      scan:
+        this.offerScannedUrl().trim().length > 0
+          ? {
+              siteServices: this.siteFoundServices(),
+              suggestedServices: this.tradeSuggestions(),
+              tradeLabel: this.tradeLabel() ?? undefined,
+              customerAvatars: this.customerAvatarSuggestions(),
+              businessNameHint: this.businessNameHint() ?? undefined,
+            }
+          : null,
+      websiteUrl: this.formValue().websiteUrl ?? '',
+      services: this.services(),
+      tradeLabel: this.tradeLabel(),
+      isStrategyOnly: this.isStrategyOnly(),
+      marketScope: this.customerScope(),
+    }),
+  );
+
   readonly copy = computed(() => {
     const strategy = this.isStrategyOnly();
+    const ctx = this.scanUiContext();
     return {
       celebrationEyebrow: 'All set',
       celebrationHeadline: strategy
@@ -243,13 +269,29 @@ export class ProtopipeOnboardingComponent implements OnInit {
       step7Helper: strategy
         ? "We'll use this name across your workspace."
         : "We'll use this name across your dashboard.",
-      step7Placeholder: strategy ? 'Maui EV idea' : 'Maui Electric',
+      step7Placeholder: strategy
+        ? ctx.businessNameHint
+          ? `${ctx.businessNameHint} project`
+          : 'Your project name'
+        : ctx.businessNameHint ?? 'Your business name',
       submitLabel: strategy ? 'Build my strategy' : 'Find my keywords',
     };
   });
 
   readonly scheduleCallUrl = computed(() => this.product.scheduleCallUrl?.trim() || '');
-  readonly currentStepHelp = computed(() => STEP_HELP[this.step()]);
+  readonly currentStepHelp = computed(() => {
+    const step = this.step();
+    const base = STEP_HELP[step];
+    return {
+      ...base,
+      example: this.scanUiContext().stepHelpExamples[step],
+    };
+  });
+  readonly serviceInputPlaceholder = computed(() => this.scanUiContext().servicePlaceholder);
+  readonly competitorInputPlaceholder = computed(
+    () => this.scanUiContext().competitorPlaceholder,
+  );
+  readonly websiteUrlPlaceholder = computed(() => this.scanUiContext().urlPlaceholder);
   readonly currentStepLabel = computed(() => this.currentStepHelp().label);
   readonly customerMomentSuggestions = computed(() => {
     const used = new Set(
@@ -322,9 +364,6 @@ export class ProtopipeOnboardingComponent implements OnInit {
     effect(() => {
       const s = this.step();
       setTimeout(() => this.focusForStep(s), 50);
-      if (s === 2) {
-        void this.ensureOfferScan();
-      }
     });
 
     effect(() => {
@@ -333,6 +372,18 @@ export class ProtopipeOnboardingComponent implements OnInit {
       if (scanned && url !== scanned) {
         this.invalidateOfferScan();
       }
+    });
+
+    effect(() => {
+      const mode = this.onboardingMode();
+      const url = (this.formValue().websiteUrl ?? '').trim();
+      if (mode !== 'existing_site' || !url) return;
+      if (this.offerScanDebounce) clearTimeout(this.offerScanDebounce);
+      this.offerScanDebounce = setTimeout(() => void this.ensureOfferScan(), 700);
+    });
+
+    this.destroyRef.onDestroy(() => {
+      if (this.offerScanDebounce) clearTimeout(this.offerScanDebounce);
     });
   }
 
@@ -551,9 +602,14 @@ export class ProtopipeOnboardingComponent implements OnInit {
     this.tradeLabel.set(null);
     this.tradeSuggestions.set([]);
     this.customerAvatarSuggestions.set([]);
+    this.businessNameHint.set(null);
     this.expandedSuggestions.set([]);
     this.offerExpandError.set(null);
     this.offerScanError.set(null);
+  }
+
+  onWebsiteUrlBlur(): void {
+    void this.ensureOfferScan();
   }
 
   async ensureOfferScan(): Promise<void> {
@@ -585,6 +641,11 @@ export class ProtopipeOnboardingComponent implements OnInit {
       this.tradeLabel.set(res.tradeLabel ?? null);
       this.tradeSuggestions.set(res.suggestedServices ?? res.tradeSuggestions ?? []);
       this.customerAvatarSuggestions.set(res.customerAvatars ?? []);
+      this.businessNameHint.set(res.businessNameHint?.trim() || null);
+
+      if (res.businessNameHint?.trim() && !this.form.controls.businessName.value?.trim()) {
+        this.form.controls.businessName.setValue(res.businessNameHint.trim());
+      }
 
       if (res.error === 'llm_not_configured') {
         this.offerScanError.set(
@@ -865,12 +926,9 @@ export class ProtopipeOnboardingComponent implements OnInit {
   }
 
   avatarPlaceholder(index: number): string {
-    const samples = [
-      'Wants a trusted electrician before a kitchen remodel…',
-      'Comparing EV charger options for a new home…',
-      'Needs emergency help after a panel issue…',
-    ];
-    return samples[index] ?? 'What does this person want?';
+    return (
+      this.scanUiContext().avatarPlaceholders[index] ?? 'What does this person want?'
+    );
   }
 
   selectMarketScope(scope: CustomerMarketScope): void {

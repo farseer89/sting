@@ -124,11 +124,16 @@
                     pInputText
                     autocomplete="url"
                     inputmode="url"
-                    placeholder="mauielectric.com"
+                    placeholder="{{ websiteUrlPlaceholder() }}"
                     (focus)="selectMode('existing_site')"
+                    (blur)="onWebsiteUrlBlur()"
                   />
                   <small class="helper-inline">
-                    We'll scan your site to understand what you do.
+                    @if (offerScanning()) {
+                      Scanning your site…
+                    } @else {
+                      We'll scan your site to understand what you do.
+                    }
                   </small>
                 </div>
               }
@@ -278,7 +283,7 @@
                 (input)="onServiceDraftInput($any($event.target).value)"
                 (keydown.enter)="addService($event)"
                 [disabled]="services().length >= maxServices"
-                [placeholder]="isStrategyOnly() ? 'e.g. EV charger installation' : 'e.g. emergency call-outs'"
+                [placeholder]="isStrategyOnly() ? serviceInputPlaceholder() : serviceInputPlaceholder()"
               />
               <button
                 type="button"
@@ -570,7 +575,7 @@
               (keydown.enter)="addCompetitor($event)"
               [disabled]="competitors().length >= maxCompetitors"
               inputmode="url"
-              placeholder="e.g. competitorelectric.com"
+              placeholder="{{ competitorInputPlaceholder() }}"
             />
             <button
               type="button"

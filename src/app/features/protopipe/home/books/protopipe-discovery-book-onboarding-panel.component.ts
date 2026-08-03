@@ -55,6 +55,7 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
   readonly marketScopeOptions = MARKET_SCOPE_OPTIONS;
 
   readonly draft = this.store.draftSnapshot;
+  readonly scanUiContext = this.store.scanUiContext;
   readonly customerMomentSuggestions = computed(() => {
     const selected = new Set(
       this.draft()
@@ -74,12 +75,6 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
   }
 
   constructor() {
-    effect(() => {
-      if (this.stepId() === 'onboarding:offer') {
-        void this.store.ensureOfferScan();
-      }
-    });
-
     effect(() => {
       this.stepId();
       this.store.clearStepError();
@@ -129,12 +124,13 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
   }
 
   avatarPlaceholder(index: number): string {
-    const samples = [
-      'Homeowner wants reliable EV charging at home',
-      'Comparing EV charger options for a new build',
-      'Needs emergency help after a panel issue',
-    ];
-    return samples[index] ?? 'What does this person want?';
+    return (
+      this.scanUiContext().avatarPlaceholders[index] ?? 'What does this person want?'
+    );
+  }
+
+  onWebsiteUrlBlur(): void {
+    void this.store.ensureOfferScan();
   }
 
   onModeKeydown(event: Event, mode: (typeof ONBOARDING_MODE_OPTIONS)[number]['id']): void {

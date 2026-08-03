@@ -28,6 +28,7 @@ export const protopipeProductConfig: ProductConfig = {
   },
   onboarding: {
     bypassLegacyWizard: true,
+    hideDiscoveryBookMasthead: true,
   },
   scheduleCallUrl: 'https://calendly.com/server-futureproofsystems/30min',
 };

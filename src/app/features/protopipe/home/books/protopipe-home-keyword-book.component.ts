@@ -32,6 +32,7 @@ import {
 import { DiscoveryBookOnboardingStore } from './discovery-book-onboarding.store';
 import { ProtopipeDiscoveryBookOnboardingPanelComponent } from './protopipe-discovery-book-onboarding-panel.component';
 import { ProtopipeOnboardingStateService } from '../../onboarding/protopipe-onboarding-state.service';
+import { PRODUCT_CONFIG } from '../../../../core/config/product-config';
 
 export type { DiscoveryBookSection };
 
@@ -55,28 +56,28 @@ const DISCOVERY_BOOK_STEP_HELP: Record<DiscoveryBookOnboardingStepId, DiscoveryB
     title: 'Services become seed topics.',
     body:
       'The services you choose tell Discovery which keyword neighborhoods to explore first. Keep only the work you actually want more customers to find.',
-    example: 'An electrician might choose emergency repairs, EV chargers, and panel upgrades.',
+    example: 'Add the services you actually want more customers to find.',
   },
   'onboarding:customers': {
     label: 'Customers',
     title: 'Customer moments make keywords sharper.',
     body:
       'Search terms change based on who is searching and what they are trying to do. Describe the buying moment, not a generic persona.',
-    example: 'Homeowners comparing EV charger installers is more useful than just homeowners.',
+    example: 'Describe the buying moment, not a generic persona.',
   },
   'onboarding:competition': {
     label: 'Competition',
     title: 'Competitors reveal proven search demand.',
     body:
       'Competitor sites help Discovery find terms that already work in your market. Add direct competitors or businesses whose SEO you admire.',
-    example: 'For a local service, add one or two nearby providers ranking for similar jobs.',
+    example: 'Add direct competitors or businesses whose SEO you admire in your market.',
   },
   'onboarding:market': {
     label: 'Market',
     title: 'Location controls search intent.',
     body:
       'Local, national, and worldwide searches behave differently. Choose where customers are when they are likely to buy.',
-    example: 'Emergency electrician is local. Digital templates may be national or worldwide.',
+    example: 'Local, national, and worldwide searches behave differently — match where customers buy.',
   },
   'onboarding:business-name': {
     label: 'Name',
@@ -107,7 +108,12 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
   readonly onboardingStore = inject(DiscoveryBookOnboardingStore);
   private readonly thinkerView = inject(ProtopipeHomeThinkerViewState);
   private readonly onboardingState = inject(ProtopipeOnboardingStateService);
+  private readonly product = inject(PRODUCT_CONFIG);
   readonly strategy = inject(ProtopipeStrategyService);
+
+  readonly hideDiscoveryBookMasthead = computed(
+    () => this.product.onboarding?.hideDiscoveryBookMasthead === true,
+  );
 
   readonly siteLabel = input('');
   readonly confirmed = output<void>();
@@ -126,7 +132,7 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
   readonly hasOnboardingProfile = computed(() => Boolean(this.strategy.onboardingProfile()));
   readonly canUseDiscoveryPipeline = computed(
     () =>
-      (this.onboardingState.onboardingCompleted() || this.hasOnboardingProfile()) &&
+      this.onboardingState.onboardingCompleted() &&
       (this.hasOnboardingProfile() || this.hasDiscoveryRun()),
   );
 
@@ -178,7 +184,11 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
   readonly activeStepHelp = computed(() => {
     const section = this.activeSection();
     if (!isOnboardingSection(section)) return null;
-    return DISCOVERY_BOOK_STEP_HELP[section];
+    const base = DISCOVERY_BOOK_STEP_HELP[section];
+    return {
+      ...base,
+      example: this.onboardingStore.scanUiContext().discoveryBookHelpExamples[section],
+    };
   });
   readonly helpOpen = signal(false);
 
@@ -214,6 +224,15 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
     });
 
     effect(() => {
+      if (!this.onboardingState.onboardingCompletionKnown()) return;
+      if (!this.onboardingState.onboardingCompleted()) {
+        const section = this.activeSection();
+        if (!isOnboardingSection(section)) {
+          this.activeSection.set(DISCOVERY_BOOK_ONBOARDING_STEPS[0].id);
+        }
+        return;
+      }
+
       const run = this.discoveryRun();
       if (!run) return;
       if (run.status === 'pending' || run.status === 'discovering') {
@@ -237,12 +256,16 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
   }
 
   selectSection(section: DiscoveryBookSection): void {
-    const pipelineAllowed =
-      this.canUseDiscoveryPipeline() ||
-      (section === 'discovery' && this.hasDiscoveryRun());
-    if (!isOnboardingSection(section) && !pipelineAllowed) {
-      this.activeSection.set(DISCOVERY_BOOK_ONBOARDING_STEPS[0].id);
-      return;
+    if (!isOnboardingSection(section)) {
+      const pipelineAllowed =
+        this.canUseDiscoveryPipeline() ||
+        (section === 'discovery' &&
+          this.onboardingState.onboardingCompleted() &&
+          this.hasDiscoveryRun());
+      if (!pipelineAllowed) {
+        this.activeSection.set(DISCOVERY_BOOK_ONBOARDING_STEPS[0].id);
+        return;
+      }
     }
     if (section === 'discovery') {
       this.didAutoLeaveDiscovery.set(true);

@@ -22,6 +22,7 @@ import {
   isPendingSiteHostname,
   type DiscoveryBookOnboardingDraft,
 } from './discovery-book-onboarding.draft';
+import { buildOnboardingScanUiContext } from '../../onboarding/onboarding-scan-context';
 
 const MAX_SERVICES = 8;
 const MAX_COMPETITORS = 3;
@@ -62,6 +63,7 @@ export class DiscoveryBookOnboardingStore {
   readonly tradeLabel = signal<string | null>(null);
   readonly tradeSuggestions = signal<string[]>([]);
   readonly customerAvatarSuggestions = signal<string[]>([]);
+  readonly businessNameHint = signal<string | null>(null);
   readonly scanResolvedBy = signal<'llm' | 'deterministic' | null>(null);
   readonly expandedSuggestions = signal<string[]>([]);
   readonly offerExpanding = signal(false);
@@ -72,6 +74,28 @@ export class DiscoveryBookOnboardingStore {
   readonly competitorFanOutSuggestions = signal<ProtopipeFanOutCompetitorSuggestion[]>([]);
   readonly competitionFanningOut = signal(false);
   readonly competitionFanOutError = signal<string | null>(null);
+  private offerScanDebounce: ReturnType<typeof setTimeout> | null = null;
+
+  readonly scanUiContext = computed(() => {
+    const draft = this.draft();
+    return buildOnboardingScanUiContext({
+      scan:
+        this.offerScannedUrl().trim().length > 0
+          ? {
+              siteServices: this.siteFoundServices(),
+              suggestedServices: this.tradeSuggestions(),
+              tradeLabel: this.tradeLabel() ?? undefined,
+              customerAvatars: this.customerAvatarSuggestions(),
+              businessNameHint: this.businessNameHint() ?? undefined,
+            }
+          : null,
+      websiteUrl: draft.websiteUrl,
+      services: draft.services,
+      tradeLabel: this.tradeLabel(),
+      isStrategyOnly: draft.onboardingMode === 'strategy_only',
+      marketScope: draft.marketScope,
+    });
+  });
 
   readonly isDirty = computed(
     () => draftFingerprint(this.draft()) !== this.baselineFingerprint(),
@@ -94,6 +118,12 @@ export class DiscoveryBookOnboardingStore {
   setWebsiteUrl(value: string): void {
     this.draft.update((d) => ({ ...d, websiteUrl: value }));
     this.invalidateOfferScan();
+    this.scheduleOfferScan();
+  }
+
+  scheduleOfferScan(): void {
+    if (this.offerScanDebounce) clearTimeout(this.offerScanDebounce);
+    this.offerScanDebounce = setTimeout(() => void this.ensureOfferScan(), 700);
   }
 
   setBusinessName(value: string): void {
@@ -222,6 +252,7 @@ export class DiscoveryBookOnboardingStore {
     this.tradeLabel.set(null);
     this.tradeSuggestions.set([]);
     this.customerAvatarSuggestions.set([]);
+    this.businessNameHint.set(null);
     this.scanResolvedBy.set(null);
     this.expandedSuggestions.set([]);
     this.offerExpandError.set(null);
@@ -259,6 +290,7 @@ export class DiscoveryBookOnboardingStore {
       this.tradeSuggestions.set(res.suggestedServices ?? res.tradeSuggestions ?? []);
       this.customerAvatarSuggestions.set(res.customerAvatars ?? []);
       this.scanResolvedBy.set(res.resolvedBy ?? null);
+      this.businessNameHint.set(res.businessNameHint?.trim() || null);
 
       if (res.error === 'llm_not_configured') {
         this.offerScanError.set(
@@ -270,6 +302,9 @@ export class DiscoveryBookOnboardingStore {
         let next = current;
         if (res.siteServices.length > 0 && current.services.length === 0) {
           next = { ...next, services: res.siteServices.slice(0, MAX_SERVICES) };
+        }
+        if (res.businessNameHint?.trim() && !current.businessName.trim()) {
+          next = { ...next, businessName: res.businessNameHint.trim() };
         }
 
         const avatars = [...next.customerAvatars];

@@ -27,6 +27,14 @@ $kb-accent: #2563eb;
   font-family: $kb-sans;
   color: $kb-text;
   -webkit-font-smoothing: antialiased;
+
+  &--hide-masthead-desktop {
+    @media (min-width: 681px) {
+      .kb-masthead {
+        display: none;
+      }
+    }
+  }
 }
 
 .kb-masthead {

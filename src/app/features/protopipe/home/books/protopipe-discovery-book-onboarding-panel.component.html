@@ -38,12 +38,17 @@
                       pInputText
                       [ngModel]="draft().websiteUrl"
                       (ngModelChange)="store.setWebsiteUrl($event)"
+                      (blur)="onWebsiteUrlBlur()"
                       (keydown.enter)="$event.stopPropagation()"
-                      placeholder="mauielectric.com"
+                      [placeholder]="scanUiContext().urlPlaceholder"
                       autocomplete="url"
                     />
                     <span class="kb-wizard__hint">
-                      We'll scan your site to pre-fill services and find keyword opportunities.
+                      @if (store.offerScanning()) {
+                        Scanning your site…
+                      } @else {
+                        We'll scan your site to pre-fill services and find keyword opportunities.
+                      }
                     </span>
                   </label>
                 }
@@ -103,7 +108,7 @@
                 [ngModel]="store.serviceDraft()"
                 (ngModelChange)="store.onServiceDraftInput($event)"
                 (keydown.enter)="store.addService(); $event.preventDefault()"
-                placeholder="e.g. emergency call-outs"
+                [placeholder]="scanUiContext().servicePlaceholder"
               />
               <button type="button" class="kb-wizard__input-btn" (click)="store.addService()">Add</button>
             </div>
@@ -400,7 +405,7 @@
                   [ngModel]="store.competitorDraft()"
                   (ngModelChange)="store.onCompetitorDraftInput($event)"
                   (keydown.enter)="store.addCompetitor(); $event.preventDefault()"
-                  placeholder="competitor.com"
+                  placeholder="{{ scanUiContext().competitorPlaceholder }}"
                 />
                 <button type="button" class="kb-wizard__input-btn" (click)="store.addCompetitor()">Add</button>
               </div>
@@ -541,7 +546,7 @@
             [ngModel]="draft().businessName"
             (ngModelChange)="store.setBusinessName($event)"
             (keydown.enter)="onPrimaryKeydown($event)"
-            placeholder="Maui Electric"
+            placeholder="{{ onboardingStore.scanUiContext().businessNameHint ?? 'Your business name' }}"
             autocomplete="organization"
           />
         </label>

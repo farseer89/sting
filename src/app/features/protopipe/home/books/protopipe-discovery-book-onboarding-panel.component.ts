@@ -1,7 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  computed,
   effect,
   HostBinding,
   inject,
@@ -26,19 +25,19 @@ import {
   isLastOnboardingStep,
   type DiscoveryBookOnboardingStepId,
 } from './discovery-book-onboarding.steps';
-
-const FALLBACK_CUSTOMER_MOMENTS = [
-  'Homeowners with an urgent problem',
-  'Customers comparing options before they buy',
-  'Businesses planning a larger project',
-  'People looking for a trusted local provider',
-] as const;
+import { ProtopipeDiscoveryBookOnboardingSuggestionsComponent } from './protopipe-discovery-book-onboarding-suggestions.component';
 
 @Component({
   selector: 'app-protopipe-discovery-book-onboarding-panel',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, AutoComplete, Button, InputText],
+  imports: [
+    FormsModule,
+    AutoComplete,
+    Button,
+    InputText,
+    ProtopipeDiscoveryBookOnboardingSuggestionsComponent,
+  ],
   templateUrl: './protopipe-discovery-book-onboarding-panel.component.html',
   styleUrl: './protopipe-discovery-book-onboarding-panel.component.scss',
 })
@@ -56,18 +55,6 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
 
   readonly draft = this.store.draftSnapshot;
   readonly scanUiContext = this.store.scanUiContext;
-  readonly customerMomentSuggestions = computed(() => {
-    const selected = new Set(
-      this.draft()
-        .customerAvatars.map((avatar) => avatar.trim().toLowerCase())
-        .filter(Boolean),
-    );
-    const suggestions =
-      this.store.availableAvatarSuggestions().length > 0
-        ? this.store.availableAvatarSuggestions()
-        : [...FALLBACK_CUSTOMER_MOMENTS];
-    return suggestions.filter((suggestion) => !selected.has(suggestion.trim().toLowerCase()));
-  });
 
   @HostBinding('class.kb-onboarding-panel--wizard')
   get wizardPanelHost(): boolean {

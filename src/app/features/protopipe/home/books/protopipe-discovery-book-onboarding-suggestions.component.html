@@ -1,0 +1,153 @@
+@switch (stepId()) {
+  @case ('onboarding:offer') {
+    @if (showOfferSuggestions()) {
+      <section class="kb-discovery-suggestions__block" aria-label="Service suggestions">
+        <p class="kb-discovery-suggestions__label">Suggestions</p>
+
+        @if (store.tradeLabel(); as trade) {
+          <p class="kb-discovery-suggestions__hint">From your trade: <strong>{{ trade }}</strong></p>
+        }
+
+        @if (
+          store.availableTradeSuggestions().length === 0 &&
+          store.availableExpandedSuggestions().length === 0 &&
+          draft().services.length === 0
+        ) {
+          <p class="kb-discovery-suggestions__hint">
+            Add your website on Getting started or type a service to unlock ideas.
+          </p>
+        }
+
+        @if (store.availableTradeSuggestions().length > 0) {
+          <ul class="kb-discovery-suggestions__list">
+            @for (svc of store.availableTradeSuggestions(); track svc) {
+              <li>
+                <button
+                  type="button"
+                  class="kb-discovery-suggestions__chip"
+                  (click)="store.addSuggestedService(svc)"
+                  [disabled]="draft().services.length >= 8"
+                >
+                  <i class="pi pi-plus" aria-hidden="true"></i>
+                  {{ svc }}
+                </button>
+              </li>
+            }
+          </ul>
+        }
+
+        @if (draft().services.length > 0 && draft().services.length < 8) {
+          <button
+            type="button"
+            class="kb-discovery-suggestions__link"
+            (click)="store.expandServices()"
+            [disabled]="!store.canExpandServices()"
+          >
+            @if (store.offerExpanding()) {
+              <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+              Expanding…
+            } @else {
+              Expand related services
+            }
+          </button>
+          @if (store.offerExpandError(); as expandErr) {
+            <p class="kb-discovery-suggestions__status kb-discovery-suggestions__status--error">{{ expandErr }}</p>
+          }
+        }
+
+        @if (store.availableExpandedSuggestions().length > 0) {
+          <ul class="kb-discovery-suggestions__list">
+            @for (svc of store.availableExpandedSuggestions(); track svc) {
+              <li>
+                <button
+                  type="button"
+                  class="kb-discovery-suggestions__chip"
+                  (click)="store.addSuggestedService(svc)"
+                  [disabled]="draft().services.length >= 8"
+                >
+                  <i class="pi pi-plus" aria-hidden="true"></i>
+                  {{ svc }}
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    }
+  }
+
+  @case ('onboarding:customers') {
+    @if (showCustomerSuggestions()) {
+      <section class="kb-discovery-suggestions__block" aria-label="Suggested customer profiles">
+        <p class="kb-discovery-suggestions__label">Tap a customer moment</p>
+        <p class="kb-discovery-suggestions__hint">
+          Use buying moments, problems, or jobs-to-be-done instead of generic personas.
+        </p>
+        <ul class="kb-discovery-suggestions__list kb-discovery-suggestions__list--stacked">
+          @for (avatar of customerMomentSuggestions(); track avatar) {
+            <li>
+              <button
+                type="button"
+                class="kb-discovery-suggestions__chip kb-discovery-suggestions__chip--wide"
+                (click)="store.applyAvatarSuggestion(avatar)"
+              >
+                <i class="pi pi-plus" aria-hidden="true"></i>
+                {{ avatar }}
+              </button>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  }
+
+  @case ('onboarding:competition') {
+    @if (showCompetitionSuggestions()) {
+      <section class="kb-discovery-suggestions__block" aria-label="Find more competitors">
+        <p class="kb-discovery-suggestions__label">Find more</p>
+
+        @if (draft().competitors.length > 0 && draft().competitors.length < 3) {
+          <button
+            type="button"
+            class="kb-discovery-suggestions__link"
+            (click)="store.fanOutCompetition()"
+            [disabled]="!store.canFanOutCompetition()"
+          >
+            @if (store.competitionFanningOut()) {
+              <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+              Finding…
+            } @else {
+              Fan out from your examples
+            }
+          </button>
+          @if (store.competitionFanOutError(); as fanOutErr) {
+            <p class="kb-discovery-suggestions__status kb-discovery-suggestions__status--error">{{ fanOutErr }}</p>
+          }
+        } @else if (draft().competitors.length === 0) {
+          <p class="kb-discovery-suggestions__hint">Add one competitor first, then fan out from there.</p>
+        }
+
+        @if (store.availableCompetitorFanOutSuggestions().length > 0) {
+          <ul class="kb-discovery-suggestions__list kb-discovery-suggestions__list--stacked">
+            @for (suggestion of store.availableCompetitorFanOutSuggestions(); track suggestion.domain) {
+              <li>
+                <button
+                  type="button"
+                  class="kb-discovery-suggestions__chip kb-discovery-suggestions__chip--wide"
+                  (click)="store.addSuggestedCompetitor(suggestion.domain)"
+                  [disabled]="draft().competitors.length >= 3"
+                >
+                  <i class="pi pi-plus" aria-hidden="true"></i>
+                  <span class="kb-discovery-suggestions__chip-copy">
+                    <span>{{ suggestion.domain }}</span>
+                    <small>{{ suggestion.label }}</small>
+                  </span>
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    }
+  }
+}

@@ -31,6 +31,7 @@ import {
 } from './discovery-book-onboarding.steps';
 import { DiscoveryBookOnboardingStore } from './discovery-book-onboarding.store';
 import { ProtopipeDiscoveryBookOnboardingPanelComponent } from './protopipe-discovery-book-onboarding-panel.component';
+import { ProtopipeDiscoveryBookOnboardingSuggestionsComponent } from './protopipe-discovery-book-onboarding-suggestions.component';
 import { ProtopipeOnboardingStateService } from '../../onboarding/protopipe-onboarding-state.service';
 import { PRODUCT_CONFIG } from '../../../../core/config/product-config';
 
@@ -99,6 +100,7 @@ const DISCOVERY_BOOK_STEP_HELP: Record<DiscoveryBookOnboardingStepId, DiscoveryB
     ProtopipeKeywordPickerComponent,
     ProtopipeKeywordSearchPanelComponent,
     ProtopipeDiscoveryBookOnboardingPanelComponent,
+    ProtopipeDiscoveryBookOnboardingSuggestionsComponent,
   ],
   templateUrl: './protopipe-home-keyword-book.component.html',
   styleUrl: './protopipe-home-keyword-book.component.scss',

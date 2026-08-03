@@ -154,8 +154,18 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
   }
 
   continue(): void {
+    void this.continueAsync();
+  }
+
+  private async continueAsync(): Promise<void> {
     if (!this.store.tryContinue(this.stepId())) {
       return;
+    }
+    if (
+      this.stepId() === 'onboarding:getting-started' &&
+      this.draft().onboardingMode === 'existing_site'
+    ) {
+      await this.store.flushOfferScanAndWait();
     }
     this.stepAdvance.emit();
   }

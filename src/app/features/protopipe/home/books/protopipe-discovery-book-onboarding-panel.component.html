@@ -593,8 +593,12 @@
           <span class="kb-onboarding-enter-hint">press Enter ↵</span>
           <p-button
             type="button"
-            label="Continue"
-            [disabled]="!store.canContinue(stepId())"
+            [label]="
+              stepId() === 'onboarding:getting-started' && store.offerScanning()
+                ? 'Scanning…'
+                : 'Continue'
+            "
+            [disabled]="!store.canContinue(stepId()) || store.offerScanning()"
             icon="pi pi-arrow-right"
             iconPos="right"
             (onClick)="continue()"
@@ -604,8 +608,12 @@
         @if (!isLastStep()) {
           <p-button
             type="button"
-            label="Continue"
-            [disabled]="!store.canContinue(stepId())"
+            [label]="
+              stepId() === 'onboarding:getting-started' && store.offerScanning()
+                ? 'Scanning…'
+                : 'Continue'
+            "
+            [disabled]="!store.canContinue(stepId()) || store.offerScanning()"
             icon="pi pi-arrow-right"
             iconPos="right"
             (onClick)="continue()"

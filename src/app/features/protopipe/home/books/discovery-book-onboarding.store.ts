@@ -105,6 +105,9 @@ export class DiscoveryBookOnboardingStore {
   readonly draftSnapshot = this.draft.asReadonly();
 
   syncFromStrategy(): void {
+    if (!this.onboardingState.onboardingCompleted() && this.isDirty()) {
+      return;
+    }
     const next = draftFromStrategy(this.strategy.onboardingProfile(), this.strategy.site());
     this.draft.set(next);
     this.baselineFingerprint.set(draftFingerprint(next));
@@ -134,6 +137,14 @@ export class DiscoveryBookOnboardingStore {
       this.offerScanDebounce = null;
     }
     void this.ensureOfferScan();
+  }
+
+  async flushOfferScanAndWait(): Promise<void> {
+    if (this.offerScanDebounce) {
+      clearTimeout(this.offerScanDebounce);
+      this.offerScanDebounce = null;
+    }
+    await this.ensureOfferScan();
   }
 
   setBusinessName(value: string): void {
@@ -767,9 +778,6 @@ export class DiscoveryBookOnboardingStore {
       return false;
     }
     this.stepError.set(null);
-    if (stepId === 'onboarding:getting-started' && this.draft().onboardingMode === 'existing_site') {
-      this.flushOfferScan();
-    }
     return true;
   }
 

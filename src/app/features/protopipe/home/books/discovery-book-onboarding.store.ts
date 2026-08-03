@@ -20,6 +20,7 @@ import {
   draftFromStrategy,
   draftToOnboardingRequest,
   isPendingSiteHostname,
+  normalizeUrl,
   type DiscoveryBookOnboardingDraft,
 } from './discovery-book-onboarding.draft';
 import { buildOnboardingScanUiContext } from '../../onboarding/onboarding-scan-context';
@@ -124,6 +125,15 @@ export class DiscoveryBookOnboardingStore {
   scheduleOfferScan(): void {
     if (this.offerScanDebounce) clearTimeout(this.offerScanDebounce);
     this.offerScanDebounce = setTimeout(() => void this.ensureOfferScan(), 700);
+  }
+
+  /** Cancel any pending debounce and scan immediately (e.g. when leaving step 1). */
+  flushOfferScan(): void {
+    if (this.offerScanDebounce) {
+      clearTimeout(this.offerScanDebounce);
+      this.offerScanDebounce = null;
+    }
+    void this.ensureOfferScan();
   }
 
   setBusinessName(value: string): void {
@@ -272,9 +282,16 @@ export class DiscoveryBookOnboardingStore {
     if (this.offerScannedUrl() === url && !this.offerScanning()) {
       return;
     }
+    if (this.offerScanning()) {
+      return;
+    }
 
     const siteId = this.strategy.siteId();
     if (!siteId) {
+      await this.strategy.ensureLoaded();
+    }
+    const resolvedSiteId = this.strategy.siteId();
+    if (!resolvedSiteId) {
       this.offerScanError.set('No site loaded.');
       return;
     }
@@ -283,7 +300,9 @@ export class DiscoveryBookOnboardingStore {
     this.offerScanError.set(null);
 
     try {
-      const res = await this.api.scanOffer(siteId, { websiteUrl: url });
+      const res = await this.api.scanOffer(resolvedSiteId, {
+        websiteUrl: normalizeUrl(url),
+      });
       this.offerScannedUrl.set(url);
       this.siteFoundServices.set(res.siteServices);
       this.tradeLabel.set(res.tradeLabel ?? null);
@@ -748,6 +767,9 @@ export class DiscoveryBookOnboardingStore {
       return false;
     }
     this.stepError.set(null);
+    if (stepId === 'onboarding:getting-started' && this.draft().onboardingMode === 'existing_site') {
+      this.flushOfferScan();
+    }
     return true;
   }
 

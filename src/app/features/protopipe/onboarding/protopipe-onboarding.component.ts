@@ -364,6 +364,9 @@ export class ProtopipeOnboardingComponent implements OnInit {
     effect(() => {
       const s = this.step();
       setTimeout(() => this.focusForStep(s), 50);
+      if (s === 2 && this.onboardingMode() === 'existing_site') {
+        this.flushOfferScan();
+      }
     });
 
     effect(() => {
@@ -424,6 +427,9 @@ export class ProtopipeOnboardingComponent implements OnInit {
       return;
     }
     if (current < this.totalSteps) {
+      if (current === 1 && this.onboardingMode() === 'existing_site') {
+        this.flushOfferScan();
+      }
       this.step.set((current + 1) as Step);
     }
   }
@@ -609,6 +615,14 @@ export class ProtopipeOnboardingComponent implements OnInit {
   }
 
   onWebsiteUrlBlur(): void {
+    this.flushOfferScan();
+  }
+
+  flushOfferScan(): void {
+    if (this.offerScanDebounce) {
+      clearTimeout(this.offerScanDebounce);
+      this.offerScanDebounce = null;
+    }
     void this.ensureOfferScan();
   }
 
@@ -624,6 +638,9 @@ export class ProtopipeOnboardingComponent implements OnInit {
     if (this.offerScannedUrl() === url && !this.offerScanning()) {
       return;
     }
+    if (this.offerScanning()) {
+      return;
+    }
 
     const siteId = this.siteId();
     if (!siteId) {
@@ -635,7 +652,9 @@ export class ProtopipeOnboardingComponent implements OnInit {
     this.offerScanError.set(null);
 
     try {
-      const res = await this.api.scanOffer(siteId, { websiteUrl: url });
+      const res = await this.api.scanOffer(siteId, {
+        websiteUrl: this.normalizeUrl(url),
+      });
       this.offerScannedUrl.set(url);
       this.siteFoundServices.set(res.siteServices);
       this.tradeLabel.set(res.tradeLabel ?? null);

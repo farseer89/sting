@@ -79,6 +79,12 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
       this.stepId();
       this.store.clearStepError();
     });
+
+    effect(() => {
+      if (this.stepId() === 'onboarding:offer') {
+        this.store.flushOfferScan();
+      }
+    });
   }
 
   isFirstStep(): boolean {
@@ -130,7 +136,7 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
   }
 
   onWebsiteUrlBlur(): void {
-    void this.store.ensureOfferScan();
+    this.store.flushOfferScan();
   }
 
   onModeKeydown(event: Event, mode: (typeof ONBOARDING_MODE_OPTIONS)[number]['id']): void {

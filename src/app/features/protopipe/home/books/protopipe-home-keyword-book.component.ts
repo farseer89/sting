@@ -272,7 +272,7 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
     }
     this.activeSection.set(section);
     if (section === 'onboarding:offer') {
-      void this.onboardingStore.ensureOfferScan();
+      this.onboardingStore.flushOfferScan();
     }
     if (!isOnboardingSection(section)) {
       this.syncWizardStep(section);

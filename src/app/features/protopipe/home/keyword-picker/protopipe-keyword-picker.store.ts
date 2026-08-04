@@ -118,6 +118,7 @@ export class ProtopipeKeywordPickerStore {
   private readonly _discoveryProgress = signal<string | null>(null);
   private readonly _discoveryProgressPercent = signal(0);
   private readonly _discoveryRunId = signal<string | null>(null);
+  private readonly _dashboardDiscoveryRun = signal<ProtopipeKeywordDiscoveryRunDto | null>(null);
   private readonly _suggestedAvatars = signal<ProtopipeSuggestedAvatar[]>([]);
   private readonly _selectedAvatarIds = signal<Set<string>>(new Set());
   private readonly _hoveredAvatarId = signal<string | null>(null);
@@ -139,6 +140,7 @@ export class ProtopipeKeywordPickerStore {
   readonly discoveryProgress = this._discoveryProgress.asReadonly();
   readonly discoveryProgressPercent = this._discoveryProgressPercent.asReadonly();
   readonly discoveryRunId = this._discoveryRunId.asReadonly();
+  readonly dashboardDiscoveryRun = this._dashboardDiscoveryRun.asReadonly();
   readonly suggestedAvatars = this._suggestedAvatars.asReadonly();
   readonly selectedAvatarIds = this._selectedAvatarIds.asReadonly();
   readonly hoveredAvatarId = this._hoveredAvatarId.asReadonly();
@@ -147,6 +149,35 @@ export class ProtopipeKeywordPickerStore {
   readonly selectedCount = computed(() => this._selected().size);
   readonly selectedList = computed(() => [...this._selected().values()]);
   readonly selectedAvatarCount = computed(() => this._selectedAvatarIds().size);
+  readonly dashboardMarketBaseline = computed(() => {
+    const artifacts = (this._dashboardDiscoveryRun() as unknown as LabKeywordDiscoveryRunDto | null)
+      ?.artifacts;
+    return artifacts?.marketBaseline ?? null;
+  });
+  readonly dashboardHasMarketBaseline = computed(() => {
+    const artifacts = (this._dashboardDiscoveryRun() as unknown as LabKeywordDiscoveryRunDto | null)
+      ?.artifacts;
+    return Boolean(artifacts?.marketBaselineReadyAt || artifacts?.marketBaseline);
+  });
+  readonly dashboardKeywordResearchReady = computed(() => {
+    const run = this._dashboardDiscoveryRun();
+    if (!run) return false;
+    return run.status === 'ready' || run.status === 'confirmed' || hasKeywordResearchOutput(run);
+  });
+  readonly dashboardDiscoveryFailed = computed(
+    () => this._dashboardDiscoveryRun()?.status === 'failed',
+  );
+  readonly dashboardDiscoveryStatus = computed<
+    'collecting' | 'market-ready' | 'keyword-loading' | 'keyword-ready' | 'confirmed' | 'failed'
+  >(() => {
+    const run = this._dashboardDiscoveryRun();
+    if (!run) return 'collecting';
+    if (run.status === 'failed') return 'failed';
+    if (run.status === 'confirmed') return 'confirmed';
+    if (this.dashboardKeywordResearchReady()) return 'keyword-ready';
+    if (this.dashboardHasMarketBaseline()) return 'market-ready';
+    return 'keyword-loading';
+  });
 
   readonly wizardEnabled = computed(
     () => this._discoveryRunId() != null && this._suggestedAvatars().length > 0,
@@ -210,14 +241,20 @@ export class ProtopipeKeywordPickerStore {
       const existing = latest.run;
 
       if (existing) {
+        this._dashboardDiscoveryRun.set(existing);
         this._discoveryRunId.set(existing.id);
         this.thinkerView.openDiscoveryRun(siteId, existing, { enterFocus: false });
         if (existing.status === 'pending' || existing.status === 'discovering') {
           this._discoveryProgress.set(discoveryStepLabel(existing.currentStep));
           this._discoveryProgressPercent.set(discoveryProgressPercent(existing));
           const run = await this.pollDiscoveryRun(siteId, existing.id, 'baseline-or-ready');
+          this._dashboardDiscoveryRun.set(run);
           this.thinkerView.updateDiscoveryRun(run);
-          if (run.status === 'ready' || run.status === 'confirmed' || hasKeywordResearchOutput(run)) {
+          if (
+            run.status === 'ready' ||
+            run.status === 'confirmed' ||
+            hasKeywordResearchOutput(run)
+          ) {
             this.mergeDiscoveryRun(run, map);
             this.applySuggestedAvatars(run.artifacts.suggestedAvatars ?? []);
             await this.seedRelatedKeywords(map, run);
@@ -234,15 +271,19 @@ export class ProtopipeKeywordPickerStore {
           await this.seedRelatedKeywords(map, existing);
         } else if (existing.status === 'failed') {
           this._discoveryNote.set(
-            existing.error?.message ?? 'Keyword discovery failed. Your saved keywords are shown below.',
+            existing.error?.message ??
+              'Keyword discovery failed. Your saved keywords are shown below.',
           );
           this.loadFromSavedStrategy(map);
         }
       } else {
+        this._dashboardDiscoveryRun.set(null);
         this._discoveryRunId.set(null);
         this._suggestedAvatars.set([]);
         this._selectedAvatarIds.set(new Set());
-        this._discoveryNote.set('Keyword research has not run yet. Complete onboarding to start discovery.');
+        this._discoveryNote.set(
+          'Keyword research has not run yet. Complete onboarding to start discovery.',
+        );
         this.loadFromSavedStrategy(map);
       }
 
@@ -252,7 +293,7 @@ export class ProtopipeKeywordPickerStore {
     } finally {
       this._loading.set(false);
       this._discoveryProgress.set(null);
-    this._discoveryProgressPercent.set(0);
+      this._discoveryProgressPercent.set(0);
     }
   }
 
@@ -379,6 +420,7 @@ export class ProtopipeKeywordPickerStore {
 
     try {
       const { run: initial } = await this.api.getKeywordDiscoveryRun(siteId, runId);
+      this._dashboardDiscoveryRun.set(initial);
       this._discoveryRunId.set(runId);
       this.thinkerView.openDiscoveryRun(siteId, initial, { enterFocus: false });
 
@@ -387,6 +429,7 @@ export class ProtopipeKeywordPickerStore {
         run = await this.pollDiscoveryRun(siteId, runId, 'baseline-or-ready');
       }
 
+      this._dashboardDiscoveryRun.set(run);
       this.thinkerView.updateDiscoveryRun(run);
       if (run.status === 'ready' || run.status === 'confirmed' || hasKeywordResearchOutput(run)) {
         this.mergeDiscoveryRun(run, map);
@@ -411,6 +454,7 @@ export class ProtopipeKeywordPickerStore {
     const map = new Map<string, KeywordPickerOption>();
     try {
       const run = await this.pollDiscoveryRun(siteId, runId);
+      this._dashboardDiscoveryRun.set(run);
       this.thinkerView.updateDiscoveryRun(run);
       this.mergeDiscoveryRun(run, map);
       this.applySuggestedAvatars(run.artifacts.suggestedAvatars ?? []);
@@ -610,7 +654,10 @@ export class ProtopipeKeywordPickerStore {
       this._searching.set(false);
       return;
     }
-    this.searchTimer = setTimeout(() => void this.fetchRelatedKeywords(trimmed), SEARCH_DEBOUNCE_MS);
+    this.searchTimer = setTimeout(
+      () => void this.fetchRelatedKeywords(trimmed),
+      SEARCH_DEBOUNCE_MS,
+    );
   }
 
   clearSearch(): void {
@@ -719,7 +766,8 @@ export class ProtopipeKeywordPickerStore {
     const phrase = (c.phrase ?? '').trim();
     if (!phrase) return;
     const pickerSource = mapDiscoverySourceToPicker(c.source);
-    if (!isRelevantForPicker(phrase, this.relevanceCtx, pickerSource, this.relevanceOptions())) return;
+    if (!isRelevantForPicker(phrase, this.relevanceCtx, pickerSource, this.relevanceOptions()))
+      return;
     mergeKeywordOption(map, {
       phraseKey: normalizePhraseKey(phrase),
       phrase,
@@ -792,7 +840,10 @@ export class ProtopipeKeywordPickerStore {
     });
   }
 
-  private mergeRanked(k: ProtopipeDiscoverRankedKeyword, map: Map<string, KeywordPickerOption>): void {
+  private mergeRanked(
+    k: ProtopipeDiscoverRankedKeyword,
+    map: Map<string, KeywordPickerOption>,
+  ): void {
     const phrase = (k.phrase ?? '').trim();
     if (!phrase) return;
     if (!isRelevantForPicker(phrase, this.relevanceCtx, 'ranked', this.relevanceOptions())) return;
@@ -889,7 +940,12 @@ export class ProtopipeKeywordPickerStore {
     const ranked = [...map.values()]
       .filter((o) => o.source === 'ranked' || o.source === 'ads')
       .filter((o) =>
-        isRelevantForPicker(o.phrase, this.relevanceCtx, o.source === 'ads' ? 'ads' : 'ranked', this.relevanceOptions()),
+        isRelevantForPicker(
+          o.phrase,
+          this.relevanceCtx,
+          o.source === 'ads' ? 'ads' : 'ranked',
+          this.relevanceOptions(),
+        ),
       )
       .sort((a, b) => (b.searchVolume ?? 0) - (a.searchVolume ?? 0));
     for (const o of ranked) {
@@ -898,7 +954,11 @@ export class ProtopipeKeywordPickerStore {
     }
 
     if (seeds.length < SEED_PHRASE_COUNT) {
-      const scored = scoreKeywordOptions([...map.values()], this.relevanceCtx, this.scoringConfig());
+      const scored = scoreKeywordOptions(
+        [...map.values()],
+        this.relevanceCtx,
+        this.scoringConfig(),
+      );
       for (const o of scored) {
         if (seeds.length >= SEED_PHRASE_COUNT) break;
         addSeed(o.phrase);
@@ -952,9 +1012,7 @@ export class ProtopipeKeywordPickerStore {
     this._pool.set(scored);
     this._suggested.set(pickSuggestedPanel(scored));
 
-    const savedKeys = new Set(
-      this.strategy.keywords().map((k) => normalizePhraseKey(k.phrase)),
-    );
+    const savedKeys = new Set(this.strategy.keywords().map((k) => normalizePhraseKey(k.phrase)));
     const preselected = pickPreselectedKeys(scored, savedKeys);
     const selected = new Map<string, KeywordPickerOption>();
 

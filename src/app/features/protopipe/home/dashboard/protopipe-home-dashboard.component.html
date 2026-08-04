@@ -1,7 +1,7 @@
 <section class="home-dash" aria-label="SearchClimber home dashboard">
   <header class="home-dash__hero">
-    <p class="home-dash__eyebrow">SearchClimber setup</p>
-    <h1>Turn market signals into your growth plan.</h1>
+    <p class="home-dash__eyebrow">Your setup is saved</p>
+    <h1>We captured the market profile for {{ businessName() }}.</h1>
     <p>
       {{ marketStatus() }}
     </p>
@@ -12,48 +12,106 @@
     }
   </header>
 
+  <section class="home-dash__collected" aria-label="Collected onboarding inputs">
+    <div>
+      <p class="home-dash__eyebrow">Collected from onboarding</p>
+      <h2>Your starting profile</h2>
+      <p>
+        These are the signals SearchClimber is using to build your market baseline and keyword plan.
+      </p>
+    </div>
+    <dl class="home-dash-fields">
+      @for (field of collectedFields(); track field.id) {
+        <div>
+          <dt>{{ field.label }}</dt>
+          <dd>{{ field.value }}</dd>
+        </div>
+      }
+    </dl>
+    @if (collectedChips().length) {
+      <div class="home-dash-chips" aria-label="Captured services, customers, and competitors">
+        @for (chip of collectedChips(); track chip.id) {
+          <span>{{ chip.label }}</span>
+        }
+      </div>
+    }
+  </section>
+
   <div class="home-dash__grid">
     <article class="home-dash-card">
       <span class="home-dash-card__status" [class.is-ready]="baselineReady()">Market baseline</span>
-      <h2>Review what we found first</h2>
+      <h2>{{ baselineReady() ? 'Early market signals are ready' : 'Scanning your market' }}</h2>
       <p>
-        See source-by-source market evidence while deeper keyword research continues in the background.
+        {{
+          baselineReady()
+            ? 'We found the first source-backed signals. Keyword planning is continuing in the background.'
+            : 'We are checking your site, existing rankings, Search Console, and competitor gaps.'
+        }}
       </p>
+      @if (marketSourceRows().length) {
+        <ul class="home-dash-card__sources">
+          @for (row of marketSourceRows(); track row.id) {
+            <li>
+              <span>{{ row.label }}</span>
+              <strong>{{ row.value }}</strong>
+            </li>
+          }
+        </ul>
+      }
       <button type="button" (click)="openTarget('keywords')">
         {{ baselineReady() ? 'Open market baseline' : 'Open discovery' }}
       </button>
     </article>
 
     <article class="home-dash-card">
-      <span class="home-dash-card__status" [class.is-ready]="keywordResearchReady()">Keyword plan</span>
-      <h2>Confirm your keyword plan</h2>
+      <span class="home-dash-card__status" [class.is-ready]="keywordResearchReady()"
+        >Keyword plan</span
+      >
+      <h2>{{ keywordPlannerLabel() }}</h2>
       <p>
-        Keywords and audiences unlock strategy, AI visibility, content, and site build next steps.
+        Confirm the keyword plan once it is ready to unlock strategy, AI visibility, content, and
+        site build next steps.
       </p>
       <button type="button" [disabled]="!keywordResearchReady()" (click)="openTarget('keywords')">
-        {{ keywordResearchReady() ? 'Review keywords' : 'Research still running' }}
+        {{ keywordResearchReady() ? 'Review keyword plan' : 'Keyword planner loading' }}
       </button>
     </article>
 
     <article class="home-dash-card">
       <span class="home-dash-card__status" [class.is-ready]="keywordPlanConfirmed()">Strategy</span>
       <h2>Build strategy from confirmed keywords</h2>
-      <p>
-        Confirm the keyword plan to generate the strategy view and content direction.
-      </p>
+      <p>Confirm the keyword plan to generate the strategy view and content direction.</p>
       <button type="button" [disabled]="!keywordPlanConfirmed()" (click)="openTarget('strategy')">
         {{ keywordPlanConfirmed() ? 'Open strategy' : 'Confirm keywords first' }}
       </button>
     </article>
 
     <article class="home-dash-card">
-      <span class="home-dash-card__status" [class.is-ready]="keywordPlanConfirmed()">AI visibility</span>
+      <span class="home-dash-card__status" [class.is-ready]="keywordPlanConfirmed()"
+        >AI visibility</span
+      >
       <h2>Track AI visibility</h2>
-      <p>
-        Confirm keywords to start measuring what AI engines see and recommend.
-      </p>
-      <button type="button" [disabled]="!keywordPlanConfirmed()" (click)="openTarget('mentions-book')">
+      <p>Confirm keywords to start measuring what AI engines see and recommend.</p>
+      <button
+        type="button"
+        [disabled]="!keywordPlanConfirmed()"
+        (click)="openTarget('mentions-book')"
+      >
         {{ keywordPlanConfirmed() ? 'Open AI visibility' : 'Confirm keywords first' }}
+      </button>
+    </article>
+
+    <article class="home-dash-card home-dash-card--next">
+      <span class="home-dash-card__status" [class.is-ready]="keywordPlanConfirmed()"
+        >Content and site build</span
+      >
+      <h2>Turn the plan into pages</h2>
+      <p>
+        Once keywords are confirmed, SearchClimber can shape content, build pages, and guide
+        publishing.
+      </p>
+      <button type="button" [disabled]="!keywordPlanConfirmed()" (click)="openTarget('build-book')">
+        {{ keywordPlanConfirmed() ? 'Open Build Book' : 'Confirm keywords first' }}
       </button>
     </article>
   </div>
@@ -66,7 +124,9 @@
     </div>
     <div class="home-dash-provider">
       <span>DataForSEO</span>
-      <strong>{{ providerLabel(dataForSeoStatus()?.connected, dataForSeoStatus()?.configured) }}</strong>
+      <strong>{{
+        providerLabel(dataForSeoStatus()?.connected, dataForSeoStatus()?.configured)
+      }}</strong>
       @if (dataForSeoStatus()?.error) {
         <small>{{ dataForSeoStatus()?.error }}</small>
       } @else if (dataForSeoStatus()?.balance != null) {

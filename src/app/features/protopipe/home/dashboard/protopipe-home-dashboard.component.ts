@@ -1,8 +1,21 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  output,
+} from '@angular/core';
 import { ProtopipeOnboardingStateService } from '../../onboarding/protopipe-onboarding-state.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { ProtopipeKeywordPickerStore } from '../keyword-picker/protopipe-keyword-picker.store';
-import { ProtopipeHomeThinkerViewState } from '../protopipe-home-thinker-view.state';
+import {
+  buildCollectedChips,
+  buildCollectedFields,
+  buildMarketSourceRows,
+  dashboardMarketStatus,
+  keywordPlannerLabel,
+} from './protopipe-home-dashboard.view-model';
 
 type DashboardTarget = 'keywords' | 'strategy' | 'mentions-book' | 'build-book';
 
@@ -17,7 +30,6 @@ export class ProtopipeHomeDashboardComponent implements OnInit {
   private readonly onboarding = inject(ProtopipeOnboardingStateService);
   private readonly strategy = inject(ProtopipeStrategyService);
   private readonly keywordStore = inject(ProtopipeKeywordPickerStore);
-  private readonly thinkerView = inject(ProtopipeHomeThinkerViewState);
 
   readonly open = output<DashboardTarget>();
 
@@ -27,37 +39,42 @@ export class ProtopipeHomeDashboardComponent implements OnInit {
   readonly providerError = this.strategy.dataForSeoTestError;
   readonly discoveryProgress = this.keywordStore.discoveryProgress;
   readonly discoveryProgressPercent = this.keywordStore.discoveryProgressPercent;
-  readonly run = this.thinkerView.discoveryRun;
+  readonly discoveryStatus = this.keywordStore.dashboardDiscoveryStatus;
+  readonly marketBaseline = this.keywordStore.dashboardMarketBaseline;
 
   readonly onboardingDone = computed(() => this.onboarding.onboardingCompleted());
-  readonly baselineReady = computed(() => {
-    const artifacts = this.run()?.artifacts as
-      | { marketBaseline?: unknown; marketBaselineReadyAt?: string }
-      | undefined;
-    return Boolean(artifacts?.marketBaseline || artifacts?.marketBaselineReadyAt);
-  });
-  readonly keywordResearchReady = computed(() => {
-    const run = this.run();
-    if (!run) return false;
-    const artifacts = run.artifacts as
-      | { scoredCandidates?: unknown[]; suggestedAvatars?: unknown[] }
-      | undefined;
-    return (
-      run.status === 'ready' ||
-      run.status === 'confirmed' ||
-      Boolean(artifacts?.scoredCandidates?.length && artifacts?.suggestedAvatars?.length)
-    );
-  });
+  readonly baselineReady = this.keywordStore.dashboardHasMarketBaseline;
+  readonly keywordResearchReady = this.keywordStore.dashboardKeywordResearchReady;
   readonly keywordPlanConfirmed = computed(
-    () => this.run()?.status === 'confirmed' || this.strategy.keywords().length > 0,
+    () => this.discoveryStatus() === 'confirmed' || this.strategy.keywords().length > 0,
   );
-  readonly marketStatus = computed(() => {
-    if (!this.onboardingDone()) return 'Complete onboarding to start market discovery.';
-    if (this.keywordResearchReady()) return 'Keyword research is ready for review.';
-    if (this.baselineReady()) return 'Market baseline is ready. Full keyword research is still running.';
-    if (this.run()) return this.discoveryProgress() ?? 'Discovery is running.';
-    return 'Discovery will start when onboarding is complete.';
-  });
+  readonly businessName = computed(
+    () =>
+      this.strategy.site()?.displayName?.trim() || this.strategy.site()?.hostname || 'your market',
+  );
+  readonly collectedFields = computed(() =>
+    buildCollectedFields(this.strategy.site(), this.strategy.onboardingProfile()),
+  );
+  readonly collectedChips = computed(() => buildCollectedChips(this.strategy.onboardingProfile()));
+  readonly marketSourceRows = computed(() => buildMarketSourceRows(this.marketBaseline()));
+  readonly marketStatus = computed(() =>
+    dashboardMarketStatus({
+      onboardingDone: this.onboardingDone(),
+      keywordPlanConfirmed: this.keywordPlanConfirmed(),
+      keywordResearchReady: this.keywordResearchReady(),
+      baselineReady: this.baselineReady(),
+      loading: this.keywordStore.loading(),
+      discoveryProgress: this.discoveryProgress(),
+    }),
+  );
+  readonly keywordPlannerLabel = computed(() =>
+    keywordPlannerLabel({
+      keywordPlanConfirmed: this.keywordPlanConfirmed(),
+      keywordResearchReady: this.keywordResearchReady(),
+      baselineReady: this.baselineReady(),
+      discoveryFailed: this.keywordStore.dashboardDiscoveryFailed(),
+    }),
+  );
 
   ngOnInit(): void {
     void this.strategy.refreshMarketProviderStatus();

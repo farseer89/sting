@@ -133,6 +133,24 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
 
   readonly hasDiscoveryRun = computed(() => Boolean(this.discoveryRun()));
   readonly hasOnboardingProfile = computed(() => Boolean(this.strategy.onboardingProfile()));
+  readonly hasMarketBaseline = computed(() => {
+    const artifacts = this.discoveryRun()?.artifacts as
+      | { marketBaseline?: unknown; marketBaselineReadyAt?: string }
+      | undefined;
+    return Boolean(artifacts?.marketBaseline || artifacts?.marketBaselineReadyAt);
+  });
+  readonly keywordResearchReady = computed(() => {
+    const run = this.discoveryRun();
+    if (!run) return false;
+    const artifacts = run.artifacts as
+      | { scoredCandidates?: unknown[]; suggestedAvatars?: unknown[] }
+      | undefined;
+    return (
+      run.status === 'ready' ||
+      run.status === 'confirmed' ||
+      Boolean(artifacts?.scoredCandidates?.length && artifacts?.suggestedAvatars?.length)
+    );
+  });
   readonly canUseDiscoveryPipeline = computed(
     () =>
       this.onboardingState.onboardingCompleted() &&
@@ -167,16 +185,22 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
   });
 
   readonly showDiscoveryNav = computed(() => this.hasDiscoveryRun());
-  readonly showKeywordNav = computed(() => this.canUseDiscoveryPipeline());
+  readonly showKeywordNav = computed(
+    () => this.canUseDiscoveryPipeline() && this.keywordResearchReady(),
+  );
 
   readonly showAudiencesNav = computed(
     () =>
       this.canUseDiscoveryPipeline() &&
+      this.keywordResearchReady() &&
       (this.store.wizardEnabled() || this.store.wizardStep() !== 'keywords'),
   );
 
   readonly showBuildNav = computed(
-    () => this.canUseDiscoveryPipeline() && this.store.wizardStep() === 'build',
+    () =>
+      this.canUseDiscoveryPipeline() &&
+      this.keywordResearchReady() &&
+      this.store.wizardStep() === 'build',
   );
 
   readonly activeOnboardingMeta = computed(() => {

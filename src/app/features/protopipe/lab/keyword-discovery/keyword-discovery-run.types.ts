@@ -113,6 +113,14 @@ export interface DiscoveryCandidate {
   serpFeatures?: string[];
   /** Which suggested avatar this candidate maps to (provisional). */
   avatarId?: string | null;
+  /** Source evidence preserved for baseline review before merge/dedupe. */
+  position?: number;
+  clicks?: number;
+  impressions?: number;
+  ctr?: number;
+  competitorDomain?: string;
+  competitorRank?: number;
+  yourRank?: number | null;
 }
 
 /**
@@ -173,11 +181,57 @@ export interface DiscoverySiteSnapshot {
   error?: string;
 }
 
+export interface DiscoveryMarketBaseline {
+  capturedAt: string;
+  siteSnapshot?: DiscoverySiteSnapshot;
+  gscQueries: DiscoveryCandidate[];
+  rankedKeywords: DiscoveryCandidate[];
+  competitorGaps: DiscoveryCandidate[];
+  sources: Record<DiscoveryMarketBaselineSourceId, DiscoveryMarketBaselineSourceStatus>;
+  location?: { code?: number; name?: string };
+  profileSummary: {
+    services: string[];
+    competitors: string[];
+    marketScope?: 'local' | 'national' | 'worldwide';
+    onboardingReadiness?: 'ready' | 'sparse';
+  };
+  discoveryContext?: DiscoveryContext;
+  totals: {
+    gscQueries: number;
+    rankedKeywords: number;
+    competitorGaps: number;
+  };
+}
+
+export type DiscoveryMarketBaselineSourceId =
+  | 'gsc'
+  | 'site_snapshot'
+  | 'ranked_keywords'
+  | 'competitor_gaps';
+
+export type DiscoveryMarketBaselineAttemptStatus =
+  | 'pending'
+  | 'available'
+  | 'empty'
+  | 'skipped'
+  | 'failed';
+
+export interface DiscoveryMarketBaselineSourceStatus {
+  status: DiscoveryMarketBaselineAttemptStatus;
+  label: string;
+  count: number;
+  reason?: string;
+  attemptedAt?: string;
+  completedAt?: string;
+}
+
 export interface DiscoveryArtifacts {
   profile?: DiscoveryProfileSnapshot;
   siteSnapshot?: DiscoverySiteSnapshot;
   discoveryContext?: DiscoveryContext;
   onboardingReadiness?: 'ready' | 'sparse';
+  marketBaselineReadyAt?: string;
+  marketBaseline?: DiscoveryMarketBaseline;
   gscQueries?: DiscoveryCandidate[];
   rankedKeywords?: DiscoveryCandidate[];
   adsIdeas?: DiscoveryCandidate[];

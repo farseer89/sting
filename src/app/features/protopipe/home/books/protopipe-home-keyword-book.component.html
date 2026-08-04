@@ -73,7 +73,7 @@
               [class.is-active]="isPipelineSectionActive('discovery')"
               (click)="selectSection('discovery')"
             >
-              Discovery run
+              {{ hasMarketBaseline() ? 'Market baseline' : 'Discovery run' }}
             </button>
           }
           @if (showKeywordNav()) {
@@ -133,7 +133,7 @@
             [class.is-active]="isPipelineSectionActive('discovery')"
             (click)="selectSection('discovery')"
           >
-            Discovery run
+            {{ hasMarketBaseline() ? 'Market baseline' : 'Discovery run' }}
             @if (discoveryRun()?.status === 'discovering' || discoveryRun()?.status === 'pending') {
               <span class="kb-binder-nav__live">live</span>
             }

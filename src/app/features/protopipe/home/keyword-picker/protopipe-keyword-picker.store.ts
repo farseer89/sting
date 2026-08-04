@@ -31,6 +31,7 @@ import {
 } from './keyword-picker.scoring';
 import type { KeywordPickerOption, KeywordPickerSource } from './keyword-picker.types';
 import { normalizePhraseKey } from './keyword-picker.types';
+import type { KeywordDiscoveryRunDto as LabKeywordDiscoveryRunDto } from '../../lab/keyword-discovery/keyword-discovery-run.types';
 
 const SEARCH_DEBOUNCE_MS = 350;
 const SEARCH_RELATED_LIMIT = 50;
@@ -61,6 +62,16 @@ function optionalString(value: string | null | undefined): string | undefined {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function hasMarketBaseline(run: ProtopipeKeywordDiscoveryRunDto): boolean {
+  const artifacts = (run as unknown as LabKeywordDiscoveryRunDto).artifacts;
+  return Boolean(artifacts.marketBaselineReadyAt || artifacts.marketBaseline);
+}
+
+function hasKeywordResearchOutput(run: ProtopipeKeywordDiscoveryRunDto): boolean {
+  const artifacts = (run as unknown as LabKeywordDiscoveryRunDto).artifacts;
+  return Boolean(artifacts.scoredCandidates?.length && artifacts.suggestedAvatars?.length);
 }
 
 function mapDiscoverySourceToPicker(
@@ -204,11 +215,18 @@ export class ProtopipeKeywordPickerStore {
         if (existing.status === 'pending' || existing.status === 'discovering') {
           this._discoveryProgress.set(discoveryStepLabel(existing.currentStep));
           this._discoveryProgressPercent.set(discoveryProgressPercent(existing));
-          const run = await this.pollDiscoveryRun(siteId, existing.id);
+          const run = await this.pollDiscoveryRun(siteId, existing.id, 'baseline-or-ready');
           this.thinkerView.updateDiscoveryRun(run);
-          this.mergeDiscoveryRun(run, map);
-          this.applySuggestedAvatars(run.artifacts.suggestedAvatars ?? []);
-          await this.seedRelatedKeywords(map);
+          if (run.status === 'ready' || run.status === 'confirmed' || hasKeywordResearchOutput(run)) {
+            this.mergeDiscoveryRun(run, map);
+            this.applySuggestedAvatars(run.artifacts.suggestedAvatars ?? []);
+            await this.seedRelatedKeywords(map);
+          } else {
+            this._discoveryNote.set(
+              'Market baseline is ready. Keyword research is still running in the background.',
+            );
+            void this.followDiscoveryRun(siteId, existing.id);
+          }
         } else if (existing.status === 'ready' || existing.status === 'confirmed') {
           this.thinkerView.updateDiscoveryRun(existing);
           this.mergeDiscoveryRun(existing, map);
@@ -241,10 +259,14 @@ export class ProtopipeKeywordPickerStore {
   private async pollDiscoveryRun(
     siteId: string,
     runId: string,
+    until: 'baseline-or-ready' | 'ready' = 'ready',
   ): Promise<ProtopipeKeywordDiscoveryRunDto> {
     for (let attempt = 0; attempt < DISCOVERY_POLL_MAX; attempt++) {
       const { run } = await this.api.getKeywordDiscoveryRun(siteId, runId);
       if (run.status === 'ready' || run.status === 'confirmed') {
+        return run;
+      }
+      if (until === 'baseline-or-ready' && hasMarketBaseline(run)) {
         return run;
       }
       if (run.status === 'failed') {
@@ -362,16 +384,41 @@ export class ProtopipeKeywordPickerStore {
 
       let run = initial;
       if (run.status === 'pending' || run.status === 'discovering') {
-        run = await this.pollDiscoveryRun(siteId, runId);
+        run = await this.pollDiscoveryRun(siteId, runId, 'baseline-or-ready');
       }
 
+      this.thinkerView.updateDiscoveryRun(run);
+      if (run.status === 'ready' || run.status === 'confirmed' || hasKeywordResearchOutput(run)) {
+        this.mergeDiscoveryRun(run, map);
+        this.applySuggestedAvatars(run.artifacts.suggestedAvatars ?? []);
+        await this.seedRelatedKeywords(map);
+      } else {
+        this._discoveryNote.set(
+          'Market baseline is ready. Keyword research is still running in the background.',
+        );
+        void this.finishDiscoveryRun(siteId, runId);
+      }
+      this.applyScoredPool(map);
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Discovery run failed after save.'));
+    } finally {
+      this._discoveryProgress.set(null);
+      this._discoveryProgressPercent.set(0);
+    }
+  }
+
+  private async finishDiscoveryRun(siteId: string, runId: string): Promise<void> {
+    const map = new Map<string, KeywordPickerOption>();
+    try {
+      const run = await this.pollDiscoveryRun(siteId, runId);
       this.thinkerView.updateDiscoveryRun(run);
       this.mergeDiscoveryRun(run, map);
       this.applySuggestedAvatars(run.artifacts.suggestedAvatars ?? []);
       await this.seedRelatedKeywords(map);
       this.applyScoredPool(map);
+      this._discoveryNote.set(null);
     } catch (err) {
-      this._error.set(parseProtopipeApiError(err, 'Discovery run failed after save.'));
+      this._error.set(parseProtopipeApiError(err, 'Keyword research failed after baseline.'));
     } finally {
       this._discoveryProgress.set(null);
       this._discoveryProgressPercent.set(0);

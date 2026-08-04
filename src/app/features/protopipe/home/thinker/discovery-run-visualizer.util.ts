@@ -1,5 +1,8 @@
 import type { ProtopipeKeywordDiscoveryRunDto } from '@hive/contracts';
-import type { KeywordDiscoveryRunDto } from '../../lab/keyword-discovery/keyword-discovery-run.types';
+import type {
+  DiscoveryMarketBaselineSourceStatus,
+  KeywordDiscoveryRunDto,
+} from '../../lab/keyword-discovery/keyword-discovery-run.types';
 import {
   DISCOVERY_NAV_PHASES,
   DISCOVERY_RESULT_STEP_ID,
@@ -25,9 +28,48 @@ function pendingView(title: string): StepVisualizerView {
   };
 }
 
+function sourceStatusValue(status: DiscoveryMarketBaselineSourceStatus['status']): string {
+  switch (status) {
+    case 'available':
+      return 'Ready';
+    case 'empty':
+      return 'No data';
+    case 'skipped':
+      return 'Skipped';
+    case 'failed':
+      return 'Needs attention';
+    case 'pending':
+    default:
+      return 'Working';
+  }
+}
+
+function sourceStatusBlocks(
+  sources: Record<string, DiscoveryMarketBaselineSourceStatus> | undefined,
+): VisualizerBlock[] {
+  if (!sources) return [];
+  return Object.values(sources).map((source) => ({
+    kind: 'meta-row' as const,
+    label: source.label,
+    value:
+      source.count > 0
+        ? `${num(source.count)} · ${sourceStatusValue(source.status)}`
+        : sourceStatusValue(source.status),
+    hint: source.reason,
+  }));
+}
+
 function candidateBlocks(
   label: string,
-  candidates: { phrase: string; searchVolume?: number; fit?: number; intent?: string }[],
+  candidates: {
+    phrase: string;
+    searchVolume?: number;
+    fit?: number;
+    intent?: string;
+    position?: number;
+    competitorDomain?: string;
+    competitorRank?: number;
+  }[],
   limit = 8,
 ): VisualizerBlock[] {
   if (!candidates.length) return [];
@@ -35,7 +77,18 @@ function candidateBlocks(
     kind: 'meta-row' as const,
     label: c.phrase,
     value: num(c.searchVolume),
-    hint: [c.intent, c.fit != null ? `${c.fit}% fit` : null].filter(Boolean).join(' · ') || undefined,
+    hint:
+      [
+        label,
+        c.intent,
+        c.position != null ? `rank ${num(c.position)}` : null,
+        c.competitorDomain
+          ? `${c.competitorDomain}${c.competitorRank != null ? ` #${num(c.competitorRank)}` : ''}`
+          : null,
+        c.fit != null ? `${c.fit}% fit` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ') || undefined,
   }));
 }
 
@@ -64,7 +117,10 @@ function buildSourcesPhaseBlocks(run: KeywordDiscoveryRunDto): VisualizerBlock[]
       value: `${a.spyfuGaps?.length ?? 0}`,
     },
   ];
+  blocks.push(...sourceStatusBlocks(a.marketBaseline?.sources));
   blocks.push(...candidateBlocks('Top GSC', a.gscQueries ?? [], 5));
+  blocks.push(...candidateBlocks('Ranked', a.rankedKeywords ?? [], 5));
+  blocks.push(...candidateBlocks('Gap', a.spyfuGaps ?? [], 5));
   return blocks;
 }
 

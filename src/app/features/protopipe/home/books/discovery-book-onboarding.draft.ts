@@ -3,6 +3,7 @@ import type {
   ProtopipeOnboardingProfile,
   ProtopipeOnboardingRequest,
   ProtopipeSerpLocationOption,
+  SaveOnboardingProgressRequest,
 } from '@hive/contracts';
 import {
   defaultNationalMarket,
@@ -23,6 +24,7 @@ import {
   type MarketReachMode,
   type OnboardingModeId,
 } from '../../onboarding/onboarding-market.constants';
+import type { DiscoveryBookOnboardingStepId } from './discovery-book-onboarding.steps';
 
 const PENDING_SITE_HOSTNAME = 'pending.local';
 
@@ -172,6 +174,44 @@ export function draftToOnboardingRequest(
 
   return {
     businessName: synced.businessName.trim(),
+    websiteUrl: synced.onboardingMode === 'strategy_only' ? '' : normalizeUrl(synced.websiteUrl),
+    profile,
+  };
+}
+
+export function draftToProgressRequest(
+  draft: DiscoveryBookOnboardingDraft,
+  completedStepId: DiscoveryBookOnboardingStepId,
+  resumeStepId: DiscoveryBookOnboardingStepId,
+): SaveOnboardingProgressRequest {
+  const synced = syncLegacyMarketFields(draft);
+  const reach = synced.marketReach;
+
+  const profile: Partial<ProtopipeOnboardingProfile> = {
+    onboardingMode: synced.onboardingMode,
+    services: synced.services.map((s) => s.trim()).filter(Boolean),
+    customerAvatars: synced.customerAvatars.map((a) => a.trim()).filter(Boolean),
+    targetCustomerSites: synced.targetCustomerSites.map((s) => s.trim()).filter(Boolean),
+    competitors: synced.competitors.map((c) => c.trim()).filter(Boolean),
+  };
+
+  if (reach) {
+    profile.marketReach = reach;
+    profile.marketTiers = marketTiersForReach(reach);
+    profile.localMarket = synced.localMarket ?? undefined;
+    profile.nationalMarket = synced.nationalMarket ?? undefined;
+    profile.marketScope = synced.marketScope ?? undefined;
+    profile.serpLocationCode = synced.serpLocationCode;
+    profile.serpLocationName = synced.serpLocationName?.trim() || undefined;
+    profile.city = synced.city?.trim() || undefined;
+    profile.state = synced.state?.trim() || undefined;
+    profile.countryIso = synced.countryIso?.trim().toUpperCase() || undefined;
+  }
+
+  return {
+    completedStepId,
+    resumeStepId,
+    businessName: synced.businessName.trim() || undefined,
     websiteUrl: synced.onboardingMode === 'strategy_only' ? '' : normalizeUrl(synced.websiteUrl),
     profile,
   };

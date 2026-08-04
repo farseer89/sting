@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import type { ProtopipeDataForSeoStatusResponse, SubscriptionState } from '@hive/contracts';
+import type { ProtopipeDataForSeoStatusResponse, SubscriptionState, DiscoveryBookOnboardingStepId } from '@hive/contracts';
 import type { ProtopipeOnboardingProfile } from '@hive/contracts';
 import type {
   KeywordIntent,
@@ -33,6 +33,7 @@ export class ProtopipeStrategyService {
   private readonly _sites = signal<ProtopipeSite[]>([]);
   private readonly _summary = signal('');
   private readonly _onboardingProfile = signal<ProtopipeOnboardingProfile | null>(null);
+  private readonly _onboardingStepId = signal<DiscoveryBookOnboardingStepId | null>(null);
   private readonly _subscription = signal<SubscriptionState | null>(null);
   private readonly _defaultCognitivePackId = signal('none');
   private readonly _keywords = signal<ProtopipeKeywordDto[]>([]);
@@ -62,6 +63,7 @@ export class ProtopipeStrategyService {
   readonly site = this._site.asReadonly();
   readonly sites = this._sites.asReadonly();
   readonly onboardingProfile = this._onboardingProfile.asReadonly();
+  readonly onboardingStepId = this._onboardingStepId.asReadonly();
   readonly subscription = this._subscription.asReadonly();
   readonly defaultCognitivePackId = this._defaultCognitivePackId.asReadonly();
 
@@ -76,6 +78,7 @@ export class ProtopipeStrategyService {
     keywords: this._keywords(),
     updatedAt: this._updatedAt(),
     onboardingProfile: this._onboardingProfile() ?? undefined,
+    onboardingStepId: this._onboardingStepId(),
   }));
 
   readonly keywordCount = computed(() => this._keywords().length);
@@ -324,6 +327,9 @@ export class ProtopipeStrategyService {
     this._site.set(plan.site);
     this._summary.set(plan.summary);
     this._onboardingProfile.set(plan.onboardingProfile ?? null);
+    this._onboardingStepId.set(
+      (plan.onboardingStepId as DiscoveryBookOnboardingStepId | null | undefined) ?? null,
+    );
     this._defaultCognitivePackId.set(plan.defaultCognitivePackId ?? 'none');
     this._keywords.set(plan.keywords);
     this._updatedAt.set(plan.updatedAt);

@@ -50,6 +50,8 @@ import type {
   ProtopipeMarketEnrichResponse,
   ProtopipeOnboardingRequest,
   ProtopipeOnboardingResponse,
+  SaveOnboardingProgressRequest,
+  SaveOnboardingProgressResponse,
   ProtopipeScanOfferRequest,
   ProtopipeScanOfferResponse,
   ProtopipeExpandOfferRequest,
@@ -239,6 +241,18 @@ export class ProtopipeApiService {
     return firstValueFrom(
       this.http.patch<ProtopipeOnboardingResponse>(
         protopipeApiUrl(ProtopipeEndpoints.siteOnboarding.path, { siteId }),
+        body,
+      ),
+    );
+  }
+
+  saveOnboardingProgress(
+    siteId: string,
+    body: SaveOnboardingProgressRequest,
+  ): Promise<SaveOnboardingProgressResponse> {
+    return firstValueFrom(
+      this.http.patch<SaveOnboardingProgressResponse>(
+        protopipeApiUrl(ProtopipeEndpoints.saveOnboardingProgress.path, { siteId }),
         body,
       ),
     );

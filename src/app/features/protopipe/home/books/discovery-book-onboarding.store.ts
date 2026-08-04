@@ -21,6 +21,7 @@ import {
   draftFingerprint,
   draftFromStrategy,
   draftToOnboardingRequest,
+  draftToProgressRequest,
   defaultMarketDraft,
   isPendingSiteHostname,
   normalizeUrl,
@@ -51,6 +52,7 @@ export class DiscoveryBookOnboardingStore {
   private readonly draft = signal<DiscoveryBookOnboardingDraft>(draftFromStrategy(null, null));
 
   readonly saving = signal(false);
+  readonly stepSaving = signal(false);
   readonly saveError = signal<string | null>(null);
   readonly saveStatus = signal<string | null>(null);
   readonly stepError = signal<string | null>(null);
@@ -759,7 +761,7 @@ export class DiscoveryBookOnboardingStore {
   }
 
   canContinue(stepId: DiscoveryBookOnboardingStepId): boolean {
-    return !this.saving() && this.stepValidationError(stepId) == null;
+    return !this.saving() && !this.stepSaving() && this.stepValidationError(stepId) == null;
   }
 
   /** First-time setup — submit on the last step only. */
@@ -781,6 +783,40 @@ export class DiscoveryBookOnboardingStore {
     }
     this.stepError.set(null);
     return true;
+  }
+
+  async saveStepProgress(
+    completedStepId: DiscoveryBookOnboardingStepId,
+    resumeStepId: DiscoveryBookOnboardingStepId,
+  ): Promise<boolean> {
+    this.flushDraftInputs();
+    const err = this.stepValidationError(completedStepId);
+    if (err) {
+      this.stepError.set(err);
+      return false;
+    }
+
+    const siteId = this.strategy.siteId();
+    if (!siteId) {
+      this.stepError.set('No site loaded.');
+      return false;
+    }
+
+    this.stepSaving.set(true);
+    this.stepError.set(null);
+
+    try {
+      const body = draftToProgressRequest(this.draft(), completedStepId, resumeStepId);
+      await this.api.saveOnboardingProgress(siteId, body);
+      await this.strategy.refreshPlan();
+      this.syncFromStrategy();
+      return true;
+    } catch (saveErr) {
+      this.stepError.set(parseProtopipeApiError(saveErr, 'Could not save onboarding progress.'));
+      return false;
+    } finally {
+      this.stepSaving.set(false);
+    }
   }
 
   fullValidationError(): string | null {

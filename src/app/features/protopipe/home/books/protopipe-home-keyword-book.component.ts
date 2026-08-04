@@ -25,6 +25,7 @@ import {
   nextOnboardingStepId,
   onboardingStepMeta,
   previousOnboardingStepId,
+  resolveOnboardingResumeStepId,
   type DiscoveryBookOnboardingStepId,
   type DiscoveryBookPipelineSection,
   type DiscoveryBookSection,
@@ -213,7 +214,9 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
       this.didResolveInitialSection.set(true);
 
       if (!this.onboardingState.onboardingCompleted()) {
-        this.activeSection.set(DISCOVERY_BOOK_ONBOARDING_STEPS[0].id);
+        this.activeSection.set(
+          resolveOnboardingResumeStepId(this.strategy.onboardingStepId()),
+        );
         return;
       }
 
@@ -230,7 +233,9 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
       if (!this.onboardingState.onboardingCompleted()) {
         const section = this.activeSection();
         if (!isOnboardingSection(section)) {
-          this.activeSection.set(DISCOVERY_BOOK_ONBOARDING_STEPS[0].id);
+          this.activeSection.set(
+            resolveOnboardingResumeStepId(this.strategy.onboardingStepId()),
+          );
         }
         return;
       }

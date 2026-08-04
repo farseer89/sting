@@ -451,11 +451,13 @@
           <p-button
             type="button"
             [label]="
-              stepId() === 'onboarding:getting-started' && store.offerScanning()
-                ? 'Scanning…'
-                : 'Continue'
+              store.stepSaving()
+                ? 'Saving…'
+                : stepId() === 'onboarding:getting-started' && store.offerScanning()
+                  ? 'Scanning…'
+                  : 'Continue'
             "
-            [disabled]="!store.canContinue(stepId()) || store.offerScanning()"
+            [disabled]="!store.canContinue(stepId()) || store.offerScanning() || store.stepSaving()"
             icon="pi pi-arrow-right"
             iconPos="right"
             (onClick)="continue()"
@@ -466,11 +468,13 @@
           <p-button
             type="button"
             [label]="
-              stepId() === 'onboarding:getting-started' && store.offerScanning()
-                ? 'Scanning…'
-                : 'Continue'
+              store.stepSaving()
+                ? 'Saving…'
+                : stepId() === 'onboarding:getting-started' && store.offerScanning()
+                  ? 'Scanning…'
+                  : 'Continue'
             "
-            [disabled]="!store.canContinue(stepId()) || store.offerScanning()"
+            [disabled]="!store.canContinue(stepId()) || store.offerScanning() || store.stepSaving()"
             icon="pi pi-arrow-right"
             iconPos="right"
             (onClick)="continue()"

@@ -26,6 +26,7 @@ import { DiscoveryBookOnboardingStore } from './discovery-book-onboarding.store'
 import {
   isFirstOnboardingStep,
   isLastOnboardingStep,
+  nextOnboardingStepId,
   type DiscoveryBookOnboardingStepId,
 } from './discovery-book-onboarding.steps';
 import { ProtopipeDiscoveryBookOnboardingSuggestionsComponent } from './protopipe-discovery-book-onboarding-suggestions.component';
@@ -165,6 +166,14 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
     ) {
       await this.store.flushOfferScanAndWait();
     }
+
+    if (!this.onboardingCompleted()) {
+      const next = nextOnboardingStepId(this.stepId());
+      if (!next) return;
+      const saved = await this.store.saveStepProgress(this.stepId(), next);
+      if (!saved) return;
+    }
+
     this.stepAdvance.emit();
   }
 

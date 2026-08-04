@@ -119,3 +119,18 @@ export function isFirstOnboardingStep(id: DiscoveryBookOnboardingStepId): boolea
 export function isLastOnboardingStep(id: DiscoveryBookOnboardingStepId): boolean {
   return DISCOVERY_BOOK_ONBOARDING_STEPS.at(-1)?.id === id;
 }
+
+export function isDiscoveryBookOnboardingStepId(
+  value: string | null | undefined,
+): value is DiscoveryBookOnboardingStepId {
+  return DISCOVERY_BOOK_ONBOARDING_STEPS.some((step) => step.id === value);
+}
+
+export function resolveOnboardingResumeStepId(
+  savedStepId: string | null | undefined,
+): DiscoveryBookOnboardingStepId {
+  if (isDiscoveryBookOnboardingStepId(savedStepId)) {
+    return savedStepId;
+  }
+  return DISCOVERY_BOOK_ONBOARDING_STEPS[0].id;
+}

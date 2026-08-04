@@ -33,10 +33,6 @@ export class ProtopipeHomeDashboardComponent implements OnInit {
 
   readonly open = output<DashboardTarget>();
 
-  readonly dataForSeoStatus = this.strategy.dataForSeoStatus;
-  readonly spyFuStatus = this.strategy.spyFuStatus;
-  readonly providerLoading = this.strategy.dataForSeoTesting;
-  readonly providerError = this.strategy.dataForSeoTestError;
   readonly discoveryProgress = this.keywordStore.discoveryProgress;
   readonly discoveryProgressPercent = this.keywordStore.discoveryProgressPercent;
   readonly discoveryStatus = this.keywordStore.dashboardDiscoveryStatus;
@@ -75,15 +71,16 @@ export class ProtopipeHomeDashboardComponent implements OnInit {
       discoveryFailed: this.keywordStore.dashboardDiscoveryFailed(),
     }),
   );
+  readonly keywordResearchInProgress = computed(
+    () =>
+      this.onboardingDone() &&
+      !this.keywordResearchReady() &&
+      !this.keywordPlanConfirmed() &&
+      !this.keywordStore.dashboardDiscoveryFailed(),
+  );
 
   ngOnInit(): void {
-    void this.strategy.refreshMarketProviderStatus();
-  }
-
-  providerLabel(connected: boolean | undefined, configured: boolean | undefined): string {
-    if (configured === false) return 'Not configured';
-    if (connected) return 'Connected';
-    return 'Needs attention';
+    void this.keywordStore.load();
   }
 
   openTarget(target: DashboardTarget): void {

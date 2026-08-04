@@ -1153,7 +1153,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
   }
 
   async enterApp(): Promise<void> {
-    await this.router.navigateByUrl('/home');
+    await this.router.navigateByUrl('/home/dashboard');
   }
 
   openScheduleCall(): void {

@@ -264,6 +264,7 @@
                     [stepId]="meta.id"
                     [onboardingCompleted]="onboardingCompleted()"
                     (discoveryStarted)="onDiscoveryStarted()"
+                    (onboardingFinished)="onOnboardingFinished()"
                     (stepAdvance)="goToNextOnboardingStep()"
                     (stepBack)="goToPreviousOnboardingStep()"
                   />

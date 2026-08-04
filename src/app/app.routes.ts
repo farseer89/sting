@@ -7,7 +7,9 @@ import { operatorOnlyGuard } from './features/client-portal/guards/operator-only
 import { protopipeContentUnsavedGuard } from './features/protopipe/guards/protopipe-content-unsaved.guard';
 import { protopipeUnsavedGuard } from './features/protopipe/guards/protopipe-unsaved.guard';
 import {
+  homeEntryGuard,
   requireOnboardingCompleteGuard,
+  requireOnboardingIncompleteGuard,
   skipWhenOnboardingCompleteGuard,
 } from './features/protopipe/onboarding/protopipe-onboarding.guard';
 
@@ -220,9 +222,33 @@ export const routes: Routes = [
       ),
   },
   {
-    // User-facing home — void white dashboard, outside the PrimeNG admin shell.
-    path: 'home',
+    path: 'home/dashboard',
     canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],
+    loadComponent: () =>
+      import('./features/protopipe/home/protopipe-user-home.component').then(
+        (m) => m.ProtopipeUserHomeComponent,
+      ),
+  },
+  {
+    path: 'home/onboarding',
+    canActivate: [authGuard, operatorOnlyGuard, requireOnboardingIncompleteGuard],
+    loadComponent: () =>
+      import('./features/protopipe/home/protopipe-user-home.component').then(
+        (m) => m.ProtopipeUserHomeComponent,
+      ),
+  },
+  {
+    path: 'home/discovery',
+    canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],
+    loadComponent: () =>
+      import('./features/protopipe/home/protopipe-user-home.component').then(
+        (m) => m.ProtopipeUserHomeComponent,
+      ),
+  },
+  {
+    // User-facing home — redirects to dashboard or onboarding.
+    path: 'home',
+    canActivate: [authGuard, operatorOnlyGuard, homeEntryGuard],
     loadComponent: () =>
       import('./features/protopipe/home/protopipe-user-home.component').then(
         (m) => m.ProtopipeUserHomeComponent,

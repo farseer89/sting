@@ -413,6 +413,7 @@
                     <app-protopipe-home-keyword-book
                       [siteLabel]="siteHostname() || siteDisplayName()"
                       (confirmed)="onKeywordsConfirmed()"
+                      (onboardingFinished)="onOnboardingFinished()"
                     />
                   </section>
                 }

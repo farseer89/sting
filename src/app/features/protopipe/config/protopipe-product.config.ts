@@ -21,9 +21,9 @@ export const protopipeProductConfig: ProductConfig = {
   routes: {
     signup: '/signup',
     signupSuccess: '/signup/success',
-    postSignupRedirect: '/home',
+    postSignupRedirect: '/home/onboarding',
     login: '/login',
-    home: '/home',
+    home: '/home/dashboard',
     billing: '/home/billing',
   },
   onboarding: {

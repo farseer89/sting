@@ -73,6 +73,12 @@ import {
   type ProtopipeHomeNavIcon,
   type ProtopipeHomeNavItem,
 } from './protopipe-home-nav';
+import {
+  HOME_DASHBOARD_PATH,
+  HOME_DISCOVERY_PATH,
+  HOME_ONBOARDING_PATH,
+  homeShellRouteKind,
+} from './protopipe-home.routes';
 import { resolveBootstrapSiteId } from '../resolve-bootstrap-site-id';
 import { calendarItemKey } from './strategy/strategy.helpers';
 import type { StrategyVisualView } from './strategy/strategy-visual-view';
@@ -367,6 +373,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.syncProspectorFromRoute();
     this.syncColdCallerFromRoute();
     this.syncBillingFromRoute();
+    this.syncViewFromRoute();
     this.syncViewFromQuery();
     this.router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
@@ -377,6 +384,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
         this.syncProspectorFromRoute();
         this.syncColdCallerFromRoute();
         this.syncBillingFromRoute();
+        this.syncViewFromRoute();
         this.syncViewFromQuery();
       });
     void this.loadBootstrap();
@@ -437,12 +445,14 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.sidePanel.setOpen(false);
       this.activeNavId.set(item.id);
       this.activeView.set('dashboard');
-      this.navigateHomeRoot();
+      void this.router.navigate([HOME_DASHBOARD_PATH]);
     } else if (item.id === 'start-keywords') {
       this.leaveWriterFocus();
       this.activeNavId.set(item.id);
       this.activeView.set('keywords');
-      this.navigateHomeRoot();
+      void this.router.navigate([
+        this.onboarding.onboardingCompleted() ? HOME_DISCOVERY_PATH : HOME_ONBOARDING_PATH,
+      ]);
     } else if (item.id === 'start-business' || item.id === 'books-business') {
       this.openBusinessDetailsView(item.id);
     } else if (item.id === 'start-mentions') {
@@ -450,13 +460,11 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.leaveThinkerFocus();
       this.activeNavId.set(item.id);
       this.activeView.set('mentions-book');
-      this.navigateHomeRoot();
     } else if (item.id === 'start-strategy') {
       this.leaveWriterFocus();
       this.leaveThinkerFocus();
       this.activeNavId.set(item.id);
       this.activeView.set('strategy');
-      this.navigateHomeRoot();
     } else if (item.id === 'start-sharpen') {
       this.leaveWriterFocus();
       this.sidePanel.setOpen(false);
@@ -704,17 +712,25 @@ export class ProtopipeUserHomeComponent implements OnInit {
     if (target === 'keywords') {
       this.activeView.set('keywords');
       this.activeNavId.set('start-keywords');
+      void this.router.navigate([HOME_DISCOVERY_PATH]);
     } else if (target === 'strategy') {
+      this.leaveWriterFocus();
+      this.leaveThinkerFocus();
       this.activeView.set('strategy');
       this.activeNavId.set('start-strategy');
     } else if (target === 'mentions-book') {
+      this.leaveWriterFocus();
+      this.leaveThinkerFocus();
       this.activeView.set('mentions-book');
       this.activeNavId.set('start-mentions');
     } else {
       this.openBuildBookView();
       return;
     }
-    this.navigateHomeRoot();
+  }
+
+  onOnboardingFinished(): void {
+    void this.router.navigate([HOME_DASHBOARD_PATH]);
   }
 
   toggleUserMenu(event: Event): void {
@@ -865,7 +881,6 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.sidePanel.setOpen(false);
     this.activeNavId.set(navId);
     this.activeView.set('business-details');
-    this.navigateHomeRoot();
   }
 
   openGoalsView(): void {
@@ -889,6 +904,27 @@ export class ProtopipeUserHomeComponent implements OnInit {
     });
   }
 
+  private syncViewFromRoute(): void {
+    const path = this.router.url.split('?')[0] ?? '';
+    const kind = homeShellRouteKind(path);
+    if (!kind) return;
+
+    if (kind === 'dashboard') {
+      this.leaveWriterFocus();
+      this.leaveThinkerFocus();
+      this.sidePanel.setOpen(false);
+      this.activeView.set('dashboard');
+      this.activeNavId.set('home-dashboard');
+      return;
+    }
+
+    if (kind === 'onboarding' || kind === 'discovery') {
+      this.leaveWriterFocus();
+      this.activeView.set('keywords');
+      this.activeNavId.set('start-keywords');
+    }
+  }
+
   private syncViewFromQuery(): void {
     const view = this.currentHomeViewParam();
     if (view === 'brand-book') {
@@ -906,12 +942,6 @@ export class ProtopipeUserHomeComponent implements OnInit {
     const path = this.router.url.split('?')[0] ?? '';
     if (path === '/home/leads' || path.startsWith('/home/leads')) {
       this.showLeadsView();
-    }
-  }
-
-  private navigateHomeRoot(): void {
-    if ((this.router.url.split('?')[0] ?? '') === '/home') {
-      void this.router.navigate(['/home']);
     }
   }
 
@@ -1184,38 +1214,13 @@ export class ProtopipeUserHomeComponent implements OnInit {
         this.contentPlan.setSiteId(site.id);
         await this.contentPlan.loadLatest();
         void this.keywordStore.load();
-        const onPacksRoute = (this.router.url.split('?')[0] ?? '').startsWith('/home/packs');
-        const onPitchPrepRoute = (this.router.url.split('?')[0] ?? '').startsWith(
-          '/home/pitch-prep',
-        );
-        const onLeadsRoute = (this.router.url.split('?')[0] ?? '').startsWith('/home/leads');
-        const currentPath = this.router.url.split('?')[0] ?? '';
-        const onProspectorRoute = currentPath.startsWith('/home/prospector');
-        const onColdCallerRoute = currentPath.startsWith('/home/cold-caller');
-        const onBillingRoute = currentPath.startsWith('/home/billing');
-        const explicitView = this.currentHomeViewParam();
-        const hasExplicitHomeView =
-          explicitView === 'brand-book' ||
-          explicitView === 'audience-book' ||
-          explicitView === 'build-book' ||
-          explicitView === 'intake';
-        if (
-          !onPacksRoute &&
-          !onPitchPrepRoute &&
-          !onLeadsRoute &&
-          !onProspectorRoute &&
-          !onColdCallerRoute &&
-          !onBillingRoute &&
-          !hasExplicitHomeView
-        ) {
-          this.activeView.set('dashboard');
-          this.activeNavId.set('home-dashboard');
-        }
+        this.syncViewFromRoute();
       }
     } catch {
       this.siteDisplayName.set('Your workspace');
       this.siteHostname.set('');
     } finally {
+      this.syncViewFromRoute();
       this.syncViewFromQuery();
       this.loading.set(false);
     }

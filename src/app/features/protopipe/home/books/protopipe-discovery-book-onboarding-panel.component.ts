@@ -51,6 +51,7 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
   readonly stepId = input.required<DiscoveryBookOnboardingStepId>();
   readonly onboardingCompleted = input(false);
   readonly discoveryStarted = output<string>();
+  readonly onboardingFinished = output<string>();
   readonly stepAdvance = output<void>();
   readonly stepBack = output<void>();
 
@@ -184,7 +185,7 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
   async finish(): Promise<void> {
     const runId = await this.store.save();
     if (runId) {
-      this.discoveryStarted.emit(runId);
+      this.onboardingFinished.emit(runId);
     }
   }
 

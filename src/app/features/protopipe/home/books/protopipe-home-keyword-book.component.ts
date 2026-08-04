@@ -120,6 +120,7 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
 
   readonly siteLabel = input('');
   readonly confirmed = output<void>();
+  readonly onboardingFinished = output<void>();
 
   readonly onboardingSteps = DISCOVERY_BOOK_ONBOARDING_STEPS;
   readonly activeSection = signal<DiscoveryBookSection>(
@@ -336,6 +337,10 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
   onDiscoveryStarted(): void {
     this.didAutoLeaveDiscovery.set(false);
     this.activeSection.set('discovery');
+  }
+
+  onOnboardingFinished(): void {
+    this.onboardingFinished.emit();
   }
 
   onRerunDiscovery(): void {

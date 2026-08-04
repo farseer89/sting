@@ -1035,6 +1035,20 @@
   overflow: hidden;
 }
 
+.home-dashboard {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+
+  app-protopipe-home-dashboard {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+}
+
 .home-billing {
   display: flex;
   flex-direction: column;

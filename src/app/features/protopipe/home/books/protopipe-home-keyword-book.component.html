@@ -237,7 +237,10 @@
           }
           @default {
             @if (activeOnboardingMeta(); as meta) {
-              <div class="kb-onboarding-workspace">
+              <div
+                class="kb-onboarding-workspace"
+                [class.kb-onboarding-workspace--market]="meta.id === 'onboarding:market'"
+              >
                 <section class="kb-onboarding-stage" aria-labelledby="discoveryBookOnboardingTitle">
                   <div class="kb-panel__head kb-panel__head--wizard">
                     <div class="kb-wizard-progress" aria-hidden="true">

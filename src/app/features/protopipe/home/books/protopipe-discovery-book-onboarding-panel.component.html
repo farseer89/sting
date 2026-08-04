@@ -293,11 +293,15 @@
     }
 
     @case ('onboarding:market') {
-      <div class="kb-wizard">
+      <div class="kb-wizard kb-wizard--market">
         <section class="kb-wizard__main">
           <fieldset class="kb-wizard__choices">
             <legend class="kb-wizard__label">Market reach</legend>
-            <div class="kb-wizard__choice-list" role="radiogroup" aria-label="Customer market reach">
+            <div
+              class="kb-wizard__choice-list kb-wizard__choice-list--reach"
+              role="radiogroup"
+              aria-label="Customer market reach"
+            >
               @for (option of marketReachOptions; track option.id) {
                 <button
                   type="button"
@@ -319,50 +323,70 @@
           </fieldset>
 
           @if (draft().marketReach; as reach) {
-            @if (marketReachNeedsLocal(reach)) {
-              <label class="kb-wizard__field" for="discoveryBookLocationSearch">
-                <span class="kb-wizard__label">Your town or city</span>
-                @if (draft().localMarket?.serpLocationName; as locationName) {
-                  <p class="kb-wizard__selected">Selected: {{ locationName }}</p>
+            @if (marketReachNeedsLocal(reach) || marketReachNeedsCountry(reach)) {
+              <div class="kb-wizard__location-fields">
+                @if (marketReachNeedsLocal(reach)) {
+                  <label class="kb-wizard__field kb-wizard__field--highlight" for="discoveryBookLocationSearch">
+                    <span class="kb-wizard__field-head">
+                      <span class="kb-wizard__field-icon" aria-hidden="true">
+                        <i class="pi pi-map-marker"></i>
+                      </span>
+                      <span class="kb-wizard__field-copy">
+                        <span class="kb-wizard__label">Your town or city</span>
+                        <span class="kb-wizard__field-hint">Local search volume for your area</span>
+                      </span>
+                    </span>
+                    @if (draft().localMarket?.serpLocationName; as locationName) {
+                      <p class="kb-wizard__selected">{{ locationName }}</p>
+                    }
+                    <p-autocomplete
+                      inputId="discoveryBookLocationSearch"
+                      [suggestions]="store.locationSuggestions()"
+                      (completeMethod)="searchLocations($event)"
+                      (onSelect)="onLocationSelected($event)"
+                      (onClear)="onLocationCleared()"
+                      field="name"
+                      optionLabel="name"
+                      placeholder="Start typing (e.g. Maui)"
+                      [forceSelection]="false"
+                      [minLength]="2"
+                      [delay]="250"
+                      appendTo="body"
+                    />
+                  </label>
                 }
-                <p-autocomplete
-                  inputId="discoveryBookLocationSearch"
-                  [suggestions]="store.locationSuggestions()"
-                  (completeMethod)="searchLocations($event)"
-                  (onSelect)="onLocationSelected($event)"
-                  (onClear)="onLocationCleared()"
-                  field="name"
-                  optionLabel="name"
-                  placeholder="Start typing (e.g. Maui)"
-                  [forceSelection]="false"
-                  [minLength]="2"
-                  [delay]="250"
-                  appendTo="body"
-                />
-              </label>
-            }
 
-            @if (marketReachNeedsCountry(reach)) {
-              <label class="kb-wizard__field" for="discoveryBookCountrySearch">
-                <span class="kb-wizard__label">Country</span>
-                @if (draft().nationalMarket?.serpLocationName; as countryName) {
-                  <p class="kb-wizard__selected">Selected: {{ countryName }}</p>
+                @if (marketReachNeedsCountry(reach)) {
+                  <label class="kb-wizard__field kb-wizard__field--highlight" for="discoveryBookCountrySearch">
+                    <span class="kb-wizard__field-head">
+                      <span class="kb-wizard__field-icon" aria-hidden="true">
+                        <i class="pi pi-flag"></i>
+                      </span>
+                      <span class="kb-wizard__field-copy">
+                        <span class="kb-wizard__label">Country</span>
+                        <span class="kb-wizard__field-hint">Nationwide search demand</span>
+                      </span>
+                    </span>
+                    @if (draft().nationalMarket?.serpLocationName; as countryName) {
+                      <p class="kb-wizard__selected">{{ countryName }}</p>
+                    }
+                    <p-autocomplete
+                      inputId="discoveryBookCountrySearch"
+                      [suggestions]="store.countrySuggestions()"
+                      (completeMethod)="searchCountries($event)"
+                      (onSelect)="onCountrySelected($event)"
+                      (onClear)="onCountryCleared()"
+                      field="name"
+                      optionLabel="name"
+                      placeholder="Search countries"
+                      [forceSelection]="true"
+                      [minLength]="0"
+                      [delay]="0"
+                      appendTo="body"
+                    />
+                  </label>
                 }
-                <p-autocomplete
-                  inputId="discoveryBookCountrySearch"
-                  [suggestions]="store.countrySuggestions()"
-                  (completeMethod)="searchCountries($event)"
-                  (onSelect)="onCountrySelected($event)"
-                  (onClear)="onCountryCleared()"
-                  field="name"
-                  optionLabel="name"
-                  placeholder="Search countries"
-                  [forceSelection]="true"
-                  [minLength]="0"
-                  [delay]="0"
-                  appendTo="body"
-                />
-              </label>
+              </div>
             }
           }
         </section>

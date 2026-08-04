@@ -727,6 +727,13 @@ $kb-row-h: 1.75rem;
   max-width: 64rem;
 }
 
+@media (min-width: 681px) {
+  .kb-onboarding-workspace--market {
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
+    max-width: 72rem;
+  }
+}
+
 .kb-onboarding-stage {
   min-width: 0;
 }

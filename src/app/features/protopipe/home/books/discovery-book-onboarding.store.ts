@@ -796,6 +796,24 @@ export class DiscoveryBookOnboardingStore {
       return false;
     }
 
+    return this.persistProgress(completedStepId, resumeStepId);
+  }
+
+  /** Save current draft when navigating between steps (no validation gate). */
+  async saveDraftProgress(
+    completedStepId: DiscoveryBookOnboardingStepId,
+    resumeStepId: DiscoveryBookOnboardingStepId,
+  ): Promise<void> {
+    if (this.onboardingState.onboardingCompleted()) return;
+    this.flushDraftInputs();
+    await this.persistProgress(completedStepId, resumeStepId, { silent: true });
+  }
+
+  private async persistProgress(
+    completedStepId: DiscoveryBookOnboardingStepId,
+    resumeStepId: DiscoveryBookOnboardingStepId,
+    options?: { silent?: boolean },
+  ): Promise<boolean> {
     const siteId = this.strategy.siteId();
     if (!siteId) {
       this.stepError.set('No site loaded.');
@@ -812,7 +830,9 @@ export class DiscoveryBookOnboardingStore {
       this.syncFromStrategy();
       return true;
     } catch (saveErr) {
-      this.stepError.set(parseProtopipeApiError(saveErr, 'Could not save onboarding progress.'));
+      if (!options?.silent) {
+        this.stepError.set(parseProtopipeApiError(saveErr, 'Could not save onboarding progress.'));
+      }
       return false;
     } finally {
       this.stepSaving.set(false);

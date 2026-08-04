@@ -96,7 +96,9 @@ export function draftFromStrategy(
   site: ProtopipeSite | null,
 ): DiscoveryBookOnboardingDraft {
   const mode = profile?.onboardingMode ?? 'existing_site';
-  const rawWebsite = site?.url?.trim() || site?.hostname?.trim() || '';
+  const profileWebsite = profile?.websiteUrl?.trim() || '';
+  const siteWebsite = site?.url?.trim() || site?.hostname?.trim() || '';
+  const rawWebsite = profileWebsite || siteWebsite;
   const websiteUrl = isPendingSiteHostname(rawWebsite) ? '' : stripUrlProtocol(rawWebsite);
 
   const reach = profile ? inferMarketReach(profile) : null;
@@ -195,6 +197,12 @@ export function draftToProgressRequest(
     competitors: synced.competitors.map((c) => c.trim()).filter(Boolean),
   };
 
+  const websiteUrl =
+    synced.onboardingMode === 'strategy_only' ? '' : normalizeUrl(synced.websiteUrl);
+  if (websiteUrl) {
+    profile.websiteUrl = websiteUrl;
+  }
+
   if (reach) {
     profile.marketReach = reach;
     profile.marketTiers = marketTiersForReach(reach);
@@ -212,7 +220,7 @@ export function draftToProgressRequest(
     completedStepId,
     resumeStepId,
     businessName: synced.businessName.trim() || undefined,
-    websiteUrl: synced.onboardingMode === 'strategy_only' ? '' : normalizeUrl(synced.websiteUrl),
+    websiteUrl,
     profile,
   };
 }

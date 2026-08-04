@@ -114,16 +114,18 @@ export class ProtopipeStrategyService {
 
       let fallbackPlan: ProtopipeStrategySummary | null = null;
       let fallbackSiteId: string | null = null;
+      let bestPlan: ProtopipeStrategySummary | null = null;
+      let bestSiteId: string | null = null;
+      let bestScore = -1;
 
       for (const siteId of orderedSiteIds) {
         try {
           const plan = await this.api.getPlan(siteId);
-          if (plan.onboardingProfile) {
-            this._siteId.set(siteId);
-            this.applyPlan(plan);
-            this._initialized.set(true);
-            this._dirty.set(false);
-            return;
+          const score = scoreOnboardingPlan(plan);
+          if (score > bestScore) {
+            bestScore = score;
+            bestPlan = plan;
+            bestSiteId = siteId;
           }
           if (!fallbackPlan) {
             fallbackPlan = plan;
@@ -132,6 +134,14 @@ export class ProtopipeStrategyService {
         } catch {
           // Owner may not have access to a stale bootstrap site id — try the rest.
         }
+      }
+
+      if (bestPlan && bestSiteId && bestScore > 0) {
+        this._siteId.set(bestSiteId);
+        this.applyPlan(bestPlan);
+        this._initialized.set(true);
+        this._dirty.set(false);
+        return;
       }
 
       if (!fallbackPlan || !fallbackSiteId) {
@@ -395,4 +405,15 @@ export class ProtopipeStrategyService {
     const trimmed = value.trim().slice(0, PROTOPIPE_MAX_NOTES_LENGTH);
     return trimmed.length > 0 ? trimmed : undefined;
   }
+}
+
+function scoreOnboardingPlan(plan: ProtopipeStrategySummary): number {
+  if (plan.onboardingStepId) return 100;
+  const profile = plan.onboardingProfile;
+  if (!profile) return 0;
+  if (profile.websiteUrl?.trim()) return 40;
+  if (profile.onboardingMode) return 20;
+  if ((profile.services?.length ?? 0) > 0) return 30;
+  if ((profile.customerAvatars?.length ?? 0) > 0) return 10;
+  return 0;
 }

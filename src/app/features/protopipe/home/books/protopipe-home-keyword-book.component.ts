@@ -263,6 +263,16 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
   }
 
   selectSection(section: DiscoveryBookSection): void {
+    const previous = this.activeSection();
+    if (
+      !this.onboardingState.onboardingCompleted() &&
+      isOnboardingSection(previous) &&
+      isOnboardingSection(section) &&
+      previous !== section
+    ) {
+      void this.onboardingStore.saveDraftProgress(previous, section);
+    }
+
     if (!isOnboardingSection(section)) {
       const pipelineAllowed =
         this.canUseDiscoveryPipeline() ||

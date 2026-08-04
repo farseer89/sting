@@ -10,7 +10,14 @@ export type DashboardDiscoveryStatus =
 
 export type DashboardStepStatus = 'locked' | 'in_progress' | 'ready' | 'complete';
 
-export type DashboardStepTarget = 'keywords' | 'mentions-book' | 'strategy' | 'build-book';
+export type DashboardStepTarget =
+  | 'keywords'
+  | 'mentions-book'
+  | 'strategy'
+  | 'build-book'
+  | 'business-details';
+
+export type DashboardStepIcon = 'keywords' | 'mentions' | 'seo' | 'content';
 
 export interface DashboardChip {
   id: string;
@@ -26,11 +33,21 @@ export interface DashboardField {
 export interface DashboardStepCard {
   id: string;
   title: string;
-  description: string;
+  metric: string;
+  hint: string;
   status: DashboardStepStatus;
   statusLabel: string;
-  actionLabel: string | null;
+  icon: DashboardStepIcon;
   target: DashboardStepTarget | null;
+}
+
+export interface DashboardWorkspaceCard {
+  id: string;
+  title: string;
+  metric: string;
+  hint: string;
+  target: DashboardStepTarget;
+  empty: boolean;
 }
 
 export interface DashboardBaselineKeywordRow {
@@ -84,6 +101,16 @@ export interface DashboardStepInput {
   discoveryFailed: boolean;
   contentPlanComplete: boolean;
   contentPlanRunning: boolean;
+  keywordCount: number;
+  baselineSignalCount: number;
+}
+
+export interface DashboardWorkspaceInput {
+  site: ProtopipeSite | null | undefined;
+  profile: ProtopipeOnboardingProfile | null | undefined;
+  baselineSignalCount: number;
+  topBaselinePhrase: string | null;
+  keywordResearchInProgress: boolean;
 }
 
 const BASELINE_TABLE_LIMIT = 12;
@@ -159,81 +186,149 @@ export function buildDashboardSteps(input: DashboardStepInput): DashboardStepCar
     {
       id: 'keywords',
       title: 'Keyword selection',
-      description: keywordDescription(input, keywordStatus),
+      metric: keywordMetric(input, keywordStatus),
+      hint: keywordHint(keywordStatus),
       status: keywordStatus,
       statusLabel: stepStatusLabel(keywordStatus),
-      actionLabel: keywordActionLabel(keywordStatus),
+      icon: 'keywords',
       target: keywordStatus === 'locked' ? null : 'keywords',
     },
     {
       id: 'mentions',
       title: 'AI mentions',
-      description: mentionsDescription(mentionsStatus),
+      metric: mentionsStatus === 'locked' ? 'Locked' : 'Track visibility',
+      hint: mentionsStatus === 'locked' ? 'Confirm keywords first' : 'Open mentions book',
       status: mentionsStatus,
       statusLabel: stepStatusLabel(mentionsStatus),
-      actionLabel: mentionsStatus === 'ready' ? 'Open mentions' : null,
+      icon: 'mentions',
       target: mentionsStatus === 'locked' ? null : 'mentions-book',
     },
     {
       id: 'seo',
       title: 'SEO rankings',
-      description: seoDescription(input, seoStatus),
+      metric: seoMetric(input, seoStatus),
+      hint: seoHint(seoStatus),
       status: seoStatus,
       statusLabel: stepStatusLabel(seoStatus),
-      actionLabel: seoStatus === 'locked' ? null : 'View baseline',
+      icon: 'seo',
       target: seoStatus === 'locked' ? null : 'keywords',
     },
     {
       id: 'content-plan',
       title: 'Content plan',
-      description: contentPlanDescription(input, contentPlanStatus),
+      metric: contentPlanMetric(contentPlanStatus),
+      hint: contentPlanHint(contentPlanStatus),
       status: contentPlanStatus,
       statusLabel: stepStatusLabel(contentPlanStatus),
-      actionLabel: contentPlanActionLabel(contentPlanStatus),
+      icon: 'content',
       target: contentPlanStatus === 'locked' ? null : 'strategy',
     },
   ];
 }
 
-function keywordDescription(input: DashboardStepInput, status: DashboardStepStatus): string {
-  if (status === 'complete') return 'Your keyword plan is confirmed.';
-  if (status === 'ready') return 'Review and confirm the keyword shortlist.';
-  if (status === 'in_progress') return 'Keyword research is running from your onboarding inputs.';
-  if (input.discoveryFailed) return 'Keyword research needs attention before you can continue.';
-  return 'Finish onboarding to start keyword research.';
+function keywordMetric(input: DashboardStepInput, status: DashboardStepStatus): string {
+  if (status === 'complete') {
+    return input.keywordCount > 0 ? `${input.keywordCount} keywords` : 'Confirmed';
+  }
+  if (status === 'ready') return 'Ready to review';
+  if (status === 'in_progress') return 'Researching…';
+  if (input.discoveryFailed) return 'Needs attention';
+  return 'Not started';
 }
 
-function keywordActionLabel(status: DashboardStepStatus): string | null {
-  if (status === 'complete') return 'Open keywords';
-  if (status === 'ready') return 'Review keywords';
-  if (status === 'in_progress') return 'View progress';
-  return null;
+function keywordHint(status: DashboardStepStatus): string {
+  if (status === 'complete') return 'Open keyword book';
+  if (status === 'ready') return 'Review shortlist';
+  if (status === 'in_progress') return 'Pulling market data';
+  return 'Finish onboarding';
 }
 
-function mentionsDescription(status: DashboardStepStatus): string {
-  if (status === 'locked') return 'Confirm keywords to start AI mention tracking.';
-  return 'Measure how AI engines mention and recommend your business.';
+function seoMetric(input: DashboardStepInput, status: DashboardStepStatus): string {
+  if (status === 'complete') {
+    return input.baselineSignalCount > 0
+      ? `${input.baselineSignalCount} signals`
+      : 'Baseline ready';
+  }
+  if (status === 'in_progress') return 'Collecting…';
+  return 'Not started';
 }
 
-function seoDescription(input: DashboardStepInput, status: DashboardStepStatus): string {
-  if (status === 'complete') return 'Early rankings and Search Console signals are captured.';
-  if (status === 'in_progress')
-    return 'Collecting rankings, Search Console queries, and competitor gaps.';
-  return 'Market baseline unlocks after onboarding is saved.';
+function seoHint(status: DashboardStepStatus): string {
+  if (status === 'complete') return 'View rankings baseline';
+  if (status === 'in_progress') return 'GSC + competitor gaps';
+  return 'Unlocks after onboarding';
 }
 
-function contentPlanDescription(input: DashboardStepInput, status: DashboardStepStatus): string {
-  if (status === 'complete') return 'Your content plan is ready in Strategy.';
-  if (status === 'in_progress') return 'Building your content plan from confirmed keywords.';
-  if (status === 'ready') return 'Generate the content calendar from your keyword plan.';
-  return 'Confirm keywords before building the content plan.';
+function contentPlanMetric(status: DashboardStepStatus): string {
+  if (status === 'complete') return 'Plan ready';
+  if (status === 'in_progress') return 'Building…';
+  if (status === 'ready') return 'Generate plan';
+  return 'Locked';
 }
 
-function contentPlanActionLabel(status: DashboardStepStatus): string | null {
-  if (status === 'complete') return 'Open plan';
-  if (status === 'ready') return 'Build plan';
-  if (status === 'in_progress') return 'View plan';
-  return null;
+function contentPlanHint(status: DashboardStepStatus): string {
+  if (status === 'complete') return 'Open in Strategy';
+  if (status === 'in_progress') return 'From your keywords';
+  if (status === 'ready') return 'Build content calendar';
+  return 'Confirm keywords first';
+}
+
+export function buildWorkspaceCards(input: DashboardWorkspaceInput): DashboardWorkspaceCard[] {
+  const profile = input.profile;
+  const serviceCount = profile?.services?.length ?? 0;
+  const competitorCount = profile?.competitors?.filter((c) => c.trim()).length ?? 0;
+  const market =
+    profile?.serpLocationName ||
+    [profile?.city, profile?.state].filter(Boolean).join(', ') ||
+    profile?.marketScope ||
+    '';
+
+  const businessName =
+    input.site?.displayName?.trim() || input.site?.hostname?.trim() || 'Your business';
+  const hasBusiness = Boolean(input.site?.displayName || input.site?.hostname || profile);
+
+  return [
+    {
+      id: 'business',
+      title: 'Business profile',
+      metric: hasBusiness ? businessName : 'Not saved',
+      hint: hasBusiness
+        ? [market, serviceCount > 0 ? `${serviceCount} services` : null]
+            .filter(Boolean)
+            .join(' · ') || 'View onboarding inputs'
+        : 'Complete onboarding',
+      target: 'business-details',
+      empty: !hasBusiness,
+    },
+    {
+      id: 'competitors',
+      title: 'Competitors',
+      metric: competitorCount > 0 ? `${competitorCount} tracked` : 'None yet',
+      hint:
+        competitorCount > 0
+          ? profile?.competitors?.[0]?.trim() || 'Manage competitor list'
+          : 'Add competitors in profile',
+      target: 'business-details',
+      empty: competitorCount === 0,
+    },
+    {
+      id: 'baseline',
+      title: 'Keyword baseline',
+      metric:
+        input.baselineSignalCount > 0
+          ? `${input.baselineSignalCount} signals`
+          : input.keywordResearchInProgress
+            ? 'Building…'
+            : 'No signals',
+      hint: input.topBaselinePhrase
+        ? `Top: ${input.topBaselinePhrase}`
+        : input.keywordResearchInProgress
+          ? 'Market research running'
+          : 'Open discovery book',
+      target: 'keywords',
+      empty: input.baselineSignalCount === 0 && !input.keywordResearchInProgress,
+    },
+  ];
 }
 
 export function buildBusinessInfo(
@@ -369,14 +464,12 @@ export function buildMarketSourceRows(
 }
 
 export function dashboardMarketStatus(input: DashboardMarketStatusInput): string {
-  if (!input.onboardingDone) return 'Complete onboarding to unlock your growth workspace.';
-  if (input.keywordPlanConfirmed)
-    return 'Your keyword plan is confirmed. Work through the remaining steps below.';
-  if (input.keywordResearchReady)
-    return 'Review keyword selection, then unlock mentions and content planning.';
-  if (input.baselineReady) return 'SEO baseline is ready. Keyword selection is still loading.';
+  if (!input.onboardingDone) return 'Complete onboarding to unlock your workspace.';
+  if (input.keywordPlanConfirmed) return 'Keyword plan confirmed — continue through the steps.';
+  if (input.keywordResearchReady) return 'Keywords ready for review.';
+  if (input.baselineReady) return 'SEO baseline ready — keywords still loading.';
   if (input.loading) return input.discoveryProgress ?? 'Researching your market.';
-  return 'We saved your business profile and are preparing your first baseline.';
+  return 'Your growth workspace is ready.';
 }
 
 export function keywordPlannerLabel(input: {

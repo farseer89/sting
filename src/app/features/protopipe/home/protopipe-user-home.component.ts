@@ -259,8 +259,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   }
 
   readonly accessState = computed(() => {
-    const email =
-      this.auth.currentUserEmail || this.auth.getStoredProfile()?.email || '';
+    const email = this.auth.currentUserEmail || this.auth.getStoredProfile()?.email || '';
     return buildProtopipeAccessState(this.strategy.subscription(), {
       isInternalAdmin: isProtopipeInternalAdminEmail(email),
     });
@@ -307,9 +306,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
       .filter((tab) => tab.item !== null);
   });
 
-  readonly mobileMoreNavItems = computed(() =>
-    this.navItems().filter((item) => !item.separator),
-  );
+  readonly mobileMoreNavItems = computed(() => this.navItems().filter((item) => !item.separator));
 
   readonly userName = computed(() => {
     const full = this.auth.getCurrentUserFullName()?.trim();
@@ -708,7 +705,9 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.activeNavId.set('start-strategy');
   }
 
-  onDashboardOpen(target: 'keywords' | 'strategy' | 'mentions-book' | 'build-book'): void {
+  onDashboardOpen(
+    target: 'keywords' | 'strategy' | 'mentions-book' | 'build-book' | 'business-details',
+  ): void {
     if (target === 'keywords') {
       this.activeView.set('keywords');
       this.activeNavId.set('start-keywords');
@@ -723,6 +722,11 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.leaveThinkerFocus();
       this.activeView.set('mentions-book');
       this.activeNavId.set('start-mentions');
+    } else if (target === 'business-details') {
+      this.leaveWriterFocus();
+      this.leaveThinkerFocus();
+      this.activeView.set('business-details');
+      this.activeNavId.set('start-business');
     } else {
       this.openBuildBookView();
       return;
@@ -1203,7 +1207,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
     try {
       const boot = await this.onboarding.load();
       const siteId = resolveBootstrapSiteId(boot);
-      const site = siteId ? boot.sites.find((s) => s.id === siteId) ?? null : null;
+      const site = siteId ? (boot.sites.find((s) => s.id === siteId) ?? null) : null;
       this.siteDisplayName.set(site?.displayName?.trim() || site?.hostname || 'Your site');
       this.siteHostname.set(site?.hostname || '');
 

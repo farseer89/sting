@@ -1,112 +1,120 @@
 <div class="dash" aria-label="SearchClimber home dashboard">
   <header class="dash__intro">
-    <p class="dash__eyebrow">Workspace</p>
-    <h1>{{ businessName() }}</h1>
-    <p class="dash__lede">{{ marketStatus() }}</p>
+    <h1>Dashboard</h1>
+    <p class="dash__lede">{{ businessName() }} · {{ marketStatus() }}</p>
   </header>
 
   <section class="dash__steps" aria-label="Setup steps">
     <div class="dash__steps-grid">
       @for (step of stepCards(); track step.id) {
-        <article
+        <button
+          type="button"
           class="dash-step"
           [class.is-complete]="step.status === 'complete'"
           [class.is-ready]="step.status === 'ready'"
           [class.is-progress]="step.status === 'in_progress'"
           [class.is-locked]="step.status === 'locked'"
+          [disabled]="!step.target"
+          (click)="openStep(step.target)"
         >
-          <div class="dash-step__head">
-            <h2>{{ step.title }}</h2>
+          <div class="dash-step__top">
+            <span class="dash-step__icon" [attr.data-icon]="step.icon" aria-hidden="true">
+              @switch (step.icon) {
+                @case ('keywords') {
+                  <svg viewBox="0 0 16 16" focusable="false">
+                    <circle
+                      cx="7"
+                      cy="7"
+                      r="4"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.1"
+                    />
+                    <path
+                      d="M10.5 10.5L13 13"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.1"
+                    />
+                  </svg>
+                }
+                @case ('mentions') {
+                  <svg viewBox="0 0 16 16" focusable="false">
+                    <path
+                      d="M8 2.5l.8 2 2 .3-1.5 1.5.4 2L8 7.5 5.3 8.3l.4-2L4.2 4.8l2-.3L8 2.5z"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="0.85"
+                    />
+                  </svg>
+                }
+                @case ('seo') {
+                  <svg viewBox="0 0 16 16" focusable="false">
+                    <path
+                      d="M3 13V6M7 13V3M11 13V8M15 13V5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.1"
+                    />
+                  </svg>
+                }
+                @case ('content') {
+                  <svg viewBox="0 0 16 16" focusable="false">
+                    <path
+                      d="M3.5 4.5h9M3.5 8h9M3.5 11.5h6"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.1"
+                    />
+                  </svg>
+                }
+              }
+            </span>
             <span class="dash-step__badge">{{ step.statusLabel }}</span>
           </div>
-          <p class="dash-step__copy">{{ step.description }}</p>
+          <span class="dash-step__title">{{ step.title }}</span>
+          <span class="dash-step__metric">{{ step.metric }}</span>
+          <span class="dash-step__hint">{{ step.hint }}</span>
           @if (
             keywordResearchInProgress() && step.id === 'keywords' && discoveryProgressPercent() > 0
           ) {
-            <div class="dash-step__progress" aria-hidden="true">
+            <span class="dash-step__progress" aria-hidden="true">
               <span [style.width.%]="discoveryProgressPercent()"></span>
-            </div>
+            </span>
           }
-          @if (step.actionLabel && step.target) {
-            <button type="button" class="dash-step__action" (click)="openStep(step.target)">
-              {{ step.actionLabel }}
-            </button>
-          }
-        </article>
+          <span class="dash-step__arrow" aria-hidden="true">
+            <svg viewBox="0 0 16 16" focusable="false">
+              <path
+                d="M6 3.5l4.5 4.5L6 12.5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </span>
+        </button>
       }
     </div>
   </section>
 
-  <section class="dash__details" aria-label="Saved workspace details">
-    <div class="dash__details-grid">
-      <article class="dash-panel" aria-label="Business info">
-        <h2>Business info</h2>
-        @if (businessInfo().length) {
-          <dl class="dash-panel__fields">
-            @for (field of businessInfo(); track field.id) {
-              <div>
-                <dt>{{ field.label }}</dt>
-                <dd>{{ field.value }}</dd>
-              </div>
-            }
-          </dl>
-        } @else {
-          <p class="dash-panel__empty">Business details will appear after onboarding.</p>
-        }
-      </article>
-
-      <article class="dash-panel" aria-label="Competitors">
-        <h2>Competitors</h2>
-        @if (competitors().length) {
-          <ul class="dash-panel__list">
-            @for (competitor of competitors(); track competitor) {
-              <li>{{ competitor }}</li>
-            }
-          </ul>
-        } @else {
-          <p class="dash-panel__empty">No competitors shared yet.</p>
-        }
-      </article>
-    </div>
-
-    <article class="dash-panel dash-panel--table" aria-label="Keyword baseline">
-      <div class="dash-panel__head">
-        <h2>Keyword baseline</h2>
-        @if (baselineReady()) {
-          <span class="dash-panel__meta">{{ baselineRows().length }} signals</span>
-        }
-      </div>
-
-      @if (baselineRows().length) {
-        <div class="dash-table-wrap">
-          <table class="dash-table">
-            <thead>
-              <tr>
-                <th scope="col">Keyword</th>
-                <th scope="col">Source</th>
-                <th scope="col">Volume</th>
-                <th scope="col">Rank</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of baselineRows(); track row.id) {
-                <tr>
-                  <td>{{ row.phrase }}</td>
-                  <td>{{ row.source }}</td>
-                  <td>{{ row.volume }}</td>
-                  <td>{{ row.rank }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      } @else if (keywordResearchInProgress()) {
-        <p class="dash-panel__empty">
-          {{ discoveryProgress() ?? 'Building your keyword baseline from market data.' }}
-        </p>
-      } @else {
-        <p class="dash-panel__empty">Keyword baseline will populate once discovery runs.</p>
+  <section class="dash__workspace" aria-label="Workspace shortcuts">
+    <h2 class="dash__section-title">Workspace</h2>
+    <div class="dash__workspace-grid">
+      @for (card of workspaceCards(); track card.id) {
+        <button
+          type="button"
+          class="dash-invite"
+          [class.is-empty]="card.empty"
+          (click)="openStep(card.target)"
+        >
+          <span class="dash-invite__title">{{ card.title }}</span>
+          <span class="dash-invite__metric">{{ card.metric }}</span>
+          <span class="dash-invite__hint">{{ card.hint }}</span>
+          <span class="dash-invite__link">Open</span>
+        </button>
       }
-    </article>
+    </div>
   </section>
 </div>

@@ -11,10 +11,9 @@ import { ProtopipeOnboardingStateService } from '../../onboarding/protopipe-onbo
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { ProtopipeKeywordPickerStore } from '../keyword-picker/protopipe-keyword-picker.store';
 import {
-  buildBusinessInfo,
-  buildCompetitors,
   buildDashboardSteps,
   buildKeywordBaselineRows,
+  buildWorkspaceCards,
   dashboardMarketStatus,
   type DashboardStepTarget,
 } from './protopipe-home-dashboard.view-model';
@@ -51,11 +50,9 @@ export class ProtopipeHomeDashboardComponent implements OnInit {
       this.strategy.site()?.hostname ||
       'Your workspace',
   );
-  readonly businessInfo = computed(() =>
-    buildBusinessInfo(this.strategy.site(), this.strategy.onboardingProfile()),
-  );
-  readonly competitors = computed(() => buildCompetitors(this.strategy.onboardingProfile()));
   readonly baselineRows = computed(() => buildKeywordBaselineRows(this.marketBaseline()));
+  readonly baselineSignalCount = computed(() => this.baselineRows().length);
+  readonly topBaselinePhrase = computed(() => this.baselineRows()[0]?.phrase ?? null);
   readonly marketStatus = computed(() =>
     dashboardMarketStatus({
       onboardingDone: this.onboardingDone(),
@@ -83,6 +80,17 @@ export class ProtopipeHomeDashboardComponent implements OnInit {
       discoveryFailed: this.keywordStore.dashboardDiscoveryFailed(),
       contentPlanComplete: this.contentPlan.isComplete(),
       contentPlanRunning: this.contentPlan.isRunning(),
+      keywordCount: this.strategy.keywords().length,
+      baselineSignalCount: this.baselineSignalCount(),
+    }),
+  );
+  readonly workspaceCards = computed(() =>
+    buildWorkspaceCards({
+      site: this.strategy.site(),
+      profile: this.strategy.onboardingProfile(),
+      baselineSignalCount: this.baselineSignalCount(),
+      topBaselinePhrase: this.topBaselinePhrase(),
+      keywordResearchInProgress: this.keywordResearchInProgress(),
     }),
   );
 

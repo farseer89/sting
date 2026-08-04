@@ -6,6 +6,7 @@ import {
   buildDashboardSteps,
   buildKeywordBaselineRows,
   buildMarketSourceRows,
+  buildWorkspaceCards,
   dashboardMarketStatus,
   keywordPlannerLabel,
 } from './protopipe-home-dashboard.view-model';
@@ -50,7 +51,7 @@ describe('protopipe home dashboard view model', () => {
     ]);
   });
 
-  it('builds the four SaaS setup steps', () => {
+  it('builds compact Metronic-style setup steps', () => {
     const steps = buildDashboardSteps({
       onboardingDone: true,
       keywordPlanConfirmed: false,
@@ -60,6 +61,8 @@ describe('protopipe home dashboard view model', () => {
       discoveryFailed: false,
       contentPlanComplete: false,
       contentPlanRunning: false,
+      keywordCount: 0,
+      baselineSignalCount: 0,
     });
 
     expect(steps.map((step) => step.title)).toEqual([
@@ -68,10 +71,31 @@ describe('protopipe home dashboard view model', () => {
       'SEO rankings',
       'Content plan',
     ]);
+    expect(steps[0]?.metric).toBe('Researching…');
+    expect(steps[0]?.hint).toBe('Pulling market data');
     expect(steps[0]?.status).toBe('in_progress');
     expect(steps[1]?.status).toBe('locked');
     expect(steps[2]?.status).toBe('in_progress');
     expect(steps[3]?.status).toBe('locked');
+  });
+
+  it('builds workspace invitation cards', () => {
+    const cards = buildWorkspaceCards({
+      site,
+      profile,
+      baselineSignalCount: 2,
+      topBaselinePhrase: 'emergency plumber',
+      keywordResearchInProgress: false,
+    });
+
+    expect(cards.map((card) => card.title)).toEqual([
+      'Business profile',
+      'Competitors',
+      'Keyword baseline',
+    ]);
+    expect(cards[0]?.metric).toBe('Maui Plumbers');
+    expect(cards[1]?.metric).toBe('2 tracked');
+    expect(cards[2]?.hint).toBe('Top: emergency plumber');
   });
 
   it('lists competitors and baseline keyword rows', () => {
@@ -111,7 +135,7 @@ describe('protopipe home dashboard view model', () => {
         loading: false,
         discoveryProgress: null,
       }),
-    ).toBe('SEO baseline is ready. Keyword selection is still loading.');
+    ).toBe('SEO baseline ready — keywords still loading.');
     expect(
       keywordPlannerLabel({
         keywordPlanConfirmed: false,
@@ -160,7 +184,9 @@ describe('protopipe home dashboard view model', () => {
         discoveryFailed: false,
         contentPlanComplete: false,
         contentPlanRunning: false,
-      }).map((step) => step.description),
+        keywordCount: 12,
+        baselineSignalCount: 8,
+      }).flatMap((step) => [step.metric, step.hint]),
     ]
       .join(' ')
       .toLowerCase();

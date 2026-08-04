@@ -1,103 +1,112 @@
 <div class="dash" aria-label="SearchClimber home dashboard">
   <header class="dash__intro">
-    <div class="dash__intro-copy">
-      <p class="dash__eyebrow">Home</p>
-      <h1>{{ businessName() }}</h1>
-      <p class="dash__lede">{{ marketStatus() }}</p>
-    </div>
+    <p class="dash__eyebrow">Workspace</p>
+    <h1>{{ businessName() }}</h1>
+    <p class="dash__lede">{{ marketStatus() }}</p>
   </header>
 
-  <section class="dash__card dash__card--progress" aria-label="Keyword research status">
-    <div class="dash__card-head">
-      <h2>Keyword research</h2>
-      <span class="dash__badge" [class.is-ready]="keywordResearchReady()">
-        {{ keywordResearchInProgress() ? 'In progress' : keywordPlannerLabel() }}
-      </span>
-    </div>
-
-    @if (keywordResearchInProgress()) {
-      <p class="dash__card-copy">
-        {{ discoveryProgress() ?? 'We are building your keyword plan from your market profile.' }}
-      </p>
-      @if (discoveryProgressPercent() > 0) {
-        <div class="dash__progress" aria-label="Keyword research progress">
-          <span [style.width.%]="discoveryProgressPercent()"></span>
-        </div>
+  <section class="dash__steps" aria-label="Setup steps">
+    <div class="dash__steps-grid">
+      @for (step of stepCards(); track step.id) {
+        <article
+          class="dash-step"
+          [class.is-complete]="step.status === 'complete'"
+          [class.is-ready]="step.status === 'ready'"
+          [class.is-progress]="step.status === 'in_progress'"
+          [class.is-locked]="step.status === 'locked'"
+        >
+          <div class="dash-step__head">
+            <h2>{{ step.title }}</h2>
+            <span class="dash-step__badge">{{ step.statusLabel }}</span>
+          </div>
+          <p class="dash-step__copy">{{ step.description }}</p>
+          @if (
+            keywordResearchInProgress() && step.id === 'keywords' && discoveryProgressPercent() > 0
+          ) {
+            <div class="dash-step__progress" aria-hidden="true">
+              <span [style.width.%]="discoveryProgressPercent()"></span>
+            </div>
+          }
+          @if (step.actionLabel && step.target) {
+            <button type="button" class="dash-step__action" (click)="openStep(step.target)">
+              {{ step.actionLabel }}
+            </button>
+          }
+        </article>
       }
-    } @else if (keywordResearchReady() && !keywordPlanConfirmed()) {
-      <p class="dash__card-copy">Your keyword plan is ready to review and confirm.</p>
-      <button type="button" class="dash__button" (click)="openTarget('keywords')">
-        Review keyword plan
-      </button>
-    } @else if (keywordPlanConfirmed()) {
-      <p class="dash__card-copy">Keyword plan confirmed. Strategy and visibility tools are unlocked.</p>
-      <button type="button" class="dash__button dash__button--secondary" (click)="openTarget('keywords')">
-        Open keyword plan
-      </button>
-    } @else {
-      <p class="dash__card-copy">Keyword research will start once onboarding is complete.</p>
-    }
+    </div>
   </section>
 
-  @if (collectedFields().length) {
-    <section class="dash__card" aria-label="Collected profile">
-      <h2>What we saved</h2>
-      <dl class="dash__fields">
-        @for (field of collectedFields(); track field.id) {
-          <div>
-            <dt>{{ field.label }}</dt>
-            <dd>{{ field.value }}</dd>
-          </div>
+  <section class="dash__details" aria-label="Saved workspace details">
+    <div class="dash__details-grid">
+      <article class="dash-panel" aria-label="Business info">
+        <h2>Business info</h2>
+        @if (businessInfo().length) {
+          <dl class="dash-panel__fields">
+            @for (field of businessInfo(); track field.id) {
+              <div>
+                <dt>{{ field.label }}</dt>
+                <dd>{{ field.value }}</dd>
+              </div>
+            }
+          </dl>
+        } @else {
+          <p class="dash-panel__empty">Business details will appear after onboarding.</p>
         }
-      </dl>
-      @if (collectedChips().length) {
-        <div class="dash__chips">
-          @for (chip of collectedChips(); track chip.id) {
-            <span>{{ chip.label }}</span>
-          }
+      </article>
+
+      <article class="dash-panel" aria-label="Competitors">
+        <h2>Competitors</h2>
+        @if (competitors().length) {
+          <ul class="dash-panel__list">
+            @for (competitor of competitors(); track competitor) {
+              <li>{{ competitor }}</li>
+            }
+          </ul>
+        } @else {
+          <p class="dash-panel__empty">No competitors shared yet.</p>
+        }
+      </article>
+    </div>
+
+    <article class="dash-panel dash-panel--table" aria-label="Keyword baseline">
+      <div class="dash-panel__head">
+        <h2>Keyword baseline</h2>
+        @if (baselineReady()) {
+          <span class="dash-panel__meta">{{ baselineRows().length }} signals</span>
+        }
+      </div>
+
+      @if (baselineRows().length) {
+        <div class="dash-table-wrap">
+          <table class="dash-table">
+            <thead>
+              <tr>
+                <th scope="col">Keyword</th>
+                <th scope="col">Source</th>
+                <th scope="col">Volume</th>
+                <th scope="col">Rank</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of baselineRows(); track row.id) {
+                <tr>
+                  <td>{{ row.phrase }}</td>
+                  <td>{{ row.source }}</td>
+                  <td>{{ row.volume }}</td>
+                  <td>{{ row.rank }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
         </div>
+      } @else if (keywordResearchInProgress()) {
+        <p class="dash-panel__empty">
+          {{ discoveryProgress() ?? 'Building your keyword baseline from market data.' }}
+        </p>
+      } @else {
+        <p class="dash-panel__empty">Keyword baseline will populate once discovery runs.</p>
       }
-    </section>
-  }
-
-  @if (baselineReady() && marketSourceRows().length) {
-    <section class="dash__card" aria-label="Market baseline">
-      <h2>Market baseline</h2>
-      <ul class="dash__rows">
-        @for (row of marketSourceRows(); track row.id) {
-          <li>
-            <span>{{ row.label }}</span>
-            <strong>{{ row.value }}</strong>
-          </li>
-        }
-      </ul>
-      <button type="button" class="dash__link" (click)="openTarget('keywords')">
-        View discovery details
-      </button>
-    </section>
-  }
-
-  <section class="dash__card" aria-label="Next steps">
-    <h2>Next steps</h2>
-    <ul class="dash__steps">
-      <li [class.is-ready]="keywordPlanConfirmed()">
-        <span>Strategy</span>
-        <button type="button" [disabled]="!keywordPlanConfirmed()" (click)="openTarget('strategy')">
-          {{ keywordPlanConfirmed() ? 'Open' : 'Confirm keywords first' }}
-        </button>
-      </li>
-      <li [class.is-ready]="keywordPlanConfirmed()">
-        <span>AI visibility</span>
-        <button type="button" [disabled]="!keywordPlanConfirmed()" (click)="openTarget('mentions-book')">
-          {{ keywordPlanConfirmed() ? 'Open' : 'Confirm keywords first' }}
-        </button>
-      </li>
-      <li [class.is-ready]="keywordPlanConfirmed()">
-        <span>Build book</span>
-        <button type="button" [disabled]="!keywordPlanConfirmed()" (click)="openTarget('build-book')">
-          {{ keywordPlanConfirmed() ? 'Open' : 'Confirm keywords first' }}
-        </button>
-      </li>
-    </ul>
+    </article>
   </section>
 </div>

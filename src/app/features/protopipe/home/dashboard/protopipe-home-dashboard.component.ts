@@ -6,18 +6,18 @@ import {
   inject,
   output,
 } from '@angular/core';
+import { ContentPlanStore } from '../../content-plan/content-plan.store';
 import { ProtopipeOnboardingStateService } from '../../onboarding/protopipe-onboarding-state.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { ProtopipeKeywordPickerStore } from '../keyword-picker/protopipe-keyword-picker.store';
 import {
-  buildCollectedChips,
-  buildCollectedFields,
-  buildMarketSourceRows,
+  buildBusinessInfo,
+  buildCompetitors,
+  buildDashboardSteps,
+  buildKeywordBaselineRows,
   dashboardMarketStatus,
-  keywordPlannerLabel,
+  type DashboardStepTarget,
 } from './protopipe-home-dashboard.view-model';
-
-type DashboardTarget = 'keywords' | 'strategy' | 'mentions-book' | 'build-book';
 
 @Component({
   selector: 'app-protopipe-home-dashboard',
@@ -30,8 +30,9 @@ export class ProtopipeHomeDashboardComponent implements OnInit {
   private readonly onboarding = inject(ProtopipeOnboardingStateService);
   private readonly strategy = inject(ProtopipeStrategyService);
   private readonly keywordStore = inject(ProtopipeKeywordPickerStore);
+  private readonly contentPlan = inject(ContentPlanStore);
 
-  readonly open = output<DashboardTarget>();
+  readonly open = output<DashboardStepTarget>();
 
   readonly discoveryProgress = this.keywordStore.discoveryProgress;
   readonly discoveryProgressPercent = this.keywordStore.discoveryProgressPercent;
@@ -46,13 +47,15 @@ export class ProtopipeHomeDashboardComponent implements OnInit {
   );
   readonly businessName = computed(
     () =>
-      this.strategy.site()?.displayName?.trim() || this.strategy.site()?.hostname || 'your market',
+      this.strategy.site()?.displayName?.trim() ||
+      this.strategy.site()?.hostname ||
+      'Your workspace',
   );
-  readonly collectedFields = computed(() =>
-    buildCollectedFields(this.strategy.site(), this.strategy.onboardingProfile()),
+  readonly businessInfo = computed(() =>
+    buildBusinessInfo(this.strategy.site(), this.strategy.onboardingProfile()),
   );
-  readonly collectedChips = computed(() => buildCollectedChips(this.strategy.onboardingProfile()));
-  readonly marketSourceRows = computed(() => buildMarketSourceRows(this.marketBaseline()));
+  readonly competitors = computed(() => buildCompetitors(this.strategy.onboardingProfile()));
+  readonly baselineRows = computed(() => buildKeywordBaselineRows(this.marketBaseline()));
   readonly marketStatus = computed(() =>
     dashboardMarketStatus({
       onboardingDone: this.onboardingDone(),
@@ -63,14 +66,6 @@ export class ProtopipeHomeDashboardComponent implements OnInit {
       discoveryProgress: this.discoveryProgress(),
     }),
   );
-  readonly keywordPlannerLabel = computed(() =>
-    keywordPlannerLabel({
-      keywordPlanConfirmed: this.keywordPlanConfirmed(),
-      keywordResearchReady: this.keywordResearchReady(),
-      baselineReady: this.baselineReady(),
-      discoveryFailed: this.keywordStore.dashboardDiscoveryFailed(),
-    }),
-  );
   readonly keywordResearchInProgress = computed(
     () =>
       this.onboardingDone() &&
@@ -78,12 +73,30 @@ export class ProtopipeHomeDashboardComponent implements OnInit {
       !this.keywordPlanConfirmed() &&
       !this.keywordStore.dashboardDiscoveryFailed(),
   );
+  readonly stepCards = computed(() =>
+    buildDashboardSteps({
+      onboardingDone: this.onboardingDone(),
+      keywordPlanConfirmed: this.keywordPlanConfirmed(),
+      keywordResearchReady: this.keywordResearchReady(),
+      keywordResearchInProgress: this.keywordResearchInProgress(),
+      baselineReady: this.baselineReady(),
+      discoveryFailed: this.keywordStore.dashboardDiscoveryFailed(),
+      contentPlanComplete: this.contentPlan.isComplete(),
+      contentPlanRunning: this.contentPlan.isRunning(),
+    }),
+  );
 
   ngOnInit(): void {
     void this.keywordStore.load();
+    const siteId = this.strategy.siteId();
+    if (siteId) {
+      this.contentPlan.setSiteId(siteId);
+      void this.contentPlan.loadLatest();
+    }
   }
 
-  openTarget(target: DashboardTarget): void {
+  openStep(target: DashboardStepTarget | null): void {
+    if (!target) return;
     this.open.emit(target);
   }
 }

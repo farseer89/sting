@@ -35,8 +35,7 @@
   height: 100%;
   min-height: 0;
   gap: 0;
-  padding:
-    max(var(--frame-pad), env(safe-area-inset-top))
+  padding: max(var(--frame-pad), env(safe-area-inset-top))
     max(var(--frame-pad), env(safe-area-inset-right))
     max(var(--frame-pad), env(safe-area-inset-bottom))
     max(var(--frame-pad), env(safe-area-inset-left));
@@ -214,7 +213,10 @@
   letter-spacing: 0.01em;
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+  transition:
+    color 0.12s ease,
+    background 0.12s ease,
+    border-color 0.12s ease;
 
   .pi {
     font-size: 0.75rem;
@@ -511,7 +513,9 @@
   letter-spacing: 0.04em;
   cursor: pointer;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
 
   &:hover {
     color: var(--void-ocean);
@@ -1441,10 +1445,16 @@
 
   .glass--full,
   .home-keywords,
-  .home-mentions {
+  .home-mentions,
+  .home-dashboard {
     flex: none;
     min-height: auto;
     overflow: visible;
+  }
+
+  .home-dashboard app-protopipe-home-dashboard {
+    flex: none;
+    min-height: auto;
   }
 
   .void__side-splitter,
@@ -1465,11 +1475,8 @@
     width: 100%;
     max-width: 100%;
     margin: 0;
-    padding:
-      0.45rem
-      max(0.55rem, env(safe-area-inset-right))
-      calc(0.45rem + env(safe-area-inset-bottom))
-      max(0.55rem, env(safe-area-inset-left));
+    padding: 0.45rem max(0.55rem, env(safe-area-inset-right))
+      calc(0.45rem + env(safe-area-inset-bottom)) max(0.55rem, env(safe-area-inset-left));
     border-top: 1px solid rgba(15, 23, 42, 0.08);
     background: rgba(255, 255, 255, 0.96);
     backdrop-filter: blur(18px);

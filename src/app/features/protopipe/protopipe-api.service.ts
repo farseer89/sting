@@ -357,18 +357,20 @@ export class ProtopipeApiService {
 
   /** Verifies bagend → DataForSEO credentials (JWT required; secrets stay on server). */
   dataForSeoStatus(): Promise<ProtopipeDataForSeoStatusResponse> {
+    const url = isShirePrimary()
+      ? shireApiUrl(ShireEndpoints.integrations.dataForSeo.status)
+      : protopipeApiUrl(ProtopipeEndpoints.dataForSeoStatus.path);
     return firstValueFrom(
-      this.http.get<ProtopipeDataForSeoStatusResponse>(
-        protopipeApiUrl(ProtopipeEndpoints.dataForSeoStatus.path),
-      ),
+      this.http.get<ProtopipeDataForSeoStatusResponse>(url),
     );
   }
 
   spyFuStatus(): Promise<ProtopipeSpyFuStatusResponse> {
+    const url = isShirePrimary()
+      ? shireApiUrl(ShireEndpoints.integrations.spyFu.status)
+      : protopipeApiUrl(ProtopipeEndpoints.spyFuStatus.path);
     return firstValueFrom(
-      this.http.get<ProtopipeSpyFuStatusResponse>(
-        protopipeApiUrl(ProtopipeEndpoints.spyFuStatus.path),
-      ),
+      this.http.get<ProtopipeSpyFuStatusResponse>(url),
     );
   }
 
@@ -415,11 +417,11 @@ export class ProtopipeApiService {
   }
 
   researchQuery(siteId: string, body: ProtopipeResearchQueryRequest): Promise<ProtopipeResearchResponse> {
+    const url = isShirePrimary()
+      ? shireApiUrl(ShireEndpoints.research.query(siteId))
+      : protopipeApiUrl(ProtopipeEndpoints.researchQuery.path, { siteId });
     return firstValueFrom(
-      this.http.post<ProtopipeResearchResponse>(
-        protopipeApiUrl(ProtopipeEndpoints.researchQuery.path, { siteId }),
-        body,
-      ),
+      this.http.post<ProtopipeResearchResponse>(url, body),
     );
   }
 

@@ -164,7 +164,9 @@ export interface DiscoveryContextSeedSource {
 
 export interface DiscoveryContext {
   profileQuality: 'strong' | 'weak';
+  keywordSeeds?: string[];
   seedPhrases: string[];
+  suggestions?: string[];
   fitPhrases: string[];
   inferredTrade?: string;
   sources: DiscoveryContextSeedSource[];

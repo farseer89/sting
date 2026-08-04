@@ -31,6 +31,11 @@ export interface ProtopipeHomeNavItem {
 /** Premiere-style nav for the user home — structure visible, features wired later. */
 export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
   {
+    id: 'home-dashboard',
+    label: 'Home',
+    icon: 'grid',
+  },
+  {
     id: 'books',
     label: 'Books',
     icon: 'sparkles',

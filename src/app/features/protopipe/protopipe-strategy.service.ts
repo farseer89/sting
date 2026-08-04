@@ -1,5 +1,10 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import type { ProtopipeDataForSeoStatusResponse, SubscriptionState, DiscoveryBookOnboardingStepId } from '@hive/contracts';
+import type {
+  ProtopipeDataForSeoStatusResponse,
+  ProtopipeSpyFuStatusResponse,
+  SubscriptionState,
+  DiscoveryBookOnboardingStepId,
+} from '@hive/contracts';
 import type { ProtopipeOnboardingProfile } from '@hive/contracts';
 import type {
   KeywordIntent,
@@ -47,6 +52,7 @@ export class ProtopipeStrategyService {
   private readonly _initialized = signal(false);
   private readonly _dataForSeoTesting = signal(false);
   private readonly _dataForSeoStatus = signal<ProtopipeDataForSeoStatusResponse | null>(null);
+  private readonly _spyFuStatus = signal<ProtopipeSpyFuStatusResponse | null>(null);
   private readonly _dataForSeoTestError = signal<string | null>(null);
 
   readonly keywords = this._keywords.asReadonly();
@@ -57,6 +63,7 @@ export class ProtopipeStrategyService {
   readonly siteId = this._siteId.asReadonly();
   readonly dataForSeoTesting = this._dataForSeoTesting.asReadonly();
   readonly dataForSeoStatus = this._dataForSeoStatus.asReadonly();
+  readonly spyFuStatus = this._spyFuStatus.asReadonly();
   readonly dataForSeoTestError = this._dataForSeoTestError.asReadonly();
   readonly marketRefreshing = this._marketRefreshing.asReadonly();
   readonly lastEnrichSummary = this._lastEnrichSummary.asReadonly();
@@ -261,6 +268,23 @@ export class ProtopipeStrategyService {
       this._dataForSeoStatus.set(status);
     } catch (err) {
       this._dataForSeoTestError.set(parseProtopipeApiError(err, 'DataForSEO check failed'));
+    } finally {
+      this._dataForSeoTesting.set(false);
+    }
+  }
+
+  async refreshMarketProviderStatus(): Promise<void> {
+    this._dataForSeoTesting.set(true);
+    this._dataForSeoTestError.set(null);
+    try {
+      const [dataForSeo, spyFu] = await Promise.all([
+        this.api.dataForSeoStatus(),
+        this.api.spyFuStatus(),
+      ]);
+      this._dataForSeoStatus.set(dataForSeo);
+      this._spyFuStatus.set(spyFu);
+    } catch (err) {
+      this._dataForSeoTestError.set(parseProtopipeApiError(err, 'Market provider check failed'));
     } finally {
       this._dataForSeoTesting.set(false);
     }

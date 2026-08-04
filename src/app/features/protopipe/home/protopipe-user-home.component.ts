@@ -61,6 +61,7 @@ import { ProtopipePitchPrepWizardComponent } from '../pitch-prep/protopipe-pitch
 import { ProtopipeLeadsListComponent } from '../leads/protopipe-leads-list.component';
 import { ProtopipeHomeThinkerBinderComponent } from './thinker/protopipe-home-thinker-binder.component';
 import { ProtopipeHomeAnalyticsBinderComponent } from './analytics-binder/protopipe-home-analytics-binder.component';
+import { ProtopipeHomeDashboardComponent } from './dashboard/protopipe-home-dashboard.component';
 import { ProtopipeProspectorComponent } from '../prospector/protopipe-prospector.component';
 import { ProtopipeColdCallerComponent } from '../cold-caller/protopipe-cold-caller.component';
 import { ProtopipeBillingComponent } from '../billing/protopipe-billing.component';
@@ -85,6 +86,7 @@ import {
 } from '../access/protopipe-access.model';
 
 export type ProtopipeHomeView =
+  | 'dashboard'
   | 'keywords'
   | 'mentions-book'
   | 'strategy'
@@ -179,6 +181,7 @@ interface MobileHomeTab {
     ProtopipeLeadsListComponent,
     ProtopipeHomeThinkerBinderComponent,
     ProtopipeHomeAnalyticsBinderComponent,
+    ProtopipeHomeDashboardComponent,
     ProtopipeProspectorComponent,
     ProtopipeColdCallerComponent,
     ProtopipeBillingComponent,
@@ -267,8 +270,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
   readonly accessNotice = signal<string | null>(null);
   readonly billingPortalLoading = this.billingPortal.loading;
   readonly loading = signal(true);
-  readonly activeView = signal<ProtopipeHomeView>('keywords');
-  readonly activeNavId = signal('start-keywords');
+  readonly activeView = signal<ProtopipeHomeView>('dashboard');
+  readonly activeNavId = signal('home-dashboard');
   readonly sharpenInitialTab = signal<SharpenTab | null>(null);
   readonly packDetailId = signal<string | null>(null);
   readonly pitchPrepProspectId = signal<string | null>(null);
@@ -284,10 +287,10 @@ export class ProtopipeUserHomeComponent implements OnInit {
   readonly mobilePrimaryTabs = computed<MobileHomeTab[]>(() => {
     const items = this.navItems();
     const configs: Array<{ id: string; label: string; icon: ProtopipeHomeNavIcon }> = [
+      { id: 'home-dashboard', label: 'Home', icon: 'grid' },
       { id: 'start-keywords', label: 'Discover', icon: 'search' },
       { id: 'start-strategy', label: 'Strategy', icon: 'sitemap' },
       { id: 'content-writer', label: 'Write', icon: 'write' },
-      { id: 'books-build', label: 'Build', icon: 'globe' },
     ];
 
     return configs
@@ -428,7 +431,14 @@ export class ProtopipeUserHomeComponent implements OnInit {
       return;
     }
     if (item.disabled) return;
-    if (item.id === 'start-keywords') {
+    if (item.id === 'home-dashboard') {
+      this.leaveWriterFocus();
+      this.leaveThinkerFocus();
+      this.sidePanel.setOpen(false);
+      this.activeNavId.set(item.id);
+      this.activeView.set('dashboard');
+      this.navigateHomeRoot();
+    } else if (item.id === 'start-keywords') {
       this.leaveWriterFocus();
       this.activeNavId.set(item.id);
       this.activeView.set('keywords');
@@ -688,6 +698,23 @@ export class ProtopipeUserHomeComponent implements OnInit {
   onKeywordsConfirmed(): void {
     this.activeView.set('strategy');
     this.activeNavId.set('start-strategy');
+  }
+
+  onDashboardOpen(target: 'keywords' | 'strategy' | 'mentions-book' | 'build-book'): void {
+    if (target === 'keywords') {
+      this.activeView.set('keywords');
+      this.activeNavId.set('start-keywords');
+    } else if (target === 'strategy') {
+      this.activeView.set('strategy');
+      this.activeNavId.set('start-strategy');
+    } else if (target === 'mentions-book') {
+      this.activeView.set('mentions-book');
+      this.activeNavId.set('start-mentions');
+    } else {
+      this.openBuildBookView();
+      return;
+    }
+    this.navigateHomeRoot();
   }
 
   toggleUserMenu(event: Event): void {
@@ -1157,7 +1184,6 @@ export class ProtopipeUserHomeComponent implements OnInit {
         this.contentPlan.setSiteId(site.id);
         await this.contentPlan.loadLatest();
         void this.keywordStore.load();
-        const planStatus = this.contentPlan.status();
         const onPacksRoute = (this.router.url.split('?')[0] ?? '').startsWith('/home/packs');
         const onPitchPrepRoute = (this.router.url.split('?')[0] ?? '').startsWith(
           '/home/pitch-prep',
@@ -1180,11 +1206,10 @@ export class ProtopipeUserHomeComponent implements OnInit {
           !onProspectorRoute &&
           !onColdCallerRoute &&
           !onBillingRoute &&
-          !hasExplicitHomeView &&
-          (planStatus === 'running' || planStatus === 'pending' || planStatus === 'complete')
+          !hasExplicitHomeView
         ) {
-          this.activeView.set('strategy');
-          this.activeNavId.set('start-strategy');
+          this.activeView.set('dashboard');
+          this.activeNavId.set('home-dashboard');
         }
       }
     } catch {

@@ -1,0 +1,91 @@
+<section class="home-dash" aria-label="SearchClimber home dashboard">
+  <header class="home-dash__hero">
+    <p class="home-dash__eyebrow">SearchClimber setup</p>
+    <h1>Turn market signals into your growth plan.</h1>
+    <p>
+      {{ marketStatus() }}
+    </p>
+    @if (discoveryProgressPercent() > 0 && !keywordResearchReady()) {
+      <div class="home-dash__progress" aria-label="Discovery progress">
+        <span [style.width.%]="discoveryProgressPercent()"></span>
+      </div>
+    }
+  </header>
+
+  <div class="home-dash__grid">
+    <article class="home-dash-card">
+      <span class="home-dash-card__status" [class.is-ready]="baselineReady()">Market baseline</span>
+      <h2>Review what we found first</h2>
+      <p>
+        See source-by-source market evidence while deeper keyword research continues in the background.
+      </p>
+      <button type="button" (click)="openTarget('keywords')">
+        {{ baselineReady() ? 'Open market baseline' : 'Open discovery' }}
+      </button>
+    </article>
+
+    <article class="home-dash-card">
+      <span class="home-dash-card__status" [class.is-ready]="keywordResearchReady()">Keyword plan</span>
+      <h2>Confirm your keyword plan</h2>
+      <p>
+        Keywords and audiences unlock strategy, AI visibility, content, and site build next steps.
+      </p>
+      <button type="button" [disabled]="!keywordResearchReady()" (click)="openTarget('keywords')">
+        {{ keywordResearchReady() ? 'Review keywords' : 'Research still running' }}
+      </button>
+    </article>
+
+    <article class="home-dash-card">
+      <span class="home-dash-card__status" [class.is-ready]="keywordPlanConfirmed()">Strategy</span>
+      <h2>Build strategy from confirmed keywords</h2>
+      <p>
+        Confirm the keyword plan to generate the strategy view and content direction.
+      </p>
+      <button type="button" [disabled]="!keywordPlanConfirmed()" (click)="openTarget('strategy')">
+        {{ keywordPlanConfirmed() ? 'Open strategy' : 'Confirm keywords first' }}
+      </button>
+    </article>
+
+    <article class="home-dash-card">
+      <span class="home-dash-card__status" [class.is-ready]="keywordPlanConfirmed()">AI visibility</span>
+      <h2>Track AI visibility</h2>
+      <p>
+        Confirm keywords to start measuring what AI engines see and recommend.
+      </p>
+      <button type="button" [disabled]="!keywordPlanConfirmed()" (click)="openTarget('mentions-book')">
+        {{ keywordPlanConfirmed() ? 'Open AI visibility' : 'Confirm keywords first' }}
+      </button>
+    </article>
+  </div>
+
+  <section class="home-dash__providers" aria-label="Market data providers">
+    <div>
+      <p class="home-dash__eyebrow">Market data providers</p>
+      <h2>Provider health</h2>
+      <p>These checks show whether current rankings and competitor gaps can run live.</p>
+    </div>
+    <div class="home-dash-provider">
+      <span>DataForSEO</span>
+      <strong>{{ providerLabel(dataForSeoStatus()?.connected, dataForSeoStatus()?.configured) }}</strong>
+      @if (dataForSeoStatus()?.error) {
+        <small>{{ dataForSeoStatus()?.error }}</small>
+      } @else if (dataForSeoStatus()?.balance != null) {
+        <small>Balance: {{ dataForSeoStatus()?.balance }}</small>
+      }
+    </div>
+    <div class="home-dash-provider">
+      <span>SpyFu</span>
+      <strong>{{ providerLabel(spyFuStatus()?.connected, spyFuStatus()?.configured) }}</strong>
+      @if (spyFuStatus()?.error) {
+        <small>{{ spyFuStatus()?.error }}</small>
+      } @else if (spyFuStatus()?.usageMonth) {
+        <small>{{ spyFuStatus()?.usageMonth }} usage loaded</small>
+      }
+    </div>
+    @if (providerLoading()) {
+      <p class="home-dash__provider-note">Checking providers...</p>
+    } @else if (providerError()) {
+      <p class="home-dash__provider-note is-error">{{ providerError() }}</p>
+    }
+  </section>
+</section>

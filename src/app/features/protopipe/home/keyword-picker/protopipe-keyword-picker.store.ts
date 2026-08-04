@@ -220,7 +220,7 @@ export class ProtopipeKeywordPickerStore {
           if (run.status === 'ready' || run.status === 'confirmed' || hasKeywordResearchOutput(run)) {
             this.mergeDiscoveryRun(run, map);
             this.applySuggestedAvatars(run.artifacts.suggestedAvatars ?? []);
-            await this.seedRelatedKeywords(map);
+            await this.seedRelatedKeywords(map, run);
           } else {
             this._discoveryNote.set(
               'Market baseline is ready. Keyword research is still running in the background.',
@@ -231,7 +231,7 @@ export class ProtopipeKeywordPickerStore {
           this.thinkerView.updateDiscoveryRun(existing);
           this.mergeDiscoveryRun(existing, map);
           this.applySuggestedAvatars(existing.artifacts.suggestedAvatars ?? []);
-          await this.seedRelatedKeywords(map);
+          await this.seedRelatedKeywords(map, existing);
         } else if (existing.status === 'failed') {
           this._discoveryNote.set(
             existing.error?.message ?? 'Keyword discovery failed. Your saved keywords are shown below.',
@@ -391,7 +391,7 @@ export class ProtopipeKeywordPickerStore {
       if (run.status === 'ready' || run.status === 'confirmed' || hasKeywordResearchOutput(run)) {
         this.mergeDiscoveryRun(run, map);
         this.applySuggestedAvatars(run.artifacts.suggestedAvatars ?? []);
-        await this.seedRelatedKeywords(map);
+        await this.seedRelatedKeywords(map, run);
       } else {
         this._discoveryNote.set(
           'Market baseline is ready. Keyword research is still running in the background.',
@@ -414,7 +414,7 @@ export class ProtopipeKeywordPickerStore {
       this.thinkerView.updateDiscoveryRun(run);
       this.mergeDiscoveryRun(run, map);
       this.applySuggestedAvatars(run.artifacts.suggestedAvatars ?? []);
-      await this.seedRelatedKeywords(map);
+      await this.seedRelatedKeywords(map, run);
       this.applyScoredPool(map);
       this._discoveryNote.set(null);
     } catch (err) {
@@ -824,11 +824,14 @@ export class ProtopipeKeywordPickerStore {
     });
   }
 
-  private async seedRelatedKeywords(map: Map<string, KeywordPickerOption>): Promise<void> {
+  private async seedRelatedKeywords(
+    map: Map<string, KeywordPickerOption>,
+    run?: ProtopipeKeywordDiscoveryRunDto,
+  ): Promise<void> {
     const siteId = this.siteId;
     if (!siteId) return;
 
-    const seeds = this.pickSeedPhrases(map);
+    const seeds = this.pickSeedPhrases(map, run);
     for (const phrase of seeds) {
       try {
         const res = await this.api.researchQuery(siteId, {
@@ -845,7 +848,10 @@ export class ProtopipeKeywordPickerStore {
     }
   }
 
-  private pickSeedPhrases(map: Map<string, KeywordPickerOption>): string[] {
+  private pickSeedPhrases(
+    map: Map<string, KeywordPickerOption>,
+    run?: ProtopipeKeywordDiscoveryRunDto,
+  ): string[] {
     const seeds: string[] = [];
     const seen = new Set<string>();
 
@@ -857,6 +863,13 @@ export class ProtopipeKeywordPickerStore {
       seen.add(key);
       seeds.push(trimmed);
     };
+
+    const discoveryContext = (run as unknown as LabKeywordDiscoveryRunDto | undefined)?.artifacts
+      ?.discoveryContext;
+    for (const seed of discoveryContext?.keywordSeeds ?? []) {
+      if (seeds.length >= SEED_PHRASE_COUNT) break;
+      addSeed(seed);
+    }
 
     const profile = this.strategy.onboardingProfile();
     if (profile?.services?.length) {

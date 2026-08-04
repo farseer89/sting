@@ -403,6 +403,11 @@
               }
 
               @switch (activeView()) {
+                @case ('dashboard') {
+                  <section class="glass glass--full glass--premiere home-dashboard" aria-label="Home dashboard">
+                    <app-protopipe-home-dashboard (open)="onDashboardOpen($event)" />
+                  </section>
+                }
                 @case ('keywords') {
                   <section class="glass glass--full glass--premiere home-keywords" aria-label="Discovery book">
                     <app-protopipe-home-keyword-book

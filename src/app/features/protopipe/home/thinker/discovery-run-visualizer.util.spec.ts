@@ -32,6 +32,15 @@ describe('discovery-run-visualizer.util', () => {
       artifacts: {
         ...FIXTURE_READY.artifacts,
         marketBaselineReadyAt: '2026-06-04T20:01:00.000Z',
+        discoveryContext: {
+          profileQuality: 'weak',
+          keywordSeeds: ['live wedding painter'],
+          seedPhrases: ['live wedding painter'],
+          suggestions: ['Position the offer around keepsake-driven event art.'],
+          fitPhrases: ['live wedding painter'],
+          sources: [{ phrase: 'live wedding painter', from: 'llm' }],
+          resolvedBy: 'llm',
+        },
         marketBaseline: {
           capturedAt: '2026-06-04T20:01:00.000Z',
           gscQueries: [],
@@ -103,6 +112,25 @@ describe('discovery-run-visualizer.util', () => {
           block.label === 'Search Console' &&
           block.value === 'Skipped' &&
           block.hint === 'Search Console is not connected.',
+      ),
+    ).toBe(true);
+    const keywordView = buildDiscoveryStepVisualizer(run as never, 'discovery:keywords', 'done');
+    expect(
+      keywordView.blocks.some(
+        (block) =>
+          block.kind === 'meta-row' &&
+          block.label === 'live wedding painter' &&
+          block.value === 'Seed' &&
+          block.hint === 'Keyword-tool input',
+      ),
+    ).toBe(true);
+    expect(
+      keywordView.blocks.some(
+        (block) =>
+          block.kind === 'meta-row' &&
+          block.label === 'Position the offer around keepsake-driven event art.' &&
+          block.value === 'Offer suggestion' &&
+          block.hint === 'Human review only',
       ),
     ).toBe(true);
     expect(view.blocks.some((block) => block.kind === 'meta-row' && block.label === 'live wedding painter')).toBe(true);

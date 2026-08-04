@@ -128,12 +128,31 @@ function buildExpansionPhaseBlocks(run: KeywordDiscoveryRunDto): VisualizerBlock
   const a = run.artifacts;
   const blocks: VisualizerBlock[] = [];
   if (a.discoveryContext) {
+    const keywordSeeds = a.discoveryContext.keywordSeeds?.length
+      ? a.discoveryContext.keywordSeeds
+      : a.discoveryContext.seedPhrases;
     blocks.push({
       kind: 'meta-row',
-      label: 'Resolved seeds',
-      value: `${a.discoveryContext.seedPhrases.length}`,
+      label: 'Keyword seeds sent to tools',
+      value: `${keywordSeeds.length}`,
       hint: `${a.discoveryContext.profileQuality} profile · ${a.discoveryContext.resolvedBy}`,
     });
+    blocks.push(
+      ...keywordSeeds.slice(0, 6).map((seed) => ({
+        kind: 'meta-row' as const,
+        label: seed,
+        value: 'Seed',
+        hint: 'Keyword-tool input',
+      })),
+    );
+    blocks.push(
+      ...(a.discoveryContext.suggestions ?? []).slice(0, 4).map((suggestion) => ({
+        kind: 'meta-row' as const,
+        label: suggestion,
+        value: 'Offer suggestion',
+        hint: 'Human review only',
+      })),
+    );
   }
   blocks.push(
     {

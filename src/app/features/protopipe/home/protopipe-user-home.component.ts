@@ -256,6 +256,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
       isInternalAdmin: isProtopipeInternalAdminEmail(email),
     });
   });
+  readonly canSharpen = computed(() => hasProtopipeCapability(this.accessState(), 'sharpen'));
   readonly navItems = computed(() => this.gateNavItems(PROTOPIPE_HOME_NAV, this.accessState()));
   readonly navCollapsed = signal(false);
   readonly openNavGroupIds = signal<string[]>([...PROTOPIPE_HOME_NAV_DEFAULT_OPEN]);
@@ -432,6 +433,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.activeNavId.set(item.id);
       this.activeView.set('keywords');
       this.navigateHomeRoot();
+    } else if (item.id === 'start-business' || item.id === 'books-business') {
+      this.openBusinessDetailsView(item.id);
     } else if (item.id === 'start-mentions') {
       this.leaveWriterFocus();
       this.leaveThinkerFocus();
@@ -496,8 +499,6 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.openResearchBookView();
     } else if (item.id === 'books-merch') {
       this.openMerchBookView();
-    } else if (item.id === 'books-business') {
-      this.openBusinessDetailsView();
     } else if (item.id === 'books-goals') {
       this.openGoalsView();
     } else if (item.id === 'int-wordpress' || item.id === 'int-google') {
@@ -832,11 +833,12 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.activeView.set('merch-book');
   }
 
-  openBusinessDetailsView(): void {
+  openBusinessDetailsView(navId: string = 'start-business'): void {
     this.leaveWriterFocus();
     this.sidePanel.setOpen(false);
-    this.activeNavId.set('books-business');
+    this.activeNavId.set(navId);
     this.activeView.set('business-details');
+    this.navigateHomeRoot();
   }
 
   openGoalsView(): void {

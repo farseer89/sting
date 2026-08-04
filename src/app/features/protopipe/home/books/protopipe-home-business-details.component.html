@@ -4,17 +4,19 @@
     <div class="bus-masthead__left">
       <h1 class="bus-masthead__title">Business book</h1>
       <p class="bus-masthead__deck">
-        Verified facts and onboarding context — the profile Sharpen and strategy builds draw from.
+        Your business profile from Discovery book onboarding — services, market, customers, and competitors in one place.
       </p>
     </div>
     <div class="bus-masthead__actions">
-      <p-button
-        label="Open Sharpen"
-        icon="pi pi-pencil"
-        severity="secondary"
-        size="small"
-        (onClick)="goSharpen.emit()"
-      />
+      @if (showSharpen()) {
+        <p-button
+          label="Open Sharpen"
+          icon="pi pi-pencil"
+          severity="secondary"
+          size="small"
+          (onClick)="goSharpen.emit()"
+        />
+      }
     </div>
   </header>
 
@@ -129,7 +131,7 @@
               <div class="bus-panel-kicker">Profile · Overview</div>
               <h2 class="bus-panel-title">Business snapshot</h2>
               <p class="bus-panel-deck">
-                What Protopipe knows about this site from onboarding and Sharpen — edit details in Sharpen.
+                What Protopipe knows about this site from Discovery book onboarding — used for keyword research and strategy.
               </p>
             </div>
 
@@ -169,18 +171,36 @@
                   <dd>{{ onboardingModeLabel(p.onboardingMode) }}</dd>
                 </div>
                 <div class="bus-dl__row">
-                  <dt>Market scope</dt>
-                  <dd>{{ marketScopeLabel(p.marketScope) }}</dd>
+                  <dt>Market reach</dt>
+                  <dd>{{ marketReachLabel(p) }}</dd>
                 </div>
-                @if (locationSummary(p); as location) {
-                  <div class="bus-dl__row">
-                    <dt>Location</dt>
-                    <dd>{{ location }}</dd>
-                  </div>
+                @if (localMarketFor(p); as localMarket) {
+                  @if (marketLocationLabel(localMarket); as localLabel) {
+                    <div class="bus-dl__row">
+                      <dt>Local area</dt>
+                      <dd>{{ localLabel }}</dd>
+                    </div>
+                  }
+                }
+                @if (nationalMarketFor(p); as nationalMarket) {
+                  @if (marketLocationLabel(nationalMarket); as nationalLabel) {
+                    <div class="bus-dl__row">
+                      <dt>Country</dt>
+                      <dd>{{ nationalLabel }}</dd>
+                    </div>
+                  }
+                }
+                @if (!localMarketFor(p) && !nationalMarketFor(p)) {
+                  @if (locationSummary(p); as location) {
+                    <div class="bus-dl__row">
+                      <dt>Location</dt>
+                      <dd>{{ location }}</dd>
+                    </div>
+                  }
                 }
               </dl>
             } @else {
-              <p class="bus-empty">No onboarding profile yet. Complete onboarding or add facts in Sharpen.</p>
+              <p class="bus-empty">No onboarding profile yet. Complete Discovery book onboarding to fill this in.</p>
             }
           }
 
@@ -212,26 +232,56 @@
             @if (profile(); as p) {
               <dl class="bus-dl">
                 <div class="bus-dl__row">
-                  <dt>Market scope</dt>
-                  <dd>{{ marketScopeLabel(p.marketScope) }}</dd>
+                  <dt>Market reach</dt>
+                  <dd>{{ marketReachLabel(p) }}</dd>
                 </div>
-                @if (locationSummary(p); as location) {
-                  <div class="bus-dl__row">
-                    <dt>Location</dt>
-                    <dd>{{ location }}</dd>
-                  </div>
+                @if (localMarketFor(p); as localMarket) {
+                  @if (marketLocationLabel(localMarket); as localLabel) {
+                    <div class="bus-dl__row">
+                      <dt>Local area</dt>
+                      <dd>{{ localLabel }}</dd>
+                    </div>
+                  }
+                  @if (localMarket.serpLocationCode) {
+                    <div class="bus-dl__row">
+                      <dt>Local SERP code</dt>
+                      <dd>{{ localMarket.serpLocationCode }}</dd>
+                    </div>
+                  }
                 }
-                @if (p.serpLocationName) {
-                  <div class="bus-dl__row">
-                    <dt>SERP location</dt>
-                    <dd>{{ p.serpLocationName }}</dd>
-                  </div>
+                @if (nationalMarketFor(p); as nationalMarket) {
+                  @if (marketLocationLabel(nationalMarket); as nationalLabel) {
+                    <div class="bus-dl__row">
+                      <dt>Country</dt>
+                      <dd>{{ nationalLabel }}</dd>
+                    </div>
+                  }
+                  @if (nationalMarket.serpLocationCode) {
+                    <div class="bus-dl__row">
+                      <dt>Country SERP code</dt>
+                      <dd>{{ nationalMarket.serpLocationCode }}</dd>
+                    </div>
+                  }
                 }
-                @if (p.serpLocationCode) {
-                  <div class="bus-dl__row">
-                    <dt>SERP location code</dt>
-                    <dd>{{ p.serpLocationCode }}</dd>
-                  </div>
+                @if (!localMarketFor(p) && !nationalMarketFor(p)) {
+                  @if (locationSummary(p); as location) {
+                    <div class="bus-dl__row">
+                      <dt>Location</dt>
+                      <dd>{{ location }}</dd>
+                    </div>
+                  }
+                  @if (p.serpLocationName) {
+                    <div class="bus-dl__row">
+                      <dt>SERP location</dt>
+                      <dd>{{ p.serpLocationName }}</dd>
+                    </div>
+                  }
+                  @if (p.serpLocationCode) {
+                    <div class="bus-dl__row">
+                      <dt>SERP location code</dt>
+                      <dd>{{ p.serpLocationCode }}</dd>
+                    </div>
+                  }
                 }
               </dl>
             } @else {

@@ -591,7 +591,10 @@
                 }
                 @case ('business-details') {
                   <section class="glass glass--full glass--premiere" aria-label="Business book">
-                    <app-protopipe-home-business-details (goSharpen)="selectNavItem({ id: 'start-sharpen', label: 'Sharpen' })" />
+                    <app-protopipe-home-business-details
+                      [showSharpen]="canSharpen()"
+                      (goSharpen)="selectNavItem({ id: 'start-sharpen', label: 'Sharpen' })"
+                    />
                   </section>
                 }
                 @case ('goals') {

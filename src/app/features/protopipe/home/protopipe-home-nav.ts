@@ -78,13 +78,6 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
         hiddenWhenLocked: true,
       },
       {
-        id: 'books-business',
-        label: 'Business book',
-        icon: 'users',
-        capability: 'admin_internal',
-        hiddenWhenLocked: true,
-      },
-      {
         id: 'books-goals',
         label: 'Goals',
         icon: 'sitemap',
@@ -99,6 +92,7 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
     icon: 'sparkles',
     children: [
       { id: 'start-keywords', label: 'Discovery book', icon: 'search', capability: 'discovery' },
+      { id: 'start-business', label: 'Business book', icon: 'users', capability: 'discovery' },
       { id: 'start-mentions', label: 'AI Mentions book', icon: 'search', capability: 'ai_mentions' },
       { id: 'start-strategy', label: 'Your strategy', icon: 'sitemap', capability: 'strategy' },
       {

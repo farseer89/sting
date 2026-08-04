@@ -113,7 +113,10 @@ export class DiscoveryBookOnboardingStore {
   readonly draftSnapshot = this.draft.asReadonly();
 
   syncFromStrategy(): void {
-    if (!this.onboardingState.onboardingCompleted() && this.isDirty()) {
+    // Baseline starts empty while the draft already has default market fields, so isDirty()
+    // is true before the first sync. Only skip when the user has edited after a prior sync.
+    const baseline = this.baselineFingerprint();
+    if (!this.onboardingState.onboardingCompleted() && baseline && this.isDirty()) {
       return;
     }
     const next = draftFromStrategy(this.strategy.onboardingProfile(), this.strategy.site());

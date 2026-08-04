@@ -191,11 +191,19 @@ export function draftToProgressRequest(
 
   const profile: Partial<ProtopipeOnboardingProfile> = {
     onboardingMode: synced.onboardingMode,
-    services: synced.services.map((s) => s.trim()).filter(Boolean),
-    customerAvatars: synced.customerAvatars.map((a) => a.trim()).filter(Boolean),
-    targetCustomerSites: synced.targetCustomerSites.map((s) => s.trim()).filter(Boolean),
-    competitors: synced.competitors.map((c) => c.trim()).filter(Boolean),
   };
+
+  const services = synced.services.map((s) => s.trim()).filter(Boolean);
+  if (services.length) profile.services = services;
+
+  const customerAvatars = synced.customerAvatars.map((a) => a.trim()).filter(Boolean);
+  if (customerAvatars.length) profile.customerAvatars = customerAvatars;
+
+  const targetCustomerSites = synced.targetCustomerSites.map((s) => s.trim()).filter(Boolean);
+  if (targetCustomerSites.length) profile.targetCustomerSites = targetCustomerSites;
+
+  const competitors = synced.competitors.map((c) => c.trim()).filter(Boolean);
+  if (competitors.length) profile.competitors = competitors;
 
   const websiteUrl =
     synced.onboardingMode === 'strategy_only' ? '' : normalizeUrl(synced.websiteUrl);

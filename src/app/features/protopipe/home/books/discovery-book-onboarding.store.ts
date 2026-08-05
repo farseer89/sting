@@ -24,6 +24,7 @@ import {
   draftToProgressRequest,
   defaultMarketDraft,
   isPendingSiteHostname,
+  normalizeDomain,
   normalizeUrl,
   syncLegacyMarketFields,
   type DiscoveryBookOnboardingDraft,
@@ -148,6 +149,16 @@ export class DiscoveryBookOnboardingStore {
       this.offerScanDebounce = null;
     }
     void this.ensureOfferScan();
+  }
+
+  shouldAutoScanOfferOnEntry(): boolean {
+    const d = this.draft();
+    return (
+      d.onboardingMode !== 'strategy_only' &&
+      d.websiteUrl.trim().length > 0 &&
+      d.services.length === 0 &&
+      !this.hasCurrentOfferScan(d.websiteUrl)
+    );
   }
 
   async flushOfferScanAndWait(): Promise<void> {
@@ -301,7 +312,7 @@ export class DiscoveryBookOnboardingStore {
       return;
     }
 
-    if (this.offerScannedUrl() === url && !this.offerScanning()) {
+    if (this.hasCurrentOfferScan(url) && !this.offerScanning()) {
       return;
     }
     if (this.offerScanning()) {
@@ -325,7 +336,7 @@ export class DiscoveryBookOnboardingStore {
       const res = await this.api.scanOffer(resolvedSiteId, {
         websiteUrl: normalizeUrl(url),
       });
-      this.offerScannedUrl.set(url);
+      this.offerScannedUrl.set(normalizeUrl(url));
       this.siteFoundServices.set(res.siteServices);
       this.tradeLabel.set(res.tradeLabel ?? null);
       this.tradeSuggestions.set(res.suggestedServices ?? res.tradeSuggestions ?? []);
@@ -364,6 +375,12 @@ export class DiscoveryBookOnboardingStore {
     } finally {
       this.offerScanning.set(false);
     }
+  }
+
+  private hasCurrentOfferScan(url: string): boolean {
+    const scanned = this.offerScannedUrl().trim();
+    if (!scanned) return false;
+    return normalizeDomain(scanned) === normalizeDomain(url);
   }
 
   removeService(index: number): void {

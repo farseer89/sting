@@ -1,8 +1,8 @@
 @use './protopipe-home-theme' as theme;
 
 :host {
-  --void-ocean: var(--p-primary-color, #0a9396);
-  --void-ocean-rgb: 10, 147, 150;
+  --void-ocean: #2563eb;
+  --void-ocean-rgb: 37, 99, 235;
   --void-ocean-muted: rgba(var(--void-ocean-rgb), 0.68);
   --void-ocean-line: rgba(var(--void-ocean-rgb), 0.34);
   --void-ocean-fill: rgba(var(--void-ocean-rgb), 0.1);
@@ -252,9 +252,9 @@
   }
 
   &--publishing {
-    background: rgb(14 116 144 / 0.08);
-    border-color: rgb(14 116 144 / 0.18);
-    color: #0f766e;
+    background: rgb(37 99 235 / 0.08);
+    border-color: rgb(37 99 235 / 0.18);
+    color: #2563eb;
   }
 
   &--failed {
@@ -747,7 +747,7 @@
   font-size: 8px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--shell-rail-muted);
+  color: #64748b;
   font-weight: 400;
 }
 
@@ -817,8 +817,8 @@
 
   &.is-active {
     color: var(--shell-rail-ink);
-    background: rgba(var(--void-ocean-rgb), 0.08);
-    border-color: rgba(var(--void-ocean-rgb), 0.2);
+    background: rgb(37 99 235 / 0.08);
+    border-color: rgb(37 99 235 / 0.22);
 
     .void-rail__sub-mark {
       background: var(--void-ocean);
@@ -907,7 +907,7 @@
   min-height: 1.1rem;
   padding: 0 0.32rem;
   border-radius: 999px;
-  background: rgba(37, 99, 235, 0.08);
+  background: rgb(37 99 235 / 0.08);
   color: #2563eb;
   font-size: 8px;
   font-weight: 700;

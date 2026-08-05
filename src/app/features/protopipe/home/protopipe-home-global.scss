@@ -42,7 +42,7 @@ html.void-home .glass--full > app-protopipe-leads-list {
 
 html.void-home .void-rail__scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(10, 147, 150, 0.55) rgba(236, 240, 244, 0.95);
+  scrollbar-color: rgb(37 99 235 / 0.42) transparent;
 }
 
 html.void-home .void-rail__scroll::-webkit-scrollbar {
@@ -54,12 +54,12 @@ html.void-home .void-rail__scroll::-webkit-scrollbar-track {
 }
 
 html.void-home .void-rail__scroll::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.12);
+  background: rgb(37 99 235 / 0.22);
   border-radius: 999px;
 }
 
 html.void-home .void-rail__scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(10, 147, 150, 0.45);
+  background: rgb(37 99 235 / 0.42);
 }
 
 @import 'app/features/protopipe/build-book/baseline/wri/wri-baseline.css';

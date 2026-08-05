@@ -313,7 +313,7 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
       this.didAutoLeaveDiscovery.set(true);
     }
     this.activeSection.set(section);
-    if (section === 'onboarding:offer') {
+    if (section === 'onboarding:offer' && this.onboardingStore.shouldAutoScanOfferOnEntry()) {
       this.onboardingStore.flushOfferScan();
     }
     if (!isOnboardingSection(section)) {

@@ -81,7 +81,7 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
     });
 
     effect(() => {
-      if (this.stepId() === 'onboarding:offer') {
+      if (this.stepId() === 'onboarding:offer' && this.store.shouldAutoScanOfferOnEntry()) {
         this.store.flushOfferScan();
       }
     });

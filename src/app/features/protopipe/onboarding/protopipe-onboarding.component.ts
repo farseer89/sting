@@ -364,7 +364,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
     effect(() => {
       const s = this.step();
       setTimeout(() => this.focusForStep(s), 50);
-      if (s === 2 && this.onboardingMode() === 'existing_site') {
+      if (s === 2 && this.shouldAutoScanOfferOnEntry()) {
         this.flushOfferScan();
       }
     });
@@ -372,7 +372,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
     effect(() => {
       const url = (this.formValue().websiteUrl ?? '').trim();
       const scanned = this.offerScannedUrl();
-      if (scanned && url !== scanned) {
+      if (scanned && !this.hasCurrentOfferScan(url)) {
         this.invalidateOfferScan();
       }
     });
@@ -618,6 +618,16 @@ export class ProtopipeOnboardingComponent implements OnInit {
     this.flushOfferScan();
   }
 
+  shouldAutoScanOfferOnEntry(): boolean {
+    const url = (this.form.controls.websiteUrl.value ?? '').trim();
+    return (
+      this.onboardingMode() === 'existing_site' &&
+      url.length > 0 &&
+      this.services().length === 0 &&
+      !this.hasCurrentOfferScan(url)
+    );
+  }
+
   flushOfferScan(): void {
     if (this.offerScanDebounce) {
       clearTimeout(this.offerScanDebounce);
@@ -635,7 +645,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
       return;
     }
 
-    if (this.offerScannedUrl() === url && !this.offerScanning()) {
+    if (this.hasCurrentOfferScan(url) && !this.offerScanning()) {
       return;
     }
     if (this.offerScanning()) {
@@ -655,7 +665,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
       const res = await this.api.scanOffer(siteId, {
         websiteUrl: this.normalizeUrl(url),
       });
-      this.offerScannedUrl.set(url);
+      this.offerScannedUrl.set(this.normalizeUrl(url));
       this.siteFoundServices.set(res.siteServices);
       this.tradeLabel.set(res.tradeLabel ?? null);
       this.tradeSuggestions.set(res.suggestedServices ?? res.tradeSuggestions ?? []);
@@ -1269,5 +1279,19 @@ export class ProtopipeOnboardingComponent implements OnInit {
     if (!trimmed) return '';
     if (/^https?:\/\//i.test(trimmed)) return trimmed;
     return `https://${trimmed}`;
+  }
+
+  private normalizeDomain(raw: string): string {
+    return raw
+      .trim()
+      .replace(/^https?:\/\//i, '')
+      .replace(/\/.*$/, '')
+      .toLowerCase();
+  }
+
+  private hasCurrentOfferScan(url: string): boolean {
+    const scanned = this.offerScannedUrl().trim();
+    if (!scanned) return false;
+    return this.normalizeDomain(scanned) === this.normalizeDomain(url);
   }
 }

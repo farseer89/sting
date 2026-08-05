@@ -3,6 +3,7 @@ import {
   buildCollectedChips,
   buildCollectedFields,
   buildCompetitors,
+  buildCustomerCards,
   buildDashboardSteps,
   buildKeywordBaselineRows,
   buildMarketSourceRows,
@@ -100,6 +101,13 @@ describe('protopipe home dashboard view model', () => {
 
   it('lists competitors and baseline keyword rows', () => {
     expect(buildCompetitors(profile)).toEqual(['competitor.example', 'rival.co']);
+    expect(buildCustomerCards(profile)).toEqual([
+      {
+        id: 'customer-0',
+        label: 'Homeowner with a leak before guests arrive',
+        initials: 'HA',
+      },
+    ]);
     expect(
       buildKeywordBaselineRows({
         rankedKeywords: [

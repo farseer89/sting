@@ -100,7 +100,10 @@
   </section>
 
   <section class="dash__workspace" aria-label="Workspace shortcuts">
-    <h2 class="dash__section-title">Workspace</h2>
+    <div class="dash__workspace-head">
+      <h2 class="dash__section-title">Workspace</h2>
+      <span>Open a card to edit the source page.</span>
+    </div>
     <div class="dash__workspace-grid">
       @for (card of workspaceCards(); track card.id) {
         <button
@@ -116,5 +119,110 @@
         </button>
       }
     </div>
+  </section>
+
+  <section class="dash__main-grid" aria-label="Dashboard details">
+    <article class="dash-panel dash-panel--keywords" aria-label="Keyword baseline">
+      <div class="dash-panel__head">
+        <div>
+          <p class="dash-panel__kicker">Keyword research</p>
+          <h2>Keyword baseline</h2>
+        </div>
+        <button type="button" class="dash-panel__action" (click)="openStep('keywords')">
+          Open keywords
+        </button>
+      </div>
+
+      @if (baselineRows().length) {
+        <div class="dash-table-wrap">
+          <table class="dash-table">
+            <thead>
+              <tr>
+                <th scope="col">Keyword</th>
+                <th scope="col">Source</th>
+                <th scope="col">Volume</th>
+                <th scope="col">Rank</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of baselineRows(); track row.id) {
+                <tr>
+                  <td>
+                    <span>{{ row.phrase }}</span>
+                  </td>
+                  <td>{{ row.source }}</td>
+                  <td>{{ row.volume }}</td>
+                  <td>{{ row.rank }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (keywordResearchInProgress()) {
+        <div class="dash-empty">
+          <span class="dash-empty__dot" aria-hidden="true"></span>
+          <p>{{ discoveryProgress() ?? 'Building your keyword baseline from market data.' }}</p>
+        </div>
+      } @else {
+        <div class="dash-empty">
+          <span class="dash-empty__dot" aria-hidden="true"></span>
+          <p>Keyword data will appear after discovery runs.</p>
+        </div>
+      }
+    </article>
+
+    <aside class="dash__side-stack">
+      <article class="dash-panel" aria-label="Competition">
+        <div class="dash-panel__head">
+          <div>
+            <p class="dash-panel__kicker">Competition</p>
+            <h2>Competitors</h2>
+          </div>
+          <button type="button" class="dash-panel__action" (click)="openStep('business-details')">
+            Edit
+          </button>
+        </div>
+
+        @if (competitors().length) {
+          <ul class="dash-list">
+            @for (competitor of competitors(); track competitor) {
+              <li>
+                <span class="dash-list__marker" aria-hidden="true"></span>
+                <span>{{ competitor }}</span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="dash-panel__empty">Add competitors to sharpen keyword gaps.</p>
+        }
+      </article>
+
+      <article class="dash-panel" aria-label="Customers">
+        <div class="dash-panel__head">
+          <div>
+            <p class="dash-panel__kicker">Customers</p>
+            <h2>Audience moments</h2>
+          </div>
+          <button type="button" class="dash-panel__action" (click)="openStep('business-details')">
+            Edit
+          </button>
+        </div>
+
+        @if (customerCards().length) {
+          <div class="dash-customers">
+            @for (customer of customerCards(); track customer.id) {
+              <div class="dash-customer">
+                <span class="dash-customer__avatar" aria-hidden="true">{{
+                  customer.initials
+                }}</span>
+                <span>{{ customer.label }}</span>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="dash-panel__empty">Customer moments will appear after onboarding.</p>
+        }
+      </article>
+    </aside>
   </section>
 </div>

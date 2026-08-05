@@ -67,6 +67,7 @@ import { ProtopipeColdCallerComponent } from '../cold-caller/protopipe-cold-call
 import { ProtopipeBillingComponent } from '../billing/protopipe-billing.component';
 import { ProtopipeBillingPortalService } from '../billing/protopipe-billing-portal.service';
 import { ProtopipeHomeSidePanelService } from './protopipe-home-side-panel.service';
+import { ProtopipeHomeKeywordsComponent } from './keywords/protopipe-home-keywords.component';
 import {
   PROTOPIPE_HOME_NAV,
   PROTOPIPE_HOME_NAV_DEFAULT_OPEN,
@@ -76,6 +77,7 @@ import {
 import {
   HOME_DASHBOARD_PATH,
   HOME_DISCOVERY_PATH,
+  HOME_KEYWORDS_PATH,
   HOME_ONBOARDING_PATH,
   homeShellRouteKind,
 } from './protopipe-home.routes';
@@ -93,6 +95,7 @@ import {
 
 export type ProtopipeHomeView =
   | 'dashboard'
+  | 'discovery'
   | 'keywords'
   | 'mentions-book'
   | 'strategy'
@@ -188,6 +191,7 @@ interface MobileHomeTab {
     ProtopipeHomeThinkerBinderComponent,
     ProtopipeHomeAnalyticsBinderComponent,
     ProtopipeHomeDashboardComponent,
+    ProtopipeHomeKeywordsComponent,
     ProtopipeProspectorComponent,
     ProtopipeColdCallerComponent,
     ProtopipeBillingComponent,
@@ -324,12 +328,14 @@ export class ProtopipeUserHomeComponent implements OnInit {
   readonly isThinkerFocus = computed(() => this.activeView() === 'thinker');
   readonly isBuildBookFocus = computed(() => this.activeView() === 'build-book');
   readonly isBlogPreviewFocus = computed(() => this.activeView() === 'blog-preview');
+  readonly isDashboardFocus = computed(() => this.activeView() === 'dashboard');
   /** Temporarily reveal site nav while in immersive Writing book. */
   readonly writerRailPeek = signal(false);
   readonly isRailHidden = computed(() => {
     if (this.isWriterFocus() && this.writerRailPeek()) return false;
     return (
       this.isWriterFocus() ||
+      this.isDashboardFocus() ||
       this.isBuildBookFocus() ||
       this.isThinkerFocus() ||
       this.isBlogPreviewFocus()
@@ -446,10 +452,12 @@ export class ProtopipeUserHomeComponent implements OnInit {
     } else if (item.id === 'start-keywords') {
       this.leaveWriterFocus();
       this.activeNavId.set(item.id);
-      this.activeView.set('keywords');
+      this.activeView.set('discovery');
       void this.router.navigate([
         this.onboarding.onboardingCompleted() ? HOME_DISCOVERY_PATH : HOME_ONBOARDING_PATH,
       ]);
+    } else if (item.id === 'seo-keywords') {
+      this.openKeywordSelectionView();
     } else if (item.id === 'start-business' || item.id === 'books-business') {
       this.openBusinessDetailsView(item.id);
     } else if (item.id === 'start-mentions') {
@@ -700,6 +708,15 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.clearFocusHistory(syncHistory);
   }
 
+  openKeywordSelectionView(): void {
+    this.leaveWriterFocus();
+    this.leaveThinkerFocus();
+    this.sidePanel.setOpen(false);
+    this.activeView.set('keywords');
+    this.activeNavId.set('seo-keywords');
+    void this.router.navigate([HOME_KEYWORDS_PATH]);
+  }
+
   onKeywordsConfirmed(): void {
     this.activeView.set('strategy');
     this.activeNavId.set('start-strategy');
@@ -709,9 +726,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
     target: 'keywords' | 'strategy' | 'mentions-book' | 'build-book' | 'business-details',
   ): void {
     if (target === 'keywords') {
-      this.activeView.set('keywords');
-      this.activeNavId.set('start-keywords');
-      void this.router.navigate([HOME_DISCOVERY_PATH]);
+      this.openKeywordSelectionView();
     } else if (target === 'strategy') {
       this.leaveWriterFocus();
       this.leaveThinkerFocus();
@@ -924,8 +939,17 @@ export class ProtopipeUserHomeComponent implements OnInit {
 
     if (kind === 'onboarding' || kind === 'discovery') {
       this.leaveWriterFocus();
-      this.activeView.set('keywords');
+      this.activeView.set('discovery');
       this.activeNavId.set('start-keywords');
+      return;
+    }
+
+    if (kind === 'keywords') {
+      this.leaveWriterFocus();
+      this.leaveThinkerFocus();
+      this.sidePanel.setOpen(false);
+      this.activeView.set('keywords');
+      this.activeNavId.set('seo-keywords');
     }
   }
 

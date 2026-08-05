@@ -98,7 +98,12 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
     children: [
       { id: 'start-keywords', label: 'Discovery book', icon: 'search', capability: 'discovery' },
       { id: 'start-business', label: 'Business book', icon: 'users', capability: 'discovery' },
-      { id: 'start-mentions', label: 'AI Mentions book', icon: 'search', capability: 'ai_mentions' },
+      {
+        id: 'start-mentions',
+        label: 'AI Mentions book',
+        icon: 'search',
+        capability: 'ai_mentions',
+      },
       { id: 'start-strategy', label: 'Your strategy', icon: 'sitemap', capability: 'strategy' },
       {
         id: 'start-sharpen',
@@ -167,7 +172,6 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
         id: 'seo-keywords',
         label: 'Keywords',
         icon: 'list',
-        disabled: true,
         capability: 'discovery',
       },
       {
@@ -304,6 +308,7 @@ export const PROTOPIPE_HOME_NAV_DEFAULT_OPEN = [
   'books',
   'start',
   'content',
+  'seo',
   'analytics',
   'account',
   'inbox',

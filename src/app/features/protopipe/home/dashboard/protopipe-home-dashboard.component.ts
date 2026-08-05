@@ -11,6 +11,8 @@ import { ProtopipeOnboardingStateService } from '../../onboarding/protopipe-onbo
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { ProtopipeKeywordPickerStore } from '../keyword-picker/protopipe-keyword-picker.store';
 import {
+  buildCompetitors,
+  buildCustomerCards,
   buildDashboardSteps,
   buildKeywordBaselineRows,
   buildWorkspaceCards,
@@ -53,6 +55,8 @@ export class ProtopipeHomeDashboardComponent implements OnInit {
   readonly baselineRows = computed(() => buildKeywordBaselineRows(this.marketBaseline()));
   readonly baselineSignalCount = computed(() => this.baselineRows().length);
   readonly topBaselinePhrase = computed(() => this.baselineRows()[0]?.phrase ?? null);
+  readonly competitors = computed(() => buildCompetitors(this.strategy.onboardingProfile()));
+  readonly customerCards = computed(() => buildCustomerCards(this.strategy.onboardingProfile()));
   readonly marketStatus = computed(() =>
     dashboardMarketStatus({
       onboardingDone: this.onboardingDone(),

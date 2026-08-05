@@ -58,6 +58,12 @@ export interface DashboardBaselineKeywordRow {
   rank: string;
 }
 
+export interface DashboardCustomerCard {
+  id: string;
+  label: string;
+  initials: string;
+}
+
 interface DashboardMarketBaselineSource {
   label: string;
   status: string;
@@ -374,6 +380,27 @@ export function buildBusinessInfo(
 
 export function buildCompetitors(profile: ProtopipeOnboardingProfile | null | undefined): string[] {
   return (profile?.competitors ?? []).map((value) => value.trim()).filter(Boolean);
+}
+
+export function buildCustomerCards(
+  profile: ProtopipeOnboardingProfile | null | undefined,
+): DashboardCustomerCard[] {
+  return (profile?.customerAvatars ?? [])
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .slice(0, 6)
+    .map((label, index) => ({
+      id: `customer-${index}`,
+      label,
+      initials: initialsFromLabel(label),
+    }));
+}
+
+function initialsFromLabel(label: string): string {
+  const words = label.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return '?';
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase();
 }
 
 export function buildKeywordBaselineRows(

@@ -140,7 +140,8 @@ export const routes: Routes = [
   {
     path: 'signup',
     canActivate: [guestGuard],
-    loadComponent: () => import('./features/signup/signup.component').then((m) => m.SignupComponent),
+    loadComponent: () =>
+      import('./features/signup/signup.component').then((m) => m.SignupComponent),
   },
   {
     path: 'signup/success',
@@ -246,6 +247,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'home/keywords',
+    canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],
+    loadComponent: () =>
+      import('./features/protopipe/home/protopipe-user-home.component').then(
+        (m) => m.ProtopipeUserHomeComponent,
+      ),
+  },
+  {
     // User-facing home — redirects to dashboard or onboarding.
     path: 'home',
     canActivate: [authGuard, operatorOnlyGuard, homeEntryGuard],
@@ -287,16 +296,16 @@ export const routes: Routes = [
       {
         path: 'protopipe/keywords/discover',
         loadComponent: () =>
-          import(
-            './features/protopipe/discovery/protopipe-discovery-hub.component'
-          ).then((m) => m.ProtopipeDiscoveryHubComponent),
+          import('./features/protopipe/discovery/protopipe-discovery-hub.component').then(
+            (m) => m.ProtopipeDiscoveryHubComponent,
+          ),
       },
       {
         path: 'protopipe/keywords/discover/diy',
         loadComponent: () =>
-          import(
-            './features/protopipe/discovery/protopipe-discovery-diy.component'
-          ).then((m) => m.ProtopipeDiscoveryDiyComponent),
+          import('./features/protopipe/discovery/protopipe-discovery-diy.component').then(
+            (m) => m.ProtopipeDiscoveryDiyComponent,
+          ),
       },
       {
         path: 'protopipe/keywords/competitors',
@@ -315,16 +324,16 @@ export const routes: Routes = [
       {
         path: 'protopipe/content/calendar',
         loadComponent: () =>
-          import(
-            './features/protopipe/content/protopipe-content-pipeline-calendar.component'
-          ).then((m) => m.ProtopipeContentPipelineCalendarComponent),
+          import('./features/protopipe/content/protopipe-content-pipeline-calendar.component').then(
+            (m) => m.ProtopipeContentPipelineCalendarComponent,
+          ),
       },
       {
         path: 'protopipe/content/plan',
         loadComponent: () =>
-          import(
-            './features/protopipe/content-plan/protopipe-content-plan.component'
-          ).then((m) => m.ProtopipeContentPlanComponent),
+          import('./features/protopipe/content-plan/protopipe-content-plan.component').then(
+            (m) => m.ProtopipeContentPlanComponent,
+          ),
       },
       {
         path: 'protopipe/content/packs',

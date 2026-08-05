@@ -1,4 +1,9 @@
-<div class="void void--shell" [class.void--writer-focus]="isWriterFocus()" data-bg="white" (click)="closeUserMenu()">
+<div
+  class="void void--shell"
+  [class.void--writer-focus]="isWriterFocus()"
+  data-bg="white"
+  (click)="closeUserMenu()"
+>
   <div class="void__backdrop" aria-hidden="true"></div>
   <div class="void__veil" aria-hidden="true"></div>
 
@@ -78,7 +83,10 @@
                   [pTooltip]="bb.publishProgressTooltip()"
                   tooltipPosition="bottom"
                 >
-                  <p-progressSpinner strokeWidth="4" [style]="{ width: '0.7rem', height: '0.7rem' }" />
+                  <p-progressSpinner
+                    strokeWidth="4"
+                    [style]="{ width: '0.7rem', height: '0.7rem' }"
+                  />
                   Publishing…
                 </span>
               } @else if (bb.publishStatus() === 'failed') {
@@ -99,7 +107,10 @@
                   <div class="void-topnav__popover">
                     <p class="void-topnav__popover-title">Publish failed</p>
                     <p class="void-topnav__popover-body">
-                      {{ bb.strategy.site()?.provisioningError || 'Deploy failed. Retry publish when ready.' }}
+                      {{
+                        bb.strategy.site()?.provisioningError ||
+                          'Deploy failed. Retry publish when ready.'
+                      }}
                     </p>
                   </div>
                 </p-popover>
@@ -127,13 +138,17 @@
             }
             <p-button
               [label]="bb.buildBook.saving() ? 'Saving…' : bb.buildBook.dirty() ? 'Save' : 'Saved'"
-              [disabled]="!bb.buildBook.dirty() || bb.buildBook.saving() || !bb.buildBook.hasDraft()"
+              [disabled]="
+                !bb.buildBook.dirty() || bb.buildBook.saving() || !bb.buildBook.hasDraft()
+              "
               size="small"
               (onClick)="bb.save()"
             />
             <span
               class="void-topnav__publish-wrap"
-              [pTooltip]="!bb.canPublish() && !bb.publishInProgress() ? bb.publishBlockers() : undefined"
+              [pTooltip]="
+                !bb.canPublish() && !bb.publishInProgress() ? bb.publishBlockers() : undefined
+              "
               tooltipPosition="bottom"
             >
               <p-button
@@ -185,10 +200,20 @@
         @if (userMenuOpen()) {
           <div class="void-topnav__user-dropdown" role="menu" (click)="$event.stopPropagation()">
             <span class="void-topnav__user-dropdown-name">{{ userName() }}</span>
-            <button type="button" class="void-topnav__user-dropdown-action" role="menuitem" (click)="openBillingView()">
+            <button
+              type="button"
+              class="void-topnav__user-dropdown-action"
+              role="menuitem"
+              (click)="openBillingView()"
+            >
               Billing
             </button>
-            <button type="button" class="void-topnav__user-dropdown-action" role="menuitem" (click)="logout()">
+            <button
+              type="button"
+              class="void-topnav__user-dropdown-action"
+              role="menuitem"
+              (click)="logout()"
+            >
               Log out
             </button>
           </div>
@@ -210,7 +235,9 @@
       } @else {
         <span class="void-mobile-topbar__name">{{ product.displayName }}</span>
       }
-      <span class="void-mobile-topbar__site">{{ siteHostname() || siteDisplayName() || 'Workspace' }}</span>
+      <span class="void-mobile-topbar__site">{{
+        siteHostname() || siteDisplayName() || 'Workspace'
+      }}</span>
     </div>
 
     <div class="void-mobile-topbar__actions">
@@ -242,10 +269,20 @@
         @if (userMenuOpen()) {
           <div class="void-topnav__user-dropdown" role="menu" (click)="$event.stopPropagation()">
             <span class="void-topnav__user-dropdown-name">{{ userName() }}</span>
-            <button type="button" class="void-topnav__user-dropdown-action" role="menuitem" (click)="openBillingView()">
+            <button
+              type="button"
+              class="void-topnav__user-dropdown-action"
+              role="menuitem"
+              (click)="openBillingView()"
+            >
               Billing
             </button>
-            <button type="button" class="void-topnav__user-dropdown-action" role="menuitem" (click)="logout()">
+            <button
+              type="button"
+              class="void-topnav__user-dropdown-action"
+              role="menuitem"
+              (click)="logout()"
+            >
               Log out
             </button>
           </div>
@@ -321,7 +358,10 @@
                           <span class="void-rail__sub-mark" aria-hidden="true"></span>
                           <span class="void-rail__label">{{ child.label }}</span>
                           @if (child.locked) {
-                            <span class="void-rail__lock" [attr.aria-label]="child.lockedLabel ?? 'Upgrade required'">
+                            <span
+                              class="void-rail__lock"
+                              [attr.aria-label]="child.lockedLabel ?? 'Upgrade required'"
+                            >
                               {{ child.lockedLabel ?? 'Locked' }}
                             </span>
                           } @else if (child.disabled) {
@@ -348,7 +388,10 @@
                   @if (!navCollapsed()) {
                     <span class="void-rail__label">{{ item.label }}</span>
                     @if (item.locked) {
-                      <span class="void-rail__lock" [attr.aria-label]="item.lockedLabel ?? 'Upgrade required'">
+                      <span
+                        class="void-rail__lock"
+                        [attr.aria-label]="item.lockedLabel ?? 'Upgrade required'"
+                      >
                         {{ item.lockedLabel ?? 'Locked' }}
                       </span>
                     }
@@ -396,7 +439,11 @@
               @if (accessNotice(); as notice) {
                 <section class="home-access-notice" aria-live="polite">
                   <span>{{ notice }}</span>
-                  <button type="button" class="home-access-notice__close" (click)="accessNotice.set(null)">
+                  <button
+                    type="button"
+                    class="home-access-notice__close"
+                    (click)="accessNotice.set(null)"
+                  >
                     Dismiss
                   </button>
                 </section>
@@ -404,12 +451,18 @@
 
               @switch (activeView()) {
                 @case ('dashboard') {
-                  <section class="glass glass--full glass--premiere home-dashboard" aria-label="Home dashboard">
+                  <section
+                    class="glass glass--full glass--premiere home-dashboard"
+                    aria-label="Home dashboard"
+                  >
                     <app-protopipe-home-dashboard (open)="onDashboardOpen($event)" />
                   </section>
                 }
-                @case ('keywords') {
-                  <section class="glass glass--full glass--premiere home-keywords" aria-label="Discovery book">
+                @case ('discovery') {
+                  <section
+                    class="glass glass--full glass--premiere home-keywords"
+                    aria-label="Discovery book"
+                  >
                     <app-protopipe-home-keyword-book
                       [siteLabel]="siteHostname() || siteDisplayName()"
                       (confirmed)="onKeywordsConfirmed()"
@@ -417,8 +470,19 @@
                     />
                   </section>
                 }
+                @case ('keywords') {
+                  <section
+                    class="glass glass--full glass--premiere home-keywords"
+                    aria-label="Keyword selection"
+                  >
+                    <app-protopipe-home-keywords (confirmed)="onKeywordsConfirmed()" />
+                  </section>
+                }
                 @case ('mentions-book') {
-                  <section class="glass glass--full glass--premiere home-mentions" aria-label="AI Mentions book">
+                  <section
+                    class="glass glass--full glass--premiere home-mentions"
+                    aria-label="AI Mentions book"
+                  >
                     <app-protopipe-home-mentions-book
                       [siteLabel]="siteHostname() || siteDisplayName()"
                       (openSharpen)="openSharpenFromMentions()"
@@ -440,12 +504,18 @@
                   </section>
                 }
                 @case ('writer') {
-                  <section class="glass glass--full glass--premiere glass--writer" aria-label="Writing book">
+                  <section
+                    class="glass glass--full glass--premiere glass--writer"
+                    aria-label="Writing book"
+                  >
                     <app-protopipe-home-writer />
                   </section>
                 }
                 @case ('packs') {
-                  <section class="glass glass--full glass--premiere glass--packs home-packs" aria-label="Thought packs">
+                  <section
+                    class="glass glass--full glass--premiere glass--packs home-packs"
+                    aria-label="Thought packs"
+                  >
                     @if (packDetailId(); as detailId) {
                       <app-thought-pack-detail
                         [catalog]="thoughtPacksCatalog()"
@@ -475,7 +545,10 @@
                       <app-protopipe-home-runbooks [siteId]="activeSiteId" />
                     </section>
                   } @else {
-                    <section class="glass glass--full glass--premiere home-welcome" aria-label="Runbooks">
+                    <section
+                      class="glass glass--full glass--premiere home-welcome"
+                      aria-label="Runbooks"
+                    >
                       <p class="home-welcome__loading">No site selected.</p>
                     </section>
                   }
@@ -486,18 +559,27 @@
                       <app-protopipe-home-intake-demo [siteId]="activeSiteId" />
                     </section>
                   } @else {
-                    <section class="glass glass--full glass--premiere home-welcome" aria-label="Intake Demo">
+                    <section
+                      class="glass glass--full glass--premiere home-welcome"
+                      aria-label="Intake Demo"
+                    >
                       <p class="home-welcome__loading">No site selected.</p>
                     </section>
                   }
                 }
                 @case ('media-studio') {
-                  <section class="glass glass--full glass--premiere glass--media-studio" aria-label="Media Studio">
+                  <section
+                    class="glass glass--full glass--premiere glass--media-studio"
+                    aria-label="Media Studio"
+                  >
                     <app-protopipe-media-studio />
                   </section>
                 }
                 @case ('pitch-prep') {
-                  <section class="glass glass--full glass--premiere glass--pitch-prep" aria-label="Pitch prep">
+                  <section
+                    class="glass glass--full glass--premiere glass--pitch-prep"
+                    aria-label="Pitch prep"
+                  >
                     @if (pitchPrepProspectId(); as prospectId) {
                       <app-protopipe-pitch-prep-wizard
                         [prospectId]="prospectId"
@@ -515,7 +597,10 @@
                   </section>
                 }
                 @case ('leads') {
-                  <section class="glass glass--full glass--premiere glass--leads" aria-label="Leads">
+                  <section
+                    class="glass glass--full glass--premiere glass--leads"
+                    aria-label="Leads"
+                  >
                     <app-protopipe-leads-list />
                   </section>
                 }
@@ -540,7 +625,10 @@
                   </section>
                 }
                 @case ('billing') {
-                  <section class="glass glass--full glass--premiere home-billing" aria-label="Billing">
+                  <section
+                    class="glass glass--full glass--premiere home-billing"
+                    aria-label="Billing"
+                  >
                     <app-protopipe-billing />
                   </section>
                 }
@@ -560,7 +648,10 @@
                   </section>
                 }
                 @case ('build-book') {
-                  <section class="glass glass--full glass--premiere glass--writer" aria-label="Build book">
+                  <section
+                    class="glass glass--full glass--premiere glass--writer"
+                    aria-label="Build book"
+                  >
                     <app-protopipe-home-build-book
                       [prospectContext]="buildBookProspectContext()"
                       (previewBlogArticleTemplate)="enterBlogArticleTemplatePreview($event)"
@@ -569,7 +660,10 @@
                   </section>
                 }
                 @case ('blog-preview') {
-                  <section class="glass glass--full glass--premiere glass--writer" aria-label="Blog preview">
+                  <section
+                    class="glass glass--full glass--premiere glass--writer"
+                    aria-label="Blog preview"
+                  >
                     @if (blogPreviewContentPostId() || blogPreviewArticleTemplateKey()) {
                       <app-protopipe-home-blog-preview
                         [contentPostId]="blogPreviewContentPostId()"
@@ -605,7 +699,9 @@
                 }
                 @case ('goals') {
                   <section class="glass glass--full glass--premiere" aria-label="Goals">
-                    <app-protopipe-home-goals (goStrategy)="selectNavItem({ id: 'start-strategy', label: 'Your strategy' })" />
+                    <app-protopipe-home-goals
+                      (goStrategy)="selectNavItem({ id: 'start-strategy', label: 'Your strategy' })"
+                    />
                   </section>
                 }
               }
@@ -674,13 +770,23 @@
       (click)="closeMobileMore()"
     ></button>
 
-    <aside id="void-mobile-more" class="void-mobile-more" aria-label="More navigation" (click)="$event.stopPropagation()">
+    <aside
+      id="void-mobile-more"
+      class="void-mobile-more"
+      aria-label="More navigation"
+      (click)="$event.stopPropagation()"
+    >
       <header class="void-mobile-more__head">
         <div>
           <p class="void-mobile-more__kicker">Workspace</p>
           <h2>Jump to</h2>
         </div>
-        <button type="button" class="void-mobile-more__close" aria-label="Close navigation" (click)="closeMobileMore()">
+        <button
+          type="button"
+          class="void-mobile-more__close"
+          aria-label="Close navigation"
+          (click)="closeMobileMore()"
+        >
           ×
         </button>
       </header>
@@ -743,18 +849,137 @@
   }
 
   <svg class="void-icons" aria-hidden="true" focusable="false">
-    <symbol id="void-icon-globe" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="0.9" /><path d="M2.5 8h11M8 2.5c1.8 1.6 2.8 3.6 2.8 5.5S9.8 11.9 8 13.5C6.2 11.9 5.2 9.9 5.2 8S6.2 4.1 8 2.5z" fill="none" stroke="currentColor" stroke-width="0.75" /></symbol>
-    <symbol id="void-icon-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="0.9" /><path d="M10.5 10.5L13 13" fill="none" stroke="currentColor" stroke-width="0.9" /></symbol>
-    <symbol id="void-icon-list" viewBox="0 0 16 16"><path d="M3.5 4.5h9M3.5 8h9M3.5 11.5h6" fill="none" stroke="currentColor" stroke-width="0.9" /></symbol>
-    <symbol id="void-icon-sparkles" viewBox="0 0 16 16"><path d="M8 2.5l.8 2 2 .3-1.5 1.5.4 2L8 7.5 5.3 8.3l.4-2L4.2 4.8l2-.3L8 2.5zM12.5 10l.5 1.2 1.2.2-.9.9.2 1.2-1-1-1 1 .2-1.2-.9-.9 1.2-.2.5-1.2z" fill="none" stroke="currentColor" stroke-width="0.65" /></symbol>
-    <symbol id="void-icon-users" viewBox="0 0 16 16"><circle cx="6" cy="6" r="2.2" fill="none" stroke="currentColor" stroke-width="0.85" /><path d="M2.5 13c0-2 1.6-3.2 3.5-3.2S9.5 11 9.5 13M10.5 4.2a2 2 0 013 1.8M11.5 13c.2-1.4 1.2-2.2 2.5-2.2" fill="none" stroke="currentColor" stroke-width="0.85" /></symbol>
-    <symbol id="void-icon-sitemap" viewBox="0 0 16 16"><path d="M8 3v3M8 10v3M4.5 8h7M5.5 6H4v4h1.5M10.5 6H12v4h-1.5" fill="none" stroke="currentColor" stroke-width="0.85" /></symbol>
-    <symbol id="void-icon-write" viewBox="0 0 16 16"><path d="M4 11.5l7-7 2.5 2.5-7 7H4v-2.5zM10.5 4.5l1 1" fill="none" stroke="currentColor" stroke-width="0.85" /></symbol>
-    <symbol id="void-icon-chart" viewBox="0 0 16 16"><path d="M3 13V6M7 13V3M11 13V8M15 13V5" fill="none" stroke="currentColor" stroke-width="0.9" /></symbol>
-    <symbol id="void-icon-inbox" viewBox="0 0 16 16"><path d="M3 4.5h10v7H3zM3 8.5h3l1 1.5h2l1-1.5h3" fill="none" stroke="currentColor" stroke-width="0.85" /></symbol>
-    <symbol id="void-icon-link" viewBox="0 0 16 16"><path d="M6.2 9.8a2.5 2.5 0 003.6 0l2-2a2.5 2.5 0 00-3.6-3.6L7.6 5.4M9.8 6.2a2.5 2.5 0 00-3.6 0l-2 2a2.5 2.5 0 003.6 3.6l1.2-1.2" fill="none" stroke="currentColor" stroke-width="0.85" /></symbol>
-    <symbol id="void-icon-grid" viewBox="0 0 16 16"><rect x="3" y="3" width="4.5" height="4.5" rx="0.5" fill="none" stroke="currentColor" stroke-width="0.85" /><rect x="8.5" y="3" width="4.5" height="4.5" rx="0.5" fill="none" stroke="currentColor" stroke-width="0.85" /><rect x="3" y="8.5" width="4.5" height="4.5" rx="0.5" fill="none" stroke="currentColor" stroke-width="0.85" /><rect x="8.5" y="8.5" width="4.5" height="4.5" rx="0.5" fill="none" stroke="currentColor" stroke-width="0.85" /></symbol>
-    <symbol id="void-icon-sharpen" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="0.85" /><path d="M8 2v2M8 12v2M2 8h2M12 8h2" fill="none" stroke="currentColor" stroke-width="0.85" /></symbol>
-    <symbol id="void-icon-phone" viewBox="0 0 16 16"><path d="M5.5 3.5l.9 2-1 1.4c.6 1.1 1.6 2.1 2.7 2.7l1.4-1 2 .9-.3 2.5C9.7 12.6 4 11.2 3 6c0-1.2.2-1.9.5-2.5L5.5 3.5z" fill="none" stroke="currentColor" stroke-width="0.85" /></symbol>
+    <symbol id="void-icon-globe" viewBox="0 0 16 16">
+      <circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="0.9" />
+      <path
+        d="M2.5 8h11M8 2.5c1.8 1.6 2.8 3.6 2.8 5.5S9.8 11.9 8 13.5C6.2 11.9 5.2 9.9 5.2 8S6.2 4.1 8 2.5z"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="0.75"
+      />
+    </symbol>
+    <symbol id="void-icon-search" viewBox="0 0 16 16">
+      <circle cx="7" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="0.9" />
+      <path d="M10.5 10.5L13 13" fill="none" stroke="currentColor" stroke-width="0.9" />
+    </symbol>
+    <symbol id="void-icon-list" viewBox="0 0 16 16">
+      <path
+        d="M3.5 4.5h9M3.5 8h9M3.5 11.5h6"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="0.9"
+      />
+    </symbol>
+    <symbol id="void-icon-sparkles" viewBox="0 0 16 16">
+      <path
+        d="M8 2.5l.8 2 2 .3-1.5 1.5.4 2L8 7.5 5.3 8.3l.4-2L4.2 4.8l2-.3L8 2.5zM12.5 10l.5 1.2 1.2.2-.9.9.2 1.2-1-1-1 1 .2-1.2-.9-.9 1.2-.2.5-1.2z"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="0.65"
+      />
+    </symbol>
+    <symbol id="void-icon-users" viewBox="0 0 16 16">
+      <circle cx="6" cy="6" r="2.2" fill="none" stroke="currentColor" stroke-width="0.85" />
+      <path
+        d="M2.5 13c0-2 1.6-3.2 3.5-3.2S9.5 11 9.5 13M10.5 4.2a2 2 0 013 1.8M11.5 13c.2-1.4 1.2-2.2 2.5-2.2"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="0.85"
+      />
+    </symbol>
+    <symbol id="void-icon-sitemap" viewBox="0 0 16 16">
+      <path
+        d="M8 3v3M8 10v3M4.5 8h7M5.5 6H4v4h1.5M10.5 6H12v4h-1.5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="0.85"
+      />
+    </symbol>
+    <symbol id="void-icon-write" viewBox="0 0 16 16">
+      <path
+        d="M4 11.5l7-7 2.5 2.5-7 7H4v-2.5zM10.5 4.5l1 1"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="0.85"
+      />
+    </symbol>
+    <symbol id="void-icon-chart" viewBox="0 0 16 16">
+      <path
+        d="M3 13V6M7 13V3M11 13V8M15 13V5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="0.9"
+      />
+    </symbol>
+    <symbol id="void-icon-inbox" viewBox="0 0 16 16">
+      <path
+        d="M3 4.5h10v7H3zM3 8.5h3l1 1.5h2l1-1.5h3"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="0.85"
+      />
+    </symbol>
+    <symbol id="void-icon-link" viewBox="0 0 16 16">
+      <path
+        d="M6.2 9.8a2.5 2.5 0 003.6 0l2-2a2.5 2.5 0 00-3.6-3.6L7.6 5.4M9.8 6.2a2.5 2.5 0 00-3.6 0l-2 2a2.5 2.5 0 003.6 3.6l1.2-1.2"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="0.85"
+      />
+    </symbol>
+    <symbol id="void-icon-grid" viewBox="0 0 16 16">
+      <rect
+        x="3"
+        y="3"
+        width="4.5"
+        height="4.5"
+        rx="0.5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="0.85"
+      />
+      <rect
+        x="8.5"
+        y="3"
+        width="4.5"
+        height="4.5"
+        rx="0.5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="0.85"
+      />
+      <rect
+        x="3"
+        y="8.5"
+        width="4.5"
+        height="4.5"
+        rx="0.5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="0.85"
+      />
+      <rect
+        x="8.5"
+        y="8.5"
+        width="4.5"
+        height="4.5"
+        rx="0.5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="0.85"
+      />
+    </symbol>
+    <symbol id="void-icon-sharpen" viewBox="0 0 16 16">
+      <circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="0.85" />
+      <path d="M8 2v2M8 12v2M2 8h2M12 8h2" fill="none" stroke="currentColor" stroke-width="0.85" />
+    </symbol>
+    <symbol id="void-icon-phone" viewBox="0 0 16 16">
+      <path
+        d="M5.5 3.5l.9 2-1 1.4c.6 1.1 1.6 2.1 2.7 2.7l1.4-1 2 .9-.3 2.5C9.7 12.6 4 11.2 3 6c0-1.2.2-1.9.5-2.5L5.5 3.5z"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="0.85"
+      />
+    </symbol>
   </svg>
 </div>

@@ -24,7 +24,6 @@ import {
   draftToProgressRequest,
   defaultMarketDraft,
   isPendingSiteHostname,
-  normalizeDomain,
   normalizeUrl,
   syncLegacyMarketFields,
   type DiscoveryBookOnboardingDraft,

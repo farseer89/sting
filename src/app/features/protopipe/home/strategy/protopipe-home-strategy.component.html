@@ -1,26 +1,32 @@
 <section class="strat-shell" aria-label="Your content strategy">
   @if (showLoading()) {
-    <div class="strat__loading" aria-busy="true">
-      <header class="strat__intro">
-        <div class="strat__intro-copy">
-          <span class="strat__eyebrow">Your content strategy</span>
-          <h1 class="strat__title">Building your strategy…</h1>
-          <p class="strat__lede">Researching keywords, mapping topics, and lining up your calendar.</p>
+    <div class="stratdash stratdash--state" aria-busy="true">
+      <header class="stratdash__intro">
+        <div>
+          <h1>Strategy</h1>
+          <p class="stratdash__lede">Building your content plan…</p>
+          <p class="stratdash__deck">Researching keywords, mapping topics, and lining up your calendar.</p>
         </div>
       </header>
-      <div class="strat__shimmer" style="height: 3.5rem"></div>
-      <div class="strat__shimmer" style="height: 12rem"></div>
+      <div class="strat-shell__shimmer"></div>
+      <div class="strat-shell__shimmer strat-shell__shimmer--tall"></div>
     </div>
   } @else if (showEmpty()) {
-    <div class="strat-shell__empty">
-      <header class="strat__intro">
-        <div class="strat__intro-copy">
-          <span class="strat__eyebrow">Your content strategy</span>
-          <h1 class="strat__title">No strategy yet</h1>
-          <p class="strat__lede">Build a content plan from your confirmed keywords — pillars, calendar, and backlog.</p>
+    <div class="stratdash stratdash--state">
+      <header class="stratdash__intro">
+        <div>
+          <h1>Strategy</h1>
+          <p class="stratdash__lede">No strategy yet</p>
+          <p class="stratdash__deck">
+            Build a content plan from your confirmed keywords — pillars, calendar, and backlog.
+          </p>
+        </div>
+        <div class="stratdash__actions">
+          <button type="button" class="stratdash__run" [disabled]="starting()" (click)="buildStrategy()">
+            {{ starting() ? 'Building…' : 'Build strategy' }}
+          </button>
         </div>
       </header>
-      <button type="button" class="strat-shell__retry" (click)="buildStrategy()">Build strategy</button>
     </div>
   } @else if (showResults() && displayPlan(); as plan) {
     @if (showBuildProblem()) {
@@ -29,15 +35,11 @@
         <p class="strat-shell__problem-detail">{{ buildProblemMessage() }}</p>
         <button
           type="button"
-          class="strat-shell__retry"
+          class="stratdash__run"
           [disabled]="starting()"
           (click)="restartBuild()"
         >
-          @if (starting()) {
-            Restarting…
-          } @else {
-            Restart build
-          }
+          {{ starting() ? 'Restarting…' : 'Restart build' }}
         </button>
       </div>
     } @else if (showBuildingBanner()) {
@@ -46,10 +48,29 @@
         {{ buildingStageLabel() }}
       </div>
     }
-    <app-protopipe-home-strategy-binder
-      [plan]="plan"
-      [siteLabel]="siteLabel()"
-      [strategySummary]="strategySummary()"
-    />
+
+    @if (shellView() === 'dashboard') {
+      <app-protopipe-home-strategy-dashboard
+        [plan]="plan"
+        [siteLabel]="siteLabel()"
+        [strategySummary]="strategySummary()"
+        [isRunning]="isRunning()"
+        [canBuild]="true"
+        [buildLabel]="buildActionLabel()"
+        [statusDetail]="showBuildingBanner() ? buildingStageLabel() : null"
+        (openSection)="openSection($event)"
+        (build)="buildStrategy()"
+        (viewRunbook)="viewRunbook()"
+      />
+    } @else {
+      <app-protopipe-home-strategy-binder
+        [plan]="plan"
+        [siteLabel]="siteLabel()"
+        [strategySummary]="strategySummary()"
+        [initialSection]="activeSection()"
+        [showBackToDashboard]="true"
+        (backToDashboard)="backToDashboard()"
+      />
+    }
   }
 </section>

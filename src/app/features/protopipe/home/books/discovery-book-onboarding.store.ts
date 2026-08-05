@@ -859,7 +859,7 @@ export class DiscoveryBookOnboardingStore {
 
   async save(): Promise<string | null> {
     this.flushDraftInputs();
-    
+
     const validation = this.fullValidationError();
     if (validation) {
       this.saveError.set(validation);
@@ -877,6 +877,7 @@ export class DiscoveryBookOnboardingStore {
     this.saveStatus.set(null);
 
     try {
+      const wasOnboardingCompleted = this.onboardingState.onboardingCompleted();
       const body = draftToOnboardingRequest(this.draft());
       const res = await this.api.completeOnboarding(siteId, body);
       this.onboardingState.applyOnboardingCompleted(res.onboardingCompletedAt);
@@ -885,6 +886,10 @@ export class DiscoveryBookOnboardingStore {
 
       if (res.discoveryRunId) {
         this.saveStatus.set('Saved — starting a fresh discovery run…');
+        if (!wasOnboardingCompleted) {
+          void this.keywordStore.followDiscoveryRun(siteId, res.discoveryRunId);
+          return res.discoveryRunId;
+        }
         await this.keywordStore.followDiscoveryRun(siteId, res.discoveryRunId);
         return res.discoveryRunId;
       }
@@ -893,6 +898,10 @@ export class DiscoveryBookOnboardingStore {
       if (!latest.run) {
         this.saveStatus.set('Saved — starting keyword discovery…');
         const started = await this.api.startKeywordDiscoveryRun(siteId);
+        if (!wasOnboardingCompleted) {
+          void this.keywordStore.followDiscoveryRun(siteId, started.run.id);
+          return started.run.id;
+        }
         await this.keywordStore.followDiscoveryRun(siteId, started.run.id);
         return started.run.id;
       }

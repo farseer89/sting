@@ -3,6 +3,11 @@
   <!-- Masthead -->
   <header class="sb-masthead">
     <div class="sb-masthead__left">
+      @if (showBackToDashboard()) {
+        <button type="button" class="sb-btn sb-btn--ghost sb-btn--sm" (click)="backToDashboard.emit()">
+          ← Back to dashboard
+        </button>
+      }
       <span class="sb-masthead__kicker">Content strategy</span>
       <h1 class="sb-masthead__title">{{ siteLabel() || 'Your site' }}</h1>
       <p class="sb-masthead__deck">{{ mastheadDeck() }}</p>

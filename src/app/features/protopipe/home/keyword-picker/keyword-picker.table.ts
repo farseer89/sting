@@ -14,9 +14,10 @@ export type KeywordPlanSortDirection = 'asc' | 'desc';
 
 export const COLUMN_TOOLTIPS: Record<KeywordPlanSortColumn, string> = {
   phrase: 'The search phrase you would target in content and SEO.',
-  market: 'The onboarding market tier used for this keyword signal: local, nationwide, or worldwide.',
+  market:
+    'The market that produced this row. Local, nationwide, and worldwide metrics stay separate when the provider returns different rows.',
   volume:
-    'Average monthly searches from DataForSEO (organic) or Google Ads Keyword Planner. Higher volume means more demand.',
+    'Average monthly searches from DataForSEO organic data or Google Ads Keyword Planner, scoped to the shown market when available.',
   competition:
     'Difficulty on a 0–100 scale. Organic rows use DataForSEO keyword difficulty (KD). Ads rows use Google competition index when available, otherwise LOW≈25, MEDIUM≈50, HIGH≈75. Lower is easier to win.',
   fit:

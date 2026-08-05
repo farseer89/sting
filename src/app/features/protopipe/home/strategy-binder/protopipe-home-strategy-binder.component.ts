@@ -2,8 +2,10 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
+  output,
   signal,
 } from '@angular/core';
 import type {
@@ -43,6 +45,10 @@ export class ProtopipeHomeStrategyBinderComponent {
   readonly plan = input.required<ProtopipeSiteContentPlan>();
   readonly siteLabel = input('');
   readonly strategySummary = input('');
+  readonly initialSection = input<StrategySection>('overview');
+  readonly showBackToDashboard = input(false);
+
+  readonly backToDashboard = output<void>();
 
   readonly activeSection = signal<StrategySection>('overview');
 
@@ -84,6 +90,9 @@ export class ProtopipeHomeStrategyBinderComponent {
 
   constructor() {
     this.content.ensureCatalogLoaded();
+    effect(() => {
+      this.activeSection.set(this.initialSection());
+    });
   }
 
   openCalendarItem(item: ProtopipeContentPlanCalendarItem): void {

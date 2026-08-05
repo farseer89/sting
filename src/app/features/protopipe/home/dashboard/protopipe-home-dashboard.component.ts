@@ -20,6 +20,13 @@ import {
   type DashboardStepTarget,
 } from './protopipe-home-dashboard.view-model';
 
+interface DashboardContentPlanInfo {
+  status: string;
+  title: string;
+  hint: string;
+  items: { label: string; value: string }[];
+}
+
 @Component({
   selector: 'app-protopipe-home-dashboard',
   standalone: true,
@@ -97,6 +104,43 @@ export class ProtopipeHomeDashboardComponent implements OnInit {
       keywordResearchInProgress: this.keywordResearchInProgress(),
     }),
   );
+  readonly contentPlanInfo = computed<DashboardContentPlanInfo>(() => {
+    const plan = this.contentPlan.plan();
+    if (!plan) {
+      return {
+        status: this.keywordPlanConfirmed() ? 'Ready' : 'Waiting on keywords',
+        title: this.keywordPlanConfirmed()
+          ? 'Content plan is ready to generate'
+          : 'Content plan unlocks after keywords',
+        hint: this.keywordPlanConfirmed()
+          ? 'Generate a calendar from your confirmed keyword strategy.'
+          : 'Confirm keywords to turn research into pillars, articles, and a calendar.',
+        items: [
+          { label: 'Source', value: this.keywordPlanConfirmed() ? 'Confirmed keywords' : 'Pending' },
+          { label: 'Output', value: 'Pillars + calendar' },
+        ],
+      };
+    }
+
+    const scheduledCount = plan.calendar.filter((item) => item.proposedPublishAt).length;
+    const backlogCount = plan.backlog?.length ?? 0;
+    const status = plan.status === 'complete' ? 'Ready' : this.formatPlanStatus(plan.status);
+
+    return {
+      status,
+      title: plan.narrative?.headline?.trim() || 'Content plan generated',
+      hint:
+        plan.narrative?.why?.trim() ||
+        (this.contentPlan.isRunning()
+          ? 'Building article topics and a publishing calendar from your keyword plan.'
+          : 'Review the recommended content pillars and calendar in Strategy.'),
+      items: [
+        { label: 'Pillars', value: `${plan.pillars.length}` },
+        { label: 'Calendar', value: `${scheduledCount} scheduled` },
+        { label: 'Backlog', value: `${backlogCount}` },
+      ],
+    };
+  });
 
   ngOnInit(): void {
     void this.keywordStore.load();
@@ -110,5 +154,13 @@ export class ProtopipeHomeDashboardComponent implements OnInit {
   openStep(target: DashboardStepTarget | null): void {
     if (!target) return;
     this.open.emit(target);
+  }
+
+  private formatPlanStatus(status: string): string {
+    return status
+      .split(/[_-]/)
+      .filter(Boolean)
+      .map((part) => part[0].toUpperCase() + part.slice(1))
+      .join(' ');
   }
 }

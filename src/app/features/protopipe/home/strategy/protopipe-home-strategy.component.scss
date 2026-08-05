@@ -18,72 +18,116 @@
   overflow: hidden;
 }
 
-.strat-shell > app-strategy-layout-a,
-.strat-shell > app-strategy-layout-b,
-.strat-shell > app-strategy-layout-c,
-.strat-shell > app-protopipe-home-strategy-binder {
+.strat-shell > app-protopipe-home-strategy-binder,
+.strat-shell > app-protopipe-home-strategy-dashboard {
   display: flex;
   flex: 1 1 0;
   min-height: 0;
   overflow: hidden;
 }
 
-.strat-shell__empty {
-  padding: 0.75rem;
+.stratdash--state {
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0.65rem 0.75rem 1.75rem;
+  box-sizing: border-box;
 }
 
-.strat-shell__error {
-  padding: 0.75rem;
-  font-size: 10px;
-  color: var(--void-ink-secondary);
+.stratdash--state h1 {
+  margin: 0;
+  font-size: clamp(1.05rem, 2.8vw, 1.35rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--void-ink-strong, #111827);
 }
 
-.strat-shell__error-detail {
-  color: #8b2020;
-  font-size: 9px;
+.stratdash--state .stratdash__lede,
+.stratdash--state .stratdash__deck {
+  margin: 0.2rem 0 0;
+  font-size: clamp(0.68rem, 1.8vw, 0.75rem);
+  line-height: 1.4;
+  color: var(--void-ink-muted, rgba(17, 24, 39, 0.52));
+}
+
+.stratdash--state .stratdash__run {
+  border: 1px solid rgba(var(--void-ocean-rgb, 10, 147, 150), 0.2);
+  border-radius: 999px;
+  background: rgba(var(--void-ocean-rgb, 10, 147, 150), 0.06);
+  color: var(--void-ocean, #0a9396);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.42rem 0.7rem;
+}
+
+.strat-shell__shimmer {
+  height: 3.5rem;
+  margin-top: 1rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(90deg, #f3f4f6 0%, #e5e7eb 50%, #f3f4f6 100%);
+  background-size: 200% 100%;
+  animation: strat-shimmer 1.4s ease-in-out infinite;
+
+  &--tall {
+    height: 12rem;
+  }
+}
+
+@keyframes strat-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
 }
 
 .strat-shell__problem {
   flex-shrink: 0;
-  margin: 0.35rem 0.45rem 0;
-  padding: 0.5rem 0.6rem;
-  border: 0.5px solid rgba(139, 32, 32, 0.35);
-  border-radius: 8px;
+  margin: 0.65rem auto 0;
+  width: min(100%, 72rem);
+  padding: 0.75rem 0.9rem;
+  border: 1px solid rgba(139, 32, 32, 0.2);
+  border-radius: 0.75rem;
   background: rgba(139, 32, 32, 0.06);
-  font-size: 9px;
-  color: var(--void-ink-secondary);
+  font-size: 0.72rem;
+  color: var(--void-ink-secondary, rgba(17, 24, 39, 0.68));
+  box-sizing: border-box;
 }
 
 .strat-shell__problem-title {
   margin: 0;
-  font-weight: 600;
+  font-weight: 700;
   color: #8b2020;
 }
 
 .strat-shell__problem-detail {
-  margin: 0.25rem 0 0;
+  margin: 0.25rem 0 0.65rem;
   color: #8b2020;
-  font-size: 9px;
 }
 
 .strat-shell__building {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   flex-shrink: 0;
-  margin: 0.35rem 0.45rem 0;
-  padding: 0.35rem 0.5rem;
-  border: 0.5px solid rgba(10, 147, 150, 0.25);
-  border-radius: 8px;
+  margin: 0.65rem auto 0;
+  width: min(calc(100% - 1.5rem), 72rem);
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(10, 147, 150, 0.2);
+  border-radius: 0.75rem;
   background: rgba(10, 147, 150, 0.06);
-  font-size: 9px;
-  letter-spacing: 0.02em;
+  font-size: 0.68rem;
+  letter-spacing: 0.01em;
   color: #0a9396;
+  box-sizing: border-box;
 }
 
 .strat-shell__building-dot {
-  width: 6px;
-  height: 6px;
+  width: 0.45rem;
+  height: 0.45rem;
   border-radius: 50%;
   background: #0a9396;
   animation: strat-building-pulse 1.2s ease-in-out infinite;
@@ -99,21 +143,9 @@
   }
 }
 
-.strat-shell__retry {
-  margin-top: 0.5rem;
-  border: 0.5px solid var(--void-ocean-line);
-  border-radius: 4px;
-  background: var(--void-ocean);
-  color: #fff;
-  font: inherit;
-  font-size: 9px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 0.35rem 0.65rem;
-  cursor: pointer;
-}
-
-.strat__loading {
-  @include strat-base;
-  padding: 0.35rem 0.45rem;
+@media (max-width: 760px) {
+  .stratdash--state {
+    padding: 0.75rem max(0.85rem, env(safe-area-inset-right)) 1rem
+      max(0.85rem, env(safe-area-inset-left));
+  }
 }

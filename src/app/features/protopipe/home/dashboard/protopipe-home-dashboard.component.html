@@ -169,6 +169,20 @@
           <p>Keyword data will appear after discovery runs.</p>
         </div>
       }
+
+      <button type="button" class="dash-plan-card" (click)="openStep('strategy')">
+        <span class="dash-plan-card__status">{{ contentPlanInfo().status }}</span>
+        <span class="dash-plan-card__title">{{ contentPlanInfo().title }}</span>
+        <span class="dash-plan-card__hint">{{ contentPlanInfo().hint }}</span>
+        <span class="dash-plan-card__stats" aria-label="Content plan summary">
+          @for (item of contentPlanInfo().items; track item.label) {
+            <span>
+              <strong>{{ item.value }}</strong>
+              {{ item.label }}
+            </span>
+          }
+        </span>
+      </button>
     </article>
 
     <aside class="dash__side-stack">

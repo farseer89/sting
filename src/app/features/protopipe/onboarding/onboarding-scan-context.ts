@@ -39,15 +39,6 @@ const DEFAULT_STANDALONE_EXAMPLES: StandaloneStepHelpExamples = {
   7: 'Use your business name for a live company or a project name for a new idea.',
 };
 
-const DEFAULT_DISCOVERY_BOOK_EXAMPLES: DiscoveryBookHelpExamples = {
-  'onboarding:getting-started': DEFAULT_STANDALONE_EXAMPLES[1],
-  'onboarding:offer': DEFAULT_STANDALONE_EXAMPLES[2],
-  'onboarding:customers': DEFAULT_STANDALONE_EXAMPLES[3],
-  'onboarding:competition': DEFAULT_STANDALONE_EXAMPLES[5],
-  'onboarding:market': DEFAULT_STANDALONE_EXAMPLES[6],
-  'onboarding:business-name': DEFAULT_STANDALONE_EXAMPLES[7],
-};
-
 export function hostnameFromWebsiteUrl(rawUrl: string | undefined): string {
   const url = rawUrl?.trim();
   if (!url) return 'yourbusiness.com';
@@ -67,7 +58,10 @@ function tradeName(tradeLabel: string | null | undefined, services: string[]): s
 }
 
 function formatServiceList(services: string[], max = 3): string {
-  const items = services.map((s) => s.trim()).filter(Boolean).slice(0, max);
+  const items = services
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, max);
   if (items.length === 0) return 'your core services';
   if (items.length === 1) return items[0];
   if (items.length === 2) return `${items[0]} and ${items[1]}`;
@@ -80,6 +74,9 @@ function marketExample(
   scope: CustomerMarketScope | null | undefined,
 ): string {
   const label = service.trim() || 'your main service';
+  if (reach === 'local') {
+    return `${label} usually behaves like a local search — customers nearby when they need help.`;
+  }
   if (reach === 'local_and_national') {
     return `${label} might get 10 searches/month locally and 1,000+ nationwide — we track both.`;
   }
@@ -166,9 +163,7 @@ export function buildOnboardingScanUiContext(input: {
   marketReach?: MarketReachMode | null;
 }): OnboardingScanUiContext {
   const services =
-    input.services && input.services.length > 0
-      ? input.services
-      : (input.scan?.siteServices ?? []);
+    input.services && input.services.length > 0 ? input.services : (input.scan?.siteServices ?? []);
   const tradeLabel = input.tradeLabel ?? input.scan?.tradeLabel ?? null;
   const avatars = input.scan?.customerAvatars ?? [];
   const businessNameHint = input.scan?.businessNameHint?.trim() || null;
@@ -194,7 +189,11 @@ export function buildOnboardingScanUiContext(input: {
     avatars[2]?.trim() || DEFAULT_AVATAR_PLACEHOLDERS[2],
   ];
 
-  const tradeSlug = tradeLabel?.trim().toLowerCase().replace(/[^a-z0-9]+/g, '') || 'competitor';
+  const tradeSlug =
+    tradeLabel
+      ?.trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '') || 'competitor';
 
   return {
     businessNameHint,

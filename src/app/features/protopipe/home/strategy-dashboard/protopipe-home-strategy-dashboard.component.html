@@ -1,0 +1,260 @@
+<div class="stratdash" aria-label="Content strategy dashboard">
+  <header class="stratdash__intro">
+    <div>
+      <h1>Strategy</h1>
+      <p class="stratdash__lede">{{ siteLabel() || 'Your site' }} · {{ headline() }}</p>
+      <p class="stratdash__deck">{{ lede() }}</p>
+    </div>
+    <div class="stratdash__actions">
+      <span class="stratdash__status">{{ statusDetail() ?? statusLabel() }}</span>
+      <button type="button" class="stratdash__secondary" (click)="viewRunbook.emit()">
+        View runbook
+      </button>
+      @if (canBuild()) {
+        <button
+          type="button"
+          class="stratdash__run"
+          [disabled]="isRunning()"
+          (click)="build.emit()"
+        >
+          {{ isRunning() ? 'Building…' : buildLabel() }}
+        </button>
+      }
+    </div>
+  </header>
+
+  <section class="stratdash__cards" aria-label="Strategy summary">
+    @for (card of summaryCards(); track card.id) {
+      <article class="strat-card">
+        <span class="strat-card__label">{{ card.label }}</span>
+        <strong>{{ card.value }}</strong>
+        <span>{{ card.hint }}</span>
+      </article>
+    }
+  </section>
+
+  <section class="stratdash__steps" aria-label="Strategy sections">
+    <div class="stratdash__steps-grid">
+      @for (step of stepCards(); track step.id) {
+        <button
+          type="button"
+          class="strat-step"
+          [class.is-complete]="step.status === 'complete'"
+          [class.is-ready]="step.status === 'ready'"
+          (click)="open(step.id)"
+        >
+          <div class="strat-step__top">
+            <span class="strat-step__icon" [attr.data-icon]="step.icon" aria-hidden="true">
+              @switch (step.icon) {
+                @case ('pillars') {
+                  <svg viewBox="0 0 16 16" focusable="false">
+                    <path
+                      d="M3 13V7M6 13V4M9 13V6M12 13V3"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.2"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                }
+                @case ('calendar') {
+                  <svg viewBox="0 0 16 16" focusable="false">
+                    <rect
+                      x="2"
+                      y="3"
+                      width="12"
+                      height="11"
+                      rx="1.5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.1"
+                    />
+                    <path
+                      d="M2 7h12M5 3V1M11 3V1"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.1"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                }
+                @case ('backlog') {
+                  <svg viewBox="0 0 16 16" focusable="false">
+                    <path
+                      d="M3 5h10M3 8h10M3 11h7"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.1"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                }
+                @case ('keywords') {
+                  <svg viewBox="0 0 16 16" focusable="false">
+                    <circle
+                      cx="7"
+                      cy="7"
+                      r="4"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.1"
+                    />
+                    <path
+                      d="M10.5 10.5L13 13"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.1"
+                    />
+                  </svg>
+                }
+              }
+            </span>
+            <span class="strat-step__badge">{{ step.statusLabel }}</span>
+          </div>
+          <span class="strat-step__title">{{ step.title }}</span>
+          <span class="strat-step__metric">{{ step.metric }}</span>
+          <span class="strat-step__hint">{{ step.hint }}</span>
+          <span class="strat-step__arrow" aria-hidden="true">
+            <svg viewBox="0 0 16 16" focusable="false">
+              <path
+                d="M6 3.5l4.5 4.5L6 12.5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </span>
+        </button>
+      }
+    </div>
+  </section>
+
+  <section class="stratdash__workspace" aria-label="Strategy shortcuts">
+    <div class="stratdash__workspace-head">
+      <h2 class="stratdash__section-title">Focus areas</h2>
+      <span>Open a card to jump into that section.</span>
+    </div>
+    <div class="stratdash__workspace-grid">
+      @for (card of workspaceCards(); track card.id) {
+        <button
+          type="button"
+          class="strat-invite"
+          [class.is-empty]="card.empty"
+          (click)="open(card.target)"
+        >
+          <span class="strat-invite__title">{{ card.title }}</span>
+          <span class="strat-invite__metric">{{ card.metric }}</span>
+          <span class="strat-invite__hint">{{ card.hint }}</span>
+          <span class="strat-invite__link">Open</span>
+        </button>
+      }
+    </div>
+  </section>
+
+  <section class="stratdash__main-grid" aria-label="Strategy details">
+    <article class="strat-panel strat-panel--calendar" aria-label="Content calendar">
+      <div class="strat-panel__head">
+        <div>
+          <p class="strat-panel__kicker">Content calendar</p>
+          <h2>Upcoming articles</h2>
+        </div>
+        <button type="button" class="strat-panel__action" (click)="open('calendar')">
+          Open calendar
+        </button>
+      </div>
+
+      @if (calendarRows().length) {
+        <div class="strat-table-wrap">
+          <table class="strat-table">
+            <thead>
+              <tr>
+                <th scope="col">Article</th>
+                <th scope="col">Keyword</th>
+                <th scope="col">Type</th>
+                <th scope="col">Cluster</th>
+                <th scope="col">Publish</th>
+                <th scope="col">Priority</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of calendarRows(); track row.id) {
+                <tr>
+                  <td>
+                    <span>{{ row.title }}</span>
+                  </td>
+                  <td>{{ row.keyword }}</td>
+                  <td>{{ row.type }}</td>
+                  <td>{{ row.cluster }}</td>
+                  <td>{{ row.publishAt }}</td>
+                  <td>{{ row.priority }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="strat-empty">
+          <span class="strat-empty__dot" aria-hidden="true"></span>
+          <p>No scheduled articles yet. Open the calendar to schedule from your backlog.</p>
+        </div>
+      }
+    </article>
+
+    <aside class="stratdash__side-stack">
+      <article class="strat-panel" aria-label="Content pillars">
+        <div class="strat-panel__head">
+          <div>
+            <p class="strat-panel__kicker">Topic clusters</p>
+            <h2>Pillars</h2>
+          </div>
+          <button type="button" class="strat-panel__action" (click)="open('pillars')">
+            View all
+          </button>
+        </div>
+
+        @if (pillarRows().length) {
+          <ul class="strat-list">
+            @for (pillar of pillarRows(); track pillar.id) {
+              <li>
+                <span class="strat-list__marker" aria-hidden="true"></span>
+                <span>
+                  <strong>{{ pillar.name }}</strong>
+                  <small>{{ pillar.keyword }} · {{ pillar.articleCount }} articles</small>
+                </span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="strat-panel__empty">Pillars appear after your content plan is built.</p>
+        }
+      </article>
+
+      <article class="strat-panel" aria-label="Existing rankings">
+        <div class="strat-panel__head">
+          <div>
+            <p class="strat-panel__kicker">Quick wins</p>
+            <h2>Already ranking</h2>
+          </div>
+        </div>
+
+        @if (winRows().length) {
+          <ul class="strat-list">
+            @for (win of winRows(); track win.id) {
+              <li>
+                <span class="strat-list__marker strat-list__marker--win" aria-hidden="true"></span>
+                <span>
+                  <strong>{{ win.phrase }}</strong>
+                  <small>Position {{ win.position }}</small>
+                </span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="strat-panel__empty">No current ranking wins captured in this plan.</p>
+        }
+      </article>
+    </aside>
+  </section>
+</div>

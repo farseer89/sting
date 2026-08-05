@@ -299,10 +299,10 @@ export class ProtopipeUserHomeComponent implements OnInit {
 
   readonly mobilePrimaryTabs = computed<MobileHomeTab[]>(() => {
     const items = this.navItems();
-    const configs: Array<{ id: string; label: string; icon: ProtopipeHomeNavIcon }> = [
+    const configs: { id: string; label: string; icon: ProtopipeHomeNavIcon }[] = [
       { id: 'home-dashboard', label: 'Home', icon: 'grid' },
-      { id: 'start-keywords', label: 'Discover', icon: 'search' },
-      { id: 'start-strategy', label: 'Strategy', icon: 'sitemap' },
+      { id: 'content-discovery', label: 'Discover', icon: 'search' },
+      { id: 'content-strategy', label: 'Strategy', icon: 'sitemap' },
       { id: 'content-writer', label: 'Write', icon: 'write' },
     ];
 
@@ -419,7 +419,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.sharpenInitialTab.set('ai-search');
     this.leaveWriterFocus();
     this.sidePanel.setOpen(false);
-    this.activeNavId.set('start-sharpen');
+    this.activeNavId.set('content-sharpen');
     this.activeView.set('sharpen');
   }
 
@@ -451,9 +451,9 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.activeNavId.set(item.id);
       this.activeView.set('dashboard');
       void this.router.navigate([HOME_DASHBOARD_PATH]);
-    } else if (item.id === 'start-keywords') {
+    } else if (item.id === 'content-discovery' || item.id === 'start-keywords') {
       this.leaveWriterFocus();
-      this.activeNavId.set(item.id);
+      this.activeNavId.set('content-discovery');
       this.activeView.set('discovery');
       void this.router.navigate([
         this.onboarding.onboardingCompleted() ? HOME_DISCOVERY_PATH : HOME_ONBOARDING_PATH,
@@ -467,22 +467,22 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.activeNavId.set(item.id);
       this.activeView.set('rankings');
       void this.router.navigate([HOME_RANKINGS_PATH]);
-    } else if (item.id === 'start-business' || item.id === 'books-business') {
-      this.openBusinessDetailsView(item.id);
-    } else if (item.id === 'start-mentions') {
+    } else if (item.id === 'business-book' || item.id === 'start-business' || item.id === 'books-business') {
+      this.openBusinessDetailsView('business-book');
+    } else if (item.id === 'seo-ai-visibility' || item.id === 'start-mentions') {
       this.leaveWriterFocus();
       this.leaveThinkerFocus();
-      this.activeNavId.set(item.id);
+      this.activeNavId.set('seo-ai-visibility');
       this.activeView.set('mentions-book');
-    } else if (item.id === 'start-strategy') {
+    } else if (item.id === 'content-strategy' || item.id === 'start-strategy') {
       this.leaveWriterFocus();
       this.leaveThinkerFocus();
-      this.activeNavId.set(item.id);
+      this.activeNavId.set('content-strategy');
       this.activeView.set('strategy');
-    } else if (item.id === 'start-sharpen') {
+    } else if (item.id === 'content-sharpen' || item.id === 'start-sharpen') {
       this.leaveWriterFocus();
       this.sidePanel.setOpen(false);
-      this.activeNavId.set(item.id);
+      this.activeNavId.set('content-sharpen');
       this.activeView.set('sharpen');
     } else if (item.id === 'content-writer') {
       this.enterWriterFocus();
@@ -629,7 +629,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
     }
     this.thinkerViewState.clearSession();
     if (wasThinker) {
-      this.restoreFocusReturnContext(runKind);
+      this.restoreFocusReturnContext();
     }
     this.clearFocusHistory(syncHistory);
   }
@@ -688,7 +688,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
       return;
     }
     this.activeView.set('strategy');
-    this.activeNavId.set('start-strategy');
+    this.activeNavId.set('content-strategy');
   }
 
   /** @deprecated Prefer enterBlogPreviewFocus — kept for Build Book internal deep-links. */
@@ -728,7 +728,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
 
   onKeywordsConfirmed(): void {
     this.activeView.set('strategy');
-    this.activeNavId.set('start-strategy');
+    this.activeNavId.set('content-strategy');
   }
 
   onDashboardOpen(
@@ -740,17 +740,17 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.leaveWriterFocus();
       this.leaveThinkerFocus();
       this.activeView.set('strategy');
-      this.activeNavId.set('start-strategy');
+      this.activeNavId.set('content-strategy');
     } else if (target === 'mentions-book') {
       this.leaveWriterFocus();
       this.leaveThinkerFocus();
       this.activeView.set('mentions-book');
-      this.activeNavId.set('start-mentions');
+      this.activeNavId.set('seo-ai-visibility');
     } else if (target === 'business-details') {
       this.leaveWriterFocus();
       this.leaveThinkerFocus();
       this.activeView.set('business-details');
-      this.activeNavId.set('start-business');
+      this.activeNavId.set('business-book');
     } else {
       this.openBuildBookView();
       return;
@@ -758,7 +758,12 @@ export class ProtopipeUserHomeComponent implements OnInit {
   }
 
   onOnboardingFinished(): void {
-    void this.router.navigate([HOME_DASHBOARD_PATH]);
+    this.leaveWriterFocus();
+    this.leaveThinkerFocus();
+    this.sidePanel.setOpen(false);
+    this.activeView.set('dashboard');
+    this.activeNavId.set('home-dashboard');
+    void this.router.navigateByUrl(HOME_DASHBOARD_PATH, { replaceUrl: true });
   }
 
   toggleUserMenu(event: Event): void {
@@ -904,7 +909,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.activeView.set('merch-book');
   }
 
-  openBusinessDetailsView(navId: string = 'start-business'): void {
+  openBusinessDetailsView(navId = 'business-book'): void {
     this.leaveWriterFocus();
     this.sidePanel.setOpen(false);
     this.activeNavId.set(navId);
@@ -949,7 +954,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
     if (kind === 'onboarding' || kind === 'discovery') {
       this.leaveWriterFocus();
       this.activeView.set('discovery');
-      this.activeNavId.set('start-keywords');
+      this.activeNavId.set('content-discovery');
       return;
     }
 
@@ -1019,7 +1024,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
       case 'rankings':
         return 'Rankings';
       case 'mentions-book':
-        return 'AI Mentions';
+        return 'AI Visibility';
       case 'writer':
         return 'Writer';
       default:
@@ -1051,14 +1056,14 @@ export class ProtopipeUserHomeComponent implements OnInit {
     });
   }
 
-  private restoreFocusReturnContext(_runKind?: string): void {
+  private restoreFocusReturnContext(): void {
     const ctx = this.focusReturnContext;
     this.focusReturnContext = null;
 
     // Legacy: content-plan runs opened with no return ctx (old Strategy binder).
     if (!ctx) {
       this.activeView.set('strategy');
-      this.activeNavId.set('start-strategy');
+      this.activeNavId.set('content-strategy');
       this.sidePanel.setOpen(false);
       this.strategyViewState.clearArticle();
       return;

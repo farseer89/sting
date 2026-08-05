@@ -50,6 +50,15 @@
                         We'll scan your site to pre-fill services and find keyword opportunities.
                       }
                     </span>
+                    @if (store.offerScanning()) {
+                      <span
+                        class="kb-start-option__scan-progress"
+                        role="progressbar"
+                        aria-label="Website scan in progress"
+                      >
+                        <span></span>
+                      </span>
+                    }
                   </label>
                 }
               </div>

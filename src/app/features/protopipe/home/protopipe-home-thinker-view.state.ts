@@ -219,7 +219,7 @@ export class ProtopipeHomeThinkerViewState {
     this._runId.set(runId);
     this._workingTitle.set('AI Mentions tracking');
     this.content.setEditingSiteId(siteId);
-    this.setFocusBackLabel('Back to AI Mentions');
+    this.setFocusBackLabel('Back to AI Visibility');
     void this.shireSession.loadRun(siteId, runId);
     this.enterThinkerFocus?.();
   }

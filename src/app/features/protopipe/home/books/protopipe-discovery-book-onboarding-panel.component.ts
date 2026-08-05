@@ -184,8 +184,8 @@ export class ProtopipeDiscoveryBookOnboardingPanelComponent {
 
   async finish(): Promise<void> {
     const runId = await this.store.save();
-    if (runId) {
-      this.onboardingFinished.emit(runId);
+    if (runId || this.store.saveStatus()) {
+      this.onboardingFinished.emit(runId ?? '');
     }
   }
 

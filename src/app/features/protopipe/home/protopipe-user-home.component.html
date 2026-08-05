@@ -489,7 +489,7 @@
                 @case ('mentions-book') {
                   <section
                     class="glass glass--full glass--premiere home-mentions"
-                    aria-label="AI Mentions book"
+                    aria-label="AI Visibility"
                   >
                     <app-protopipe-home-mentions-book
                       [siteLabel]="siteHostname() || siteDisplayName()"
@@ -701,14 +701,14 @@
                   <section class="glass glass--full glass--premiere" aria-label="Business book">
                     <app-protopipe-home-business-details
                       [showSharpen]="canSharpen()"
-                      (goSharpen)="selectNavItem({ id: 'start-sharpen', label: 'Sharpen' })"
+                      (goSharpen)="selectNavItem({ id: 'content-sharpen', label: 'Sharpen' })"
                     />
                   </section>
                 }
                 @case ('goals') {
                   <section class="glass glass--full glass--premiere" aria-label="Goals">
                     <app-protopipe-home-goals
-                      (goStrategy)="selectNavItem({ id: 'start-strategy', label: 'Your strategy' })"
+                      (goStrategy)="selectNavItem({ id: 'content-strategy', label: 'Your strategy' })"
                     />
                   </section>
                 }

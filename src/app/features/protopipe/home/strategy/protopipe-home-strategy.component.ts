@@ -12,13 +12,19 @@ import type { ProtopipeSiteContentPlan } from '@hive/contracts';
 import { ContentPlanStore } from '../../content-plan/content-plan.store';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { ProtopipeHomeStrategyViewState } from './protopipe-home-strategy-view.state';
-import { ProtopipeHomeStrategyBinderComponent } from '../strategy-binder/protopipe-home-strategy-binder.component';
+import {
+  ProtopipeHomeStrategyBinderComponent,
+  type StrategySection,
+} from '../strategy-binder/protopipe-home-strategy-binder.component';
+import { ProtopipeHomeStrategyDashboardComponent } from '../strategy-dashboard/protopipe-home-strategy-dashboard.component';
+
+type StrategyShellView = 'dashboard' | 'detail';
 
 @Component({
   selector: 'app-protopipe-home-strategy',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ProtopipeHomeStrategyBinderComponent],
+  imports: [ProtopipeHomeStrategyBinderComponent, ProtopipeHomeStrategyDashboardComponent],
   templateUrl: './protopipe-home-strategy.component.html',
   styleUrl: './protopipe-home-strategy.component.scss',
 })
@@ -30,6 +36,8 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
 
   readonly siteLabel = signal('');
   readonly strategySummary = signal('');
+  readonly shellView = signal<StrategyShellView>('dashboard');
+  readonly activeSection = signal<StrategySection>('overview');
 
   readonly isRunning = this.store.isRunning;
   readonly starting = this.store.starting;
@@ -95,6 +103,10 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
     return 'Something went wrong while building your strategy.';
   });
 
+  readonly buildActionLabel = computed(() =>
+    this.displayPlan() ? 'Rebuild strategy' : 'Build strategy',
+  );
+
   constructor() {
     effect(() => {
       this.viewState.setPlan(this.displayPlan());
@@ -117,6 +129,20 @@ export class ProtopipeHomeStrategyComponent implements OnInit {
 
   restartBuild(): void {
     void this.store.restartBuild();
+  }
+
+  openSection(section: StrategySection): void {
+    this.activeSection.set(section);
+    this.shellView.set('detail');
+  }
+
+  backToDashboard(): void {
+    this.shellView.set('dashboard');
+    this.activeSection.set('overview');
+  }
+
+  viewRunbook(): void {
+    this.viewState.openStrategyBuildRun();
   }
 
   private async bootstrap(): Promise<void> {

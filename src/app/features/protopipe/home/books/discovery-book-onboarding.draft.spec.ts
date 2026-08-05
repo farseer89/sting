@@ -68,6 +68,38 @@ describe('discovery-book-onboarding.draft', () => {
     expect(body.websiteUrl).toBe('https://mauielectric.com');
   });
 
+  it('builds local-only onboarding requests with only the local market tier', () => {
+    const body = draftToOnboardingRequest({
+      onboardingMode: 'existing_site',
+      websiteUrl: 'mauielectric.com',
+      businessName: 'Maui Electric',
+      services: ['EV charger installation'],
+      customerAvatars: ['Homeowner with an EV'],
+      targetCustomerSites: [],
+      competitors: [],
+      marketReach: 'local',
+      localMarket: {
+        serpLocationCode: 1234,
+        serpLocationName: 'Maui, Hawaii, United States',
+        city: 'Maui',
+        state: 'Hawaii',
+        countryIso: 'US',
+      },
+      nationalMarket: null,
+      marketScope: 'local',
+      serpLocationCode: 1234,
+      serpLocationName: 'Maui, Hawaii, United States',
+      city: 'Maui',
+      state: 'Hawaii',
+      countryIso: 'US',
+    });
+
+    expect(body.profile?.marketReach).toBe('local');
+    expect(body.profile?.marketTiers).toEqual(['local']);
+    expect(body.profile?.localMarket?.serpLocationName).toBe('Maui, Hawaii, United States');
+    expect(body.profile?.nationalMarket).toBeUndefined();
+  });
+
   it('defaults new drafts to nationwide United States', () => {
     const draft = draftFromStrategy(null, null);
     expect(draft.marketReach).toBe('national');

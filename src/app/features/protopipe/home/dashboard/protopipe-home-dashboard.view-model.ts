@@ -195,17 +195,19 @@ export function buildDashboardSteps(input: DashboardStepInput): DashboardStepCar
       metric: keywordMetric(input, keywordStatus),
       hint: keywordHint(keywordStatus),
       status: keywordStatus,
-      statusLabel: stepStatusLabel(keywordStatus),
+      statusLabel:
+        keywordStatus === 'locked' ? 'Finish onboarding' : stepStatusLabel(keywordStatus),
       icon: 'keywords',
       target: keywordStatus === 'locked' ? null : 'keywords',
     },
     {
       id: 'mentions',
-      title: 'AI mentions',
-      metric: mentionsStatus === 'locked' ? 'Locked' : 'Track visibility',
+      title: 'AI Visibility',
+      metric: mentionsStatus === 'locked' ? 'Confirm keywords' : 'Track visibility',
       hint: mentionsStatus === 'locked' ? 'Confirm keywords first' : 'Open mentions book',
       status: mentionsStatus,
-      statusLabel: stepStatusLabel(mentionsStatus),
+      statusLabel:
+        mentionsStatus === 'locked' ? 'Confirm keywords' : stepStatusLabel(mentionsStatus),
       icon: 'mentions',
       target: mentionsStatus === 'locked' ? null : 'mentions-book',
     },
@@ -215,7 +217,7 @@ export function buildDashboardSteps(input: DashboardStepInput): DashboardStepCar
       metric: seoMetric(input, seoStatus),
       hint: seoHint(seoStatus),
       status: seoStatus,
-      statusLabel: stepStatusLabel(seoStatus),
+      statusLabel: seoStatus === 'locked' ? 'Run discovery' : stepStatusLabel(seoStatus),
       icon: 'seo',
       target: seoStatus === 'locked' ? null : 'keywords',
     },
@@ -225,7 +227,10 @@ export function buildDashboardSteps(input: DashboardStepInput): DashboardStepCar
       metric: contentPlanMetric(contentPlanStatus),
       hint: contentPlanHint(contentPlanStatus),
       status: contentPlanStatus,
-      statusLabel: stepStatusLabel(contentPlanStatus),
+      statusLabel:
+        contentPlanStatus === 'locked'
+          ? 'Confirm keywords'
+          : stepStatusLabel(contentPlanStatus),
       icon: 'content',
       target: contentPlanStatus === 'locked' ? null : 'strategy',
     },
@@ -269,7 +274,7 @@ function contentPlanMetric(status: DashboardStepStatus): string {
   if (status === 'complete') return 'Plan ready';
   if (status === 'in_progress') return 'Building…';
   if (status === 'ready') return 'Generate plan';
-  return 'Locked';
+  return 'Confirm keywords';
 }
 
 function contentPlanHint(status: DashboardStepStatus): string {

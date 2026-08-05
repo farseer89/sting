@@ -2,7 +2,7 @@
 export type CustomerMarketScope = 'local' | 'national' | 'worldwide';
 
 /** Primary market reach preset (replaces exclusive local/national/worldwide pick). */
-export type MarketReachMode = 'national' | 'local_and_national' | 'local_and_worldwide';
+export type MarketReachMode = 'local' | 'national' | 'local_and_national' | 'local_and_worldwide';
 
 /** How the user started onboarding — step 1 fork. */
 export type OnboardingModeId = 'existing_site' | 'strategy_only';
@@ -57,6 +57,12 @@ export const DEFAULT_US_COUNTRY: MarketCountryOption = {
 };
 
 export const MARKET_REACH_OPTIONS: readonly MarketReachOption[] = [
+  {
+    id: 'local',
+    label: 'Local only',
+    description: 'Search demand in your town, city, or service area',
+    icon: 'pi pi-map-marker',
+  },
   {
     id: 'national',
     label: 'Nationwide',
@@ -124,7 +130,7 @@ export const MARKET_COUNTRIES: readonly MarketCountryOption[] = [
 ];
 
 export function marketReachNeedsLocal(reach: MarketReachMode): boolean {
-  return reach === 'local_and_national' || reach === 'local_and_worldwide';
+  return reach === 'local' || reach === 'local_and_national' || reach === 'local_and_worldwide';
 }
 
 export function marketReachNeedsCountry(reach: MarketReachMode): boolean {

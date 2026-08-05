@@ -182,6 +182,9 @@
                               <td class="kwpick__plan-kw">{{ kw.phrase }}</td>
                               <td>
                                 <span class="kwpick__pill">{{ marketScopeLabel(kw) }}</span>
+                                @if (marketScopeDetail(kw)) {
+                                  <span class="kwpick__scope-detail">{{ marketScopeDetail(kw) }}</span>
+                                }
                               </td>
                               <td>{{ formatVolume(kw.searchVolume) }}</td>
                               <td>
@@ -398,7 +401,7 @@
                           <td class="kwpick__td-phrase">{{ kw.phrase }}</td>
                           <td>
                             <span class="kwpick__pill">{{ marketScopeLabel(kw) }}</span>
-                            @if (!bookMode() && marketScopeDetail(kw)) {
+                            @if (marketScopeDetail(kw)) {
                               <span class="kwpick__scope-detail">{{ marketScopeDetail(kw) }}</span>
                             }
                           </td>
@@ -414,10 +417,10 @@
                             @if (formatCompetitionCell(kw); as comp) {
                               <div [class]="metricClasses(competitionTier(kw))">
                                 <span class="kwpick__metric-val">{{
-                                  comp.score != null ? comp.score : '—'
+                                  comp.score !== null ? comp.score : '—'
                                 }}</span>
                                 <span class="kwpick__metric-lbl">{{
-                                  comp.score != null ? comp.label + ' · ' + competitionHint(kw) : 'No data'
+                                  comp.score !== null ? comp.label + ' · ' + competitionHint(kw) : 'No data'
                                 }}</span>
                               </div>
                             }
@@ -426,7 +429,7 @@
                             <div [class]="metricClasses(fitTier(kw.relevanceScore))">
                               <span class="kwpick__metric-val">{{ fitLabel(kw.relevanceScore) }}</span>
                               <span class="kwpick__metric-lbl">{{
-                                kw.relevanceScore != null ? kw.relevanceScore + '% match' : 'No data'
+                                kw.relevanceScore !== undefined ? kw.relevanceScore + '% match' : 'No data'
                               }}</span>
                             </div>
                           </td>

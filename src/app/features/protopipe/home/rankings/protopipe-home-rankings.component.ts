@@ -7,6 +7,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import type { KeywordRankingRow } from '@hive/contracts';
 import type { RankingsSortColumn, RankingsSortState } from './protopipe-home-rankings.model';
 import { firstValueFrom } from 'rxjs';
@@ -46,9 +47,21 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
   readonly biggestGaps = computed(() => biggestRankingGaps(this.rows()));
   readonly capturedAt = computed(() => latestCapturedAt(this.rows()));
   readonly hasRows = computed(() => this.rows().length > 0);
+  readonly keywordCount = computed(() => this.strategy.keywords().length);
+  readonly canRunBaseline = computed(
+    () => Boolean(this.strategy.siteId()) && this.keywordCount() > 0 && !this.runSession.isActive(),
+  );
+  readonly emptyMessage = computed(() =>
+    this.keywordCount() === 0
+      ? 'Confirm keywords first. Once keywords are saved, run a baseline to capture rankings.'
+      : 'Run a baseline to capture current positions and competitors above your site.',
+  );
   readonly runStatusLabel = computed(() => {
     const thought = this.runSession.thought();
-    if (!thought) return this.capturedAt() ? `Fresh as of ${this.formatDate(this.capturedAt())}` : 'No baseline yet';
+    if (!thought)
+      return this.capturedAt()
+        ? `Fresh as of ${this.formatDate(this.capturedAt())}`
+        : 'No baseline yet';
     if (thought.status === 'pending' || thought.status === 'running') return 'Baseline running';
     if (thought.status === 'complete') return 'Baseline complete';
     if (thought.status === 'failed') return 'Baseline failed';
@@ -79,6 +92,10 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
       const response = await firstValueFrom(this.api.listRankings$(siteId));
       this.rows.set(response.rankings);
     } catch (err) {
+      if (isRankingsNotReadyError(err)) {
+        this.rows.set([]);
+        return;
+      }
       this.error.set(parseProtopipeApiError(err, 'Could not load rankings.'));
     } finally {
       this.loading.set(false);
@@ -87,7 +104,7 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
 
   async runBaseline(): Promise<void> {
     const siteId = this.strategy.siteId();
-    if (!siteId || this.runSession.isActive()) return;
+    if (!siteId || !this.canRunBaseline()) return;
     this.error.set(null);
     const run = await this.runSession.enqueueRun(siteId, { thinkerKind: 'rankings_baseline' });
     if (!run && this.runSession.loadError()) {
@@ -135,6 +152,18 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
       minute: '2-digit',
     }).format(new Date(value));
   }
+}
+
+function isRankingsNotReadyError(err: unknown): boolean {
+  if (!(err instanceof HttpErrorResponse)) return false;
+  if (err.status !== 404) return false;
+  const message =
+    typeof err.error === 'string'
+      ? err.error
+      : typeof err.error?.message === 'string'
+        ? err.error.message
+        : err.message;
+  return message.includes('/api/sites/') && message.includes('/rankings');
 }
 
 function latestCapturedAt(rows: KeywordRankingRow[]): string | null {

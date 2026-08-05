@@ -11,7 +11,7 @@
       <button
         type="button"
         class="rankdash__run"
-        [disabled]="runSession.isActive()"
+        [disabled]="!canRunBaseline()"
         (click)="runBaseline()"
       >
         {{ runSession.isActive() ? 'Running baseline…' : 'Run baseline' }}
@@ -121,9 +121,7 @@
           </table>
         </div>
       } @else {
-        <div class="rankdash__empty">
-          Run a baseline to capture current positions and competitors above your site.
-        </div>
+        <div class="rankdash__empty">{{ emptyMessage() }}</div>
       }
     </article>
 

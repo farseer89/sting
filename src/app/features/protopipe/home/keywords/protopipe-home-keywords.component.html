@@ -1,3 +1,34 @@
-<section class="home-keyword-selection" aria-label="Keyword selection">
-  <app-protopipe-keyword-picker [siteLabel]="siteLabel()" (confirmed)="confirmed.emit()" />
+<section class="kb-shell home-keyword-selection" aria-label="Keyword selection">
+  <div class="kb-panel">
+    <div class="kb-panel__head">
+      <span class="kb-panel-kicker">{{ panelCopy().kicker }}</span>
+      <h2 class="kb-panel-title">{{ panelCopy().title }}</h2>
+      <p class="kb-panel-deck">{{ panelCopy().deck }}</p>
+    </div>
+
+    @if (activeSection() === 'keywords') {
+      <div class="kb-keywords-layout">
+        <div class="kb-keywords-main">
+          <app-protopipe-keyword-picker
+            [bookMode]="true"
+            [bookSection]="activeSection()"
+            (bookSectionChange)="onBookSectionChange($event)"
+            (confirmed)="confirmed.emit()"
+          />
+        </div>
+        <aside class="kb-keywords-selected" aria-label="Your keywords">
+          <app-protopipe-keyword-search-panel />
+        </aside>
+      </div>
+    } @else {
+      <div class="kb-keywords-main">
+        <app-protopipe-keyword-picker
+          [bookMode]="true"
+          [bookSection]="activeSection()"
+          (bookSectionChange)="onBookSectionChange($event)"
+          (confirmed)="confirmed.emit()"
+        />
+      </div>
+    }
+  </div>
 </section>

@@ -328,14 +328,12 @@ export class ProtopipeUserHomeComponent implements OnInit {
   readonly isThinkerFocus = computed(() => this.activeView() === 'thinker');
   readonly isBuildBookFocus = computed(() => this.activeView() === 'build-book');
   readonly isBlogPreviewFocus = computed(() => this.activeView() === 'blog-preview');
-  readonly isDashboardFocus = computed(() => this.activeView() === 'dashboard');
   /** Temporarily reveal site nav while in immersive Writing book. */
   readonly writerRailPeek = signal(false);
   readonly isRailHidden = computed(() => {
     if (this.isWriterFocus() && this.writerRailPeek()) return false;
     return (
       this.isWriterFocus() ||
-      this.isDashboardFocus() ||
       this.isBuildBookFocus() ||
       this.isThinkerFocus() ||
       this.isBlogPreviewFocus()

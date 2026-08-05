@@ -6,6 +6,7 @@ import {
   MIN_KEYWORD_VOLUME,
   PRESELECT_COUNT,
   SUGGESTED_PANEL_COUNT,
+  keywordPickerKey,
   normalizePhraseKey,
 } from './keyword-picker.types';
 
@@ -129,7 +130,7 @@ export function mergeKeywordOption(
   map: Map<string, KeywordPickerOption>,
   incoming: KeywordPickerOption,
 ): void {
-  const key = normalizePhraseKey(incoming.phrase);
+  const key = incoming.phraseKey || keywordPickerKey(incoming.phrase, incoming.marketTier);
   if (!key) return;
   const existing = map.get(key);
   if (!existing) {
@@ -160,6 +161,8 @@ export function mergeKeywordOption(
     competition: existing.competition ?? incoming.competition,
     competitionIndex: existing.competitionIndex ?? incoming.competitionIndex,
     position: existing.position ?? incoming.position,
+    marketTier: existing.marketTier ?? incoming.marketTier,
+    marketLocationName: existing.marketLocationName ?? incoming.marketLocationName,
     source: sourceRank(existing.source) >= sourceRank(incoming.source) ? existing.source : incoming.source,
   });
 }

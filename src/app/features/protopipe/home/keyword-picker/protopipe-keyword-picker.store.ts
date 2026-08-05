@@ -30,7 +30,7 @@ import {
   scoreKeywordOptions,
 } from './keyword-picker.scoring';
 import type { KeywordPickerOption, KeywordPickerSource } from './keyword-picker.types';
-import { normalizePhraseKey } from './keyword-picker.types';
+import { keywordPickerKey, normalizePhraseKey } from './keyword-picker.types';
 import type { KeywordDiscoveryRunDto as LabKeywordDiscoveryRunDto } from '../../lab/keyword-discovery/keyword-discovery-run.types';
 
 const SEARCH_DEBOUNCE_MS = 350;
@@ -587,6 +587,8 @@ export class ProtopipeKeywordPickerStore {
 
       const confirmedKeywords = [...this._selected().values()].map((o) => ({
         phrase: o.phrase,
+        marketTier: o.marketTier,
+        marketLocationName: optionalString(o.marketLocationName),
         searchVolume: optionalNumber(o.searchVolume),
         difficulty: optionalNumber(o.keywordDifficulty),
         cpc: optionalNumber(o.cpc),
@@ -673,7 +675,7 @@ export class ProtopipeKeywordPickerStore {
   }
 
   toggle(option: KeywordPickerOption): void {
-    const key = normalizePhraseKey(option.phrase);
+    const key = option.phraseKey || keywordPickerKey(option.phrase, option.marketTier);
     if (!key) return;
     this._selected.update((current) => {
       const next = new Map(current);
@@ -708,7 +710,7 @@ export class ProtopipeKeywordPickerStore {
   }
 
   addFromOption(option: KeywordPickerOption): void {
-    const key = normalizePhraseKey(option.phrase);
+    const key = option.phraseKey || keywordPickerKey(option.phrase, option.marketTier);
     if (!key) return;
     this._selected.update((current) => {
       const next = new Map(current);
@@ -769,8 +771,10 @@ export class ProtopipeKeywordPickerStore {
     if (!isRelevantForPicker(phrase, this.relevanceCtx, pickerSource, this.relevanceOptions()))
       return;
     mergeKeywordOption(map, {
-      phraseKey: normalizePhraseKey(phrase),
+      phraseKey: keywordPickerKey(phrase, c.marketTier),
       phrase,
+      marketTier: c.marketTier,
+      marketLocationName: c.marketLocationName,
       searchVolume: c.searchVolume,
       keywordDifficulty: c.difficulty,
       opportunityScore: c.opportunity,

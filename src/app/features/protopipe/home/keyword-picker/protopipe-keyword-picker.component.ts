@@ -19,6 +19,8 @@ import {
   competitionTier,
   fitTier,
   opportunityTier,
+  marketScopeDetail,
+  marketScopeLabel,
   volumeHint,
   volumeTier,
   type KeywordPlanSortColumn,
@@ -64,6 +66,8 @@ export class ProtopipeKeywordPickerComponent implements OnInit {
   readonly formatCompetition = formatCompetitionLabel;
   readonly fitLabel = fitLabel;
   readonly sourceLabel = sourceLabel;
+  readonly marketScopeLabel = marketScopeLabel;
+  readonly marketScopeDetail = marketScopeDetail;
   readonly columnTooltips = COLUMN_TOOLTIPS;
   readonly minKeywordVolume = MIN_KEYWORD_VOLUME;
   readonly volumeTier = volumeTier;
@@ -190,7 +194,7 @@ export class ProtopipeKeywordPickerComponent implements OnInit {
       return;
     }
     this.sortColumn.set(column);
-    this.sortDirection.set(column === 'phrase' ? 'asc' : 'desc');
+    this.sortDirection.set(column === 'phrase' || column === 'market' ? 'asc' : 'desc');
   }
 
   isWizardStepActive(step: KeywordPickerWizardStep): boolean {

@@ -1,5 +1,6 @@
 import type {
   KeywordIntent,
+  MarketTier,
   ProtopipeDiscoveryCandidateSource,
   ProtopipeDiscoveryFunnelStage,
 } from '@hive/contracts';
@@ -15,6 +16,8 @@ export interface KeywordPickerOption {
   competitionIndex?: number;
   position?: number;
   source: KeywordPickerSource;
+  marketTier?: MarketTier;
+  marketLocationName?: string;
   opportunityScore?: number;
   relevanceScore?: number;
   intent?: KeywordIntent;
@@ -33,6 +36,11 @@ export const ASSUMED_DIFFICULTY = 50;
 
 export function normalizePhraseKey(phrase: string): string {
   return phrase.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+export function keywordPickerKey(phrase: string, marketTier?: MarketTier): string {
+  const phraseKey = normalizePhraseKey(phrase);
+  return marketTier ? `${phraseKey}::${marketTier}` : phraseKey;
 }
 
 export function formatKeywordVolume(n: number | undefined): string {

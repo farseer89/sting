@@ -641,6 +641,16 @@
   color: var(--void-ink-secondary);
 }
 
+.kwpick__scope-detail {
+  display: block;
+  margin-top: 0.18rem;
+  max-width: 8rem;
+  color: var(--void-ink-muted);
+  font-size: 8px;
+  line-height: 1.25;
+  white-space: normal;
+}
+
 .kwpick__empty {
   margin: 0.5rem 0;
   font-size: 9px;

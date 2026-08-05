@@ -3,6 +3,7 @@ import { ASSUMED_DIFFICULTY } from './keyword-picker.types';
 
 export type KeywordPlanSortColumn =
   | 'phrase'
+  | 'market'
   | 'volume'
   | 'competition'
   | 'fit'
@@ -13,6 +14,7 @@ export type KeywordPlanSortDirection = 'asc' | 'desc';
 
 export const COLUMN_TOOLTIPS: Record<KeywordPlanSortColumn, string> = {
   phrase: 'The search phrase you would target in content and SEO.',
+  market: 'The onboarding market tier used for this keyword signal: local, nationwide, or worldwide.',
   volume:
     'Average monthly searches from DataForSEO (organic) or Google Ads Keyword Planner. Higher volume means more demand.',
   competition:
@@ -24,6 +26,23 @@ export const COLUMN_TOOLTIPS: Record<KeywordPlanSortColumn, string> = {
   source:
     'Where we found this phrase: current rankings, Search Console traffic, Google Ads ideas, or related research.',
 };
+
+export function marketScopeLabel(option: KeywordPickerOption): string {
+  switch (option.marketTier) {
+    case 'local':
+      return 'Local';
+    case 'national':
+      return 'Nationwide';
+    case 'worldwide':
+      return 'Worldwide';
+    default:
+      return '—';
+  }
+}
+
+export function marketScopeDetail(option: KeywordPickerOption): string {
+  return option.marketLocationName ?? '';
+}
 
 /** Unified 0–100 competition difficulty for sorting and display. */
 export function competitionNumericScore(option: KeywordPickerOption): number | null {
@@ -158,6 +177,19 @@ function sourceRank(source: KeywordPickerOption['source']): number {
   }
 }
 
+function marketRank(option: KeywordPickerOption): number {
+  switch (option.marketTier) {
+    case 'local':
+      return 0;
+    case 'national':
+      return 1;
+    case 'worldwide':
+      return 2;
+    default:
+      return 3;
+  }
+}
+
 export function comparePlanRows(
   a: KeywordPickerOption,
   b: KeywordPickerOption,
@@ -166,6 +198,11 @@ export function comparePlanRows(
   switch (column) {
     case 'phrase':
       return a.phrase.localeCompare(b.phrase);
+    case 'market': {
+      const rank = marketRank(a) - marketRank(b);
+      if (rank !== 0) return rank;
+      return (a.marketLocationName ?? '').localeCompare(b.marketLocationName ?? '');
+    }
     case 'volume':
       return volumeValue(a) - volumeValue(b);
     case 'competition': {

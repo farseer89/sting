@@ -170,6 +170,7 @@
                         <thead>
                           <tr>
                             <th scope="col">Keyword</th>
+                            <th scope="col">Market</th>
                             <th scope="col">Volume</th>
                             <th scope="col">Stage</th>
                             <th scope="col">Source</th>
@@ -179,6 +180,9 @@
                           @for (kw of section.keywords; track kw.phraseKey) {
                             <tr>
                               <td class="kwpick__plan-kw">{{ kw.phrase }}</td>
+                              <td>
+                                <span class="kwpick__pill">{{ marketScopeLabel(kw) }}</span>
+                              </td>
                               <td>{{ formatVolume(kw.searchVolume) }}</td>
                               <td>
                                 @if (funnelLabel(kw.funnelStage); as stage) {
@@ -283,6 +287,21 @@
                             Keyword <span class="kwpick__sort-ind">{{ sortIndicator('phrase') }}</span>
                           </button>
                         </th>
+                        <th scope="col">
+                          <button
+                            type="button"
+                            class="kwpick__th-sort"
+                            [title]="columnTooltips.market"
+                            (click)="toggleSort('market')"
+                          >
+                            @if (bookMode()) {
+                              Mkt
+                            } @else {
+                              Market
+                            }
+                            <span class="kwpick__sort-ind">{{ sortIndicator('market') }}</span>
+                          </button>
+                        </th>
                         <th scope="col" class="kwpick__th-metric">
                           <button
                             type="button"
@@ -377,6 +396,12 @@
                             />
                           </td>
                           <td class="kwpick__td-phrase">{{ kw.phrase }}</td>
+                          <td>
+                            <span class="kwpick__pill">{{ marketScopeLabel(kw) }}</span>
+                            @if (!bookMode() && marketScopeDetail(kw)) {
+                              <span class="kwpick__scope-detail">{{ marketScopeDetail(kw) }}</span>
+                            }
+                          </td>
                           <td class="kwpick__td-metric">
                             <div [class]="metricClasses(volumeTier(kw.searchVolume))">
                               <span class="kwpick__metric-val">{{ formatVolume(kw.searchVolume) }}</span>

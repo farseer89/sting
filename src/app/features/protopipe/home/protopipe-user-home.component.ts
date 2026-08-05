@@ -62,6 +62,7 @@ import { ProtopipeLeadsListComponent } from '../leads/protopipe-leads-list.compo
 import { ProtopipeHomeThinkerBinderComponent } from './thinker/protopipe-home-thinker-binder.component';
 import { ProtopipeHomeAnalyticsBinderComponent } from './analytics-binder/protopipe-home-analytics-binder.component';
 import { ProtopipeHomeDashboardComponent } from './dashboard/protopipe-home-dashboard.component';
+import { ProtopipeHomeRankingsComponent } from './rankings/protopipe-home-rankings.component';
 import { ProtopipeProspectorComponent } from '../prospector/protopipe-prospector.component';
 import { ProtopipeColdCallerComponent } from '../cold-caller/protopipe-cold-caller.component';
 import { ProtopipeBillingComponent } from '../billing/protopipe-billing.component';
@@ -78,6 +79,7 @@ import {
   HOME_DASHBOARD_PATH,
   HOME_DISCOVERY_PATH,
   HOME_KEYWORDS_PATH,
+  HOME_RANKINGS_PATH,
   HOME_ONBOARDING_PATH,
   homeShellRouteKind,
 } from './protopipe-home.routes';
@@ -97,6 +99,7 @@ export type ProtopipeHomeView =
   | 'dashboard'
   | 'discovery'
   | 'keywords'
+  | 'rankings'
   | 'mentions-book'
   | 'strategy'
   | 'sharpen'
@@ -191,6 +194,7 @@ interface MobileHomeTab {
     ProtopipeHomeThinkerBinderComponent,
     ProtopipeHomeAnalyticsBinderComponent,
     ProtopipeHomeDashboardComponent,
+    ProtopipeHomeRankingsComponent,
     ProtopipeHomeKeywordsComponent,
     ProtopipeProspectorComponent,
     ProtopipeColdCallerComponent,
@@ -456,6 +460,13 @@ export class ProtopipeUserHomeComponent implements OnInit {
       ]);
     } else if (item.id === 'seo-keywords') {
       this.openKeywordSelectionView();
+    } else if (item.id === 'seo-rankings') {
+      this.leaveWriterFocus();
+      this.leaveThinkerFocus();
+      this.sidePanel.setOpen(false);
+      this.activeNavId.set(item.id);
+      this.activeView.set('rankings');
+      void this.router.navigate([HOME_RANKINGS_PATH]);
     } else if (item.id === 'start-business' || item.id === 'books-business') {
       this.openBusinessDetailsView(item.id);
     } else if (item.id === 'start-mentions') {
@@ -948,6 +959,15 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.sidePanel.setOpen(false);
       this.activeView.set('keywords');
       this.activeNavId.set('seo-keywords');
+      return;
+    }
+
+    if (kind === 'rankings') {
+      this.leaveWriterFocus();
+      this.leaveThinkerFocus();
+      this.sidePanel.setOpen(false);
+      this.activeView.set('rankings');
+      this.activeNavId.set('seo-rankings');
     }
   }
 
@@ -996,6 +1016,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
         return 'Back to Strategy';
       case 'keywords':
         return 'Keywords';
+      case 'rankings':
+        return 'Rankings';
       case 'mentions-book':
         return 'AI Mentions';
       case 'writer':

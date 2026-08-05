@@ -255,6 +255,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'home/rankings',
+    canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],
+    loadComponent: () =>
+      import('./features/protopipe/home/protopipe-user-home.component').then(
+        (m) => m.ProtopipeUserHomeComponent,
+      ),
+  },
+  {
     // User-facing home — redirects to dashboard or onboarding.
     path: 'home',
     canActivate: [authGuard, operatorOnlyGuard, homeEntryGuard],

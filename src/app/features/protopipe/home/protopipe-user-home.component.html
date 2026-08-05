@@ -478,6 +478,14 @@
                     <app-protopipe-home-keywords (confirmed)="onKeywordsConfirmed()" />
                   </section>
                 }
+                @case ('rankings') {
+                  <section
+                    class="glass glass--full glass--premiere home-rankings"
+                    aria-label="SEO rankings"
+                  >
+                    <app-protopipe-home-rankings />
+                  </section>
+                }
                 @case ('mentions-book') {
                   <section
                     class="glass glass--full glass--premiere home-mentions"

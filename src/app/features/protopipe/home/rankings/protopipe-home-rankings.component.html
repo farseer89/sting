@@ -1,0 +1,184 @@
+<div class="rankdash" aria-label="SEO rankings dashboard">
+  <header class="rankdash__intro">
+    <div>
+      <h1>Rankings</h1>
+      <p class="rankdash__lede">
+        Current keyword positions by local, nationwide, and worldwide market.
+      </p>
+    </div>
+    <div class="rankdash__actions">
+      <span class="rankdash__status">{{ runStatusLabel() }}</span>
+      <button
+        type="button"
+        class="rankdash__run"
+        [disabled]="runSession.isActive()"
+        (click)="runBaseline()"
+      >
+        {{ runSession.isActive() ? 'Running baseline…' : 'Run baseline' }}
+      </button>
+    </div>
+  </header>
+
+  @if (error()) {
+    <p class="rankdash__error">{{ error() }}</p>
+  }
+
+  <section class="rankdash__cards" aria-label="Ranking summary">
+    @for (card of summaryCards(); track card.id) {
+      <article class="rank-card">
+        <span class="rank-card__label">{{ card.label }}</span>
+        <strong>{{ card.value }}</strong>
+        <span>{{ card.hint }}</span>
+      </article>
+    }
+  </section>
+
+  <section class="rankdash__main" aria-label="Ranking details">
+    <article class="rank-panel rank-panel--table">
+      <div class="rank-panel__head">
+        <div>
+          <p class="rank-panel__kicker">Baseline</p>
+          <h2>Current rankings</h2>
+        </div>
+        <button type="button" class="rank-panel__action" (click)="loadRankings()">Refresh</button>
+      </div>
+
+      @if (loading()) {
+        <div class="rankdash__empty">Loading ranking baseline…</div>
+      } @else if (hasRows()) {
+        <div class="rank-table-wrap">
+          <table class="rank-table">
+            <thead>
+              <tr>
+                <th scope="col">
+                  <button type="button" (click)="toggleSort('keyword')">
+                    Keyword {{ sortIndicator('keyword') }}
+                  </button>
+                </th>
+                <th scope="col">
+                  <button type="button" (click)="toggleSort('market')">
+                    Market {{ sortIndicator('market') }}
+                  </button>
+                </th>
+                <th scope="col">
+                  <button type="button" (click)="toggleSort('rank')">
+                    Current rank {{ sortIndicator('rank') }}
+                  </button>
+                </th>
+                <th scope="col">Ranking URL</th>
+                <th scope="col">Volume / KD</th>
+                <th scope="col">
+                  <button type="button" (click)="toggleSort('competitors')">
+                    Competitors {{ sortIndicator('competitors') }}
+                  </button>
+                </th>
+                <th scope="col">
+                  <button type="button" (click)="toggleSort('captured')">
+                    Last captured {{ sortIndicator('captured') }}
+                  </button>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of sortedRows(); track row.keywordId + row.latest.marketTier + row.latest.locationCode) {
+                <tr>
+                  <td>
+                    <span class="rank-table__keyword">{{ row.phrase }}</span>
+                  </td>
+                  <td>
+                    <span class="rank-table__pill">{{ marketScopeLabel(row.latest.marketTier) }}</span>
+                    <span class="rank-table__muted">{{ row.latest.locationName }}</span>
+                  </td>
+                  <td>
+                    <span
+                      class="rank-table__rank"
+                      [class.is-missing]="row.latest.position == null"
+                    >
+                      {{ rankLabel(row.latest.position) }}
+                    </span>
+                  </td>
+                  <td>
+                    @if (row.latest.rankingUrl) {
+                      <a [href]="row.latest.rankingUrl" target="_blank" rel="noopener noreferrer">
+                        Ranking page
+                      </a>
+                    } @else {
+                      <span class="rank-table__muted">No ranking URL</span>
+                    }
+                  </td>
+                  <td>
+                    <span>{{ row.latest.searchVolume ?? '—' }}</span>
+                    <span class="rank-table__muted">KD {{ row.latest.keywordDifficulty ?? '—' }}</span>
+                  </td>
+                  <td>
+                    <span>{{ competitorsLabel(row) }}</span>
+                    <span class="rank-table__muted">{{ topCompetitorDomains(row) }}</span>
+                  </td>
+                  <td>{{ formatDate(row.latest.capturedAt) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="rankdash__empty">
+          Run a baseline to capture current positions and competitors above your site.
+        </div>
+      }
+    </article>
+
+    <aside class="rankdash__side">
+      <article class="rank-panel">
+        <div class="rank-panel__head">
+          <div>
+            <p class="rank-panel__kicker">Gaps</p>
+            <h2>Biggest gaps</h2>
+          </div>
+        </div>
+        @if (biggestGaps().length) {
+          <ul class="rank-list">
+            @for (row of biggestGaps(); track row.keywordId + row.latest.marketTier) {
+              <li>
+                <span>{{ row.phrase }}</span>
+                <strong>{{ marketScopeLabel(row.latest.marketTier) }} · {{ rankLabel(row.latest.position) }}</strong>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="rank-panel__empty">Gaps appear after a baseline run.</p>
+        }
+      </article>
+
+      <article class="rank-panel">
+        <div class="rank-panel__head">
+          <div>
+            <p class="rank-panel__kicker">Competition</p>
+            <h2>Top overlap</h2>
+          </div>
+        </div>
+        @if (topCompetitors().length) {
+          <ul class="rank-list">
+            @for (competitor of topCompetitors(); track competitor.domain) {
+              <li>
+                <span>{{ competitor.domain }}</span>
+                <strong>{{ competitor.count }} keywords</strong>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="rank-panel__empty">Competitor overlap appears after baseline capture.</p>
+        }
+      </article>
+
+      <article class="rank-panel">
+        <div class="rank-panel__head">
+          <div>
+            <p class="rank-panel__kicker">Freshness</p>
+            <h2>Baseline status</h2>
+          </div>
+        </div>
+        <p class="rank-panel__empty">{{ runStatusLabel() }}</p>
+      </article>
+    </aside>
+  </section>
+</div>

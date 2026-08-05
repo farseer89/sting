@@ -175,6 +175,12 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
         capability: 'discovery',
       },
       {
+        id: 'seo-rankings',
+        label: 'Rankings',
+        icon: 'chart',
+        capability: 'discovery',
+      },
+      {
         id: 'seo-competitors',
         label: 'Competitors',
         icon: 'users',

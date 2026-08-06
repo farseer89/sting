@@ -26,8 +26,14 @@ export function marketScopeLabel(tier: KeywordRankingSnapshot['marketTier']): st
   }
 }
 
-export function rankLabel(position: number | null): string {
-  return position == null ? 'Not ranking' : `#${position}`;
+/** Keep in sync with Shire DEFAULT_SERP_ORGANIC_DEPTH. */
+export const RANKINGS_SERP_DEPTH = 100;
+
+export function rankLabel(
+  position: number | null,
+  depth: number = RANKINGS_SERP_DEPTH,
+): string {
+  return position == null ? `>${depth}` : `#${position}`;
 }
 
 export function buildRankingsSummary(
@@ -188,20 +194,6 @@ export function drawerTabsForRow(row: KeywordRankingRow): RankingsDrawerTabOptio
 
 export function defaultDrawerTab(tabs: RankingsDrawerTabOption[]): RankingsDrawerTab {
   return tabs[0]?.id ?? 'organic';
-}
-
-/** Compact SERP feature columns shown in the rankings table. */
-export const RANKINGS_TABLE_SERP_COLUMNS = [
-  { id: 'ai_overview', label: 'AI', title: 'AI overview' },
-  { id: 'local_pack', label: 'Local', title: 'Local pack' },
-  { id: 'people_also_ask', label: 'PAA', title: 'People also ask' },
-  { id: 'featured_snippet', label: 'FS', title: 'Featured snippet' },
-] as const;
-
-export type RankingsTableSerpColumnId = (typeof RANKINGS_TABLE_SERP_COLUMNS)[number]['id'];
-
-export function hasSerpFeature(row: KeywordRankingRow, featureId: RankingsTableSerpColumnId): boolean {
-  return (row.latest.serpFeatures ?? []).includes(featureId);
 }
 
 export function locationShortLabel(locationName: string | undefined | null): string {

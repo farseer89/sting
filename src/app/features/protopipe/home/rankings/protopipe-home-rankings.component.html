@@ -87,11 +87,9 @@
                     Rank {{ sortIndicator('rank') }}
                   </button>
                 </th>
-                @for (featureCol of serpFeatureColumns; track featureCol.id) {
-                  <th scope="col" class="rank-table__feature-head" [attr.title]="featureCol.title">
-                    {{ featureCol.label }}
-                  </th>
-                }
+                <th scope="col" class="rank-table__feature-head" title="SERP features — hover row for details">
+                  Features
+                </th>
                 <th scope="col">Vol</th>
                 <th scope="col">KD</th>
                 <th scope="col">
@@ -132,15 +130,14 @@
                       {{ rankLabel(row.latest.position) }}
                     </span>
                   </td>
-                  @for (featureCol of serpFeatureColumns; track featureCol.id) {
-                    <td class="rank-table__feature-cell">
-                      @if (hasSerpFeature(row, featureCol.id)) {
-                        <span class="rank-table__feature-yes" [attr.title]="featureCol.title">·</span>
-                      } @else {
-                        <span class="rank-table__feature-no" aria-hidden="true">—</span>
-                      }
-                    </td>
-                  }
+                  <td class="rank-table__feature-cell">
+                    <span
+                      class="rank-table__serp-check"
+                      [class.is-checked]="featureChips(row).length > 0"
+                      [attr.title]="serpFeaturesTooltip(row)"
+                      [attr.aria-label]="serpFeaturesTooltip(row)"
+                    ></span>
+                  </td>
                   <td class="rank-table__metric">{{ row.latest.searchVolume ?? '—' }}</td>
                   <td class="rank-table__metric">{{ row.latest.keywordDifficulty ?? '—' }}</td>
                   <td class="rank-table__metric rank-table__metric--count">

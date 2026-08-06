@@ -155,7 +155,7 @@
 
 .rank-table {
   width: 100%;
-  min-width: 64rem;
+  min-width: 56rem;
   border-collapse: collapse;
   font-size: 0.72rem;
 }
@@ -218,26 +218,39 @@
 
 .rank-table__feature-head {
   text-align: center;
-  width: 2.4rem;
+  width: 2.75rem;
 }
 
 .rank-table__feature-cell {
   text-align: center;
   vertical-align: middle;
-  width: 2.4rem;
+  width: 2.75rem;
   padding-inline: 0.35rem;
 }
 
-.rank-table__feature-yes {
-  color: var(--void-ocean, #0a9396);
-  font-size: 1.35rem;
-  font-weight: 900;
-  line-height: 1;
-}
+.rank-table__serp-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.85rem;
+  height: 0.85rem;
+  border: 1.5px solid rgba(17, 24, 39, 0.22);
+  border-radius: 0.15rem;
+  background: #fff;
+  cursor: default;
 
-.rank-table__feature-no {
-  color: rgba(17, 24, 39, 0.22);
-  font-size: 0.62rem;
+  &.is-checked {
+    border-color: rgba(var(--void-ocean-rgb, 10, 147, 150), 0.45);
+    background: rgba(var(--void-ocean-rgb, 10, 147, 150), 0.12);
+    color: var(--void-ocean, #0a9396);
+    font-size: 0.58rem;
+    font-weight: 800;
+    line-height: 1;
+
+    &::after {
+      content: '✓';
+    }
+  }
 }
 
 .rank-table__metric {

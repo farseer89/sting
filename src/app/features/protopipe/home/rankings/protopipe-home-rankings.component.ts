@@ -20,11 +20,9 @@ import {
   buildRankingsSummary,
   defaultDrawerTab,
   drawerTabsForRow,
-  hasSerpFeature,
   locationShortLabel,
   marketScopeLabel,
   rankLabel,
-  RANKINGS_TABLE_SERP_COLUMNS,
   sortRankingRows,
   topCompetitorsByOverlap,
 } from './protopipe-home-rankings.model';
@@ -110,8 +108,6 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
 
   readonly marketScopeLabel = marketScopeLabel;
   readonly rankLabel = rankLabel;
-  readonly serpFeatureColumns = RANKINGS_TABLE_SERP_COLUMNS;
-  readonly hasSerpFeature = hasSerpFeature;
   readonly locationShortLabel = locationShortLabel;
   readonly marketFilters: { id: MarketFilter; label: string }[] = [
     { id: 'all', label: 'All markets' },
@@ -234,6 +230,12 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
       default:
         return feature;
     }
+  }
+
+  serpFeaturesTooltip(row: KeywordRankingRow): string {
+    const features = this.featureChips(row);
+    if (!features.length) return 'No SERP features detected';
+    return features.map((feature) => this.featureLabel(feature)).join(', ');
   }
 
   aiOverviewText(row: KeywordRankingRow): string | null {

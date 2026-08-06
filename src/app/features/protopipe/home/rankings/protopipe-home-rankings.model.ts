@@ -59,9 +59,9 @@ export function buildRankingsSummary(
     { id: 'missing', label: 'Not ranking yet', value: String(notRanking), hint: 'Baseline gaps' },
     {
       id: 'competitors',
-      label: 'Competitors beating us',
+      label: 'Competitors ahead',
       value: String(competitors),
-      hint: 'Unique domains above us',
+      hint: 'Unique domains ranked higher',
     },
   ];
 }
@@ -188,4 +188,24 @@ export function drawerTabsForRow(row: KeywordRankingRow): RankingsDrawerTabOptio
 
 export function defaultDrawerTab(tabs: RankingsDrawerTabOption[]): RankingsDrawerTab {
   return tabs[0]?.id ?? 'organic';
+}
+
+/** Compact SERP feature columns shown in the rankings table. */
+export const RANKINGS_TABLE_SERP_COLUMNS = [
+  { id: 'ai_overview', label: 'AI', title: 'AI overview' },
+  { id: 'local_pack', label: 'Local', title: 'Local pack' },
+  { id: 'people_also_ask', label: 'PAA', title: 'People also ask' },
+  { id: 'featured_snippet', label: 'FS', title: 'Featured snippet' },
+] as const;
+
+export type RankingsTableSerpColumnId = (typeof RANKINGS_TABLE_SERP_COLUMNS)[number]['id'];
+
+export function hasSerpFeature(row: KeywordRankingRow, featureId: RankingsTableSerpColumnId): boolean {
+  return (row.latest.serpFeatures ?? []).includes(featureId);
+}
+
+export function locationShortLabel(locationName: string | undefined | null): string {
+  if (!locationName) return '—';
+  const primary = locationName.split(',')[0]?.trim();
+  return primary || locationName;
 }

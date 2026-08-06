@@ -20,8 +20,11 @@ import {
   buildRankingsSummary,
   defaultDrawerTab,
   drawerTabsForRow,
+  hasSerpFeature,
+  locationShortLabel,
   marketScopeLabel,
   rankLabel,
+  RANKINGS_TABLE_SERP_COLUMNS,
   sortRankingRows,
   topCompetitorsByOverlap,
 } from './protopipe-home-rankings.model';
@@ -107,6 +110,9 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
 
   readonly marketScopeLabel = marketScopeLabel;
   readonly rankLabel = rankLabel;
+  readonly serpFeatureColumns = RANKINGS_TABLE_SERP_COLUMNS;
+  readonly hasSerpFeature = hasSerpFeature;
+  readonly locationShortLabel = locationShortLabel;
   readonly marketFilters: { id: MarketFilter; label: string }[] = [
     { id: 'all', label: 'All markets' },
     { id: 'local', label: 'Local' },
@@ -256,17 +262,16 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
     return sort.direction === 'asc' ? '↑' : '↓';
   }
 
-  competitorsLabel(row: KeywordRankingRow): string {
+  competitorsAheadCount(row: KeywordRankingRow): string {
     const count = row.latest.competitorsAbove.length;
-    if (count === 0) return 'Clear lane';
-    return `${count} above us`;
+    return count === 0 ? '—' : String(count);
   }
 
-  topCompetitorDomains(row: KeywordRankingRow): string {
+  competitorLeaders(row: KeywordRankingRow): string {
     const labels = row.latest.competitorsAbove
       .map((competitor) => competitor.title ?? competitor.domain)
       .slice(0, 3);
-    return labels.length ? labels.join(', ') : 'No competitor above captured';
+    return labels.length ? labels.join(', ') : '—';
   }
 
   formatDate(value: string | null | undefined): string {

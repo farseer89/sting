@@ -155,7 +155,7 @@
 
 .rank-table {
   width: 100%;
-  min-width: 58rem;
+  min-width: 64rem;
   border-collapse: collapse;
   font-size: 0.72rem;
 }
@@ -202,6 +202,63 @@
   font-size: 0.62rem;
   font-weight: 700;
   padding: 0.18rem 0.45rem;
+  white-space: nowrap;
+}
+
+.rank-table__location {
+  display: block;
+  max-width: 9rem;
+  color: var(--void-ink-muted, rgba(17, 24, 39, 0.62));
+  font-size: 0.68rem;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rank-table__feature-head {
+  text-align: center;
+  width: 2.4rem;
+}
+
+.rank-table__feature-cell {
+  text-align: center;
+  vertical-align: middle;
+  width: 2.4rem;
+  padding-inline: 0.35rem;
+}
+
+.rank-table__feature-yes {
+  color: var(--void-ocean, #0a9396);
+  font-size: 1.35rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.rank-table__feature-no {
+  color: rgba(17, 24, 39, 0.22);
+  font-size: 0.62rem;
+}
+
+.rank-table__metric {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.rank-table__metric--count {
+  text-align: center;
+  font-weight: 700;
+}
+
+.rank-table__leaders {
+  display: block;
+  max-width: 11rem;
+  color: var(--void-ink-muted, rgba(17, 24, 39, 0.62));
+  font-size: 0.68rem;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .rank-table__muted {

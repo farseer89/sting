@@ -78,24 +78,31 @@
                 </th>
                 <th scope="col">
                   <button type="button" (click)="toggleSort('market')">
-                    Market {{ sortIndicator('market') }}
+                    Scope {{ sortIndicator('market') }}
                   </button>
                 </th>
+                <th scope="col">Location</th>
                 <th scope="col">
                   <button type="button" (click)="toggleSort('rank')">
-                    Current rank {{ sortIndicator('rank') }}
+                    Rank {{ sortIndicator('rank') }}
                   </button>
                 </th>
-                <th scope="col">SERP features</th>
-                <th scope="col">Volume / KD</th>
+                @for (featureCol of serpFeatureColumns; track featureCol.id) {
+                  <th scope="col" class="rank-table__feature-head" [attr.title]="featureCol.title">
+                    {{ featureCol.label }}
+                  </th>
+                }
+                <th scope="col">Vol</th>
+                <th scope="col">KD</th>
                 <th scope="col">
                   <button type="button" (click)="toggleSort('competitors')">
-                    Competitors {{ sortIndicator('competitors') }}
+                    Ahead {{ sortIndicator('competitors') }}
                   </button>
                 </th>
+                <th scope="col">Leaders</th>
                 <th scope="col">
                   <button type="button" (click)="toggleSort('captured')">
-                    Last captured {{ sortIndicator('captured') }}
+                    Captured {{ sortIndicator('captured') }}
                   </button>
                 </th>
               </tr>
@@ -108,7 +115,14 @@
                   </td>
                   <td>
                     <span class="rank-table__pill">{{ marketScopeLabel(row.latest.marketTier) }}</span>
-                    <span class="rank-table__muted">{{ row.latest.locationName }}</span>
+                  </td>
+                  <td>
+                    <span
+                      class="rank-table__location"
+                      [attr.title]="row.latest.locationName ?? undefined"
+                    >
+                      {{ locationShortLabel(row.latest.locationName) }}
+                    </span>
                   </td>
                   <td>
                     <span
@@ -118,26 +132,24 @@
                       {{ rankLabel(row.latest.position) }}
                     </span>
                   </td>
-                  <td>
-                    @if (featureChips(row).length) {
-                      <span class="rank-table__chips">
-                        @for (feature of featureChips(row); track feature) {
-                          <span class="rank-chip">{{ featureLabel(feature) }}</span>
-                        }
-                      </span>
-                    } @else {
-                      <span class="rank-table__muted">None detected</span>
-                    }
+                  @for (featureCol of serpFeatureColumns; track featureCol.id) {
+                    <td class="rank-table__feature-cell">
+                      @if (hasSerpFeature(row, featureCol.id)) {
+                        <span class="rank-table__feature-yes" [attr.title]="featureCol.title">·</span>
+                      } @else {
+                        <span class="rank-table__feature-no" aria-hidden="true">—</span>
+                      }
+                    </td>
+                  }
+                  <td class="rank-table__metric">{{ row.latest.searchVolume ?? '—' }}</td>
+                  <td class="rank-table__metric">{{ row.latest.keywordDifficulty ?? '—' }}</td>
+                  <td class="rank-table__metric rank-table__metric--count">
+                    {{ competitorsAheadCount(row) }}
                   </td>
                   <td>
-                    <span>{{ row.latest.searchVolume ?? '—' }}</span>
-                    <span class="rank-table__muted">KD {{ row.latest.keywordDifficulty ?? '—' }}</span>
+                    <span class="rank-table__leaders">{{ competitorLeaders(row) }}</span>
                   </td>
-                  <td>
-                    <span>{{ competitorsLabel(row) }}</span>
-                    <span class="rank-table__muted">{{ topCompetitorDomains(row) }}</span>
-                  </td>
-                  <td>{{ formatDate(row.latest.capturedAt) }}</td>
+                  <td class="rank-table__metric">{{ formatDate(row.latest.capturedAt) }}</td>
                 </tr>
               }
             </tbody>
@@ -316,7 +328,7 @@
                   }
                 </ul>
               } @else {
-                <p class="rank-drawer__empty">No competitors above you in this snapshot.</p>
+                <p class="rank-drawer__empty">No competitors ahead in this snapshot.</p>
               }
             }
             @default {

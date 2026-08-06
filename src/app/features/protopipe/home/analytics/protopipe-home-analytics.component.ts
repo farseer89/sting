@@ -27,6 +27,15 @@ import type {
   HomeAnalyticsSnapshot,
 } from './protopipe-home-analytics.model';
 
+type SeriesChartModel = {
+  pvArea: string;
+  pv: string;
+  sess: string;
+  leads: string;
+  dots: { x: number; pvY: number; sessY: number; leadsY: number; label: string }[];
+  labels: { x: number; text: string }[];
+};
+
 @Component({
   selector: 'app-protopipe-home-analytics',
   standalone: true,
@@ -41,7 +50,6 @@ export class ProtopipeHomeAnalyticsComponent implements OnInit, AfterViewChecked
   private readonly sanitizer = inject(DomSanitizer);
 
   @ViewChild('heatmapCanvas') heatmapCanvas?: ElementRef<HTMLCanvasElement>;
-  @ViewChild('seriesSvg') seriesSvg?: ElementRef<SVGSVGElement>;
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -65,8 +73,20 @@ export class ProtopipeHomeAnalyticsComponent implements OnInit, AfterViewChecked
     return url ? this.sanitizer.bypassSecurityTrustResourceUrl(url) : null;
   });
 
+  readonly heatmapPageSafe = computed<SafeResourceUrl | null>(() => {
+    const url = this.activeHeatmap()?.url;
+    return url ? this.sanitizer.bypassSecurityTrustResourceUrl(url) : null;
+  });
+
+  readonly heatmapPageHeight = computed(() => {
+    const heatmap = this.activeHeatmap();
+    if (!heatmap) return 1400;
+    const maxPointY = Math.max(0, ...heatmap.points.map((p) => p.y));
+    const viewport = heatmap.medianViewportHeight ?? 900;
+    return Math.max(1200, Math.round(maxPointY + viewport), Math.round(viewport * 2.2));
+  });
+
   private heatmapPaintKey = '';
-  private seriesPaintKey = '';
 
   readonly sections: { id: AnalyticsSection; label: string }[] = [
     { id: 'pulse', label: 'Web analytics' },
@@ -100,12 +120,53 @@ export class ProtopipeHomeAnalyticsComponent implements OnInit, AfterViewChecked
     return Math.max(1, ...sources.map((s) => s.sessions));
   });
 
+  readonly seriesChart = computed<SeriesChartModel | null>(() => {
+    const series = this.snapshot()?.series ?? [];
+    if (!series.length) return null;
+
+    const w = 640;
+    const h = 180;
+    const padX = 18;
+    const padTop = 16;
+    const padBottom = 28;
+    const maxY = Math.max(1, ...series.map((p) => Math.max(p.pageviews, p.sessions, p.leads)));
+    const x = (i: number) => padX + (i / Math.max(series.length - 1, 1)) * (w - padX * 2);
+    const y = (v: number) => h - padBottom - (v / maxY) * (h - padTop - padBottom);
+
+    const pathFor = (values: number[]) =>
+      values
+        .map((v, i) => `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`)
+        .join(' ');
+
+    const pvValues = series.map((p) => p.pageviews);
+    const lastX = x(series.length - 1);
+    const firstX = x(0);
+    const baseY = h - padBottom;
+
+    return {
+      pvArea: `${pathFor(pvValues)} L ${lastX.toFixed(1)} ${baseY} L ${firstX.toFixed(1)} ${baseY} Z`,
+      pv: pathFor(pvValues),
+      sess: pathFor(series.map((p) => p.sessions)),
+      leads: pathFor(series.map((p) => p.leads)),
+      dots: series.map((p, i) => ({
+        x: x(i),
+        pvY: y(p.pageviews),
+        sessY: y(p.sessions),
+        leadsY: y(p.leads),
+        label: p.date.slice(5),
+      })),
+      labels: series.map((p, i) => ({
+        x: x(i),
+        text: p.date.slice(5),
+      })),
+    };
+  });
+
   ngOnInit(): void {
     void this.reload();
   }
 
   ngAfterViewChecked(): void {
-    if (this.activeSection() === 'pulse') this.paintSeries();
     if (this.activeSection() === 'heatmaps') this.paintHeatmap();
   }
 
@@ -161,10 +222,17 @@ export class ProtopipeHomeAnalyticsComponent implements OnInit, AfterViewChecked
       trafficSources: res.trafficSources ?? [],
       contentRows: res.contentRows,
       funnels: res.funnels,
-      sessions: res.sessions,
+      sessions: res.sessions.map((session) => ({
+        ...session,
+        startedAt: session.startedAt || '',
+        endedAt: session.endedAt,
+      })),
       playlists: res.playlists,
       heatmaps: res.heatmaps.map((heatmap) => ({
         ...heatmap,
+        rangeLabel: heatmap.rangeLabel || res.rangeLabel,
+        dateFrom: heatmap.dateFrom || '',
+        dateTo: heatmap.dateTo || '',
         points: heatmap.points ?? [],
         scrollBuckets: heatmap.scrollBuckets ?? [],
         sections: heatmap.sections ?? [],
@@ -176,13 +244,11 @@ export class ProtopipeHomeAnalyticsComponent implements OnInit, AfterViewChecked
     this.live.set(res.source === 'posthog');
     this.activeFunnelId.set(snap.funnels[0]?.id ?? 'content-to-lead');
     this.activeHeatmapId.set(snap.heatmaps[0]?.id ?? 'home');
-    this.seriesPaintKey = '';
     this.heatmapPaintKey = '';
   }
 
   setSection(section: AnalyticsSection): void {
     this.activeSection.set(section);
-    this.seriesPaintKey = '';
     this.heatmapPaintKey = '';
   }
 
@@ -252,6 +318,30 @@ export class ProtopipeHomeAnalyticsComponent implements OnInit, AfterViewChecked
     return Math.round((count / max) * 100);
   }
 
+  formatDateTime(iso: string | undefined | null): string {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '—';
+    return new Intl.DateTimeFormat(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(d);
+  }
+
+  formatDate(isoDate: string | undefined | null): string {
+    if (!isoDate) return '—';
+    const d = new Date(`${isoDate.slice(0, 10)}T12:00:00Z`);
+    if (Number.isNaN(d.getTime())) return isoDate;
+    return new Intl.DateTimeFormat(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(d);
+  }
+
   trendClass(trend: 'up' | 'down' | 'flat'): string {
     return `analytics-trend analytics-trend--${trend}`;
   }
@@ -268,87 +358,51 @@ export class ProtopipeHomeAnalyticsComponent implements OnInit, AfterViewChecked
     return `analytics-pill analytics-pill--${value}`;
   }
 
-  private paintSeries(): void {
-    const svg = this.seriesSvg?.nativeElement;
-    const series = this.snapshot()?.series ?? [];
-    if (!svg || !series.length) return;
-    const key = series.map((p) => `${p.date}:${p.sessions}:${p.pageviews}:${p.leads}`).join('|');
-    if (key === this.seriesPaintKey) return;
-    this.seriesPaintKey = key;
-
-    const w = 640;
-    const h = 160;
-    const pad = 16;
-    const maxY = Math.max(1, ...series.map((p) => Math.max(p.pageviews, p.sessions, p.leads)));
-    const x = (i: number) => pad + (i / Math.max(series.length - 1, 1)) * (w - pad * 2);
-    const y = (v: number) => h - pad - (v / maxY) * (h - pad * 2);
-
-    const pathFor = (values: number[]) =>
-      values
-        .map((v, i) => `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`)
-        .join(' ');
-
-    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-    svg.innerHTML = `
-      <defs>
-        <linearGradient id="pvFill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="rgba(10,147,150,0.28)"/>
-          <stop offset="100%" stop-color="rgba(10,147,150,0)"/>
-        </linearGradient>
-      </defs>
-      <path d="${pathFor(series.map((p) => p.pageviews))} L ${x(series.length - 1)} ${h - pad} L ${x(0)} ${h - pad} Z" fill="url(#pvFill)"/>
-      <path d="${pathFor(series.map((p) => p.pageviews))}" fill="none" stroke="#0a9396" stroke-width="2.5"/>
-      <path d="${pathFor(series.map((p) => p.sessions))}" fill="none" stroke="#005f73" stroke-width="2" stroke-dasharray="4 3"/>
-      <path d="${pathFor(series.map((p) => p.leads))}" fill="none" stroke="#ee9b00" stroke-width="2.5"/>
-    `;
-  }
-
   private paintHeatmap(): void {
     const canvas = this.heatmapCanvas?.nativeElement;
     const heatmap = this.activeHeatmap();
     if (!canvas || !heatmap) return;
 
-    const key = `${heatmap.id}:${this.heatmapType()}:${heatmap.points.length}:${heatmap.scrollBuckets.length}`;
+    const pageHeight = this.heatmapPageHeight();
+    const key = `${heatmap.id}:${this.heatmapType()}:${heatmap.points.length}:${heatmap.scrollBuckets.length}:${pageHeight}:${canvas.clientWidth}`;
     if (key === this.heatmapPaintKey) return;
     this.heatmapPaintKey = key;
 
     const dpr = window.devicePixelRatio || 1;
     const width = canvas.clientWidth || 720;
-    const height = 420;
+    const height = pageHeight;
     canvas.width = Math.floor(width * dpr);
     canvas.height = Math.floor(height * dpr);
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(0, 0, width, height);
-    ctx.fillStyle = 'rgba(255,255,255,0.04)';
-    for (let i = 0; i < 8; i++) {
-      ctx.fillRect(0, (i / 8) * height, width, 1);
-    }
+    ctx.clearRect(0, 0, width, height);
 
     if (this.heatmapType() === 'scroll') {
       const buckets = heatmap.scrollBuckets;
       buckets.forEach((bucket, i) => {
         const y0 = (i / Math.max(buckets.length, 1)) * height;
         const h = height / Math.max(buckets.length, 1);
-        const alpha = Math.min(0.85, 0.15 + bucket.reachPct / 120);
+        const alpha = Math.min(0.55, 0.08 + bucket.reachPct / 180);
         ctx.fillStyle = `rgba(10, 147, 150, ${alpha})`;
-        ctx.fillRect(0, y0, width, h - 1);
+        ctx.fillRect(0, y0, width, h);
       });
       return;
     }
 
+    if (!heatmap.points.length) return;
+
     const maxCount = Math.max(1, ...heatmap.points.map((p) => p.count));
-    const maxY = Math.max(800, ...heatmap.points.map((p) => p.y), 1);
     for (const point of heatmap.points) {
-      const px = point.x * width;
-      const py = (point.y / maxY) * height;
-      const radius = 10 + (point.count / maxCount) * 28;
+      const px = Math.min(1, Math.max(0, point.x)) * width;
+      const py = Math.min(height - 8, Math.max(8, point.y));
+      const radius = 14 + (point.count / maxCount) * 36;
       const grad = ctx.createRadialGradient(px, py, 0, px, py, radius);
       const hot = point.count / maxCount;
-      grad.addColorStop(0, `rgba(255, ${Math.round(80 + 100 * (1 - hot))}, 20, ${0.55 + hot * 0.35})`);
+      grad.addColorStop(0, `rgba(255, ${Math.round(60 + 80 * (1 - hot))}, 10, ${0.65 + hot * 0.3})`);
+      grad.addColorStop(0.45, `rgba(255, 120, 20, ${0.28 + hot * 0.2})`);
       grad.addColorStop(1, 'rgba(255,80,20,0)');
       ctx.fillStyle = grad;
       ctx.beginPath();

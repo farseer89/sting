@@ -93,8 +93,27 @@
                 <span class="chart-legend__item chart-legend__item--leads">Leads</span>
               </div>
             </div>
-            @if (snap.series.length) {
-              <svg #seriesSvg class="series-chart" role="img" aria-label="Sessions pageviews and leads chart"></svg>
+            @if (seriesChart(); as chart) {
+              <svg class="series-chart" viewBox="0 0 640 180" role="img" aria-label="Sessions pageviews and leads chart">
+                <defs>
+                  <linearGradient id="analyticsPvFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="rgba(10,147,150,0.32)" />
+                    <stop offset="100%" stop-color="rgba(10,147,150,0)" />
+                  </linearGradient>
+                </defs>
+                <path [attr.d]="chart.pvArea" fill="url(#analyticsPvFill)" />
+                <path [attr.d]="chart.pv" fill="none" stroke="#0a9396" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                <path [attr.d]="chart.sess" fill="none" stroke="#005f73" stroke-width="2" stroke-dasharray="4 3" stroke-linecap="round" stroke-linejoin="round" />
+                <path [attr.d]="chart.leads" fill="none" stroke="#ee9b00" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                @for (dot of chart.dots; track dot.label + $index) {
+                  <circle [attr.cx]="dot.x" [attr.cy]="dot.pvY" r="3.8" fill="#0a9396" stroke="#fff" stroke-width="1.2" />
+                  <circle [attr.cx]="dot.x" [attr.cy]="dot.sessY" r="3" fill="#005f73" stroke="#fff" stroke-width="1" />
+                  <circle [attr.cx]="dot.x" [attr.cy]="dot.leadsY" r="3.4" fill="#ee9b00" stroke="#fff" stroke-width="1" />
+                }
+                @for (label of chart.labels; track label.text + $index) {
+                  <text [attr.x]="label.x" y="172" text-anchor="middle" class="series-chart__label">{{ label.text }}</text>
+                }
+              </svg>
             } @else {
               <p class="analytics-panel__body">No trend points in this range yet.</p>
             }
@@ -223,20 +242,27 @@
                 <table class="analytics-table">
                   <thead>
                     <tr>
+                      <th scope="col">When</th>
                       <th scope="col">Entry</th>
                       <th scope="col">Active</th>
                       <th scope="col">Clicks</th>
                       <th scope="col">Value</th>
                       <th scope="col">Signals</th>
                       <th scope="col">Summary</th>
+                      <th scope="col">Replay</th>
                     </tr>
                   </thead>
                   <tbody>
                     @for (session of snap.sessions; track session.id) {
-                      <tr class="analytics-table__row" (click)="openReplay(session)">
+                      <tr>
+                        <td class="analytics-table__metric analytics-table__when">
+                          <span class="analytics-table__name">{{ formatDateTime(session.startedAt) }}</span>
+                          @if (session.endedAt) {
+                            <span class="analytics-table__muted">→ {{ formatDateTime(session.endedAt) }}</span>
+                          }
+                        </td>
                         <td>
                           <span class="analytics-table__name">{{ session.location }}</span>
-                          <span class="analytics-table__muted">Watch replay →</span>
                         </td>
                         <td class="analytics-table__metric">{{ session.duration }}</td>
                         <td class="analytics-table__metric">{{ session.clickCount }}</td>
@@ -252,6 +278,15 @@
                         </td>
                         <td>
                           <span class="analytics-table__message">{{ session.aiSummary }}</span>
+                        </td>
+                        <td class="analytics-table__action">
+                          <button
+                            type="button"
+                            class="analyticsdash__refresh"
+                            (click)="openReplay(session)"
+                          >
+                            Watch replay
+                          </button>
                         </td>
                       </tr>
                     }
@@ -291,6 +326,11 @@
                 <div>
                   <p class="analytics-panel__kicker">{{ heatmap.url }}</p>
                   <h2>{{ heatmap.label }} heatmap</h2>
+                  <p class="analytics-panel__body">
+                    Capture window:
+                    {{ formatDate(heatmap.dateFrom) }} – {{ formatDate(heatmap.dateTo) }}
+                    ({{ heatmap.rangeLabel || snap.rangeLabel }})
+                  </p>
                 </div>
                 <div class="analyticsdash__filters analyticsdash__filters--nested" role="group">
                   <button
@@ -311,23 +351,71 @@
                   </button>
                 </div>
               </div>
-              <canvas #heatmapCanvas class="heatmap-canvas" aria-label="Heatmap visualization"></canvas>
-              <ul class="heatmap-list">
-                @for (section of heatmap.sections; track section.label) {
-                  <li class="heatmap-row">
-                    <div class="heatmap-row__label">
-                      <span>{{ section.label }}</span>
-                      @if (section.hasCta) {
-                        <span class="analytics-pill">{{ section.ctaClicks ?? 0 }}</span>
-                      }
-                    </div>
-                    <div class="heatmap-row__track">
-                      <div class="heatmap-row__fill" [style.width.%]="section.reachPct"></div>
-                    </div>
-                    <span class="heatmap-row__pct">{{ section.reachPct }}%</span>
-                  </li>
-                }
-              </ul>
+              <div class="heatmap-stage">
+                <div class="heatmap-stage__scroll">
+                  <div class="heatmap-stage__sheet" [style.height.px]="heatmapPageHeight()">
+                    @if (heatmapPageSafe(); as pageUrl) {
+                      <iframe
+                        class="heatmap-stage__page"
+                        [src]="pageUrl"
+                        title="Live page preview for heatmap"
+                        loading="lazy"
+                        referrerpolicy="no-referrer"
+                      ></iframe>
+                    }
+                    <canvas
+                      #heatmapCanvas
+                      class="heatmap-stage__overlay"
+                      aria-label="Heatmap visualization"
+                    ></canvas>
+                  </div>
+                </div>
+                <p class="heatmap-stage__hint">
+                  Live page with click / scroll overlay. Scroll to explore below the fold.
+                  @if (activeHeatmap(); as hm) {
+                    @if (!hm.points.length && heatmapType() === 'clicks') {
+                      No click points captured for this URL yet.
+                    }
+                  }
+                </p>
+              </div>
+              <div class="analytics-table-wrap heatmap-table-wrap">
+                <table class="analytics-table analytics-table--compact">
+                  <thead>
+                    <tr>
+                      <th scope="col">Section</th>
+                      <th scope="col">Period</th>
+                      <th scope="col">Reach</th>
+                      <th scope="col">CTA clicks</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (section of heatmap.sections; track section.label) {
+                      <tr>
+                        <td>
+                          <span class="analytics-table__name">{{ section.label }}</span>
+                        </td>
+                        <td class="analytics-table__metric analytics-table__when">
+                          {{ formatDate(heatmap.dateFrom) }} – {{ formatDate(heatmap.dateTo) }}
+                        </td>
+                        <td>
+                          <div class="heatmap-row__track heatmap-row__track--inline">
+                            <div class="heatmap-row__fill" [style.width.%]="section.reachPct"></div>
+                          </div>
+                          <span class="heatmap-row__pct">{{ section.reachPct }}%</span>
+                        </td>
+                        <td class="analytics-table__metric">
+                          @if (section.hasCta) {
+                            {{ section.ctaClicks ?? 0 }}
+                          } @else {
+                            —
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
             </article>
           } @else {
             <div class="analyticsdash__empty">No heatmap points for this site yet.</div>

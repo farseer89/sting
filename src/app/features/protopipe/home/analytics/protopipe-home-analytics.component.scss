@@ -601,22 +601,78 @@
   margin-top: 1rem;
 }
 
-.heatmap-canvas {
+.series-chart__label {
+  fill: rgba(17, 24, 39, 0.45);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.heatmap-stage {
+  margin-top: 0.55rem;
+}
+
+.heatmap-stage__scroll {
+  width: 100%;
+  max-height: min(70vh, 42rem);
+  overflow: auto;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 0.55rem;
+  background: #f8fafc;
+}
+
+.heatmap-stage__sheet {
+  position: relative;
+  width: 100%;
+  min-height: 40rem;
+}
+
+.heatmap-stage__page,
+.heatmap-stage__overlay {
   display: block;
   width: 100%;
-  height: 26rem;
-  margin-top: 0.55rem;
-  border-radius: 0.55rem;
-  background: #0f172a;
+  height: 100%;
 }
 
-.analytics-table__row {
-  cursor: pointer;
-  transition: background 120ms ease;
+.heatmap-stage__page {
+  border: 0;
+  pointer-events: none;
+  background: #fff;
 }
 
-.analytics-table__row:hover {
-  background: rgba(var(--void-ocean-rgb, 10, 147, 150), 0.04);
+.heatmap-stage__overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.heatmap-stage__hint {
+  margin: 0.45rem 0 0;
+  font-size: 0.62rem;
+  color: var(--void-ink-muted, rgba(17, 24, 39, 0.52));
+}
+
+.analytics-table__action {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.analytics-table__when {
+  white-space: nowrap;
+}
+
+.analytics-table--compact {
+  min-width: 36rem;
+}
+
+.heatmap-table-wrap {
+  margin-top: 0.85rem;
+}
+
+.heatmap-row__track--inline {
+  display: inline-block;
+  width: min(8rem, 40%);
+  margin-right: 0.45rem;
+  vertical-align: middle;
 }
 
 .replay-drawer {
@@ -690,10 +746,6 @@
   .heatmap-row {
     grid-template-columns: minmax(0, 1fr);
     gap: 0.35rem;
-  }
-
-  .heatmap-canvas {
-    height: 18rem;
   }
 
   .replay-drawer__panel {

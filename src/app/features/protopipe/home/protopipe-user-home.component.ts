@@ -66,6 +66,7 @@ import { ProtopipeWebsiteHostingComponent } from './your-site/protopipe-website-
 import { isShireHostedSite } from '@hive/contracts';
 import { ProtopipeHomeThinkerBinderComponent } from './thinker/protopipe-home-thinker-binder.component';
 import { ProtopipeHomeAnalyticsBinderComponent } from './analytics-binder/protopipe-home-analytics-binder.component';
+import { ProtopipeHomeAnalyticsComponent } from './analytics/protopipe-home-analytics.component';
 import { ProtopipeHomeDashboardComponent } from './dashboard/protopipe-home-dashboard.component';
 import { ProtopipeHomeRankingsComponent } from './rankings/protopipe-home-rankings.component';
 import { ProtopipeProspectorComponent } from '../prospector/protopipe-prospector.component';
@@ -118,6 +119,7 @@ export type ProtopipeHomeView =
   | 'website-hosting'
   | 'contact-alerts'
   | 'hosted-leads'
+  | 'analytics'
   | 'brand-book'
   | 'audience-book'
   | 'build-book'
@@ -206,6 +208,7 @@ interface MobileHomeTab {
     ProtopipeWebsiteHostingComponent,
     ProtopipeHomeThinkerBinderComponent,
     ProtopipeHomeAnalyticsBinderComponent,
+    ProtopipeHomeAnalyticsComponent,
     ProtopipeHomeDashboardComponent,
     ProtopipeHomeRankingsComponent,
     ProtopipeHomeKeywordsComponent,
@@ -527,6 +530,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
     } else if (item.id === 'analytics-leads') {
       this.showLeadsView();
       void this.router.navigate(['/home/leads']);
+    } else if (item.id === 'analytics-overview') {
+      this.showAnalyticsView();
     } else if (item.id === 'prospector') {
       this.leaveWriterFocus();
       this.sidePanel.setOpen(false);
@@ -1163,6 +1168,14 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.sidePanel.setOpen(false);
     this.activeNavId.set('your-site-leads');
     this.activeView.set('hosted-leads');
+  }
+
+  private showAnalyticsView(): void {
+    this.leaveWriterFocus();
+    this.leaveThinkerFocus();
+    this.sidePanel.setOpen(false);
+    this.activeNavId.set('analytics-overview');
+    this.activeView.set('analytics');
   }
 
   private showContactAlertsView(): void {

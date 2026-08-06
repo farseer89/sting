@@ -1,0 +1,411 @@
+import { PROTOPIPE_LANDING_V2_CLIENT_SITES_SLUG } from '../../protopipe.constants';
+import type { HomeAnalyticsSnapshot } from './protopipe-home-analytics.model';
+
+/** Mock snapshots keyed by PostHog `site_slug` (== clientSitesSlug). */
+export const ANALYTICS_MOCK_BY_SLUG: Record<string, HomeAnalyticsSnapshot> = {
+  [PROTOPIPE_LANDING_V2_CLIENT_SITES_SLUG]: {
+    siteSlug: PROTOPIPE_LANDING_V2_CLIENT_SITES_SLUG,
+    siteLabel: 'Destination Wedding Painter',
+    hostname: 'destinationweddingpainter.com',
+    rangeLabel: 'Last 7 days',
+    filterNote: 'Filtered by PostHog property site_slug = destinationweddingpainter',
+    pulse: [
+      {
+        id: 'sessions',
+        label: 'Organic sessions',
+        value: '1,247',
+        hint: 'Site-wide pageviews',
+        trend: '↑ 18%',
+      },
+      {
+        id: 'leads',
+        label: 'Content leads',
+        value: '14',
+        hint: 'form_submit events',
+        trend: '↑ 27%',
+      },
+      {
+        id: 'cvr',
+        label: 'Content CVR',
+        value: '1.12%',
+        hint: 'Leads ÷ sessions',
+        trend: '↑ 0.31pp',
+      },
+      {
+        id: 'time',
+        label: 'Avg time on page',
+        value: '3:47',
+        hint: 'Engaged sessions',
+        trend: '↑ 22s',
+      },
+    ],
+    contentRows: [
+      {
+        title: 'Home — live wedding painting',
+        slug: 'home',
+        path: '/',
+        sessions: 412,
+        avgTime: '4:12',
+        scrollDepth: 74,
+        ctaClicks: 18,
+        cvr: 4.4,
+        trend: 'up',
+        trendPct: 22,
+      },
+      {
+        title: 'Get in touch',
+        slug: 'get-in-touch',
+        path: '/get-in-touch',
+        sessions: 289,
+        avgTime: '3:47',
+        scrollDepth: 62,
+        ctaClicks: 34,
+        cvr: 8.1,
+        trend: 'up',
+        trendPct: 41,
+      },
+      {
+        title: 'Our story',
+        slug: 'our-story',
+        path: '/our-story',
+        sessions: 244,
+        avgTime: '3:15',
+        scrollDepth: 58,
+        ctaClicks: 9,
+        cvr: 3.7,
+        trend: 'up',
+        trendPct: 8,
+      },
+      {
+        title: 'Gallery',
+        slug: 'gallery',
+        path: '/gallery',
+        sessions: 187,
+        avgTime: '2:58',
+        scrollDepth: 51,
+        ctaClicks: 7,
+        cvr: 2.6,
+        trend: 'flat',
+        trendPct: 0,
+      },
+      {
+        title: 'Live wedding painting in Tuscany',
+        slug: 'live-wedding-painting-tuscany',
+        path: '/blog/live-wedding-painting-tuscany',
+        sessions: 115,
+        avgTime: '2:31',
+        scrollDepth: 41,
+        ctaClicks: 4,
+        cvr: 2.1,
+        trend: 'down',
+        trendPct: 6,
+      },
+    ],
+    funnels: [
+      {
+        id: 'content-to-lead',
+        label: 'Content → Lead',
+        desc: 'Full path from pageview to inquiry form submission.',
+        totalCvr: '1.11%',
+        steps: [
+          {
+            label: 'Pageview',
+            count: 8432,
+            dropPct: 0,
+            api: 'event: $pageview · properties.site_slug = destinationweddingpainter',
+          },
+          {
+            label: 'Scrolled 50%+',
+            count: 5890,
+            dropPct: 30.1,
+            api: 'event: scroll_depth · depth >= 50',
+          },
+          {
+            label: 'Inquiry CTA visible',
+            count: 2247,
+            dropPct: 61.8,
+            api: 'event: $element_click · inquiry section',
+          },
+          {
+            label: 'CTA clicked',
+            count: 712,
+            dropPct: 68.3,
+            api: 'event: cta_click',
+          },
+          {
+            label: 'Form started',
+            count: 389,
+            dropPct: 45.4,
+            api: 'event: form_start · form_id: lead-capture-form',
+          },
+          {
+            label: 'Lead submitted',
+            count: 94,
+            dropPct: 75.8,
+            api: 'event: form_submit · form_id: lead-capture-form',
+          },
+        ],
+      },
+      {
+        id: 'inquiry-page',
+        label: 'Get in touch',
+        desc: 'Direct visits to the inquiry page through form submit.',
+        totalCvr: '12.5%',
+        steps: [
+          {
+            label: 'Get-in-touch pageview',
+            count: 1247,
+            dropPct: 0,
+            api: 'event: $pageview · path = /get-in-touch',
+          },
+          {
+            label: 'Form visible',
+            count: 934,
+            dropPct: 25.1,
+            api: 'event: form_view · form_id: lead-capture-form',
+          },
+          {
+            label: 'Lead submitted',
+            count: 156,
+            dropPct: 83.3,
+            api: 'event: form_submit · form_id: lead-capture-form',
+          },
+        ],
+      },
+      {
+        id: 'gallery-to-inquiry',
+        label: 'Gallery → Inquiry',
+        desc: 'Visitors who browse the gallery then open the inquiry form.',
+        totalCvr: '15.9%',
+        steps: [
+          {
+            label: 'Gallery pageview',
+            count: 1247,
+            dropPct: 0,
+            api: 'event: $pageview · path = /gallery',
+          },
+          {
+            label: 'Viewed 3+ pieces',
+            count: 847,
+            dropPct: 32.1,
+            api: 'event: gallery_item_view · count >= 3',
+          },
+          {
+            label: 'Clicked Book your date',
+            count: 312,
+            dropPct: 63.2,
+            api: 'event: cta_click · label: Book your date',
+          },
+          {
+            label: 'Inquiry started',
+            count: 198,
+            dropPct: 36.5,
+            api: 'event: form_start · form_id: lead-capture-form',
+          },
+        ],
+      },
+    ],
+    sessions: [
+      {
+        id: 'rec_dwp_01',
+        location: 'Lahaina, HI',
+        duration: '8m 14s',
+        pages: 4,
+        aiSummary:
+          'Compared gallery pieces, opened Our Story, then paused on the inquiry form for 43 seconds before submitting. High booking intent for a Maui wedding.',
+        value: 'high',
+        signals: ['form complete', 'multi-page'],
+      },
+      {
+        id: 'rec_dwp_02',
+        location: 'Los Angeles, CA',
+        duration: '3m 22s',
+        pages: 2,
+        aiSummary:
+          'Read home to 90% scroll depth. Hovered “Book your date” for 8 seconds, then exited. Likely comparing destination painters.',
+        value: 'high',
+        signals: ['deep read', 'cta hover'],
+      },
+      {
+        id: 'rec_dwp_03',
+        location: 'Seattle, WA',
+        duration: '14m 02s',
+        pages: 7,
+        aiSummary:
+          'Rage-clicked Send inquiry twice. Validation may have blocked submit after correcting email. High frustration signal.',
+        value: 'medium',
+        signals: ['rage click', 'form error'],
+      },
+      {
+        id: 'rec_dwp_04',
+        location: 'Chicago, IL',
+        duration: '5m 44s',
+        pages: 3,
+        aiSummary:
+          'Browsed gallery and Our Story. Clicked through to Get in touch but never started the form.',
+        value: 'medium',
+        signals: ['multi-page', 'no form'],
+      },
+      {
+        id: 'rec_dwp_05',
+        location: 'Austin, TX',
+        duration: '1m 08s',
+        pages: 1,
+        aiSummary:
+          'Landed on Tuscany blog post from organic search. Scrolled to 31%, then exited. Possible intent mismatch.',
+        value: 'low',
+        signals: ['low scroll', 'quick exit'],
+      },
+    ],
+    playlists: [
+      { name: 'Form abandonment', count: 23 },
+      { name: 'Gallery browsers', count: 47 },
+      { name: 'Inquiry CTA interactions', count: 89 },
+      { name: 'Rage clicks', count: 12 },
+    ],
+    heatmaps: [
+      {
+        id: 'home',
+        label: 'Home — live wedding painting',
+        sections: [
+          { label: 'Hero / book CTA', reachPct: 94, hasCta: true, ctaClicks: 22 },
+          { label: 'Recent celebrations', reachPct: 82, hasCta: false },
+          { label: 'How it works', reachPct: 71, hasCta: false },
+          { label: 'Why couples choose live painting', reachPct: 63, hasCta: false },
+          { label: 'Gallery preview', reachPct: 42, hasCta: true, ctaClicks: 8 },
+          { label: 'FAQ', reachPct: 31, hasCta: false },
+          { label: 'Inquiry form', reachPct: 18, hasCta: true, ctaClicks: 14 },
+        ],
+      },
+      {
+        id: 'get-in-touch',
+        label: 'Get in touch',
+        sections: [
+          { label: 'Intro / promise', reachPct: 96, hasCta: false },
+          { label: 'Inquiry form', reachPct: 88, hasCta: true, ctaClicks: 34 },
+          { label: 'Contact details', reachPct: 54, hasCta: false },
+        ],
+      },
+      {
+        id: 'gallery',
+        label: 'Gallery',
+        sections: [
+          { label: 'Intro', reachPct: 91, hasCta: false },
+          { label: 'Featured pieces', reachPct: 79, hasCta: false },
+          { label: 'Destination weddings', reachPct: 52, hasCta: false },
+          { label: 'Bottom book CTA', reachPct: 22, hasCta: true, ctaClicks: 6 },
+        ],
+      },
+    ],
+    experiments: [
+      {
+        id: 'exp-cta-copy',
+        name: 'Hero CTA copy',
+        status: 'running',
+        metric: 'form_submit conversion',
+        confidence: 87,
+        variants: [
+          { name: 'Book now (control)', cvr: 2.1, sessions: 412 },
+          { name: 'Check availability', cvr: 2.4, sessions: 407 },
+          { name: 'Book your date', cvr: 3.8, sessions: 398, winner: true },
+        ],
+        insight:
+          '“Book your date” outperforms control by +81%. Matches destination-wedding planning language better than a generic book CTA.',
+      },
+      {
+        id: 'exp-hero-image',
+        name: 'Hero image on home',
+        status: 'complete',
+        metric: 'scroll_depth avg + time on page',
+        confidence: 98,
+        variants: [
+          { name: 'Studio portrait (control)', cvr: 2.12, sessions: 612 },
+          { name: 'Live painting at ceremony', cvr: 3.87, sessions: 589, winner: true },
+        ],
+        insight:
+          'Ceremony-context heroes lift avg scroll depth from 51% to 68% and time on page from 2:12 to 3:47.',
+      },
+      {
+        id: 'exp-form-placement',
+        name: 'Inquiry form placement',
+        status: 'running',
+        metric: 'form_submit rate',
+        confidence: 61,
+        variants: [
+          { name: 'Bottom only (control)', cvr: 1.8, sessions: 287 },
+          { name: 'Mid-page + bottom', cvr: 4.4, sessions: 294, winner: true },
+        ],
+        insight:
+          'Mid-page inquiry block (after How it works) drives higher completions. Early result — needs more data.',
+      },
+      {
+        id: 'exp-form-fields',
+        name: 'Optional wedding date field',
+        status: 'draft',
+        metric: 'form_submit conversion',
+        confidence: 0,
+        variants: [
+          { name: 'Date required (control)', cvr: 1.11, sessions: 0 },
+          { name: 'Date optional', cvr: 0, sessions: 0 },
+        ],
+        insight:
+          'Form dropouts often happen after visitors hesitate on date-specific fields. Hypothesis: fewer required fields will increase completions.',
+      },
+    ],
+    signals: [
+      {
+        id: 'sig-1',
+        severity: 'critical',
+        title: 'Form friction is blocking inquiry starters',
+        body: 'Rage-click analysis shows elevated submit retries on the lead-capture form. Session recordings suggest validation errors that do not clear cleanly after correction.',
+        api: "HogQLQuery: SELECT COUNT() FROM events WHERE event = '$rageclick' AND properties.site_slug = 'destinationweddingpainter'",
+        action: 'Review form validation',
+      },
+      {
+        id: 'sig-2',
+        severity: 'opportunity',
+        title: 'Gallery → inquiry visitors convert 4.1× above average',
+        body: 'Users who view the gallery before opening the form convert at 4.56% vs site-wide 1.11%. Strengthen gallery CTAs and internal links from home.',
+        api: 'FunnelsQuery: gallery pageview → form_submit · site_slug filter',
+        action: 'Audit gallery CTAs',
+      },
+      {
+        id: 'sig-3',
+        severity: 'opportunity',
+        title: 'Get-in-touch page converts 2.3× above average',
+        body: 'Direct inquiry-page traffic converts disproportionately. Promote /get-in-touch from high-intent blog and gallery exits.',
+        api: "TrendsQuery: cvr by pathname = '/get-in-touch'",
+        action: 'Link more pages to inquiry',
+      },
+      {
+        id: 'sig-4',
+        severity: 'insight',
+        title: 'Mid-page CTA drives 3× more clicks than bottom CTA',
+        body: 'Only 18% of home readers reach the bottom inquiry form. The mid-page Book your date CTA (reached by ~63%) generates far more clicks.',
+        api: 'HogQLQuery: cta_click events grouped by element position',
+        action: 'Keep mid-page CTA',
+      },
+      {
+        id: 'sig-5',
+        severity: 'insight',
+        title: 'Mobile visitors bounce faster without ceremony imagery',
+        body: 'Mobile sessions on pages without a strong ceremony hero average 1:31 vs 3:22 with one. Gallery and blog posts without heroes underperform.',
+        api: 'TrendsQuery: avg_time_on_page by has_hero × device_type',
+        action: 'Add ceremony heroes',
+      },
+      {
+        id: 'sig-6',
+        severity: 'info',
+        title: 'Thursday 8–10 AM is the highest-converting window',
+        body: 'Organic traffic peaks Thursday morning and converts at 1.89% — about 70% above average. Schedule publishes and social around that window.',
+        api: 'HogQLQuery: cvr by dayofweek(timestamp), hour(timestamp)',
+      },
+    ],
+  },
+};
+
+export function analyticsMockForSlug(siteSlug: string | null | undefined): HomeAnalyticsSnapshot | null {
+  const key = siteSlug?.trim().toLowerCase();
+  if (!key) return null;
+  return ANALYTICS_MOCK_BY_SLUG[key] ?? null;
+}

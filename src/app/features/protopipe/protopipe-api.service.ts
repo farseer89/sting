@@ -98,6 +98,7 @@ import type {
   ShireHostedSiteScanRequest,
   ShireHostedSiteScanResponse,
   ShirePatchFormNotificationsRequest,
+  ShireSiteAnalyticsResponse,
   ListContextCardsResponse,
   PatchContextCardRequest,
   PatchContextCardResponse,
@@ -1236,6 +1237,12 @@ export class ProtopipeApiService {
       this.http.delete<{ deleted: true; id: string }>(
         shireApiUrl(ShireEndpoints.leads.delete(siteId, leadId)),
       ),
+    );
+  }
+
+  getSiteAnalytics(siteId: string): Promise<ShireSiteAnalyticsResponse> {
+    return firstValueFrom(
+      this.http.get<ShireSiteAnalyticsResponse>(shireApiUrl(ShireEndpoints.analytics.get(siteId))),
     );
   }
 

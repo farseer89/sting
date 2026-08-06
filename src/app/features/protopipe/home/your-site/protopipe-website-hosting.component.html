@@ -1,0 +1,47 @@
+<div class="website-page">
+  <header class="website-page__intro">
+    <p class="website-page__eyebrow">Hosting setup</p>
+    <h1>Check hosted status</h1>
+    <p class="website-page__lede">
+      Enter your website URL. If it matches a SearchClimber-hosted site, we’ll connect it
+      automatically.
+    </p>
+  </header>
+
+  <section class="website-card">
+    <label class="website-card__label" for="website-hosting-url">Website URL</label>
+    <div class="website-card__scan">
+      <input
+        pInputText
+        id="website-hosting-url"
+        type="url"
+        [ngModel]="websiteUrl()"
+        (ngModelChange)="websiteUrl.set($event)"
+        placeholder="https://example.com"
+      />
+      <button
+        pButton
+        type="button"
+        [loading]="scanning()"
+        [disabled]="!canScan()"
+        (click)="scan()"
+      >
+        <span>Check hosted status</span>
+      </button>
+    </div>
+
+    @if (connected()) {
+      <p class="website-card__success" role="status">
+        We found your hosted website and connected it to this workspace.
+      </p>
+    } @else {
+      <p class="website-card__body">
+        If no hosted match is found, we’ll keep using this as your external SEO website.
+      </p>
+    }
+
+    @if (error()) {
+      <p class="website-card__error" role="alert">{{ error() }}</p>
+    }
+  </section>
+</div>

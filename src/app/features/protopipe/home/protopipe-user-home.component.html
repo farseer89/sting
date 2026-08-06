@@ -612,6 +612,22 @@
                     <app-protopipe-leads-list />
                   </section>
                 }
+                @case ('website-overview') {
+                  <section
+                    class="glass glass--full glass--premiere glass--website"
+                    aria-label="Website overview"
+                  >
+                    <app-protopipe-website-overview />
+                  </section>
+                }
+                @case ('website-hosting') {
+                  <section
+                    class="glass glass--full glass--premiere glass--website"
+                    aria-label="Website hosting setup"
+                  >
+                    <app-protopipe-website-hosting />
+                  </section>
+                }
                 @case ('contact-alerts') {
                   <section
                     class="glass glass--full glass--premiere glass--contact-alerts"

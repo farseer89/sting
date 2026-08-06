@@ -60,6 +60,8 @@ import { ProtopipePitchProspectBoardComponent } from '../pitch-prep/protopipe-pi
 import { ProtopipePitchPrepWizardComponent } from '../pitch-prep/protopipe-pitch-prep-wizard.component';
 import { ProtopipeLeadsListComponent } from '../leads/protopipe-leads-list.component';
 import { ProtopipeContactAlertsComponent } from './your-site/protopipe-contact-alerts.component';
+import { ProtopipeWebsiteOverviewComponent } from './your-site/protopipe-website-overview.component';
+import { ProtopipeWebsiteHostingComponent } from './your-site/protopipe-website-hosting.component';
 import { isShireHostedSite } from '@hive/contracts';
 import { ProtopipeHomeThinkerBinderComponent } from './thinker/protopipe-home-thinker-binder.component';
 import { ProtopipeHomeAnalyticsBinderComponent } from './analytics-binder/protopipe-home-analytics-binder.component';
@@ -111,6 +113,8 @@ export type ProtopipeHomeView =
   | 'media-studio'
   | 'pitch-prep'
   | 'leads'
+  | 'website-overview'
+  | 'website-hosting'
   | 'contact-alerts'
   | 'brand-book'
   | 'audience-book'
@@ -195,6 +199,8 @@ interface MobileHomeTab {
     ProtopipePitchPrepWizardComponent,
     ProtopipeLeadsListComponent,
     ProtopipeContactAlertsComponent,
+    ProtopipeWebsiteOverviewComponent,
+    ProtopipeWebsiteHostingComponent,
     ProtopipeHomeThinkerBinderComponent,
     ProtopipeHomeAnalyticsBinderComponent,
     ProtopipeHomeDashboardComponent,
@@ -507,6 +513,10 @@ export class ProtopipeUserHomeComponent implements OnInit {
     } else if (item.id === 'content-pitch-prep') {
       this.showPitchPrepBoard();
       void this.router.navigate(['/home/pitch-prep']);
+    } else if (item.id === 'website-overview') {
+      this.showWebsiteOverviewView();
+    } else if (item.id === 'website-hosting') {
+      this.showWebsiteHostingView();
     } else if (item.id === 'your-site-contact-alerts') {
       this.showContactAlertsView();
     } else if (item.id === 'analytics-leads') {
@@ -1150,6 +1160,22 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.activeView.set('contact-alerts');
   }
 
+  private showWebsiteOverviewView(): void {
+    this.leaveWriterFocus();
+    this.leaveThinkerFocus();
+    this.sidePanel.setOpen(false);
+    this.activeNavId.set('website-overview');
+    this.activeView.set('website-overview');
+  }
+
+  private showWebsiteHostingView(): void {
+    this.leaveWriterFocus();
+    this.leaveThinkerFocus();
+    this.sidePanel.setOpen(false);
+    this.activeNavId.set('website-hosting');
+    this.activeView.set('website-hosting');
+  }
+
   private showLeadsView(): void {
     this.leaveWriterFocus();
     this.sidePanel.setOpen(false);
@@ -1232,6 +1258,10 @@ export class ProtopipeUserHomeComponent implements OnInit {
         }
 
         if (item.requiresHostedSite && !hostedSite) {
+          return null;
+        }
+
+        if (item.requiresNonHostedSite && hostedSite) {
           return null;
         }
 

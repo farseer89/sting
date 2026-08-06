@@ -186,6 +186,7 @@ export class ProtopipeOnboardingComponent implements OnInit {
   readonly competitionFanOutError = signal<string | null>(null);
   readonly targetCustomerSites = signal<string[]>([]);
   readonly targetCustomerDraft = signal('');
+  readonly hostedSiteConnected = signal(false);
 
   /** Customer avatars — what each person wants (simple text per slot). */
   readonly maxCustomerAvatars = MAX_CUSTOMER_AVATARS;
@@ -1139,11 +1140,12 @@ export class ProtopipeOnboardingComponent implements OnInit {
         countryIso: country?.iso,
       };
 
-      await this.api.completeOnboarding(siteId, {
+      const result = await this.api.completeOnboarding(siteId, {
         businessName: v.businessName.trim(),
         websiteUrl: websiteUrl || '',
         profile,
       });
+      this.hostedSiteConnected.set(Boolean(result.hostedSiteConnected));
 
       void this.api.startKeywordDiscoveryRun(siteId).catch(() => {
         // Non-blocking — home loads the run when the user enters the app.

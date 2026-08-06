@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import type {
   ProtopipeDataForSeoStatusResponse,
   ProtopipeSpyFuStatusResponse,
+  ShireHostedSiteScanResponse,
   SubscriptionState,
   DiscoveryBookOnboardingStepId,
 } from '@hive/contracts';
@@ -416,6 +417,18 @@ export class ProtopipeStrategyService {
       copy[idx] = { ...copy[idx], ...next };
       return copy;
     });
+  }
+
+  async scanHostedSite(url: string): Promise<ShireHostedSiteScanResponse> {
+    const siteId = this._siteId();
+    if (!siteId) {
+      throw new Error('No site selected');
+    }
+    const result = await this.api.scanHostedSite(siteId, { url });
+    this.mergeSite(result.site);
+    this.api.invalidateBootstrapCache();
+    await this.refreshSitesList();
+    return result;
   }
 
   private clampPhrase(value: string): string {

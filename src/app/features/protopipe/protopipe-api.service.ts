@@ -95,6 +95,8 @@ import type {
   ConvertLeadResponse,
   ShireFormNotificationsResponse,
   ShireLeadsListResponse,
+  ShireHostedSiteScanRequest,
+  ShireHostedSiteScanResponse,
   ShirePatchFormNotificationsRequest,
   ListContextCardsResponse,
   PatchContextCardRequest,
@@ -1244,6 +1246,18 @@ export class ProtopipeApiService {
     return firstValueFrom(
       this.http.patch<ShireFormNotificationsResponse>(
         shireApiUrl(ShireEndpoints.formNotifications.patch(siteId)),
+        body,
+      ),
+    );
+  }
+
+  scanHostedSite(
+    siteId: string,
+    body: ShireHostedSiteScanRequest,
+  ): Promise<ShireHostedSiteScanResponse> {
+    return firstValueFrom(
+      this.http.post<ShireHostedSiteScanResponse>(
+        shireApiUrl(ShireEndpoints.hosting.scan(siteId)),
         body,
       ),
     );

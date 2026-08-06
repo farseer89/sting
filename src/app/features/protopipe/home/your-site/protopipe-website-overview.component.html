@@ -1,0 +1,40 @@
+<div class="website-page">
+  <header class="website-page__intro">
+    <p class="website-page__eyebrow">Website</p>
+    <h1>Your website workspace</h1>
+    <p class="website-page__lede">
+      Manage the site SearchClimber uses for SEO strategy, hosted forms, and publishing.
+    </p>
+  </header>
+
+  <section class="website-card">
+    <div class="website-card__top">
+      <span class="website-card__icon">
+        <i class="pi pi-globe" aria-hidden="true"></i>
+      </span>
+      <span class="website-card__badge" [class.is-hosted]="hostedSite()">
+        {{ hostedSite() ? 'Hosted' : 'External site' }}
+      </span>
+    </div>
+
+    <h2>{{ site()?.displayName || 'Your site' }}</h2>
+    <p class="website-card__url">{{ displayUrl() }}</p>
+
+    @if (hostedSite()) {
+      <p class="website-card__body">
+        This hosted website is connected to your workspace. Hosted forms, leads, and contact
+        alerts are available from the Website and Leads areas.
+      </p>
+      <div class="website-card__quick">
+        <span>Contact alerts</span>
+        <span>Leads inbox</span>
+        <span>Hosted forms</span>
+      </div>
+    } @else {
+      <p class="website-card__body">
+        We’ll use this website for your SEO workspace. Hosted features appear automatically if
+        this URL matches a SearchClimber-hosted site.
+      </p>
+    }
+  </section>
+</div>

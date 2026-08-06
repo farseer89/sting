@@ -26,6 +26,8 @@ export interface ProtopipeHomeNavItem {
   hiddenWhenLocked?: boolean;
   /** Hide when the active site is not a hosted client-sites site. */
   requiresHostedSite?: boolean;
+  /** Hide when the active site is already hosted by client-sites. */
+  requiresNonHostedSite?: boolean;
   separator?: boolean;
   children?: ProtopipeHomeNavItem[];
 }
@@ -151,11 +153,21 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
     ],
   },
   {
-    id: 'your-site',
-    label: 'Your Site',
+    id: 'website',
+    label: 'Website',
     icon: 'globe',
-    requiresHostedSite: true,
     children: [
+      {
+        id: 'website-overview',
+        label: 'Overview',
+        icon: 'globe',
+      },
+      {
+        id: 'website-hosting',
+        label: 'Hosting setup',
+        icon: 'link',
+        requiresNonHostedSite: true,
+      },
       {
         id: 'your-site-contact-alerts',
         label: 'Contact alerts',
@@ -345,6 +357,7 @@ export const PROTOPIPE_HOME_NAV_DEFAULT_OPEN = [
   'business-profile',
   'seo',
   'content',
+  'website',
   'account',
   'books',
   'analytics',

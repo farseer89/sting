@@ -41,6 +41,11 @@
               We've set everything up.
             }
           </p>
+          @if (hostedSiteConnected()) {
+            <p class="hosted-connected">
+              We found your hosted website and connected it to this workspace.
+            </p>
+          }
           @if (summaryChips().length > 0) {
             <ul class="contents-chips">
               @for (chip of summaryChips(); track chip.label) {

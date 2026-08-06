@@ -718,13 +718,36 @@
   letter-spacing: -0.03em;
 }
 
-.replay-drawer__frame {
+/* Clip the PostHog "Powered by" strip on shared embeds (white-label is paid-gated). */
+.replay-drawer__frame-crop {
+  --replay-brand-crop: 2.75rem;
+  position: relative;
   flex: 1;
-  width: 100%;
   min-height: 28rem;
+  overflow: hidden;
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 0.65rem;
   background: #0f172a;
+}
+
+.replay-drawer__frame {
+  display: block;
+  width: 100%;
+  height: calc(100% + var(--replay-brand-crop));
+  min-height: calc(28rem + var(--replay-brand-crop));
+  border: 0;
+  background: #0f172a;
+}
+
+.replay-drawer__brand-mask {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 10.5rem;
+  height: 2.35rem;
+  background: #1d1f27;
+  pointer-events: none;
 }
 
 @media (min-width: 720px) {

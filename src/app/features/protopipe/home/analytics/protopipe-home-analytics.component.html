@@ -482,12 +482,15 @@
       @if (replayLoading()) {
         <div class="analyticsdash__empty">Preparing embeddable replay…</div>
       } @else if (replayEmbedSafe(); as embedUrl) {
-        <iframe
-          class="replay-drawer__frame"
-          [src]="embedUrl"
-          title="PostHog session replay"
-          allowfullscreen
-        ></iframe>
+        <div class="replay-drawer__frame-crop">
+          <iframe
+            class="replay-drawer__frame"
+            [src]="embedUrl"
+            title="Session replay"
+            allowfullscreen
+          ></iframe>
+          <div class="replay-drawer__brand-mask" aria-hidden="true"></div>
+        </div>
       } @else {
         <div class="analyticsdash__empty">
           {{ replayError() || 'Replay embed unavailable.' }}

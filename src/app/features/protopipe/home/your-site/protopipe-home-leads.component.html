@@ -3,9 +3,12 @@
     <div>
       <h1>Leads</h1>
       <p class="leadsdash__lede">
-        Contact form submissions from your hosted site. Click a row for the full message.
+        All contact form submissions for your hosted site, including historical leads from prior
+        workspace connections.
       </p>
-      @if (latestReceived()) {
+      @if (rows().length) {
+        <p class="leadsdash__coverage">Showing {{ rows().length }} lead{{ rows().length === 1 ? '' : 's' }}</p>
+      } @else if (latestReceived()) {
         <p class="leadsdash__coverage">Latest lead {{ formatDate(latestReceived()) }}</p>
       }
     </div>

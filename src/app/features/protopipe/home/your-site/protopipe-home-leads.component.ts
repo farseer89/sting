@@ -191,7 +191,7 @@ function buildLeadSummary(rows: ShireLead[]): { id: string; label: string; value
   }).length;
 
   return [
-    { id: 'total', label: 'Total leads', value: String(rows.length), hint: 'All form submissions' },
+    { id: 'total', label: 'Total leads', value: String(rows.length), hint: 'All historical submissions' },
     { id: 'new', label: 'New', value: String(newCount), hint: 'Not yet reviewed' },
     { id: 'week', label: 'This week', value: String(thisWeek), hint: 'Last 7 days' },
     { id: 'messages', label: 'With message', value: String(withMessage), hint: 'Includes visitor note' },

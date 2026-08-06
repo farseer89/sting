@@ -39,6 +39,21 @@ export const ANALYTICS_MOCK_BY_SLUG: Record<string, HomeAnalyticsSnapshot> = {
         trend: '↑ 22s',
       },
     ],
+    series: [
+      { date: '2026-07-31', pageviews: 180, sessions: 142, leads: 1 },
+      { date: '2026-08-01', pageviews: 210, sessions: 168, leads: 2 },
+      { date: '2026-08-02', pageviews: 195, sessions: 155, leads: 1 },
+      { date: '2026-08-03', pageviews: 240, sessions: 190, leads: 3 },
+      { date: '2026-08-04', pageviews: 260, sessions: 205, leads: 2 },
+      { date: '2026-08-05', pageviews: 228, sessions: 182, leads: 3 },
+      { date: '2026-08-06', pageviews: 250, sessions: 205, leads: 2 },
+    ],
+    trafficSources: [
+      { source: 'google', sessions: 842, pageviews: 1102 },
+      { source: 'direct', sessions: 214, pageviews: 268 },
+      { source: 'instagram', sessions: 128, pageviews: 155 },
+      { source: 'referral', sessions: 63, pageviews: 88 },
+    ],
     contentRows: [
       {
         title: 'Home — live wedding painting',
@@ -208,9 +223,14 @@ export const ANALYTICS_MOCK_BY_SLUG: Record<string, HomeAnalyticsSnapshot> = {
     sessions: [
       {
         id: 'rec_dwp_01',
+        startUrl: 'https://destinationweddingpainter.com/',
         location: 'Lahaina, HI',
         duration: '8m 14s',
+        activeSeconds: 412,
         pages: 4,
+        clickCount: 28,
+        keypressCount: 64,
+        activityScore: 92,
         aiSummary:
           'Compared gallery pieces, opened Our Story, then paused on the inquiry form for 43 seconds before submitting. High booking intent for a Maui wedding.',
         value: 'high',
@@ -218,9 +238,14 @@ export const ANALYTICS_MOCK_BY_SLUG: Record<string, HomeAnalyticsSnapshot> = {
       },
       {
         id: 'rec_dwp_02',
+        startUrl: 'https://destinationweddingpainter.com/',
         location: 'Los Angeles, CA',
         duration: '3m 22s',
+        activeSeconds: 168,
         pages: 2,
+        clickCount: 9,
+        keypressCount: 0,
+        activityScore: 71,
         aiSummary:
           'Read home to 90% scroll depth. Hovered “Book your date” for 8 seconds, then exited. Likely comparing destination painters.',
         value: 'high',
@@ -228,9 +253,14 @@ export const ANALYTICS_MOCK_BY_SLUG: Record<string, HomeAnalyticsSnapshot> = {
       },
       {
         id: 'rec_dwp_03',
+        startUrl: 'https://destinationweddingpainter.com/get-in-touch',
         location: 'Seattle, WA',
         duration: '14m 02s',
+        activeSeconds: 640,
         pages: 7,
+        clickCount: 41,
+        keypressCount: 112,
+        activityScore: 88,
         aiSummary:
           'Rage-clicked Send inquiry twice. Validation may have blocked submit after correcting email. High frustration signal.',
         value: 'medium',
@@ -238,9 +268,14 @@ export const ANALYTICS_MOCK_BY_SLUG: Record<string, HomeAnalyticsSnapshot> = {
       },
       {
         id: 'rec_dwp_04',
+        startUrl: 'https://destinationweddingpainter.com/gallery',
         location: 'Chicago, IL',
         duration: '5m 44s',
+        activeSeconds: 290,
         pages: 3,
+        clickCount: 14,
+        keypressCount: 0,
+        activityScore: 54,
         aiSummary:
           'Browsed gallery and Our Story. Clicked through to Get in touch but never started the form.',
         value: 'medium',
@@ -248,9 +283,14 @@ export const ANALYTICS_MOCK_BY_SLUG: Record<string, HomeAnalyticsSnapshot> = {
       },
       {
         id: 'rec_dwp_05',
+        startUrl: 'https://destinationweddingpainter.com/blog/tuscany',
         location: 'Austin, TX',
         duration: '1m 08s',
+        activeSeconds: 48,
         pages: 1,
+        clickCount: 2,
+        keypressCount: 0,
+        activityScore: 18,
         aiSummary:
           'Landed on Tuscany blog post from organic search. Scrolled to 31%, then exited. Possible intent mismatch.',
         value: 'low',
@@ -258,15 +298,27 @@ export const ANALYTICS_MOCK_BY_SLUG: Record<string, HomeAnalyticsSnapshot> = {
       },
     ],
     playlists: [
-      { name: 'Form abandonment', count: 23 },
-      { name: 'Gallery browsers', count: 47 },
-      { name: 'Inquiry CTA interactions', count: 89 },
-      { name: 'Rage clicks', count: 12 },
+      { id: 'form-abandon', name: 'Form abandonment', count: 23 },
+      { id: 'gallery', name: 'Gallery browsers', count: 47 },
+      { id: 'cta', name: 'Inquiry CTA interactions', count: 89 },
+      { id: 'rage', name: 'Rage clicks', count: 12 },
     ],
     heatmaps: [
       {
         id: 'home',
         label: 'Home — live wedding painting',
+        url: 'https://destinationweddingpainter.com/',
+        clickCount: 412,
+        points: [
+          { x: 0.48, y: 220, count: 28 },
+          { x: 0.52, y: 840, count: 14 },
+        ],
+        scrollBuckets: [
+          { depthPct: 25, reachPct: 94 },
+          { depthPct: 50, reachPct: 71 },
+          { depthPct: 75, reachPct: 42 },
+          { depthPct: 100, reachPct: 18 },
+        ],
         sections: [
           { label: 'Hero / book CTA', reachPct: 94, hasCta: true, ctaClicks: 22 },
           { label: 'Recent celebrations', reachPct: 82, hasCta: false },
@@ -280,6 +332,13 @@ export const ANALYTICS_MOCK_BY_SLUG: Record<string, HomeAnalyticsSnapshot> = {
       {
         id: 'get-in-touch',
         label: 'Get in touch',
+        url: 'https://destinationweddingpainter.com/get-in-touch',
+        clickCount: 188,
+        points: [{ x: 0.5, y: 520, count: 34 }],
+        scrollBuckets: [
+          { depthPct: 50, reachPct: 88 },
+          { depthPct: 100, reachPct: 54 },
+        ],
         sections: [
           { label: 'Intro / promise', reachPct: 96, hasCta: false },
           { label: 'Inquiry form', reachPct: 88, hasCta: true, ctaClicks: 34 },
@@ -289,6 +348,13 @@ export const ANALYTICS_MOCK_BY_SLUG: Record<string, HomeAnalyticsSnapshot> = {
       {
         id: 'gallery',
         label: 'Gallery',
+        url: 'https://destinationweddingpainter.com/gallery',
+        clickCount: 96,
+        points: [{ x: 0.45, y: 360, count: 12 }],
+        scrollBuckets: [
+          { depthPct: 50, reachPct: 79 },
+          { depthPct: 100, reachPct: 22 },
+        ],
         sections: [
           { label: 'Intro', reachPct: 91, hasCta: false },
           { label: 'Featured pieces', reachPct: 79, hasCta: false },

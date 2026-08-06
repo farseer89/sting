@@ -107,7 +107,8 @@
         <div>
           <h2 class="integration-card__name">Google</h2>
           <p class="integration-card__tagline">
-            Search Console queries &amp; Google Analytics property data for this account.
+            Search Console queries and ranking data for this account. Hosted-site traffic,
+            replays, and heatmaps use built-in analytics — no GA4 link required.
           </p>
         </div>
       </div>
@@ -156,7 +157,7 @@
           <ul class="integration-card__bullets">
             <li><i class="pi pi-check"></i> Real keyword impressions &amp; clicks from Search Console</li>
             <li><i class="pi pi-check"></i> Position data on the queries you actually rank for</li>
-            <li><i class="pi pi-check"></i> GA4 property discovery (analytics dashboards next)</li>
+            <li><i class="pi pi-check"></i> Search Console property discovery for rankings</li>
           </ul>
           <div class="integration-card__actions">
             <p-button
@@ -196,10 +197,12 @@
               <dt>Search Console properties</dt>
               <dd>{{ status()?.gscPropertiesCount ?? '—' }}</dd>
             </div>
-            <div>
-              <dt>GA4 properties</dt>
-              <dd>{{ status()?.ga4PropertiesCount ?? '—' }}</dd>
-            </div>
+            @if ((status()?.ga4PropertiesCount ?? 0) > 0) {
+              <div>
+                <dt>GA4 properties (legacy)</dt>
+                <dd>{{ status()?.ga4PropertiesCount }}</dd>
+              </div>
+            }
           </dl>
 
           @if (status()?.lastError) {

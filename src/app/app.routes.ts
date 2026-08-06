@@ -263,6 +263,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'home/analytics',
+    canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],
+    loadComponent: () =>
+      import('./features/protopipe/home/protopipe-user-home.component').then(
+        (m) => m.ProtopipeUserHomeComponent,
+      ),
+  },
+  {
     // User-facing home — redirects to dashboard or onboarding.
     path: 'home',
     canActivate: [authGuard, operatorOnlyGuard, homeEntryGuard],
@@ -387,11 +395,10 @@ export const routes: Routes = [
           ),
       },
       {
+        // Legacy GA4 analytics — hosted sites use PostHog at /home/analytics.
         path: 'protopipe/analytics',
-        loadComponent: () =>
-          import('./features/protopipe/analytics/protopipe-analytics.component').then(
-            (m) => m.ProtopipeAnalyticsComponent,
-          ),
+        redirectTo: '/home/analytics',
+        pathMatch: 'full',
       },
       {
         path: 'protopipe/admin/agent',

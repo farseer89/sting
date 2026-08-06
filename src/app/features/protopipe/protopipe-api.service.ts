@@ -98,6 +98,7 @@ import type {
   ShireHostedSiteScanRequest,
   ShireHostedSiteScanResponse,
   ShirePatchFormNotificationsRequest,
+  ShireAnalyticsReplayShareResponse,
   ShireSiteAnalyticsResponse,
   ListContextCardsResponse,
   PatchContextCardRequest,
@@ -1243,6 +1244,18 @@ export class ProtopipeApiService {
   getHostedSiteAnalytics(siteId: string): Promise<ShireSiteAnalyticsResponse> {
     return firstValueFrom(
       this.http.get<ShireSiteAnalyticsResponse>(shireApiUrl(ShireEndpoints.analytics.get(siteId))),
+    );
+  }
+
+  shareHostedReplay(
+    siteId: string,
+    recordingId: string,
+  ): Promise<ShireAnalyticsReplayShareResponse> {
+    return firstValueFrom(
+      this.http.post<ShireAnalyticsReplayShareResponse>(
+        shireApiUrl(ShireEndpoints.analytics.shareReplay(siteId, recordingId)),
+        {},
+      ),
     );
   }
 

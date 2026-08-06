@@ -3,7 +3,8 @@
     <div>
       <h1>Analytics</h1>
       <p class="analyticsdash__lede">
-        PostHog engagement for your hosted site — one shared project, filtered by site.
+        PostHog web analytics, replays, and heatmaps for your hosted site — no Google Analytics
+        link required.
       </p>
       @if (snapshot(); as snap) {
         <p class="analyticsdash__coverage">
@@ -55,6 +56,9 @@
           @if (section.id === 'signals' && signalCount()) {
             <span class="analyticsdash__filter-badge">{{ signalCount() }}</span>
           }
+          @if (section.id === 'sessions' && sessionCount()) {
+            <span class="analyticsdash__filter-badge">{{ sessionCount() }}</span>
+          }
         </button>
       }
     </div>
@@ -76,22 +80,57 @@
 
     @switch (activeSection()) {
       @case ('pulse') {
-        <section class="analyticsdash__main" aria-label="Pulse detail">
+        <section class="analyticsdash__main analyticsdash__main--split" aria-label="Web analytics">
+          <article class="analytics-panel analytics-panel--chart">
+            <div class="analytics-panel__head">
+              <div>
+                <p class="analytics-panel__kicker">Trends</p>
+                <h2>Traffic over time</h2>
+              </div>
+              <div class="chart-legend" aria-hidden="true">
+                <span class="chart-legend__item chart-legend__item--pv">Pageviews</span>
+                <span class="chart-legend__item chart-legend__item--sess">Sessions</span>
+                <span class="chart-legend__item chart-legend__item--leads">Leads</span>
+              </div>
+            </div>
+            @if (snap.series.length) {
+              <svg #seriesSvg class="series-chart" role="img" aria-label="Sessions pageviews and leads chart"></svg>
+            } @else {
+              <p class="analytics-panel__body">No trend points in this range yet.</p>
+            }
+          </article>
+
           <article class="analytics-panel">
             <div class="analytics-panel__head">
               <div>
-                <p class="analytics-panel__kicker">Overview</p>
-                <h2>Weekly pulse</h2>
+                <p class="analytics-panel__kicker">Acquisition</p>
+                <h2>Traffic sources</h2>
               </div>
             </div>
-            <p class="analytics-panel__body">
-              Live PostHog metrics for {{ snap.siteLabel }}.
-              <code>{{ snap.filterNote }}</code>
-            </p>
-            <div class="playlist-grid">
-              @for (playlist of snap.playlists; track playlist.name) {
+            @if (snap.trafficSources.length) {
+              <ul class="source-list">
+                @for (source of snap.trafficSources; track source.source) {
+                  <li class="source-row">
+                    <div class="source-row__meta">
+                      <span class="source-row__name">{{ source.source }}</span>
+                      <span class="source-row__count">{{ source.sessions | number }} sessions</span>
+                    </div>
+                    <div class="source-row__track">
+                      <div
+                        class="source-row__fill"
+                        [style.width.%]="barWidth(source.sessions, maxSourceSessions())"
+                      ></div>
+                    </div>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="analytics-panel__body">No referring sources yet.</p>
+            }
+            <div class="playlist-grid playlist-grid--compact">
+              @for (playlist of snap.playlists; track playlist.id) {
                 <article class="playlist-card">
-                  <strong>{{ playlist.count }}</strong>
+                  <strong>{{ playlist.count | number }}</strong>
                   <span>{{ playlist.name }}</span>
                 </article>
               }
@@ -106,7 +145,7 @@
             <div class="analytics-panel__head">
               <div>
                 <p class="analytics-panel__kicker">Pages</p>
-                <h2>Content performance</h2>
+                <h2>Top pages</h2>
               </div>
             </div>
             <div class="analytics-table-wrap">
@@ -115,11 +154,7 @@
                   <tr>
                     <th scope="col">Page</th>
                     <th scope="col">Sessions</th>
-                    <th scope="col">Avg time</th>
-                    <th scope="col">Scroll</th>
-                    <th scope="col">CTA clicks</th>
                     <th scope="col">CVR</th>
-                    <th scope="col">Trend</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -130,21 +165,7 @@
                         <span class="analytics-table__muted">{{ row.path }}</span>
                       </td>
                       <td class="analytics-table__metric">{{ row.sessions | number }}</td>
-                      <td class="analytics-table__metric">{{ row.avgTime }}</td>
-                      <td class="analytics-table__metric">{{ row.scrollDepth }}%</td>
-                      <td class="analytics-table__metric">{{ row.ctaClicks }}</td>
                       <td class="analytics-table__metric">{{ row.cvr }}%</td>
-                      <td>
-                        <span [class]="trendClass(row.trend)">
-                          @if (row.trend === 'up') {
-                            ↑ {{ row.trendPct }}%
-                          } @else if (row.trend === 'down') {
-                            ↓ {{ row.trendPct }}%
-                          } @else {
-                            —
-                          }
-                        </span>
-                      </td>
                     </tr>
                   }
                 </tbody>
@@ -156,19 +177,6 @@
 
       @case ('funnels') {
         <section class="analyticsdash__main" aria-label="Funnels">
-          <div class="analyticsdash__filters analyticsdash__filters--nested" role="group" aria-label="Funnel">
-            @for (funnel of snap.funnels; track funnel.id) {
-              <button
-                type="button"
-                class="analyticsdash__filter"
-                [class.is-active]="activeFunnelId() === funnel.id"
-                (click)="setFunnel(funnel.id)"
-              >
-                {{ funnel.label }}
-              </button>
-            }
-          </div>
-
           @if (activeFunnel(); as funnel) {
             <article class="analytics-panel">
               <div class="analytics-panel__head">
@@ -181,7 +189,10 @@
               <ol class="funnel-steps">
                 @for (step of funnel.steps; track step.label; let i = $index) {
                   <li class="funnel-step">
-                    <div class="funnel-step__bar" [style.width.%]="barWidth(step.count, funnel.steps[0].count)"></div>
+                    <div
+                      class="funnel-step__bar"
+                      [style.width.%]="barWidth(step.count, funnel.steps[0].count)"
+                    ></div>
                     <div class="funnel-step__meta">
                       <span class="funnel-step__label">{{ i + 1 }}. {{ step.label }}</span>
                       <span class="funnel-step__count">{{ step.count | number }}</span>
@@ -199,60 +210,68 @@
       }
 
       @case ('sessions') {
-        <section class="analyticsdash__main" aria-label="Sessions">
+        <section class="analyticsdash__main" aria-label="Session replays">
           <article class="analytics-panel analytics-panel--table">
             <div class="analytics-panel__head">
               <div>
-                <p class="analytics-panel__kicker">Replay</p>
-                <h2>Recent sessions</h2>
+                <p class="analytics-panel__kicker">Session replay</p>
+                <h2>Watch real visits</h2>
               </div>
             </div>
-            <div class="analytics-table-wrap">
-              <table class="analytics-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Location</th>
-                    <th scope="col">Duration</th>
-                    <th scope="col">Pages</th>
-                    <th scope="col">Value</th>
-                    <th scope="col">Signals</th>
-                    <th scope="col">AI summary</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (session of snap.sessions; track session.id) {
+            @if (snap.sessions.length) {
+              <div class="analytics-table-wrap">
+                <table class="analytics-table">
+                  <thead>
                     <tr>
-                      <td>
-                        <span class="analytics-table__name">{{ session.location }}</span>
-                        <span class="analytics-table__muted">{{ session.id }}</span>
-                      </td>
-                      <td class="analytics-table__metric">{{ session.duration }}</td>
-                      <td class="analytics-table__metric">{{ session.pages }}</td>
-                      <td>
-                        <span [class]="valueClass(session.value)">{{ session.value }}</span>
-                      </td>
-                      <td>
-                        <div class="signal-chips">
-                          @for (signal of session.signals; track signal) {
-                            <span class="analytics-pill">{{ signal }}</span>
-                          }
-                        </div>
-                      </td>
-                      <td>
-                        <span class="analytics-table__message">{{ session.aiSummary }}</span>
-                      </td>
+                      <th scope="col">Entry</th>
+                      <th scope="col">Active</th>
+                      <th scope="col">Clicks</th>
+                      <th scope="col">Value</th>
+                      <th scope="col">Signals</th>
+                      <th scope="col">Summary</th>
                     </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    @for (session of snap.sessions; track session.id) {
+                      <tr class="analytics-table__row" (click)="openReplay(session)">
+                        <td>
+                          <span class="analytics-table__name">{{ session.location }}</span>
+                          <span class="analytics-table__muted">Watch replay →</span>
+                        </td>
+                        <td class="analytics-table__metric">{{ session.duration }}</td>
+                        <td class="analytics-table__metric">{{ session.clickCount }}</td>
+                        <td>
+                          <span [class]="valueClass(session.value)">{{ session.value }}</span>
+                        </td>
+                        <td>
+                          <div class="signal-chips">
+                            @for (signal of session.signals; track signal) {
+                              <span class="analytics-pill">{{ signal }}</span>
+                            }
+                          </div>
+                        </td>
+                        <td>
+                          <span class="analytics-table__message">{{ session.aiSummary }}</span>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <p class="analytics-panel__body">No session recordings matched this site yet.</p>
+            }
           </article>
         </section>
       }
 
       @case ('heatmaps') {
         <section class="analyticsdash__main" aria-label="Heatmaps">
-          <div class="analyticsdash__filters analyticsdash__filters--nested" role="group" aria-label="Heatmap page">
+          <div
+            class="analyticsdash__filters analyticsdash__filters--nested"
+            role="group"
+            aria-label="Heatmap page"
+          >
             @for (heatmap of snap.heatmaps; track heatmap.id) {
               <button
                 type="button"
@@ -261,25 +280,45 @@
                 (click)="setHeatmap(heatmap.id)"
               >
                 {{ heatmap.label }}
+                <span class="analyticsdash__filter-badge">{{ heatmap.clickCount }}</span>
               </button>
             }
           </div>
 
           @if (activeHeatmap(); as heatmap) {
-            <article class="analytics-panel">
+            <article class="analytics-panel analytics-panel--heatmap">
               <div class="analytics-panel__head">
                 <div>
-                  <p class="analytics-panel__kicker">Section reach</p>
-                  <h2>{{ heatmap.label }}</h2>
+                  <p class="analytics-panel__kicker">{{ heatmap.url }}</p>
+                  <h2>{{ heatmap.label }} heatmap</h2>
+                </div>
+                <div class="analyticsdash__filters analyticsdash__filters--nested" role="group">
+                  <button
+                    type="button"
+                    class="analyticsdash__filter"
+                    [class.is-active]="heatmapType() === 'clicks'"
+                    (click)="setHeatmapType('clicks')"
+                  >
+                    Clicks
+                  </button>
+                  <button
+                    type="button"
+                    class="analyticsdash__filter"
+                    [class.is-active]="heatmapType() === 'scroll'"
+                    (click)="setHeatmapType('scroll')"
+                  >
+                    Scroll depth
+                  </button>
                 </div>
               </div>
+              <canvas #heatmapCanvas class="heatmap-canvas" aria-label="Heatmap visualization"></canvas>
               <ul class="heatmap-list">
                 @for (section of heatmap.sections; track section.label) {
                   <li class="heatmap-row">
                     <div class="heatmap-row__label">
                       <span>{{ section.label }}</span>
                       @if (section.hasCta) {
-                        <span class="analytics-pill">CTA · {{ section.ctaClicks ?? 0 }} clicks</span>
+                        <span class="analytics-pill">{{ section.ctaClicks ?? 0 }}</span>
                       }
                     </div>
                     <div class="heatmap-row__track">
@@ -290,41 +329,37 @@
                 }
               </ul>
             </article>
+          } @else {
+            <div class="analyticsdash__empty">No heatmap points for this site yet.</div>
           }
         </section>
       }
 
       @case ('experiments') {
         <section class="analyticsdash__main analyticsdash__main--stack" aria-label="Experiments">
-          @for (experiment of snap.experiments; track experiment.id) {
-            <article class="analytics-panel">
-              <div class="analytics-panel__head">
-                <div>
-                  <p class="analytics-panel__kicker">{{ experiment.metric }}</p>
-                  <h2>{{ experiment.name }}</h2>
+          @if (snap.experiments.length) {
+            @for (experiment of snap.experiments; track experiment.id) {
+              <article class="analytics-panel">
+                <div class="analytics-panel__head">
+                  <div>
+                    <p class="analytics-panel__kicker">{{ experiment.metric }}</p>
+                    <h2>{{ experiment.name }}</h2>
+                  </div>
+                  <span [class]="statusClass(experiment.status)">{{ experiment.status }}</span>
                 </div>
-                <span [class]="statusClass(experiment.status)">{{ experiment.status }}</span>
-              </div>
-              <p class="analytics-panel__body">{{ experiment.insight }}</p>
-              <div class="variant-grid">
-                @for (variant of experiment.variants; track variant.name) {
-                  <article class="variant-card" [class.is-winner]="variant.winner">
-                    <span class="analytics-card__label">{{ variant.name }}</span>
-                    <strong>{{ variant.cvr }}%</strong>
-                    <span>{{ variant.sessions | number }} sessions</span>
-                  </article>
-                }
-              </div>
-              @if (experiment.confidence) {
-                <p class="analytics-panel__meta">Confidence {{ experiment.confidence }}%</p>
-              }
-            </article>
+                <p class="analytics-panel__body">{{ experiment.insight }}</p>
+              </article>
+            }
+          } @else {
+            <div class="analyticsdash__empty">
+              No PostHog experiments yet. When you run A/B tests, they show up here automatically.
+            </div>
           }
         </section>
       }
 
       @case ('signals') {
-        <section class="analyticsdash__main analyticsdash__main--stack" aria-label="AI signals">
+        <section class="analyticsdash__main analyticsdash__main--stack" aria-label="Insights">
           @for (signal of snap.signals; track signal.id) {
             <article [class]="severityClass(signal.severity)">
               <div class="signal-card__head">
@@ -343,3 +378,40 @@
     }
   }
 </div>
+
+@if (selectedSession(); as session) {
+  <div class="replay-drawer" role="dialog" aria-modal="true" aria-label="Session replay">
+    <button type="button" class="replay-drawer__backdrop" (click)="closeReplay()" aria-label="Close"></button>
+    <aside class="replay-drawer__panel">
+      <header class="replay-drawer__head">
+        <div>
+          <p class="analytics-panel__kicker">Session replay</p>
+          <h2>{{ session.location }} · {{ session.duration }}</h2>
+        </div>
+        <button type="button" class="analyticsdash__refresh" (click)="closeReplay()">Close</button>
+      </header>
+      <p class="analytics-panel__body">{{ session.aiSummary }}</p>
+      @if (replayLoading()) {
+        <div class="analyticsdash__empty">Preparing embeddable replay…</div>
+      } @else if (replayEmbedSafe(); as embedUrl) {
+        <iframe
+          class="replay-drawer__frame"
+          [src]="embedUrl"
+          title="PostHog session replay"
+          allowfullscreen
+        ></iframe>
+      } @else {
+        <div class="analyticsdash__empty">
+          {{ replayError() || 'Replay embed unavailable.' }}
+          @if (session.posthogUrl) {
+            <p>
+              <a [href]="session.posthogUrl" target="_blank" rel="noopener noreferrer">
+                Open in PostHog →
+              </a>
+            </p>
+          }
+        </div>
+      }
+    </aside>
+  </div>
+}

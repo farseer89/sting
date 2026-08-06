@@ -531,6 +531,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.showLeadsView();
       void this.router.navigate(['/home/leads']);
     } else if (item.id === 'analytics-overview') {
+      void this.router.navigate(['/home/analytics']);
       this.showAnalyticsView();
     } else if (item.id === 'prospector') {
       this.leaveWriterFocus();
@@ -1017,6 +1018,11 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.sidePanel.setOpen(false);
       this.activeView.set('rankings');
       this.activeNavId.set('seo-rankings');
+      return;
+    }
+
+    if (kind === 'analytics') {
+      this.showAnalyticsView();
     }
   }
 

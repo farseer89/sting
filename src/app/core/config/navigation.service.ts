@@ -94,7 +94,7 @@ export class NavigationService {
             id: 'analytics',
             label: 'Analytics',
             icon: 'pi pi-chart-bar',
-            routerLink: '/protopipe/analytics',
+            routerLink: '/home/analytics',
             visible: true,
           },
           {

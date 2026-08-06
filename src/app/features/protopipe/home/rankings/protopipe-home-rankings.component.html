@@ -237,95 +237,119 @@
           </div>
         }
 
-        @if (aiOverviewText(row); as overview) {
-          <section class="rank-drawer__section">
-            <h3>AI overview</h3>
-            <pre class="rank-drawer__overview">{{ overview }}</pre>
-          </section>
-        } @else if (row.latest.serpDetail?.aiOverview?.present) {
-          <section class="rank-drawer__section">
-            <h3>AI overview</h3>
-            <p class="rank-drawer__empty">Present on SERP — content was not returned by the provider.</p>
-          </section>
+        @if (drawerTabs().length) {
+          <div class="rank-drawer__tabs" role="tablist" aria-label="SERP detail tabs">
+            @for (tab of drawerTabs(); track tab.id) {
+              <button
+                type="button"
+                class="rank-drawer__tab"
+                role="tab"
+                [class.is-active]="drawerTab() === tab.id"
+                [attr.aria-selected]="drawerTab() === tab.id"
+                (click)="setDrawerTab(tab.id)"
+              >
+                {{ tab.label }}
+                @if (tab.count != null && tab.count > 0) {
+                  <span class="rank-drawer__tab-count">{{ tab.count }}</span>
+                }
+              </button>
+            }
+          </div>
         }
 
-        @if (row.latest.serpDetail?.organic?.length) {
-          <section class="rank-drawer__section">
-            <h3>Top results</h3>
-            <ol class="rank-drawer__organic">
-              @for (result of row.latest.serpDetail!.organic!; track result.position + result.url) {
-                <li [class.is-yours]="result.isYourSite">
-                  <span class="rank-drawer__pos">#{{ result.position }}</span>
-                  <div>
-                    <a [href]="result.url" target="_blank" rel="noopener noreferrer">{{ result.title }}</a>
-                    <p>{{ result.domain }}</p>
-                    @if (result.snippet) {
-                      <p class="rank-drawer__snippet">{{ result.snippet }}</p>
-                    }
-                  </div>
-                </li>
+        <div class="rank-drawer__body" role="tabpanel">
+          @switch (drawerTab()) {
+            @case ('ai_overview') {
+              @if (aiOverviewText(row); as overview) {
+                <pre class="rank-drawer__overview">{{ overview }}</pre>
+              } @else if (row.latest.serpDetail?.aiOverview?.present) {
+                <p class="rank-drawer__empty">
+                  Present on SERP — content was not returned by the provider.
+                </p>
+              } @else {
+                <p class="rank-drawer__empty">No AI overview captured for this keyword.</p>
               }
-            </ol>
-          </section>
-        }
-
-        @if (row.latest.competitorsAbove.length) {
-          <section class="rank-drawer__section">
-            <h3>Competitors above you</h3>
-            <ul class="rank-drawer__list">
-              @for (competitor of row.latest.competitorsAbove; track competitor.domain + competitor.position) {
-                <li>
-                  <strong>#{{ competitor.position }}</strong>
-                  <span>{{ competitor.domain }}</span>
-                  @if (competitor.title) {
-                    <span class="rank-drawer__muted">{{ competitor.title }}</span>
+            }
+            @case ('people_also_ask') {
+              @if (row.latest.serpDetail?.peopleAlsoAsk?.length) {
+                <ul class="rank-drawer__list rank-drawer__list--paa">
+                  @for (paa of row.latest.serpDetail!.peopleAlsoAsk!; track paa.question) {
+                    <li>
+                      <strong>{{ paa.question }}</strong>
+                      @if (paa.answer) {
+                        <span class="rank-drawer__muted">{{ paa.answer }}</span>
+                      }
+                    </li>
                   }
-                </li>
+                </ul>
+              } @else {
+                <p class="rank-drawer__empty">No people-also-ask questions captured yet.</p>
               }
-            </ul>
-          </section>
-        }
-
-        @if (row.latest.serpDetail?.peopleAlsoAsk?.length) {
-          <section class="rank-drawer__section">
-            <h3>People also ask</h3>
-            <ul class="rank-drawer__list">
-              @for (paa of row.latest.serpDetail!.peopleAlsoAsk!; track paa.question) {
-                <li>
-                  <strong>{{ paa.question }}</strong>
-                  @if (paa.answer) {
-                    <span class="rank-drawer__muted">{{ paa.answer }}</span>
+            }
+            @case ('local_pack') {
+              @if (row.latest.serpDetail?.localPack?.length) {
+                <ul class="rank-drawer__list">
+                  @for (place of row.latest.serpDetail!.localPack!; track place.position + place.title) {
+                    <li>
+                      <strong>#{{ place.position }} {{ place.title }}</strong>
+                      @if (place.address) {
+                        <span class="rank-drawer__muted">{{ place.address }}</span>
+                      }
+                    </li>
                   }
-                </li>
+                </ul>
+              } @else {
+                <p class="rank-drawer__empty">No local pack listings captured yet.</p>
               }
-            </ul>
-          </section>
-        }
-
-        @if (row.latest.serpDetail?.localPack?.length) {
-          <section class="rank-drawer__section">
-            <h3>Local pack</h3>
-            <ul class="rank-drawer__list">
-              @for (place of row.latest.serpDetail!.localPack!; track place.position + place.title) {
-                <li>
-                  <strong>#{{ place.position }} {{ place.title }}</strong>
-                  @if (place.address) {
-                    <span class="rank-drawer__muted">{{ place.address }}</span>
+            }
+            @case ('competition') {
+              @if (row.latest.competitorsAbove.length) {
+                <ul class="rank-drawer__list">
+                  @for (competitor of row.latest.competitorsAbove; track competitor.domain + competitor.position) {
+                    <li>
+                      <strong>#{{ competitor.position }}</strong>
+                      <span>{{ competitor.domain }}</span>
+                      @if (competitor.title) {
+                        <span class="rank-drawer__muted">{{ competitor.title }}</span>
+                      }
+                    </li>
                   }
-                </li>
+                </ul>
+              } @else {
+                <p class="rank-drawer__empty">No competitors above you in this snapshot.</p>
               }
-            </ul>
-          </section>
-        }
+            }
+            @default {
+              @if (row.latest.serpDetail?.organic?.length) {
+                <ol class="rank-drawer__organic">
+                  @for (result of row.latest.serpDetail!.organic!; track result.position + result.url) {
+                    <li [class.is-yours]="result.isYourSite">
+                      <span class="rank-drawer__pos">#{{ result.position }}</span>
+                      <div>
+                        <a [href]="result.url" target="_blank" rel="noopener noreferrer">{{ result.title }}</a>
+                        <p>{{ result.domain }}</p>
+                        @if (result.snippet) {
+                          <p class="rank-drawer__snippet">{{ result.snippet }}</p>
+                        }
+                      </div>
+                    </li>
+                  }
+                </ol>
+              } @else {
+                <p class="rank-drawer__empty">No organic results captured yet.</p>
+              }
 
-        @if (row.latest.serpDetail?.relatedSearches?.length) {
-          <section class="rank-drawer__section">
-            <h3>Related searches</h3>
-            <p class="rank-drawer__related">
-              {{ row.latest.serpDetail!.relatedSearches!.join(' · ') }}
-            </p>
-          </section>
-        }
+              @if (row.latest.serpDetail?.relatedSearches?.length) {
+                <section class="rank-drawer__section rank-drawer__section--inline">
+                  <h3>Related searches</h3>
+                  <p class="rank-drawer__related">
+                    {{ row.latest.serpDetail!.relatedSearches!.join(' · ') }}
+                  </p>
+                </section>
+              }
+            }
+          }
+        </div>
 
         @if (!row.latest.serpDetail) {
           <p class="rank-drawer__empty">

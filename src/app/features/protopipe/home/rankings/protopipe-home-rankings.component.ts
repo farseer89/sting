@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import type { KeywordRankingMarketTier, KeywordRankingRow } from '@hive/contracts';
-import type { RankingsSortColumn, RankingsSortState } from './protopipe-home-rankings.model';
+import type { RankingsDrawerTab, RankingsSortColumn, RankingsSortState } from './protopipe-home-rankings.model';
 import { firstValueFrom } from 'rxjs';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
@@ -18,6 +18,8 @@ import { ShireApiService } from '../../shire/shire-api.service';
 import {
   biggestRankingGaps,
   buildRankingsSummary,
+  defaultDrawerTab,
+  drawerTabsForRow,
   marketScopeLabel,
   rankLabel,
   sortRankingRows,
@@ -44,6 +46,7 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
   readonly sort = signal<RankingsSortState>({ column: 'rank', direction: 'asc' });
   readonly marketFilter = signal<MarketFilter>('all');
   readonly selectedRow = signal<KeywordRankingRow | null>(null);
+  readonly drawerTab = signal<RankingsDrawerTab>('organic');
 
   readonly filteredRows = computed(() => {
     const filter = this.marketFilter();
@@ -77,6 +80,10 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
   readonly researchGap = computed(() => {
     const gap = this.strategy.keywords().length - this.uniqueTrackedKeywords();
     return gap > 0 ? gap : 0;
+  });
+  readonly drawerTabs = computed(() => {
+    const row = this.selectedRow();
+    return row ? drawerTabsForRow(row) : [];
   });
   readonly canResearch = computed(
     () => Boolean(this.strategy.siteId()) && this.keywordCount() > 0 && !this.runSession.isActive(),
@@ -184,10 +191,16 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
 
   openRow(row: KeywordRankingRow): void {
     this.selectedRow.set(row);
+    this.drawerTab.set(defaultDrawerTab(drawerTabsForRow(row)));
   }
 
   closeDrawer(): void {
     this.selectedRow.set(null);
+    this.drawerTab.set('organic');
+  }
+
+  setDrawerTab(tab: RankingsDrawerTab): void {
+    this.drawerTab.set(tab);
   }
 
   featureChips(row: KeywordRankingRow): string[] {

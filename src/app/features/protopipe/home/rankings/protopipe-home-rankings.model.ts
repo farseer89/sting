@@ -130,3 +130,62 @@ function marketRank(tier: KeywordRankingSnapshot['marketTier']): number {
 function rankValue(position: number | null): number {
   return position ?? Number.POSITIVE_INFINITY;
 }
+
+export type RankingsDrawerTab =
+  | 'organic'
+  | 'ai_overview'
+  | 'people_also_ask'
+  | 'local_pack'
+  | 'competition';
+
+export interface RankingsDrawerTabOption {
+  id: RankingsDrawerTab;
+  label: string;
+  count?: number;
+}
+
+export function drawerTabsForRow(row: KeywordRankingRow): RankingsDrawerTabOption[] {
+  const detail = row.latest.serpDetail;
+  const features = row.latest.serpFeatures ?? [];
+  const tabs: RankingsDrawerTabOption[] = [];
+
+  tabs.push({
+    id: 'organic',
+    label: 'Top results',
+    count: detail?.organic?.length,
+  });
+
+  if (detail?.aiOverview?.present || features.includes('ai_overview')) {
+    tabs.push({ id: 'ai_overview', label: 'AI overview' });
+  }
+
+  if ((detail?.peopleAlsoAsk?.length ?? 0) > 0 || features.includes('people_also_ask')) {
+    tabs.push({
+      id: 'people_also_ask',
+      label: 'People also ask',
+      count: detail?.peopleAlsoAsk?.length,
+    });
+  }
+
+  if ((detail?.localPack?.length ?? 0) > 0 || features.includes('local_pack')) {
+    tabs.push({
+      id: 'local_pack',
+      label: 'Local pack',
+      count: detail?.localPack?.length,
+    });
+  }
+
+  if (row.latest.competitorsAbove.length > 0) {
+    tabs.push({
+      id: 'competition',
+      label: 'Competition',
+      count: row.latest.competitorsAbove.length,
+    });
+  }
+
+  return tabs;
+}
+
+export function defaultDrawerTab(tabs: RankingsDrawerTabOption[]): RankingsDrawerTab {
+  return tabs[0]?.id ?? 'organic';
+}

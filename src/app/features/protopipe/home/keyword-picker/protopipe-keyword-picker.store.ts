@@ -331,6 +331,58 @@ export class ProtopipeKeywordPickerStore {
     return true;
   }
 
+  /**
+   * Persist confirmed keywords and start researchRankings.
+   * Does not require audiences or start content plan.
+   */
+  async confirmKeywordsOnly(): Promise<boolean> {
+    if (this._confirming()) return false;
+    if (this._selected().size === 0) {
+      this._error.set('Select at least one keyword.');
+      return false;
+    }
+    const siteId = this.siteId;
+    const discoveryRunId = this._discoveryRunId();
+    if (!siteId || !discoveryRunId) {
+      this._error.set('Keyword discovery is not ready yet.');
+      return false;
+    }
+
+    this._confirming.set(true);
+    this._error.set(null);
+    try {
+      const confirmedKeywords = [...this._selected().values()].map((o) => ({
+        phrase: o.phrase,
+        marketTier: o.marketTier,
+        marketLocationName: optionalString(o.marketLocationName),
+        searchVolume: optionalNumber(o.searchVolume),
+        difficulty: optionalNumber(o.keywordDifficulty),
+        cpc: optionalNumber(o.cpc),
+        fit: optionalRatio(o.relevanceScore),
+        opportunity: optionalNumber(o.opportunityScore),
+        intent: o.intent,
+        funnelStage: o.funnelStage,
+        source: o.discoverySource,
+        isGap: o.isGap,
+        serpFeatures: o.serpFeatures,
+        avatarId: optionalString(o.avatarId),
+      }));
+
+      await this.api.confirmKeywords(siteId, {
+        discoveryRunId,
+        confirmedKeywords,
+      });
+
+      await this.strategy.reload();
+      return true;
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Failed to confirm keywords and start rankings'));
+      return false;
+    } finally {
+      this._confirming.set(false);
+    }
+  }
+
   goToBuildStep(): boolean {
     const selected = this._selectedAvatarIds();
     if (selected.size === 0) {

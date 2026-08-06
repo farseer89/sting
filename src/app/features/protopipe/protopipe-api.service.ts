@@ -41,6 +41,8 @@ import type {
   ProtopipeGetDiscoveryRunResponse,
   ProtopipeGetLatestDiscoveryRunResponse,
   ProtopipeStartDiscoveryResponse,
+  ProtopipeConfirmKeywordsRequest,
+  ProtopipeConfirmKeywordsResponse,
   ProtopipeStrategyConfirmRequest,
   ProtopipeStrategyConfirmResponse,
   ProtopipeResearchQueryRequest,
@@ -504,31 +506,38 @@ export class ProtopipeApiService {
   }
 
   startKeywordDiscoveryRun(siteId: string): Promise<ProtopipeStartDiscoveryResponse> {
-    return firstValueFrom(
-      this.http.post<ProtopipeStartDiscoveryResponse>(
-        protopipeApiUrl(ProtopipeEndpoints.keywordDiscoveryStart.path, { siteId }),
-        {},
-      ),
-    );
+    const url = isShirePrimary()
+      ? shireApiUrl(ShireEndpoints.keywordDiscovery.start(siteId))
+      : protopipeApiUrl(ProtopipeEndpoints.keywordDiscoveryStart.path, { siteId });
+    return firstValueFrom(this.http.post<ProtopipeStartDiscoveryResponse>(url, {}));
   }
 
   getKeywordDiscoveryRun(
     siteId: string,
     runId: string,
   ): Promise<ProtopipeGetDiscoveryRunResponse> {
-    return firstValueFrom(
-      this.http.get<ProtopipeGetDiscoveryRunResponse>(
-        protopipeApiUrl(ProtopipeEndpoints.keywordDiscoveryGetRun.path, { siteId, runId }),
-      ),
-    );
+    const url = isShirePrimary()
+      ? shireApiUrl(ShireEndpoints.keywordDiscovery.get(siteId, runId))
+      : protopipeApiUrl(ProtopipeEndpoints.keywordDiscoveryGetRun.path, { siteId, runId });
+    return firstValueFrom(this.http.get<ProtopipeGetDiscoveryRunResponse>(url));
   }
 
   getLatestKeywordDiscoveryRun(siteId: string): Promise<ProtopipeGetLatestDiscoveryRunResponse> {
-    return firstValueFrom(
-      this.http.get<ProtopipeGetLatestDiscoveryRunResponse>(
-        protopipeApiUrl(ProtopipeEndpoints.keywordDiscoveryGetLatestRun.path, { siteId }),
-      ),
-    );
+    const url = isShirePrimary()
+      ? shireApiUrl(ShireEndpoints.keywordDiscovery.latest(siteId))
+      : protopipeApiUrl(ProtopipeEndpoints.keywordDiscoveryGetLatestRun.path, { siteId });
+    return firstValueFrom(this.http.get<ProtopipeGetLatestDiscoveryRunResponse>(url));
+  }
+
+  /** Keywords-only confirm → researchRankings (no audiences / content plan). */
+  confirmKeywords(
+    siteId: string,
+    body: ProtopipeConfirmKeywordsRequest,
+  ): Promise<ProtopipeConfirmKeywordsResponse> {
+    const url = isShirePrimary()
+      ? shireApiUrl(ShireEndpoints.keywordDiscovery.confirmKeywords(siteId))
+      : protopipeApiUrl(ProtopipeEndpoints.keywordDiscoveryConfirmKeywords.path, { siteId });
+    return firstValueFrom(this.http.post<ProtopipeConfirmKeywordsResponse>(url, body));
   }
 
   confirmKeywordStrategy(

@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import type { KeywordRankingRow } from '@hive/contracts';
+import type { KeywordRankingMarketTier, KeywordRankingRow } from '@hive/contracts';
 import type { RankingsSortColumn, RankingsSortState } from './protopipe-home-rankings.model';
 import { firstValueFrom } from 'rxjs';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
@@ -23,6 +23,8 @@ import {
   sortRankingRows,
   topCompetitorsByOverlap,
 } from './protopipe-home-rankings.model';
+
+type MarketFilter = 'all' | KeywordRankingMarketTier;
 
 @Component({
   selector: 'app-protopipe-home-rankings',
@@ -40,36 +42,60 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly sort = signal<RankingsSortState>({ column: 'rank', direction: 'asc' });
+  readonly marketFilter = signal<MarketFilter>('all');
+  readonly selectedRow = signal<KeywordRankingRow | null>(null);
 
-  readonly sortedRows = computed(() => sortRankingRows(this.rows(), this.sort()));
+  readonly filteredRows = computed(() => {
+    const filter = this.marketFilter();
+    const all = this.rows();
+    if (filter === 'all') return all;
+    return all.filter((row) => row.latest.marketTier === filter);
+  });
+  readonly sortedRows = computed(() => sortRankingRows(this.filteredRows(), this.sort()));
   readonly summaryCards = computed(() => buildRankingsSummary(this.rows()));
   readonly topCompetitors = computed(() => topCompetitorsByOverlap(this.rows()));
   readonly biggestGaps = computed(() => biggestRankingGaps(this.rows()));
   readonly capturedAt = computed(() => latestCapturedAt(this.rows()));
-  readonly hasRows = computed(() => this.rows().length > 0);
+  readonly hasRows = computed(() => this.filteredRows().length > 0);
   readonly keywordCount = computed(() => this.strategy.keywords().length);
-  readonly canRunBaseline = computed(
+  readonly uniqueTrackedKeywords = computed(
+    () => new Set(this.rows().map((row) => row.keywordId)).size,
+  );
+  readonly marketSnapshotCount = computed(() => this.rows().length);
+  readonly coverageLabel = computed(() => {
+    const keywords = this.uniqueTrackedKeywords();
+    const snapshots = this.marketSnapshotCount();
+    if (snapshots === 0) return 'No ranking snapshots yet';
+    return `${keywords} keyword(s) · ${snapshots} market snapshot(s)`;
+  });
+  readonly canResearch = computed(
     () => Boolean(this.strategy.siteId()) && this.keywordCount() > 0 && !this.runSession.isActive(),
   );
   readonly emptyMessage = computed(() =>
     this.keywordCount() === 0
-      ? 'Confirm keywords first. Once keywords are saved, run a baseline to capture rankings.'
-      : 'Run a baseline to capture current positions and competitors above your site.',
+      ? 'Confirm keywords first. Once keywords are saved, research rankings to capture SERP detail.'
+      : 'Research rankings to capture current positions, AI overviews, and competitors.',
   );
   readonly runStatusLabel = computed(() => {
     const thought = this.runSession.thought();
     if (!thought)
       return this.capturedAt()
         ? `Fresh as of ${this.formatDate(this.capturedAt())}`
-        : 'No baseline yet';
-    if (thought.status === 'pending' || thought.status === 'running') return 'Baseline running';
-    if (thought.status === 'complete') return 'Baseline complete';
-    if (thought.status === 'failed') return 'Baseline failed';
+        : 'No research run yet';
+    if (thought.status === 'pending' || thought.status === 'running') return 'Research running';
+    if (thought.status === 'complete') return 'Research complete';
+    if (thought.status === 'failed') return 'Research failed';
     return thought.status;
   });
 
   readonly marketScopeLabel = marketScopeLabel;
   readonly rankLabel = rankLabel;
+  readonly marketFilters: { id: MarketFilter; label: string }[] = [
+    { id: 'all', label: 'All markets' },
+    { id: 'local', label: 'Local' },
+    { id: 'national', label: 'Nationwide' },
+    { id: 'worldwide', label: 'Worldwide' },
+  ];
 
   constructor() {
     effect(() => {
@@ -81,6 +107,22 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
 
   ngOnInit(): void {
     void this.loadRankings();
+    void this.attachLatestResearchRun();
+  }
+
+  private async attachLatestResearchRun(): Promise<void> {
+    const siteId = this.strategy.siteId();
+    if (!siteId || this.runSession.isActive()) return;
+    try {
+      const { run } = await firstValueFrom(
+        this.api.getLatestRun$(siteId, 'rankings_baseline'),
+      );
+      if (run.status === 'pending' || run.status === 'running') {
+        this.runSession.attach(siteId, run.id, run);
+      }
+    } catch {
+      // No prior research run — fine.
+    }
   }
 
   async loadRankings(): Promise<void> {
@@ -91,6 +133,17 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
     try {
       const response = await firstValueFrom(this.api.listRankings$(siteId));
       this.rows.set(response.rankings);
+      const selected = this.selectedRow();
+      if (selected) {
+        const refreshed =
+          response.rankings.find(
+            (row) =>
+              row.keywordId === selected.keywordId &&
+              row.latest.marketTier === selected.latest.marketTier &&
+              row.latest.locationCode === selected.latest.locationCode,
+          ) ?? null;
+        this.selectedRow.set(refreshed);
+      }
     } catch (err) {
       if (isRankingsNotReadyError(err)) {
         this.rows.set([]);
@@ -102,14 +155,62 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
     }
   }
 
-  async runBaseline(): Promise<void> {
+  async runResearch(): Promise<void> {
     const siteId = this.strategy.siteId();
-    if (!siteId || !this.canRunBaseline()) return;
+    if (!siteId || !this.canResearch()) return;
     this.error.set(null);
-    const run = await this.runSession.enqueueRun(siteId, { thinkerKind: 'rankings_baseline' });
-    if (!run && this.runSession.loadError()) {
-      this.error.set(this.runSession.loadError());
+    try {
+      const { runId } = await firstValueFrom(this.api.researchRankings$(siteId));
+      const run = await this.runSession.loadRun(siteId, runId);
+      if (!run && this.runSession.loadError()) {
+        this.error.set(this.runSession.loadError());
+      }
+    } catch (err) {
+      this.error.set(parseProtopipeApiError(err, 'Could not start rankings research.'));
     }
+  }
+
+  setMarketFilter(filter: MarketFilter): void {
+    this.marketFilter.set(filter);
+  }
+
+  openRow(row: KeywordRankingRow): void {
+    this.selectedRow.set(row);
+  }
+
+  closeDrawer(): void {
+    this.selectedRow.set(null);
+  }
+
+  featureChips(row: KeywordRankingRow): string[] {
+    return row.latest.serpFeatures ?? [];
+  }
+
+  featureLabel(feature: string): string {
+    switch (feature) {
+      case 'ai_overview':
+        return 'AI overview';
+      case 'people_also_ask':
+        return 'People also ask';
+      case 'featured_snippet':
+        return 'Featured snippet';
+      case 'related_searches':
+        return 'Related searches';
+      case 'images':
+        return 'Images';
+      case 'video':
+        return 'Video';
+      case 'knowledge_graph':
+        return 'Knowledge graph';
+      default:
+        return feature;
+    }
+  }
+
+  aiOverviewText(row: KeywordRankingRow): string | null {
+    const overview = row.latest.serpDetail?.aiOverview;
+    if (!overview?.present) return null;
+    return overview.markdown?.trim() || overview.text?.trim() || null;
   }
 
   toggleSort(column: RankingsSortColumn): void {

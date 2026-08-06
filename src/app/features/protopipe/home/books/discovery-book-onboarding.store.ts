@@ -903,7 +903,8 @@ export class DiscoveryBookOnboardingStore {
       if (res.discoveryRunId) {
         this.saveStatus.set('Saved — starting a fresh discovery run…');
         if (!wasOnboardingCompleted) {
-          void this.keywordStore.followDiscoveryRun(siteId, res.discoveryRunId);
+          // First finish goes to the home dashboard. Discovery continues server-side;
+          // do not attach the runbook UI here (that hijacks navigation to Market Baseline).
           return res.discoveryRunId;
         }
         await this.keywordStore.followDiscoveryRun(siteId, res.discoveryRunId);
@@ -915,7 +916,6 @@ export class DiscoveryBookOnboardingStore {
         this.saveStatus.set('Saved — starting keyword discovery…');
         const started = await this.api.startKeywordDiscoveryRun(siteId);
         if (!wasOnboardingCompleted) {
-          void this.keywordStore.followDiscoveryRun(siteId, started.run.id);
           return started.run.id;
         }
         await this.keywordStore.followDiscoveryRun(siteId, started.run.id);

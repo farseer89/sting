@@ -283,13 +283,14 @@ export class ProtopipeKeywordPickerComponent implements OnInit {
   }
 
   continueFromKeywords(): void {
-    if (this.store.wizardEnabled()) {
-      if (this.store.confirmKeywordSelection()) {
-        this.bookSectionChange.emit('avatars');
-      }
-      return;
+    void this.confirmKeywords();
+  }
+
+  async confirmKeywords(): Promise<void> {
+    const ok = await this.store.confirmKeywordsOnly();
+    if (ok) {
+      this.confirmed.emit();
     }
-    void this.confirm();
   }
 
   continueFromAvatars(): void {

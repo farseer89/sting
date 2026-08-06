@@ -5,6 +5,7 @@ import {
   type EnqueueRunRequest,
   type KeywordRankingsListResponse,
   type RunResponse,
+  type ThinkerKind,
 } from '@hive/contracts';
 import { Observable } from 'rxjs';
 import { shireApiUrl } from './shire-http.util';
@@ -17,6 +18,13 @@ export class ShireApiService {
     return this.http.get<RunResponse>(shireApiUrl(ShireEndpoints.runs.get(siteId, runId)));
   }
 
+  getLatestRun$(siteId: string, thinkerKind?: ThinkerKind): Observable<RunResponse> {
+    const params = thinkerKind ? { thinkerKind } : undefined;
+    return this.http.get<RunResponse>(shireApiUrl(ShireEndpoints.runs.latest(siteId)), {
+      params,
+    });
+  }
+
   enqueueRun$(siteId: string, body: EnqueueRunRequest): Observable<RunResponse> {
     return this.http.post<RunResponse>(shireApiUrl(ShireEndpoints.runs.enqueue(siteId)), body);
   }
@@ -24,6 +32,13 @@ export class ShireApiService {
   listRankings$(siteId: string): Observable<KeywordRankingsListResponse> {
     return this.http.get<KeywordRankingsListResponse>(
       shireApiUrl(ShireEndpoints.rankings.list(siteId)),
+    );
+  }
+
+  researchRankings$(siteId: string): Observable<{ runId: string }> {
+    return this.http.post<{ runId: string }>(
+      shireApiUrl(ShireEndpoints.rankings.research(siteId)),
+      {},
     );
   }
 

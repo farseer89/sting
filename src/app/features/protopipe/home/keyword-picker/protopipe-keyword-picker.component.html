@@ -534,11 +534,9 @@
                 (click)="continueFromKeywords()"
               >
               @if (store.confirming()) {
-                Saving…
-              } @else if (store.wizardEnabled()) {
-                Continue to audiences
+                Confirming…
               } @else {
-                Confirm & build plan
+                Confirm keywords
               }
               </button>
             </div>

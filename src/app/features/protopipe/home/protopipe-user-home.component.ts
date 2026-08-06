@@ -727,8 +727,12 @@ export class ProtopipeUserHomeComponent implements OnInit {
   }
 
   onKeywordsConfirmed(): void {
-    this.activeView.set('strategy');
-    this.activeNavId.set('content-strategy');
+    this.leaveWriterFocus();
+    this.leaveThinkerFocus();
+    this.sidePanel.setOpen(false);
+    this.activeView.set('rankings');
+    this.activeNavId.set('seo-rankings');
+    void this.router.navigate([HOME_RANKINGS_PATH]);
   }
 
   onDashboardOpen(
@@ -765,11 +769,12 @@ export class ProtopipeUserHomeComponent implements OnInit {
   }
 
   onOnboardingFinished(): void {
-    this.leaveWriterFocus();
-    this.leaveThinkerFocus();
-    this.sidePanel.setOpen(false);
+    // Navigate first so Discovery Book cannot paint Market Baseline before route sync.
     this.activeView.set('dashboard');
     this.activeNavId.set('home-dashboard');
+    this.sidePanel.setOpen(false);
+    this.leaveWriterFocus();
+    this.leaveThinkerFocus();
     void this.router.navigateByUrl(HOME_DASHBOARD_PATH, { replaceUrl: true });
   }
 

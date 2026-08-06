@@ -190,19 +190,11 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
     () => this.canUseDiscoveryPipeline() && this.keywordResearchReady(),
   );
 
-  readonly showAudiencesNav = computed(
-    () =>
-      this.canUseDiscoveryPipeline() &&
-      this.keywordResearchReady() &&
-      (this.store.wizardEnabled() || this.store.wizardStep() !== 'keywords'),
-  );
+  /** Audiences confirm moves to the content component later — hide for rankings-first flow. */
+  readonly showAudiencesNav = computed(() => false);
 
-  readonly showBuildNav = computed(
-    () =>
-      this.canUseDiscoveryPipeline() &&
-      this.keywordResearchReady() &&
-      this.store.wizardStep() === 'build',
-  );
+  /** Content plan build is deferred until after rankings iteration. */
+  readonly showBuildNav = computed(() => false);
 
   readonly activeOnboardingMeta = computed(() => {
     const section = this.activeSection();
@@ -233,24 +225,21 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
       if (!this.onboardingState.onboardingCompletionKnown()) return;
 
       this.onboardingStore.syncFromStrategy();
+
+      if (!this.didResolveInitialSection()) {
+        this.didResolveInitialSection.set(true);
+        if (!this.onboardingState.onboardingCompleted()) {
+          this.activeSection.set(
+            resolveOnboardingResumeStepId(this.strategy.onboardingStepId()),
+          );
+        } else {
+          // Completed onboarding opens keyword selection — never auto-enter the runbook.
+          // Market Baseline is only opened via explicit user action / Save & rerun.
+          this.activeSection.set('keywords');
+        }
+      }
+
       this.loadKeywordStoreWhenReady();
-
-      if (this.didResolveInitialSection()) return;
-      this.didResolveInitialSection.set(true);
-
-      if (!this.onboardingState.onboardingCompleted()) {
-        this.activeSection.set(
-          resolveOnboardingResumeStepId(this.strategy.onboardingStepId()),
-        );
-        return;
-      }
-
-      const run = this.discoveryRun();
-      if (run?.status === 'pending' || run?.status === 'discovering') {
-        this.activeSection.set('discovery');
-      } else {
-        this.activeSection.set('keywords');
-      }
     });
 
     effect(() => {
@@ -265,13 +254,10 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
         return;
       }
 
+      // If the user is watching a run and it finishes, move them to keywords once.
+      // Do not auto-open Market Baseline when a run becomes pending (finish/onboarding).
       const run = this.discoveryRun();
       if (!run) return;
-      if (run.status === 'pending' || run.status === 'discovering') {
-        this.didAutoLeaveDiscovery.set(false);
-        this.activeSection.set('discovery');
-        return;
-      }
       if (
         (run.status === 'ready' || run.status === 'confirmed') &&
         this.activeSection() === 'discovery' &&
@@ -318,6 +304,7 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
     }
     if (!isOnboardingSection(section)) {
       this.syncWizardStep(section);
+      this.loadKeywordStoreWhenReady();
     }
   }
 
@@ -340,6 +327,8 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
   }
 
   onOnboardingFinished(): void {
+    // Keep the book off the runbook while the shell navigates to the dashboard.
+    this.didAutoLeaveDiscovery.set(true);
     this.onboardingFinished.emit();
   }
 
@@ -402,6 +391,9 @@ export class ProtopipeHomeKeywordBookComponent implements OnInit {
 
   private loadKeywordStoreWhenReady(): void {
     if (this.didLoadKeywordStore() || !this.canUseDiscoveryPipeline()) return;
+    // Avoid the full-book loading spinner during onboarding finish — dashboard
+    // loads keyword/discovery state after navigation.
+    if (isOnboardingSection(this.activeSection())) return;
     this.didLoadKeywordStore.set(true);
     void this.store.load();
   }

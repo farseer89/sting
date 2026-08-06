@@ -263,8 +263,10 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
   }
 
   topCompetitorDomains(row: KeywordRankingRow): string {
-    const domains = row.latest.competitorsAbove.map((competitor) => competitor.domain).slice(0, 3);
-    return domains.length ? domains.join(', ') : 'No competitor above captured';
+    const labels = row.latest.competitorsAbove
+      .map((competitor) => competitor.title ?? competitor.domain)
+      .slice(0, 3);
+    return labels.length ? labels.join(', ') : 'No competitor above captured';
   }
 
   formatDate(value: string | null | undefined): string {

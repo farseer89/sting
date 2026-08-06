@@ -11,9 +11,9 @@
   flex-direction: column;
   gap: 1.25rem;
   width: 100%;
-  max-width: 72rem;
-  margin: 0 auto;
-  padding: 0.65rem 0.75rem 1.75rem;
+  max-width: none;
+  margin: 0;
+  padding: 0.65rem 0.75rem 1.75rem 0.35rem;
   color: var(--void-ink, #111827);
   box-sizing: border-box;
 }

@@ -176,6 +176,17 @@
             <dd>{{ lead.componentId }}</dd>
           </div>
         </dl>
+
+        <div class="lead-drawer__actions">
+          <button
+            type="button"
+            class="lead-drawer__delete"
+            [disabled]="deleting()"
+            (click)="deleteSelectedLead()"
+          >
+            {{ deleting() ? 'Deleting…' : 'Delete lead' }}
+          </button>
+        </div>
       </aside>
     </div>
   }

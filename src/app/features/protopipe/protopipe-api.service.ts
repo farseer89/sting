@@ -1231,6 +1231,14 @@ export class ProtopipeApiService {
     return firstValueFrom(this.http.get<ProtopipeLeadDetailResponse>(url));
   }
 
+  deleteLead(siteId: string, leadId: string): Promise<{ deleted: true; id: string }> {
+    return firstValueFrom(
+      this.http.delete<{ deleted: true; id: string }>(
+        shireApiUrl(ShireEndpoints.leads.delete(siteId, leadId)),
+      ),
+    );
+  }
+
   getFormNotifications(siteId: string): Promise<ShireFormNotificationsResponse> {
     return firstValueFrom(
       this.http.get<ShireFormNotificationsResponse>(

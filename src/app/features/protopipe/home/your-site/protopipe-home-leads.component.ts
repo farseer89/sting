@@ -34,6 +34,7 @@ export class ProtopipeHomeLeadsComponent implements OnInit {
   readonly sort = signal<LeadSortState>({ column: 'received', direction: 'desc' });
   readonly statusFilter = signal<LeadStatusFilter>('all');
   readonly selectedLead = signal<ShireLead | null>(null);
+  readonly deleting = signal(false);
 
   readonly sortedRows = computed(() => sortLeads(this.filteredRows(), this.sort()));
   readonly filteredRows = computed(() => {
@@ -92,6 +93,27 @@ export class ProtopipeHomeLeadsComponent implements OnInit {
 
   closeDrawer(): void {
     this.selectedLead.set(null);
+  }
+
+  async deleteSelectedLead(): Promise<void> {
+    const lead = this.selectedLead();
+    const siteId = this.strategy.siteId();
+    if (!lead || !siteId) return;
+
+    const label = lead.name?.trim() || lead.email || 'this lead';
+    if (!window.confirm(`Delete ${label}? This cannot be undone.`)) return;
+
+    this.deleting.set(true);
+    this.error.set(null);
+    try {
+      await this.api.deleteLead(siteId, lead.id);
+      this.rows.update((rows) => rows.filter((row) => row.id !== lead.id));
+      this.selectedLead.set(null);
+    } catch (err) {
+      this.error.set(parseProtopipeApiError(err, 'Could not delete lead.'));
+    } finally {
+      this.deleting.set(false);
+    }
   }
 
   toggleSort(column: LeadSortColumn): void {

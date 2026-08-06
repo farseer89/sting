@@ -1,6 +1,7 @@
 import type { KeywordRelevanceContext } from './keyword-picker.relevance';
 import { computeRelevanceScore } from './keyword-picker.relevance';
 import type { KeywordPickerOption } from './keyword-picker.types';
+import { comparePlanRows } from './keyword-picker.table';
 import {
   ASSUMED_DIFFICULTY,
   MIN_KEYWORD_VOLUME,
@@ -230,6 +231,12 @@ export function dedupeConfirmKeywords(options: KeywordPickerOption[]): KeywordPi
     });
   }
   return [...byPhrase.values()];
+}
+
+export function sortSelectedPanelList(options: KeywordPickerOption[]): KeywordPickerOption[] {
+  return [...dedupeConfirmKeywords(options)].sort(
+    (a, b) => comparePlanRows(a, b, 'opportunity') * -1,
+  );
 }
 
 export function mergeKeywordOption(

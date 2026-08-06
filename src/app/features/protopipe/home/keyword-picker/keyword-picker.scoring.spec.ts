@@ -7,6 +7,7 @@ import {
   mergeKeywordOption,
   refreshSelectedFromPool,
   scoreKeywordOptions,
+  sortSelectedPanelList,
 } from './keyword-picker.scoring';
 import type { KeywordPickerOption } from './keyword-picker.types';
 
@@ -141,5 +142,21 @@ describe('keyword selection helpers', () => {
     ]);
     expect(deduped).toHaveLength(1);
     expect(deduped[0]?.marketTier).toBe('local');
+  });
+
+  it('sorts the selected panel by opportunity descending', () => {
+    const sorted = sortSelectedPanelList([
+      pool[1],
+      pool[0],
+      {
+        ...pool[0],
+        phraseKey: 'live wedding painting::national',
+        marketTier: 'national',
+      },
+    ]);
+    expect(sorted.map((row) => row.phrase)).toEqual([
+      'live wedding painting',
+      'wedding painter maui',
+    ]);
   });
 });

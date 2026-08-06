@@ -33,6 +33,7 @@ import {
   poolOptionsForPhrase,
   refreshSelectedFromPool,
   scoreKeywordOptions,
+  sortSelectedPanelList,
 } from './keyword-picker.scoring';
 import type { KeywordPickerOption, KeywordPickerSource } from './keyword-picker.types';
 import { keywordPickerKey, normalizePhraseKey } from './keyword-picker.types';
@@ -151,8 +152,11 @@ export class ProtopipeKeywordPickerStore {
   readonly hoveredAvatarId = this._hoveredAvatarId.asReadonly();
   readonly wizardStep = this._wizardStep.asReadonly();
 
-  readonly selectedCount = computed(() => this._selected().size);
-  readonly selectedList = computed(() => [...this._selected().values()]);
+  readonly selectedPanelList = computed(() =>
+    sortSelectedPanelList([...this._selected().values()]),
+  );
+  readonly selectedList = this.selectedPanelList;
+  readonly selectedCount = computed(() => this.selectedPanelList().length);
   readonly selectedAvatarCount = computed(() => this._selectedAvatarIds().size);
   readonly dashboardMarketBaseline = computed(() => {
     const artifacts = (this._dashboardDiscoveryRun() as unknown as LabKeywordDiscoveryRunDto | null)

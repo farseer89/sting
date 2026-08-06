@@ -198,6 +198,8 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
     switch (feature) {
       case 'ai_overview':
         return 'AI overview';
+      case 'local_pack':
+        return 'Local pack';
       case 'people_also_ask':
         return 'People also ask';
       case 'featured_snippet':

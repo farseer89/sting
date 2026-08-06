@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { fitLabel } from './keyword-picker.table';
+import { fitLabel, marketBadgeLabel } from './keyword-picker.table';
 import {
   formatCompetitionLabel,
   formatKeywordVolume,
@@ -19,9 +19,10 @@ export class ProtopipeKeywordSearchPanelComponent {
   readonly formatVolume = formatKeywordVolume;
   readonly formatCompetition = formatCompetitionLabel;
   readonly fitLabel = fitLabel;
+  readonly marketBadgeLabel = marketBadgeLabel;
 
   readonly selectedVolume = computed(() =>
-    this.store.selectedList().reduce((sum, k) => sum + (k.searchVolume ?? 0), 0),
+    this.store.selectedPanelList().reduce((sum, k) => sum + (k.searchVolume ?? 0), 0),
   );
 
   remove(phraseKey: string): void {

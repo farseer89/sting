@@ -12,11 +12,14 @@
   </div>
 } @else {
   <ul class="kwsearch__selected" aria-label="Selected keywords">
-    @for (kw of store.selectedList(); track kw.phraseKey) {
+    @for (kw of store.selectedPanelList(); track kw.phraseKey) {
       <li class="kwsearch__selected-row">
         <div class="kwsearch__selected-main">
           <span class="kwsearch__selected-phrase">{{ kw.phrase }}</span>
           <span class="kwsearch__selected-meta">
+            @if (kw.marketTier) {
+              <span class="kwsearch__pill">{{ marketBadgeLabel(kw) }}</span>
+            }
             <span>{{ formatVolume(kw.searchVolume) }}/mo</span>
             <span>{{ formatCompetition(kw) }}</span>
             @if (kw.relevanceScore != null) {

@@ -92,7 +92,7 @@ export class NavigationService {
           },
           {
             id: 'analytics',
-            label: 'Analytics',
+            label: 'Site Visits',
             icon: 'pi pi-chart-bar',
             routerLink: '/home/analytics',
             visible: true,

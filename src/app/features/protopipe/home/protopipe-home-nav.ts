@@ -90,12 +90,6 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
     icon: 'write',
     children: [
       {
-        id: 'content-discovery',
-        label: 'Discovery book',
-        icon: 'search',
-        capability: 'discovery',
-      },
-      {
         id: 'content-strategy',
         label: 'Your strategy',
         icon: 'sitemap',
@@ -143,13 +137,6 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
         capability: 'admin_internal',
         hiddenWhenLocked: true,
       },
-      {
-        id: 'content-packs',
-        label: 'Thought packs',
-        icon: 'sitemap',
-        capability: 'content_packs',
-        lockedLabel: 'Advanced',
-      },
     ],
   },
   {
@@ -167,6 +154,12 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
         label: 'Hosting setup',
         icon: 'link',
         requiresNonHostedSite: true,
+      },
+      {
+        id: 'analytics-overview',
+        label: 'Site Visits',
+        icon: 'chart',
+        requiresHostedSite: true,
       },
       {
         id: 'your-site-leads',
@@ -255,12 +248,6 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
         icon: 'inbox',
         capability: 'admin_internal',
         hiddenWhenLocked: true,
-      },
-      {
-        id: 'analytics-overview',
-        label: 'Overview',
-        icon: 'chart',
-        requiresHostedSite: true,
       },
     ],
   },

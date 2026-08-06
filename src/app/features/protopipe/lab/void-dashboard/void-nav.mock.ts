@@ -71,7 +71,7 @@ export const VOID_PREMIERE_NAV: VoidNavItem[] = [
     label: 'Analytics',
     icon: 'chart',
     children: [
-      { id: 'analytics-overview', label: 'Overview', icon: 'chart', window: 'analytics' },
+      { id: 'analytics-overview', label: 'Site Visits', icon: 'chart', window: 'analytics' },
       { id: 'analytics-calendar', label: 'Calendar', icon: 'grid', window: 'calendar' },
     ],
   },

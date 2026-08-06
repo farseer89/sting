@@ -1240,7 +1240,7 @@ export class ProtopipeApiService {
     );
   }
 
-  getSiteAnalytics(siteId: string): Promise<ShireSiteAnalyticsResponse> {
+  getHostedSiteAnalytics(siteId: string): Promise<ShireSiteAnalyticsResponse> {
     return firstValueFrom(
       this.http.get<ShireSiteAnalyticsResponse>(shireApiUrl(ShireEndpoints.analytics.get(siteId))),
     );

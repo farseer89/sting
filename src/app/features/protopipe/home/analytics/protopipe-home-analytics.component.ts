@@ -93,7 +93,7 @@ export class ProtopipeHomeAnalyticsComponent implements OnInit {
 
     this.loading.set(true);
     try {
-      const res = await this.api.getSiteAnalytics(siteId);
+      const res = await this.api.getHostedSiteAnalytics(siteId);
       this.applyResponse(res);
     } catch (err) {
       this.snapshot.set(null);

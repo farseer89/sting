@@ -52,7 +52,9 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
     return all.filter((row) => row.latest.marketTier === filter);
   });
   readonly sortedRows = computed(() => sortRankingRows(this.filteredRows(), this.sort()));
-  readonly summaryCards = computed(() => buildRankingsSummary(this.rows()));
+  readonly summaryCards = computed(() =>
+    buildRankingsSummary(this.rows(), this.strategy.keywords().length),
+  );
   readonly topCompetitors = computed(() => topCompetitorsByOverlap(this.rows()));
   readonly biggestGaps = computed(() => biggestRankingGaps(this.rows()));
   readonly capturedAt = computed(() => latestCapturedAt(this.rows()));
@@ -63,10 +65,18 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
   );
   readonly marketSnapshotCount = computed(() => this.rows().length);
   readonly coverageLabel = computed(() => {
-    const keywords = this.uniqueTrackedKeywords();
+    const confirmed = this.strategy.keywords().length;
+    const researched = this.uniqueTrackedKeywords();
     const snapshots = this.marketSnapshotCount();
-    if (snapshots === 0) return 'No ranking snapshots yet';
-    return `${keywords} keyword(s) · ${snapshots} market snapshot(s)`;
+    if (confirmed === 0 && snapshots === 0) return 'No ranking snapshots yet';
+    if (confirmed > researched) {
+      return `${confirmed} confirmed · ${researched} researched · ${snapshots} snapshot(s)`;
+    }
+    return `${researched} keyword(s) · ${snapshots} market snapshot(s)`;
+  });
+  readonly researchGap = computed(() => {
+    const gap = this.strategy.keywords().length - this.uniqueTrackedKeywords();
+    return gap > 0 ? gap : 0;
   });
   readonly canResearch = computed(
     () => Boolean(this.strategy.siteId()) && this.keywordCount() > 0 && !this.runSession.isActive(),

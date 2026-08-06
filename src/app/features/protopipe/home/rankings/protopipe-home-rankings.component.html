@@ -7,6 +7,12 @@
         detail.
       </p>
       <p class="rankdash__coverage">{{ coverageLabel() }}</p>
+      @if (researchGap() > 0) {
+        <p class="rankdash__gap">
+          {{ researchGap() }} confirmed keyword(s) have no ranking data yet. Click
+          <strong>Research rankings</strong> to capture them.
+        </p>
+      }
     </div>
     <div class="rankdash__actions">
       <span class="rankdash__status">{{ runStatusLabel() }}</span>

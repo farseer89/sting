@@ -35,6 +35,14 @@ export class ShireApiService {
     );
   }
 
+  /** Back-compat for builds that POST here instead of /runs. */
+  researchRankings$(siteId: string): Observable<{ runId: string }> {
+    return this.http.post<{ runId: string }>(
+      shireApiUrl(ShireEndpoints.rankings.research(siteId)),
+      {},
+    );
+  }
+
   rerunStep$(siteId: string, runId: string, stepId: string): Observable<RunResponse> {
     return this.http.post<RunResponse>(
       shireApiUrl(ShireEndpoints.runs.rerunStep(siteId, runId, stepId)),

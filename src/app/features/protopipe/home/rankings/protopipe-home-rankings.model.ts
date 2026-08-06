@@ -30,8 +30,12 @@ export function rankLabel(position: number | null): string {
   return position == null ? 'Not ranking' : `#${position}`;
 }
 
-export function buildRankingsSummary(rows: KeywordRankingRow[]): RankingsSummaryCard[] {
-  const tracked = new Set(rows.map((row) => row.keywordId)).size;
+export function buildRankingsSummary(
+  rows: KeywordRankingRow[],
+  confirmedKeywordCount?: number,
+): RankingsSummaryCard[] {
+  const researched = new Set(rows.map((row) => row.keywordId)).size;
+  const tracked = confirmedKeywordCount ?? researched;
   const top3 = rows.filter((row) => row.latest.position != null && row.latest.position <= 3).length;
   const top10 = rows.filter(
     (row) => row.latest.position != null && row.latest.position <= 10,
@@ -46,7 +50,10 @@ export function buildRankingsSummary(rows: KeywordRankingRow[]): RankingsSummary
       id: 'tracked',
       label: 'Keywords tracked',
       value: String(tracked),
-      hint: `${rows.length} market snapshots`,
+      hint:
+        confirmedKeywordCount != null && confirmedKeywordCount > researched
+          ? `${researched} researched · ${rows.length} snapshots`
+          : `${rows.length} market snapshots`,
     },
     { id: 'top3', label: 'Top 3', value: String(top3), hint: `${top10} in top 10` },
     { id: 'missing', label: 'Not ranking yet', value: String(notRanking), hint: 'Baseline gaps' },

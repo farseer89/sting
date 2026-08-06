@@ -24,9 +24,14 @@ import {
 } from './keyword-picker.relevance';
 import { buildSearchResultsFromResearch } from './keyword-picker.search-results';
 import {
+  buildInitialSelection,
+  dedupeConfirmKeywords,
+  isPhraseSelected,
   mergeKeywordOption,
-  pickPreselectedKeys,
+  normalizePhraseFromKey,
   pickSuggestedPanel,
+  poolOptionsForPhrase,
+  refreshSelectedFromPool,
   scoreKeywordOptions,
 } from './keyword-picker.scoring';
 import type { KeywordPickerOption, KeywordPickerSource } from './keyword-picker.types';
@@ -265,6 +270,9 @@ export class ProtopipeKeywordPickerStore {
             void this.followDiscoveryRun(siteId, existing.id);
           }
         } else if (existing.status === 'ready' || existing.status === 'confirmed') {
+          if (existing.status === 'confirmed') {
+            await this.strategy.reload();
+          }
           this.thinkerView.updateDiscoveryRun(existing);
           this.mergeDiscoveryRun(existing, map);
           this.applySuggestedAvatars(existing.artifacts.suggestedAvatars ?? []);
@@ -351,22 +359,7 @@ export class ProtopipeKeywordPickerStore {
     this._confirming.set(true);
     this._error.set(null);
     try {
-      const confirmedKeywords = [...this._selected().values()].map((o) => ({
-        phrase: o.phrase,
-        marketTier: o.marketTier,
-        marketLocationName: optionalString(o.marketLocationName),
-        searchVolume: optionalNumber(o.searchVolume),
-        difficulty: optionalNumber(o.keywordDifficulty),
-        cpc: optionalNumber(o.cpc),
-        fit: optionalRatio(o.relevanceScore),
-        opportunity: optionalNumber(o.opportunityScore),
-        intent: o.intent,
-        funnelStage: o.funnelStage,
-        source: o.discoverySource,
-        isGap: o.isGap,
-        serpFeatures: o.serpFeatures,
-        avatarId: optionalString(o.avatarId),
-      }));
+      const confirmedKeywords = this.mapConfirmedKeywords();
 
       await this.api.confirmKeywords(siteId, {
         discoveryRunId,
@@ -637,22 +630,7 @@ export class ProtopipeKeywordPickerStore {
         };
       });
 
-      const confirmedKeywords = [...this._selected().values()].map((o) => ({
-        phrase: o.phrase,
-        marketTier: o.marketTier,
-        marketLocationName: optionalString(o.marketLocationName),
-        searchVolume: optionalNumber(o.searchVolume),
-        difficulty: optionalNumber(o.keywordDifficulty),
-        cpc: optionalNumber(o.cpc),
-        fit: optionalRatio(o.relevanceScore),
-        opportunity: optionalNumber(o.opportunityScore),
-        intent: o.intent,
-        funnelStage: o.funnelStage,
-        source: o.discoverySource,
-        isGap: o.isGap,
-        serpFeatures: o.serpFeatures,
-        avatarId: optionalString(o.avatarId),
-      }));
+      const confirmedKeywords = this.mapConfirmedKeywords();
 
       await this.api.confirmKeywordStrategy(siteId, {
         discoveryRunId,
@@ -723,17 +701,27 @@ export class ProtopipeKeywordPickerStore {
   }
 
   isSelected(phraseKey: string): boolean {
-    return this._selected().has(phraseKey);
+    return isPhraseSelected(this._selected(), phraseKey);
   }
 
   toggle(option: KeywordPickerOption): void {
     const key = option.phraseKey || keywordPickerKey(option.phrase, option.marketTier);
     if (!key) return;
+    const normalized = normalizePhraseKey(option.phrase);
     this._selected.update((current) => {
       const next = new Map(current);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
+      if (isPhraseSelected(current, normalized)) {
+        for (const [entryKey, entry] of current) {
+          if (normalizePhraseKey(entry.phrase) === normalized) {
+            next.delete(entryKey);
+          }
+        }
+        return next;
+      }
+      for (const poolOption of poolOptionsForPhrase(this._pool(), option.phrase)) {
+        next.set(poolOption.phraseKey, poolOption);
+      }
+      if (!isPhraseSelected(next, normalized)) {
         next.set(key, { ...option, phraseKey: key });
       }
       return next;
@@ -743,7 +731,12 @@ export class ProtopipeKeywordPickerStore {
   remove(phraseKey: string): void {
     this._selected.update((current) => {
       const next = new Map(current);
-      next.delete(phraseKey);
+      const normalized = normalizePhraseFromKey(phraseKey);
+      for (const [key, option] of current) {
+        if (normalizePhraseKey(option.phrase) === normalized) {
+          next.delete(key);
+        }
+      }
       return next;
     });
   }
@@ -751,7 +744,7 @@ export class ProtopipeKeywordPickerStore {
   addCustom(phrase: string): boolean {
     const key = normalizePhraseKey(phrase);
     if (!key) return false;
-    if (this._selected().has(key)) return false;
+    if (isPhraseSelected(this._selected(), key)) return false;
     const option: KeywordPickerOption = {
       phraseKey: key,
       phrase: phrase.trim(),
@@ -1061,6 +1054,25 @@ export class ProtopipeKeywordPickerStore {
     }
   }
 
+  private mapConfirmedKeywords() {
+    return dedupeConfirmKeywords([...this._selected().values()]).map((o) => ({
+      phrase: o.phrase,
+      marketTier: o.marketTier,
+      marketLocationName: optionalString(o.marketLocationName),
+      searchVolume: optionalNumber(o.searchVolume),
+      difficulty: optionalNumber(o.keywordDifficulty),
+      cpc: optionalNumber(o.cpc),
+      fit: optionalRatio(o.relevanceScore),
+      opportunity: optionalNumber(o.opportunityScore),
+      intent: o.intent,
+      funnelStage: o.funnelStage,
+      source: o.discoverySource,
+      isGap: o.isGap,
+      serpFeatures: o.serpFeatures,
+      avatarId: optionalString(o.avatarId),
+    }));
+  }
+
   private applyScoredPool(map: Map<string, KeywordPickerOption>): void {
     // Keep saved + strategy keywords in the browsable pool (confirmed runs may omit scoredCandidates).
     this.loadFromSavedStrategy(map);
@@ -1068,26 +1080,27 @@ export class ProtopipeKeywordPickerStore {
     this._pool.set(scored);
     this._suggested.set(pickSuggestedPanel(scored));
 
-    const savedKeys = new Set(this.strategy.keywords().map((k) => normalizePhraseKey(k.phrase)));
-    const preselected = pickPreselectedKeys(scored, savedKeys);
-    const selected = new Map<string, KeywordPickerOption>();
+    const savedKeys = new Set(
+      this.strategy
+        .keywords()
+        .map((keyword) => normalizePhraseKey(keyword.phrase))
+        .filter(Boolean),
+    );
 
-    for (const key of preselected) {
-      const fromPool = scored.find((o) => o.phraseKey === key);
-      if (fromPool) {
-        selected.set(key, fromPool);
-      }
+    if (savedKeys.size > 0) {
+      // Confirmed keywords always repopulate checkmarks when returning to the picker.
+      this._selected.set(buildInitialSelection(scored, savedKeys));
+      return;
     }
-    for (const kw of this.strategy.keywords()) {
-      const key = normalizePhraseKey(kw.phrase);
-      if (!key || selected.has(key)) continue;
-      selected.set(key, {
-        phraseKey: key,
-        phrase: kw.phrase,
-        source: 'custom',
-      });
+
+    const existing = this._selected();
+    if (existing.size > 0) {
+      // Discovery can finish in the background while the user is checking rows — keep their picks.
+      this._selected.set(refreshSelectedFromPool(existing, scored));
+      return;
     }
-    this._selected.set(selected);
+
+    this._selected.set(buildInitialSelection(scored, savedKeys));
   }
 
   private mergeIntoPool(option: KeywordPickerOption): void {

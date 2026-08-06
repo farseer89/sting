@@ -18,9 +18,8 @@ import {
   competitionHint,
   competitionTier,
   fitTier,
+  marketBadgeLabel,
   opportunityTier,
-  marketScopeDetail,
-  marketScopeLabel,
   volumeHint,
   volumeTier,
   type KeywordPlanSortColumn,
@@ -28,7 +27,7 @@ import {
   type MetricTier,
 } from './keyword-picker.table';
 import { sourceLabel, formatKeywordVolume, formatCompetitionLabel, MIN_KEYWORD_VOLUME } from './keyword-picker.types';
-import type { ProtopipeSuggestedAvatar } from '@hive/contracts';
+import type { MarketTier, ProtopipeSuggestedAvatar } from '@hive/contracts';
 import type { KeywordPickerOption } from './keyword-picker.types';
 import { ProtopipeHomeSidePanelService } from '../protopipe-home-side-panel.service';
 import { ProtopipeAvatarSuggestionPanelComponent } from './protopipe-avatar-suggestion-panel.component';
@@ -37,6 +36,8 @@ import {
   ProtopipeKeywordPickerStore,
   type KeywordPickerWizardStep,
 } from './protopipe-keyword-picker.store';
+
+type KeywordMarketFilter = 'all' | MarketTier;
 
 @Component({
   selector: 'app-protopipe-keyword-picker',
@@ -66,10 +67,10 @@ export class ProtopipeKeywordPickerComponent implements OnInit {
   readonly formatCompetition = formatCompetitionLabel;
   readonly fitLabel = fitLabel;
   readonly sourceLabel = sourceLabel;
-  readonly marketScopeLabel = marketScopeLabel;
-  readonly marketScopeDetail = marketScopeDetail;
+  readonly marketBadgeLabel = marketBadgeLabel;
   readonly columnTooltips = COLUMN_TOOLTIPS;
   readonly minKeywordVolume = MIN_KEYWORD_VOLUME;
+  readonly skeletonRows = Array.from({ length: 8 }, (_, index) => index);
   readonly volumeTier = volumeTier;
   readonly competitionTier = competitionTier;
   readonly fitTier = fitTier;
@@ -81,13 +82,14 @@ export class ProtopipeKeywordPickerComponent implements OnInit {
 
   readonly sortColumn = signal<KeywordPlanSortColumn>('opportunity');
   readonly sortDirection = signal<KeywordPlanSortDirection>('desc');
+  readonly marketFilter = signal<KeywordMarketFilter>('all');
 
   readonly sortedPlanRows = computed(() =>
     sortPlanRows(this.store.pool(), this.sortColumn(), this.sortDirection()),
   );
 
   /** When searching, the main table shows API related ideas — not the static discovery pool. */
-  readonly tableRows = computed(() => {
+  readonly baseTableRows = computed(() => {
     if (!this.store.hasSearchQuery()) {
       return this.sortedPlanRows();
     }
@@ -96,6 +98,33 @@ export class ProtopipeKeywordPickerComponent implements OnInit {
     if (primary) rows.push(primary);
     rows.push(...this.store.searchRelated());
     return rows;
+  });
+
+  readonly marketFilterOptions = computed(() => {
+    const rows = this.baseTableRows();
+    const counts = new Map<KeywordMarketFilter, number>([
+      ['all', rows.length],
+      ['local', 0],
+      ['national', 0],
+      ['worldwide', 0],
+    ]);
+    for (const row of rows) {
+      if (row.marketTier) {
+        counts.set(row.marketTier, (counts.get(row.marketTier) ?? 0) + 1);
+      }
+    }
+    return [
+      { id: 'all' as const, label: 'All markets', count: counts.get('all') ?? 0 },
+      { id: 'local' as const, label: 'Local', count: counts.get('local') ?? 0 },
+      { id: 'national' as const, label: 'Nationwide', count: counts.get('national') ?? 0 },
+      { id: 'worldwide' as const, label: 'Worldwide', count: counts.get('worldwide') ?? 0 },
+    ].filter((option) => option.id === 'all' || option.count > 0);
+  });
+
+  readonly tableRows = computed(() => {
+    const filter = this.marketFilter();
+    const rows = this.baseTableRows();
+    return filter === 'all' ? rows : rows.filter((row) => row.marketTier === filter);
   });
 
   readonly tableLabel = computed(() =>
@@ -226,6 +255,10 @@ export class ProtopipeKeywordPickerComponent implements OnInit {
 
   clearSearch(): void {
     this.store.clearSearch();
+  }
+
+  setMarketFilter(filter: KeywordMarketFilter): void {
+    this.marketFilter.set(filter);
   }
 
   exploreRelated(option: KeywordPickerOption, event: Event): void {

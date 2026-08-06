@@ -12,6 +12,7 @@ export type DashboardStepStatus = 'locked' | 'in_progress' | 'ready' | 'complete
 
 export type DashboardStepTarget =
   | 'keywords'
+  | 'rankings'
   | 'mentions-book'
   | 'strategy'
   | 'build-book'
@@ -172,13 +173,11 @@ export function buildDashboardSteps(input: DashboardStepInput): DashboardStepCar
 
   const mentionsStatus: DashboardStepStatus = !input.keywordPlanConfirmed ? 'locked' : 'ready';
 
-  const seoStatus: DashboardStepStatus = !input.onboardingDone
+  const seoStatus: DashboardStepStatus = !input.keywordPlanConfirmed
     ? 'locked'
     : input.baselineReady
       ? 'complete'
-      : input.keywordResearchInProgress
-        ? 'in_progress'
-        : 'locked';
+      : 'ready';
 
   const contentPlanStatus: DashboardStepStatus = !input.keywordPlanConfirmed
     ? 'locked'
@@ -217,9 +216,9 @@ export function buildDashboardSteps(input: DashboardStepInput): DashboardStepCar
       metric: seoMetric(input, seoStatus),
       hint: seoHint(seoStatus),
       status: seoStatus,
-      statusLabel: seoStatus === 'locked' ? 'Run discovery' : stepStatusLabel(seoStatus),
+      statusLabel: seoStatus === 'locked' ? 'Confirm keywords' : stepStatusLabel(seoStatus),
       icon: 'seo',
-      target: seoStatus === 'locked' ? null : 'keywords',
+      target: seoStatus === 'locked' ? null : 'rankings',
     },
     {
       id: 'content-plan',
@@ -257,17 +256,17 @@ function keywordHint(status: DashboardStepStatus): string {
 function seoMetric(input: DashboardStepInput, status: DashboardStepStatus): string {
   if (status === 'complete') {
     return input.baselineSignalCount > 0
-      ? `${input.baselineSignalCount} signals`
+      ? `${input.baselineSignalCount} rankings`
       : 'Baseline ready';
   }
-  if (status === 'in_progress') return 'Collecting…';
+  if (status === 'ready') return 'Ready to run';
   return 'Not started';
 }
 
 function seoHint(status: DashboardStepStatus): string {
   if (status === 'complete') return 'View rankings baseline';
-  if (status === 'in_progress') return 'GSC + competitor gaps';
-  return 'Unlocks after onboarding';
+  if (status === 'ready') return 'Capture current positions';
+  return 'Confirm keywords first';
 }
 
 function contentPlanMetric(status: DashboardStepStatus): string {

@@ -68,7 +68,7 @@ describe('protopipe home dashboard view model', () => {
 
     expect(steps.map((step) => step.title)).toEqual([
       'Keyword selection',
-      'AI mentions',
+      'AI Visibility',
       'SEO rankings',
       'Content plan',
     ]);
@@ -76,8 +76,29 @@ describe('protopipe home dashboard view model', () => {
     expect(steps[0]?.hint).toBe('Pulling market data');
     expect(steps[0]?.status).toBe('in_progress');
     expect(steps[1]?.status).toBe('locked');
-    expect(steps[2]?.status).toBe('in_progress');
+    expect(steps[2]?.status).toBe('locked');
     expect(steps[3]?.status).toBe('locked');
+  });
+
+  it('opens rankings after keywords are confirmed', () => {
+    const steps = buildDashboardSteps({
+      onboardingDone: true,
+      keywordPlanConfirmed: true,
+      keywordResearchReady: true,
+      keywordResearchInProgress: false,
+      baselineReady: false,
+      discoveryFailed: false,
+      contentPlanComplete: false,
+      contentPlanRunning: false,
+      keywordCount: 8,
+      baselineSignalCount: 0,
+    });
+
+    const seo = steps.find((step) => step.id === 'seo');
+    expect(seo?.status).toBe('ready');
+    expect(seo?.metric).toBe('Ready to run');
+    expect(seo?.hint).toBe('Capture current positions');
+    expect(seo?.target).toBe('rankings');
   });
 
   it('builds workspace invitation cards', () => {

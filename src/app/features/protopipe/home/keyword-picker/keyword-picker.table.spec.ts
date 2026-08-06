@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  marketBadgeLabel,
   marketScopeDetail,
   marketScopeLabel,
   sortPlanRows,
@@ -20,6 +21,7 @@ describe('keyword-picker.table market scope', () => {
     expect(marketScopeDetail(local)).toBe('Maui County');
     expect(marketScopeLabel({ ...local, marketTier: 'national' })).toBe('Nationwide');
     expect(marketScopeLabel({ ...local, marketTier: 'worldwide' })).toBe('Worldwide');
+    expect(marketBadgeLabel({ ...local, marketTier: 'national', marketLocationName: 'United States' })).toBe('Nationwide · US');
   });
 
   it('sorts local, nationwide, worldwide in ascending market order', () => {

@@ -5,10 +5,14 @@ import {
   computed,
   inject,
   output,
+  signal,
 } from '@angular/core';
+import type { KeywordRankingRow } from '@hive/contracts';
+import { firstValueFrom } from 'rxjs';
 import { ContentPlanStore } from '../../content-plan/content-plan.store';
 import { ProtopipeOnboardingStateService } from '../../onboarding/protopipe-onboarding-state.service';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
+import { ShireApiService } from '../../shire/shire-api.service';
 import { ProtopipeKeywordPickerStore } from '../keyword-picker/protopipe-keyword-picker.store';
 import {
   buildCompetitors,
@@ -39,6 +43,7 @@ export class ProtopipeHomeDashboardComponent implements OnInit {
   private readonly strategy = inject(ProtopipeStrategyService);
   private readonly keywordStore = inject(ProtopipeKeywordPickerStore);
   private readonly contentPlan = inject(ContentPlanStore);
+  private readonly shireApi = inject(ShireApiService);
 
   readonly open = output<DashboardStepTarget>();
 
@@ -61,6 +66,8 @@ export class ProtopipeHomeDashboardComponent implements OnInit {
   );
   readonly baselineRows = computed(() => buildKeywordBaselineRows(this.marketBaseline()));
   readonly baselineSignalCount = computed(() => this.baselineRows().length);
+  readonly rankingRows = signal<KeywordRankingRow[]>([]);
+  readonly rankingSignalCount = computed(() => this.rankingRows().length);
   readonly topBaselinePhrase = computed(() => this.baselineRows()[0]?.phrase ?? null);
   readonly competitors = computed(() => buildCompetitors(this.strategy.onboardingProfile()));
   readonly customerCards = computed(() => buildCustomerCards(this.strategy.onboardingProfile()));
@@ -87,12 +94,12 @@ export class ProtopipeHomeDashboardComponent implements OnInit {
       keywordPlanConfirmed: this.keywordPlanConfirmed(),
       keywordResearchReady: this.keywordResearchReady(),
       keywordResearchInProgress: this.keywordResearchInProgress(),
-      baselineReady: this.baselineReady(),
+      baselineReady: this.rankingSignalCount() > 0,
       discoveryFailed: this.keywordStore.dashboardDiscoveryFailed(),
       contentPlanComplete: this.contentPlan.isComplete(),
       contentPlanRunning: this.contentPlan.isRunning(),
       keywordCount: this.strategy.keywords().length,
-      baselineSignalCount: this.baselineSignalCount(),
+      baselineSignalCount: this.rankingSignalCount(),
     }),
   );
   readonly workspaceCards = computed(() =>
@@ -148,12 +155,22 @@ export class ProtopipeHomeDashboardComponent implements OnInit {
     if (siteId) {
       this.contentPlan.setSiteId(siteId);
       void this.contentPlan.loadLatest();
+      void this.loadRankingsSummary(siteId);
     }
   }
 
   openStep(target: DashboardStepTarget | null): void {
     if (!target) return;
     this.open.emit(target);
+  }
+
+  private async loadRankingsSummary(siteId: string): Promise<void> {
+    try {
+      const response = await firstValueFrom(this.shireApi.listRankings$(siteId));
+      this.rankingRows.set(response.rankings);
+    } catch {
+      this.rankingRows.set([]);
+    }
   }
 
   private formatPlanStatus(status: string): string {

@@ -732,10 +732,17 @@ export class ProtopipeUserHomeComponent implements OnInit {
   }
 
   onDashboardOpen(
-    target: 'keywords' | 'strategy' | 'mentions-book' | 'build-book' | 'business-details',
+    target: 'keywords' | 'rankings' | 'strategy' | 'mentions-book' | 'build-book' | 'business-details',
   ): void {
     if (target === 'keywords') {
       this.openKeywordSelectionView();
+    } else if (target === 'rankings') {
+      this.leaveWriterFocus();
+      this.leaveThinkerFocus();
+      this.sidePanel.setOpen(false);
+      this.activeView.set('rankings');
+      this.activeNavId.set('seo-rankings');
+      void this.router.navigate([HOME_RANKINGS_PATH]);
     } else if (target === 'strategy') {
       this.leaveWriterFocus();
       this.leaveThinkerFocus();

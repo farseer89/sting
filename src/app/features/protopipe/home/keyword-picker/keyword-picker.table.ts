@@ -45,6 +45,21 @@ export function marketScopeDetail(option: KeywordPickerOption): string {
   return option.marketLocationName ?? '';
 }
 
+export function marketBadgeLabel(option: KeywordPickerOption): string {
+  const label = marketScopeLabel(option);
+  const detail = compactMarketLocation(marketScopeDetail(option));
+  if (!detail || label === '—') return label;
+  return `${label} · ${detail}`;
+}
+
+function compactMarketLocation(detail: string): string {
+  const trimmed = detail.trim();
+  if (!trimmed) return '';
+  if (/^united states$/i.test(trimmed)) return 'US';
+  if (/^worldwide$/i.test(trimmed)) return '';
+  return trimmed;
+}
+
 /** Unified 0–100 competition difficulty for sorting and display. */
 export function competitionNumericScore(option: KeywordPickerOption): number | null {
   if (option.keywordDifficulty != null) {

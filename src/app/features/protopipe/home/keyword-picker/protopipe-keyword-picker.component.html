@@ -50,33 +50,55 @@
   </header>
   }
 
-  @if (!bookMode() && store.loading()) {
-    <div
-      class="kwpick__progress"
-      role="progressbar"
-      [attr.aria-valuenow]="store.discoveryProgressPercent()"
-      aria-valuemin="0"
-      aria-valuemax="100"
-      [attr.aria-label]="store.discoveryProgress() ?? 'Loading keyword suggestions'"
-    >
-      <div class="kwpick__progress-track">
-        <div
-          class="kwpick__progress-fill"
-          [style.width.%]="store.discoveryProgressPercent()"
-        ></div>
+  @if (store.loading()) {
+    @if (bookMode()) {
+      <div class="kwpick__body">
+        <article class="kwpick__panel kwpick__panel--explorer">
+          <div class="kwpick__skeleton-head">
+            <span class="kwpick__skeleton-line kwpick__skeleton-line--title"></span>
+            <span class="kwpick__skeleton-line kwpick__skeleton-line--meta"></span>
+          </div>
+          <div class="kwpick__table-skeleton" aria-label="Loading keyword suggestions">
+            @for (row of skeletonRows; track row) {
+              <div class="kwpick__skeleton-row">
+                <span class="kwpick__skeleton-check"></span>
+                <span class="kwpick__skeleton-line kwpick__skeleton-line--keyword"></span>
+                <span class="kwpick__skeleton-pill"></span>
+                <span class="kwpick__skeleton-line"></span>
+                <span class="kwpick__skeleton-line"></span>
+              </div>
+            }
+          </div>
+        </article>
       </div>
-      <div class="kwpick__progress-meta">
-        <p class="kwpick__progress-label">
-          @if (store.discoveryProgress(); as progress) {
-            {{ progress }}
-          } @else {
-            Loading keyword suggestions…
-          }
-        </p>
-        <span class="kwpick__progress-pct">{{ store.discoveryProgressPercent() }}%</span>
+    } @else {
+      <div
+        class="kwpick__progress"
+        role="progressbar"
+        [attr.aria-valuenow]="store.discoveryProgressPercent()"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        [attr.aria-label]="store.discoveryProgress() ?? 'Loading keyword suggestions'"
+      >
+        <div class="kwpick__progress-track">
+          <div
+            class="kwpick__progress-fill"
+            [style.width.%]="store.discoveryProgressPercent()"
+          ></div>
+        </div>
+        <div class="kwpick__progress-meta">
+          <p class="kwpick__progress-label">
+            @if (store.discoveryProgress(); as progress) {
+              {{ progress }}
+            } @else {
+              Loading keyword suggestions…
+            }
+          </p>
+          <span class="kwpick__progress-pct">{{ store.discoveryProgressPercent() }}%</span>
+        </div>
       </div>
-    </div>
-  } @else if (bookMode() || !store.loading()) {
+    }
+  } @else {
     @if (store.error(); as err) {
       <div class="kwpick__alert" role="alert">{{ err }}</div>
     }
@@ -181,10 +203,7 @@
                             <tr>
                               <td class="kwpick__plan-kw">{{ kw.phrase }}</td>
                               <td>
-                                <span class="kwpick__pill">{{ marketScopeLabel(kw) }}</span>
-                                @if (marketScopeDetail(kw)) {
-                                  <span class="kwpick__scope-detail">{{ marketScopeDetail(kw) }}</span>
-                                }
+                                <span class="kwpick__market-badge">{{ marketBadgeLabel(kw) }}</span>
                               </td>
                               <td>{{ formatVolume(kw.searchVolume) }}</td>
                               <td>
@@ -250,6 +269,23 @@
                 }
               </span>
             </header>
+
+            @if (marketFilterOptions().length > 1) {
+              <div class="kwpick__market-filter" aria-label="Filter keywords by market">
+                @for (option of marketFilterOptions(); track option.id) {
+                  <button
+                    type="button"
+                    class="kwpick__market-filter-chip"
+                    [class.is-active]="marketFilter() === option.id"
+                    [attr.aria-pressed]="marketFilter() === option.id"
+                    (click)="setMarketFilter(option.id)"
+                  >
+                    <span>{{ option.label }}</span>
+                    <strong>{{ option.count }}</strong>
+                  </button>
+                }
+              </div>
+            }
 
             @if (store.hasSearchQuery() && !store.searching() && store.searchResultCount() <= 1) {
               <p class="kwpick__note kwpick__panel-body">
@@ -400,10 +436,7 @@
                           </td>
                           <td class="kwpick__td-phrase">{{ kw.phrase }}</td>
                           <td>
-                            <span class="kwpick__pill">{{ marketScopeLabel(kw) }}</span>
-                            @if (marketScopeDetail(kw)) {
-                              <span class="kwpick__scope-detail">{{ marketScopeDetail(kw) }}</span>
-                            }
+                            <span class="kwpick__market-badge">{{ marketBadgeLabel(kw) }}</span>
                           </td>
                           <td class="kwpick__td-metric">
                             <div [class]="metricClasses(volumeTier(kw.searchVolume))">

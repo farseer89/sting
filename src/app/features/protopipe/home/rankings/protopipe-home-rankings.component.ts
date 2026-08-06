@@ -159,14 +159,12 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
     const siteId = this.strategy.siteId();
     if (!siteId || !this.canResearch()) return;
     this.error.set(null);
-    try {
-      const { runId } = await firstValueFrom(this.api.researchRankings$(siteId));
-      const run = await this.runSession.loadRun(siteId, runId);
-      if (!run && this.runSession.loadError()) {
-        this.error.set(this.runSession.loadError());
-      }
-    } catch (err) {
-      this.error.set(parseProtopipeApiError(err, 'Could not start rankings research.'));
+    const run = await this.runSession.enqueueRun(siteId, {
+      thinkerKind: 'rankings_baseline',
+      params: { source: 'researchRankings' },
+    });
+    if (!run && this.runSession.loadError()) {
+      this.error.set(this.runSession.loadError());
     }
   }
 

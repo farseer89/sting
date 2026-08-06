@@ -468,10 +468,10 @@
 </div>
 
 @if (selectedSession(); as session) {
-  <div class="replay-drawer" role="dialog" aria-modal="true" aria-label="Session replay">
-    <button type="button" class="replay-drawer__backdrop" (click)="closeReplay()" aria-label="Close"></button>
-    <aside class="replay-drawer__panel">
-      <header class="replay-drawer__head">
+  <div class="replay-dialog" role="dialog" aria-modal="true" aria-label="Session replay">
+    <button type="button" class="replay-dialog__backdrop" (click)="closeReplay()" aria-label="Close"></button>
+    <div class="replay-dialog__panel">
+      <header class="replay-dialog__head">
         <div>
           <p class="analytics-panel__kicker">Session replay</p>
           <h2>{{ session.location }} · {{ session.duration }}</h2>
@@ -482,14 +482,13 @@
       @if (replayLoading()) {
         <div class="analyticsdash__empty">Preparing embeddable replay…</div>
       } @else if (replayEmbedSafe(); as embedUrl) {
-        <div class="replay-drawer__frame-crop">
+        <div class="replay-dialog__frame-crop">
           <iframe
-            class="replay-drawer__frame"
+            class="replay-dialog__frame"
             [src]="embedUrl"
             title="Session replay"
             allowfullscreen
           ></iframe>
-          <div class="replay-drawer__brand-mask" aria-hidden="true"></div>
         </div>
       } @else {
         <div class="analyticsdash__empty">
@@ -497,12 +496,12 @@
           @if (session.posthogUrl) {
             <p>
               <a [href]="session.posthogUrl" target="_blank" rel="noopener noreferrer">
-                Open in PostHog →
+                Open recording →
               </a>
             </p>
           }
         </div>
       }
-    </aside>
+    </div>
   </div>
 }

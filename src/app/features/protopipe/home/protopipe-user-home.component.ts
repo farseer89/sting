@@ -60,6 +60,7 @@ import { ProtopipePitchProspectBoardComponent } from '../pitch-prep/protopipe-pi
 import { ProtopipePitchPrepWizardComponent } from '../pitch-prep/protopipe-pitch-prep-wizard.component';
 import { ProtopipeLeadsListComponent } from '../leads/protopipe-leads-list.component';
 import { ProtopipeContactAlertsComponent } from './your-site/protopipe-contact-alerts.component';
+import { ProtopipeHomeLeadsComponent } from './your-site/protopipe-home-leads.component';
 import { ProtopipeWebsiteOverviewComponent } from './your-site/protopipe-website-overview.component';
 import { ProtopipeWebsiteHostingComponent } from './your-site/protopipe-website-hosting.component';
 import { isShireHostedSite } from '@hive/contracts';
@@ -116,6 +117,7 @@ export type ProtopipeHomeView =
   | 'website-overview'
   | 'website-hosting'
   | 'contact-alerts'
+  | 'hosted-leads'
   | 'brand-book'
   | 'audience-book'
   | 'build-book'
@@ -199,6 +201,7 @@ interface MobileHomeTab {
     ProtopipePitchPrepWizardComponent,
     ProtopipeLeadsListComponent,
     ProtopipeContactAlertsComponent,
+    ProtopipeHomeLeadsComponent,
     ProtopipeWebsiteOverviewComponent,
     ProtopipeWebsiteHostingComponent,
     ProtopipeHomeThinkerBinderComponent,
@@ -517,6 +520,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.showWebsiteOverviewView();
     } else if (item.id === 'website-hosting') {
       this.showWebsiteHostingView();
+    } else if (item.id === 'your-site-leads') {
+      this.showHostedLeadsView();
     } else if (item.id === 'your-site-contact-alerts') {
       this.showContactAlertsView();
     } else if (item.id === 'analytics-leads') {
@@ -1150,6 +1155,14 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.activeView.set('billing');
       this.activeNavId.set('account-billing');
     }
+  }
+
+  private showHostedLeadsView(): void {
+    this.leaveWriterFocus();
+    this.leaveThinkerFocus();
+    this.sidePanel.setOpen(false);
+    this.activeNavId.set('your-site-leads');
+    this.activeView.set('hosted-leads');
   }
 
   private showContactAlertsView(): void {

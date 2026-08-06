@@ -1,0 +1,179 @@
+<div class="leadsdash" aria-label="Hosted site leads">
+  <header class="leadsdash__intro">
+    <div>
+      <h1>Leads</h1>
+      <p class="leadsdash__lede">
+        Contact form submissions from your hosted site. Click a row for the full message.
+      </p>
+      @if (latestReceived()) {
+        <p class="leadsdash__coverage">Latest lead {{ formatDate(latestReceived()) }}</p>
+      }
+    </div>
+    <div class="leadsdash__actions">
+      @if (hostedSite()) {
+        <button type="button" class="leadsdash__refresh" (click)="loadLeads()">Refresh</button>
+      }
+    </div>
+  </header>
+
+  @if (!hostedSite()) {
+    <div class="leadsdash__empty">
+      Leads are available for hosted sites linked to client-sites. Connect a hosted site to see form
+      submissions here.
+    </div>
+  } @else {
+    @if (error()) {
+      <p class="leadsdash__error">{{ error() }}</p>
+    }
+
+    <div class="leadsdash__filters" role="group" aria-label="Lead status filter">
+      @for (filter of statusFilters; track filter.id) {
+        <button
+          type="button"
+          class="leadsdash__filter"
+          [class.is-active]="statusFilter() === filter.id"
+          (click)="setStatusFilter(filter.id)"
+        >
+          {{ filter.label }}
+        </button>
+      }
+    </div>
+
+    <section class="leadsdash__cards" aria-label="Lead summary">
+      @for (card of summaryCards(); track card.id) {
+        <article class="lead-card">
+          <span class="lead-card__label">{{ card.label }}</span>
+          <strong>{{ card.value }}</strong>
+          <span>{{ card.hint }}</span>
+        </article>
+      }
+    </section>
+
+    <section class="leadsdash__main" aria-label="Lead list">
+      <article class="lead-panel lead-panel--table">
+        <div class="lead-panel__head">
+          <div>
+            <p class="lead-panel__kicker">Inbound</p>
+            <h2>Received leads</h2>
+          </div>
+          <button type="button" class="lead-panel__action" (click)="loadLeads()">Refresh</button>
+        </div>
+
+        @if (loading()) {
+          <div class="leadsdash__empty">Loading leads…</div>
+        } @else if (hasRows()) {
+          <div class="lead-table-wrap">
+            <table class="lead-table">
+              <thead>
+                <tr>
+                  <th scope="col">
+                    <button type="button" (click)="toggleSort('received')">
+                      Received {{ sortIndicator('received') }}
+                    </button>
+                  </th>
+                  <th scope="col">
+                    <button type="button" (click)="toggleSort('name')">
+                      Name {{ sortIndicator('name') }}
+                    </button>
+                  </th>
+                  <th scope="col">
+                    <button type="button" (click)="toggleSort('email')">
+                      Email {{ sortIndicator('email') }}
+                    </button>
+                  </th>
+                  <th scope="col">Message</th>
+                  <th scope="col">
+                    <button type="button" (click)="toggleSort('status')">
+                      Status {{ sortIndicator('status') }}
+                    </button>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (lead of sortedRows(); track lead.id) {
+                  <tr class="lead-table__row" (click)="openLead(lead)">
+                    <td class="lead-table__metric">{{ formatDate(lead.createdAt) }}</td>
+                    <td>
+                      <span class="lead-table__name">{{ lead.name?.trim() || '—' }}</span>
+                    </td>
+                    <td>
+                      @if (lead.email) {
+                        <a
+                          class="lead-table__email"
+                          [href]="'mailto:' + lead.email"
+                          (click)="$event.stopPropagation()"
+                        >
+                          {{ lead.email }}
+                        </a>
+                      } @else {
+                        <span class="lead-table__muted">—</span>
+                      }
+                    </td>
+                    <td>
+                      <span class="lead-table__message">{{ messagePreview(lead) }}</span>
+                    </td>
+                    <td>
+                      <span class="lead-table__pill lead-table__pill--{{ lead.status }}">
+                        {{ statusLabel(lead.status) }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="leadsdash__empty">
+            No leads yet. Submissions from your hosted contact form will appear here.
+          </div>
+        }
+      </article>
+    </section>
+  }
+
+  @if (selectedLead(); as lead) {
+    <div class="lead-drawer" role="dialog" aria-modal="true" aria-label="Lead detail">
+      <button type="button" class="lead-drawer__backdrop" aria-label="Close" (click)="closeDrawer()"></button>
+      <aside class="lead-drawer__panel">
+        <header class="lead-drawer__head">
+          <div>
+            <p class="lead-drawer__kicker">{{ statusLabel(lead.status) }}</p>
+            <h2>{{ lead.name?.trim() || lead.email || 'Lead' }}</h2>
+            <p class="lead-drawer__meta">Received {{ formatDateLong(lead.createdAt) }}</p>
+          </div>
+          <button type="button" class="lead-drawer__close" (click)="closeDrawer()">Close</button>
+        </header>
+
+        <dl class="lead-drawer__dl">
+          <div>
+            <dt>Name</dt>
+            <dd>{{ lead.name?.trim() || '—' }}</dd>
+          </div>
+          <div>
+            <dt>Email</dt>
+            <dd>
+              @if (lead.email) {
+                <a [href]="'mailto:' + lead.email">{{ lead.email }}</a>
+              } @else {
+                —
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>Message</dt>
+            <dd class="lead-drawer__message">
+              {{
+                lead.message?.trim() ||
+                  (typeof lead.payload['message'] === 'string' ? lead.payload['message'] : '—')
+              }}
+            </dd>
+          </div>
+          <div>
+            <dt>Form</dt>
+            <dd>{{ lead.componentId }}</dd>
+          </div>
+        </dl>
+      </aside>
+    </div>
+  }
+</div>

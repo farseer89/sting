@@ -169,6 +169,12 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
         requiresNonHostedSite: true,
       },
       {
+        id: 'your-site-leads',
+        label: 'Leads',
+        icon: 'inbox',
+        requiresHostedSite: true,
+      },
+      {
         id: 'your-site-contact-alerts',
         label: 'Contact alerts',
         icon: 'inbox',

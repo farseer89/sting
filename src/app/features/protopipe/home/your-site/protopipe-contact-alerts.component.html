@@ -1,0 +1,80 @@
+<div class="contact-alerts">
+  <header class="contact-alerts__head">
+    <h1 class="contact-alerts__title">Contact alerts</h1>
+    <p class="contact-alerts__sub">
+      Email and SMS notifications when visitors submit contact or quote forms on your hosted site.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <p class="contact-alerts__muted">Loading…</p>
+  } @else if (!hostedSite()) {
+    <p class="contact-alerts__empty">
+      Contact alerts are available for hosted sites linked to client-sites. Register or select a
+      hosted site to configure notifications.
+    </p>
+  } @else {
+    @if (error()) {
+      <p class="contact-alerts__error" role="alert">{{ error() }}</p>
+    }
+    @if (saved()) {
+      <p class="contact-alerts__success" role="status">Settings saved.</p>
+    }
+
+    <div class="contact-alerts__field">
+      <label class="contact-alerts__checkbox">
+        <p-checkbox [(ngModel)]="notifyEmail" [binary]="true" inputId="notify-email" />
+        <span>Email me when a form is submitted</span>
+      </label>
+    </div>
+
+    <div class="contact-alerts__field">
+      <label class="contact-alerts__label" for="alert-email">Alert email (optional)</label>
+      <input
+        pInputText
+        id="alert-email"
+        type="email"
+        class="contact-alerts__input"
+        [(ngModel)]="email"
+        placeholder="{{ fallbackEmail() || 'Account owner email' }}"
+      />
+      <p class="contact-alerts__hint">
+        Leave blank to use your account email
+        @if (fallbackEmail()) {
+          ({{ fallbackEmail() }}).
+        } @else {
+          .
+        }
+      </p>
+    </div>
+
+    <div class="contact-alerts__field">
+      <label class="contact-alerts__checkbox">
+        <p-checkbox [(ngModel)]="notifySms" [binary]="true" inputId="notify-sms" />
+        <span>Text me when a form is submitted</span>
+      </label>
+    </div>
+
+    <div class="contact-alerts__field">
+      <label class="contact-alerts__label" for="alert-sms">SMS number (E.164)</label>
+      <input
+        pInputText
+        id="alert-sms"
+        type="tel"
+        class="contact-alerts__input"
+        [(ngModel)]="smsPhone"
+        placeholder="+15551234567"
+      />
+      <p class="contact-alerts__hint">Required for SMS alerts. Example: +15551234567</p>
+    </div>
+
+    <button
+      pButton
+      type="button"
+      label="Save"
+      class="contact-alerts__save"
+      [loading]="saving()"
+      (click)="save()"
+    ></button>
+  }
+</div>

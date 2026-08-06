@@ -93,6 +93,9 @@ import type {
   ProtopipeLeadsListResponse,
   ProtopipeLeadDetailResponse,
   ConvertLeadResponse,
+  ShireFormNotificationsResponse,
+  ShireLeadsListResponse,
+  ShirePatchFormNotificationsRequest,
   ListContextCardsResponse,
   PatchContextCardRequest,
   PatchContextCardResponse,
@@ -1202,25 +1205,46 @@ export class ProtopipeApiService {
   }
 
   listLeadsForAccount(): Promise<ProtopipeLeadsListResponse> {
-    return firstValueFrom(
-      this.http.get<ProtopipeLeadsListResponse>(
-        protopipeApiUrl(ProtopipeEndpoints.leadsListAll.path),
-      ),
+    const url = isShirePrimary()
+      ? shireApiUrl(ShireEndpoints.leads.listAccount)
+      : protopipeApiUrl(ProtopipeEndpoints.leadsListAll.path);
+    return firstValueFrom(this.http.get<ProtopipeLeadsListResponse | ShireLeadsListResponse>(url)).then(
+      (res) => ({ leads: res.leads }),
     );
   }
 
   listLeads(siteId: string): Promise<ProtopipeLeadsListResponse> {
-    return firstValueFrom(
-      this.http.get<ProtopipeLeadsListResponse>(
-        protopipeApiUrl(ProtopipeEndpoints.leadsList.path, { siteId }),
-      ),
+    const url = isShirePrimary()
+      ? shireApiUrl(ShireEndpoints.leads.listSite(siteId))
+      : protopipeApiUrl(ProtopipeEndpoints.leadsList.path, { siteId });
+    return firstValueFrom(this.http.get<ProtopipeLeadsListResponse | ShireLeadsListResponse>(url)).then(
+      (res) => ({ leads: res.leads }),
     );
   }
 
   getLead(siteId: string, leadId: string): Promise<ProtopipeLeadDetailResponse> {
+    const url = isShirePrimary()
+      ? shireApiUrl(ShireEndpoints.leads.get(siteId, leadId))
+      : protopipeApiUrl(ProtopipeEndpoints.leadDetail.path, { siteId, leadId });
+    return firstValueFrom(this.http.get<ProtopipeLeadDetailResponse>(url));
+  }
+
+  getFormNotifications(siteId: string): Promise<ShireFormNotificationsResponse> {
     return firstValueFrom(
-      this.http.get<ProtopipeLeadDetailResponse>(
-        protopipeApiUrl(ProtopipeEndpoints.leadDetail.path, { siteId, leadId }),
+      this.http.get<ShireFormNotificationsResponse>(
+        shireApiUrl(ShireEndpoints.formNotifications.get(siteId)),
+      ),
+    );
+  }
+
+  patchFormNotifications(
+    siteId: string,
+    body: ShirePatchFormNotificationsRequest,
+  ): Promise<ShireFormNotificationsResponse> {
+    return firstValueFrom(
+      this.http.patch<ShireFormNotificationsResponse>(
+        shireApiUrl(ShireEndpoints.formNotifications.patch(siteId)),
+        body,
       ),
     );
   }

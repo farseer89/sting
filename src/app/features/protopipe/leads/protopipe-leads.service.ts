@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import type { ProtopipeLead } from '@hive/contracts';
 import { parseProtopipeApiError } from '../protopipe-http.util';
+import { isShirePrimary } from '../shire/shire-http.util';
 import { ProtopipeApiService } from '../protopipe-api.service';
 
 @Injectable({ providedIn: 'root' })
@@ -48,6 +49,11 @@ export class ProtopipeLeadsService {
   async convertSelected(): Promise<void> {
     const lead = this._selected();
     if (!lead) return;
+
+    if (isShirePrimary()) {
+      this._error.set('Lead conversion is not available yet for Shire-hosted sites.');
+      return;
+    }
 
     this._converting.set(true);
     this._error.set(null);

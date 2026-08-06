@@ -24,6 +24,8 @@ export interface ProtopipeHomeNavItem {
   capability?: ProtopipeCapability;
   lockedLabel?: string;
   hiddenWhenLocked?: boolean;
+  /** Hide when the active site is not a hosted client-sites site. */
+  requiresHostedSite?: boolean;
   separator?: boolean;
   children?: ProtopipeHomeNavItem[];
 }
@@ -145,6 +147,20 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
         icon: 'sitemap',
         capability: 'content_packs',
         lockedLabel: 'Advanced',
+      },
+    ],
+  },
+  {
+    id: 'your-site',
+    label: 'Your Site',
+    icon: 'globe',
+    requiresHostedSite: true,
+    children: [
+      {
+        id: 'your-site-contact-alerts',
+        label: 'Contact alerts',
+        icon: 'inbox',
+        requiresHostedSite: true,
       },
     ],
   },

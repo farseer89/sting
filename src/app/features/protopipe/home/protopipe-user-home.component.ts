@@ -59,6 +59,8 @@ import { ProtopipeHomeMerchBookComponent } from './books/protopipe-home-merch-bo
 import { ProtopipePitchProspectBoardComponent } from '../pitch-prep/protopipe-pitch-prospect-board.component';
 import { ProtopipePitchPrepWizardComponent } from '../pitch-prep/protopipe-pitch-prep-wizard.component';
 import { ProtopipeLeadsListComponent } from '../leads/protopipe-leads-list.component';
+import { ProtopipeContactAlertsComponent } from './your-site/protopipe-contact-alerts.component';
+import { isShireHostedSite } from '@hive/contracts';
 import { ProtopipeHomeThinkerBinderComponent } from './thinker/protopipe-home-thinker-binder.component';
 import { ProtopipeHomeAnalyticsBinderComponent } from './analytics-binder/protopipe-home-analytics-binder.component';
 import { ProtopipeHomeDashboardComponent } from './dashboard/protopipe-home-dashboard.component';
@@ -109,6 +111,7 @@ export type ProtopipeHomeView =
   | 'media-studio'
   | 'pitch-prep'
   | 'leads'
+  | 'contact-alerts'
   | 'brand-book'
   | 'audience-book'
   | 'build-book'
@@ -191,6 +194,7 @@ interface MobileHomeTab {
     ProtopipePitchProspectBoardComponent,
     ProtopipePitchPrepWizardComponent,
     ProtopipeLeadsListComponent,
+    ProtopipeContactAlertsComponent,
     ProtopipeHomeThinkerBinderComponent,
     ProtopipeHomeAnalyticsBinderComponent,
     ProtopipeHomeDashboardComponent,
@@ -273,7 +277,13 @@ export class ProtopipeUserHomeComponent implements OnInit {
     });
   });
   readonly canSharpen = computed(() => hasProtopipeCapability(this.accessState(), 'sharpen'));
-  readonly navItems = computed(() => this.gateNavItems(PROTOPIPE_HOME_NAV, this.accessState()));
+  readonly navItems = computed(() =>
+    this.gateNavItems(
+      PROTOPIPE_HOME_NAV,
+      this.accessState(),
+      isShireHostedSite(this.strategy.site() ?? {}),
+    ),
+  );
   readonly navCollapsed = signal(false);
   readonly openNavGroupIds = signal<string[]>([...PROTOPIPE_HOME_NAV_DEFAULT_OPEN]);
   readonly siteDisplayName = signal('');
@@ -497,6 +507,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
     } else if (item.id === 'content-pitch-prep') {
       this.showPitchPrepBoard();
       void this.router.navigate(['/home/pitch-prep']);
+    } else if (item.id === 'your-site-contact-alerts') {
+      this.showContactAlertsView();
     } else if (item.id === 'analytics-leads') {
       this.showLeadsView();
       void this.router.navigate(['/home/leads']);
@@ -1130,6 +1142,14 @@ export class ProtopipeUserHomeComponent implements OnInit {
     }
   }
 
+  private showContactAlertsView(): void {
+    this.leaveWriterFocus();
+    this.leaveThinkerFocus();
+    this.sidePanel.setOpen(false);
+    this.activeNavId.set('your-site-contact-alerts');
+    this.activeView.set('contact-alerts');
+  }
+
   private showLeadsView(): void {
     this.leaveWriterFocus();
     this.sidePanel.setOpen(false);
@@ -1203,6 +1223,7 @@ export class ProtopipeUserHomeComponent implements OnInit {
   private gateNavItems(
     items: readonly ProtopipeHomeNavItem[],
     access: ProtopipeAccessState,
+    hostedSite: boolean,
   ): ProtopipeHomeNavItem[] {
     const gated = items
       .map((item) => {
@@ -1210,12 +1231,18 @@ export class ProtopipeUserHomeComponent implements OnInit {
           return item;
         }
 
+        if (item.requiresHostedSite && !hostedSite) {
+          return null;
+        }
+
         const hasCapability = hasProtopipeCapability(access, item.capability);
         if (!hasCapability && item.hiddenWhenLocked) {
           return null;
         }
 
-        const children = item.children ? this.gateNavItems(item.children, access) : undefined;
+        const children = item.children
+          ? this.gateNavItems(item.children, access, hostedSite)
+          : undefined;
         if (item.children && (!children || children.length === 0)) {
           return null;
         }

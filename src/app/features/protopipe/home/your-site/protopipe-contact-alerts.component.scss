@@ -43,6 +43,18 @@
   width: 100%;
 }
 
+.contact-alerts__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.contact-alerts__add,
+.contact-alerts__remove {
+  margin-top: 0.15rem;
+}
+
 .contact-alerts__hint {
   margin-top: 0.35rem;
   font-size: 0.875rem;

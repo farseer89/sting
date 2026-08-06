@@ -28,10 +28,10 @@ export class ProtopipeContactAlertsComponent implements OnInit {
   readonly hostedSite = signal(false);
   readonly fallbackEmail = signal<string | undefined>(undefined);
 
-  notifyEmail = true;
-  notifySms = false;
-  email = '';
-  smsPhone = '';
+  readonly notifyEmail = signal(true);
+  readonly notifySms = signal(false);
+  readonly emails = signal<string[]>(['']);
+  readonly smsPhones = signal<string[]>(['']);
 
   ngOnInit(): void {
     void this.load();
@@ -66,10 +66,10 @@ export class ProtopipeContactAlertsComponent implements OnInit {
     this.saved.set(false);
     try {
       const body: ShirePatchFormNotificationsRequest = {
-        notifyEmail: this.notifyEmail,
-        notifySms: this.notifySms,
-        email: this.email.trim() || undefined,
-        smsPhone: this.smsPhone.trim() || undefined,
+        notifyEmail: this.notifyEmail(),
+        notifySms: this.notifySms(),
+        emails: this.cleanList(this.emails()),
+        smsPhones: this.cleanList(this.smsPhones()),
       };
       const res = await this.api.patchFormNotifications(siteId, body);
       this.applySettings(res);
@@ -81,12 +81,48 @@ export class ProtopipeContactAlertsComponent implements OnInit {
     }
   }
 
+  addEmail(): void {
+    this.emails.update((rows) => [...rows, '']);
+  }
+
+  removeEmail(index: number): void {
+    this.emails.update((rows) => (rows.length <= 1 ? [''] : rows.filter((_, i) => i !== index)));
+  }
+
+  updateEmail(index: number, value: string): void {
+    this.emails.update((rows) => rows.map((row, i) => (i === index ? value : row)));
+  }
+
+  addSmsPhone(): void {
+    this.smsPhones.update((rows) => [...rows, '']);
+  }
+
+  removeSmsPhone(index: number): void {
+    this.smsPhones.update((rows) => (rows.length <= 1 ? [''] : rows.filter((_, i) => i !== index)));
+  }
+
+  updateSmsPhone(index: number, value: string): void {
+    this.smsPhones.update((rows) => rows.map((row, i) => (i === index ? value : row)));
+  }
+
   private applySettings(res: ShireFormNotificationsResponse): void {
-    this.notifyEmail = res.notifyEmail;
-    this.notifySms = res.notifySms;
-    this.email = res.email ?? '';
-    this.smsPhone = res.smsPhone ?? '';
+    this.notifyEmail.set(res.notifyEmail);
+    this.notifySms.set(res.notifySms);
+    this.emails.set(this.toEditableList(res.emails, res.email));
+    this.smsPhones.set(this.toEditableList(res.smsPhones, res.smsPhone));
     this.fallbackEmail.set(res.fallbackEmail);
     this.hostedSite.set(res.hostedSite);
+  }
+
+  private toEditableList(values?: string[], legacy?: string): string[] {
+    const normalized = (values?.length ? values : legacy?.trim() ? [legacy.trim()] : []).filter(
+      Boolean,
+    );
+    return normalized.length ? normalized : [''];
+  }
+
+  private cleanList(values: string[]): string[] | undefined {
+    const cleaned = values.map((value) => value.trim()).filter(Boolean);
+    return cleaned.length ? cleaned : undefined;
   }
 }

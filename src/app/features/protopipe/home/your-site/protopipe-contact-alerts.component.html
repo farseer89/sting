@@ -23,21 +23,46 @@
 
     <div class="contact-alerts__field">
       <label class="contact-alerts__checkbox">
-        <p-checkbox [(ngModel)]="notifyEmail" [binary]="true" inputId="notify-email" />
+        <p-checkbox
+          [ngModel]="notifyEmail()"
+          (ngModelChange)="notifyEmail.set($event)"
+          [binary]="true"
+          inputId="notify-email"
+        />
         <span>Email me when a form is submitted</span>
       </label>
     </div>
 
     <div class="contact-alerts__field">
-      <label class="contact-alerts__label" for="alert-email">Alert email (optional)</label>
-      <input
-        pInputText
-        id="alert-email"
-        type="email"
-        class="contact-alerts__input"
-        [(ngModel)]="email"
-        placeholder="{{ fallbackEmail() || 'Account owner email' }}"
-      />
+      <span class="contact-alerts__label">Alert emails (optional)</span>
+      @for (row of emails(); track $index) {
+        <div class="contact-alerts__row">
+          <input
+            pInputText
+            type="email"
+            class="contact-alerts__input"
+            [ngModel]="row"
+            (ngModelChange)="updateEmail($index, $event)"
+            [attr.placeholder]="$index === 0 ? (fallbackEmail() || 'Account owner email') : 'another@example.com'"
+          />
+          @if (emails().length > 1) {
+            <button
+              pButton
+              type="button"
+              label="Remove"
+              class="p-button-text p-button-sm contact-alerts__remove"
+              (click)="removeEmail($index)"
+            ></button>
+          }
+        </div>
+      }
+      <button
+        pButton
+        type="button"
+        label="Add another email"
+        class="p-button-text p-button-sm contact-alerts__add"
+        (click)="addEmail()"
+      ></button>
       <p class="contact-alerts__hint">
         Leave blank to use your account email
         @if (fallbackEmail()) {
@@ -50,21 +75,46 @@
 
     <div class="contact-alerts__field">
       <label class="contact-alerts__checkbox">
-        <p-checkbox [(ngModel)]="notifySms" [binary]="true" inputId="notify-sms" />
+        <p-checkbox
+          [ngModel]="notifySms()"
+          (ngModelChange)="notifySms.set($event)"
+          [binary]="true"
+          inputId="notify-sms"
+        />
         <span>Text me when a form is submitted</span>
       </label>
     </div>
 
     <div class="contact-alerts__field">
-      <label class="contact-alerts__label" for="alert-sms">SMS number (E.164)</label>
-      <input
-        pInputText
-        id="alert-sms"
-        type="tel"
-        class="contact-alerts__input"
-        [(ngModel)]="smsPhone"
-        placeholder="+15551234567"
-      />
+      <span class="contact-alerts__label">SMS numbers (E.164)</span>
+      @for (row of smsPhones(); track $index) {
+        <div class="contact-alerts__row">
+          <input
+            pInputText
+            type="tel"
+            class="contact-alerts__input"
+            [ngModel]="row"
+            (ngModelChange)="updateSmsPhone($index, $event)"
+            placeholder="+15551234567"
+          />
+          @if (smsPhones().length > 1) {
+            <button
+              pButton
+              type="button"
+              label="Remove"
+              class="p-button-text p-button-sm contact-alerts__remove"
+              (click)="removeSmsPhone($index)"
+            ></button>
+          }
+        </div>
+      }
+      <button
+        pButton
+        type="button"
+        label="Add another number"
+        class="p-button-text p-button-sm contact-alerts__add"
+        (click)="addSmsPhone()"
+      ></button>
       <p class="contact-alerts__hint">Required for SMS alerts. Example: +15551234567</p>
     </div>
 

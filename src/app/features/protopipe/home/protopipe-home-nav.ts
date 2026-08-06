@@ -40,23 +40,16 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
     icon: 'grid',
   },
   {
-    id: 'business-profile',
-    label: 'Business Profile',
-    icon: 'users',
-    children: [
-      {
-        id: 'business-book',
-        label: 'Business book',
-        icon: 'users',
-        capability: 'discovery',
-      },
-    ],
-  },
-  {
     id: 'seo',
     label: 'SEO',
     icon: 'search',
     children: [
+      {
+        id: 'business-book',
+        label: 'Business Details',
+        icon: 'users',
+        capability: 'discovery',
+      },
       {
         id: 'seo-keywords',
         label: 'Keywords',
@@ -345,7 +338,6 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
 ];
 
 export const PROTOPIPE_HOME_NAV_DEFAULT_OPEN = [
-  'business-profile',
   'seo',
   'content',
   'website',

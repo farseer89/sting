@@ -1,0 +1,288 @@
+<div class="healthdash" aria-label="Site Health dashboard">
+  <header class="healthdash__intro">
+    <div>
+      <h1>Site Health</h1>
+      <p class="healthdash__lede">
+        The site scan behind your content calendar: crawl coverage, refresh opportunities, and
+        pages we already know about.
+      </p>
+      <p class="healthdash__coverage">
+        {{ sourceLabel() }} · {{ audit()?.hostname || 'Latest content plan' }}
+      </p>
+    </div>
+    <div class="healthdash__actions">
+      <span class="healthdash__status">
+        @if (audit()?.scannedCount != null) {
+          {{ audit()!.scannedCount }} page(s) scanned
+        } @else {
+          No scan loaded
+        }
+      </span>
+      <button
+        type="button"
+        class="healthdash__run"
+        [disabled]="store.loading()"
+        (click)="reload()"
+      >
+        {{ store.loading() ? 'Refreshing…' : 'Refresh' }}
+      </button>
+    </div>
+  </header>
+
+  @if (store.error()) {
+    <p class="healthdash__error">{{ store.error() }}</p>
+  }
+
+  <section class="healthdash__cards" aria-label="Site health summary">
+    @for (card of summaryCards(); track card.id) {
+      <article class="health-card">
+        <span class="health-card__label">{{ card.label }}</span>
+        <strong>{{ card.value }}</strong>
+        <span>{{ card.hint }}</span>
+      </article>
+    }
+  </section>
+
+  <div class="healthdash__tabs" role="tablist" aria-label="Site health views">
+    @for (tab of tabs(); track tab.id) {
+      <button
+        type="button"
+        role="tab"
+        class="healthdash__tab"
+        [class.is-active]="activeTab() === tab.id"
+        [attr.aria-selected]="activeTab() === tab.id"
+        (click)="setTab(tab.id)"
+      >
+        {{ tab.label }}
+        @if (tab.count != null) {
+          <span>{{ tab.count }}</span>
+        }
+      </button>
+    }
+  </div>
+
+  <section class="healthdash__main" aria-label="Site health details">
+    <article class="health-panel health-panel--table">
+      <div class="health-panel__head">
+        <div>
+          <p class="health-panel__kicker">
+            @switch (activeTab()) {
+              @case ('refresh') {
+                Refresh
+              }
+              @case ('wins') {
+                Rankings
+              }
+              @case ('pages') {
+                Inventory
+              }
+              @default {
+                Scan
+              }
+            }
+          </p>
+          <h2>
+            @switch (activeTab()) {
+              @case ('refresh') {
+                Refresh candidates
+              }
+              @case ('wins') {
+                Already ranking
+              }
+              @case ('pages') {
+                Scanned pages
+              }
+              @default {
+                Scan overview
+              }
+            }
+          </h2>
+        </div>
+      </div>
+
+      @if (activeTab() === 'overview') {
+        <div class="health-overview">
+          <p>{{ sourceDescription() }}</p>
+          @if (audit()?.note) {
+            <p class="health-overview__note">{{ audit()!.note }}</p>
+          }
+          <dl>
+            <div>
+              <dt>Source</dt>
+              <dd>{{ sourceLabel() }}</dd>
+            </div>
+            <div>
+              <dt>Pages</dt>
+              <dd>{{ audit()?.pages?.length ?? 0 }}</dd>
+            </div>
+            <div>
+              <dt>Refresh candidates</dt>
+              <dd>{{ audit()?.refreshCandidates?.length ?? 0 }}</dd>
+            </div>
+            <div>
+              <dt>Ranking wins</dt>
+              <dd>{{ audit()?.alreadyRanking?.length ?? 0 }}</dd>
+            </div>
+          </dl>
+        </div>
+      } @else if (activeTab() === 'wins') {
+        @if (wins().length) {
+          <div class="health-table-wrap">
+            <table class="health-table">
+              <thead>
+                <tr>
+                  <th scope="col">Keyword</th>
+                  <th scope="col">Position</th>
+                  <th scope="col">URL</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (win of wins(); track win.id) {
+                  <tr>
+                    <td>
+                      <span class="health-table__title">{{ win.phrase }}</span>
+                    </td>
+                    <td class="health-table__metric">{{ win.position }}</td>
+                    <td>
+                      @if (win.url.startsWith('http')) {
+                        <a [href]="win.url" target="_blank" rel="noopener noreferrer">
+                          {{ win.url }}
+                        </a>
+                      } @else {
+                        <span class="health-table__muted">{{ win.url }}</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="healthdash__empty">{{ emptyMessage() }}</div>
+        }
+      } @else if (visiblePages().length) {
+        <div class="health-table-wrap">
+          <table class="health-table">
+            <thead>
+              <tr>
+                <th scope="col">Page</th>
+                <th scope="col">H1</th>
+                <th scope="col">Words</th>
+                <th scope="col">Links</th>
+                <th scope="col">Modified</th>
+                <th scope="col">Health</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of visiblePages(); track row.id) {
+                <tr class="health-table__row" (click)="openPage(row)">
+                  <td>
+                    <span class="health-table__title">{{ row.title }}</span>
+                    <span class="health-table__url">{{ row.url }}</span>
+                  </td>
+                  <td>{{ row.h1 }}</td>
+                  <td class="health-table__metric">{{ row.wordCount }}</td>
+                  <td class="health-table__metric">{{ row.internalLinks }}</td>
+                  <td class="health-table__metric">{{ row.modified }}</td>
+                  <td>
+                    <span class="health-table__pill" [class.is-healthy]="row.reasons.length === 0">
+                      {{ row.statusLabel }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="healthdash__empty">{{ emptyMessage() }}</div>
+      }
+    </article>
+
+    <aside class="healthdash__side">
+      <article class="health-panel">
+        <div class="health-panel__head">
+          <div>
+            <p class="health-panel__kicker">Why it matters</p>
+            <h2>Planning context</h2>
+          </div>
+        </div>
+        <p class="health-panel__empty">
+          Before planning new articles, we check what already exists so the calendar can avoid
+          duplicate topics and spot refresh opportunities.
+        </p>
+      </article>
+
+      <article class="health-panel">
+        <div class="health-panel__head">
+          <div>
+            <p class="health-panel__kicker">Next action</p>
+            <h2>Use the scan</h2>
+          </div>
+        </div>
+        @if (refreshPages().length) {
+          <ul class="health-list">
+            @for (row of refreshPages().slice(0, 4); track row.id) {
+              <li>
+                <span>{{ row.title }}</span>
+                <strong>{{ row.statusLabel }}</strong>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="health-panel__empty">
+            Refresh candidates appear here when the scan finds thin or stale pages.
+          </p>
+        }
+      </article>
+    </aside>
+  </section>
+
+  @if (selectedPage(); as row) {
+    <div class="health-drawer" role="dialog" aria-modal="true" aria-label="Page detail">
+      <button
+        type="button"
+        class="health-drawer__backdrop"
+        aria-label="Close"
+        (click)="closeDrawer()"
+      ></button>
+      <aside class="health-drawer__panel">
+        <header class="health-drawer__head">
+          <div>
+            <p class="health-drawer__kicker">{{ row.statusLabel }}</p>
+            <h2>{{ row.title }}</h2>
+            <p class="health-drawer__meta">{{ row.wordCount }} words · {{ row.internalLinks }} internal links</p>
+          </div>
+          <button type="button" class="health-drawer__close" (click)="closeDrawer()">Close</button>
+        </header>
+
+        <p class="health-drawer__url">
+          <a [href]="row.url" target="_blank" rel="noopener noreferrer">{{ row.url }}</a>
+        </p>
+
+        <section class="health-drawer__section">
+          <h3>Page basics</h3>
+          <dl>
+            <div>
+              <dt>H1</dt>
+              <dd>{{ row.h1 }}</dd>
+            </div>
+            <div>
+              <dt>Modified</dt>
+              <dd>{{ row.modified }}</dd>
+            </div>
+            <div>
+              <dt>Schema</dt>
+              <dd>{{ schemaSummary(row.source) }}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="health-drawer__section">
+          <h3>Top headings</h3>
+          <p>{{ headingSummary(row.source) }}</p>
+        </section>
+      </aside>
+    </div>
+  }
+</div>

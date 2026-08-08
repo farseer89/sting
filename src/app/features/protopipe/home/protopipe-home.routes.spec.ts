@@ -5,6 +5,7 @@ import {
   HOME_DISCOVERY_PATH,
   HOME_KEYWORDS_PATH,
   HOME_ONBOARDING_PATH,
+  HOME_SITE_HEALTH_PATH,
   homeShellRouteKind,
 } from './protopipe-home.routes';
 
@@ -14,6 +15,7 @@ describe('protopipe home routes', () => {
     expect(homeShellRouteKind(HOME_ONBOARDING_PATH)).toBe('onboarding');
     expect(homeShellRouteKind(HOME_DISCOVERY_PATH)).toBe('discovery');
     expect(homeShellRouteKind(HOME_KEYWORDS_PATH)).toBe('keywords');
+    expect(homeShellRouteKind(HOME_SITE_HEALTH_PATH)).toBe('site-health');
     expect(homeShellRouteKind(HOME_ANALYTICS_PATH)).toBe('analytics');
     expect(homeShellRouteKind('/home')).toBe('entry');
     expect(homeShellRouteKind('/home/packs')).toBeNull();

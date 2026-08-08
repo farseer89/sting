@@ -69,6 +69,7 @@ import { ProtopipeHomeAnalyticsBinderComponent } from './analytics-binder/protop
 import { ProtopipeHomeAnalyticsComponent } from './analytics/protopipe-home-analytics.component';
 import { ProtopipeHomeDashboardComponent } from './dashboard/protopipe-home-dashboard.component';
 import { ProtopipeHomeRankingsComponent } from './rankings/protopipe-home-rankings.component';
+import { ProtopipeSiteHealthComponent } from './site-health/protopipe-site-health.component';
 import { ProtopipeProspectorComponent } from '../prospector/protopipe-prospector.component';
 import { ProtopipeColdCallerComponent } from '../cold-caller/protopipe-cold-caller.component';
 import { ProtopipeBillingComponent } from '../billing/protopipe-billing.component';
@@ -86,6 +87,7 @@ import {
   HOME_DISCOVERY_PATH,
   HOME_KEYWORDS_PATH,
   HOME_RANKINGS_PATH,
+  HOME_SITE_HEALTH_PATH,
   HOME_ONBOARDING_PATH,
   homeShellRouteKind,
 } from './protopipe-home.routes';
@@ -106,6 +108,7 @@ export type ProtopipeHomeView =
   | 'discovery'
   | 'keywords'
   | 'rankings'
+  | 'site-health'
   | 'mentions-book'
   | 'strategy'
   | 'sharpen'
@@ -211,6 +214,7 @@ interface MobileHomeTab {
     ProtopipeHomeAnalyticsComponent,
     ProtopipeHomeDashboardComponent,
     ProtopipeHomeRankingsComponent,
+    ProtopipeSiteHealthComponent,
     ProtopipeHomeKeywordsComponent,
     ProtopipeProspectorComponent,
     ProtopipeColdCallerComponent,
@@ -489,6 +493,13 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.activeNavId.set(item.id);
       this.activeView.set('rankings');
       void this.router.navigate([HOME_RANKINGS_PATH]);
+    } else if (item.id === 'website-site-health') {
+      this.leaveWriterFocus();
+      this.leaveThinkerFocus();
+      this.sidePanel.setOpen(false);
+      this.activeNavId.set(item.id);
+      this.activeView.set('site-health');
+      void this.router.navigate([HOME_SITE_HEALTH_PATH]);
     } else if (item.id === 'business-book' || item.id === 'start-business' || item.id === 'books-business') {
       this.openBusinessDetailsView('business-book');
     } else if (item.id === 'seo-ai-visibility' || item.id === 'start-mentions') {
@@ -1018,6 +1029,15 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.sidePanel.setOpen(false);
       this.activeView.set('rankings');
       this.activeNavId.set('seo-rankings');
+      return;
+    }
+
+    if (kind === 'site-health') {
+      this.leaveWriterFocus();
+      this.leaveThinkerFocus();
+      this.sidePanel.setOpen(false);
+      this.activeView.set('site-health');
+      this.activeNavId.set('website-site-health');
       return;
     }
 

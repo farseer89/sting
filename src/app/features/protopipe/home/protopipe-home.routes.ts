@@ -5,6 +5,7 @@ export const HOME_ONBOARDING_PATH = '/home/onboarding';
 export const HOME_DISCOVERY_PATH = '/home/discovery';
 export const HOME_KEYWORDS_PATH = '/home/keywords';
 export const HOME_RANKINGS_PATH = '/home/rankings';
+export const HOME_SITE_HEALTH_PATH = '/home/site-health';
 export const HOME_ANALYTICS_PATH = '/home/analytics';
 
 export type HomeShellRouteKind =
@@ -14,6 +15,7 @@ export type HomeShellRouteKind =
   | 'discovery'
   | 'keywords'
   | 'rankings'
+  | 'site-health'
   | 'analytics';
 
 export function homeShellRouteKind(path: string): HomeShellRouteKind | null {
@@ -23,6 +25,7 @@ export function homeShellRouteKind(path: string): HomeShellRouteKind | null {
   if (normalized === HOME_DISCOVERY_PATH) return 'discovery';
   if (normalized === HOME_KEYWORDS_PATH) return 'keywords';
   if (normalized === HOME_RANKINGS_PATH) return 'rankings';
+  if (normalized === HOME_SITE_HEALTH_PATH) return 'site-health';
   if (normalized === HOME_ANALYTICS_PATH) return 'analytics';
   if (normalized === HOME_ENTRY_PATH) return 'entry';
   return null;

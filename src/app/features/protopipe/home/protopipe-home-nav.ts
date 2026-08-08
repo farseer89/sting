@@ -143,6 +143,11 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
         icon: 'globe',
       },
       {
+        id: 'website-site-health',
+        label: 'Site Health',
+        icon: 'sitemap',
+      },
+      {
         id: 'website-hosting',
         label: 'Hosting setup',
         icon: 'link',

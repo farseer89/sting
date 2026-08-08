@@ -31,6 +31,37 @@
     <p class="rankdash__error">{{ error() }}</p>
   }
 
+  @if (showResearchProgress()) {
+    <section
+      class="rankdash__research"
+      role="status"
+      aria-live="polite"
+      aria-label="Rankings research progress"
+    >
+      <div class="rankdash__research-head">
+        <span class="rankdash__research-dot" aria-hidden="true"></span>
+        <div class="rankdash__research-copy">
+          <p class="rankdash__research-title">{{ researchProgressLabel() }}</p>
+          <p class="rankdash__research-detail">{{ researchProgressDetail() }}</p>
+        </div>
+        <span class="rankdash__research-percent">{{ researchProgressPercent() }}%</span>
+      </div>
+      <div
+        class="rankdash__research-bar"
+        role="progressbar"
+        [attr.aria-valuenow]="researchProgressPercent()"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        [attr.aria-valuetext]="researchProgressLabel()"
+      >
+        <span
+          class="rankdash__research-bar-fill"
+          [style.width.%]="researchProgressPercent()"
+        ></span>
+      </div>
+    </section>
+  }
+
   <div class="rankdash__filters" role="group" aria-label="Market filter">
     @for (filter of marketFilters; track filter.id) {
       <button

@@ -31,6 +31,12 @@ import {
   sortRankingRows,
   topCompetitorsByOverlap,
 } from './protopipe-home-rankings.model';
+import {
+  rankingsResearchProgressDetail,
+  rankingsResearchProgressFromThought,
+  rankingsResearchProgressLabel,
+  rankingsResearchProgressPercent,
+} from './rankings-research-progress';
 
 type MarketFilter = 'all' | KeywordRankingMarketTier;
 type DrawerFolderTab = 'overview' | 'features' | 'competition' | 'organic';
@@ -98,15 +104,30 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
   );
   readonly runStatusLabel = computed(() => {
     const thought = this.runSession.thought();
+    if (this.runSession.isActive()) {
+      return this.researchProgressLabel();
+    }
     if (!thought)
       return this.capturedAt()
         ? `Fresh as of ${this.formatDate(this.capturedAt())}`
         : 'No research run yet';
-    if (thought.status === 'pending' || thought.status === 'running') return 'Research running';
     if (thought.status === 'complete') return 'Research complete';
     if (thought.status === 'failed') return 'Research failed';
     return thought.status;
   });
+  readonly researchProgress = computed(() =>
+    rankingsResearchProgressFromThought(this.runSession.thought()),
+  );
+  readonly researchProgressPercent = computed(() =>
+    rankingsResearchProgressPercent(this.runSession.thought(), this.researchProgress()),
+  );
+  readonly researchProgressLabel = computed(() =>
+    rankingsResearchProgressLabel(this.runSession.thought(), this.researchProgress()),
+  );
+  readonly researchProgressDetail = computed(() =>
+    rankingsResearchProgressDetail(this.researchProgress()),
+  );
+  readonly showResearchProgress = computed(() => this.runSession.isActive());
 
   readonly marketScopeLabel = marketScopeLabel;
   readonly rankLabel = rankLabel;

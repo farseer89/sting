@@ -67,6 +67,7 @@ import { isShireHostedSite } from '@hive/contracts';
 import { ProtopipeHomeThinkerBinderComponent } from './thinker/protopipe-home-thinker-binder.component';
 import { ProtopipeHomeAnalyticsBinderComponent } from './analytics-binder/protopipe-home-analytics-binder.component';
 import { ProtopipeHomeAnalyticsComponent } from './analytics/protopipe-home-analytics.component';
+import { ProtopipeAiVisibilityComponent } from './ai-visibility/protopipe-ai-visibility.component';
 import { ProtopipeHomeDashboardComponent } from './dashboard/protopipe-home-dashboard.component';
 import { ProtopipeHomeRankingsComponent } from './rankings/protopipe-home-rankings.component';
 import { ProtopipeSiteHealthComponent } from './site-health/protopipe-site-health.component';
@@ -87,6 +88,7 @@ import {
   HOME_DISCOVERY_PATH,
   HOME_KEYWORDS_PATH,
   HOME_RANKINGS_PATH,
+  HOME_AI_VISIBILITY_PATH,
   HOME_SITE_HEALTH_PATH,
   HOME_ONBOARDING_PATH,
   homeShellRouteKind,
@@ -108,6 +110,7 @@ export type ProtopipeHomeView =
   | 'discovery'
   | 'keywords'
   | 'rankings'
+  | 'ai-visibility'
   | 'site-health'
   | 'mentions-book'
   | 'strategy'
@@ -212,6 +215,7 @@ interface MobileHomeTab {
     ProtopipeHomeThinkerBinderComponent,
     ProtopipeHomeAnalyticsBinderComponent,
     ProtopipeHomeAnalyticsComponent,
+    ProtopipeAiVisibilityComponent,
     ProtopipeHomeDashboardComponent,
     ProtopipeHomeRankingsComponent,
     ProtopipeSiteHealthComponent,
@@ -500,13 +504,19 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.activeNavId.set(item.id);
       this.activeView.set('site-health');
       void this.router.navigate([HOME_SITE_HEALTH_PATH]);
-    } else if (item.id === 'business-book' || item.id === 'start-business' || item.id === 'books-business') {
+    } else if (
+      item.id === 'business-book' ||
+      item.id === 'start-business' ||
+      item.id === 'books-business'
+    ) {
       this.openBusinessDetailsView('business-book');
     } else if (item.id === 'seo-ai-visibility' || item.id === 'start-mentions') {
       this.leaveWriterFocus();
       this.leaveThinkerFocus();
+      this.sidePanel.setOpen(false);
       this.activeNavId.set('seo-ai-visibility');
-      this.activeView.set('mentions-book');
+      this.activeView.set('ai-visibility');
+      void this.router.navigate([HOME_AI_VISIBILITY_PATH]);
     } else if (item.id === 'content-strategy' || item.id === 'start-strategy') {
       this.leaveWriterFocus();
       this.leaveThinkerFocus();
@@ -780,7 +790,14 @@ export class ProtopipeUserHomeComponent implements OnInit {
   }
 
   onDashboardOpen(
-    target: 'keywords' | 'rankings' | 'strategy' | 'mentions-book' | 'build-book' | 'business-details',
+    target:
+      | 'keywords'
+      | 'rankings'
+      | 'strategy'
+      | 'mentions-book'
+      | 'ai-visibility'
+      | 'build-book'
+      | 'business-details',
   ): void {
     if (target === 'keywords') {
       this.openKeywordSelectionView();
@@ -796,11 +813,13 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.leaveThinkerFocus();
       this.activeView.set('strategy');
       this.activeNavId.set('content-strategy');
-    } else if (target === 'mentions-book') {
+    } else if (target === 'mentions-book' || target === 'ai-visibility') {
       this.leaveWriterFocus();
       this.leaveThinkerFocus();
-      this.activeView.set('mentions-book');
+      this.sidePanel.setOpen(false);
+      this.activeView.set('ai-visibility');
       this.activeNavId.set('seo-ai-visibility');
+      void this.router.navigate([HOME_AI_VISIBILITY_PATH]);
     } else if (target === 'business-details') {
       this.leaveWriterFocus();
       this.leaveThinkerFocus();
@@ -1032,6 +1051,15 @@ export class ProtopipeUserHomeComponent implements OnInit {
       return;
     }
 
+    if (kind === 'ai-visibility') {
+      this.leaveWriterFocus();
+      this.leaveThinkerFocus();
+      this.sidePanel.setOpen(false);
+      this.activeView.set('ai-visibility');
+      this.activeNavId.set('seo-ai-visibility');
+      return;
+    }
+
     if (kind === 'site-health') {
       this.leaveWriterFocus();
       this.leaveThinkerFocus();
@@ -1093,6 +1121,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
         return 'Keywords';
       case 'rankings':
         return 'Rankings';
+      case 'ai-visibility':
+        return 'AI Visibility';
       case 'mentions-book':
         return 'AI Visibility';
       case 'writer':

@@ -125,7 +125,7 @@
                   <td>
                     <span
                       class="rank-table__rank"
-                      [class.is-missing]="row.latest.position == null"
+                      [class.is-missing]="row.latest.position === null"
                     >
                       {{ rankLabel(row.latest.position) }}
                     </span>
@@ -238,48 +238,287 @@
           </p>
         }
 
-        @if (featureChips(row).length) {
-          <div class="rank-drawer__chips">
+        <nav class="rank-drawer__folders" aria-label="SERP detail folders">
+          @for (tab of drawerFolderTabs; track tab.id) {
+            <button
+              type="button"
+              class="rank-drawer__folder"
+              [class.is-active]="drawerTab() === tab.id"
+              [attr.aria-current]="drawerTab() === tab.id ? 'page' : null"
+              (click)="setDrawerTab(tab.id)"
+            >
+              {{ tab.label }}
+            </button>
+          }
+        </nav>
+
+        @if (drawerTab() === 'features' && featureChips(row).length) {
+          <div class="rank-drawer__chips" aria-label="Detected SERP features">
             @for (feature of featureChips(row); track feature) {
               <span class="rank-chip">{{ featureLabel(feature) }}</span>
             }
           </div>
         }
 
-        @if (drawerTabs().length) {
-          <div class="rank-drawer__tabs" role="tablist" aria-label="SERP detail tabs">
-            @for (tab of drawerTabs(); track tab.id) {
-              <button
-                type="button"
-                class="rank-drawer__tab"
-                role="tab"
-                [class.is-active]="drawerTab() === tab.id"
-                [attr.aria-selected]="drawerTab() === tab.id"
-                (click)="setDrawerTab(tab.id)"
-              >
-                {{ tab.label }}
-                @if (tab.count != null && tab.count > 0) {
-                  <span class="rank-drawer__tab-count">{{ tab.count }}</span>
-                }
-              </button>
-            }
-          </div>
-        }
+        <div class="rank-drawer__body">
+          @if (serpDetail(row); as detail) {
+            <section class="rank-drawer__stats" aria-label="SERP snapshot summary">
+              <div>
+                <span>Organic rank</span>
+                <strong>{{ positionDetailLabel(detail.organicPosition ?? row.latest.position) }}</strong>
+              </div>
+              <div>
+                <span>Local rank</span>
+                <strong>{{ positionDetailLabel(detail.localPackPosition) }}</strong>
+              </div>
+              <div>
+                <span>Ads</span>
+                <strong>{{ adsSummary(row) }}</strong>
+              </div>
+              <div>
+                <span>Device</span>
+                <strong>{{ row.latest.device }}</strong>
+              </div>
+            </section>
+          }
 
-        <div class="rank-drawer__body" role="tabpanel">
-          @switch (drawerTab()) {
-            @case ('ai_overview') {
-              @if (aiOverviewText(row); as overview) {
-                <pre class="rank-drawer__overview">{{ overview }}</pre>
-              } @else if (row.latest.serpDetail?.aiOverview?.present) {
-                <p class="rank-drawer__empty">
-                  Present on SERP — content was not returned by the provider.
-                </p>
-              } @else {
-                <p class="rank-drawer__empty">No AI overview captured for this keyword.</p>
-              }
+          <section
+            class="rank-drawer__section rank-drawer__section--callout"
+            [hidden]="drawerTab() !== 'overview'"
+          >
+            <p class="rank-drawer__kicker">Opportunity read</p>
+            <p>{{ serpOpportunity(row) }}</p>
+          </section>
+
+          <section
+            class="rank-drawer__section rank-drawer__section--card"
+            [hidden]="drawerTab() !== 'overview'"
+          >
+            <div class="rank-drawer__section-head">
+              <p class="rank-drawer__kicker">Your result</p>
+              <h3>Current page match</h3>
+            </div>
+            @if (yourOrganicResult(row); as result) {
+              <article class="rank-drawer__result-card is-yours">
+                <span class="rank-drawer__pos">#{{ result.position }}</span>
+                <div>
+                  <a [href]="result.url" target="_blank" rel="noopener noreferrer">{{ result.title }}</a>
+                  <p>{{ result.displayedUrl ?? result.domain }}</p>
+                  @if (result.snippet) {
+                    <p class="rank-drawer__snippet">{{ result.snippet }}</p>
+                  }
+                </div>
+              </article>
+            } @else if (row.latest.rankingUrl) {
+              <article class="rank-drawer__result-card is-yours">
+                <span class="rank-drawer__pos">{{ rankLabel(row.latest.position) }}</span>
+                <div>
+                  <a [href]="row.latest.rankingUrl" target="_blank" rel="noopener noreferrer">
+                    {{ row.latest.rankingUrl }}
+                  </a>
+                  <p>Ranking URL captured for this snapshot.</p>
+                </div>
+              </article>
+            } @else {
+              <p class="rank-drawer__empty">No owned result found in the captured organic set.</p>
             }
-            @case ('people_also_ask') {
+          </section>
+
+          @if (mediaCount(row) > 0 || hasMediaFeature(row)) {
+            <section
+              id="rank-drawer-media"
+              class="rank-drawer__section rank-drawer__section--card"
+              [hidden]="drawerTab() !== 'features'"
+            >
+              <div class="rank-drawer__section-head">
+                <p class="rank-drawer__kicker">SERP feature</p>
+                <h3>Media results</h3>
+              </div>
+              @if (mediaCount(row) > 0) {
+                @if (imagePack(row).length) {
+                  <section class="rank-drawer__section rank-drawer__section--inline">
+                    <h4>Image pack</h4>
+                    <div class="rank-drawer__media-grid">
+                      @for (image of imagePack(row); track image.url ?? image.title ?? image.thumbnailUrl) {
+                        <article class="rank-drawer__media-card">
+                          @if (image.thumbnailUrl) {
+                            <img [src]="image.thumbnailUrl" [alt]="image.title ?? 'Image result'" />
+                          }
+                          <strong>{{ image.title ?? sourceLabel(image) }}</strong>
+                          <span>{{ sourceLabel(image) }}</span>
+                          @if (image.url) {
+                            <a [href]="image.url" target="_blank" rel="noopener noreferrer">Open result</a>
+                          }
+                        </article>
+                      }
+                    </div>
+                  </section>
+                }
+
+                @if (videoPack(row).length) {
+                  <section class="rank-drawer__section rank-drawer__section--inline">
+                    <h4>Video pack</h4>
+                    <ul class="rank-drawer__source-list">
+                      @for (video of videoPack(row); track video.url ?? video.title) {
+                        <li>
+                          @if (video.url) {
+                            <a [href]="video.url" target="_blank" rel="noopener noreferrer">
+                              {{ video.title ?? sourceLabel(video) }}
+                            </a>
+                          } @else {
+                            <strong>{{ video.title ?? sourceLabel(video) }}</strong>
+                          }
+                          <span>{{ sourceLabel(video) }}</span>
+                        </li>
+                      }
+                    </ul>
+                  </section>
+                }
+              } @else {
+                <p class="rank-drawer__empty">
+                  Media modules were detected, but detailed image or video results were not captured.
+                </p>
+              }
+            </section>
+          }
+
+          @if (row.latest.serpDetail?.aiOverview?.present || hasFeature(row, 'ai_overview')) {
+            <section
+              id="rank-drawer-ai-overview"
+              class="rank-drawer__section rank-drawer__section--card rank-drawer__section--ai"
+              [hidden]="drawerTab() !== 'features'"
+            >
+              <div class="rank-drawer__section-head">
+                <p class="rank-drawer__kicker">SERP feature</p>
+                <h3>{{ aiOverviewTitle(row) }}</h3>
+              </div>
+              @if (aiOverviewParagraphs(row).length) {
+                <div class="rank-drawer__overview">
+                  @for (paragraph of aiOverviewParagraphs(row); track paragraph) {
+                    <p>{{ paragraph }}</p>
+                  }
+                </div>
+              } @else {
+                <p class="rank-drawer__empty">
+                  AI overview is present on the SERP, but the provider did not return readable text.
+                </p>
+              }
+
+              @if (aiOverviewSources(row).length) {
+                <section class="rank-drawer__section rank-drawer__section--inline">
+                  <h4>Sources cited by AI overview</h4>
+                  <ul class="rank-drawer__source-list">
+                    @for (source of aiOverviewSources(row); track source.url ?? source.domain ?? source.title) {
+                      <li>
+                        @if (source.url) {
+                          <a [href]="source.url" target="_blank" rel="noopener noreferrer">
+                            {{ source.title ?? sourceLabel(source) }}
+                          </a>
+                        } @else {
+                          <strong>{{ source.title ?? sourceLabel(source) }}</strong>
+                        }
+                        @if (source.domain) {
+                          <span>{{ source.domain }}</span>
+                        }
+                      </li>
+                    }
+                  </ul>
+                </section>
+              }
+            </section>
+          }
+
+          @if (serpDetail(row)?.knowledgeGraph || hasFeature(row, 'knowledge_graph')) {
+            <section
+              id="rank-drawer-knowledge-graph"
+              class="rank-drawer__section rank-drawer__section--card"
+              [hidden]="drawerTab() !== 'features'"
+            >
+              <div class="rank-drawer__section-head">
+                <p class="rank-drawer__kicker">SERP feature</p>
+                <h3>Knowledge graph</h3>
+              </div>
+              @if (serpDetail(row)?.knowledgeGraph; as graph) {
+                <article class="rank-drawer__knowledge">
+                  <h4>{{ graph.title ?? 'Knowledge panel detected' }}</h4>
+                  @if (graph.description) {
+                    <p>{{ graph.description }}</p>
+                  }
+                  @if (graph.url) {
+                    <a [href]="graph.url" target="_blank" rel="noopener noreferrer">
+                      {{ graph.domain ?? graph.source ?? graph.url }}
+                    </a>
+                  } @else if (graph.source || graph.domain) {
+                    <span>{{ graph.source ?? graph.domain }}</span>
+                  }
+                </article>
+              } @else {
+                <p class="rank-drawer__empty">Knowledge graph was detected, but details were not captured.</p>
+              }
+            </section>
+          }
+
+          @if (row.latest.serpDetail?.localPack?.length || hasFeature(row, 'local_pack')) {
+            <section
+              id="rank-drawer-local-pack"
+              class="rank-drawer__section rank-drawer__section--card"
+              [hidden]="drawerTab() !== 'features'"
+            >
+              <div class="rank-drawer__section-head">
+                <p class="rank-drawer__kicker">SERP feature</p>
+                <h3>Local pack</h3>
+              </div>
+              @if (row.latest.serpDetail?.localPack?.length) {
+                <ul class="rank-drawer__list">
+                  @for (place of serpDetail(row)!.localPack!; track place.position + place.title) {
+                    <li [class.is-yours]="place.isYourSite">
+                      <strong>#{{ place.position }} {{ place.title }}</strong>
+                      @if (place.isYourSite) {
+                        <span class="rank-drawer__badge">You</span>
+                      }
+                      @if (hasValue(place.rating) || hasValue(place.reviewCount)) {
+                        <span class="rank-drawer__muted">
+                          @if (hasValue(place.rating)) {
+                            {{ place.rating }} stars
+                          }
+                          @if (hasValue(place.reviewCount)) {
+                            · {{ place.reviewCount }} reviews
+                          }
+                        </span>
+                      }
+                      @if (place.categories?.length) {
+                        <span class="rank-drawer__muted">{{ place.categories?.join(', ') }}</span>
+                      }
+                      @if (place.address) {
+                        <span class="rank-drawer__muted">{{ place.address }}</span>
+                      }
+                      @if (place.phone) {
+                        <span class="rank-drawer__muted">{{ place.phone }}</span>
+                      }
+                      @if (place.url) {
+                        <a [href]="place.url" target="_blank" rel="noopener noreferrer">
+                          {{ place.domain ?? place.url }}
+                        </a>
+                      }
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="rank-drawer__empty">Local pack was detected, but listings were not captured.</p>
+              }
+            </section>
+          }
+
+          @if (row.latest.serpDetail?.peopleAlsoAsk?.length || hasFeature(row, 'people_also_ask')) {
+            <section
+              id="rank-drawer-people-also-ask"
+              class="rank-drawer__section rank-drawer__section--card"
+              [hidden]="drawerTab() !== 'features'"
+            >
+              <div class="rank-drawer__section-head">
+                <p class="rank-drawer__kicker">SERP feature</p>
+                <h3>People also ask</h3>
+              </div>
               @if (row.latest.serpDetail?.peopleAlsoAsk?.length) {
                 <ul class="rank-drawer__list rank-drawer__list--paa">
                   @for (paa of row.latest.serpDetail!.peopleAlsoAsk!; track paa.question) {
@@ -292,72 +531,104 @@
                   }
                 </ul>
               } @else {
-                <p class="rank-drawer__empty">No people-also-ask questions captured yet.</p>
+                <p class="rank-drawer__empty">People-also-ask questions were detected, but details were not captured.</p>
               }
-            }
-            @case ('local_pack') {
-              @if (row.latest.serpDetail?.localPack?.length) {
-                <ul class="rank-drawer__list">
-                  @for (place of row.latest.serpDetail!.localPack!; track place.position + place.title) {
-                    <li>
-                      <strong>#{{ place.position }} {{ place.title }}</strong>
-                      @if (place.address) {
-                        <span class="rank-drawer__muted">{{ place.address }}</span>
-                      }
-                    </li>
-                  }
-                </ul>
-              } @else {
-                <p class="rank-drawer__empty">No local pack listings captured yet.</p>
-              }
-            }
-            @case ('competition') {
-              @if (row.latest.competitorsAbove.length) {
-                <ul class="rank-drawer__list">
-                  @for (competitor of row.latest.competitorsAbove; track competitor.domain + competitor.position) {
-                    <li>
-                      <strong>#{{ competitor.position }}</strong>
-                      <span>{{ competitor.domain }}</span>
-                      @if (competitor.title) {
-                        <span class="rank-drawer__muted">{{ competitor.title }}</span>
-                      }
-                    </li>
-                  }
-                </ul>
-              } @else {
-                <p class="rank-drawer__empty">No competitors ahead in this snapshot.</p>
-              }
-            }
-            @default {
-              @if (row.latest.serpDetail?.organic?.length) {
-                <ol class="rank-drawer__organic">
-                  @for (result of row.latest.serpDetail!.organic!; track result.position + result.url) {
-                    <li [class.is-yours]="result.isYourSite">
-                      <span class="rank-drawer__pos">#{{ result.position }}</span>
-                      <div>
-                        <a [href]="result.url" target="_blank" rel="noopener noreferrer">{{ result.title }}</a>
-                        <p>{{ result.domain }}</p>
-                        @if (result.snippet) {
-                          <p class="rank-drawer__snippet">{{ result.snippet }}</p>
-                        }
-                      </div>
-                    </li>
-                  }
-                </ol>
-              } @else {
-                <p class="rank-drawer__empty">No organic results captured yet.</p>
-              }
-
-              @if (row.latest.serpDetail?.relatedSearches?.length) {
-                <section class="rank-drawer__section rank-drawer__section--inline">
-                  <h3>Related searches</h3>
-                  <p class="rank-drawer__related">
-                    {{ row.latest.serpDetail!.relatedSearches!.join(' · ') }}
-                  </p>
-                </section>
-              }
-            }
+            </section>
           }
+
+          @if (serpDetail(row)?.paidResults?.length) {
+            <section
+              class="rank-drawer__section rank-drawer__section--card"
+              [hidden]="drawerTab() !== 'features'"
+            >
+              <div class="rank-drawer__section-head">
+                <p class="rank-drawer__kicker">SERP feature</p>
+                <h3>Ads</h3>
+              </div>
+              <ul class="rank-drawer__list">
+                @for (ad of serpDetail(row)!.paidResults!; track ad.position + ad.title) {
+                  <li>
+                    <strong>#{{ ad.position }} {{ ad.title }}</strong>
+                    @if (ad.displayedUrl || ad.domain) {
+                      <span class="rank-drawer__muted">{{ ad.displayedUrl ?? ad.domain }}</span>
+                    }
+                    @if (ad.snippet) {
+                      <span class="rank-drawer__muted">{{ ad.snippet }}</span>
+                    }
+                    @if (ad.url) {
+                      <a [href]="ad.url" target="_blank" rel="noopener noreferrer">{{ ad.url }}</a>
+                    }
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+
+          @if (row.latest.competitorsAbove.length) {
+            <section
+              class="rank-drawer__section rank-drawer__section--card"
+              [hidden]="drawerTab() !== 'competition'"
+            >
+              <div class="rank-drawer__section-head">
+                <p class="rank-drawer__kicker">Competition</p>
+                <h3>Results ahead of you</h3>
+              </div>
+              <ul class="rank-drawer__list">
+                @for (competitor of row.latest.competitorsAbove; track competitor.domain + competitor.position) {
+                  <li>
+                    <strong>#{{ competitor.position }}</strong>
+                    <span>{{ competitor.domain }}</span>
+                    @if (competitor.title) {
+                      <span class="rank-drawer__muted">{{ competitor.title }}</span>
+                    }
+                    @if (competitor.url) {
+                      <a [href]="competitor.url" target="_blank" rel="noopener noreferrer">
+                        {{ competitor.url }}
+                      </a>
+                    }
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+
+          <section
+            id="rank-drawer-organic"
+            class="rank-drawer__section rank-drawer__section--card"
+            [hidden]="drawerTab() !== 'organic'"
+          >
+            <div class="rank-drawer__section-head">
+              <p class="rank-drawer__kicker">Organic SERP</p>
+              <h3>Top results</h3>
+            </div>
+            @if (serpDetail(row)?.organic?.length) {
+              <ol class="rank-drawer__organic">
+                @for (result of serpDetail(row)!.organic!; track result.position + result.url) {
+                  <li [class.is-yours]="result.isYourSite">
+                    <span class="rank-drawer__pos">#{{ result.position }}</span>
+                    <div>
+                      <a [href]="result.url" target="_blank" rel="noopener noreferrer">{{ result.title }}</a>
+                      <p>{{ result.displayedUrl ?? result.domain }}</p>
+                      @if (result.snippet) {
+                        <p class="rank-drawer__snippet">{{ result.snippet }}</p>
+                      }
+                    </div>
+                  </li>
+                }
+              </ol>
+            } @else {
+              <p class="rank-drawer__empty">No organic results captured yet.</p>
+            }
+
+            @if (row.latest.serpDetail?.relatedSearches?.length) {
+              <section class="rank-drawer__section rank-drawer__section--inline">
+                <h4>Related searches</h4>
+                <p class="rank-drawer__related">
+                  {{ row.latest.serpDetail!.relatedSearches!.join(' · ') }}
+                </p>
+              </section>
+            }
+          </section>
         </div>
 
         @if (!row.latest.serpDetail) {

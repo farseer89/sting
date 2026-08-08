@@ -1,0 +1,231 @@
+<div class="aiv">
+  <header class="aiv__intro">
+    <div>
+      <p class="aiv__eyebrow">AI Visibility 2.0</p>
+      <h1>Search answers that mention, cite, or skip your site.</h1>
+      <p class="aiv__lede">
+        Built from ranking research snapshots. Once research captures AI Overview text and sources,
+        this dashboard turns those SERP details into visibility, citation, and opportunity signals.
+      </p>
+      @if (capturedAt()) {
+        <p class="aiv__status">Latest snapshot {{ capturedAt() }}</p>
+      }
+    </div>
+
+    <div class="aiv__actions">
+      <button type="button" class="aiv__button aiv__button--ghost" (click)="loadRankings()">
+        Refresh
+      </button>
+      <button type="button" class="aiv__button" (click)="goToRankings()">Open rankings</button>
+    </div>
+  </header>
+
+  @if (error()) {
+    <p class="aiv__error">{{ error() }}</p>
+  }
+
+  @if (loading()) {
+    <section class="aiv__empty" aria-live="polite">Loading AI visibility data…</section>
+  } @else if (rows().length === 0) {
+    <section class="aiv__empty">
+      <p>{{ emptyMessage() }}</p>
+      <button type="button" class="aiv__button" (click)="goToRankings()">Research rankings</button>
+    </section>
+  } @else {
+    <section class="aiv__metrics" aria-label="AI visibility scorecard">
+      @for (metric of metrics(); track metric.id) {
+        <article class="aiv-card">
+          <span class="aiv-card__label">{{ metric.label }}</span>
+          <strong>{{ metric.value }}</strong>
+          <p>{{ metric.hint }}</p>
+        </article>
+      }
+    </section>
+
+    <section class="aiv-panel aiv-panel--entity" aria-label="Entity understanding">
+      <div class="aiv-panel__head">
+        <div>
+          <p class="aiv-panel__kicker">Entity understanding</p>
+          <h2>Knowledge graph signals Google attaches to these searches</h2>
+        </div>
+        <span class="aiv-panel__count">{{ knowledgeGraphRows().length }}</span>
+      </div>
+
+      @if (knowledgeGraphRows().length) {
+        <div class="aiv-entities">
+          @for (
+            item of knowledgeGraphRows();
+            track item.row.keywordId + item.row.latest.marketTier + item.row.latest.locationCode
+          ) {
+            <article class="aiv-entity">
+              @if (item.graph.imageUrl) {
+                <img class="aiv-entity__image" [src]="item.graph.imageUrl" alt="" />
+              } @else {
+                <div class="aiv-entity__image aiv-entity__image--placeholder" aria-hidden="true">
+                  {{ (item.graph.title || item.row.phrase).slice(0, 1) }}
+                </div>
+              }
+
+              <div class="aiv-entity__body">
+                <div class="aiv-entity__top">
+                  <div>
+                    <p class="aiv-entity__keyword">{{ item.row.phrase }}</p>
+                    <h3>{{ item.graph.title || 'Knowledge graph detected' }}</h3>
+                    @if (item.graph.subtitle || item.graph.source) {
+                      <span>{{ item.graph.subtitle || item.graph.source }}</span>
+                    }
+                  </div>
+                  <em>{{ marketScopeLabel(item.row.latest.marketTier) }}</em>
+                </div>
+
+                @if (item.graph.description) {
+                  <p class="aiv-entity__description">{{ item.graph.description }}</p>
+                }
+
+                @if (item.graph.attributes?.length) {
+                  <dl class="aiv-entity__facts">
+                    @for (
+                      fact of item.graph.attributes?.slice(0, 4) ?? [];
+                      track fact.label + fact.value
+                    ) {
+                      <div>
+                        <dt>{{ fact.label }}</dt>
+                        <dd>{{ fact.value }}</dd>
+                      </div>
+                    }
+                  </dl>
+                }
+
+                @if (item.graph.profiles?.length || item.graph.relatedEntities?.length) {
+                  <div class="aiv-entity__links">
+                    @for (
+                      profile of item.graph.profiles?.slice(0, 3) ?? [];
+                      track profile.url ?? profile.domain ?? profile.title
+                    ) {
+                      @if (profile.url) {
+                        <a [href]="profile.url" target="_blank" rel="noopener noreferrer">
+                          {{ profile.title || profile.domain || 'Profile' }}
+                        </a>
+                      } @else {
+                        <span>{{ profile.title || profile.domain || 'Profile' }}</span>
+                      }
+                    }
+                    @for (
+                      entity of item.graph.relatedEntities?.slice(0, 3) ?? [];
+                      track entity.url ?? entity.title ?? entity.imageUrl
+                    ) {
+                      <span>{{ entity.title || entity.domain || 'Related entity' }}</span>
+                    }
+                  </div>
+                }
+              </div>
+            </article>
+          }
+        </div>
+      } @else {
+        <p class="aiv-panel__empty">
+          No detailed knowledge graph payloads are stored yet. Re-run ranking research after this
+          deploy to capture entity images, facts, profiles, and related entities.
+        </p>
+      }
+    </section>
+
+    <section class="aiv__grid">
+      <article class="aiv-panel aiv-panel--wide">
+        <div class="aiv-panel__head">
+          <div>
+            <p class="aiv-panel__kicker">Opportunities</p>
+            <h2>AI Overviews where you are not cited</h2>
+          </div>
+          <span class="aiv-panel__count">{{ uncitedRows().length }}</span>
+        </div>
+
+        @if (uncitedRows().length) {
+          <div class="aiv-table" role="table" aria-label="Uncited AI Overview opportunities">
+            <div class="aiv-table__row aiv-table__row--head" role="row">
+              <span role="columnheader">Keyword</span>
+              <span role="columnheader">Market</span>
+              <span role="columnheader">Rank</span>
+              <span role="columnheader">AI sources</span>
+            </div>
+            @for (
+              row of uncitedRows();
+              track row.keywordId + row.latest.marketTier + row.latest.locationCode
+            ) {
+              <div class="aiv-table__row" role="row">
+                <strong role="cell">{{ row.phrase }}</strong>
+                <span role="cell">
+                  {{ marketScopeLabel(row.latest.marketTier) }}
+                  @if (row.latest.locationName) {
+                    · {{ locationShortLabel(row.latest.locationName) }}
+                  }
+                </span>
+                <span role="cell">{{ rankLabel(row.latest.position) }}</span>
+                <span role="cell">{{ sourceLabel(row) }}</span>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="aiv-panel__empty">
+            No uncited AI Overview opportunities in the current snapshots.
+          </p>
+        }
+      </article>
+
+      <article class="aiv-panel">
+        <div class="aiv-panel__head">
+          <div>
+            <p class="aiv-panel__kicker">Citation map</p>
+            <h2>Domains AI answers cite</h2>
+          </div>
+        </div>
+
+        @if (sourceDomains().length) {
+          <div class="aiv-sources">
+            @for (source of sourceDomains(); track source.domain) {
+              <div class="aiv-source">
+                <div>
+                  <strong>{{ source.domain }}</strong>
+                  <span>{{ source.keywords.join(', ') }}</span>
+                </div>
+                <em>{{ source.count }}</em>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="aiv-panel__empty">
+            AI Overview sources have not been captured yet. Re-run ranking research after the Shire
+            parser deploy.
+          </p>
+        }
+      </article>
+
+      <article class="aiv-panel">
+        <div class="aiv-panel__head">
+          <div>
+            <p class="aiv-panel__kicker">Answer themes</p>
+            <h2>What AI Overviews say</h2>
+          </div>
+        </div>
+
+        @if (overviewRows().length) {
+          <div class="aiv-excerpts">
+            @for (
+              row of overviewRows();
+              track row.keywordId + row.latest.marketTier + row.latest.locationCode
+            ) {
+              <blockquote class="aiv-excerpt">
+                <p>{{ aiOverviewText(row) }}</p>
+                <cite>{{ row.phrase }}</cite>
+              </blockquote>
+            }
+          </div>
+        } @else {
+          <p class="aiv-panel__empty">
+            AI Overview presence exists, but no answer body is stored in the current snapshots.
+          </p>
+        }
+      </article>
+    </section>
+  }
+</div>

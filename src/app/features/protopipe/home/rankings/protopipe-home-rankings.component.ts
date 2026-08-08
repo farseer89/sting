@@ -9,7 +9,13 @@ import {
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import type { KeywordRankingMarketTier, KeywordRankingRow } from '@hive/contracts';
-import type { RankingsDrawerTab, RankingsSortColumn, RankingsSortState } from './protopipe-home-rankings.model';
+import type {
+  RankingSerpDetailView,
+  RankingSerpMediaResult,
+  RankingSerpSource,
+  RankingsSortColumn,
+  RankingsSortState,
+} from './protopipe-home-rankings.model';
 import { firstValueFrom } from 'rxjs';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
@@ -18,16 +24,16 @@ import { ShireApiService } from '../../shire/shire-api.service';
 import {
   biggestRankingGaps,
   buildRankingsSummary,
-  defaultDrawerTab,
-  drawerTabsForRow,
   locationShortLabel,
   marketScopeLabel,
   rankLabel,
+  rankingSerpDetail,
   sortRankingRows,
   topCompetitorsByOverlap,
 } from './protopipe-home-rankings.model';
 
 type MarketFilter = 'all' | KeywordRankingMarketTier;
+type DrawerFolderTab = 'overview' | 'features' | 'competition' | 'organic';
 
 @Component({
   selector: 'app-protopipe-home-rankings',
@@ -47,7 +53,7 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
   readonly sort = signal<RankingsSortState>({ column: 'rank', direction: 'asc' });
   readonly marketFilter = signal<MarketFilter>('all');
   readonly selectedRow = signal<KeywordRankingRow | null>(null);
-  readonly drawerTab = signal<RankingsDrawerTab>('organic');
+  readonly drawerTab = signal<DrawerFolderTab>('overview');
 
   readonly filteredRows = computed(() => {
     const filter = this.marketFilter();
@@ -82,10 +88,6 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
     const gap = this.strategy.keywords().length - this.uniqueTrackedKeywords();
     return gap > 0 ? gap : 0;
   });
-  readonly drawerTabs = computed(() => {
-    const row = this.selectedRow();
-    return row ? drawerTabsForRow(row) : [];
-  });
   readonly canResearch = computed(
     () => Boolean(this.strategy.siteId()) && this.keywordCount() > 0 && !this.runSession.isActive(),
   );
@@ -114,6 +116,12 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
     { id: 'local', label: 'Local' },
     { id: 'national', label: 'Nationwide' },
     { id: 'worldwide', label: 'Worldwide' },
+  ];
+  readonly drawerFolderTabs: { id: DrawerFolderTab; label: string }[] = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'features', label: 'Features' },
+    { id: 'competition', label: 'Competition' },
+    { id: 'organic', label: 'Organic' },
   ];
 
   constructor() {
@@ -193,15 +201,15 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
 
   openRow(row: KeywordRankingRow): void {
     this.selectedRow.set(row);
-    this.drawerTab.set(defaultDrawerTab(drawerTabsForRow(row)));
+    this.drawerTab.set('overview');
   }
 
   closeDrawer(): void {
     this.selectedRow.set(null);
-    this.drawerTab.set('organic');
+    this.drawerTab.set('overview');
   }
 
-  setDrawerTab(tab: RankingsDrawerTab): void {
+  setDrawerTab(tab: DrawerFolderTab): void {
     this.drawerTab.set(tab);
   }
 
@@ -221,8 +229,13 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
         return 'Featured snippet';
       case 'related_searches':
         return 'Related searches';
+      case 'image':
+      case 'image_pack':
       case 'images':
         return 'Images';
+      case 'videos':
+      case 'video_box':
+      case 'video_carousel':
       case 'video':
         return 'Video';
       case 'knowledge_graph':
@@ -239,9 +252,107 @@ export class ProtopipeHomeRankingsComponent implements OnInit {
   }
 
   aiOverviewText(row: KeywordRankingRow): string | null {
-    const overview = row.latest.serpDetail?.aiOverview;
+    const overview = this.serpDetail(row)?.aiOverview;
     if (!overview?.present) return null;
     return overview.markdown?.trim() || overview.text?.trim() || null;
+  }
+
+  aiOverviewTitle(row: KeywordRankingRow): string {
+    return this.serpDetail(row)?.aiOverview?.title?.trim() || 'AI overview detected';
+  }
+
+  aiOverviewParagraphs(row: KeywordRankingRow): string[] {
+    const text = this.aiOverviewText(row);
+    if (!text) return [];
+    return text
+      .replace(/^#{1,6}\s+/gm, '')
+      .split(/\n{2,}|\n(?=(?:[-*]|\d+\.)\s+)/)
+      .map((part) =>
+        part
+          .replace(/^\s*(?:[-*]|\d+\.)\s+/gm, '')
+          .replace(/\*\*(.*?)\*\*/g, '$1')
+          .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
+          .trim(),
+      )
+      .filter(Boolean)
+      .slice(0, 8);
+  }
+
+  serpDetail(row: KeywordRankingRow): RankingSerpDetailView | undefined {
+    return rankingSerpDetail(row);
+  }
+
+  hasFeature(row: KeywordRankingRow, feature: string): boolean {
+    return this.featureChips(row).includes(feature);
+  }
+
+  serpOpportunity(row: KeywordRankingRow): string {
+    const features = new Set(this.featureChips(row));
+    const signals: string[] = [];
+    if (features.has('ai_overview')) signals.push('AI overview');
+    if (this.hasMediaFeature(row)) signals.push('media modules');
+    if (features.has('knowledge_graph')) signals.push('entity panel');
+    if (features.has('local_pack')) signals.push('local pack');
+    if (signals.length === 0) {
+      return 'This SERP is mostly organic results. The next move is to compare the pages ranking above you and tighten the target page.';
+    }
+    return `Google is showing ${signals.join(', ')} signals here. Treat this as more than a text ranking: strengthen the page, supporting media, and entity/local signals that match this SERP shape.`;
+  }
+
+  yourOrganicResult(
+    row: KeywordRankingRow,
+  ): NonNullable<RankingSerpDetailView['organic']>[number] | undefined {
+    const organic = this.serpDetail(row)?.organic ?? [];
+    return (
+      organic.find((result) => result.isYourSite) ??
+      organic.find((result) => result.url === row.latest.rankingUrl)
+    );
+  }
+
+  positionDetailLabel(position: number | null | undefined): string {
+    return position == null ? 'Not found' : `#${position}`;
+  }
+
+  adsSummary(row: KeywordRankingRow): string {
+    const ads = this.serpDetail(row)?.adsCount;
+    const top = ads?.top ?? 0;
+    const bottom = ads?.bottom ?? 0;
+    if (top === 0 && bottom === 0) return 'No ads';
+    return `${top} top · ${bottom} bottom`;
+  }
+
+  aiOverviewSources(row: KeywordRankingRow): RankingSerpSource[] {
+    const detail = this.serpDetail(row);
+    return detail?.aiOverview?.sources ?? detail?.aiOverviewSources ?? [];
+  }
+
+  imagePack(row: KeywordRankingRow): RankingSerpMediaResult[] {
+    return this.serpDetail(row)?.imagePack ?? [];
+  }
+
+  videoPack(row: KeywordRankingRow): RankingSerpMediaResult[] {
+    return this.serpDetail(row)?.videoPack ?? [];
+  }
+
+  mediaCount(row: KeywordRankingRow): number {
+    return this.imagePack(row).length + this.videoPack(row).length;
+  }
+
+  hasMediaFeature(row: KeywordRankingRow): boolean {
+    return this.featureChips(row).some((feature) =>
+      ['image', 'image_pack', 'images', 'video', 'videos', 'video_box', 'video_carousel'].includes(
+        feature,
+      ),
+    );
+  }
+
+  sourceLabel(source: RankingSerpSource | RankingSerpMediaResult): string {
+    const mediaSource = 'source' in source ? source.source : undefined;
+    return source.domain ?? mediaSource ?? source.title ?? source.url ?? 'Source';
+  }
+
+  hasValue(value: unknown): boolean {
+    return value !== null && value !== undefined;
   }
 
   toggleSort(column: RankingsSortColumn): void {

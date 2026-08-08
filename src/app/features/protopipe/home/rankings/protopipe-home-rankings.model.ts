@@ -1,4 +1,77 @@
-import type { KeywordRankingRow, KeywordRankingSnapshot } from '@hive/contracts';
+import type {
+  KeywordRankingRow,
+  KeywordRankingSerpDetail,
+  KeywordRankingSnapshot,
+} from '@hive/contracts';
+
+export interface RankingSerpSource {
+  title?: string;
+  url?: string;
+  domain?: string;
+}
+
+export interface RankingSerpMediaResult {
+  position?: number;
+  title?: string;
+  url?: string;
+  source?: string;
+  domain?: string;
+  thumbnailUrl?: string;
+}
+
+type RankingOrganicResultView = NonNullable<KeywordRankingSerpDetail['organic']>[number] & {
+  displayedUrl?: string;
+};
+
+type RankingLocalPackResultView = NonNullable<KeywordRankingSerpDetail['localPack']>[number] & {
+  categories?: string[];
+  cid?: string;
+  placeId?: string;
+  url?: string;
+  domain?: string;
+  isYourSite?: boolean;
+};
+
+export interface RankingSerpDetailView extends KeywordRankingSerpDetail {
+  adsCount?: { top: number; bottom: number };
+  organicPosition?: number | null;
+  localPackPosition?: number | null;
+  organic?: RankingOrganicResultView[];
+  localPack?: RankingLocalPackResultView[];
+  paidResults?: {
+    position: number;
+    title: string;
+    url?: string;
+    displayedUrl?: string;
+    snippet?: string;
+    domain?: string;
+  }[];
+  imagePack?: RankingSerpMediaResult[];
+  videoPack?: RankingSerpMediaResult[];
+  knowledgeGraph?: {
+    title?: string;
+    subtitle?: string;
+    description?: string;
+    url?: string;
+    domain?: string;
+    source?: string;
+    imageUrl?: string;
+    attributes?: Array<{ label: string; value: string }>;
+    profiles?: RankingSerpSource[];
+    relatedEntities?: Array<{
+      title?: string;
+      subtitle?: string;
+      description?: string;
+      url?: string;
+      domain?: string;
+      imageUrl?: string;
+    }>;
+  };
+  aiOverviewSources?: RankingSerpSource[];
+  aiOverview?: KeywordRankingSerpDetail['aiOverview'] & {
+    sources?: RankingSerpSource[];
+  };
+}
 
 export type RankingsSortColumn = 'keyword' | 'market' | 'rank' | 'competitors' | 'captured';
 export type RankingsSortDirection = 'asc' | 'desc';
@@ -29,10 +102,7 @@ export function marketScopeLabel(tier: KeywordRankingSnapshot['marketTier']): st
 /** Keep in sync with Shire DEFAULT_SERP_ORGANIC_DEPTH. */
 export const RANKINGS_SERP_DEPTH = 100;
 
-export function rankLabel(
-  position: number | null,
-  depth: number = RANKINGS_SERP_DEPTH,
-): string {
+export function rankLabel(position: number | null, depth: number = RANKINGS_SERP_DEPTH): string {
   return position == null ? `>${depth}` : `#${position}`;
 }
 
@@ -104,13 +174,9 @@ export function sortRankingRows(
   return [...rows].sort((a, b) => compareRows(a, b, sort));
 }
 
-function compareRows(
-  a: KeywordRankingRow,
-  b: KeywordRankingRow,
-  sort: RankingsSortState,
-): number {
+function compareRows(a: KeywordRankingRow, b: KeywordRankingRow, sort: RankingsSortState): number {
   const direction = sort.direction === 'asc' ? 1 : -1;
-  let result = 0;
+  let result: number;
   if (sort.column === 'keyword') {
     result = a.phrase.localeCompare(b.phrase);
   } else if (sort.column === 'market') {
@@ -142,6 +208,9 @@ export type RankingsDrawerTab =
   | 'ai_overview'
   | 'people_also_ask'
   | 'local_pack'
+  | 'paid'
+  | 'media'
+  | 'knowledge_graph'
   | 'competition';
 
 export interface RankingsDrawerTabOption {
@@ -151,7 +220,7 @@ export interface RankingsDrawerTabOption {
 }
 
 export function drawerTabsForRow(row: KeywordRankingRow): RankingsDrawerTabOption[] {
-  const detail = row.latest.serpDetail;
+  const detail = rankingSerpDetail(row);
   const features = row.latest.serpFeatures ?? [];
   const tabs: RankingsDrawerTabOption[] = [];
 
@@ -181,6 +250,30 @@ export function drawerTabsForRow(row: KeywordRankingRow): RankingsDrawerTabOptio
     });
   }
 
+  if ((detail?.paidResults?.length ?? 0) > 0) {
+    tabs.push({
+      id: 'paid',
+      label: 'Ads',
+      count: detail?.paidResults?.length,
+    });
+  }
+
+  const mediaCount = (detail?.imagePack?.length ?? 0) + (detail?.videoPack?.length ?? 0);
+  if (mediaCount > 0 || features.includes('images') || features.includes('video')) {
+    tabs.push({
+      id: 'media',
+      label: 'Media',
+      count: mediaCount || undefined,
+    });
+  }
+
+  if (detail?.knowledgeGraph || features.includes('knowledge_graph')) {
+    tabs.push({
+      id: 'knowledge_graph',
+      label: 'Knowledge',
+    });
+  }
+
   if (row.latest.competitorsAbove.length > 0) {
     tabs.push({
       id: 'competition',
@@ -190,6 +283,10 @@ export function drawerTabsForRow(row: KeywordRankingRow): RankingsDrawerTabOptio
   }
 
   return tabs;
+}
+
+export function rankingSerpDetail(row: KeywordRankingRow): RankingSerpDetailView | undefined {
+  return row.latest.serpDetail as RankingSerpDetailView | undefined;
 }
 
 export function defaultDrawerTab(tabs: RankingsDrawerTabOption[]): RankingsDrawerTab {

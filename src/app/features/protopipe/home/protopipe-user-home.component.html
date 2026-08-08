@@ -486,6 +486,14 @@
                     <app-protopipe-home-rankings />
                   </section>
                 }
+                @case ('ai-visibility') {
+                  <section
+                    class="glass glass--full glass--premiere home-ai-visibility"
+                    aria-label="AI Visibility 2.0"
+                  >
+                    <app-protopipe-ai-visibility />
+                  </section>
+                }
                 @case ('site-health') {
                   <section
                     class="glass glass--full glass--premiere home-site-health"
@@ -756,7 +764,9 @@
                 @case ('goals') {
                   <section class="glass glass--full glass--premiere" aria-label="Goals">
                     <app-protopipe-home-goals
-                      (goStrategy)="selectNavItem({ id: 'content-strategy', label: 'Your strategy' })"
+                      (goStrategy)="
+                        selectNavItem({ id: 'content-strategy', label: 'Your strategy' })
+                      "
                     />
                   </section>
                 }

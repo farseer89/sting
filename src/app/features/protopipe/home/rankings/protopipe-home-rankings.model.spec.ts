@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { KeywordRankingRow } from '@hive/contracts';
 import {
   buildRankingsSummary,
+  drawerTabsForRow,
   marketScopeLabel,
   sortRankingRows,
   topCompetitorsByOverlap,
@@ -65,5 +66,34 @@ describe('protopipe rankings dashboard model', () => {
 
   it('counts competitor overlap', () => {
     expect(topCompetitorsByOverlap(rows)[0]).toEqual({ domain: 'competitor-a.com', count: 2 });
+  });
+
+  it('adds tabs for richer SERP detail blocks', () => {
+    const tabs = drawerTabsForRow({
+      keywordId: 'kw-3',
+      phrase: 'maui wedding planner',
+      latest: {
+        position: 1,
+        marketTier: 'local',
+        device: 'desktop',
+        competitorsAbove: [],
+        capturedAt: '2026-08-04T12:00:00.000Z',
+        source: 'dataforseo',
+        serpDetail: {
+          organic: [],
+          paidResults: [{ position: 1, title: 'Sponsored planner' }],
+          imagePack: [{ title: 'Image result' }],
+          videoPack: [{ title: 'Video result' }],
+          knowledgeGraph: { title: 'Maui Weddings' },
+        },
+      },
+    } as KeywordRankingRow);
+
+    expect(tabs.map((tab) => tab.id)).toEqual([
+      'organic',
+      'paid',
+      'media',
+      'knowledge_graph',
+    ]);
   });
 });

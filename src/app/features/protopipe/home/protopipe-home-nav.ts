@@ -64,7 +64,7 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
       },
       {
         id: 'seo-ai-visibility',
-        label: 'AI Visibility',
+        label: 'AI Visibility 2.0',
         icon: 'sparkles',
         capability: 'ai_mentions',
       },

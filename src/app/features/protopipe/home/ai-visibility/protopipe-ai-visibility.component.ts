@@ -42,24 +42,6 @@ interface AiVisibilityKnowledgeGraphRow {
   graph: NonNullable<NonNullable<ReturnType<typeof rankingSerpDetail>>['knowledgeGraph']>;
 }
 
-interface AiVisibilityInputCard {
-  id: string;
-  label: string;
-  status: 'ready' | 'missing' | 'planned';
-  value: string;
-  hint: string;
-}
-
-interface AiAwarenessCostScenario {
-  id: string;
-  label: string;
-  promptCount: number;
-  googleAiModeStandard: string;
-  googleAiModeLive: string;
-  llmResponsesLiveBase: string;
-  note: string;
-}
-
 interface CaptureMarketTarget {
   locationCode: number;
   locationName: string;
@@ -72,10 +54,6 @@ const DEFAULT_NATIONAL_MARKET: CaptureMarketTarget = {
   locationCode: 2840,
   locationName: 'United States',
 };
-
-const GOOGLE_AI_MODE_STANDARD_SERP_USD = 0.0012;
-const GOOGLE_AI_MODE_LIVE_SERP_USD = 0.004;
-const LLM_RESPONSES_LIVE_TASK_FEE_USD = 0.0006;
 
 @Component({
   selector: 'app-protopipe-ai-visibility',
@@ -163,95 +141,6 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
       .filter((item): item is AiVisibilityKnowledgeGraphRow => Boolean(item.graph)),
   );
   readonly capturedAt = computed(() => latestCapturedAt(this.rows()));
-  readonly inputCards = computed<AiVisibilityInputCard[]>(() => {
-    const hostname = this.ownDomain();
-    const keywordCount = this.trackedKeywordCount();
-    const rankingSnapshotCount = this.rows().length;
-    const aiSnapshots = this.aiRows().length;
-    const sourceCount = this.sourceDomains().length;
-    const entityCount = this.knowledgeGraphRows().length;
-    const persistedCaptures = this.persistedSnapshots();
-
-    return [
-      {
-        id: 'site',
-        label: 'Site identity',
-        status: hostname ? 'ready' : 'missing',
-        value: hostname ?? 'Missing',
-        hint: 'Used to score whether AI answers cite this site.',
-      },
-      {
-        id: 'keywords',
-        label: 'Tracked keywords',
-        status: keywordCount > 0 ? 'ready' : 'missing',
-        value: plural(keywordCount, 'keyword'),
-        hint: 'Defines which search and prompt themes the visibility view can inspect.',
-      },
-      {
-        id: 'rankings',
-        label: 'Ranking snapshots',
-        status: rankingSnapshotCount > 0 ? 'ready' : 'missing',
-        value: plural(rankingSnapshotCount, 'snapshot'),
-        hint: 'Current source for AI Overview coverage, citations, and entity panels.',
-      },
-      {
-        id: 'ai-overviews',
-        label: 'AI Overview evidence',
-        status: aiSnapshots > 0 ? 'ready' : 'missing',
-        value: `${aiSnapshots}/${rankingSnapshotCount || 0}`,
-        hint: 'Rows with AI Overview text or source data from ranking research.',
-      },
-      {
-        id: 'sources',
-        label: 'Cited source domains',
-        status: sourceCount > 0 ? 'ready' : 'missing',
-        value: plural(sourceCount, 'domain'),
-        hint: 'External domains AI answers cite instead of, or alongside, this site.',
-      },
-      {
-        id: 'entities',
-        label: 'Entity dossiers',
-        status: entityCount > 0 ? 'ready' : 'missing',
-        value: plural(entityCount, 'panel'),
-        hint: 'Knowledge graph facts, authority links, and related entities from ranking snapshots.',
-      },
-      {
-        id: 'dataforseo-awareness',
-        label: 'DataForSEO AI Awareness',
-        status: persistedCaptures.length > 0 ? 'ready' : 'planned',
-        value: persistedCaptures.length
-          ? plural(persistedCaptures.length, 'keyword capture')
-          : 'Cost model ready',
-        hint: persistedCaptures.length
-          ? `Latest run captured ${persistedCaptures.length} keyword${persistedCaptures.length === 1 ? '' : 's'} with Google AI Mode and ChatGPT.`
-          : 'Run AI awareness capture to persist Google AI Mode SERP and ChatGPT responses.',
-      },
-    ];
-  });
-  readonly costScenarios = computed<AiAwarenessCostScenario[]>(() => {
-    const keywordCount = this.trackedKeywordCount();
-    const currentPromptCount = clamp(keywordCount || 8, 8, 24);
-    const scenarios = [
-      { id: 'starter', label: 'Starter test', promptCount: 8 },
-      { id: 'current', label: 'Current keyword set', promptCount: currentPromptCount },
-      { id: 'heavy', label: 'Heavy test', promptCount: 48 },
-    ];
-
-    return scenarios.map((scenario) => ({
-      ...scenario,
-      googleAiModeStandard: formatUsd(
-        scenario.promptCount * GOOGLE_AI_MODE_STANDARD_SERP_USD,
-      ),
-      googleAiModeLive: formatUsd(scenario.promptCount * GOOGLE_AI_MODE_LIVE_SERP_USD),
-      llmResponsesLiveBase: `${formatUsd(
-        scenario.promptCount * LLM_RESPONSES_LIVE_TASK_FEE_USD,
-      )} + model pass-through`,
-      note:
-        scenario.id === 'current'
-          ? 'Based on the current tracked keyword count, capped for test use.'
-          : 'Use this to compare small and expanded prompt clusters.',
-    }));
-  });
   readonly metrics = computed<AiVisibilityMetric[]>(() => {
     const snapshots = this.rows().length;
     const aiSnapshots = this.aiRows().length;
@@ -294,6 +183,49 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
       },
     ];
   });
+  readonly marketMetrics = computed<AiVisibilityMetric[]>(() => {
+    const snapshots = this.visibleSnapshots();
+    const completeSources = snapshots.flatMap((snapshot) =>
+      snapshot.sources.filter((source) => source.status === 'complete'),
+    );
+    const citedKeywords = snapshots.filter((snapshot) => this.snapshotCited(snapshot)).length;
+    const mentionedKeywords = snapshots.filter((snapshot) => this.snapshotMentioned(snapshot)).length;
+    const citedDomains = new Set(completeSources.flatMap((source) => source.citedDomains));
+    const fullAnswers = completeSources.filter((source) => this.sourceAnswerText(source)).length;
+
+    return [
+      {
+        id: 'captured-keywords',
+        label: 'Keywords captured',
+        value: String(snapshots.length),
+        hint: `${this.marketScopeButtonLabel(this.selectedMarketScope())} AI answers stored`,
+      },
+      {
+        id: 'site-cited',
+        label: 'Site cited',
+        value: percentLabel(citedKeywords, snapshots.length),
+        hint: `${citedKeywords} of ${snapshots.length} keywords cite your site`,
+      },
+      {
+        id: 'site-mentioned',
+        label: 'Site mentioned',
+        value: percentLabel(mentionedKeywords, snapshots.length),
+        hint: `${mentionedKeywords} answers mention your brand or domain`,
+      },
+      {
+        id: 'citation-map',
+        label: 'Cited domains',
+        value: String(citedDomains.size),
+        hint: 'Unique sources AI answers rely on in this market',
+      },
+      {
+        id: 'answers',
+        label: 'Full answers',
+        value: String(fullAnswers),
+        hint: 'Saved Google AI Mode and ChatGPT responses available to read',
+      },
+    ];
+  });
 
   readonly emptyMessage = computed(() =>
     this.trackedKeywordCount() === 0
@@ -304,15 +236,7 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   readonly rankLabel = rankLabel;
   readonly marketScopeLabel = marketScopeLabel;
   readonly locationShortLabel = locationShortLabel;
-  readonly formatUsd = formatUsd;
   readonly dateLabel = dateLabel;
-  readonly captureEstimateUsd = computed(() => {
-    const count = this.trackedKeywordCount();
-    if (count <= 0) return null;
-    const aiMode = count * GOOGLE_AI_MODE_LIVE_SERP_USD;
-    const chatGptBase = count * LLM_RESPONSES_LIVE_TASK_FEE_USD;
-    return `${formatUsd(aiMode)} AI Mode + ${formatUsd(chatGptBase)} ChatGPT base`;
-  });
   readonly activeSnapshot = computed(() => {
     const snapshots = this.visibleSnapshots();
     if (snapshots.length === 0) return null;
@@ -352,15 +276,19 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
           if (isRankingsNotReadyError(err)) return { rankings: [] };
           throw err;
         }),
-        firstValueFrom(this.api.getLatestAiVisibility$(siteId)).catch(() => ({ snapshot: null })),
+        firstValueFrom(this.api.listAiVisibility$(siteId)).catch(() =>
+          firstValueFrom(this.api.getLatestAiVisibility$(siteId)).then(({ snapshot }) => ({
+            snapshots: snapshot ? [snapshot] : [],
+          })),
+        ),
       ]);
       this.rows.set(rankingsResponse.rankings);
-      const snapshot = aiVisibilityResponse.snapshot;
-      this.persistedSnapshots.set(snapshot ? [snapshot] : []);
-      if (snapshot) {
-        this.selectedMarketScope.set(this.snapshotMarketScope(snapshot));
+      const snapshots = this.mergeSnapshots([], aiVisibilityResponse.snapshots);
+      this.persistedSnapshots.set(snapshots);
+      if (snapshots[0]) {
+        this.selectedMarketScope.set(this.snapshotMarketScope(snapshots[0]));
       }
-      this.selectedSnapshotId.set(snapshot?.id ?? null);
+      this.selectedSnapshotId.set(snapshots[0]?.id ?? null);
     } catch (err) {
       this.error.set(parseProtopipeApiError(err, 'Could not load AI visibility data.'));
     } finally {
@@ -384,7 +312,7 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
     this.selectedMarketScope.set(scope);
     const snapshots =
       scope === 'local' ? this.localSnapshots() : this.nationalSnapshots();
-    this.selectedSnapshotId.set(snapshots.at(-1)?.id ?? null);
+    this.selectedSnapshotId.set(snapshots[0]?.id ?? null);
   }
 
   snapshotMarketScope(snapshot: AiVisibilitySnapshot): CaptureMarketScope {
@@ -501,7 +429,42 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
     const snapshot = this.sourceSnapshotFor(source);
     if (!snapshot) return 'Not captured';
     if (snapshot.status === 'failed') return 'Failed';
-    return `${formatUsd(snapshot.costUsd)} national`;
+    return '1 national';
+  }
+
+  sourceDisplayName(source: AiVisibilitySourceSnapshot): string {
+    if (source.source === 'google_ai_mode') return 'Google AI Mode';
+    if (source.source === 'chatgpt') return 'ChatGPT';
+    return 'Keyword Overview';
+  }
+
+  sourceAnswerText(source: AiVisibilitySourceSnapshot): string {
+    const sectionText = source.answerSections
+      ?.map((section) => section.markdown || section.text)
+      .filter((text): text is string => Boolean(text?.trim()))
+      .join('\n\n');
+    return cleanAnswerText(source.answerMarkdown || sectionText || source.answerExcerpt || '');
+  }
+
+  snapshotCited(snapshot: AiVisibilitySnapshot | null | undefined): boolean {
+    return Boolean(snapshot?.sources.some((source) => source.clientCited));
+  }
+
+  snapshotMentioned(snapshot: AiVisibilitySnapshot | null | undefined): boolean {
+    return Boolean(snapshot?.sources.some((source) => source.clientMentioned));
+  }
+
+  snapshotStatusLabel(snapshot: AiVisibilitySnapshot | null | undefined): string {
+    if (!snapshot) return 'Not captured';
+    if (this.snapshotCited(snapshot)) return 'Cited';
+    if (this.snapshotMentioned(snapshot)) return 'Mentioned';
+    return 'Not cited';
+  }
+
+  snapshotSourceSummary(snapshot: AiVisibilitySnapshot): string {
+    const complete = snapshot.sources.filter((source) => source.status === 'complete').length;
+    const domains = new Set(snapshot.sources.flatMap((source) => source.citedDomains)).size;
+    return `${complete}/${snapshot.sources.length} answers · ${domains} cited domains`;
   }
 
   sourcesFor(row: KeywordRankingRow) {
@@ -632,15 +595,6 @@ function plural(count: number, singular: string): string {
   return `${count} ${singular}${count === 1 ? '' : 's'}`;
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
-
-function formatUsd(value: number): string {
-  if (value < 0.01) return `$${value.toFixed(4)}`;
-  return `$${value.toFixed(2)}`;
-}
-
 function rankValue(position: number | null): number {
   return position ?? Number.POSITIVE_INFINITY;
 }
@@ -667,4 +621,12 @@ function isRankingsNotReadyError(err: unknown): boolean {
 
 function snapshotKey(snapshot: AiVisibilitySnapshot): string {
   return `${snapshot.keyword.trim().toLowerCase()}::${snapshot.locationCode}`;
+}
+
+function cleanAnswerText(value: string): string {
+  return value
+    .replace(/\r/g, '')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }

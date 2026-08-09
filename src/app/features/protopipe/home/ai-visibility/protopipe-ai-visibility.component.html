@@ -67,73 +67,14 @@
     <p class="aiv__error">{{ error() }}</p>
   }
 
-  @if (captureEstimateUsd() && trackedKeywordCount() > 0 && !capturing()) {
-    <p class="aiv__capture-hint">
-      Run national or local AI awareness for all {{ trackedKeywordCount() }} tracked keywords — est.
-      {{ captureEstimateUsd() }} per market plus ChatGPT model pass-through.
-    </p>
-  }
-
-  <section class="aiv-inputs" aria-label="AI visibility inputs">
-    <div class="aiv-panel__head">
-      <div>
-        <p class="aiv-panel__kicker">Inputs</p>
-        <h2>What this view can reason from today</h2>
-        <p class="aiv-panel__subhead">
-          AI Visibility 2.0 is only as good as its inputs. This section separates current
-          ranking-derived signals from the planned DataForSEO AI Awareness source.
-        </p>
-      </div>
-    </div>
-
-    <div class="aiv-input-grid">
-      @for (input of inputCards(); track input.id) {
-        <article
-          class="aiv-input-card"
-          [class.aiv-input-card--ready]="input.status === 'ready'"
-          [class.aiv-input-card--missing]="input.status === 'missing'"
-          [class.aiv-input-card--planned]="input.status === 'planned'"
-        >
-          <div>
-            <span>{{ input.label }}</span>
-            <strong>{{ input.value }}</strong>
-          </div>
-          <em>{{ input.status }}</em>
-          <p>{{ input.hint }}</p>
-        </article>
-      }
-    </div>
-
-    <div class="aiv-cost">
-      <div class="aiv-cost__head">
-        <div>
-          <p class="aiv-panel__kicker">DataForSEO feasibility</p>
-          <h3>AI Awareness cost model</h3>
-        </div>
-        <span>Estimate before paid calls</span>
-      </div>
-
-      <div class="aiv-cost-table" role="table" aria-label="DataForSEO AI Awareness cost estimates">
-        <div class="aiv-cost-table__row aiv-cost-table__row--head" role="row">
-          <span role="columnheader">Scenario</span>
-          <span role="columnheader">Prompts</span>
-          <span role="columnheader">AI Mode standard</span>
-          <span role="columnheader">AI Mode live</span>
-          <span role="columnheader">LLM Responses live</span>
-        </div>
-
-        @for (scenario of costScenarios(); track scenario.id) {
-          <div class="aiv-cost-table__row" role="row">
-            <strong role="cell">{{ scenario.label }}</strong>
-            <span role="cell">{{ scenario.promptCount }}</span>
-            <span role="cell">{{ scenario.googleAiModeStandard }}</span>
-            <span role="cell">{{ scenario.googleAiModeLive }}</span>
-            <span role="cell">{{ scenario.llmResponsesLiveBase }}</span>
-            <small role="cell">{{ scenario.note }}</small>
-          </div>
-        }
-      </div>
-    </div>
+  <section class="aiv__metrics aiv__metrics--market" aria-label="AI visibility market scorecard">
+    @for (metric of marketMetrics(); track metric.id) {
+      <article class="aiv-card">
+        <span class="aiv-card__label">{{ metric.label }}</span>
+        <strong>{{ metric.value }}</strong>
+        <p>{{ metric.hint }}</p>
+      </article>
+    }
   </section>
 
   <nav class="aiv-tabs" aria-label="AI visibility sources">
@@ -479,189 +420,184 @@
   }
   } @else {
     <section class="aiv-panel aiv-source-panel" aria-label="Persisted AI visibility source">
-      @if (showMarketScopePicker()) {
-        <nav class="aiv-market-tabs" aria-label="AI visibility market scope">
-          <button
-            type="button"
-            class="aiv-market-tabs__button"
-            [class.aiv-market-tabs__button--active]="selectedMarketScope() === 'national'"
-            (click)="selectMarketScope('national')"
-          >
-            <span>National</span>
-            <em>{{ nationalSnapshots().length }} · {{ marketScopeButtonLabel('national') }}</em>
-          </button>
-          <button
-            type="button"
-            class="aiv-market-tabs__button"
-            [class.aiv-market-tabs__button--active]="selectedMarketScope() === 'local'"
-            (click)="selectMarketScope('local')"
-          >
-            <span>Local</span>
-            <em>{{ localSnapshots().length }} · {{ marketScopeButtonLabel('local') }}</em>
-          </button>
-        </nav>
-      }
-
-      @if (visibleSnapshots().length > 1) {
-        <div class="aiv-keyword-picker">
-          <label for="aiv-keyword-select">Keyword</label>
-          <select
-            id="aiv-keyword-select"
-            [value]="selectedSnapshotId() ?? ''"
-            (change)="selectSnapshot($any($event.target).value)"
-          >
-            @for (snapshot of visibleSnapshots(); track snapshot.id) {
-              <option [value]="snapshot.id">
-                {{ snapshot.keyword }} — {{ snapshotMarketLabel(snapshot) }}
-              </option>
-            }
-          </select>
-        </div>
-      }
-
-      @if (activePersistedSource(); as source) {
-        <div class="aiv-panel__head">
-          <div>
-            <p class="aiv-panel__kicker">
-              {{ source.source === 'google_ai_mode' ? 'Primary source' : 'Secondary source' }}
-              · {{ selectedMarketScope() === 'local' ? 'Local' : 'National' }}
-            </p>
-            <h2>
-              {{ source.source === 'google_ai_mode' ? 'Google AI Mode SERP' : 'ChatGPT LLM Responses' }}
-            </h2>
-            <p class="aiv-panel__subhead">
-              Persisted DataForSEO capture for "{{ activeSnapshot()?.keyword }}" in
-              {{ activeMarketLabel() }}.
-            </p>
-          </div>
-          <span class="aiv-panel__count">{{ formatUsd(source.costUsd) }}</span>
-        </div>
-
-        <div class="aiv-source-panel__meta">
-          <span>{{ selectedMarketScope() === 'local' ? 'Local market' : 'National market' }}</span>
-          <span>{{ activeMarketLabel() }}</span>
-          <span>{{ source.status }}</span>
-          <span>{{ source.role }}</span>
-          @if (source.modelName) {
-            <span>{{ source.modelName }}</span>
-          }
-          @if (source.latencyMs) {
-            <span>{{ source.latencyMs }} ms</span>
-          }
-          @if (source.answerSections?.length) {
-            <span>{{ source.answerSections?.length }} sections</span>
-          }
-          @if (source.rawPayloadStored) {
-            <span>Raw payload saved</span>
-          }
-          @if (source.inputTokens || source.outputTokens) {
-            <span>{{ source.inputTokens ?? 0 }} in / {{ source.outputTokens ?? 0 }} out</span>
-          }
-        </div>
-
-        @if (source.status === 'failed') {
-          <p class="aiv-panel__empty">{{ source.error || 'Capture failed.' }}</p>
-        } @else {
-          @if (source.answerExcerpt) {
-            <blockquote class="aiv-source-panel__answer">
-              <p>{{ source.answerExcerpt }}</p>
-            </blockquote>
-          } @else {
-            <p class="aiv-panel__empty">No answer excerpt was captured for this source.</p>
+      <div class="aiv-source-shell">
+        <aside class="aiv-source-shell__rail" aria-label="Captured keyword navigation">
+          @if (showMarketScopePicker()) {
+            <nav class="aiv-market-tabs" aria-label="AI visibility market scope">
+              <button
+                type="button"
+                class="aiv-market-tabs__button"
+                [class.aiv-market-tabs__button--active]="selectedMarketScope() === 'national'"
+                (click)="selectMarketScope('national')"
+              >
+                <span>National</span>
+                <em>{{ nationalSnapshots().length }} · {{ marketScopeButtonLabel('national') }}</em>
+              </button>
+              <button
+                type="button"
+                class="aiv-market-tabs__button"
+                [class.aiv-market-tabs__button--active]="selectedMarketScope() === 'local'"
+                (click)="selectMarketScope('local')"
+              >
+                <span>Local</span>
+                <em>{{ localSnapshots().length }} · {{ marketScopeButtonLabel('local') }}</em>
+              </button>
+            </nav>
           }
 
-          @if (source.itemTypes?.length || source.links?.length) {
-            <div class="aiv-source-panel__evidence">
-              @if (source.itemTypes?.length) {
-                <section>
-                  <span>Item types</span>
-                  <p>{{ source.itemTypes?.join(', ') }}</p>
-                </section>
-              }
-              @if (source.links?.length) {
-                <section>
-                  <span>Featured links</span>
-                  <p>
-                    @for (link of source.links?.slice(0, 6) ?? []; track link.url) {
-                      <a [href]="link.url" target="_blank" rel="noopener noreferrer">
-                        {{ link.title || link.domain || link.url }}
-                      </a>
-                    }
-                  </p>
-                </section>
-              }
+          <div class="aiv-keyword-list">
+            <div class="aiv-keyword-list__head">
+              <span>{{ selectedMarketScope() === 'local' ? 'Local keywords' : 'National keywords' }}</span>
+              <em>{{ visibleSnapshots().length }}</em>
             </div>
-          }
 
-          @if (source.answerSections?.length) {
-            <div class="aiv-source-panel__sections">
-              <div class="aiv-source-panel__sections-head">
-                <span>Answer sections preserved for planning</span>
-                <em>{{ source.answerSections?.length }}</em>
+            @if (visibleSnapshots().length) {
+              @for (snapshot of visibleSnapshots(); track snapshot.id) {
+                <button
+                  type="button"
+                  class="aiv-keyword-item"
+                  [class.aiv-keyword-item--active]="selectedSnapshotId() === snapshot.id"
+                  [class.aiv-keyword-item--cited]="snapshotCited(snapshot)"
+                  (click)="selectSnapshot(snapshot.id)"
+                >
+                  <strong>{{ snapshot.keyword }}</strong>
+                  <span>{{ snapshotStatusLabel(snapshot) }}</span>
+                  <em>{{ snapshotSourceSummary(snapshot) }}</em>
+                </button>
+              }
+            } @else {
+              <p class="aiv-panel__empty">
+                No {{ selectedMarketScope() }} captures yet for {{ activeMarketLabel() }}.
+              </p>
+            }
+          </div>
+        </aside>
+
+        <div class="aiv-source-shell__reader">
+          @if (activePersistedSource(); as source) {
+            <div class="aiv-panel__head">
+              <div>
+                <p class="aiv-panel__kicker">
+                  {{ selectedMarketScope() === 'local' ? 'Local' : 'National' }} answer
+                </p>
+                <h2>{{ sourceDisplayName(source) }} response</h2>
+                <p class="aiv-panel__subhead">
+                  {{ activeSnapshot()?.keyword }} · {{ activeMarketLabel() }}
+                </p>
               </div>
-              @for (section of source.answerSections?.slice(0, 5) ?? []; track section.type + $index) {
-                <article>
-                  <div>
-                    <strong>{{ section.title || section.type }}</strong>
-                    @if (section.citations.length) {
-                      <em>{{ section.citations.length }} refs</em>
+              <span class="aiv-panel__count">{{ snapshotStatusLabel(activeSnapshot()) }}</span>
+            </div>
+
+            <div class="aiv-source-panel__meta">
+              <span>{{ source.status }}</span>
+              @if (source.modelName) {
+                <span>{{ source.modelName }}</span>
+              }
+              <span>{{ source.citedDomains.length }} cited domains</span>
+              @if (source.answerSections?.length) {
+                <span>{{ source.answerSections?.length }} sections</span>
+              }
+              <span>{{ dateLabel(source.capturedAt) }}</span>
+            </div>
+
+            @if (source.status === 'failed') {
+              <p class="aiv-panel__empty">{{ source.error || 'Capture failed.' }}</p>
+            } @else {
+              @if (sourceAnswerText(source)) {
+                <article class="aiv-source-panel__answer">
+                  <div class="aiv-source-panel__answer-head">
+                    <span>Full answer</span>
+                    @if (source.clientCited) {
+                      <em>Cites your site</em>
+                    } @else if (source.clientMentioned) {
+                      <em>Mentions your site</em>
+                    } @else {
+                      <em>Not cited</em>
                     }
                   </div>
-                  <p>{{ section.text || section.markdown || 'Structured element preserved.' }}</p>
+                  <p>{{ sourceAnswerText(source) }}</p>
                 </article>
+              } @else {
+                <p class="aiv-panel__empty">No answer text was captured for this source.</p>
               }
-            </div>
-          }
 
-          <div class="aiv-source-panel__grid">
-            <article>
-              <span>Client cited</span>
-              <strong>{{ source.clientCited ? 'Yes' : 'No' }}</strong>
-              <p>
-                {{ source.clientMentioned ? 'Client domain appears in the answer text.' : 'No client domain mention found in the answer text.' }}
-              </p>
-            </article>
-            <article>
-              <span>Cited domains</span>
-              <strong>{{ source.citedDomains.length }}</strong>
-              <p>{{ source.citedDomains.slice(0, 6).join(', ') || 'No domains returned.' }}</p>
-            </article>
-            <article>
-              <span>Captured</span>
-              <strong>{{ dateLabel(source.capturedAt) }}</strong>
-              <p>{{ source.endpoint || 'DataForSEO AI visibility source' }}</p>
-            </article>
-          </div>
+              <div class="aiv-source-panel__grid">
+                <article>
+                  <span>Your site</span>
+                  <strong>{{ source.clientCited ? 'Cited' : source.clientMentioned ? 'Mentioned' : 'Not cited' }}</strong>
+                  <p>
+                    {{ source.clientCited ? 'This source links to your site.' : source.clientMentioned ? 'Your site appears in the answer text.' : 'The answer does not mention or cite your site.' }}
+                  </p>
+                </article>
+                <article>
+                  <span>Citation depth</span>
+                  <strong>{{ source.citedDomains.length }}</strong>
+                  <p>{{ source.citedDomains.slice(0, 6).join(', ') || 'No cited domains returned.' }}</p>
+                </article>
+                <article>
+                  <span>Saved content</span>
+                  <strong>{{ source.answerSections?.length || (sourceAnswerText(source) ? 1 : 0) }}</strong>
+                  <p>Sections and full answer text are available for planning.</p>
+                </article>
+              </div>
 
-          @if (source.citations.length) {
-            <div class="aiv-source-panel__citations">
-              @for (citation of source.citations; track citation.url) {
-                <a [href]="citation.url" target="_blank" rel="noopener noreferrer">
-                  <strong>{{ citation.title || citation.domain || citation.url }}</strong>
-                  @if (citation.domain) {
-                    <span>{{ citation.domain }}</span>
+              @if (source.citations.length || source.links?.length) {
+                <div class="aiv-source-panel__citations">
+                  @for (citation of source.citations; track citation.url) {
+                    <a [href]="citation.url" target="_blank" rel="noopener noreferrer">
+                      <strong>{{ citation.title || citation.domain || citation.url }}</strong>
+                      @if (citation.domain) {
+                        <span>{{ citation.domain }}</span>
+                      }
+                    </a>
                   }
-                </a>
+                  @for (link of source.links ?? []; track link.url) {
+                    <a [href]="link.url" target="_blank" rel="noopener noreferrer">
+                      <strong>{{ link.title || link.domain || link.url }}</strong>
+                      @if (link.domain) {
+                        <span>{{ link.domain }}</span>
+                      }
+                    </a>
+                  }
+                </div>
               }
+
+              @if (source.answerSections?.length) {
+                <div class="aiv-source-panel__sections">
+                  <div class="aiv-source-panel__sections-head">
+                    <span>Answer sections</span>
+                    <em>{{ source.answerSections?.length }}</em>
+                  </div>
+                  @for (section of source.answerSections ?? []; track section.type + $index) {
+                    <article>
+                      <div>
+                        <strong>{{ section.title || section.type }}</strong>
+                        @if (section.citations.length) {
+                          <em>{{ section.citations.length }} refs</em>
+                        }
+                      </div>
+                      <p>{{ section.text || section.markdown || 'Structured element preserved.' }}</p>
+                    </article>
+                  }
+                </div>
+              }
+            }
+          } @else {
+            <div class="aiv-panel__head">
+              <div>
+                <p class="aiv-panel__kicker">Not captured yet</p>
+                <h2>
+                  {{ activeSource() === 'google_ai_mode' ? 'Google AI Mode' : 'ChatGPT' }}
+                </h2>
+                <p class="aiv-panel__subhead">
+                  Run {{ selectedMarketScope() === 'local' ? 'Run local' : 'Run national' }} to
+                  capture every tracked keyword for {{ activeMarketLabel() }}.
+                </p>
+              </div>
             </div>
           }
-        }
-      } @else {
-        <div class="aiv-panel__head">
-          <div>
-            <p class="aiv-panel__kicker">Not captured yet</p>
-            <h2>
-              {{ activeSource() === 'google_ai_mode' ? 'Google AI Mode SERP' : 'ChatGPT LLM Responses' }}
-            </h2>
-            <p class="aiv-panel__subhead">
-              No {{ selectedMarketScope() }} captures yet for
-              {{ activeMarketLabel() }}. Run
-              {{ selectedMarketScope() === 'local' ? 'Run local' : 'Run national' }} to populate this
-              view.
-            </p>
-          </div>
         </div>
-      }
+      </div>
     </section>
   }
 </div>

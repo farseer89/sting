@@ -67,6 +67,38 @@
     <p class="aiv__error">{{ error() }}</p>
   }
 
+  <nav class="aiv-model-strip" aria-label="AI answer models">
+    @for (model of modelOptions; track model.id) {
+      <button
+        type="button"
+        class="aiv-model-strip__item"
+        [class.aiv-model-strip__item--active]="activeModelId() === model.id"
+        [class.aiv-model-strip__item--locked]="!model.available"
+        [attr.aria-current]="activeModelId() === model.id ? 'true' : null"
+        (click)="selectModel(model.id)"
+      >
+        @if (!model.available) {
+          <svg class="aiv-model-strip__lock" viewBox="0 0 16 16" aria-hidden="true">
+            <path
+              d="M4.5 7V5.5a3.5 3.5 0 1 1 7 0V7M4 7h8a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        }
+        <span>{{ model.label }}</span>
+        @if (model.available && model.dataSource) {
+          <em>{{ modelCaptureStatusLabel(model.dataSource) }}</em>
+        } @else {
+          <em class="aiv-model-strip__soon">Soon</em>
+        }
+      </button>
+    }
+  </nav>
+
   <section class="aiv__metrics aiv__metrics--market" aria-label="AI visibility market scorecard">
     @for (metric of marketMetrics(); track metric.id) {
       <article class="aiv-card">
@@ -77,37 +109,22 @@
     }
   </section>
 
-  <nav class="aiv-tabs" aria-label="AI visibility sources">
-    <button
-      type="button"
-      [class.aiv-tabs__button--active]="activeSource() === 'google_ai_mode'"
-      class="aiv-tabs__button"
-      (click)="setActiveSource('google_ai_mode')"
-    >
-      <span>Google AI Mode</span>
-      <em>{{ sourceStatusLabel('google_ai_mode') }}</em>
-    </button>
-    <button
-      type="button"
-      [class.aiv-tabs__button--active]="activeSource() === 'keyword_overview'"
-      class="aiv-tabs__button"
-      (click)="setActiveSource('keyword_overview')"
-    >
-      <span>Keyword Overview</span>
-      <em>{{ sourceStatusLabel('keyword_overview') }}</em>
-    </button>
-    <button
-      type="button"
-      [class.aiv-tabs__button--active]="activeSource() === 'chatgpt'"
-      class="aiv-tabs__button"
-      (click)="setActiveSource('chatgpt')"
-    >
-      <span>ChatGPT</span>
-      <em>{{ sourceStatusLabel('chatgpt') }}</em>
-    </button>
-  </nav>
-
-  @if (activeSource() === 'keyword_overview') {
+  @if (isActiveModelLocked()) {
+    <section class="aiv-panel aiv-panel--locked" aria-label="Model coming soon">
+      <div class="aiv-panel__head">
+        <div>
+          <p class="aiv-panel__kicker">Coming soon</p>
+          <h2>{{ activeModel().label }}</h2>
+          <p class="aiv-panel__subhead">{{ activeModel().description }}</p>
+        </div>
+        <span class="aiv-panel__count aiv-panel__count--locked">Locked</span>
+      </div>
+      <p class="aiv-panel__empty">
+        {{ activeModel().label }} is not available yet. Switch to Google AI, ChatGPT, or Google AI
+        Overview to review captured visibility data.
+      </p>
+    </section>
+  } @else if (activeDataSource() === 'keyword_overview') {
   @if (loading()) {
     <section class="aiv__empty" aria-live="polite">Loading AI visibility data…</section>
   } @else if (rows().length === 0) {
@@ -485,7 +502,7 @@
                   {{ activeSnapshot()?.keyword }} · {{ activeMarketLabel() }}
                 </p>
               </div>
-              <span class="aiv-panel__count">{{ snapshotStatusLabel(activeSnapshot()) }}</span>
+              <span class="aiv-panel__count">{{ sourceStatusLabel(source) }}</span>
             </div>
 
             <div class="aiv-source-panel__meta">
@@ -503,92 +520,123 @@
             @if (source.status === 'failed') {
               <p class="aiv-panel__empty">{{ source.error || 'Capture failed.' }}</p>
             } @else {
-              @if (sourceAnswerText(source)) {
-                <article class="aiv-source-panel__answer">
-                  <div class="aiv-source-panel__answer-head">
-                    <span>Full answer</span>
-                    @if (source.clientCited) {
-                      <em>Cites your site</em>
-                    } @else if (source.clientMentioned) {
-                      <em>Mentions your site</em>
-                    } @else {
-                      <em>Not cited</em>
-                    }
-                  </div>
-                  <p>{{ sourceAnswerText(source) }}</p>
-                </article>
-              } @else {
-                <p class="aiv-panel__empty">No answer text was captured for this source.</p>
-              }
-
-              <div class="aiv-source-panel__grid">
-                <article>
-                  <span>Your site</span>
-                  <strong>{{ source.clientCited ? 'Cited' : source.clientMentioned ? 'Mentioned' : 'Not cited' }}</strong>
-                  <p>
-                    {{ source.clientCited ? 'This source links to your site.' : source.clientMentioned ? 'Your site appears in the answer text.' : 'The answer does not mention or cite your site.' }}
-                  </p>
-                </article>
-                <article>
-                  <span>Citation depth</span>
-                  <strong>{{ source.citedDomains.length }}</strong>
-                  <p>{{ source.citedDomains.slice(0, 6).join(', ') || 'No cited domains returned.' }}</p>
-                </article>
-                <article>
-                  <span>Saved content</span>
-                  <strong>{{ source.answerSections?.length || (sourceAnswerText(source) ? 1 : 0) }}</strong>
-                  <p>Sections and full answer text are available for planning.</p>
-                </article>
-              </div>
-
-              @if (source.citations.length || source.links?.length) {
-                <div class="aiv-source-panel__citations">
-                  @for (citation of source.citations; track citation.url) {
-                    <a [href]="citation.url" target="_blank" rel="noopener noreferrer">
-                      <strong>{{ citation.title || citation.domain || citation.url }}</strong>
-                      @if (citation.domain) {
-                        <span>{{ citation.domain }}</span>
-                      }
-                    </a>
-                  }
-                  @for (link of source.links ?? []; track link.url) {
-                    <a [href]="link.url" target="_blank" rel="noopener noreferrer">
-                      <strong>{{ link.title || link.domain || link.url }}</strong>
-                      @if (link.domain) {
-                        <span>{{ link.domain }}</span>
-                      }
-                    </a>
-                  }
-                </div>
-              }
-
-              @if (source.answerSections?.length) {
-                <div class="aiv-source-panel__sections">
-                  <div class="aiv-source-panel__sections-head">
-                    <span>Answer sections</span>
-                    <em>{{ source.answerSections?.length }}</em>
-                  </div>
-                  @for (section of source.answerSections ?? []; track section.type + $index) {
+              <div class="aiv-answer-layout">
+                <div class="aiv-answer-layout__summary">
+                  <div class="aiv-source-panel__grid">
                     <article>
-                      <div>
-                        <strong>{{ section.title || section.type }}</strong>
-                        @if (section.citations.length) {
-                          <em>{{ section.citations.length }} refs</em>
+                      <span>Your site</span>
+                      <strong>{{ sourceClientCited(source) ? 'Cited' : sourceClientMentioned(source) ? 'Mentioned' : 'Not cited' }}</strong>
+                      <p>
+                        {{ sourceClientCited(source) ? 'This source links to your site.' : sourceClientMentioned(source) ? 'Your site appears in the answer text.' : 'The answer does not mention or cite your site.' }}
+                      </p>
+                    </article>
+                    <article>
+                      <span>Citation depth</span>
+                      <strong>{{ source.citedDomains.length }}</strong>
+                      <p>{{ source.citedDomains.slice(0, 6).join(', ') || 'No cited domains returned.' }}</p>
+                    </article>
+                    <article>
+                      <span>Saved content</span>
+                      <strong>{{ source.answerSections?.length || (sourceAnswerText(source) ? 1 : 0) }}</strong>
+                      <p>Sections and full answer text are available for planning.</p>
+                    </article>
+                  </div>
+
+                  @if (source.citations.length || source.links?.length) {
+                    <div class="aiv-source-panel__citations">
+                      @for (citation of source.citations; track citation.url) {
+                        <a
+                          [href]="citation.url"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          [class.aiv-source-panel__citations-own]="citationIsOwn(citation)"
+                        >
+                          <strong>{{ citation.title || citation.domain || citation.url }}</strong>
+                          @if (citation.domain) {
+                            <span>{{ citation.domain }}</span>
+                          }
+                        </a>
+                      }
+                      @for (link of source.links ?? []; track link.url) {
+                        <a
+                          [href]="link.url"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          [class.aiv-source-panel__citations-own]="citationIsOwn(link)"
+                        >
+                          <strong>{{ link.title || link.domain || link.url }}</strong>
+                          @if (link.domain) {
+                            <span>{{ link.domain }}</span>
+                          }
+                        </a>
+                      }
+                    </div>
+                  }
+
+                  @if (answerPreview(source)) {
+                    <article class="aiv-source-panel__answer aiv-source-panel__answer--preview">
+                      <div class="aiv-source-panel__answer-head">
+                        <span>Summary</span>
+                        @if (answerHasMore(source)) {
+                          <em>Scroll full answer →</em>
                         }
                       </div>
-                      <p>{{ section.text || section.markdown || 'Structured element preserved.' }}</p>
+                      <p>{{ answerPreview(source) }}</p>
                     </article>
+                  } @else {
+                    <p class="aiv-panel__empty">No answer text was captured for this source.</p>
                   }
                 </div>
-              }
+
+                <aside class="aiv-answer-layout__full" aria-label="Full AI answer">
+                  <div class="aiv-source-panel__answer-head">
+                    <span>Full answer</span>
+                    <em
+                      [class.aiv-source-panel__status--cited]="sourceClientCited(source)"
+                      [class.aiv-source-panel__status--mentioned]="!sourceClientCited(source) && sourceClientMentioned(source)"
+                      [class.aiv-source-panel__status--uncited]="!sourceClientCited(source) && !sourceClientMentioned(source)"
+                    >
+                      {{ sourceClientCited(source) ? 'Cites your site' : sourceClientMentioned(source) ? 'Mentions your site' : 'Not cited' }}
+                    </em>
+                  </div>
+
+                  @if (answerParagraphs(source).length) {
+                    <div class="aiv-answer-layout__scroll">
+                      @for (paragraph of answerParagraphs(source); track $index) {
+                        <p>{{ paragraph }}</p>
+                      }
+
+                      @if (source.answerSections?.length) {
+                        <div class="aiv-source-panel__sections aiv-source-panel__sections--inline">
+                          <div class="aiv-source-panel__sections-head">
+                            <span>Answer sections</span>
+                            <em>{{ source.answerSections?.length }}</em>
+                          </div>
+                          @for (section of source.answerSections ?? []; track section.type + $index) {
+                            <article>
+                              <div>
+                                <strong>{{ section.title || section.type }}</strong>
+                                @if (section.citations.length) {
+                                  <em>{{ section.citations.length }} refs</em>
+                                }
+                              </div>
+                              <p>{{ formatAnswerForDisplay(section.text || section.markdown || '') || 'Structured element preserved.' }}</p>
+                            </article>
+                          }
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <p class="aiv-panel__empty aiv-panel__empty--compact">No answer text was captured for this source.</p>
+                  }
+                </aside>
+              </div>
             }
           } @else {
             <div class="aiv-panel__head">
               <div>
                 <p class="aiv-panel__kicker">Not captured yet</p>
-                <h2>
-                  {{ activeSource() === 'google_ai_mode' ? 'Google AI Mode' : 'ChatGPT' }}
-                </h2>
+                <h2>{{ activeModel().label }}</h2>
                 <p class="aiv-panel__subhead">
                   Run {{ selectedMarketScope() === 'local' ? 'Run local' : 'Run national' }} to
                   capture every tracked keyword for {{ activeMarketLabel() }}.

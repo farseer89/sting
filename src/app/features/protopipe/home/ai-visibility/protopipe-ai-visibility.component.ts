@@ -48,7 +48,62 @@ interface CaptureMarketTarget {
 }
 
 type CaptureMarketScope = 'national' | 'local';
-type AiVisibilityTab = AiVisibilitySource;
+
+type AiVisibilityModelId =
+  | AiVisibilitySource
+  | 'gemini'
+  | 'claude'
+  | 'perplexity';
+
+interface AiVisibilityModelOption {
+  id: AiVisibilityModelId;
+  label: string;
+  available: boolean;
+  dataSource?: AiVisibilitySource;
+  description: string;
+}
+
+const AI_VISIBILITY_MODELS: readonly AiVisibilityModelOption[] = [
+  {
+    id: 'google_ai_mode',
+    label: 'Google AI',
+    available: true,
+    dataSource: 'google_ai_mode',
+    description: 'Live Google AI Mode answers captured per keyword.',
+  },
+  {
+    id: 'chatgpt',
+    label: 'ChatGPT',
+    available: true,
+    dataSource: 'chatgpt',
+    description: 'ChatGPT web-search answers captured per keyword.',
+  },
+  {
+    id: 'keyword_overview',
+    label: 'Google AI Overview',
+    available: true,
+    dataSource: 'keyword_overview',
+    description: 'AI Overviews extracted from ranking research snapshots.',
+  },
+  {
+    id: 'gemini',
+    label: 'Gemini',
+    available: false,
+    description: 'Gemini answer and citation tracking is coming soon.',
+  },
+  {
+    id: 'claude',
+    label: 'Claude',
+    available: false,
+    description: 'Claude answer and citation tracking is coming soon.',
+  },
+  {
+    id: 'perplexity',
+    label: 'Perplexity',
+    available: false,
+    description: 'Perplexity answer and citation tracking is coming soon.',
+  },
+];
 
 const DEFAULT_NATIONAL_MARKET: CaptureMarketTarget = {
   locationCode: 2840,
@@ -81,7 +136,8 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   readonly persistedSnapshots = signal<AiVisibilitySnapshot[]>([]);
   readonly selectedSnapshotId = signal<string | null>(null);
   readonly selectedMarketScope = signal<CaptureMarketScope>('national');
-  readonly activeSource = signal<AiVisibilityTab>('google_ai_mode');
+  readonly activeModelId = signal<AiVisibilityModelId>('google_ai_mode');
+  readonly modelOptions = AI_VISIBILITY_MODELS;
 
   readonly ownDomain = computed(() => normalizeDomain(this.strategy.site()?.hostname));
   readonly trackedKeywordCount = computed(() => this.strategy.keywords().length);
@@ -237,6 +293,7 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   readonly marketScopeLabel = marketScopeLabel;
   readonly locationShortLabel = locationShortLabel;
   readonly dateLabel = dateLabel;
+  readonly formatAnswerForDisplay = formatAnswerForDisplay;
   readonly activeSnapshot = computed(() => {
     const snapshots = this.visibleSnapshots();
     if (snapshots.length === 0) return null;
@@ -253,9 +310,22 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
     }
     return this.snapshotMarketLabel(snapshot);
   });
-  readonly activePersistedSource = computed(() =>
-    this.sourceSnapshotFor(this.activeSource()),
+  readonly activeModel = computed(
+    () =>
+      AI_VISIBILITY_MODELS.find((model) => model.id === this.activeModelId()) ??
+      AI_VISIBILITY_MODELS[0],
   );
+  readonly activeDataSource = computed((): AiVisibilitySource | null => {
+    const model = this.activeModel();
+    return model.available && model.dataSource ? model.dataSource : null;
+  });
+  readonly isActiveModelLocked = computed(() => !this.activeModel().available);
+
+  readonly activePersistedSource = computed(() => {
+    const source = this.activeDataSource();
+    if (!source || source === 'keyword_overview') return null;
+    return this.sourceSnapshotFor(source);
+  });
 
   ngOnInit(): void {
     void this.load();
@@ -300,8 +370,8 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
     void this.router.navigate(['/home/rankings']);
   }
 
-  setActiveSource(source: AiVisibilityTab): void {
-    this.activeSource.set(source);
+  selectModel(modelId: AiVisibilityModelId): void {
+    this.activeModelId.set(modelId);
   }
 
   selectSnapshot(snapshotId: string): void {
@@ -414,7 +484,7 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
     return this.activeSnapshot()?.sources.find((item) => item.source === source) ?? null;
   }
 
-  sourceStatusLabel(source: AiVisibilitySource): string {
+  modelCaptureStatusLabel(source: AiVisibilitySource): string {
     if (source === 'keyword_overview') return plural(this.aiRows().length, 'AI Overview');
     const nationalCount = this.nationalSnapshots().length;
     const localCount = this.localSnapshots().length;
@@ -433,9 +503,9 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   }
 
   sourceDisplayName(source: AiVisibilitySourceSnapshot): string {
-    if (source.source === 'google_ai_mode') return 'Google AI Mode';
+    if (source.source === 'google_ai_mode') return 'Google AI';
     if (source.source === 'chatgpt') return 'ChatGPT';
-    return 'Keyword Overview';
+    return 'Google AI Overview';
   }
 
   sourceAnswerText(source: AiVisibilitySourceSnapshot): string {
@@ -443,19 +513,69 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
       ?.map((section) => section.markdown || section.text)
       .filter((text): text is string => Boolean(text?.trim()))
       .join('\n\n');
-    return cleanAnswerText(source.answerMarkdown || sectionText || source.answerExcerpt || '');
+    return formatAnswerForDisplay(source.answerMarkdown || sectionText || source.answerExcerpt || '');
+  }
+
+  answerParagraphs(source: AiVisibilitySourceSnapshot): string[] {
+    const text = this.sourceAnswerText(source);
+    if (!text) return [];
+    return text.split(/\n\n+/).map((paragraph) => paragraph.trim()).filter(Boolean);
+  }
+
+  answerPreview(source: AiVisibilitySourceSnapshot): string {
+    const paragraphs = this.answerParagraphs(source);
+    if (paragraphs.length === 0) return '';
+    if (paragraphs.length <= 2) return paragraphs.join('\n\n');
+    return `${paragraphs.slice(0, 2).join('\n\n')}\n\n…`;
+  }
+
+  answerHasMore(source: AiVisibilitySourceSnapshot): boolean {
+    return this.answerParagraphs(source).length > 2;
+  }
+
+  sourceClientCited(source: AiVisibilitySourceSnapshot): boolean {
+    if (source.clientCited) return true;
+    const own = this.ownDomain();
+    if (!own) return false;
+    return this.sourceCitationDomains(source).some((domain) => domainMatchesOwn(domain, own));
+  }
+
+  sourceClientMentioned(source: AiVisibilitySourceSnapshot): boolean {
+    if (source.clientMentioned) return true;
+    const own = this.ownDomain();
+    if (!own) return false;
+    return textMentionsDomain(this.sourceAnswerText(source), own);
+  }
+
+  sourceStatusLabel(source: AiVisibilitySourceSnapshot): string {
+    if (this.sourceClientCited(source)) return 'Cited';
+    if (this.sourceClientMentioned(source)) return 'Mentioned';
+    return 'Not cited';
+  }
+
+  citationIsOwn(citation: { domain?: string | null; url?: string | null }): boolean {
+    const own = this.ownDomain();
+    if (!own) return false;
+    const domain = normalizeDomain(citation.domain ?? domainFromUrl(citation.url ?? undefined));
+    return domain ? domainMatchesOwn(domain, own) : false;
   }
 
   snapshotCited(snapshot: AiVisibilitySnapshot | null | undefined): boolean {
-    return Boolean(snapshot?.sources.some((source) => source.clientCited));
+    const source = this.snapshotSourceForActiveTab(snapshot);
+    if (source) return this.sourceClientCited(source);
+    return Boolean(snapshot?.sources.some((item) => this.sourceClientCited(item)));
   }
 
   snapshotMentioned(snapshot: AiVisibilitySnapshot | null | undefined): boolean {
-    return Boolean(snapshot?.sources.some((source) => source.clientMentioned));
+    const source = this.snapshotSourceForActiveTab(snapshot);
+    if (source) return this.sourceClientMentioned(source);
+    return Boolean(snapshot?.sources.some((item) => this.sourceClientMentioned(item)));
   }
 
   snapshotStatusLabel(snapshot: AiVisibilitySnapshot | null | undefined): string {
     if (!snapshot) return 'Not captured';
+    const source = this.snapshotSourceForActiveTab(snapshot);
+    if (source) return this.sourceStatusLabel(source);
     if (this.snapshotCited(snapshot)) return 'Cited';
     if (this.snapshotMentioned(snapshot)) return 'Mentioned';
     return 'Not cited';
@@ -507,6 +627,24 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
       const domain = normalizeDomain(source.domain ?? domainFromUrl(source.url));
       return domain === own || domain?.endsWith(`.${own}`);
     });
+  }
+
+  private snapshotSourceForActiveTab(
+    snapshot: AiVisibilitySnapshot | null | undefined,
+  ): AiVisibilitySourceSnapshot | null {
+    if (!snapshot) return null;
+    return snapshot.sources.find((source) => source.source === this.activeDataSource()) ?? null;
+  }
+
+  private sourceCitationDomains(source: AiVisibilitySourceSnapshot): string[] {
+    const domains = [
+      ...source.citedDomains,
+      ...source.citations.map((citation) =>
+        normalizeDomain(citation.domain ?? domainFromUrl(citation.url)),
+      ),
+      ...(source.links ?? []).map((link) => normalizeDomain(link.domain ?? domainFromUrl(link.url))),
+    ].filter((domain): domain is string => Boolean(domain));
+    return Array.from(new Set(domains));
   }
 
   private mergeSnapshots(
@@ -624,9 +762,31 @@ function snapshotKey(snapshot: AiVisibilitySnapshot): string {
 }
 
 function cleanAnswerText(value: string): string {
+  return formatAnswerForDisplay(value);
+}
+
+function formatAnswerForDisplay(value: string): string {
   return value
     .replace(/\r/g, '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/__(.*?)__/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/\[(\d+)\]/g, '')
+    .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/\u3010[^\u3011]*\u3011/g, '')
     .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+function domainMatchesOwn(domain: string, own: string): boolean {
+  return domain === own || domain.endsWith(`.${own}`);
+}
+
+function textMentionsDomain(text: string | undefined, domain: string): boolean {
+  if (!text || !domain) return false;
+  const normalized = text.toLowerCase();
+  const target = domain.toLowerCase();
+  return normalized.includes(target) || normalized.includes(`www.${target}`);
 }

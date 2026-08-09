@@ -13,15 +13,46 @@
     </div>
 
     <div class="aiv__actions">
-      <button type="button" class="aiv__button aiv__button--ghost" (click)="loadRankings()">
+      @if (captureProgress(); as progress) {
+        <p class="aiv__capture-progress" aria-live="polite">
+          Capturing {{ progress.current }}/{{ progress.total }} — {{ progress.keyword }}
+        </p>
+      }
+      <button
+        type="button"
+        class="aiv__button"
+        [disabled]="capturing() || trackedKeywordCount() === 0"
+        (click)="captureAllKeywords()"
+      >
+        @if (capturing()) {
+          Running capture…
+        } @else {
+          Run AI awareness
+        }
+      </button>
+      <button
+        type="button"
+        class="aiv__button aiv__button--ghost"
+        [disabled]="loading() || capturing()"
+        (click)="loadRankings()"
+      >
         Refresh
       </button>
-      <button type="button" class="aiv__button" (click)="goToRankings()">Open rankings</button>
+      <button type="button" class="aiv__button aiv__button--ghost" (click)="goToRankings()">
+        Open rankings
+      </button>
     </div>
   </header>
 
   @if (error()) {
     <p class="aiv__error">{{ error() }}</p>
+  }
+
+  @if (captureEstimateUsd() && trackedKeywordCount() > 0 && !capturing()) {
+    <p class="aiv__capture-hint">
+      Run AI awareness for all {{ trackedKeywordCount() }} tracked keywords — est.
+      {{ captureEstimateUsd() }} plus ChatGPT model pass-through.
+    </p>
   }
 
   <section class="aiv-inputs" aria-label="AI visibility inputs">
@@ -429,6 +460,21 @@
   }
   } @else {
     <section class="aiv-panel aiv-source-panel" aria-label="Persisted AI visibility source">
+      @if (persistedSnapshots().length > 1) {
+        <div class="aiv-keyword-picker">
+          <label for="aiv-keyword-select">Keyword</label>
+          <select
+            id="aiv-keyword-select"
+            [value]="selectedSnapshotId() ?? ''"
+            (change)="selectSnapshot($any($event.target).value)"
+          >
+            @for (snapshot of persistedSnapshots(); track snapshot.id) {
+              <option [value]="snapshot.id">{{ snapshot.keyword }}</option>
+            }
+          </select>
+        </div>
+      }
+
       @if (activePersistedSource(); as source) {
         <div class="aiv-panel__head">
           <div>
@@ -439,7 +485,7 @@
               {{ source.source === 'google_ai_mode' ? 'Google AI Mode SERP' : 'ChatGPT LLM Responses' }}
             </h2>
             <p class="aiv-panel__subhead">
-              Persisted DataForSEO capture for "{{ persistedSnapshot()?.keyword }}".
+              Persisted DataForSEO capture for "{{ activeSnapshot()?.keyword }}".
             </p>
           </div>
           <span class="aiv-panel__count">{{ formatUsd(source.costUsd) }}</span>
@@ -508,8 +554,8 @@
               {{ activeSource() === 'google_ai_mode' ? 'Google AI Mode SERP' : 'ChatGPT LLM Responses' }}
             </h2>
             <p class="aiv-panel__subhead">
-              This tab is ready for persisted DataForSEO AI Awareness snapshots. Run a backend
-              capture to populate it.
+              Run AI awareness capture to persist Google AI Mode SERP and ChatGPT responses for
+              each tracked keyword.
             </p>
           </div>
         </div>

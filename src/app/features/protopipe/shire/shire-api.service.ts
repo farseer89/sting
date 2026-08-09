@@ -3,6 +3,8 @@ import { Injectable, inject } from '@angular/core';
 import {
   ShireEndpoints,
   type AiVisibilityLatestResponse,
+  type CaptureAiVisibilityRequest,
+  type CaptureAiVisibilityResponse,
   type EnqueueRunRequest,
   type KeywordAlignmentLatestResponse,
   type KeywordRankingsListResponse,
@@ -67,6 +69,16 @@ export class ShireApiService {
   getLatestAiVisibility$(siteId: string): Observable<AiVisibilityLatestResponse> {
     return this.http.get<AiVisibilityLatestResponse>(
       shireApiUrl(ShireEndpoints.aiVisibility.latest(siteId)),
+    );
+  }
+
+  captureAiVisibility$(
+    siteId: string,
+    body: CaptureAiVisibilityRequest,
+  ): Observable<CaptureAiVisibilityResponse> {
+    return this.http.post<CaptureAiVisibilityResponse>(
+      shireApiUrl(ShireEndpoints.aiVisibility.capture(siteId)),
+      body,
     );
   }
 

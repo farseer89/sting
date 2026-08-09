@@ -79,9 +79,14 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   private readonly strategy = inject(ProtopipeStrategyService);
 
   readonly loading = signal(false);
+  readonly capturing = signal(false);
+  readonly captureProgress = signal<{ current: number; total: number; keyword: string } | null>(
+    null,
+  );
   readonly error = signal<string | null>(null);
   readonly rows = signal<KeywordRankingRow[]>([]);
-  readonly persistedSnapshot = signal<AiVisibilitySnapshot | null>(null);
+  readonly persistedSnapshots = signal<AiVisibilitySnapshot[]>([]);
+  readonly selectedSnapshotId = signal<string | null>(null);
   readonly activeSource = signal<AiVisibilityTab>('google_ai_mode');
 
   readonly ownDomain = computed(() => normalizeDomain(this.strategy.site()?.hostname));
@@ -109,13 +114,11 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   readonly inputCards = computed<AiVisibilityInputCard[]>(() => {
     const hostname = this.ownDomain();
     const keywordCount = this.trackedKeywordCount();
-    const snapshots = this.rows().length;
+    const rankingSnapshotCount = this.rows().length;
     const aiSnapshots = this.aiRows().length;
     const sourceCount = this.sourceDomains().length;
     const entityCount = this.knowledgeGraphRows().length;
-    const persisted = this.persistedSnapshot();
-    const persistedSourceCount =
-      persisted?.sources.filter((source) => source.status === 'complete').length ?? 0;
+    const persistedCaptures = this.persistedSnapshots();
 
     return [
       {
@@ -135,15 +138,15 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
       {
         id: 'rankings',
         label: 'Ranking snapshots',
-        status: snapshots > 0 ? 'ready' : 'missing',
-        value: plural(snapshots, 'snapshot'),
+        status: rankingSnapshotCount > 0 ? 'ready' : 'missing',
+        value: plural(rankingSnapshotCount, 'snapshot'),
         hint: 'Current source for AI Overview coverage, citations, and entity panels.',
       },
       {
         id: 'ai-overviews',
         label: 'AI Overview evidence',
         status: aiSnapshots > 0 ? 'ready' : 'missing',
-        value: `${aiSnapshots}/${snapshots || 0}`,
+        value: `${aiSnapshots}/${rankingSnapshotCount || 0}`,
         hint: 'Rows with AI Overview text or source data from ranking research.',
       },
       {
@@ -163,13 +166,13 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
       {
         id: 'dataforseo-awareness',
         label: 'DataForSEO AI Awareness',
-        status: persistedSourceCount > 0 ? 'ready' : 'planned',
-        value: persisted
-          ? `${persistedSourceCount}/${persisted.sources.length} sources`
+        status: persistedCaptures.length > 0 ? 'ready' : 'planned',
+        value: persistedCaptures.length
+          ? plural(persistedCaptures.length, 'keyword capture')
           : 'Cost model ready',
-        hint: persisted
-          ? `Latest persisted capture for "${persisted.keyword}".`
-          : 'Next input candidate: Google AI Mode SERP and LLM Responses prompts.',
+        hint: persistedCaptures.length
+          ? `Latest run captured ${persistedCaptures.length} keyword${persistedCaptures.length === 1 ? '' : 's'} with Google AI Mode and ChatGPT.`
+          : 'Run AI awareness capture to persist Google AI Mode SERP and ChatGPT responses.',
       },
     ];
   });
@@ -251,6 +254,19 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   readonly locationShortLabel = locationShortLabel;
   readonly formatUsd = formatUsd;
   readonly dateLabel = dateLabel;
+  readonly captureEstimateUsd = computed(() => {
+    const count = this.trackedKeywordCount();
+    if (count <= 0) return null;
+    const aiMode = count * GOOGLE_AI_MODE_LIVE_SERP_USD;
+    const chatGptBase = count * LLM_RESPONSES_LIVE_TASK_FEE_USD;
+    return `${formatUsd(aiMode)} AI Mode + ${formatUsd(chatGptBase)} ChatGPT base`;
+  });
+  readonly activeSnapshot = computed(() => {
+    const snapshots = this.persistedSnapshots();
+    if (snapshots.length === 0) return null;
+    const selectedId = this.selectedSnapshotId();
+    return snapshots.find((snapshot) => snapshot.id === selectedId) ?? snapshots.at(-1) ?? null;
+  });
   readonly activePersistedSource = computed(() =>
     this.sourceSnapshotFor(this.activeSource()),
   );
@@ -277,7 +293,9 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
         firstValueFrom(this.api.getLatestAiVisibility$(siteId)).catch(() => ({ snapshot: null })),
       ]);
       this.rows.set(rankingsResponse.rankings);
-      this.persistedSnapshot.set(aiVisibilityResponse.snapshot);
+      const snapshot = aiVisibilityResponse.snapshot;
+      this.persistedSnapshots.set(snapshot ? [snapshot] : []);
+      this.selectedSnapshotId.set(snapshot?.id ?? null);
     } catch (err) {
       this.error.set(parseProtopipeApiError(err, 'Could not load AI visibility data.'));
     } finally {
@@ -293,12 +311,68 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
     this.activeSource.set(source);
   }
 
+  selectSnapshot(snapshotId: string): void {
+    this.selectedSnapshotId.set(snapshotId);
+  }
+
+  async captureAllKeywords(): Promise<void> {
+    const siteId = this.strategy.siteId();
+    const keywords = this.strategy
+      .keywords()
+      .map((keyword) => keyword.phrase.trim())
+      .filter(Boolean);
+    if (!siteId || keywords.length === 0) return;
+
+    this.capturing.set(true);
+    this.error.set(null);
+    const captured: AiVisibilitySnapshot[] = [];
+    const failures: string[] = [];
+
+    try {
+      for (let index = 0; index < keywords.length; index += 1) {
+        const keyword = keywords[index];
+        this.captureProgress.set({
+          current: index + 1,
+          total: keywords.length,
+          keyword,
+        });
+        try {
+          const response = await firstValueFrom(
+            this.api.captureAiVisibility$(siteId, {
+              keyword,
+              includeChatGpt: true,
+            }),
+          );
+          captured.push(response.snapshot);
+          this.persistedSnapshots.set([...captured]);
+          this.selectedSnapshotId.set(response.snapshot.id);
+        } catch (err) {
+          failures.push(`${keyword}: ${parseProtopipeApiError(err, 'Capture failed.')}`);
+        }
+      }
+
+      if (captured.length === 0) {
+        this.error.set(failures[0] ?? 'AI awareness capture failed for all keywords.');
+      } else if (failures.length > 0) {
+        this.error.set(
+          `Captured ${captured.length}/${keywords.length} keywords. ${failures.slice(0, 2).join(' ')}`,
+        );
+      }
+    } finally {
+      this.captureProgress.set(null);
+      this.capturing.set(false);
+    }
+  }
+
   sourceSnapshotFor(source: AiVisibilitySource): AiVisibilitySourceSnapshot | null {
-    return this.persistedSnapshot()?.sources.find((item) => item.source === source) ?? null;
+    return this.activeSnapshot()?.sources.find((item) => item.source === source) ?? null;
   }
 
   sourceStatusLabel(source: AiVisibilitySource): string {
     if (source === 'keyword_overview') return plural(this.aiRows().length, 'AI Overview');
+    const snapshots = this.persistedSnapshots();
+    if (snapshots.length === 0) return 'Not captured';
+    if (snapshots.length > 1) return plural(snapshots.length, 'keyword');
     const snapshot = this.sourceSnapshotFor(source);
     if (!snapshot) return 'Not captured';
     if (snapshot.status === 'failed') return 'Failed';

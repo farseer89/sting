@@ -68,6 +68,7 @@ import { ProtopipeHomeThinkerBinderComponent } from './thinker/protopipe-home-th
 import { ProtopipeHomeAnalyticsBinderComponent } from './analytics-binder/protopipe-home-analytics-binder.component';
 import { ProtopipeHomeAnalyticsComponent } from './analytics/protopipe-home-analytics.component';
 import { ProtopipeAiVisibilityComponent } from './ai-visibility/protopipe-ai-visibility.component';
+import { ProtopipeContentPlanV2Component } from './content-plan-v2/protopipe-content-plan-v2.component';
 import { ProtopipeHomeDashboardComponent } from './dashboard/protopipe-home-dashboard.component';
 import { ProtopipeHomeRankingsComponent } from './rankings/protopipe-home-rankings.component';
 import { ProtopipeSiteHealthComponent } from './site-health/protopipe-site-health.component';
@@ -89,6 +90,7 @@ import {
   HOME_KEYWORDS_PATH,
   HOME_RANKINGS_PATH,
   HOME_AI_VISIBILITY_PATH,
+  HOME_CONTENT_PLAN_V2_PATH,
   HOME_SITE_HEALTH_PATH,
   HOME_ONBOARDING_PATH,
   homeShellRouteKind,
@@ -111,6 +113,7 @@ export type ProtopipeHomeView =
   | 'keywords'
   | 'rankings'
   | 'ai-visibility'
+  | 'content-plan-v2'
   | 'site-health'
   | 'mentions-book'
   | 'strategy'
@@ -216,6 +219,7 @@ interface MobileHomeTab {
     ProtopipeHomeAnalyticsBinderComponent,
     ProtopipeHomeAnalyticsComponent,
     ProtopipeAiVisibilityComponent,
+    ProtopipeContentPlanV2Component,
     ProtopipeHomeDashboardComponent,
     ProtopipeHomeRankingsComponent,
     ProtopipeSiteHealthComponent,
@@ -522,6 +526,13 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.leaveThinkerFocus();
       this.activeNavId.set('content-strategy');
       this.activeView.set('strategy');
+    } else if (item.id === 'content-plan-v2') {
+      this.leaveWriterFocus();
+      this.leaveThinkerFocus();
+      this.sidePanel.setOpen(false);
+      this.activeNavId.set('content-plan-v2');
+      this.activeView.set('content-plan-v2');
+      void this.router.navigate([HOME_CONTENT_PLAN_V2_PATH]);
     } else if (item.id === 'content-sharpen' || item.id === 'start-sharpen') {
       this.leaveWriterFocus();
       this.sidePanel.setOpen(false);
@@ -1057,6 +1068,15 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.sidePanel.setOpen(false);
       this.activeView.set('ai-visibility');
       this.activeNavId.set('seo-ai-visibility');
+      return;
+    }
+
+    if (kind === 'content-plan-v2') {
+      this.leaveWriterFocus();
+      this.leaveThinkerFocus();
+      this.sidePanel.setOpen(false);
+      this.activeView.set('content-plan-v2');
+      this.activeNavId.set('content-plan-v2');
       return;
     }
 

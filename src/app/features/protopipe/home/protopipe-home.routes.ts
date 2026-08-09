@@ -6,6 +6,7 @@ export const HOME_DISCOVERY_PATH = '/home/discovery';
 export const HOME_KEYWORDS_PATH = '/home/keywords';
 export const HOME_RANKINGS_PATH = '/home/rankings';
 export const HOME_AI_VISIBILITY_PATH = '/home/ai-visibility';
+export const HOME_CONTENT_PLAN_V2_PATH = '/home/content-plan-v2';
 export const HOME_SITE_HEALTH_PATH = '/home/site-health';
 export const HOME_ANALYTICS_PATH = '/home/analytics';
 
@@ -17,6 +18,7 @@ export type HomeShellRouteKind =
   | 'keywords'
   | 'rankings'
   | 'ai-visibility'
+  | 'content-plan-v2'
   | 'site-health'
   | 'analytics';
 
@@ -28,6 +30,7 @@ export function homeShellRouteKind(path: string): HomeShellRouteKind | null {
   if (normalized === HOME_KEYWORDS_PATH) return 'keywords';
   if (normalized === HOME_RANKINGS_PATH) return 'rankings';
   if (normalized === HOME_AI_VISIBILITY_PATH) return 'ai-visibility';
+  if (normalized === HOME_CONTENT_PLAN_V2_PATH) return 'content-plan-v2';
   if (normalized === HOME_SITE_HEALTH_PATH) return 'site-health';
   if (normalized === HOME_ANALYTICS_PATH) return 'analytics';
   if (normalized === HOME_ENTRY_PATH) return 'entry';

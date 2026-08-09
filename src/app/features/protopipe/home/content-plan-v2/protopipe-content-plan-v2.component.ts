@@ -1,0 +1,382 @@
+import { HttpErrorResponse } from '@angular/common/http';
+import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal } from '@angular/core';
+import type {
+  AiVisibilitySnapshot,
+  KeywordRankingRow,
+  PageOptimizationSnapshot,
+  PageSpeedSnapshot,
+  SiteAuditLatestResponse,
+  Thought,
+} from '@hive/contracts';
+import { firstValueFrom } from 'rxjs';
+import { parseProtopipeApiError } from '../../protopipe-http.util';
+import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
+import { ThoughtRunSession } from '../../runs/thought-run-session.service';
+import { ShireApiService } from '../../shire/shire-api.service';
+
+type ContentPlanV2Tab =
+  | 'readiness'
+  | 'business'
+  | 'audience'
+  | 'keywords'
+  | 'rankings'
+  | 'site-health'
+  | 'optimization'
+  | 'ai-visibility'
+  | 'inventory'
+  | 'raw';
+
+interface EvidenceTab {
+  id: ContentPlanV2Tab;
+  label: string;
+  count: number;
+  state: 'ready' | 'partial' | 'missing';
+}
+
+interface ReadinessCheck {
+  label: string;
+  ok: boolean;
+  detail: string;
+  required?: boolean;
+}
+
+interface ClientIdentity {
+  hostname: string;
+  aliases: string[];
+}
+
+@Component({
+  selector: 'app-protopipe-content-plan-v2',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  templateUrl: './protopipe-content-plan-v2.component.html',
+  styleUrl: './protopipe-content-plan-v2.component.scss',
+})
+export class ProtopipeContentPlanV2Component implements OnInit {
+  private readonly api = inject(ShireApiService);
+  readonly strategy = inject(ProtopipeStrategyService);
+  readonly runSession = inject(ThoughtRunSession);
+
+  readonly activeTab = signal<ContentPlanV2Tab>('readiness');
+  readonly loadingEvidence = signal(false);
+  readonly evidenceError = signal<string | null>(null);
+  readonly autoStartAttempted = signal(false);
+  readonly rankings = signal<KeywordRankingRow[]>([]);
+  readonly aiVisibilitySnapshots = signal<AiVisibilitySnapshot[]>([]);
+  readonly latestAudit = signal<SiteAuditLatestResponse['audit'] | null>(null);
+  readonly pageOptimization = signal<PageOptimizationSnapshot | null>(null);
+  readonly pageSpeed = signal<PageSpeedSnapshot | null>(null);
+
+  readonly thought = computed(() => this.contentPlanThought(this.runSession.thought()));
+  readonly artifacts = computed(() => asRecord(this.thought()?.artifacts) ?? {});
+  readonly business = computed(() => asRecord(this.artifacts()['business']));
+  readonly strategyContext = computed(() => asRecord(this.artifacts()['strategyContext']));
+  readonly audit = computed(() => asRecord(this.artifacts()['audit']) ?? asRecord(this.latestAudit()));
+  readonly scoredKeywords = computed(() => asRecordArray(this.artifacts()['scored']));
+  readonly clusters = computed(() => asRecordArray(this.artifacts()['clusters']));
+  readonly calendar = computed(() => asRecordArray(this.artifacts()['calendar']));
+  readonly backlog = computed(() => asRecordArray(this.artifacts()['backlog']));
+  readonly focusStrategies = computed(() => asRecordArray(this.artifacts()['focusStrategies']));
+  readonly pageOptimizationSignals = computed(() =>
+    asRecordArray(this.artifacts()['pageOptimizationSignals']).length
+      ? asRecordArray(this.artifacts()['pageOptimizationSignals'])
+      : asRecordArray(this.pageOptimization()?.pages)
+          .map((page) => asRecord(page['contentPlanSignal']))
+          .filter((signal): signal is Record<string, unknown> => Boolean(signal)),
+  );
+  readonly clientSiteFixes = computed(() =>
+    asRecordArray(this.artifacts()['clientSiteFixes']).length
+      ? asRecordArray(this.artifacts()['clientSiteFixes'])
+      : asRecordArray(this.pageOptimization()?.pages).filter((page) => asArray(page['issues']).length > 0),
+  );
+  readonly performanceSignals = computed(() =>
+    asRecordArray(this.artifacts()['performanceSignals']).length
+      ? asRecordArray(this.artifacts()['performanceSignals'])
+      : asRecordArray(this.pageSpeed()?.pages),
+  );
+  readonly artifactKeys = computed(() => Object.keys(this.artifacts()).sort());
+
+  readonly clientIdentity = computed<ClientIdentity>(() => {
+    const site = this.strategy.site();
+    const business = this.business();
+    const hostname = stringValue(recordValue(business, 'hostname')) || site?.hostname || '';
+    const displayName =
+      stringValue(recordValue(business, 'displayName')) || site?.displayName || site?.hostname || '';
+    return {
+      hostname,
+      aliases: uniqueStrings([displayName, site?.displayName]),
+    };
+  });
+
+  readonly runStatusLabel = computed(() => {
+    const thought = this.thought();
+    if (!thought) return this.autoStartAttempted() ? 'Starting evidence run…' : 'No evidence run yet';
+    if (thought.status === 'pending') return 'Queued';
+    if (thought.status === 'running') return `Running ${thought.currentStepId ?? 'evidence'}`;
+    if (thought.status === 'complete') return 'Ready';
+    if (thought.status === 'failed') return 'Failed';
+    return thought.status;
+  });
+
+  readonly readinessChecks = computed<ReadinessCheck[]>(() => {
+    const identity = this.clientIdentity();
+    const keywordCount = this.strategy.keywords().length;
+    const thought = this.thought();
+    return [
+      {
+        label: 'Business identity',
+        ok: Boolean(identity.hostname && identity.aliases.length),
+        detail: identity.hostname
+          ? `${identity.hostname} · ${identity.aliases.length} alias(es)`
+          : 'Missing site hostname or brand alias',
+        required: true,
+      },
+      {
+        label: 'Confirmed keywords',
+        ok: keywordCount > 0,
+        detail: keywordCount > 0 ? `${keywordCount} keyword(s) available` : 'Confirm keywords first',
+        required: true,
+      },
+      {
+        label: 'Evidence run',
+        ok: Boolean(thought),
+        detail: thought ? `${thought.status} · ${thought.steps.length} step(s)` : 'No run found yet',
+        required: true,
+      },
+      {
+        label: 'Scored keyword evidence',
+        ok: this.scoredKeywords().length > 0,
+        detail: `${this.scoredKeywords().length} scored keyword row(s)`,
+      },
+      {
+        label: 'Ranking / SERP evidence',
+        ok: this.focusStrategies().length > 0 || this.rankings().length > 0,
+        detail: `${this.focusStrategies().length} focus strategy row(s), ${this.rankings().length} ranking snapshot(s)`,
+      },
+      {
+        label: 'Site audit evidence',
+        ok: Boolean(this.audit()),
+        detail: this.audit()
+          ? `${numberValue(recordValue(this.audit(), 'scannedCount')) ?? 0} page(s) scanned`
+          : 'No latest site audit snapshot',
+      },
+      {
+        label: 'Page optimization signals',
+        ok: this.pageOptimizationSignals().length > 0,
+        detail: `${this.pageOptimizationSignals().length} support signal(s)`,
+      },
+      {
+        label: 'AI visibility evidence',
+        ok: this.aiVisibilitySnapshots().length > 0,
+        detail: `${this.aiVisibilitySnapshots().length} AI visibility snapshot(s)`,
+      },
+    ];
+  });
+
+  readonly readinessStatus = computed(() => {
+    const checks = this.readinessChecks();
+    if (checks.some((check) => check.required && !check.ok)) return 'needs_input';
+    if (this.runSession.isActive() && this.thought()?.thinkerKind === 'content_plan_v2_evidence') return 'needs_research';
+    if (checks.some((check) => !check.ok)) return 'ready_with_warnings';
+    return 'ready';
+  });
+
+  readonly blockers = computed(() =>
+    this.readinessChecks().filter((check) => check.required && !check.ok),
+  );
+  readonly warnings = computed(() =>
+    this.readinessChecks().filter((check) => !check.required && !check.ok),
+  );
+
+  readonly tabs = computed<EvidenceTab[]>(() => [
+    tab('readiness', 'Readiness', this.readinessChecks().filter((check) => check.ok).length, this.blockers().length === 0),
+    tab('business', 'Business', this.clientIdentity().aliases.length + (this.clientIdentity().hostname ? 1 : 0), Boolean(this.clientIdentity().hostname)),
+    tab('audience', 'Audience', this.confirmedAvatars().length, this.confirmedAvatars().length > 0),
+    tab('keywords', 'Keywords', this.scoredKeywords().length || this.strategy.keywords().length, this.strategy.keywords().length > 0),
+    tab('rankings', 'Rankings / SERP', this.focusStrategies().length || this.rankings().length, this.focusStrategies().length > 0 || this.rankings().length > 0),
+    tab('site-health', 'Site Health', numberValue(recordValue(this.audit(), 'scannedCount')) ?? 0, Boolean(this.audit())),
+    tab('optimization', 'Optimization', this.pageOptimizationSignals().length, this.pageOptimizationSignals().length > 0),
+    tab('ai-visibility', 'AI Visibility', this.aiVisibilitySnapshots().length, this.aiVisibilitySnapshots().length > 0),
+    tab('inventory', 'Content Inventory', this.calendar().length + this.backlog().length, this.calendar().length > 0 || this.backlog().length > 0),
+    tab('raw', 'Raw Evidence', this.artifactKeys().length, this.artifactKeys().length > 0),
+  ]);
+
+  readonly confirmedAvatars = computed(() => {
+    const businessAvatars = asRecordArray(recordValue(this.business(), 'confirmedAvatars'));
+    if (businessAvatars.length > 0) return businessAvatars;
+    return asRecordArray(recordValue(this.strategyContext(), 'confirmedAvatars'));
+  });
+
+  readonly selectedTab = computed(() => this.tabs().find((item) => item.id === this.activeTab()) ?? this.tabs()[0]);
+
+  constructor() {
+    effect(() => {
+      const thought = this.thought();
+      if (thought?.status === 'complete') {
+        void this.loadEvidence();
+      }
+    });
+  }
+
+  ngOnInit(): void {
+    void this.loadInitial();
+  }
+
+  setTab(tabId: ContentPlanV2Tab): void {
+    this.activeTab.set(tabId);
+  }
+
+  async refresh(): Promise<void> {
+    await this.loadInitial({ allowAutoStart: false });
+  }
+
+  async startEvidenceRun(auto = false): Promise<void> {
+    const siteId = this.strategy.siteId();
+    if (!siteId || this.runSession.isActive()) return;
+    if (this.strategy.keywords().length === 0) {
+      this.evidenceError.set('Confirm keywords before starting Content Plan V2 evidence.');
+      return;
+    }
+    if (auto) this.autoStartAttempted.set(true);
+    this.evidenceError.set(null);
+    const run = await this.runSession.enqueueRun(siteId, {
+      thinkerKind: 'content_plan_v2_evidence',
+      params: { source: auto ? 'contentPlanV2AutoStart' : 'contentPlanV2' },
+    });
+    if (!run && this.runSession.loadError()) {
+      this.evidenceError.set(this.runSession.loadError());
+    }
+  }
+
+  statusClass(state: EvidenceTab['state']): string {
+    return `cpv2-tab--${state}`;
+  }
+
+  field(record: Record<string, unknown> | null, key: string, fallback = 'Not captured'): string {
+    const value = recordValue(record, key);
+    if (typeof value === 'string' && value.trim()) return value.trim();
+    if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    return fallback;
+  }
+
+  label(value: string): string {
+    return value
+      .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+      .replace(/[_-]+/g, ' ')
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  }
+
+  formatDate(value: string | undefined): string {
+    if (!value) return 'Not captured';
+    const parsed = Date.parse(value);
+    if (!Number.isFinite(parsed)) return value;
+    return new Date(parsed).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+
+  private async loadInitial(options: { allowAutoStart?: boolean } = {}): Promise<void> {
+    await this.attachLatestContentPlanRun(options.allowAutoStart ?? true);
+    await this.loadEvidence();
+  }
+
+  private async attachLatestContentPlanRun(allowAutoStart: boolean): Promise<void> {
+    const siteId = this.strategy.siteId();
+    if (!siteId) return;
+    const current = this.runSession.thought();
+    if (current?.thinkerKind === 'content_plan_v2_evidence') return;
+
+    try {
+      const { run } = await firstValueFrom(this.api.getLatestRun$(siteId, 'content_plan_v2_evidence'));
+      this.runSession.attach(siteId, run.id, run);
+    } catch (err) {
+      if (err instanceof HttpErrorResponse && err.status === 404 && allowAutoStart) {
+        await this.startEvidenceRun(true);
+        return;
+      }
+      if (!(err instanceof HttpErrorResponse && err.status === 404)) {
+        this.evidenceError.set(parseProtopipeApiError(err, 'Could not load latest content plan run.'));
+      }
+    }
+  }
+
+  private async loadEvidence(): Promise<void> {
+    const siteId = this.strategy.siteId();
+    if (!siteId) return;
+    this.loadingEvidence.set(true);
+    const [rankings, aiVisibility, audit, optimization, speed] = await Promise.allSettled([
+      firstValueFrom(this.api.listRankings$(siteId)),
+      firstValueFrom(this.api.listAiVisibility$(siteId)),
+      firstValueFrom(this.api.getLatestSiteAudit$(siteId)),
+      firstValueFrom(this.api.getLatestPageOptimization$(siteId)),
+      firstValueFrom(this.api.getLatestPageSpeed$(siteId)),
+    ]);
+
+    if (rankings.status === 'fulfilled') this.rankings.set(rankings.value.rankings);
+    if (aiVisibility.status === 'fulfilled') this.aiVisibilitySnapshots.set(aiVisibility.value.snapshots);
+    if (audit.status === 'fulfilled') this.latestAudit.set(audit.value.audit);
+    if (optimization.status === 'fulfilled') this.pageOptimization.set(optimization.value.snapshot);
+    if (speed.status === 'fulfilled') this.pageSpeed.set(speed.value.snapshot);
+
+    this.loadingEvidence.set(false);
+  }
+
+  private contentPlanThought(thought: Thought | null): Thought | null {
+    return thought?.thinkerKind === 'content_plan_v2_evidence' ? thought : null;
+  }
+}
+
+function tab(
+  id: ContentPlanV2Tab,
+  label: string,
+  count: number,
+  ready: boolean,
+): EvidenceTab {
+  return {
+    id,
+    label,
+    count,
+    state: ready ? 'ready' : count > 0 ? 'partial' : 'missing',
+  };
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function asArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function asRecordArray(value: unknown): Record<string, unknown>[] {
+  return asArray(value)
+    .map((item) => asRecord(item))
+    .filter((item): item is Record<string, unknown> => Boolean(item));
+}
+
+function recordValue(record: Record<string, unknown> | null | undefined, key: string): unknown {
+  return record ? record[key] : undefined;
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function numberValue(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function uniqueStrings(values: Array<string | undefined | null>): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const value of values) {
+    const normalized = value?.trim();
+    if (!normalized) continue;
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(normalized);
+  }
+  return out;
+}

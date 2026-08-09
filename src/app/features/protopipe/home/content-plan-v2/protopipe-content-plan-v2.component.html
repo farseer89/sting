@@ -1,0 +1,352 @@
+<div class="cpv2" aria-label="Content Plan V2 evidence inspector">
+  <header class="cpv2__hero">
+    <div>
+      <p class="cpv2__eyebrow">Content Plan V2</p>
+      <h1>Evidence Inspector</h1>
+      <p class="cpv2__lede">
+        The planning substrate before calendar generation: identity, keywords, SERP evidence,
+        site health, AI visibility, and content inventory.
+      </p>
+      <p class="cpv2__meta">
+        {{ runStatusLabel() }} · {{ clientIdentity().hostname || 'No hostname' }}
+      </p>
+    </div>
+    <div class="cpv2__actions">
+      <span class="cpv2__status" [class]="'cpv2__status--' + readinessStatus()">
+        {{ label(readinessStatus()) }}
+      </span>
+      <button type="button" class="cpv2__button" [disabled]="loadingEvidence()" (click)="refresh()">
+        {{ loadingEvidence() ? 'Refreshing…' : 'Refresh' }}
+      </button>
+      @if (!thought() && !runSession.isActive()) {
+        <button type="button" class="cpv2__button cpv2__button--primary" (click)="startEvidenceRun()">
+          Build evidence
+        </button>
+      }
+    </div>
+  </header>
+
+  @if (evidenceError()) {
+    <p class="cpv2__error">{{ evidenceError() }}</p>
+  }
+
+  @if (runSession.isActive() && thought()?.thinkerKind === 'content_plan_v2_evidence') {
+    <section class="cpv2__progress" role="status" aria-live="polite">
+      <span class="cpv2__pulse" aria-hidden="true"></span>
+      <div>
+        <strong>{{ runStatusLabel() }}</strong>
+        <p>Content Plan V2 evidence will update when the run completes.</p>
+      </div>
+    </section>
+  }
+
+  <section class="cpv2__summary" aria-label="Evidence summary">
+    @for (check of readinessChecks(); track check.label) {
+      <article class="cpv2__check" [class.cpv2__check--missing]="!check.ok">
+        <span>{{ check.ok ? 'Ready' : check.required ? 'Needed' : 'Gap' }}</span>
+        <strong>{{ check.label }}</strong>
+        <p>{{ check.detail }}</p>
+      </article>
+    }
+  </section>
+
+  <div class="cpv2__tabs" role="tablist" aria-label="Content Plan V2 evidence tabs">
+    @for (tab of tabs(); track tab.id) {
+      <button
+        type="button"
+        role="tab"
+        class="cpv2-tab"
+        [class.cpv2-tab--active]="activeTab() === tab.id"
+        [class.cpv2-tab--ready]="tab.state === 'ready'"
+        [class.cpv2-tab--partial]="tab.state === 'partial'"
+        [class.cpv2-tab--missing]="tab.state === 'missing'"
+        [attr.aria-selected]="activeTab() === tab.id"
+        (click)="setTab(tab.id)"
+      >
+        <span>{{ tab.label }}</span>
+        <strong>{{ tab.count }}</strong>
+      </button>
+    }
+  </div>
+
+  <main class="cpv2__panel" [attr.aria-label]="selectedTab()?.label || 'Evidence panel'">
+    @switch (activeTab()) {
+      @case ('readiness') {
+        <section class="cpv2__section">
+          <div class="cpv2__section-head">
+            <h2>Readiness Report</h2>
+            <p>V2 should return a repair checklist instead of weak strategy when required inputs are missing.</p>
+          </div>
+
+          <div class="cpv2__two-col">
+            <article>
+              <h3>Blockers</h3>
+              @if (blockers().length) {
+                @for (blocker of blockers(); track blocker.label) {
+                  <p class="cpv2__line cpv2__line--bad">{{ blocker.label }} — {{ blocker.detail }}</p>
+                }
+              } @else {
+                <p class="cpv2__line cpv2__line--good">No required blockers.</p>
+              }
+            </article>
+            <article>
+              <h3>Warnings</h3>
+              @if (warnings().length) {
+                @for (warning of warnings(); track warning.label) {
+                  <p class="cpv2__line">{{ warning.label }} — {{ warning.detail }}</p>
+                }
+              } @else {
+                <p class="cpv2__line cpv2__line--good">All optional evidence is present.</p>
+              }
+            </article>
+          </div>
+
+          <div class="cpv2__steps">
+            @for (step of thought()?.steps ?? []; track step.id) {
+              <article class="cpv2__step" [class]="'cpv2__step--' + step.status">
+                <span>{{ step.status }}</span>
+                <strong>{{ step.label }}</strong>
+                <p>{{ step.summary || step.description || step.id }}</p>
+              </article>
+            } @empty {
+              <p class="cpv2__empty">No content-plan run steps yet.</p>
+            }
+          </div>
+        </section>
+      }
+
+      @case ('business') {
+        <section class="cpv2__section">
+          <div class="cpv2__section-head">
+            <h2>Business Identity</h2>
+            <p>Canonical identity and aliases used for brand visibility matching.</p>
+          </div>
+          <div class="cpv2__identity">
+            <article>
+              <span>Hostname</span>
+              <strong>{{ clientIdentity().hostname || 'Not captured' }}</strong>
+            </article>
+            <article>
+              <span>Market</span>
+              <strong>{{ field(business(), 'marketScope') }}</strong>
+              <p>{{ field(business(), 'serviceArea') }}</p>
+            </article>
+            <article>
+              <span>Location</span>
+              <strong>{{ field(business(), 'serpLocationName') }}</strong>
+              <p>{{ field(business(), 'city') }} {{ field(business(), 'state', '') }}</p>
+            </article>
+          </div>
+          <div class="cpv2__chips">
+            @for (alias of clientIdentity().aliases; track alias) {
+              <span>{{ alias }}</span>
+            } @empty {
+              <span>No brand aliases found</span>
+            }
+          </div>
+        </section>
+      }
+
+      @case ('audience') {
+        <section class="cpv2__section">
+          <div class="cpv2__section-head">
+            <h2>Audience Inputs</h2>
+            <p>Confirmed avatars and example searches available to shape briefs.</p>
+          </div>
+          <div class="cpv2__cards">
+            @for (avatar of confirmedAvatars(); track field(avatar, 'id', $index.toString())) {
+              <article>
+                <span>{{ field(avatar, 'intentCluster') }}</span>
+                <strong>{{ field(avatar, 'description') }}</strong>
+                <p>{{ field(avatar, 'exampleQueries') }}</p>
+              </article>
+            } @empty {
+              <p class="cpv2__empty">No confirmed avatars in the current substrate.</p>
+            }
+          </div>
+        </section>
+      }
+
+      @case ('keywords') {
+        <section class="cpv2__section">
+          <div class="cpv2__section-head">
+            <h2>Keyword Evidence</h2>
+            <p>Confirmed keywords plus scored/tiered rows from the content-plan run.</p>
+          </div>
+          <div class="cpv2__table">
+            @for (keyword of scoredKeywords().slice(0, 18); track field(keyword, 'phrase', $index.toString())) {
+              <article>
+                <strong>{{ field(keyword, 'phrase') }}</strong>
+                <span>{{ field(keyword, 'intent') }} · {{ field(keyword, 'priority') }}</span>
+                <span>Score {{ field(keyword, 'score', 'n/a') }}</span>
+              </article>
+            } @empty {
+              @for (keyword of strategy.keywords().slice(0, 18); track keyword.id) {
+                <article>
+                  <strong>{{ keyword.phrase }}</strong>
+                  <span>{{ keyword.intent || 'intent pending' }} · {{ keyword.priority || 'priority pending' }}</span>
+                  <span>Confirmed keyword</span>
+                </article>
+              } @empty {
+                <p class="cpv2__empty">No keywords confirmed yet.</p>
+              }
+            }
+          </div>
+        </section>
+      }
+
+      @case ('rankings') {
+        <section class="cpv2__section">
+          <div class="cpv2__section-head">
+            <h2>Rankings / SERP Evidence</h2>
+            <p>Ranking snapshots and focus strategies that explain what the plan should support.</p>
+          </div>
+          <div class="cpv2__cards">
+            @for (focus of focusStrategies().slice(0, 12); track field(focus, 'phrase', $index.toString())) {
+              <article>
+                <span>Focus strategy</span>
+                <strong>{{ field(focus, 'phrase') }}</strong>
+                <p>{{ field(focus, 'recommendedPillarAngle') }}</p>
+              </article>
+            } @empty {
+              @for (row of rankings().slice(0, 12); track row.keywordId + row.latest.capturedAt) {
+                <article>
+                  <span>{{ row.latest.marketTier }} · {{ row.latest.locationName || 'Default market' }}</span>
+                  <strong>{{ row.phrase }}</strong>
+                  <p>Current rank: {{ row.latest.position ?? 'not ranking' }}</p>
+                </article>
+              } @empty {
+                <p class="cpv2__empty">No ranking or SERP evidence loaded.</p>
+              }
+            }
+          </div>
+        </section>
+      }
+
+      @case ('site-health') {
+        <section class="cpv2__section">
+          <div class="cpv2__section-head">
+            <h2>Site Health</h2>
+            <p>Existing pages, refresh candidates, and already-ranking pages consumed by planning.</p>
+          </div>
+          <div class="cpv2__identity">
+            <article>
+              <span>Pages scanned</span>
+              <strong>{{ field(audit(), 'scannedCount', '0') }}</strong>
+            </article>
+            <article>
+              <span>Source</span>
+              <strong>{{ field(audit(), 'source') }}</strong>
+            </article>
+            <article>
+              <span>Captured</span>
+              <strong>{{ formatDate(latestAudit() ? undefined : thought()?.finishedAt) }}</strong>
+            </article>
+          </div>
+          <div class="cpv2__cards">
+            @for (fix of clientSiteFixes().slice(0, 9); track field(fix, 'url', $index.toString())) {
+              <article>
+                <span>{{ field(fix, 'pageRole') }}</span>
+                <strong>{{ field(fix, 'title') }}</strong>
+                <p>{{ field(fix, 'url') }}</p>
+              </article>
+            } @empty {
+              <p class="cpv2__empty">No site fix rows found.</p>
+            }
+          </div>
+        </section>
+      }
+
+      @case ('optimization') {
+        <section class="cpv2__section">
+          <div class="cpv2__section-head">
+            <h2>Page Optimization Signals</h2>
+            <p>Existing pages that should be supported, refreshed, or protected from cannibalization.</p>
+          </div>
+          <div class="cpv2__cards">
+            @for (signal of pageOptimizationSignals().slice(0, 12); track field(signal, 'supportTargetUrl', $index.toString())) {
+              <article>
+                <span>{{ field(signal, 'calendarKind') }}</span>
+                <strong>{{ field(signal, 'supportTargetKeyword') }}</strong>
+                <p>{{ field(signal, 'supportTargetUrl') }}</p>
+              </article>
+            } @empty {
+              <p class="cpv2__empty">No page optimization signals loaded.</p>
+            }
+          </div>
+          <div class="cpv2__cards">
+            @for (page of performanceSignals().slice(0, 6); track field(page, 'url', $index.toString())) {
+              <article>
+                <span>Performance</span>
+                <strong>{{ field(page, 'status') }}</strong>
+                <p>{{ field(page, 'url') }}</p>
+              </article>
+            }
+          </div>
+        </section>
+      }
+
+      @case ('ai-visibility') {
+        <section class="cpv2__section">
+          <div class="cpv2__section-head">
+            <h2>AI Visibility</h2>
+            <p>Prompts, cited domains, brand/domain citation state, and answer gaps for V2 planning.</p>
+          </div>
+          <div class="cpv2__cards">
+            @for (snapshot of aiVisibilitySnapshots().slice(0, 12); track snapshot.id) {
+              <article>
+                <span>{{ snapshot.locationName || 'Default market' }}</span>
+                <strong>{{ snapshot.keyword }}</strong>
+                <p>
+                  {{ snapshot.summary.clientCitedSourceCount }} cited source(s) ·
+                  {{ snapshot.summary.topCitedDomains.slice(0, 3).join(', ') || 'No domains' }}
+                </p>
+              </article>
+            } @empty {
+              <p class="cpv2__empty">No AI visibility snapshots loaded yet.</p>
+            }
+          </div>
+        </section>
+      }
+
+      @case ('inventory') {
+        <section class="cpv2__section">
+          <div class="cpv2__section-head">
+            <h2>Content Inventory</h2>
+            <p>Calendar, backlog, and publishing candidates produced by the latest content-plan run.</p>
+          </div>
+          <div class="cpv2__table">
+            @for (item of calendar().slice(0, 16); track field(item, 'workingTitle', $index.toString())) {
+              <article>
+                <strong>{{ field(item, 'editorialTitle', field(item, 'workingTitle')) }}</strong>
+                <span>{{ field(item, 'suggestedKeyword') }} · {{ field(item, 'clusterRole') }}</span>
+                <span>{{ field(item, 'proposedPublishAt') }}</span>
+              </article>
+            } @empty {
+              <p class="cpv2__empty">No calendar rows generated yet.</p>
+            }
+          </div>
+        </section>
+      }
+
+      @case ('raw') {
+        <section class="cpv2__section">
+          <div class="cpv2__section-head">
+            <h2>Raw Evidence Keys</h2>
+            <p>Developer-facing artifact inventory from the latest `content_plan` Thought.</p>
+          </div>
+          <div class="cpv2__raw">
+            @for (key of artifactKeys(); track key) {
+              <article>
+                <strong>{{ key }}</strong>
+                <span>{{ label(typeof artifacts()[key]) }}</span>
+              </article>
+            } @empty {
+              <p class="cpv2__empty">No run artifacts found.</p>
+            }
+          </div>
+        </section>
+      }
+    }
+  </main>
+</div>

@@ -271,6 +271,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'home/content-plan-v2',
+    canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],
+    loadComponent: () =>
+      import('./features/protopipe/home/protopipe-user-home.component').then(
+        (m) => m.ProtopipeUserHomeComponent,
+      ),
+  },
+  {
     path: 'home/analytics',
     canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],
     loadComponent: () =>

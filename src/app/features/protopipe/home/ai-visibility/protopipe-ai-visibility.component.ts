@@ -622,7 +622,7 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   citationIsOwn(citation: { domain?: string | null; url?: string | null }): boolean {
     const own = this.ownDomain();
     if (!own) return false;
-    const domain = normalizeDomain(citation.domain ?? domainFromUrl(citation.url ?? undefined));
+    const domain = citationDomain(citation);
     return domain ? domainMatchesOwn(domain, own) : false;
   }
 
@@ -720,14 +720,22 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   }
 
   private sourceCitationDomains(source: AiVisibilitySourceSnapshot): string[] {
-    const domains = [
-      ...source.citedDomains,
-      ...source.citations.map((citation) =>
-        normalizeDomain(citation.domain ?? domainFromUrl(citation.url)),
-      ),
-      ...(source.links ?? []).map((link) => normalizeDomain(link.domain ?? domainFromUrl(link.url))),
+    const fromEvidence = [
+      ...source.citations.map((citation) => citationDomain(citation)),
+      ...(source.links ?? []).map((link) => citationDomain(link)),
     ].filter((domain): domain is string => Boolean(domain));
-    return Array.from(new Set(domains));
+
+    if (fromEvidence.length > 0) {
+      return Array.from(new Set(fromEvidence));
+    }
+
+    return Array.from(
+      new Set(
+        source.citedDomains
+          .map((domain) => normalizeDomain(domain))
+          .filter((domain): domain is string => Boolean(domain)),
+      ),
+    );
   }
 
   private mergeSnapshots(
@@ -798,6 +806,48 @@ function normalizeDomain(value?: string | null): string | null {
     .trim();
 }
 
+function resolveCitationUrl(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return trimmed;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return trimmed;
+  }
+
+  const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+  if (host !== 'google.com') return trimmed;
+
+  if (parsed.pathname === '/url') {
+    for (const key of ['q', 'url', 'u']) {
+      const target = parsed.searchParams.get(key);
+      if (!target) continue;
+      const decoded = decodeURIComponent(target.trim());
+      if (/^https?:\/\//i.test(decoded)) {
+        return resolveCitationUrl(decoded);
+      }
+    }
+  }
+
+  return trimmed;
+}
+
+function citationDomainFromUrl(url?: string | null): string | null {
+  if (!url?.trim()) return null;
+  const resolved = resolveCitationUrl(url);
+  return normalizeDomain(domainFromUrl(resolved));
+}
+
+function preferCitationDomain(explicitDomain: string | null, resolvedDomain: string | null): string | null {
+  if (!resolvedDomain) return explicitDomain;
+  if (!explicitDomain || explicitDomain === 'google.com' || explicitDomain.endsWith('.google.com')) {
+    return resolvedDomain;
+  }
+  return explicitDomain;
+}
+
 function domainFromUrl(url?: string): string | null {
   if (!url) return null;
   try {
@@ -805,6 +855,12 @@ function domainFromUrl(url?: string): string | null {
   } catch {
     return null;
   }
+}
+
+function citationDomain(citation: { domain?: string | null; url?: string | null }): string | null {
+  const explicit = normalizeDomain(citation.domain ?? undefined);
+  const resolved = citationDomainFromUrl(citation.url ?? undefined);
+  return preferCitationDomain(explicit, resolved);
 }
 
 function percentLabel(numerator: number, denominator: number): string {

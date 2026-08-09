@@ -89,6 +89,12 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
         capability: 'strategy',
       },
       {
+        id: 'content-plan-v2',
+        label: 'Content Plan V2',
+        icon: 'sparkles',
+        capability: 'strategy',
+      },
+      {
         id: 'content-calendar',
         label: 'Content calendar',
         icon: 'grid',

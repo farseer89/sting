@@ -3,8 +3,8 @@
     <div>
       <h1>Site Health</h1>
       <p class="healthdash__lede">
-        The latest persisted site audit: crawl coverage, refresh opportunities, and pages we
-        already know about.
+        Existing-page SEO recommendations, mobile readiness, and crawl facts for client handoff
+        and smarter blog support.
       </p>
       <p class="healthdash__coverage">
         {{ sourceLabel() }} · {{ audit()?.hostname || 'Latest site audit' }}
@@ -18,13 +18,21 @@
           No scan loaded
         }
       </span>
-      @if (activeTab() === 'alignment' && canStartAlignment()) {
+      @if (activeTab() === 'optimization' && canStartOptimization()) {
         <button
           type="button"
           class="healthdash__run healthdash__run--primary"
-          (click)="startAlignment()"
+          (click)="startOptimization()"
         >
-          Run keyword alignment
+          Run Page Optimization
+        </button>
+      } @else if (activeTab() === 'performance' && canStartPerformance()) {
+        <button
+          type="button"
+          class="healthdash__run healthdash__run--primary"
+          (click)="startPerformance()"
+        >
+          Run Performance
         </button>
       } @else if (store.canStartAudit()) {
         <button type="button" class="healthdash__run healthdash__run--primary" (click)="startAudit()">
@@ -45,8 +53,11 @@
   @if (store.error()) {
     <p class="healthdash__error">{{ store.error() }}</p>
   }
-  @if (alignmentStore.error()) {
-    <p class="healthdash__error">{{ alignmentStore.error() }}</p>
+  @if (optimizationStore.error()) {
+    <p class="healthdash__error">{{ optimizationStore.error() }}</p>
+  }
+  @if (speedStore.error()) {
+    <p class="healthdash__error">{{ speedStore.error() }}</p>
   }
 
   @if (showAuditLoading()) {
@@ -82,35 +93,65 @@
     </section>
   }
 
-  @if (showAlignmentLoading()) {
+  @if (showOptimizationLoading()) {
     <section
       class="healthdash__loading"
       role="status"
       aria-live="polite"
-      aria-label="Keyword alignment loading progress"
+      aria-label="Page optimization loading progress"
     >
       <div class="healthdash__loading-head">
         <span class="healthdash__loading-dot" aria-hidden="true"></span>
         <div class="healthdash__loading-copy">
-          <p class="healthdash__loading-title">{{ alignmentStore.alignmentProgressLabel() }}</p>
+          <p class="healthdash__loading-title">{{ optimizationStore.progressLabel() }}</p>
           <p class="healthdash__loading-detail">
-            {{ alignmentStore.alignmentProgressDetail() }}
+            {{ optimizationStore.progressDetail() }}
           </p>
         </div>
-        <span class="healthdash__loading-percent">{{ alignmentStore.alignmentProgressPercent() }}%</span>
+        <span class="healthdash__loading-percent">{{ optimizationStore.progressPercent() }}%</span>
       </div>
       <div
         class="healthdash__loading-bar"
         role="progressbar"
-        [attr.aria-valuenow]="alignmentStore.alignmentProgressPercent()"
+        [attr.aria-valuenow]="optimizationStore.progressPercent()"
         aria-valuemin="0"
         aria-valuemax="100"
-        [attr.aria-valuetext]="alignmentStore.alignmentProgressLabel()"
+        [attr.aria-valuetext]="optimizationStore.progressLabel()"
       >
         <span
           class="healthdash__loading-bar-fill"
-          [style.width.%]="alignmentStore.alignmentProgressPercent()"
+          [style.width.%]="optimizationStore.progressPercent()"
         ></span>
+      </div>
+    </section>
+  }
+
+  @if (showPerformanceLoading()) {
+    <section
+      class="healthdash__loading"
+      role="status"
+      aria-live="polite"
+      aria-label="Performance loading progress"
+    >
+      <div class="healthdash__loading-head">
+        <span class="healthdash__loading-dot" aria-hidden="true"></span>
+        <div class="healthdash__loading-copy">
+          <p class="healthdash__loading-title">{{ speedStore.progressLabel() }}</p>
+          <p class="healthdash__loading-detail">
+            {{ speedStore.progressDetail() }}
+          </p>
+        </div>
+        <span class="healthdash__loading-percent">{{ speedStore.progressPercent() }}%</span>
+      </div>
+      <div
+        class="healthdash__loading-bar"
+        role="progressbar"
+        [attr.aria-valuenow]="speedStore.progressPercent()"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        [attr.aria-valuetext]="speedStore.progressLabel()"
+      >
+        <span class="healthdash__loading-bar-fill" [style.width.%]="speedStore.progressPercent()"></span>
       </div>
     </section>
   }
@@ -158,8 +199,11 @@
               @case ('pages') {
                 Inventory
               }
-              @case ('alignment') {
-                Keyword fit
+              @case ('optimization') {
+                Page SEO
+              }
+              @case ('performance') {
+                Speed
               }
               @default {
                 Scan
@@ -177,8 +221,11 @@
               @case ('pages') {
                 Scanned pages
               }
-              @case ('alignment') {
-                Keyword-to-page fit
+              @case ('optimization') {
+                Page Optimization
+              }
+              @case ('performance') {
+                Performance
               }
               @default {
                 Scan overview
@@ -218,48 +265,85 @@
             </div>
           </dl>
         </div>
-      } @else if (activeTab() === 'alignment') {
-        @if (alignmentRows().length) {
+      } @else if (activeTab() === 'optimization') {
+        @if (optimizationRows().length) {
+          <div class="health-cardgrid">
+            @for (row of optimizationRows(); track row.id) {
+              <article class="health-rec-card">
+                <div class="health-rec-card__head">
+                  <div>
+                    <p>{{ row.pageRole }}</p>
+                    <h3>{{ row.title }}</h3>
+                  </div>
+                  <span
+                    class="health-table__pill"
+                    [class.is-healthy]="row.severityLabel === 'Healthy'"
+                  >
+                    {{ row.severityLabel }}
+                  </span>
+                </div>
+                <a [href]="row.url" target="_blank" rel="noopener noreferrer">{{ row.url }}</a>
+                <dl>
+                  <div>
+                    <dt>Score</dt>
+                    <dd>{{ row.score }}</dd>
+                  </div>
+                  <div>
+                    <dt>Issues</dt>
+                    <dd>{{ row.issueCount }}</dd>
+                  </div>
+                </dl>
+                <p>{{ row.topIssue }}</p>
+                <p><strong>Suggested handoff:</strong> {{ row.suggestedValue }}</p>
+                <p><strong>Blog support:</strong> {{ row.supportOpportunity }}</p>
+              </article>
+            }
+          </div>
+        } @else {
+          <div class="healthdash__empty">
+            <p>{{ emptyMessage() }}</p>
+            @if (canStartOptimization()) {
+              <button type="button" class="healthdash__empty-action" (click)="startOptimization()">
+                Run Page Optimization now
+              </button>
+            } @else if (!store.hasAudit() && store.canStartAudit()) {
+              <button type="button" class="healthdash__empty-action" (click)="startAudit()">
+                Run site audit first
+              </button>
+            }
+          </div>
+        }
+      } @else if (activeTab() === 'performance') {
+        @if (speedRows().length) {
           <div class="health-table-wrap">
             <table class="health-table">
               <thead>
                 <tr>
-                  <th scope="col">Keyword</th>
+                  <th scope="col">URL</th>
                   <th scope="col">Status</th>
                   <th scope="col">Score</th>
-                  <th scope="col">Best page</th>
-                  <th scope="col">Ranking</th>
-                  <th scope="col">Action</th>
+                  <th scope="col">LCP</th>
+                  <th scope="col">CLS</th>
+                  <th scope="col">Top fixes</th>
                 </tr>
               </thead>
               <tbody>
-                @for (row of alignmentRows(); track row.id) {
+                @for (row of speedRows(); track row.id) {
                   <tr>
                     <td>
-                      <span class="health-table__title">{{ row.phrase }}</span>
-                      <span class="health-table__url">{{ row.reasons }}</span>
+                      <a [href]="row.url" target="_blank" rel="noopener noreferrer">
+                        {{ row.url }}
+                      </a>
                     </td>
                     <td>
-                      <span
-                        class="health-table__pill"
-                        [class.is-healthy]="row.status === 'matched' || row.status === 'ranking_win'"
-                      >
+                      <span class="health-table__pill" [class.is-healthy]="row.statusLabel === 'Good'">
                         {{ row.statusLabel }}
                       </span>
                     </td>
-                    <td class="health-table__metric">{{ row.score }}</td>
-                    <td>
-                      <span class="health-table__title">{{ row.pageTitle }}</span>
-                      @if (row.pageUrl.startsWith('http')) {
-                        <a [href]="row.pageUrl" target="_blank" rel="noopener noreferrer">
-                          {{ row.pageUrl }}
-                        </a>
-                      } @else {
-                        <span class="health-table__muted">{{ row.pageUrl }}</span>
-                      }
-                    </td>
-                    <td class="health-table__metric">{{ row.ranking }}</td>
-                    <td>{{ row.actionLabel }}</td>
+                    <td class="health-table__metric">{{ row.performanceScore }}</td>
+                    <td class="health-table__metric">{{ row.lcp }}</td>
+                    <td class="health-table__metric">{{ row.cls }}</td>
+                    <td>{{ row.issueSummary }}</td>
                   </tr>
                 }
               </tbody>
@@ -268,17 +352,13 @@
         } @else {
           <div class="healthdash__empty">
             <p>{{ emptyMessage() }}</p>
-            @if (canStartAlignment()) {
-              <button type="button" class="healthdash__empty-action" (click)="startAlignment()">
-                Run keyword alignment now
+            @if (canStartPerformance()) {
+              <button type="button" class="healthdash__empty-action" (click)="startPerformance()">
+                Run Performance now
               </button>
-            } @else if (alignmentPrerequisite(); as prerequisite) {
-              <button
-                type="button"
-                class="healthdash__empty-action"
-                (click)="handleAlignmentPrerequisiteAction()"
-              >
-                {{ prerequisite.actionLabel }}
+            } @else if (!store.hasAudit() && store.canStartAudit()) {
+              <button type="button" class="healthdash__empty-action" (click)="startAudit()">
+                Run site audit first
               </button>
             }
           </div>
@@ -366,30 +446,30 @@
           </div>
         </div>
         <p class="health-panel__empty">
-          Before planning new articles, we check what already exists so the calendar can avoid
-          duplicate topics and spot refresh opportunities.
+          Site Health does not imply we can edit the client site. It separates existing-page fixes
+          from the blog content we can create to support keyword goals.
         </p>
       </article>
 
       <article class="health-panel">
         <div class="health-panel__head">
           <div>
-            <p class="health-panel__kicker">Next action</p>
-            <h2>Use the scan</h2>
+            <p class="health-panel__kicker">Client handoff</p>
+            <h2>Use the signals</h2>
           </div>
         </div>
-        @if (refreshPages().length) {
+        @if (optimizationRows().length) {
           <ul class="health-list">
-            @for (row of refreshPages().slice(0, 4); track row.id) {
+            @for (row of optimizationRows().slice(0, 4); track row.id) {
               <li>
                 <span>{{ row.title }}</span>
-                <strong>{{ row.statusLabel }}</strong>
+                <strong>{{ row.severityLabel }}</strong>
               </li>
             }
           </ul>
         } @else {
           <p class="health-panel__empty">
-            Refresh candidates appear here when the scan finds thin or stale pages.
+            Page recommendations appear here after Page Optimization runs.
           </p>
         }
       </article>

@@ -4,11 +4,23 @@ import type {
   KeywordAlignmentSnapshot,
   KeywordAlignmentStatus,
   KeywordAlignmentSummary,
+  PageOptimizationPageReport,
+  PageOptimizationSnapshot,
+  PageOptimizationSummary,
+  PageSpeedPageReport,
+  PageSpeedSnapshot,
+  PageSpeedSummary,
   ProtopipeContentAudit,
   ProtopipeExistingPage,
 } from '@hive/contracts';
 
-export type SiteHealthTab = 'overview' | 'refresh' | 'pages' | 'wins' | 'alignment';
+export type SiteHealthTab =
+  | 'overview'
+  | 'optimization'
+  | 'performance'
+  | 'refresh'
+  | 'pages'
+  | 'wins';
 
 export interface SiteHealthSummaryCard {
   id: string;
@@ -53,6 +65,31 @@ export interface KeywordAlignmentDisplayRow {
 export interface KeywordAlignmentPrerequisite {
   message: string;
   actionLabel?: string;
+}
+
+export interface PageOptimizationDisplayRow {
+  id: string;
+  source: PageOptimizationPageReport;
+  title: string;
+  url: string;
+  pageRole: string;
+  score: string;
+  issueCount: string;
+  severityLabel: string;
+  topIssue: string;
+  suggestedValue: string;
+  supportOpportunity: string;
+}
+
+export interface PageSpeedDisplayRow {
+  id: string;
+  source: PageSpeedPageReport;
+  url: string;
+  statusLabel: string;
+  performanceScore: string;
+  lcp: string;
+  cls: string;
+  issueSummary: string;
 }
 
 export interface SiteHealthTabOption {
@@ -109,17 +146,97 @@ export function buildSiteHealthSummaryCards(
 
 export function siteHealthTabs(
   audit: ProtopipeContentAudit | null | undefined,
-  alignment: KeywordAlignmentSnapshot | null | undefined,
+  optimization?: PageOptimizationSnapshot | null,
+  speed?: PageSpeedSnapshot | null,
 ): SiteHealthTabOption[] {
   return [
     { id: 'overview', label: 'Overview' },
+    {
+      id: 'optimization',
+      label: 'Page Optimization',
+      count: optimization?.summary.pageCount ?? undefined,
+    },
+    {
+      id: 'performance',
+      label: 'Performance',
+      count: speed?.summary.testedUrlCount ?? undefined,
+    },
     { id: 'refresh', label: 'Refresh', count: audit?.refreshCandidates?.length ?? 0 },
     { id: 'pages', label: 'Pages', count: audit?.pages?.length ?? 0 },
     { id: 'wins', label: 'Wins', count: audit?.alreadyRanking?.length ?? 0 },
+  ];
+}
+
+export function buildPageOptimizationSummaryCards(
+  summary: PageOptimizationSummary | null | undefined,
+): SiteHealthSummaryCard[] {
+  return [
     {
-      id: 'alignment',
-      label: 'Keyword fit',
-      count: alignment?.summary.totalKeywords ?? undefined,
+      id: 'pages',
+      label: 'Pages reviewed',
+      value: formatCount(summary?.pageCount ?? 0),
+      hint: 'Existing pages checked for page-level SEO fixes.',
+    },
+    {
+      id: 'site-fixes',
+      label: 'Site fixes',
+      value: formatCount(summary?.siteFixCount ?? 0),
+      hint: 'Client-site recommendations, not blog deliverables.',
+    },
+    {
+      id: 'critical',
+      label: 'Critical issues',
+      value: formatCount(summary?.criticalIssueCount ?? 0),
+      hint: 'Fix these before leaning on the page.',
+    },
+    {
+      id: 'warnings',
+      label: 'Warnings',
+      value: formatCount(summary?.warningIssueCount ?? 0),
+      hint: 'Metadata, structure, freshness, or linking work.',
+    },
+    {
+      id: 'support',
+      label: 'Blog support targets',
+      value: formatCount(summary?.supportOpportunityCount ?? 0),
+      hint: 'Pages blog content can support with internal links.',
+    },
+  ];
+}
+
+export function buildPageSpeedSummaryCards(
+  summary: PageSpeedSummary | null | undefined,
+): SiteHealthSummaryCard[] {
+  return [
+    {
+      id: 'tested',
+      label: 'URLs tested',
+      value: formatCount(summary?.testedUrlCount ?? 0),
+      hint: 'Mobile readiness checks for important pages.',
+    },
+    {
+      id: 'poor',
+      label: 'Poor',
+      value: formatCount(summary?.poorCount ?? 0),
+      hint: 'Pages with serious mobile performance risk.',
+    },
+    {
+      id: 'needs-work',
+      label: 'Needs work',
+      value: formatCount(summary?.needsImprovementCount ?? 0),
+      hint: 'Usable, but worth client dev attention.',
+    },
+    {
+      id: 'good',
+      label: 'Good',
+      value: formatCount(summary?.goodCount ?? 0),
+      hint: 'Pages ready to receive blog support traffic.',
+    },
+    {
+      id: 'critical',
+      label: 'Critical fixes',
+      value: formatCount(summary?.criticalIssueCount ?? 0),
+      hint: 'Highest-priority dev handoff items.',
     },
   ];
 }
@@ -197,6 +314,69 @@ export function alignmentEmptyMessage(input: {
     return 'No keyword alignment snapshot is stored yet. Run keyword alignment to score fit against your latest site audit.';
   }
   return 'No keyword alignment rows were produced for this site.';
+}
+
+export function pageOptimizationRows(
+  snapshot: PageOptimizationSnapshot | null | undefined,
+): PageOptimizationDisplayRow[] {
+  return (snapshot?.pages ?? []).map((page) => {
+    const topIssue = page.issues[0];
+    return {
+      id: page.url,
+      source: page,
+      title: page.title?.trim() || page.h1?.trim() || urlLabel(page.url),
+      url: page.url,
+      pageRole: page.pageRole,
+      score: `${page.score}/100`,
+      issueCount: formatCount(page.issues.length),
+      severityLabel: severityLabel(topIssue?.severity),
+      topIssue: topIssue?.rationale ?? 'No major page optimization issues captured.',
+      suggestedValue: topIssue?.suggestedValue ?? 'See recommendations for this page.',
+      supportOpportunity:
+        page.contentPlanSignal?.supportWithBlogTopics?.slice(0, 2).join(' · ') ||
+        'No blog support topic suggested.',
+    };
+  });
+}
+
+export function pageSpeedRows(snapshot: PageSpeedSnapshot | null | undefined): PageSpeedDisplayRow[] {
+  return (snapshot?.pages ?? []).map((page) => ({
+    id: page.url,
+    source: page,
+    url: page.url,
+    statusLabel: speedStatusLabel(page.status),
+    performanceScore:
+      page.metrics.performanceScore != null ? `${page.metrics.performanceScore}/100` : 'Unknown',
+    lcp: formatMs(page.metrics.lcpMs),
+    cls: page.metrics.cls != null ? page.metrics.cls.toFixed(2) : 'Unknown',
+    issueSummary: page.issues.map((issue) => issue.recommendation).join(' · ') || 'No issues captured.',
+  }));
+}
+
+export function pageOptimizationEmptyMessage(input: {
+  loading: boolean;
+  hasSnapshot: boolean;
+  hasAudit: boolean;
+}): string {
+  if (input.loading) return 'Loading page optimization...';
+  if (!input.hasAudit) return 'Run a site audit first so we can evaluate existing pages.';
+  if (!input.hasSnapshot) {
+    return 'No page optimization snapshot is stored yet. Run Page Optimization to generate client-ready site fix recommendations.';
+  }
+  return 'No page optimization rows were produced for this site.';
+}
+
+export function pageSpeedEmptyMessage(input: {
+  loading: boolean;
+  hasSnapshot: boolean;
+  hasAudit: boolean;
+}): string {
+  if (input.loading) return 'Loading performance audit...';
+  if (!input.hasAudit) return 'Run a site audit first so we can select important URLs to test.';
+  if (!input.hasSnapshot) {
+    return 'No performance snapshot is stored yet. Run Performance to check mobile readiness.';
+  }
+  return 'No performance rows were produced for this site.';
 }
 
 export function pageRows(pages: ProtopipeExistingPage[] | null | undefined): SiteHealthPageRow[] {
@@ -353,4 +533,36 @@ function alignmentActionLabel(action: KeywordAlignmentAction): string {
     default:
       return action;
   }
+}
+
+function severityLabel(severity: string | undefined): string {
+  switch (severity) {
+    case 'critical':
+      return 'Critical';
+    case 'warning':
+      return 'Warning';
+    case 'notice':
+      return 'Notice';
+    default:
+      return 'Healthy';
+  }
+}
+
+function speedStatusLabel(status: string): string {
+  switch (status) {
+    case 'good':
+      return 'Good';
+    case 'needs_improvement':
+      return 'Needs work';
+    case 'poor':
+      return 'Poor';
+    default:
+      return 'Unknown';
+  }
+}
+
+function formatMs(value: number | undefined): string {
+  if (value == null) return 'Unknown';
+  if (value >= 1000) return `${(value / 1000).toFixed(1)}s`;
+  return `${Math.round(value)}ms`;
 }

@@ -5,6 +5,8 @@ import {
   type EnqueueRunRequest,
   type KeywordAlignmentLatestResponse,
   type KeywordRankingsListResponse,
+  type PageOptimizationLatestResponse,
+  type PageSpeedLatestResponse,
   type RunResponse,
   type SiteAuditLatestResponse,
   type ThinkerKind,
@@ -46,6 +48,18 @@ export class ShireApiService {
   getLatestKeywordAlignment$(siteId: string): Observable<KeywordAlignmentLatestResponse> {
     return this.http.get<KeywordAlignmentLatestResponse>(
       shireApiUrl(ShireEndpoints.keywordAlignments.latest(siteId)),
+    );
+  }
+
+  getLatestPageOptimization$(siteId: string): Observable<PageOptimizationLatestResponse> {
+    return this.http.get<PageOptimizationLatestResponse>(
+      shireApiUrl(ShireEndpoints.pageOptimizations.latest(siteId)),
+    );
+  }
+
+  getLatestPageSpeed$(siteId: string): Observable<PageSpeedLatestResponse> {
+    return this.http.get<PageSpeedLatestResponse>(
+      shireApiUrl(ShireEndpoints.pageSpeed.latest(siteId)),
     );
   }
 

@@ -3,13 +3,17 @@ import { Router } from '@angular/router';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { HOME_KEYWORDS_PATH } from '../protopipe-home.routes';
 import {
-  alignmentEmptyMessage,
   alignmentPrerequisite,
-  alignmentRows,
   buildKeywordAlignmentSummaryCards,
+  buildPageOptimizationSummaryCards,
+  buildPageSpeedSummaryCards,
   buildSiteHealthSummaryCards,
   headingSummary,
   pageRows,
+  pageOptimizationEmptyMessage,
+  pageOptimizationRows,
+  pageSpeedEmptyMessage,
+  pageSpeedRows,
   refreshRows,
   schemaSummary,
   siteHealthTabs,
@@ -19,7 +23,8 @@ import {
   type SiteHealthPageRow,
   type SiteHealthTab,
 } from './protopipe-site-health.model';
-import { KeywordAlignmentStore } from './keyword-alignment.store';
+import { PageOptimizationStore } from './page-optimization.store';
+import { PageSpeedStore } from './page-speed.store';
 import { SiteHealthStore } from './site-health.store';
 
 @Component({
@@ -33,13 +38,15 @@ export class ProtopipeSiteHealthComponent {
   private readonly strategy = inject(ProtopipeStrategyService);
   private readonly router = inject(Router);
   readonly store = inject(SiteHealthStore);
-  readonly alignmentStore = inject(KeywordAlignmentStore);
+  readonly optimizationStore = inject(PageOptimizationStore);
+  readonly speedStore = inject(PageSpeedStore);
 
   readonly activeTab = signal<SiteHealthTab>('overview');
   readonly selectedPage = signal<SiteHealthPageRow | null>(null);
 
   readonly audit = this.store.audit;
-  readonly alignmentSnapshot = this.alignmentStore.snapshot;
+  readonly optimizationSnapshot = this.optimizationStore.snapshot;
+  readonly speedSnapshot = this.speedStore.snapshot;
   readonly keywordCount = computed(() => this.strategy.keywords().length);
   readonly alignmentPrerequisite = computed(() =>
     alignmentPrerequisite({
@@ -47,17 +54,27 @@ export class ProtopipeSiteHealthComponent {
       keywordCount: this.keywordCount(),
     }),
   );
-  readonly canStartAlignment = computed(
-    () => this.alignmentStore.canStartAlignment() && this.alignmentPrerequisite() === null,
+  readonly canStartOptimization = computed(
+    () => this.store.hasAudit() && this.optimizationStore.canStart(),
   );
-  readonly showAuditSummaryCards = computed(() => this.activeTab() !== 'alignment');
+  readonly canStartPerformance = computed(() => this.store.hasAudit() && this.speedStore.canStart());
+  readonly showAuditSummaryCards = computed(
+    () => this.activeTab() !== 'optimization' && this.activeTab() !== 'performance',
+  );
   readonly summaryCards = computed(() =>
-    this.showAuditSummaryCards()
-      ? buildSiteHealthSummaryCards(this.audit())
-      : buildKeywordAlignmentSummaryCards(this.alignmentSnapshot()?.summary),
+    this.activeTab() === 'optimization'
+      ? buildPageOptimizationSummaryCards(this.optimizationSnapshot()?.summary)
+      : this.activeTab() === 'performance'
+        ? buildPageSpeedSummaryCards(this.speedSnapshot()?.summary)
+        : this.showAuditSummaryCards()
+          ? buildSiteHealthSummaryCards(this.audit())
+          : buildKeywordAlignmentSummaryCards(null),
   );
-  readonly tabs = computed(() => siteHealthTabs(this.audit(), this.alignmentSnapshot()));
-  readonly alignmentRows = computed(() => alignmentRows(this.alignmentSnapshot()));
+  readonly tabs = computed(() =>
+    siteHealthTabs(this.audit(), this.optimizationSnapshot(), this.speedSnapshot()),
+  );
+  readonly optimizationRows = computed(() => pageOptimizationRows(this.optimizationSnapshot()));
+  readonly speedRows = computed(() => pageSpeedRows(this.speedSnapshot()));
   readonly allPages = computed(() => pageRows(this.audit()?.pages));
   readonly refreshPages = computed(() => refreshRows(this.audit()));
   readonly wins = computed(() => winRows(this.audit()));
@@ -70,11 +87,18 @@ export class ProtopipeSiteHealthComponent {
   });
 
   readonly emptyMessage = computed(() => {
-    if (this.activeTab() === 'alignment') {
-      return alignmentEmptyMessage({
-        loading: !this.alignmentStore.hasCheckedLatest(),
-        hasSnapshot: this.alignmentStore.hasSnapshot(),
-        prerequisite: this.alignmentPrerequisite(),
+    if (this.activeTab() === 'optimization') {
+      return pageOptimizationEmptyMessage({
+        loading: !this.optimizationStore.hasCheckedLatest(),
+        hasSnapshot: this.optimizationStore.hasSnapshot(),
+        hasAudit: this.store.hasAudit(),
+      });
+    }
+    if (this.activeTab() === 'performance') {
+      return pageSpeedEmptyMessage({
+        loading: !this.speedStore.hasCheckedLatest(),
+        hasSnapshot: this.speedStore.hasSnapshot(),
+        hasAudit: this.store.hasAudit(),
       });
     }
     if (!this.store.hasCheckedLatest()) return 'Loading site health…';
@@ -86,16 +110,24 @@ export class ProtopipeSiteHealthComponent {
     return 'No crawlable pages were found in this scan.';
   });
 
-  readonly showAlignmentLoading = computed(
-    () => this.activeTab() === 'alignment' && this.alignmentStore.showAlignmentProgress(),
+  readonly showOptimizationLoading = computed(
+    () => this.activeTab() === 'optimization' && this.optimizationStore.showProgress(),
+  );
+  readonly showPerformanceLoading = computed(
+    () => this.activeTab() === 'performance' && this.speedStore.showProgress(),
   );
   readonly showAuditLoading = computed(
-    () => this.activeTab() !== 'alignment' && this.store.showAuditProgress(),
+    () =>
+      this.activeTab() !== 'optimization' &&
+      this.activeTab() !== 'performance' &&
+      this.store.showAuditProgress(),
   );
   readonly isRefreshing = computed(() =>
-    this.activeTab() === 'alignment'
-      ? this.alignmentStore.refreshingLatest()
-      : this.store.refreshingLatest(),
+    this.activeTab() === 'optimization'
+      ? this.optimizationStore.refreshingLatest()
+      : this.activeTab() === 'performance'
+        ? this.speedStore.refreshingLatest()
+        : this.store.refreshingLatest(),
   );
 
   readonly headingSummary = headingSummary;
@@ -106,14 +138,19 @@ export class ProtopipeSiteHealthComponent {
       const siteId = this.strategy.siteId();
       if (siteId) {
         void this.store.load(siteId);
-        void this.alignmentStore.load(siteId);
+        void this.optimizationStore.load(siteId);
+        void this.speedStore.load(siteId);
       }
     });
   }
 
   async reload(): Promise<void> {
-    if (this.activeTab() === 'alignment') {
-      await this.alignmentStore.reload();
+    if (this.activeTab() === 'optimization') {
+      await this.optimizationStore.reload();
+      return;
+    }
+    if (this.activeTab() === 'performance') {
+      await this.speedStore.reload();
       return;
     }
     await this.store.reload();
@@ -123,8 +160,12 @@ export class ProtopipeSiteHealthComponent {
     await this.store.startAudit();
   }
 
-  async startAlignment(): Promise<void> {
-    await this.alignmentStore.startAlignment();
+  async startOptimization(): Promise<void> {
+    await this.optimizationStore.start();
+  }
+
+  async startPerformance(): Promise<void> {
+    await this.speedStore.start();
   }
 
   handleAlignmentPrerequisiteAction(): void {

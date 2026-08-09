@@ -1,5 +1,7 @@
 import type {
   KeywordAlignmentSnapshot,
+  PageOptimizationSnapshot,
+  PageSpeedSnapshot,
   ProtopipeContentAudit,
   ProtopipeExistingPage,
 } from '@hive/contracts';
@@ -9,8 +11,12 @@ import {
   alignmentPrerequisite,
   alignmentRows,
   buildKeywordAlignmentSummaryCards,
+  buildPageOptimizationSummaryCards,
+  buildPageSpeedSummaryCards,
   buildSiteHealthSummaryCards,
   pageReasons,
+  pageOptimizationRows,
+  pageSpeedRows,
   pageRows,
   siteHealthTabs,
   sourceDescription,
@@ -105,26 +111,43 @@ describe('site health model', () => {
     });
   });
 
-  it('includes keyword fit tab and alignment summary cards', () => {
-    const snapshot: KeywordAlignmentSnapshot = {
-      id: 'align-1',
+  it('includes page optimization and performance tabs with summary cards', () => {
+    const optimization: PageOptimizationSnapshot = {
+      id: 'opt-1',
       siteId: 'site-1',
-      rows: [],
+      pages: [],
       summary: {
-        totalKeywords: 4,
-        missingCount: 2,
-        weakMatchCount: 1,
-        matchedCount: 1,
-        refreshCandidateCount: 0,
-        rankingWinCount: 0,
+        pageCount: 3,
+        criticalIssueCount: 1,
+        warningIssueCount: 2,
+        noticeIssueCount: 4,
+        siteFixCount: 2,
+        supportOpportunityCount: 1,
+      },
+      capturedAt: '2026-08-08T00:00:00.000Z',
+      createdAt: '2026-08-08T00:00:00.000Z',
+      updatedAt: '2026-08-08T00:00:00.000Z',
+    };
+    const speed: PageSpeedSnapshot = {
+      id: 'speed-1',
+      siteId: 'site-1',
+      pages: [],
+      summary: {
+        testedUrlCount: 2,
+        poorCount: 1,
+        needsImprovementCount: 1,
+        goodCount: 0,
+        criticalIssueCount: 1,
       },
       capturedAt: '2026-08-08T00:00:00.000Z',
       createdAt: '2026-08-08T00:00:00.000Z',
       updatedAt: '2026-08-08T00:00:00.000Z',
     };
 
-    expect(siteHealthTabs(audit(), snapshot).some((tab) => tab.id === 'alignment')).toBe(true);
-    expect(buildKeywordAlignmentSummaryCards(snapshot.summary)[0]?.value).toBe('4');
+    const tabs = siteHealthTabs(audit(), optimization, speed).map((tab) => tab.id);
+    expect(tabs).toEqual(expect.arrayContaining(['optimization', 'performance']));
+    expect(buildPageOptimizationSummaryCards(optimization.summary)[1]?.value).toBe('2');
+    expect(buildPageSpeedSummaryCards(speed.summary)[1]?.value).toBe('1');
   });
 
   it('describes alignment prerequisites and empty states', () => {
@@ -141,6 +164,107 @@ describe('site health model', () => {
         prerequisite: null,
       }),
     ).toContain('No keyword alignment snapshot');
+  });
+
+  it('maps page optimization and speed rows for display', () => {
+    expect(
+      pageOptimizationRows({
+        id: 'opt-1',
+        siteId: 'site-1',
+        capturedAt: '2026-08-08T00:00:00.000Z',
+        createdAt: '2026-08-08T00:00:00.000Z',
+        updatedAt: '2026-08-08T00:00:00.000Z',
+        summary: {
+          pageCount: 1,
+          criticalIssueCount: 1,
+          warningIssueCount: 0,
+          noticeIssueCount: 0,
+          siteFixCount: 1,
+          supportOpportunityCount: 1,
+        },
+        pages: [
+          {
+            url: 'https://example.com/services',
+            title: 'Services',
+            pageRole: 'service',
+            targetKeywords: ['local seo'],
+            score: 78,
+            source: page(),
+            issues: [
+              {
+                id: 'title',
+                category: 'title',
+                severity: 'critical',
+                action: 'update_title',
+                rationale: 'Improve title.',
+                suggestedValue: 'Local SEO Services',
+              },
+            ],
+            contentPlanSignal: {
+              supportTargetUrl: 'https://example.com/services',
+              supportTargetKeyword: 'local seo',
+              supportWithBlogTopics: ['How to choose local seo'],
+              recommendedAnchorText: ['local seo'],
+              avoidCannibalizing: ['local seo'],
+              shouldCreateNewBlogContent: true,
+              shouldSuggestSiteEdit: true,
+              calendarKind: 'none',
+              rationale: 'Support the page.',
+            },
+          },
+        ],
+      })[0],
+    ).toEqual(
+      expect.objectContaining({
+        pageRole: 'service',
+        severityLabel: 'Critical',
+        supportOpportunity: 'How to choose local seo',
+      }),
+    );
+
+    expect(
+      pageSpeedRows({
+        id: 'speed-1',
+        siteId: 'site-1',
+        capturedAt: '2026-08-08T00:00:00.000Z',
+        createdAt: '2026-08-08T00:00:00.000Z',
+        updatedAt: '2026-08-08T00:00:00.000Z',
+        summary: {
+          testedUrlCount: 1,
+          poorCount: 1,
+          needsImprovementCount: 0,
+          goodCount: 0,
+          criticalIssueCount: 1,
+        },
+        pages: [
+          {
+            url: 'https://example.com/',
+            device: 'mobile',
+            source: 'lighthouse_lab',
+            status: 'poor',
+            metrics: { performanceScore: 42, lcpMs: 4100, cls: 0.18 },
+            issues: [
+              {
+                id: 'unused-javascript',
+                category: 'javascript',
+                severity: 'critical',
+                recommendation: 'Remove unused JavaScript.',
+              },
+            ],
+            contentPlanImpact: {
+              lowersConfidenceForTargetPage: true,
+              shouldMentionAsSiteFix: true,
+            },
+          },
+        ],
+      })[0],
+    ).toEqual(
+      expect.objectContaining({
+        statusLabel: 'Poor',
+        performanceScore: '42/100',
+        lcp: '4.1s',
+      }),
+    );
   });
 
   it('maps alignment rows for display', () => {

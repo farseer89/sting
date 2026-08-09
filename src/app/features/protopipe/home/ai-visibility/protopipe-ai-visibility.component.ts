@@ -60,6 +60,11 @@ interface AiAwarenessCostScenario {
   note: string;
 }
 
+interface LocalCaptureTarget {
+  locationCode: number;
+  locationName: string;
+}
+
 type AiVisibilityTab = AiVisibilitySource;
 
 const GOOGLE_AI_MODE_STANDARD_SERP_USD = 0.0012;
@@ -80,9 +85,13 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
 
   readonly loading = signal(false);
   readonly capturing = signal(false);
-  readonly captureProgress = signal<{ current: number; total: number; keyword: string } | null>(
-    null,
-  );
+  readonly captureMode = signal<'standard' | 'local' | null>(null);
+  readonly captureProgress = signal<{
+    current: number;
+    total: number;
+    keyword: string;
+    locationName?: string;
+  } | null>(null);
   readonly error = signal<string | null>(null);
   readonly rows = signal<KeywordRankingRow[]>([]);
   readonly persistedSnapshots = signal<AiVisibilitySnapshot[]>([]);
@@ -91,6 +100,18 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
 
   readonly ownDomain = computed(() => normalizeDomain(this.strategy.site()?.hostname));
   readonly trackedKeywordCount = computed(() => this.strategy.keywords().length);
+  readonly localCaptureTarget = computed<LocalCaptureTarget | null>(() => {
+    const profile = this.strategy.onboardingProfile();
+    const reach = profile?.marketReach;
+    const hasLocalReach =
+      reach === 'local' || reach === 'local_and_national' || reach === 'local_and_worldwide';
+    const localMarket = profile?.localMarket;
+    if (!hasLocalReach || !localMarket?.serpLocationCode) return null;
+    return {
+      locationCode: localMarket.serpLocationCode,
+      locationName: locationShortLabel(localMarket.serpLocationName),
+    };
+  });
   readonly aiRows = computed(() => this.rows().filter((row) => hasAiOverview(row)));
   readonly citedRows = computed(() => this.aiRows().filter((row) => this.isOwnDomainCited(row)));
   readonly uncitedRows = computed(() =>
@@ -316,6 +337,20 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   }
 
   async captureAllKeywords(): Promise<void> {
+    await this.captureKeywords({ mode: 'standard' });
+  }
+
+  async captureLocalKeywords(): Promise<void> {
+    const target = this.localCaptureTarget();
+    if (!target) return;
+    await this.captureKeywords({ mode: 'local', ...target });
+  }
+
+  private async captureKeywords(options: {
+    mode: 'standard' | 'local';
+    locationCode?: number;
+    locationName?: string;
+  }): Promise<void> {
     const siteId = this.strategy.siteId();
     const keywords = this.strategy
       .keywords()
@@ -324,9 +359,11 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
     if (!siteId || keywords.length === 0) return;
 
     this.capturing.set(true);
+    this.captureMode.set(options.mode);
     this.error.set(null);
     const captured: AiVisibilitySnapshot[] = [];
     const failures: string[] = [];
+    const captureLabel = options.mode === 'local' ? 'local AI awareness' : 'AI awareness';
 
     try {
       for (let index = 0; index < keywords.length; index += 1) {
@@ -335,11 +372,14 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
           current: index + 1,
           total: keywords.length,
           keyword,
+          locationName: options.locationName,
         });
         try {
           const response = await firstValueFrom(
             this.api.captureAiVisibility$(siteId, {
               keyword,
+              locationCode: options.locationCode,
+              locationName: options.locationName,
               includeChatGpt: true,
             }),
           );
@@ -352,14 +392,15 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
       }
 
       if (captured.length === 0) {
-        this.error.set(failures[0] ?? 'AI awareness capture failed for all keywords.');
+        this.error.set(failures[0] ?? `${captureLabel} capture failed for all keywords.`);
       } else if (failures.length > 0) {
         this.error.set(
-          `Captured ${captured.length}/${keywords.length} keywords. ${failures.slice(0, 2).join(' ')}`,
+          `Captured ${captured.length}/${keywords.length} ${captureLabel} keywords. ${failures.slice(0, 2).join(' ')}`,
         );
       }
     } finally {
       this.captureProgress.set(null);
+      this.captureMode.set(null);
       this.capturing.set(false);
     }
   }

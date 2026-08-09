@@ -16,6 +16,9 @@
       @if (captureProgress(); as progress) {
         <p class="aiv__capture-progress" aria-live="polite">
           Capturing {{ progress.current }}/{{ progress.total }} — {{ progress.keyword }}
+          @if (progress.locationName) {
+            <span>{{ progress.locationName }}</span>
+          }
         </p>
       }
       <button
@@ -30,6 +33,21 @@
           Run AI awareness
         }
       </button>
+      @if (localCaptureTarget(); as localTarget) {
+        <button
+          type="button"
+          class="aiv__button aiv__button--local"
+          [disabled]="capturing() || trackedKeywordCount() === 0"
+          (click)="captureLocalKeywords()"
+        >
+          @if (captureMode() === 'local') {
+            Running local…
+          } @else {
+            Run local
+          }
+          <span>{{ localTarget.locationName }}</span>
+        </button>
+      }
       <button
         type="button"
         class="aiv__button aiv__button--ghost"
@@ -52,6 +70,9 @@
     <p class="aiv__capture-hint">
       Run AI awareness for all {{ trackedKeywordCount() }} tracked keywords — est.
       {{ captureEstimateUsd() }} plus ChatGPT model pass-through.
+      @if (localCaptureTarget(); as localTarget) {
+        Local run uses {{ localTarget.locationName }} for Google AI Mode and localizes ChatGPT prompts.
+      }
     </p>
   }
 
@@ -469,7 +490,9 @@
             (change)="selectSnapshot($any($event.target).value)"
           >
             @for (snapshot of persistedSnapshots(); track snapshot.id) {
-              <option [value]="snapshot.id">{{ snapshot.keyword }}</option>
+              <option [value]="snapshot.id">
+                {{ snapshot.keyword }}{{ snapshot.locationName ? ' — ' + snapshot.locationName : '' }}
+              </option>
             }
           </select>
         </div>
@@ -486,6 +509,9 @@
             </h2>
             <p class="aiv-panel__subhead">
               Persisted DataForSEO capture for "{{ activeSnapshot()?.keyword }}".
+              @if (activeSnapshot()?.locationName) {
+                Market: {{ activeSnapshot()?.locationName }}.
+              }
             </p>
           </div>
           <span class="aiv-panel__count">{{ formatUsd(source.costUsd) }}</span>

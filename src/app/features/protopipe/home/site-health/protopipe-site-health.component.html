@@ -18,6 +18,11 @@
           No scan loaded
         }
       </span>
+      @if (store.canStartAudit()) {
+        <button type="button" class="healthdash__run healthdash__run--primary" (click)="startAudit()">
+          Run site audit
+        </button>
+      }
       <button
         type="button"
         class="healthdash__run"
@@ -43,20 +48,25 @@
       <div class="healthdash__loading-head">
         <span class="healthdash__loading-dot" aria-hidden="true"></span>
         <div class="healthdash__loading-copy">
-          <p class="healthdash__loading-title">Loading latest site audit…</p>
+          <p class="healthdash__loading-title">{{ store.auditProgressLabel() }}</p>
           <p class="healthdash__loading-detail">
-            Pulling the persisted crawl snapshot, refresh candidates, and ranking wins for this site.
+            {{ store.auditProgressDetail() }}
           </p>
         </div>
+        <span class="healthdash__loading-percent">{{ store.auditProgressPercent() }}%</span>
       </div>
       <div
         class="healthdash__loading-bar"
         role="progressbar"
+        [attr.aria-valuenow]="store.auditProgressPercent()"
         aria-valuemin="0"
         aria-valuemax="100"
-        aria-valuetext="Loading latest site audit"
+        [attr.aria-valuetext]="store.auditProgressLabel()"
       >
-        <span class="healthdash__loading-bar-fill"></span>
+        <span
+          class="healthdash__loading-bar-fill"
+          [style.width.%]="store.auditProgressPercent()"
+        ></span>
       </div>
     </section>
   }
@@ -131,6 +141,11 @@
       @if (activeTab() === 'overview') {
         <div class="health-overview">
           <p>{{ sourceDescription() }}</p>
+          @if (!store.hasAudit() && store.canStartAudit()) {
+            <button type="button" class="healthdash__empty-action" (click)="startAudit()">
+              Run site audit now
+            </button>
+          }
           @if (audit()?.note) {
             <p class="health-overview__note">{{ audit()!.note }}</p>
           }

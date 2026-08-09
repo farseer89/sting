@@ -67,6 +67,10 @@ export class ProtopipeSiteHealthComponent {
     await this.store.reload();
   }
 
+  async startAudit(): Promise<void> {
+    await this.store.startAudit();
+  }
+
   setTab(tab: SiteHealthTab): void {
     this.activeTab.set(tab);
     this.selectedPage.set(null);

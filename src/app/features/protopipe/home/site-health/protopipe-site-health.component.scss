@@ -73,6 +73,13 @@
   white-space: nowrap;
 }
 
+.healthdash__run--primary {
+  border-color: rgba(var(--void-ocean-rgb, 10, 147, 150), 0.34);
+  background: var(--void-ocean, #0a9396);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(var(--void-ocean-rgb, 10, 147, 150), 0.18);
+}
+
 .healthdash__run:disabled {
   cursor: default;
   opacity: 0.58;
@@ -109,7 +116,7 @@
 
 .healthdash__loading-head {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: start;
   gap: 0.65rem;
 }
@@ -143,6 +150,14 @@
   line-height: 1.4;
 }
 
+.healthdash__loading-percent {
+  color: var(--void-ocean, #0a9396);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding-top: 0.05rem;
+}
+
 .healthdash__loading-bar {
   position: relative;
   height: 0.42rem;
@@ -152,19 +167,16 @@
 }
 
 .healthdash__loading-bar-fill {
-  position: absolute;
-  inset: 0 auto 0 0;
   display: block;
-  width: 42%;
+  height: 100%;
   border-radius: inherit;
   background: linear-gradient(
     90deg,
-    rgba(var(--void-ocean-rgb, 10, 147, 150), 0.52),
-    var(--void-ocean, #0a9396),
-    rgba(var(--void-ocean-rgb, 10, 147, 150), 0.52)
+    rgba(var(--void-ocean-rgb, 10, 147, 150), 0.82),
+    var(--void-ocean, #0a9396)
   );
   box-shadow: 0 0 12px rgba(var(--void-ocean-rgb, 10, 147, 150), 0.28);
-  animation: healthdash-loading-bar 1.35s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  transition: width 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes healthdash-loading-pulse {
@@ -181,25 +193,13 @@
   }
 }
 
-@keyframes healthdash-loading-bar {
-  0% {
-    transform: translateX(-105%);
-  }
-
-  100% {
-    transform: translateX(245%);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .healthdash__loading-dot,
-  .healthdash__loading-bar-fill {
+  .healthdash__loading-dot {
     animation: none;
   }
 
   .healthdash__loading-bar-fill {
-    width: 100%;
-    opacity: 0.7;
+    transition: none;
   }
 }
 
@@ -459,6 +459,22 @@
   color: var(--void-ink-muted, rgba(17, 24, 39, 0.52));
   font-size: 0.75rem;
   padding: 1rem;
+}
+
+.healthdash__empty-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.75rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--void-ocean, #0a9396);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.48rem 0.78rem;
 }
 
 .health-drawer {

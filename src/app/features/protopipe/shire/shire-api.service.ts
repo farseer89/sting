@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import {
   ShireEndpoints,
   type EnqueueRunRequest,
+  type KeywordAlignmentLatestResponse,
   type KeywordRankingsListResponse,
   type RunResponse,
   type SiteAuditLatestResponse,
@@ -39,6 +40,12 @@ export class ShireApiService {
   getLatestSiteAudit$(siteId: string): Observable<SiteAuditLatestResponse> {
     return this.http.get<SiteAuditLatestResponse>(
       shireApiUrl(ShireEndpoints.siteAudits.latest(siteId)),
+    );
+  }
+
+  getLatestKeywordAlignment$(siteId: string): Observable<KeywordAlignmentLatestResponse> {
+    return this.http.get<KeywordAlignmentLatestResponse>(
+      shireApiUrl(ShireEndpoints.keywordAlignments.latest(siteId)),
     );
   }
 

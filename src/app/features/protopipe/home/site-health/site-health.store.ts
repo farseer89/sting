@@ -9,6 +9,7 @@ import {
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 import { ShireApiService } from '../../shire/shire-api.service';
 import { firstValueFrom } from 'rxjs';
+import { reloadSnapshotWithRetry } from './run-snapshot-reload.util';
 
 const AUDIT_STAGE_PERCENT: Record<string, number> = {
   load_site: 18,
@@ -31,6 +32,7 @@ export class SiteHealthStore {
   private readonly _error = signal<string | null>(null);
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
   private pollFailures = 0;
+  private initializedSiteId: string | null = null;
 
   readonly audit = this._audit.asReadonly();
   readonly capturedAt = this._capturedAt.asReadonly();
@@ -93,14 +95,16 @@ export class SiteHealthStore {
   });
 
   async load(siteId: string): Promise<void> {
-    if (this._siteId() === siteId && (this._audit() || this.loading())) return;
+    if (this.initializedSiteId === siteId) return;
     if (this._siteId() !== siteId) {
       this.stopPolling();
       this._auditRun.set(null);
       this.pollFailures = 0;
+      this.initializedSiteId = null;
     }
     this._siteId.set(siteId);
-    await this.reload();
+    this.initializedSiteId = siteId;
+    await this.reload({ startIfMissing: true });
   }
 
   async reload(options: { startIfMissing?: boolean } = {}): Promise<void> {
@@ -119,8 +123,10 @@ export class SiteHealthStore {
         this.stopPolling();
         return;
       }
-      if (startIfMissing) {
-        await this.attachOrStartAuditRun(siteId);
+
+      const resumed = await this.tryResumeAuditRun(siteId);
+      if (!resumed && startIfMissing) {
+        await this.enqueueAuditRun(siteId);
       }
     } catch (err) {
       this._error.set(parseProtopipeApiError(err, 'Could not load site health.'));
@@ -136,7 +142,10 @@ export class SiteHealthStore {
     this._startingAudit.set(true);
     this._error.set(null);
     try {
-      await this.attachOrStartAuditRun(siteId);
+      const resumed = await this.tryResumeAuditRun(siteId);
+      if (!resumed) {
+        await this.enqueueAuditRun(siteId);
+      }
     } catch (err) {
       this._error.set(parseProtopipeApiError(err, 'Could not start a site audit.'));
     } finally {
@@ -144,10 +153,23 @@ export class SiteHealthStore {
     }
   }
 
-  private async attachOrStartAuditRun(siteId: string): Promise<void> {
-    const latest = await this.loadLatestActiveAuditRun(siteId);
-    if (latest) return;
+  private async tryResumeAuditRun(siteId: string): Promise<boolean> {
+    const latest = await this.fetchLatestAuditRun(siteId);
+    if (!latest) return false;
+    if (latest.status === 'pending' || latest.status === 'running') {
+      this.attachAuditRun(siteId, latest);
+      return true;
+    }
+    if (latest.status === 'failed') {
+      this._auditRun.set(latest);
+      this._error.set(latest.summary || 'Site audit failed.');
+      return true;
+    }
+    this._auditRun.set(null);
+    return false;
+  }
 
+  private async enqueueAuditRun(siteId: string): Promise<void> {
     const { run } = await firstValueFrom(
       this.api.enqueueRun$(siteId, {
         thinkerKind: 'site_audit',
@@ -157,17 +179,13 @@ export class SiteHealthStore {
     this.attachAuditRun(siteId, run);
   }
 
-  private async loadLatestActiveAuditRun(siteId: string): Promise<Thought | null> {
+  private async fetchLatestAuditRun(siteId: string): Promise<Thought | null> {
     try {
       const { run } = await firstValueFrom(this.api.getLatestRun$(siteId, 'site_audit'));
-      if (run.status === 'pending' || run.status === 'running') {
-        this.attachAuditRun(siteId, run);
-        return run;
-      }
+      return run;
     } catch {
-      // No prior site_audit run exists yet.
+      return null;
     }
-    return null;
   }
 
   private attachAuditRun(siteId: string, run: Thought): void {
@@ -199,7 +217,7 @@ export class SiteHealthStore {
         }
         this.stopPolling();
         if (nextRun.status === 'complete') {
-          void this.reload({ startIfMissing: false });
+          void this.reloadAfterRunComplete();
           return;
         }
         if (nextRun.status === 'failed') {
@@ -219,6 +237,30 @@ export class SiteHealthStore {
         this.schedulePoll(backoff);
       },
     });
+  }
+
+  private async reloadAfterRunComplete(): Promise<void> {
+    const saved = await reloadSnapshotWithRetry(
+      () => this.fetchLatestAuditSnapshot(),
+      () => this.hasAudit(),
+    );
+    if (saved) {
+      this._auditRun.set(null);
+      this.stopPolling();
+      return;
+    }
+    this._auditRun.set(null);
+    this._error.set(
+      'Site audit finished, but no crawl snapshot is available yet. Try Refresh or run the audit again.',
+    );
+  }
+
+  private async fetchLatestAuditSnapshot(): Promise<void> {
+    const siteId = this._siteId();
+    if (!siteId) return;
+    const res = await firstValueFrom(this.api.getLatestSiteAudit$(siteId));
+    this._audit.set(res.audit);
+    this._capturedAt.set(res.capturedAt ?? null);
   }
 
   private stopPolling(): void {

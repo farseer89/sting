@@ -9,6 +9,7 @@ import {
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 import { ShireApiService } from '../../shire/shire-api.service';
 import { firstValueFrom } from 'rxjs';
+import { reloadSnapshotWithRetry } from './run-snapshot-reload.util';
 import {
   keywordAlignmentProgressDetail,
   keywordAlignmentProgressLabel,
@@ -29,6 +30,7 @@ export class KeywordAlignmentStore {
   private readonly _error = signal<string | null>(null);
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
   private pollFailures = 0;
+  private initializedSiteId: string | null = null;
 
   readonly snapshot = this._snapshot.asReadonly();
   readonly alignmentRun = this._alignmentRun.asReadonly();
@@ -62,13 +64,15 @@ export class KeywordAlignmentStore {
   });
 
   async load(siteId: string): Promise<void> {
-    if (this._siteId() === siteId && (this._snapshot() || this.loading())) return;
+    if (this.initializedSiteId === siteId) return;
     if (this._siteId() !== siteId) {
       this.stopPolling();
       this._alignmentRun.set(null);
       this.pollFailures = 0;
+      this.initializedSiteId = null;
     }
     this._siteId.set(siteId);
+    this.initializedSiteId = siteId;
     await this.reload();
   }
 
@@ -87,8 +91,10 @@ export class KeywordAlignmentStore {
         this.stopPolling();
         return;
       }
-      if (startIfMissing) {
-        await this.attachOrStartAlignmentRun(siteId);
+
+      const resumed = await this.tryResumeAlignmentRun(siteId);
+      if (!resumed && startIfMissing) {
+        await this.enqueueAlignmentRun(siteId);
       }
     } catch (err) {
       this._error.set(parseProtopipeApiError(err, 'Could not load keyword alignment.'));
@@ -104,7 +110,10 @@ export class KeywordAlignmentStore {
     this._starting.set(true);
     this._error.set(null);
     try {
-      await this.attachOrStartAlignmentRun(siteId);
+      const resumed = await this.tryResumeAlignmentRun(siteId);
+      if (!resumed) {
+        await this.enqueueAlignmentRun(siteId);
+      }
     } catch (err) {
       this._error.set(parseProtopipeApiError(err, 'Could not start keyword alignment.'));
     } finally {
@@ -112,10 +121,23 @@ export class KeywordAlignmentStore {
     }
   }
 
-  private async attachOrStartAlignmentRun(siteId: string): Promise<void> {
-    const latest = await this.loadLatestActiveAlignmentRun(siteId);
-    if (latest) return;
+  private async tryResumeAlignmentRun(siteId: string): Promise<boolean> {
+    const latest = await this.fetchLatestAlignmentRun(siteId);
+    if (!latest) return false;
+    if (latest.status === 'pending' || latest.status === 'running') {
+      this.attachAlignmentRun(siteId, latest);
+      return true;
+    }
+    if (latest.status === 'failed') {
+      this._alignmentRun.set(latest);
+      this._error.set(latest.summary || 'Keyword alignment failed.');
+      return true;
+    }
+    this._alignmentRun.set(null);
+    return false;
+  }
 
+  private async enqueueAlignmentRun(siteId: string): Promise<void> {
     const { run } = await firstValueFrom(
       this.api.enqueueRun$(siteId, {
         thinkerKind: 'keyword_alignment_audit',
@@ -125,19 +147,15 @@ export class KeywordAlignmentStore {
     this.attachAlignmentRun(siteId, run);
   }
 
-  private async loadLatestActiveAlignmentRun(siteId: string): Promise<Thought | null> {
+  private async fetchLatestAlignmentRun(siteId: string): Promise<Thought | null> {
     try {
       const { run } = await firstValueFrom(
         this.api.getLatestRun$(siteId, 'keyword_alignment_audit'),
       );
-      if (run.status === 'pending' || run.status === 'running') {
-        this.attachAlignmentRun(siteId, run);
-        return run;
-      }
+      return run;
     } catch {
-      // No prior keyword_alignment_audit run exists yet.
+      return null;
     }
-    return null;
   }
 
   private attachAlignmentRun(siteId: string, run: Thought): void {
@@ -169,7 +187,7 @@ export class KeywordAlignmentStore {
         }
         this.stopPolling();
         if (nextRun.status === 'complete') {
-          void this.reload({ startIfMissing: false });
+          void this.reloadAfterRunComplete();
           return;
         }
         if (nextRun.status === 'failed') {
@@ -189,6 +207,29 @@ export class KeywordAlignmentStore {
         this.schedulePoll(backoff);
       },
     });
+  }
+
+  private async reloadAfterRunComplete(): Promise<void> {
+    const saved = await reloadSnapshotWithRetry(
+      () => this.fetchLatestAlignmentSnapshot(),
+      () => this.hasSnapshot(),
+    );
+    if (saved) {
+      this._alignmentRun.set(null);
+      this.stopPolling();
+      return;
+    }
+    this._alignmentRun.set(null);
+    this._error.set(
+      'Keyword alignment finished, but no snapshot is available yet. Try Refresh or run alignment again.',
+    );
+  }
+
+  private async fetchLatestAlignmentSnapshot(): Promise<void> {
+    const siteId = this._siteId();
+    if (!siteId) return;
+    const res = await firstValueFrom(this.api.getLatestKeywordAlignment$(siteId));
+    this._snapshot.set(res.snapshot);
   }
 
   private stopPolling(): void {

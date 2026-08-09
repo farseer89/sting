@@ -185,7 +185,7 @@ export class PageSpeedStore {
           return;
         }
         this.stopPolling();
-        if (nextRun.status === 'complete') void this.reloadAfterRunComplete();
+        if (nextRun.status === 'complete') void this.reloadAfterRunComplete(nextRun);
         if (nextRun.status === 'failed') this._error.set(nextRun.summary || 'Performance audit failed.');
       },
       error: () => {
@@ -203,7 +203,11 @@ export class PageSpeedStore {
     });
   }
 
-  private async reloadAfterRunComplete(): Promise<void> {
+  private async reloadAfterRunComplete(completedRun: Thought): Promise<void> {
+    const outputSnapshot = pageSpeedSnapshotFromRun(completedRun);
+    if (outputSnapshot) {
+      this._snapshot.set(outputSnapshot);
+    }
     const saved = await reloadSnapshotWithRetry(
       () => this.fetchLatestSnapshot(),
       () => this.hasSnapshot(),
@@ -225,4 +229,16 @@ export class PageSpeedStore {
       this.pollTimer = null;
     }
   }
+}
+
+function pageSpeedSnapshotFromRun(run: Thought): PageSpeedSnapshot | null {
+  const output = run.outputs.find((port) => port.portId === 'page_speed')?.artifact?.data;
+  if (!isPageSpeedSnapshot(output)) return null;
+  return output;
+}
+
+function isPageSpeedSnapshot(value: unknown): value is PageSpeedSnapshot {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<PageSpeedSnapshot>;
+  return Array.isArray(candidate.pages) && candidate.summary != null;
 }

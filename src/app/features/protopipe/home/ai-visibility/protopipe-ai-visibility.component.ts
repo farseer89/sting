@@ -60,12 +60,18 @@ interface AiAwarenessCostScenario {
   note: string;
 }
 
-interface LocalCaptureTarget {
+interface CaptureMarketTarget {
   locationCode: number;
   locationName: string;
 }
 
+type CaptureMarketScope = 'national' | 'local';
 type AiVisibilityTab = AiVisibilitySource;
+
+const DEFAULT_NATIONAL_MARKET: CaptureMarketTarget = {
+  locationCode: 2840,
+  locationName: 'United States',
+};
 
 const GOOGLE_AI_MODE_STANDARD_SERP_USD = 0.0012;
 const GOOGLE_AI_MODE_LIVE_SERP_USD = 0.004;
@@ -85,7 +91,7 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
 
   readonly loading = signal(false);
   readonly capturing = signal(false);
-  readonly captureMode = signal<'standard' | 'local' | null>(null);
+  readonly captureMode = signal<CaptureMarketScope | null>(null);
   readonly captureProgress = signal<{
     current: number;
     total: number;
@@ -96,11 +102,22 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   readonly rows = signal<KeywordRankingRow[]>([]);
   readonly persistedSnapshots = signal<AiVisibilitySnapshot[]>([]);
   readonly selectedSnapshotId = signal<string | null>(null);
+  readonly selectedMarketScope = signal<CaptureMarketScope>('national');
   readonly activeSource = signal<AiVisibilityTab>('google_ai_mode');
 
   readonly ownDomain = computed(() => normalizeDomain(this.strategy.site()?.hostname));
   readonly trackedKeywordCount = computed(() => this.strategy.keywords().length);
-  readonly localCaptureTarget = computed<LocalCaptureTarget | null>(() => {
+  readonly nationalCaptureTarget = computed<CaptureMarketTarget>(() => {
+    const nationalMarket = this.strategy.onboardingProfile()?.nationalMarket;
+    if (nationalMarket?.serpLocationCode) {
+      return {
+        locationCode: nationalMarket.serpLocationCode,
+        locationName: locationShortLabel(nationalMarket.serpLocationName),
+      };
+    }
+    return DEFAULT_NATIONAL_MARKET;
+  });
+  readonly localCaptureTarget = computed<CaptureMarketTarget | null>(() => {
     const profile = this.strategy.onboardingProfile();
     const reach = profile?.marketReach;
     const hasLocalReach =
@@ -112,6 +129,20 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
       locationName: locationShortLabel(localMarket.serpLocationName),
     };
   });
+  readonly showMarketScopePicker = computed(() => Boolean(this.localCaptureTarget()));
+  readonly nationalSnapshots = computed(() =>
+    this.persistedSnapshots().filter(
+      (snapshot) => this.snapshotMarketScope(snapshot) === 'national',
+    ),
+  );
+  readonly localSnapshots = computed(() =>
+    this.persistedSnapshots().filter((snapshot) => this.snapshotMarketScope(snapshot) === 'local'),
+  );
+  readonly visibleSnapshots = computed(() =>
+    this.selectedMarketScope() === 'local'
+      ? this.localSnapshots()
+      : this.nationalSnapshots(),
+  );
   readonly aiRows = computed(() => this.rows().filter((row) => hasAiOverview(row)));
   readonly citedRows = computed(() => this.aiRows().filter((row) => this.isOwnDomainCited(row)));
   readonly uncitedRows = computed(() =>
@@ -283,10 +314,20 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
     return `${formatUsd(aiMode)} AI Mode + ${formatUsd(chatGptBase)} ChatGPT base`;
   });
   readonly activeSnapshot = computed(() => {
-    const snapshots = this.persistedSnapshots();
+    const snapshots = this.visibleSnapshots();
     if (snapshots.length === 0) return null;
     const selectedId = this.selectedSnapshotId();
-    return snapshots.find((snapshot) => snapshot.id === selectedId) ?? snapshots.at(-1) ?? null;
+    const selected = snapshots.find((snapshot) => snapshot.id === selectedId);
+    return selected ?? snapshots.at(-1) ?? null;
+  });
+  readonly activeMarketLabel = computed(() => {
+    const snapshot = this.activeSnapshot();
+    if (!snapshot) {
+      return this.selectedMarketScope() === 'local'
+        ? (this.localCaptureTarget()?.locationName ?? 'Local')
+        : this.nationalCaptureTarget().locationName;
+    }
+    return this.snapshotMarketLabel(snapshot);
   });
   readonly activePersistedSource = computed(() =>
     this.sourceSnapshotFor(this.activeSource()),
@@ -316,6 +357,9 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
       this.rows.set(rankingsResponse.rankings);
       const snapshot = aiVisibilityResponse.snapshot;
       this.persistedSnapshots.set(snapshot ? [snapshot] : []);
+      if (snapshot) {
+        this.selectedMarketScope.set(this.snapshotMarketScope(snapshot));
+      }
       this.selectedSnapshotId.set(snapshot?.id ?? null);
     } catch (err) {
       this.error.set(parseProtopipeApiError(err, 'Could not load AI visibility data.'));
@@ -336,8 +380,34 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
     this.selectedSnapshotId.set(snapshotId);
   }
 
+  selectMarketScope(scope: CaptureMarketScope): void {
+    this.selectedMarketScope.set(scope);
+    const snapshots =
+      scope === 'local' ? this.localSnapshots() : this.nationalSnapshots();
+    this.selectedSnapshotId.set(snapshots.at(-1)?.id ?? null);
+  }
+
+  snapshotMarketScope(snapshot: AiVisibilitySnapshot): CaptureMarketScope {
+    const localCode = this.localCaptureTarget()?.locationCode;
+    if (localCode && snapshot.locationCode === localCode) return 'local';
+    return 'national';
+  }
+
+  snapshotMarketLabel(snapshot: AiVisibilitySnapshot): string {
+    if (snapshot.locationName) return snapshot.locationName;
+    return this.snapshotMarketScope(snapshot) === 'local' ? 'Local market' : 'United States';
+  }
+
+  marketScopeButtonLabel(scope: CaptureMarketScope): string {
+    if (scope === 'local') {
+      return this.localCaptureTarget()?.locationName ?? 'Local';
+    }
+    return this.nationalCaptureTarget().locationName;
+  }
+
   async captureAllKeywords(): Promise<void> {
-    await this.captureKeywords({ mode: 'standard' });
+    const target = this.nationalCaptureTarget();
+    await this.captureKeywords({ mode: 'national', ...target });
   }
 
   async captureLocalKeywords(): Promise<void> {
@@ -347,9 +417,9 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   }
 
   private async captureKeywords(options: {
-    mode: 'standard' | 'local';
-    locationCode?: number;
-    locationName?: string;
+    mode: CaptureMarketScope;
+    locationCode: number;
+    locationName: string;
   }): Promise<void> {
     const siteId = this.strategy.siteId();
     const keywords = this.strategy
@@ -360,10 +430,17 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
 
     this.capturing.set(true);
     this.captureMode.set(options.mode);
+    this.selectedMarketScope.set(options.mode);
     this.error.set(null);
     const captured: AiVisibilitySnapshot[] = [];
     const failures: string[] = [];
-    const captureLabel = options.mode === 'local' ? 'local AI awareness' : 'AI awareness';
+    const captureLabel =
+      options.mode === 'local'
+        ? `local (${options.locationName})`
+        : `national (${options.locationName})`;
+    const retainedSnapshots = this.persistedSnapshots().filter(
+      (snapshot) => this.snapshotMarketScope(snapshot) !== options.mode,
+    );
 
     try {
       for (let index = 0; index < keywords.length; index += 1) {
@@ -384,7 +461,7 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
             }),
           );
           captured.push(response.snapshot);
-          this.persistedSnapshots.set([...captured]);
+          this.persistedSnapshots.set(this.mergeSnapshots(retainedSnapshots, captured));
           this.selectedSnapshotId.set(response.snapshot.id);
         } catch (err) {
           failures.push(`${keyword}: ${parseProtopipeApiError(err, 'Capture failed.')}`);
@@ -411,13 +488,20 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
 
   sourceStatusLabel(source: AiVisibilitySource): string {
     if (source === 'keyword_overview') return plural(this.aiRows().length, 'AI Overview');
-    const snapshots = this.persistedSnapshots();
-    if (snapshots.length === 0) return 'Not captured';
-    if (snapshots.length > 1) return plural(snapshots.length, 'keyword');
+    const nationalCount = this.nationalSnapshots().length;
+    const localCount = this.localSnapshots().length;
+    if (nationalCount === 0 && localCount === 0) return 'Not captured';
+    if (nationalCount > 0 && localCount > 0) {
+      return `${nationalCount} national · ${localCount} local`;
+    }
+    if (localCount > 0) {
+      return `${localCount} local`;
+    }
+    if (nationalCount > 1) return `${nationalCount} national`;
     const snapshot = this.sourceSnapshotFor(source);
     if (!snapshot) return 'Not captured';
     if (snapshot.status === 'failed') return 'Failed';
-    return `${formatUsd(snapshot.costUsd)} captured`;
+    return `${formatUsd(snapshot.costUsd)} national`;
   }
 
   sourcesFor(row: KeywordRankingRow) {
@@ -460,6 +544,22 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
       const domain = normalizeDomain(source.domain ?? domainFromUrl(source.url));
       return domain === own || domain?.endsWith(`.${own}`);
     });
+  }
+
+  private mergeSnapshots(
+    retained: AiVisibilitySnapshot[],
+    captured: AiVisibilitySnapshot[],
+  ): AiVisibilitySnapshot[] {
+    const merged = new Map<string, AiVisibilitySnapshot>();
+    for (const snapshot of retained) {
+      merged.set(snapshotKey(snapshot), snapshot);
+    }
+    for (const snapshot of captured) {
+      merged.set(snapshotKey(snapshot), snapshot);
+    }
+    return Array.from(merged.values()).sort(
+      (a, b) => Date.parse(b.capturedAt) - Date.parse(a.capturedAt),
+    );
   }
 
   private buildSourceDomains(): AiVisibilitySourceDomain[] {
@@ -563,4 +663,8 @@ function dateLabel(value: string): string {
 
 function isRankingsNotReadyError(err: unknown): boolean {
   return err instanceof Error && /404|not found|no rankings/i.test(err.message);
+}
+
+function snapshotKey(snapshot: AiVisibilitySnapshot): string {
+  return `${snapshot.keyword.trim().toLowerCase()}::${snapshot.locationCode}`;
 }

@@ -1,9 +1,18 @@
-import type { ProtopipeContentAudit, ProtopipeExistingPage } from '@hive/contracts';
+import type {
+  KeywordAlignmentSnapshot,
+  ProtopipeContentAudit,
+  ProtopipeExistingPage,
+} from '@hive/contracts';
 import { describe, expect, it } from 'vitest';
 import {
+  alignmentEmptyMessage,
+  alignmentPrerequisite,
+  alignmentRows,
+  buildKeywordAlignmentSummaryCards,
   buildSiteHealthSummaryCards,
   pageReasons,
   pageRows,
+  siteHealthTabs,
   sourceDescription,
   sourceLabel,
   winRows,
@@ -94,5 +103,79 @@ describe('site health model', () => {
       position: '#8',
       url: 'https://example.com/services',
     });
+  });
+
+  it('includes keyword fit tab and alignment summary cards', () => {
+    const snapshot: KeywordAlignmentSnapshot = {
+      id: 'align-1',
+      siteId: 'site-1',
+      rows: [],
+      summary: {
+        totalKeywords: 4,
+        missingCount: 2,
+        weakMatchCount: 1,
+        matchedCount: 1,
+        refreshCandidateCount: 0,
+        rankingWinCount: 0,
+      },
+      capturedAt: '2026-08-08T00:00:00.000Z',
+      createdAt: '2026-08-08T00:00:00.000Z',
+      updatedAt: '2026-08-08T00:00:00.000Z',
+    };
+
+    expect(siteHealthTabs(audit(), snapshot).some((tab) => tab.id === 'alignment')).toBe(true);
+    expect(buildKeywordAlignmentSummaryCards(snapshot.summary)[0]?.value).toBe('4');
+  });
+
+  it('describes alignment prerequisites and empty states', () => {
+    expect(alignmentPrerequisite({ hasAudit: false, keywordCount: 3 })?.actionLabel).toBe(
+      'Run site audit',
+    );
+    expect(alignmentPrerequisite({ hasAudit: true, keywordCount: 0 })?.actionLabel).toBe(
+      'Go to Keywords',
+    );
+    expect(
+      alignmentEmptyMessage({
+        loading: false,
+        hasSnapshot: false,
+        prerequisite: null,
+      }),
+    ).toContain('No keyword alignment snapshot');
+  });
+
+  it('maps alignment rows for display', () => {
+    const rows = alignmentRows({
+      id: 'align-1',
+      siteId: 'site-1',
+      capturedAt: '2026-08-08T00:00:00.000Z',
+      createdAt: '2026-08-08T00:00:00.000Z',
+      updatedAt: '2026-08-08T00:00:00.000Z',
+      summary: {
+        totalKeywords: 1,
+        missingCount: 1,
+        weakMatchCount: 0,
+        matchedCount: 0,
+        refreshCandidateCount: 0,
+        rankingWinCount: 0,
+      },
+      rows: [
+        {
+          keywordId: 'kw-1',
+          phrase: 'local seo',
+          status: 'missing',
+          recommendedAction: 'create_new_page',
+          score: 0,
+          reasons: ['No audited page clearly targets this keyword'],
+        },
+      ],
+    });
+
+    expect(rows[0]).toEqual(
+      expect.objectContaining({
+        phrase: 'local seo',
+        statusLabel: 'Missing page',
+        actionLabel: 'Create page',
+      }),
+    );
   });
 });

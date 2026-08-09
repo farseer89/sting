@@ -1,0 +1,200 @@
+import { Injectable, computed, inject, signal } from '@angular/core';
+import {
+  RUN_POLL_BACKOFF_MS,
+  RUN_POLL_INTERVAL_MS,
+  isTerminalRunStatus,
+  type KeywordAlignmentSnapshot,
+  type Thought,
+} from '@hive/contracts';
+import { parseProtopipeApiError } from '../../protopipe-http.util';
+import { ShireApiService } from '../../shire/shire-api.service';
+import { firstValueFrom } from 'rxjs';
+import {
+  keywordAlignmentProgressDetail,
+  keywordAlignmentProgressLabel,
+  keywordAlignmentProgressPercent,
+} from './keyword-alignment-progress';
+
+const MAX_POLL_FAILURES = 6;
+
+@Injectable({ providedIn: 'root' })
+export class KeywordAlignmentStore {
+  private readonly api = inject(ShireApiService);
+
+  private readonly _siteId = signal<string | null>(null);
+  private readonly _snapshot = signal<KeywordAlignmentSnapshot | null>(null);
+  private readonly _loadingLatest = signal(false);
+  private readonly _starting = signal(false);
+  private readonly _alignmentRun = signal<Thought | null>(null);
+  private readonly _error = signal<string | null>(null);
+  private pollTimer: ReturnType<typeof setTimeout> | null = null;
+  private pollFailures = 0;
+
+  readonly snapshot = this._snapshot.asReadonly();
+  readonly alignmentRun = this._alignmentRun.asReadonly();
+  readonly error = this._error.asReadonly();
+  readonly hasSnapshot = computed(() => this.snapshot() !== null);
+  readonly runningAlignment = computed(() => {
+    const run = this._alignmentRun();
+    return run?.status === 'pending' || run?.status === 'running';
+  });
+  readonly loading = computed(
+    () => this._loadingLatest() || this._starting() || this.runningAlignment(),
+  );
+  readonly alignmentProgressPercent = computed(() => {
+    if (this._loadingLatest()) return 10;
+    if (this._starting()) return 8;
+    return keywordAlignmentProgressPercent(this._alignmentRun());
+  });
+  readonly alignmentProgressLabel = computed(() => {
+    if (this._loadingLatest()) return 'Loading latest keyword alignment…';
+    if (this._starting()) return 'Starting keyword alignment…';
+    return keywordAlignmentProgressLabel(this._alignmentRun());
+  });
+  readonly alignmentProgressDetail = computed(() => {
+    if (this._loadingLatest()) {
+      return 'Checking for a persisted keyword-to-page fit snapshot before starting new work.';
+    }
+    if (this._starting()) {
+      return 'Creating a keyword alignment run to score confirmed keywords against audited pages.';
+    }
+    return keywordAlignmentProgressDetail(this._alignmentRun());
+  });
+
+  async load(siteId: string): Promise<void> {
+    if (this._siteId() === siteId && (this._snapshot() || this.loading())) return;
+    if (this._siteId() !== siteId) {
+      this.stopPolling();
+      this._alignmentRun.set(null);
+      this.pollFailures = 0;
+    }
+    this._siteId.set(siteId);
+    await this.reload();
+  }
+
+  async reload(options: { startIfMissing?: boolean } = {}): Promise<void> {
+    const startIfMissing = options.startIfMissing ?? false;
+    const siteId = this._siteId();
+    if (!siteId) return;
+
+    this._loadingLatest.set(true);
+    this._error.set(null);
+    try {
+      const res = await firstValueFrom(this.api.getLatestKeywordAlignment$(siteId));
+      this._snapshot.set(res.snapshot);
+      if (res.snapshot) {
+        this._alignmentRun.set(null);
+        this.stopPolling();
+        return;
+      }
+      if (startIfMissing) {
+        await this.attachOrStartAlignmentRun(siteId);
+      }
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Could not load keyword alignment.'));
+    } finally {
+      this._loadingLatest.set(false);
+    }
+  }
+
+  async startAlignment(): Promise<void> {
+    const siteId = this._siteId();
+    if (!siteId || this.loading()) return;
+
+    this._starting.set(true);
+    this._error.set(null);
+    try {
+      await this.attachOrStartAlignmentRun(siteId);
+    } catch (err) {
+      this._error.set(parseProtopipeApiError(err, 'Could not start keyword alignment.'));
+    } finally {
+      this._starting.set(false);
+    }
+  }
+
+  private async attachOrStartAlignmentRun(siteId: string): Promise<void> {
+    const latest = await this.loadLatestActiveAlignmentRun(siteId);
+    if (latest) return;
+
+    const { run } = await firstValueFrom(
+      this.api.enqueueRun$(siteId, {
+        thinkerKind: 'keyword_alignment_audit',
+        params: { source: 'siteHealth' },
+      }),
+    );
+    this.attachAlignmentRun(siteId, run);
+  }
+
+  private async loadLatestActiveAlignmentRun(siteId: string): Promise<Thought | null> {
+    try {
+      const { run } = await firstValueFrom(
+        this.api.getLatestRun$(siteId, 'keyword_alignment_audit'),
+      );
+      if (run.status === 'pending' || run.status === 'running') {
+        this.attachAlignmentRun(siteId, run);
+        return run;
+      }
+    } catch {
+      // No prior keyword_alignment_audit run exists yet.
+    }
+    return null;
+  }
+
+  private attachAlignmentRun(siteId: string, run: Thought): void {
+    this._siteId.set(siteId);
+    this._alignmentRun.set(run);
+    this.pollFailures = 0;
+    if (run.status === 'pending' || run.status === 'running') {
+      this.schedulePoll(RUN_POLL_INTERVAL_MS);
+    }
+  }
+
+  private schedulePoll(delayMs: number): void {
+    this.stopPolling();
+    this.pollTimer = setTimeout(() => this.poll(), delayMs);
+  }
+
+  private poll(): void {
+    const siteId = this._siteId();
+    const run = this._alignmentRun();
+    if (!siteId || !run) return;
+
+    this.api.getRun$(siteId, run.id).subscribe({
+      next: ({ run: nextRun }) => {
+        this.pollFailures = 0;
+        this._alignmentRun.set(nextRun);
+        if (!isTerminalRunStatus(nextRun.status)) {
+          this.schedulePoll(RUN_POLL_INTERVAL_MS);
+          return;
+        }
+        this.stopPolling();
+        if (nextRun.status === 'complete') {
+          void this.reload({ startIfMissing: false });
+          return;
+        }
+        if (nextRun.status === 'failed') {
+          this._error.set(nextRun.summary || 'Keyword alignment failed.');
+        }
+      },
+      error: () => {
+        this.pollFailures += 1;
+        if (this.pollFailures >= MAX_POLL_FAILURES) {
+          this.stopPolling();
+          this._error.set('Lost connection while waiting for keyword alignment.');
+          return;
+        }
+        const backoff =
+          RUN_POLL_BACKOFF_MS[Math.min(this.pollFailures - 1, RUN_POLL_BACKOFF_MS.length - 1)] ??
+          RUN_POLL_INTERVAL_MS;
+        this.schedulePoll(backoff);
+      },
+    });
+  }
+
+  private stopPolling(): void {
+    if (this.pollTimer) {
+      clearTimeout(this.pollTimer);
+      this.pollTimer = null;
+    }
+  }
+}

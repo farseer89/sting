@@ -18,7 +18,15 @@
           No scan loaded
         }
       </span>
-      @if (store.canStartAudit()) {
+      @if (activeTab() === 'alignment' && canStartAlignment()) {
+        <button
+          type="button"
+          class="healthdash__run healthdash__run--primary"
+          (click)="startAlignment()"
+        >
+          Run keyword alignment
+        </button>
+      } @else if (store.canStartAudit()) {
         <button type="button" class="healthdash__run healthdash__run--primary" (click)="startAudit()">
           Run site audit
         </button>
@@ -26,10 +34,14 @@
       <button
         type="button"
         class="healthdash__run"
-        [disabled]="store.loading()"
+        [disabled]="activeTab() === 'alignment' ? alignmentStore.loading() : store.loading()"
         (click)="reload()"
       >
-        {{ store.loading() ? 'Refreshing…' : 'Refresh' }}
+        {{
+          (activeTab() === 'alignment' ? alignmentStore.loading() : store.loading())
+            ? 'Refreshing…'
+            : 'Refresh'
+        }}
       </button>
     </div>
   </header>
@@ -37,8 +49,11 @@
   @if (store.error()) {
     <p class="healthdash__error">{{ store.error() }}</p>
   }
+  @if (alignmentStore.error()) {
+    <p class="healthdash__error">{{ alignmentStore.error() }}</p>
+  }
 
-  @if (store.loading()) {
+  @if (showAuditLoading()) {
     <section
       class="healthdash__loading"
       role="status"
@@ -66,6 +81,39 @@
         <span
           class="healthdash__loading-bar-fill"
           [style.width.%]="store.auditProgressPercent()"
+        ></span>
+      </div>
+    </section>
+  }
+
+  @if (showAlignmentLoading()) {
+    <section
+      class="healthdash__loading"
+      role="status"
+      aria-live="polite"
+      aria-label="Keyword alignment loading progress"
+    >
+      <div class="healthdash__loading-head">
+        <span class="healthdash__loading-dot" aria-hidden="true"></span>
+        <div class="healthdash__loading-copy">
+          <p class="healthdash__loading-title">{{ alignmentStore.alignmentProgressLabel() }}</p>
+          <p class="healthdash__loading-detail">
+            {{ alignmentStore.alignmentProgressDetail() }}
+          </p>
+        </div>
+        <span class="healthdash__loading-percent">{{ alignmentStore.alignmentProgressPercent() }}%</span>
+      </div>
+      <div
+        class="healthdash__loading-bar"
+        role="progressbar"
+        [attr.aria-valuenow]="alignmentStore.alignmentProgressPercent()"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        [attr.aria-valuetext]="alignmentStore.alignmentProgressLabel()"
+      >
+        <span
+          class="healthdash__loading-bar-fill"
+          [style.width.%]="alignmentStore.alignmentProgressPercent()"
         ></span>
       </div>
     </section>
@@ -114,6 +162,9 @@
               @case ('pages') {
                 Inventory
               }
+              @case ('alignment') {
+                Keyword fit
+              }
               @default {
                 Scan
               }
@@ -129,6 +180,9 @@
               }
               @case ('pages') {
                 Scanned pages
+              }
+              @case ('alignment') {
+                Keyword-to-page fit
               }
               @default {
                 Scan overview
@@ -168,6 +222,71 @@
             </div>
           </dl>
         </div>
+      } @else if (activeTab() === 'alignment') {
+        @if (alignmentRows().length) {
+          <div class="health-table-wrap">
+            <table class="health-table">
+              <thead>
+                <tr>
+                  <th scope="col">Keyword</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Score</th>
+                  <th scope="col">Best page</th>
+                  <th scope="col">Ranking</th>
+                  <th scope="col">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of alignmentRows(); track row.id) {
+                  <tr>
+                    <td>
+                      <span class="health-table__title">{{ row.phrase }}</span>
+                      <span class="health-table__url">{{ row.reasons }}</span>
+                    </td>
+                    <td>
+                      <span
+                        class="health-table__pill"
+                        [class.is-healthy]="row.status === 'matched' || row.status === 'ranking_win'"
+                      >
+                        {{ row.statusLabel }}
+                      </span>
+                    </td>
+                    <td class="health-table__metric">{{ row.score }}</td>
+                    <td>
+                      <span class="health-table__title">{{ row.pageTitle }}</span>
+                      @if (row.pageUrl.startsWith('http')) {
+                        <a [href]="row.pageUrl" target="_blank" rel="noopener noreferrer">
+                          {{ row.pageUrl }}
+                        </a>
+                      } @else {
+                        <span class="health-table__muted">{{ row.pageUrl }}</span>
+                      }
+                    </td>
+                    <td class="health-table__metric">{{ row.ranking }}</td>
+                    <td>{{ row.actionLabel }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="healthdash__empty">
+            <p>{{ emptyMessage() }}</p>
+            @if (canStartAlignment()) {
+              <button type="button" class="healthdash__empty-action" (click)="startAlignment()">
+                Run keyword alignment now
+              </button>
+            } @else if (alignmentPrerequisite(); as prerequisite) {
+              <button
+                type="button"
+                class="healthdash__empty-action"
+                (click)="handleAlignmentPrerequisiteAction()"
+              >
+                {{ prerequisite.actionLabel }}
+              </button>
+            }
+          </div>
+        }
       } @else if (activeTab() === 'wins') {
         @if (wins().length) {
           <div class="health-table-wrap">

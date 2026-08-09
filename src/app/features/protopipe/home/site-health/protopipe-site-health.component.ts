@@ -45,11 +45,8 @@ export class ProtopipeSiteHealthComponent {
 
   readonly emptyMessage = computed(() => {
     if (this.store.loading()) return 'Loading site health…';
-    if (!this.store.hasPlan()) {
-      return 'Build your content calendar first. Site Health appears after the plan scans your existing pages.';
-    }
     if (!this.store.hasAudit()) {
-      return 'The latest plan has no site scan yet. The next calendar build will scan the site first.';
+      return 'No site audit snapshot is stored yet. Complete onboarding or run a site audit to populate Site Health.';
     }
     if (this.activeTab() === 'refresh') return 'No refresh candidates were flagged in this scan.';
     if (this.activeTab() === 'wins') return 'No already-ranking wins were captured in this plan.';

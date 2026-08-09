@@ -142,7 +142,7 @@ export function sourceLabel(source: ProtopipeContentAudit['source'] | undefined)
 }
 
 export function sourceDescription(audit: ProtopipeContentAudit | null | undefined): string {
-  if (!audit) return 'Build a content calendar to scan the site before planning articles.';
+  if (!audit) return 'Run a site audit to populate crawl coverage before planning articles.';
   if (audit.note) return audit.note;
   if (audit.source === 'sitemap') {
     return 'We found pages from your sitemap, which usually gives the strongest coverage.';

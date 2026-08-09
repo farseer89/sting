@@ -3,11 +3,11 @@
     <div>
       <h1>Site Health</h1>
       <p class="healthdash__lede">
-        The site scan behind your content calendar: crawl coverage, refresh opportunities, and
-        pages we already know about.
+        The latest persisted site audit: crawl coverage, refresh opportunities, and pages we
+        already know about.
       </p>
       <p class="healthdash__coverage">
-        {{ sourceLabel() }} · {{ audit()?.hostname || 'Latest content plan' }}
+        {{ sourceLabel() }} · {{ audit()?.hostname || 'Latest site audit' }}
       </p>
     </div>
     <div class="healthdash__actions">
@@ -31,6 +31,34 @@
 
   @if (store.error()) {
     <p class="healthdash__error">{{ store.error() }}</p>
+  }
+
+  @if (store.loading()) {
+    <section
+      class="healthdash__loading"
+      role="status"
+      aria-live="polite"
+      aria-label="Site health loading progress"
+    >
+      <div class="healthdash__loading-head">
+        <span class="healthdash__loading-dot" aria-hidden="true"></span>
+        <div class="healthdash__loading-copy">
+          <p class="healthdash__loading-title">Loading latest site audit…</p>
+          <p class="healthdash__loading-detail">
+            Pulling the persisted crawl snapshot, refresh candidates, and ranking wins for this site.
+          </p>
+        </div>
+      </div>
+      <div
+        class="healthdash__loading-bar"
+        role="progressbar"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuetext="Loading latest site audit"
+      >
+        <span class="healthdash__loading-bar-fill"></span>
+      </div>
+    </section>
   }
 
   <section class="healthdash__cards" aria-label="Site health summary">

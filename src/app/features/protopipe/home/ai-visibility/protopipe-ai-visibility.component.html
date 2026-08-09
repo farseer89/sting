@@ -46,7 +46,11 @@
       <div class="aiv-panel__head">
         <div>
           <p class="aiv-panel__kicker">Entity understanding</p>
-          <h2>Knowledge graph signals Google attaches to these searches</h2>
+          <h2>Google's entity model for these searches</h2>
+          <p class="aiv-panel__subhead">
+            Full knowledge graph dossiers extracted from ranking snapshots: facts, source links,
+            profiles, and related entities Google associates with the query.
+          </p>
         </div>
         <span class="aiv-panel__count">{{ knowledgeGraphRows().length }}</span>
       </div>
@@ -58,66 +62,168 @@
             track item.row.keywordId + item.row.latest.marketTier + item.row.latest.locationCode
           ) {
             <article class="aiv-entity">
-              @if (item.graph.imageUrl) {
-                <img class="aiv-entity__image" [src]="item.graph.imageUrl" alt="" />
-              } @else {
-                <div class="aiv-entity__image aiv-entity__image--placeholder" aria-hidden="true">
-                  {{ (item.graph.title || item.row.phrase).slice(0, 1) }}
-                </div>
-              }
+              <header class="aiv-entity__header">
+                <div class="aiv-entity__identity">
+                  @if (item.graph.imageUrl) {
+                    <img class="aiv-entity__image" [src]="item.graph.imageUrl" alt="" />
+                  } @else {
+                    <div
+                      class="aiv-entity__image aiv-entity__image--placeholder"
+                      aria-hidden="true"
+                    >
+                      {{ (item.graph.title || item.row.phrase).slice(0, 1) }}
+                    </div>
+                  }
 
-              <div class="aiv-entity__body">
-                <div class="aiv-entity__top">
                   <div>
-                    <p class="aiv-entity__keyword">{{ item.row.phrase }}</p>
+                    <p class="aiv-entity__label">Entity dossier</p>
                     <h3>{{ item.graph.title || 'Knowledge graph detected' }}</h3>
                     @if (item.graph.subtitle || item.graph.source) {
-                      <span>{{ item.graph.subtitle || item.graph.source }}</span>
+                      <span class="aiv-entity__type">
+                        {{ item.graph.subtitle || item.graph.source }}
+                      </span>
                     }
                   </div>
-                  <em>{{ marketScopeLabel(item.row.latest.marketTier) }}</em>
                 </div>
 
-                @if (item.graph.description) {
-                  <p class="aiv-entity__description">{{ item.graph.description }}</p>
-                }
+                <div class="aiv-entity__context">
+                  <span>{{ item.row.phrase }}</span>
+                  <em>{{ marketScopeLabel(item.row.latest.marketTier) }}</em>
+                  @if (item.row.latest.locationName) {
+                    <em>{{ locationShortLabel(item.row.latest.locationName) }}</em>
+                  }
+                  <em>{{ rankLabel(item.row.latest.position) }}</em>
+                </div>
+              </header>
 
-                @if (item.graph.attributes?.length) {
-                  <dl class="aiv-entity__facts">
-                    @for (
-                      fact of item.graph.attributes?.slice(0, 4) ?? [];
-                      track fact.label + fact.value
-                    ) {
-                      <div>
-                        <dt>{{ fact.label }}</dt>
-                        <dd>{{ fact.value }}</dd>
-                      </div>
-                    }
-                  </dl>
-                }
+              <div class="aiv-entity__insight">
+                <span aria-hidden="true">KG</span>
+                <p>{{ entityDossierInsight(item) }}</p>
+              </div>
 
-                @if (item.graph.profiles?.length || item.graph.relatedEntities?.length) {
-                  <div class="aiv-entity__links">
-                    @for (
-                      profile of item.graph.profiles?.slice(0, 3) ?? [];
-                      track profile.url ?? profile.domain ?? profile.title
-                    ) {
-                      @if (profile.url) {
-                        <a [href]="profile.url" target="_blank" rel="noopener noreferrer">
-                          {{ profile.title || profile.domain || 'Profile' }}
+              <div class="aiv-entity__grid">
+                <section class="aiv-entity__section aiv-entity__section--wide">
+                  <div class="aiv-entity__section-head">
+                    <p>What Google thinks this is</p>
+                  </div>
+
+                  @if (item.graph.description) {
+                    <p class="aiv-entity__description">{{ item.graph.description }}</p>
+                  } @else {
+                    <p class="aiv-entity__empty">No entity description captured.</p>
+                  }
+
+                  @if (item.graph.url || item.graph.domain || item.graph.source) {
+                    <div class="aiv-entity__source">
+                      <span>Primary source</span>
+                      @if (item.graph.url) {
+                        <a [href]="item.graph.url" target="_blank" rel="noopener noreferrer">
+                          {{ item.graph.domain || item.graph.source || item.graph.url }}
                         </a>
                       } @else {
-                        <span>{{ profile.title || profile.domain || 'Profile' }}</span>
+                        <strong>{{ item.graph.domain || item.graph.source }}</strong>
                       }
-                    }
-                    @for (
-                      entity of item.graph.relatedEntities?.slice(0, 3) ?? [];
-                      track entity.url ?? entity.title ?? entity.imageUrl
-                    ) {
-                      <span>{{ entity.title || entity.domain || 'Related entity' }}</span>
-                    }
+                    </div>
+                  }
+                </section>
+
+                <section class="aiv-entity__section">
+                  <div class="aiv-entity__section-head">
+                    <p>Facts Google associates</p>
+                    <span>{{ item.graph.attributes?.length ?? 0 }}</span>
                   </div>
-                }
+
+                  @if (item.graph.attributes?.length) {
+                    <dl class="aiv-entity__facts">
+                      @for (fact of item.graph.attributes ?? []; track fact.label + fact.value) {
+                        <div>
+                          <dt>{{ fact.label }}</dt>
+                          <dd>{{ fact.value }}</dd>
+                        </div>
+                      }
+                    </dl>
+                  } @else {
+                    <p class="aiv-entity__empty">No facts captured for this panel.</p>
+                  }
+                </section>
+
+                <section class="aiv-entity__section">
+                  <div class="aiv-entity__section-head">
+                    <p>Authority links</p>
+                    <span>{{ item.graph.profiles?.length ?? 0 }}</span>
+                  </div>
+
+                  @if (item.graph.profiles?.length) {
+                    <div class="aiv-entity__profiles">
+                      @for (
+                        profile of item.graph.profiles ?? [];
+                        track profile.url ?? profile.domain ?? profile.title
+                      ) {
+                        @if (profile.url) {
+                          <a [href]="profile.url" target="_blank" rel="noopener noreferrer">
+                            <strong>{{ profile.title || profile.domain || 'Profile' }}</strong>
+                            @if (profile.domain) {
+                              <span>{{ profile.domain }}</span>
+                            }
+                          </a>
+                        } @else {
+                          <span>
+                            <strong>{{ profile.title || profile.domain || 'Profile' }}</strong>
+                            @if (profile.domain) {
+                              <span>{{ profile.domain }}</span>
+                            }
+                          </span>
+                        }
+                      }
+                    </div>
+                  } @else {
+                    <p class="aiv-entity__empty">No profile links captured for this panel.</p>
+                  }
+                </section>
+
+                <section class="aiv-entity__section aiv-entity__section--wide">
+                  <div class="aiv-entity__section-head">
+                    <p>Related entities Google connects</p>
+                    <span>{{ item.graph.relatedEntities?.length ?? 0 }}</span>
+                  </div>
+
+                  @if (item.graph.relatedEntities?.length) {
+                    <div class="aiv-entity__related">
+                      @for (
+                        entity of item.graph.relatedEntities ?? [];
+                        track entity.url ?? entity.title ?? entity.imageUrl
+                      ) {
+                        <article>
+                          @if (entity.imageUrl) {
+                            <img [src]="entity.imageUrl" alt="" />
+                          } @else {
+                            <span aria-hidden="true">
+                              {{ (entity.title || entity.domain || 'R').slice(0, 1) }}
+                            </span>
+                          }
+                          <div>
+                            <strong>{{ entity.title || entity.domain || 'Related entity' }}</strong>
+                            @if (entity.subtitle) {
+                              <em>{{ entity.subtitle }}</em>
+                            }
+                            @if (entity.description) {
+                              <p>{{ entity.description }}</p>
+                            }
+                            @if (entity.url) {
+                              <a [href]="entity.url" target="_blank" rel="noopener noreferrer">
+                                {{ entity.domain || entity.url }}
+                              </a>
+                            } @else if (entity.domain) {
+                              <small>{{ entity.domain }}</small>
+                            }
+                          </div>
+                        </article>
+                      }
+                    </div>
+                  } @else {
+                    <p class="aiv-entity__empty">No related entities captured for this panel.</p>
+                  }
+                </section>
               </div>
             </article>
           }

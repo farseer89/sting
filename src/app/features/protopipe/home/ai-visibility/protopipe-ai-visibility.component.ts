@@ -72,8 +72,7 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   readonly knowledgeGraphRows = computed<AiVisibilityKnowledgeGraphRow[]>(() =>
     this.rows()
       .map((row) => ({ row, graph: rankingSerpDetail(row)?.knowledgeGraph }))
-      .filter((item): item is AiVisibilityKnowledgeGraphRow => Boolean(item.graph))
-      .slice(0, 6),
+      .filter((item): item is AiVisibilityKnowledgeGraphRow => Boolean(item.graph)),
   );
   readonly capturedAt = computed(() => latestCapturedAt(this.rows()));
   readonly metrics = computed<AiVisibilityMetric[]>(() => {
@@ -173,6 +172,20 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
     const overview = rankingSerpDetail(row)?.aiOverview;
     const text = overview?.markdown?.trim() || overview?.text?.trim() || '';
     return cleanOverviewText(text);
+  }
+
+  entityDossierInsight(item: AiVisibilityKnowledgeGraphRow): string {
+    const facts = item.graph.attributes?.length ?? 0;
+    const profiles = item.graph.profiles?.length ?? 0;
+    const related = item.graph.relatedEntities?.length ?? 0;
+    const signals = [
+      facts ? `${facts} fact${facts === 1 ? '' : 's'}` : null,
+      profiles ? `${profiles} authority link${profiles === 1 ? '' : 's'}` : null,
+      related ? `${related} related entit${related === 1 ? 'y' : 'ies'}` : null,
+    ].filter(Boolean);
+    const entityType = item.graph.subtitle || item.graph.source || 'an entity-led result';
+    const signalText = signals.length ? ` We captured ${signals.join(', ')}.` : '';
+    return `Google is treating "${item.row.phrase}" as ${entityType} for ${marketScopeLabel(item.row.latest.marketTier)} search.${signalText}`;
   }
 
   private isOwnDomainCited(row: KeywordRankingRow): boolean {

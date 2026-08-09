@@ -5,6 +5,7 @@ import {
   type EnqueueRunRequest,
   type KeywordRankingsListResponse,
   type RunResponse,
+  type SiteAuditLatestResponse,
   type ThinkerKind,
 } from '@hive/contracts';
 import { Observable } from 'rxjs';
@@ -32,6 +33,12 @@ export class ShireApiService {
   listRankings$(siteId: string): Observable<KeywordRankingsListResponse> {
     return this.http.get<KeywordRankingsListResponse>(
       shireApiUrl(ShireEndpoints.rankings.list(siteId)),
+    );
+  }
+
+  getLatestSiteAudit$(siteId: string): Observable<SiteAuditLatestResponse> {
+    return this.http.get<SiteAuditLatestResponse>(
+      shireApiUrl(ShireEndpoints.siteAudits.latest(siteId)),
     );
   }
 

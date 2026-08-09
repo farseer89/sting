@@ -24,6 +24,99 @@
     <p class="aiv__error">{{ error() }}</p>
   }
 
+  <section class="aiv-inputs" aria-label="AI visibility inputs">
+    <div class="aiv-panel__head">
+      <div>
+        <p class="aiv-panel__kicker">Inputs</p>
+        <h2>What this view can reason from today</h2>
+        <p class="aiv-panel__subhead">
+          AI Visibility 2.0 is only as good as its inputs. This section separates current
+          ranking-derived signals from the planned DataForSEO AI Awareness source.
+        </p>
+      </div>
+    </div>
+
+    <div class="aiv-input-grid">
+      @for (input of inputCards(); track input.id) {
+        <article
+          class="aiv-input-card"
+          [class.aiv-input-card--ready]="input.status === 'ready'"
+          [class.aiv-input-card--missing]="input.status === 'missing'"
+          [class.aiv-input-card--planned]="input.status === 'planned'"
+        >
+          <div>
+            <span>{{ input.label }}</span>
+            <strong>{{ input.value }}</strong>
+          </div>
+          <em>{{ input.status }}</em>
+          <p>{{ input.hint }}</p>
+        </article>
+      }
+    </div>
+
+    <div class="aiv-cost">
+      <div class="aiv-cost__head">
+        <div>
+          <p class="aiv-panel__kicker">DataForSEO feasibility</p>
+          <h3>AI Awareness cost model</h3>
+        </div>
+        <span>Estimate before paid calls</span>
+      </div>
+
+      <div class="aiv-cost-table" role="table" aria-label="DataForSEO AI Awareness cost estimates">
+        <div class="aiv-cost-table__row aiv-cost-table__row--head" role="row">
+          <span role="columnheader">Scenario</span>
+          <span role="columnheader">Prompts</span>
+          <span role="columnheader">AI Mode standard</span>
+          <span role="columnheader">AI Mode live</span>
+          <span role="columnheader">LLM Responses live</span>
+        </div>
+
+        @for (scenario of costScenarios(); track scenario.id) {
+          <div class="aiv-cost-table__row" role="row">
+            <strong role="cell">{{ scenario.label }}</strong>
+            <span role="cell">{{ scenario.promptCount }}</span>
+            <span role="cell">{{ scenario.googleAiModeStandard }}</span>
+            <span role="cell">{{ scenario.googleAiModeLive }}</span>
+            <span role="cell">{{ scenario.llmResponsesLiveBase }}</span>
+            <small role="cell">{{ scenario.note }}</small>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <nav class="aiv-tabs" aria-label="AI visibility sources">
+    <button
+      type="button"
+      [class.aiv-tabs__button--active]="activeSource() === 'google_ai_mode'"
+      class="aiv-tabs__button"
+      (click)="setActiveSource('google_ai_mode')"
+    >
+      <span>Google AI Mode</span>
+      <em>{{ sourceStatusLabel('google_ai_mode') }}</em>
+    </button>
+    <button
+      type="button"
+      [class.aiv-tabs__button--active]="activeSource() === 'keyword_overview'"
+      class="aiv-tabs__button"
+      (click)="setActiveSource('keyword_overview')"
+    >
+      <span>Keyword Overview</span>
+      <em>{{ sourceStatusLabel('keyword_overview') }}</em>
+    </button>
+    <button
+      type="button"
+      [class.aiv-tabs__button--active]="activeSource() === 'chatgpt'"
+      class="aiv-tabs__button"
+      (click)="setActiveSource('chatgpt')"
+    >
+      <span>ChatGPT</span>
+      <em>{{ sourceStatusLabel('chatgpt') }}</em>
+    </button>
+  </nav>
+
+  @if (activeSource() === 'keyword_overview') {
   @if (loading()) {
     <section class="aiv__empty" aria-live="polite">Loading AI visibility data…</section>
   } @else if (rows().length === 0) {
@@ -332,6 +425,95 @@
           </p>
         }
       </article>
+    </section>
+  }
+  } @else {
+    <section class="aiv-panel aiv-source-panel" aria-label="Persisted AI visibility source">
+      @if (activePersistedSource(); as source) {
+        <div class="aiv-panel__head">
+          <div>
+            <p class="aiv-panel__kicker">
+              {{ source.source === 'google_ai_mode' ? 'Primary source' : 'Secondary source' }}
+            </p>
+            <h2>
+              {{ source.source === 'google_ai_mode' ? 'Google AI Mode SERP' : 'ChatGPT LLM Responses' }}
+            </h2>
+            <p class="aiv-panel__subhead">
+              Persisted DataForSEO capture for "{{ persistedSnapshot()?.keyword }}".
+            </p>
+          </div>
+          <span class="aiv-panel__count">{{ formatUsd(source.costUsd) }}</span>
+        </div>
+
+        <div class="aiv-source-panel__meta">
+          <span>{{ source.status }}</span>
+          <span>{{ source.role }}</span>
+          @if (source.modelName) {
+            <span>{{ source.modelName }}</span>
+          }
+          @if (source.inputTokens || source.outputTokens) {
+            <span>{{ source.inputTokens ?? 0 }} in / {{ source.outputTokens ?? 0 }} out</span>
+          }
+        </div>
+
+        @if (source.status === 'failed') {
+          <p class="aiv-panel__empty">{{ source.error || 'Capture failed.' }}</p>
+        } @else {
+          @if (source.answerExcerpt) {
+            <blockquote class="aiv-source-panel__answer">
+              <p>{{ source.answerExcerpt }}</p>
+            </blockquote>
+          } @else {
+            <p class="aiv-panel__empty">No answer excerpt was captured for this source.</p>
+          }
+
+          <div class="aiv-source-panel__grid">
+            <article>
+              <span>Client cited</span>
+              <strong>{{ source.clientCited ? 'Yes' : 'No' }}</strong>
+              <p>
+                {{ source.clientMentioned ? 'Client domain appears in the answer text.' : 'No client domain mention found in the answer text.' }}
+              </p>
+            </article>
+            <article>
+              <span>Cited domains</span>
+              <strong>{{ source.citedDomains.length }}</strong>
+              <p>{{ source.citedDomains.slice(0, 6).join(', ') || 'No domains returned.' }}</p>
+            </article>
+            <article>
+              <span>Captured</span>
+              <strong>{{ dateLabel(source.capturedAt) }}</strong>
+              <p>{{ source.endpoint || 'DataForSEO AI visibility source' }}</p>
+            </article>
+          </div>
+
+          @if (source.citations.length) {
+            <div class="aiv-source-panel__citations">
+              @for (citation of source.citations; track citation.url) {
+                <a [href]="citation.url" target="_blank" rel="noopener noreferrer">
+                  <strong>{{ citation.title || citation.domain || citation.url }}</strong>
+                  @if (citation.domain) {
+                    <span>{{ citation.domain }}</span>
+                  }
+                </a>
+              }
+            </div>
+          }
+        }
+      } @else {
+        <div class="aiv-panel__head">
+          <div>
+            <p class="aiv-panel__kicker">Not captured yet</p>
+            <h2>
+              {{ activeSource() === 'google_ai_mode' ? 'Google AI Mode SERP' : 'ChatGPT LLM Responses' }}
+            </h2>
+            <p class="aiv-panel__subhead">
+              This tab is ready for persisted DataForSEO AI Awareness snapshots. Run a backend
+              capture to populate it.
+            </p>
+          </div>
+        </div>
+      }
     </section>
   }
 </div>

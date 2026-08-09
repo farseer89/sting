@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
   ShireEndpoints,
+  type AiVisibilityLatestResponse,
   type EnqueueRunRequest,
   type KeywordAlignmentLatestResponse,
   type KeywordRankingsListResponse,
@@ -60,6 +61,12 @@ export class ShireApiService {
   getLatestPageSpeed$(siteId: string): Observable<PageSpeedLatestResponse> {
     return this.http.get<PageSpeedLatestResponse>(
       shireApiUrl(ShireEndpoints.pageSpeed.latest(siteId)),
+    );
+  }
+
+  getLatestAiVisibility$(siteId: string): Observable<AiVisibilityLatestResponse> {
+    return this.http.get<AiVisibilityLatestResponse>(
+      shireApiUrl(ShireEndpoints.aiVisibility.latest(siteId)),
     );
   }
 

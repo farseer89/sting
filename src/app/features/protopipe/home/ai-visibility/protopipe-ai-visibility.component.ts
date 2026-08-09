@@ -7,7 +7,12 @@ import {
   signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import type { KeywordRankingRow } from '@hive/contracts';
+import type {
+  AiVisibilitySnapshot,
+  AiVisibilitySource,
+  AiVisibilitySourceSnapshot,
+  KeywordRankingRow,
+} from '@hive/contracts';
 import { firstValueFrom } from 'rxjs';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
@@ -37,6 +42,30 @@ interface AiVisibilityKnowledgeGraphRow {
   graph: NonNullable<NonNullable<ReturnType<typeof rankingSerpDetail>>['knowledgeGraph']>;
 }
 
+interface AiVisibilityInputCard {
+  id: string;
+  label: string;
+  status: 'ready' | 'missing' | 'planned';
+  value: string;
+  hint: string;
+}
+
+interface AiAwarenessCostScenario {
+  id: string;
+  label: string;
+  promptCount: number;
+  googleAiModeStandard: string;
+  googleAiModeLive: string;
+  llmResponsesLiveBase: string;
+  note: string;
+}
+
+type AiVisibilityTab = AiVisibilitySource;
+
+const GOOGLE_AI_MODE_STANDARD_SERP_USD = 0.0012;
+const GOOGLE_AI_MODE_LIVE_SERP_USD = 0.004;
+const LLM_RESPONSES_LIVE_TASK_FEE_USD = 0.0006;
+
 @Component({
   selector: 'app-protopipe-ai-visibility',
   standalone: true,
@@ -52,6 +81,8 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly rows = signal<KeywordRankingRow[]>([]);
+  readonly persistedSnapshot = signal<AiVisibilitySnapshot | null>(null);
+  readonly activeSource = signal<AiVisibilityTab>('google_ai_mode');
 
   readonly ownDomain = computed(() => normalizeDomain(this.strategy.site()?.hostname));
   readonly trackedKeywordCount = computed(() => this.strategy.keywords().length);
@@ -75,6 +106,97 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
       .filter((item): item is AiVisibilityKnowledgeGraphRow => Boolean(item.graph)),
   );
   readonly capturedAt = computed(() => latestCapturedAt(this.rows()));
+  readonly inputCards = computed<AiVisibilityInputCard[]>(() => {
+    const hostname = this.ownDomain();
+    const keywordCount = this.trackedKeywordCount();
+    const snapshots = this.rows().length;
+    const aiSnapshots = this.aiRows().length;
+    const sourceCount = this.sourceDomains().length;
+    const entityCount = this.knowledgeGraphRows().length;
+    const persisted = this.persistedSnapshot();
+    const persistedSourceCount =
+      persisted?.sources.filter((source) => source.status === 'complete').length ?? 0;
+
+    return [
+      {
+        id: 'site',
+        label: 'Site identity',
+        status: hostname ? 'ready' : 'missing',
+        value: hostname ?? 'Missing',
+        hint: 'Used to score whether AI answers cite this site.',
+      },
+      {
+        id: 'keywords',
+        label: 'Tracked keywords',
+        status: keywordCount > 0 ? 'ready' : 'missing',
+        value: plural(keywordCount, 'keyword'),
+        hint: 'Defines which search and prompt themes the visibility view can inspect.',
+      },
+      {
+        id: 'rankings',
+        label: 'Ranking snapshots',
+        status: snapshots > 0 ? 'ready' : 'missing',
+        value: plural(snapshots, 'snapshot'),
+        hint: 'Current source for AI Overview coverage, citations, and entity panels.',
+      },
+      {
+        id: 'ai-overviews',
+        label: 'AI Overview evidence',
+        status: aiSnapshots > 0 ? 'ready' : 'missing',
+        value: `${aiSnapshots}/${snapshots || 0}`,
+        hint: 'Rows with AI Overview text or source data from ranking research.',
+      },
+      {
+        id: 'sources',
+        label: 'Cited source domains',
+        status: sourceCount > 0 ? 'ready' : 'missing',
+        value: plural(sourceCount, 'domain'),
+        hint: 'External domains AI answers cite instead of, or alongside, this site.',
+      },
+      {
+        id: 'entities',
+        label: 'Entity dossiers',
+        status: entityCount > 0 ? 'ready' : 'missing',
+        value: plural(entityCount, 'panel'),
+        hint: 'Knowledge graph facts, authority links, and related entities from ranking snapshots.',
+      },
+      {
+        id: 'dataforseo-awareness',
+        label: 'DataForSEO AI Awareness',
+        status: persistedSourceCount > 0 ? 'ready' : 'planned',
+        value: persisted
+          ? `${persistedSourceCount}/${persisted.sources.length} sources`
+          : 'Cost model ready',
+        hint: persisted
+          ? `Latest persisted capture for "${persisted.keyword}".`
+          : 'Next input candidate: Google AI Mode SERP and LLM Responses prompts.',
+      },
+    ];
+  });
+  readonly costScenarios = computed<AiAwarenessCostScenario[]>(() => {
+    const keywordCount = this.trackedKeywordCount();
+    const currentPromptCount = clamp(keywordCount || 8, 8, 24);
+    const scenarios = [
+      { id: 'starter', label: 'Starter test', promptCount: 8 },
+      { id: 'current', label: 'Current keyword set', promptCount: currentPromptCount },
+      { id: 'heavy', label: 'Heavy test', promptCount: 48 },
+    ];
+
+    return scenarios.map((scenario) => ({
+      ...scenario,
+      googleAiModeStandard: formatUsd(
+        scenario.promptCount * GOOGLE_AI_MODE_STANDARD_SERP_USD,
+      ),
+      googleAiModeLive: formatUsd(scenario.promptCount * GOOGLE_AI_MODE_LIVE_SERP_USD),
+      llmResponsesLiveBase: `${formatUsd(
+        scenario.promptCount * LLM_RESPONSES_LIVE_TASK_FEE_USD,
+      )} + model pass-through`,
+      note:
+        scenario.id === 'current'
+          ? 'Based on the current tracked keyword count, capped for test use.'
+          : 'Use this to compare small and expanded prompt clusters.',
+    }));
+  });
   readonly metrics = computed<AiVisibilityMetric[]>(() => {
     const snapshots = this.rows().length;
     const aiSnapshots = this.aiRows().length;
@@ -127,9 +249,18 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   readonly rankLabel = rankLabel;
   readonly marketScopeLabel = marketScopeLabel;
   readonly locationShortLabel = locationShortLabel;
+  readonly formatUsd = formatUsd;
+  readonly dateLabel = dateLabel;
+  readonly activePersistedSource = computed(() =>
+    this.sourceSnapshotFor(this.activeSource()),
+  );
 
   ngOnInit(): void {
-    void this.loadRankings();
+    void this.load();
+  }
+
+  async load(): Promise<void> {
+    await this.loadRankings();
   }
 
   async loadRankings(): Promise<void> {
@@ -138,13 +269,16 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const response = await firstValueFrom(this.api.listRankings$(siteId));
-      this.rows.set(response.rankings);
+      const [rankingsResponse, aiVisibilityResponse] = await Promise.all([
+        firstValueFrom(this.api.listRankings$(siteId)).catch((err) => {
+          if (isRankingsNotReadyError(err)) return { rankings: [] };
+          throw err;
+        }),
+        firstValueFrom(this.api.getLatestAiVisibility$(siteId)).catch(() => ({ snapshot: null })),
+      ]);
+      this.rows.set(rankingsResponse.rankings);
+      this.persistedSnapshot.set(aiVisibilityResponse.snapshot);
     } catch (err) {
-      if (isRankingsNotReadyError(err)) {
-        this.rows.set([]);
-        return;
-      }
       this.error.set(parseProtopipeApiError(err, 'Could not load AI visibility data.'));
     } finally {
       this.loading.set(false);
@@ -153,6 +287,22 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
 
   goToRankings(): void {
     void this.router.navigate(['/home/rankings']);
+  }
+
+  setActiveSource(source: AiVisibilityTab): void {
+    this.activeSource.set(source);
+  }
+
+  sourceSnapshotFor(source: AiVisibilitySource): AiVisibilitySourceSnapshot | null {
+    return this.persistedSnapshot()?.sources.find((item) => item.source === source) ?? null;
+  }
+
+  sourceStatusLabel(source: AiVisibilitySource): string {
+    if (source === 'keyword_overview') return plural(this.aiRows().length, 'AI Overview');
+    const snapshot = this.sourceSnapshotFor(source);
+    if (!snapshot) return 'Not captured';
+    if (snapshot.status === 'failed') return 'Failed';
+    return `${formatUsd(snapshot.costUsd)} captured`;
   }
 
   sourcesFor(row: KeywordRankingRow) {
@@ -263,6 +413,19 @@ function percentLabel(numerator: number, denominator: number): string {
   return `${Math.round((numerator / denominator) * 100)}%`;
 }
 
+function plural(count: number, singular: string): string {
+  return `${count} ${singular}${count === 1 ? '' : 's'}`;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+function formatUsd(value: number): string {
+  if (value < 0.01) return `$${value.toFixed(4)}`;
+  return `$${value.toFixed(2)}`;
+}
+
 function rankValue(position: number | null): number {
   return position ?? Number.POSITIVE_INFINITY;
 }
@@ -275,6 +438,12 @@ function latestCapturedAt(rows: KeywordRankingRow[]): string | null {
   return latest
     ? new Date(latest).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
     : null;
+}
+
+function dateLabel(value: string): string {
+  const parsed = Date.parse(value);
+  if (!Number.isFinite(parsed)) return 'Unknown';
+  return new Date(parsed).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 function isRankingsNotReadyError(err: unknown): boolean {

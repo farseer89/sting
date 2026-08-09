@@ -67,37 +67,62 @@
     <p class="aiv__error">{{ error() }}</p>
   }
 
-  <nav class="aiv-model-strip" aria-label="AI answer models">
-    @for (model of modelOptions; track model.id) {
-      <button
-        type="button"
-        class="aiv-model-strip__item"
-        [class.aiv-model-strip__item--active]="activeModelId() === model.id"
-        [class.aiv-model-strip__item--locked]="!model.available"
-        [attr.aria-current]="activeModelId() === model.id ? 'true' : null"
-        (click)="selectModel(model.id)"
-      >
-        @if (!model.available) {
-          <svg class="aiv-model-strip__lock" viewBox="0 0 16 16" aria-hidden="true">
-            <path
-              d="M4.5 7V5.5a3.5 3.5 0 1 1 7 0V7M4 7h8a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.4"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        }
-        <span>{{ model.label }}</span>
-        @if (model.available && model.dataSource) {
-          <em>{{ modelCaptureStatusLabel(model.dataSource) }}</em>
-        } @else {
-          <em class="aiv-model-strip__soon">Soon</em>
-        }
-      </button>
+  <div class="aiv-model-row">
+    <nav class="aiv-model-strip" aria-label="AI answer models">
+      @for (model of modelOptions; track model.id) {
+        <button
+          type="button"
+          class="aiv-model-strip__item"
+          [class.aiv-model-strip__item--active]="activeModelId() === model.id"
+          [class.aiv-model-strip__item--locked]="!model.available"
+          [attr.aria-current]="activeModelId() === model.id ? 'true' : null"
+          (click)="selectModel(model.id)"
+        >
+          @if (!model.available) {
+            <svg class="aiv-model-strip__lock" viewBox="0 0 16 16" aria-hidden="true">
+              <path
+                d="M4.5 7V5.5a3.5 3.5 0 1 1 7 0V7M4 7h8a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          }
+          <span>{{ model.label }}</span>
+          @if (model.available && model.dataSource) {
+            <em>{{ modelCaptureStatusLabel(model.dataSource) }}</em>
+          } @else {
+            <em class="aiv-model-strip__soon">Soon</em>
+          }
+        </button>
+      }
+    </nav>
+
+    @if (showMarketScopePicker()) {
+      <nav class="aiv-market-tabs aiv-market-tabs--top" aria-label="AI visibility market scope">
+        <button
+          type="button"
+          class="aiv-market-tabs__button"
+          [class.aiv-market-tabs__button--active]="selectedMarketScope() === 'national'"
+          (click)="selectMarketScope('national')"
+        >
+          <span>National</span>
+          <em>{{ nationalSnapshots().length }}</em>
+        </button>
+        <button
+          type="button"
+          class="aiv-market-tabs__button"
+          [class.aiv-market-tabs__button--active]="selectedMarketScope() === 'local'"
+          (click)="selectMarketScope('local')"
+        >
+          <span>Local</span>
+          <em>{{ localSnapshots().length }}</em>
+        </button>
+      </nav>
     }
-  </nav>
+  </div>
 
   <section class="aiv__metrics aiv__metrics--market" aria-label="AI visibility market scorecard">
     @for (metric of marketMetrics(); track metric.id) {
@@ -439,29 +464,6 @@
     <section class="aiv-panel aiv-source-panel" aria-label="Persisted AI visibility source">
       <div class="aiv-source-shell">
         <aside class="aiv-source-shell__rail" aria-label="Captured keyword navigation">
-          @if (showMarketScopePicker()) {
-            <nav class="aiv-market-tabs" aria-label="AI visibility market scope">
-              <button
-                type="button"
-                class="aiv-market-tabs__button"
-                [class.aiv-market-tabs__button--active]="selectedMarketScope() === 'national'"
-                (click)="selectMarketScope('national')"
-              >
-                <span>National</span>
-                <em>{{ nationalSnapshots().length }} · {{ marketScopeButtonLabel('national') }}</em>
-              </button>
-              <button
-                type="button"
-                class="aiv-market-tabs__button"
-                [class.aiv-market-tabs__button--active]="selectedMarketScope() === 'local'"
-                (click)="selectMarketScope('local')"
-              >
-                <span>Local</span>
-                <em>{{ localSnapshots().length }} · {{ marketScopeButtonLabel('local') }}</em>
-              </button>
-            </nav>
-          }
-
           <div class="aiv-keyword-list">
             <div class="aiv-keyword-list__head">
               <span>{{ selectedMarketScope() === 'local' ? 'Local keywords' : 'National keywords' }}</span>
@@ -577,59 +579,29 @@
                     <article class="aiv-source-panel__answer aiv-source-panel__answer--preview">
                       <div class="aiv-source-panel__answer-head">
                         <span>Summary</span>
-                        @if (answerHasMore(source)) {
-                          <em>Scroll full answer →</em>
-                        }
+                        <button
+                          type="button"
+                          class="aiv-source-panel__answer-action"
+                          (click)="openAnswerDrawer()"
+                        >
+                          Read full answer
+                        </button>
                       </div>
                       <p>{{ answerPreview(source) }}</p>
+                      @if (answerHasMore(source)) {
+                        <button
+                          type="button"
+                          class="aiv-source-panel__answer-cta"
+                          (click)="openAnswerDrawer()"
+                        >
+                          Open the full response in the side reader
+                        </button>
+                      }
                     </article>
                   } @else {
                     <p class="aiv-panel__empty">No answer text was captured for this source.</p>
                   }
                 </div>
-
-                <aside class="aiv-answer-layout__full" aria-label="Full AI answer">
-                  <div class="aiv-source-panel__answer-head">
-                    <span>Full answer</span>
-                    <em
-                      [class.aiv-source-panel__status--cited]="sourceClientCited(source)"
-                      [class.aiv-source-panel__status--mentioned]="!sourceClientCited(source) && sourceClientMentioned(source)"
-                      [class.aiv-source-panel__status--uncited]="!sourceClientCited(source) && !sourceClientMentioned(source)"
-                    >
-                      {{ sourceClientCited(source) ? 'Cites your site' : sourceClientMentioned(source) ? 'Mentions your site' : 'Not cited' }}
-                    </em>
-                  </div>
-
-                  @if (answerParagraphs(source).length) {
-                    <div class="aiv-answer-layout__scroll">
-                      @for (paragraph of answerParagraphs(source); track $index) {
-                        <p>{{ paragraph }}</p>
-                      }
-
-                      @if (source.answerSections?.length) {
-                        <div class="aiv-source-panel__sections aiv-source-panel__sections--inline">
-                          <div class="aiv-source-panel__sections-head">
-                            <span>Answer sections</span>
-                            <em>{{ source.answerSections?.length }}</em>
-                          </div>
-                          @for (section of source.answerSections ?? []; track section.type + $index) {
-                            <article>
-                              <div>
-                                <strong>{{ section.title || section.type }}</strong>
-                                @if (section.citations.length) {
-                                  <em>{{ section.citations.length }} refs</em>
-                                }
-                              </div>
-                              <p>{{ formatAnswerForDisplay(section.text || section.markdown || '') || 'Structured element preserved.' }}</p>
-                            </article>
-                          }
-                        </div>
-                      }
-                    </div>
-                  } @else {
-                    <p class="aiv-panel__empty aiv-panel__empty--compact">No answer text was captured for this source.</p>
-                  }
-                </aside>
               </div>
             }
           } @else {
@@ -647,5 +619,72 @@
         </div>
       </div>
     </section>
+  }
+
+  @if (answerDrawerOpen()) {
+    @if (activePersistedSource(); as source) {
+      <div class="aiv-answer-drawer" role="dialog" aria-modal="true" aria-label="Full AI answer">
+        <button
+          type="button"
+          class="aiv-answer-drawer__backdrop"
+          aria-label="Close full answer"
+          (click)="closeAnswerDrawer()"
+        ></button>
+        <aside class="aiv-answer-drawer__panel">
+          <header class="aiv-answer-drawer__head">
+            <div>
+              <p class="aiv-answer-drawer__kicker">
+                {{ selectedMarketScope() === 'local' ? 'Local' : 'National' }} · {{ activeModel().label }}
+              </p>
+              <h2>{{ activeSnapshot()?.keyword }}</h2>
+              <p class="aiv-answer-drawer__meta">{{ activeMarketLabel() }} · {{ dateLabel(source.capturedAt) }}</p>
+            </div>
+            <button type="button" class="aiv-answer-drawer__close" (click)="closeAnswerDrawer()">
+              Close
+            </button>
+          </header>
+
+          <div class="aiv-answer-drawer__status">
+            <span
+              [class.aiv-source-panel__status--cited]="sourceClientCited(source)"
+              [class.aiv-source-panel__status--mentioned]="!sourceClientCited(source) && sourceClientMentioned(source)"
+              [class.aiv-source-panel__status--uncited]="!sourceClientCited(source) && !sourceClientMentioned(source)"
+            >
+              {{ sourceClientCited(source) ? 'Cites your site' : sourceClientMentioned(source) ? 'Mentions your site' : 'Not cited' }}
+            </span>
+            <span>{{ source.citedDomains.length }} cited domains</span>
+            @if (source.modelName) {
+              <span>{{ source.modelName }}</span>
+            }
+          </div>
+
+          <div class="aiv-answer-drawer__body">
+            @for (paragraph of answerParagraphs(source); track $index) {
+              <p>{{ paragraph }}</p>
+            }
+
+            @if (source.answerSections?.length) {
+              <section class="aiv-answer-drawer__sections">
+                <div class="aiv-source-panel__sections-head">
+                  <span>Answer sections</span>
+                  <em>{{ source.answerSections?.length }}</em>
+                </div>
+                @for (section of source.answerSections ?? []; track section.type + $index) {
+                  <article>
+                    <div>
+                      <strong>{{ section.title || section.type }}</strong>
+                      @if (section.citations.length) {
+                        <em>{{ section.citations.length }} refs</em>
+                      }
+                    </div>
+                    <p>{{ formatAnswerForDisplay(section.text || section.markdown || '') || 'Structured element preserved.' }}</p>
+                  </article>
+                }
+              </section>
+            }
+          </div>
+        </aside>
+      </div>
+    }
   }
 </div>

@@ -137,6 +137,7 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   readonly selectedSnapshotId = signal<string | null>(null);
   readonly selectedMarketScope = signal<CaptureMarketScope>('national');
   readonly activeModelId = signal<AiVisibilityModelId>('google_ai_mode');
+  readonly answerDrawerOpen = signal(false);
   readonly modelOptions = AI_VISIBILITY_MODELS;
 
   readonly ownDomain = computed(() => normalizeDomain(this.strategy.site()?.hostname));
@@ -241,44 +242,94 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   });
   readonly marketMetrics = computed<AiVisibilityMetric[]>(() => {
     const snapshots = this.visibleSnapshots();
-    const completeSources = snapshots.flatMap((snapshot) =>
-      snapshot.sources.filter((source) => source.status === 'complete'),
-    );
-    const citedKeywords = snapshots.filter((snapshot) => this.snapshotCited(snapshot)).length;
-    const mentionedKeywords = snapshots.filter((snapshot) => this.snapshotMentioned(snapshot)).length;
-    const citedDomains = new Set(completeSources.flatMap((source) => source.citedDomains));
+    const dataSource = this.activeDataSource();
+    if (dataSource === 'keyword_overview') {
+      const rows = this.marketAiRows();
+      const citedRows = rows.filter((row) => this.isOwnDomainCited(row));
+      const citedDomains = new Set(
+        rows.flatMap((row) =>
+          this.sourcesFor(row)
+            .map((source) => normalizeDomain(source.domain ?? domainFromUrl(source.url)))
+            .filter((domain): domain is string => Boolean(domain)),
+        ),
+      );
+
+      return [
+        {
+          id: 'captured-keywords',
+          label: 'AI Overviews',
+          value: String(rows.length),
+          hint: `${rows.length} ranking snapshots in ${this.marketScopeButtonLabel(this.selectedMarketScope())} have AI Overviews`,
+        },
+        {
+          id: 'site-cited',
+          label: 'Site cited',
+          value: percentLabel(citedRows.length, rows.length),
+          hint: `${citedRows.length} of ${rows.length} AI Overviews cite your site`,
+        },
+        {
+          id: 'site-mentioned',
+          label: 'SERP snapshots',
+          value: String(this.marketRankingRows().length),
+          hint: 'Ranking snapshots available for this market',
+        },
+        {
+          id: 'citation-map',
+          label: 'Cited domains',
+          value: String(citedDomains.size),
+          hint: 'Unique domains cited by Google AI Overviews',
+        },
+        {
+          id: 'answers',
+          label: 'Answer text',
+          value: String(rows.filter((row) => this.aiOverviewText(row)).length),
+          hint: 'AI Overview answer bodies stored from ranking research',
+        },
+      ];
+    }
+
+    const sourceRows = dataSource
+      ? snapshots
+          .map((snapshot) => snapshot.sources.find((source) => source.source === dataSource))
+          .filter((source): source is AiVisibilitySourceSnapshot => Boolean(source))
+      : [];
+    const completeSources = sourceRows.filter((source) => source.status === 'complete');
+    const citedAnswers = completeSources.filter((source) => this.sourceClientCited(source)).length;
+    const mentionedAnswers = completeSources.filter((source) => this.sourceClientMentioned(source)).length;
+    const citedDomains = new Set(completeSources.flatMap((source) => this.sourceCitationDomains(source)));
     const fullAnswers = completeSources.filter((source) => this.sourceAnswerText(source)).length;
+    const modelLabel = this.activeModel().label;
 
     return [
       {
         id: 'captured-keywords',
-        label: 'Keywords captured',
-        value: String(snapshots.length),
-        hint: `${this.marketScopeButtonLabel(this.selectedMarketScope())} AI answers stored`,
+        label: 'Model answers',
+        value: String(completeSources.length),
+        hint: `${completeSources.length} of ${snapshots.length} ${modelLabel} captures are complete`,
       },
       {
         id: 'site-cited',
         label: 'Site cited',
-        value: percentLabel(citedKeywords, snapshots.length),
-        hint: `${citedKeywords} of ${snapshots.length} keywords cite your site`,
+        value: percentLabel(citedAnswers, completeSources.length),
+        hint: `${citedAnswers} of ${completeSources.length} ${modelLabel} answers cite your site`,
       },
       {
         id: 'site-mentioned',
         label: 'Site mentioned',
-        value: percentLabel(mentionedKeywords, snapshots.length),
-        hint: `${mentionedKeywords} answers mention your brand or domain`,
+        value: percentLabel(mentionedAnswers, completeSources.length),
+        hint: `${mentionedAnswers} ${modelLabel} answers mention your brand or domain`,
       },
       {
         id: 'citation-map',
         label: 'Cited domains',
         value: String(citedDomains.size),
-        hint: 'Unique sources AI answers rely on in this market',
+        hint: `Unique domains cited by ${modelLabel} in this market`,
       },
       {
         id: 'answers',
         label: 'Full answers',
         value: String(fullAnswers),
-        hint: 'Saved Google AI Mode and ChatGPT responses available to read',
+        hint: `${modelLabel} answers available to open in the reader`,
       },
     ];
   });
@@ -372,10 +423,12 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
 
   selectModel(modelId: AiVisibilityModelId): void {
     this.activeModelId.set(modelId);
+    this.closeAnswerDrawer();
   }
 
   selectSnapshot(snapshotId: string): void {
     this.selectedSnapshotId.set(snapshotId);
+    this.closeAnswerDrawer();
   }
 
   selectMarketScope(scope: CaptureMarketScope): void {
@@ -383,6 +436,19 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
     const snapshots =
       scope === 'local' ? this.localSnapshots() : this.nationalSnapshots();
     this.selectedSnapshotId.set(snapshots[0]?.id ?? null);
+    this.closeAnswerDrawer();
+  }
+
+  openAnswerDrawer(): void {
+    const source = this.activePersistedSource();
+    if (!source || this.answerParagraphs(source).length === 0) {
+      return;
+    }
+    this.answerDrawerOpen.set(true);
+  }
+
+  closeAnswerDrawer(): void {
+    this.answerDrawerOpen.set(false);
   }
 
   snapshotMarketScope(snapshot: AiVisibilitySnapshot): CaptureMarketScope {
@@ -627,6 +693,23 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
       const domain = normalizeDomain(source.domain ?? domainFromUrl(source.url));
       return domain === own || domain?.endsWith(`.${own}`);
     });
+  }
+
+  private marketRankingRows(): KeywordRankingRow[] {
+    return this.rows().filter((row) => this.rowMatchesSelectedMarket(row));
+  }
+
+  private marketAiRows(): KeywordRankingRow[] {
+    return this.marketRankingRows().filter((row) => hasAiOverview(row));
+  }
+
+  private rowMatchesSelectedMarket(row: KeywordRankingRow): boolean {
+    const scope = this.selectedMarketScope();
+    if (scope === 'local') {
+      const localCode = this.localCaptureTarget()?.locationCode;
+      return row.latest.marketTier === 'local' || Boolean(localCode && row.latest.locationCode === localCode);
+    }
+    return row.latest.marketTier !== 'local';
   }
 
   private snapshotSourceForActiveTab(

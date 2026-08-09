@@ -37,7 +37,6 @@ export class ProtopipeSiteHealthComponent {
 
   readonly activeTab = signal<SiteHealthTab>('overview');
   readonly selectedPage = signal<SiteHealthPageRow | null>(null);
-  private readonly alignmentAutoStartSiteId = signal<string | null>(null);
 
   readonly audit = this.store.audit;
   readonly alignmentSnapshot = this.alignmentStore.snapshot;
@@ -49,10 +48,7 @@ export class ProtopipeSiteHealthComponent {
     }),
   );
   readonly canStartAlignment = computed(
-    () =>
-      !this.alignmentStore.hasSnapshot() &&
-      !this.alignmentStore.loading() &&
-      this.alignmentPrerequisite() === null,
+    () => this.alignmentStore.canStartAlignment() && this.alignmentPrerequisite() === null,
   );
   readonly showAuditSummaryCards = computed(() => this.activeTab() !== 'alignment');
   readonly summaryCards = computed(() =>
@@ -76,12 +72,12 @@ export class ProtopipeSiteHealthComponent {
   readonly emptyMessage = computed(() => {
     if (this.activeTab() === 'alignment') {
       return alignmentEmptyMessage({
-        loading: this.alignmentStore.loading(),
+        loading: !this.alignmentStore.hasCheckedLatest(),
         hasSnapshot: this.alignmentStore.hasSnapshot(),
         prerequisite: this.alignmentPrerequisite(),
       });
     }
-    if (this.store.loading()) return 'Loading site health…';
+    if (!this.store.hasCheckedLatest()) return 'Loading site health…';
     if (!this.store.hasAudit()) {
       return 'No site audit snapshot is stored yet. Complete onboarding or run a site audit to populate Site Health.';
     }
@@ -91,10 +87,15 @@ export class ProtopipeSiteHealthComponent {
   });
 
   readonly showAlignmentLoading = computed(
-    () => this.activeTab() === 'alignment' && this.alignmentStore.loading(),
+    () => this.activeTab() === 'alignment' && this.alignmentStore.showAlignmentProgress(),
   );
   readonly showAuditLoading = computed(
-    () => this.activeTab() !== 'alignment' && this.store.loading(),
+    () => this.activeTab() !== 'alignment' && this.store.showAuditProgress(),
+  );
+  readonly isRefreshing = computed(() =>
+    this.activeTab() === 'alignment'
+      ? this.alignmentStore.refreshingLatest()
+      : this.store.refreshingLatest(),
   );
 
   readonly headingSummary = headingSummary;
@@ -108,28 +109,11 @@ export class ProtopipeSiteHealthComponent {
         void this.alignmentStore.load(siteId);
       }
     });
-
-    effect(() => {
-      const siteId = this.strategy.siteId();
-      if (!siteId) {
-        this.alignmentAutoStartSiteId.set(null);
-        return;
-      }
-      const ready =
-        this.store.hasAudit() &&
-        this.keywordCount() > 0 &&
-        !this.alignmentStore.hasSnapshot() &&
-        !this.alignmentStore.loading();
-      if (ready && this.alignmentAutoStartSiteId() !== siteId) {
-        this.alignmentAutoStartSiteId.set(siteId);
-        void this.alignmentStore.reload({ startIfMissing: true });
-      }
-    });
   }
 
   async reload(): Promise<void> {
     if (this.activeTab() === 'alignment') {
-      await this.alignmentStore.reload({ startIfMissing: this.canStartAlignment() });
+      await this.alignmentStore.reload();
       return;
     }
     await this.store.reload();
@@ -140,7 +124,6 @@ export class ProtopipeSiteHealthComponent {
   }
 
   async startAlignment(): Promise<void> {
-    this.alignmentAutoStartSiteId.set(this.strategy.siteId());
     await this.alignmentStore.startAlignment();
   }
 

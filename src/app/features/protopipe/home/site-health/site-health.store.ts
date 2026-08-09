@@ -30,6 +30,7 @@ export class SiteHealthStore {
   private readonly _startingAudit = signal(false);
   private readonly _auditRun = signal<Thought | null>(null);
   private readonly _error = signal<string | null>(null);
+  private readonly _hasCheckedLatest = signal(false);
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
   private pollFailures = 0;
   private initializedSiteId: string | null = null;
@@ -38,15 +39,19 @@ export class SiteHealthStore {
   readonly capturedAt = this._capturedAt.asReadonly();
   readonly auditRun = this._auditRun.asReadonly();
   readonly error = this._error.asReadonly();
+  readonly hasCheckedLatest = this._hasCheckedLatest.asReadonly();
+  readonly refreshingLatest = this._loadingLatest.asReadonly();
   readonly hasAudit = computed(() => this.audit() !== null);
   readonly runningAudit = computed(() => {
     const run = this._auditRun();
     return run?.status === 'pending' || run?.status === 'running';
   });
-  readonly loading = computed(() => this._loadingLatest() || this._startingAudit() || this.runningAudit());
-  readonly canStartAudit = computed(() => !this.hasAudit() && !this.loading());
+  readonly showAuditProgress = computed(() => this._startingAudit() || this.runningAudit());
+  readonly loading = computed(() => !this._hasCheckedLatest() || this.showAuditProgress());
+  readonly canStartAudit = computed(
+    () => this._hasCheckedLatest() && !this.hasAudit() && !this.showAuditProgress(),
+  );
   readonly auditProgressPercent = computed(() => {
-    if (this._loadingLatest()) return 10;
     if (this._startingAudit()) return 8;
     const run = this._auditRun();
     if (!run) return 0;
@@ -56,7 +61,6 @@ export class SiteHealthStore {
     return AUDIT_STAGE_PERCENT[run.currentStepId ?? ''] ?? 28;
   });
   readonly auditProgressLabel = computed(() => {
-    if (this._loadingLatest()) return 'Loading latest site audit…';
     if (this._startingAudit()) return 'Starting site audit…';
     const run = this._auditRun();
     if (!run) return 'Preparing site audit…';
@@ -78,9 +82,6 @@ export class SiteHealthStore {
   });
   readonly auditProgressDetail = computed(() => {
     const run = this._auditRun();
-    if (this._loadingLatest()) {
-      return 'Checking for a persisted crawl snapshot before starting new work.';
-    }
     if (this._startingAudit()) {
       return 'Creating a site audit run so we can crawl the site and store a fresh snapshot.';
     }
@@ -101,14 +102,15 @@ export class SiteHealthStore {
       this._auditRun.set(null);
       this.pollFailures = 0;
       this.initializedSiteId = null;
+      this._hasCheckedLatest.set(false);
     }
     this._siteId.set(siteId);
     this.initializedSiteId = siteId;
-    await this.reload({ startIfMissing: true });
+    await this.reload({ startIfMissing: false });
   }
 
   async reload(options: { startIfMissing?: boolean } = {}): Promise<void> {
-    const startIfMissing = options.startIfMissing ?? true;
+    const startIfMissing = options.startIfMissing ?? false;
     const siteId = this._siteId();
     if (!siteId) return;
 
@@ -118,6 +120,7 @@ export class SiteHealthStore {
       const res = await firstValueFrom(this.api.getLatestSiteAudit$(siteId));
       this._audit.set(res.audit);
       this._capturedAt.set(res.capturedAt ?? null);
+      this._hasCheckedLatest.set(true);
       if (res.audit) {
         this._auditRun.set(null);
         this.stopPolling();
@@ -126,9 +129,10 @@ export class SiteHealthStore {
 
       const resumed = await this.tryResumeAuditRun(siteId);
       if (!resumed && startIfMissing) {
-        await this.enqueueAuditRun(siteId);
+        await this.startAuditRun(siteId);
       }
     } catch (err) {
+      this._hasCheckedLatest.set(true);
       this._error.set(parseProtopipeApiError(err, 'Could not load site health.'));
     } finally {
       this._loadingLatest.set(false);
@@ -137,17 +141,23 @@ export class SiteHealthStore {
 
   async startAudit(): Promise<void> {
     const siteId = this._siteId();
-    if (!siteId || this.loading()) return;
+    if (!siteId || this.showAuditProgress()) return;
 
-    this._startingAudit.set(true);
     this._error.set(null);
     try {
       const resumed = await this.tryResumeAuditRun(siteId);
       if (!resumed) {
-        await this.enqueueAuditRun(siteId);
+        await this.startAuditRun(siteId);
       }
     } catch (err) {
       this._error.set(parseProtopipeApiError(err, 'Could not start a site audit.'));
+    }
+  }
+
+  private async startAuditRun(siteId: string): Promise<void> {
+    this._startingAudit.set(true);
+    try {
+      await this.enqueueAuditRun(siteId);
     } finally {
       this._startingAudit.set(false);
     }

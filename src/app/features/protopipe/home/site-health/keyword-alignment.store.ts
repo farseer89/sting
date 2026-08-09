@@ -28,6 +28,7 @@ export class KeywordAlignmentStore {
   private readonly _starting = signal(false);
   private readonly _alignmentRun = signal<Thought | null>(null);
   private readonly _error = signal<string | null>(null);
+  private readonly _hasCheckedLatest = signal(false);
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
   private pollFailures = 0;
   private initializedSiteId: string | null = null;
@@ -35,28 +36,27 @@ export class KeywordAlignmentStore {
   readonly snapshot = this._snapshot.asReadonly();
   readonly alignmentRun = this._alignmentRun.asReadonly();
   readonly error = this._error.asReadonly();
+  readonly hasCheckedLatest = this._hasCheckedLatest.asReadonly();
+  readonly refreshingLatest = this._loadingLatest.asReadonly();
   readonly hasSnapshot = computed(() => this.snapshot() !== null);
   readonly runningAlignment = computed(() => {
     const run = this._alignmentRun();
     return run?.status === 'pending' || run?.status === 'running';
   });
-  readonly loading = computed(
-    () => this._loadingLatest() || this._starting() || this.runningAlignment(),
+  readonly showAlignmentProgress = computed(() => this._starting() || this.runningAlignment());
+  readonly canStartAlignment = computed(
+    () => this._hasCheckedLatest() && !this.hasSnapshot() && !this.showAlignmentProgress(),
   );
+  readonly loading = computed(() => !this._hasCheckedLatest() || this.showAlignmentProgress());
   readonly alignmentProgressPercent = computed(() => {
-    if (this._loadingLatest()) return 10;
     if (this._starting()) return 8;
     return keywordAlignmentProgressPercent(this._alignmentRun());
   });
   readonly alignmentProgressLabel = computed(() => {
-    if (this._loadingLatest()) return 'Loading latest keyword alignment…';
     if (this._starting()) return 'Starting keyword alignment…';
     return keywordAlignmentProgressLabel(this._alignmentRun());
   });
   readonly alignmentProgressDetail = computed(() => {
-    if (this._loadingLatest()) {
-      return 'Checking for a persisted keyword-to-page fit snapshot before starting new work.';
-    }
     if (this._starting()) {
       return 'Creating a keyword alignment run to score confirmed keywords against audited pages.';
     }
@@ -70,6 +70,7 @@ export class KeywordAlignmentStore {
       this._alignmentRun.set(null);
       this.pollFailures = 0;
       this.initializedSiteId = null;
+      this._hasCheckedLatest.set(false);
     }
     this._siteId.set(siteId);
     this.initializedSiteId = siteId;
@@ -86,6 +87,7 @@ export class KeywordAlignmentStore {
     try {
       const res = await firstValueFrom(this.api.getLatestKeywordAlignment$(siteId));
       this._snapshot.set(res.snapshot);
+      this._hasCheckedLatest.set(true);
       if (res.snapshot) {
         this._alignmentRun.set(null);
         this.stopPolling();
@@ -94,9 +96,10 @@ export class KeywordAlignmentStore {
 
       const resumed = await this.tryResumeAlignmentRun(siteId);
       if (!resumed && startIfMissing) {
-        await this.enqueueAlignmentRun(siteId);
+        await this.startAlignmentRun(siteId);
       }
     } catch (err) {
+      this._hasCheckedLatest.set(true);
       this._error.set(parseProtopipeApiError(err, 'Could not load keyword alignment.'));
     } finally {
       this._loadingLatest.set(false);
@@ -105,17 +108,23 @@ export class KeywordAlignmentStore {
 
   async startAlignment(): Promise<void> {
     const siteId = this._siteId();
-    if (!siteId || this.loading()) return;
+    if (!siteId || this.showAlignmentProgress()) return;
 
-    this._starting.set(true);
     this._error.set(null);
     try {
       const resumed = await this.tryResumeAlignmentRun(siteId);
       if (!resumed) {
-        await this.enqueueAlignmentRun(siteId);
+        await this.startAlignmentRun(siteId);
       }
     } catch (err) {
       this._error.set(parseProtopipeApiError(err, 'Could not start keyword alignment.'));
+    }
+  }
+
+  private async startAlignmentRun(siteId: string): Promise<void> {
+    this._starting.set(true);
+    try {
+      await this.enqueueAlignmentRun(siteId);
     } finally {
       this._starting.set(false);
     }

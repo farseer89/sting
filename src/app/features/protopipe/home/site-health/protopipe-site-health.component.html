@@ -34,14 +34,10 @@
       <button
         type="button"
         class="healthdash__run"
-        [disabled]="activeTab() === 'alignment' ? alignmentStore.loading() : store.loading()"
+        [disabled]="isRefreshing()"
         (click)="reload()"
       >
-        {{
-          (activeTab() === 'alignment' ? alignmentStore.loading() : store.loading())
-            ? 'Refreshing…'
-            : 'Refresh'
-        }}
+        {{ isRefreshing() ? 'Refreshing…' : 'Refresh' }}
       </button>
     </div>
   </header>

@@ -1,139 +1,219 @@
-<div class="aiv">
-  <header class="aiv__intro">
-    <div>
-      <p class="aiv__eyebrow">AI Visibility 2.0</p>
-      <h1>Search answers that mention, cite, or skip your site.</h1>
-      <p class="aiv__lede">
-        Built from ranking research snapshots. Once research captures AI Overview text and sources,
-        this dashboard turns those SERP details into visibility, citation, and opportunity signals.
+<div class="bus-shell" aria-label="AI Visibility book">
+  <header class="bus-masthead">
+    <div class="bus-masthead__left">
+      <h1 class="bus-masthead__title">AI Visibility</h1>
+      <p class="bus-masthead__deck">
+        Search answers that mention, cite, or skip your site — across national and local markets.
       </p>
-      @if (capturedAt()) {
-        <p class="aiv__status">Latest snapshot {{ capturedAt() }}</p>
-      }
-    </div>
-
-    <div class="aiv__actions">
-      @if (captureProgress(); as progress) {
-        <p class="aiv__capture-progress" aria-live="polite">
-          Capturing {{ progress.current }}/{{ progress.total }} — {{ progress.keyword }}
-          @if (progress.locationName) {
-            <span>{{ progress.locationName }}</span>
-          }
-        </p>
-      }
-      <button
-        type="button"
-        class="aiv__button"
-        [disabled]="capturing() || trackedKeywordCount() === 0"
-        (click)="captureAllKeywords()"
-      >
-        @if (captureMode() === 'national') {
-          Running national…
+      <p class="bus-masthead__meta">
+        @if (capturedAt()) {
+          Latest snapshot {{ capturedAt() }}
         } @else {
-          Run national
+          {{ trackedKeywordCount() }} tracked keywords
         }
-        <span>{{ nationalCaptureTarget().locationName }}</span>
-      </button>
+      </p>
+    </div>
+    <div class="bus-masthead__actions">
+      <p-button
+        [label]="captureMode() === 'national' ? 'Running national…' : 'Run national'"
+        icon="pi pi-globe"
+        size="small"
+        [disabled]="capturing() || trackedKeywordCount() === 0"
+        (onClick)="captureAllKeywords()"
+      />
       @if (localCaptureTarget(); as localTarget) {
-        <button
-          type="button"
-          class="aiv__button aiv__button--local"
+        <p-button
+          [label]="captureMode() === 'local' ? 'Running local…' : 'Run local'"
+          icon="pi pi-map-marker"
+          severity="secondary"
+          size="small"
           [disabled]="capturing() || trackedKeywordCount() === 0"
-          (click)="captureLocalKeywords()"
-        >
-          @if (captureMode() === 'local') {
-            Running local…
-          } @else {
-            Run local
-          }
-          <span>{{ localTarget.locationName }}</span>
-        </button>
+          (onClick)="captureLocalKeywords()"
+        />
       }
-      <button
-        type="button"
-        class="aiv__button aiv__button--ghost"
+      <p-button
+        label="Refresh"
+        icon="pi pi-refresh"
+        severity="secondary"
+        size="small"
         [disabled]="loading() || capturing()"
-        (click)="loadRankings()"
-      >
-        Refresh
-      </button>
-      <button type="button" class="aiv__button aiv__button--ghost" (click)="goToRankings()">
-        Open rankings
-      </button>
+        (onClick)="loadRankings()"
+      />
+      <p-button
+        label="Open rankings"
+        icon="pi pi-external-link"
+        severity="secondary"
+        size="small"
+        [outlined]="true"
+        (onClick)="goToRankings()"
+      />
     </div>
   </header>
 
   @if (error()) {
-    <p class="aiv__error">{{ error() }}</p>
+    <p-message severity="error" [text]="error()!" styleClass="w-full" />
   }
 
-  <div class="aiv-model-row">
-    <nav class="aiv-model-strip" aria-label="AI answer models">
-      @for (model of modelOptions; track model.id) {
-        <button
-          type="button"
-          class="aiv-model-strip__item"
-          [class.aiv-model-strip__item--active]="activeModelId() === model.id"
-          [class.aiv-model-strip__item--locked]="!model.available"
-          [attr.aria-current]="activeModelId() === model.id ? 'true' : null"
-          (click)="selectModel(model.id)"
-        >
-          @if (!model.available) {
-            <svg class="aiv-model-strip__lock" viewBox="0 0 16 16" aria-hidden="true">
-              <path
-                d="M4.5 7V5.5a3.5 3.5 0 1 1 7 0V7M4 7h8a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          }
-          <span>{{ model.label }}</span>
-          @if (model.available && model.dataSource) {
-            <em>{{ modelCaptureStatusLabel(model.dataSource) }}</em>
-          } @else {
-            <em class="aiv-model-strip__soon">Soon</em>
-          }
-        </button>
-      }
-    </nav>
+  @if (captureProgress(); as progress) {
+    <div class="bus-notice" role="status" aria-live="polite">
+      <span class="bus-notice__dot" aria-hidden="true"></span>
+      <div>
+        <strong>Capturing {{ progress.current }}/{{ progress.total }}</strong>
+        {{ progress.keyword }}
+        @if (progress.locationName) {
+          · {{ progress.locationName }}
+        }
+      </div>
+    </div>
+  }
 
-    @if (showMarketScopePicker()) {
-      <nav class="aiv-market-tabs aiv-market-tabs--top" aria-label="AI visibility market scope">
+  @if (loading() && rows().length === 0 && persistedSnapshots().length === 0) {
+    <div class="bus-loading">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Loading AI visibility" />
+    </div>
+  } @else {
+    <div class="bus-binder">
+      <nav class="bus-binder-nav" aria-label="AI visibility models and markets">
+        <div class="bus-binder-nav__label">Dashboard</div>
         <button
           type="button"
-          class="aiv-market-tabs__button"
-          [class.aiv-market-tabs__button--active]="selectedMarketScope() === 'national'"
-          (click)="selectMarketScope('national')"
+          class="bus-binder-nav__item"
+          [class.is-active]="isOverviewSection()"
+          (click)="selectBinderSection('overview')"
         >
-          <span>National</span>
-          <em>{{ nationalSnapshots().length }}</em>
+          <svg class="bus-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.1"/>
+            <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.1"/>
+            <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.1"/>
+            <rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.1"/>
+          </svg>
+          Overview
         </button>
-        <button
-          type="button"
-          class="aiv-market-tabs__button"
-          [class.aiv-market-tabs__button--active]="selectedMarketScope() === 'local'"
-          (click)="selectMarketScope('local')"
-        >
-          <span>Local</span>
-          <em>{{ localSnapshots().length }}</em>
-        </button>
+
+        <div class="bus-binder-nav__label">National</div>
+        <p class="bus-binder-nav__meta">{{ nationalCaptureTarget().locationName }}</p>
+        @for (model of modelOptions; track model.id) {
+          <button
+            type="button"
+            class="bus-binder-nav__item"
+            [class.is-active]="isBinderSectionActive('national', model.id)"
+            [class.is-missing]="model.available && modelCaptureCount('national', model.id) === 0"
+            (click)="selectBinderSection(binderSectionKey('national', model.id))"
+          >
+            <span>{{ model.label }}</span>
+            @if (!model.available) {
+              <span class="bus-binder-nav__badge bus-binder-nav__badge--muted">Soon</span>
+            } @else if (modelCaptureCount('national', model.id) > 0) {
+              <span class="bus-binder-nav__badge">{{ modelCaptureCount('national', model.id) }}</span>
+            }
+          </button>
+        }
+
+        @if (localCaptureTarget(); as localTarget) {
+          <div class="bus-binder-nav__label">Local</div>
+          <p class="bus-binder-nav__meta">{{ localTarget.locationName }}</p>
+          @for (model of modelOptions; track model.id + '-local') {
+            <button
+              type="button"
+              class="bus-binder-nav__item"
+              [class.is-active]="isBinderSectionActive('local', model.id)"
+              [class.is-missing]="model.available && modelCaptureCount('local', model.id) === 0"
+              (click)="selectBinderSection(binderSectionKey('local', model.id))"
+            >
+              <span>{{ model.label }}</span>
+              @if (!model.available) {
+                <span class="bus-binder-nav__badge bus-binder-nav__badge--muted">Soon</span>
+              } @else if (modelCaptureCount('local', model.id) > 0) {
+                <span class="bus-binder-nav__badge">{{ modelCaptureCount('local', model.id) }}</span>
+              }
+            </button>
+          }
+        }
       </nav>
-    }
-  </div>
 
-  <section class="aiv__metrics aiv__metrics--market" aria-label="AI visibility market scorecard">
-    @for (metric of marketMetrics(); track metric.id) {
-      <article class="aiv-card">
-        <span class="aiv-card__label">{{ metric.label }}</span>
-        <strong>{{ metric.value }}</strong>
-        <p>{{ metric.hint }}</p>
-      </article>
-    }
-  </section>
+      <div class="bus-binder-panel">
+        @if (isOverviewSection()) {
+          <div class="bus-panel-head">
+            <p class="bus-panel-kicker">Dashboard</p>
+            <h2 class="bus-panel-title">AI visibility overview</h2>
+            <p class="bus-panel-deck">
+              High-level coverage across rankings research, live model captures, and citation signals.
+            </p>
+          </div>
 
+          <div class="bus-stat-grid">
+            <div class="bus-stat">
+              <span class="bus-stat__value">{{ trackedKeywordCount() }}</span>
+              <span class="bus-stat__label">Tracked keywords</span>
+            </div>
+            <div class="bus-stat">
+              <span class="bus-stat__value">{{ nationalSnapshots().length }}</span>
+              <span class="bus-stat__label">National captures</span>
+            </div>
+            <div class="bus-stat">
+              <span class="bus-stat__value">{{ localSnapshots().length }}</span>
+              <span class="bus-stat__label">Local captures</span>
+            </div>
+            <div class="bus-stat">
+              <span class="bus-stat__value">{{ uncitedRows().length }}</span>
+              <span class="bus-stat__label">Uncited opportunities</span>
+            </div>
+          </div>
+
+          <h3 class="bus-subhead">Rankings signals</h3>
+          <section class="aiv__metrics aiv__metrics--overview" aria-label="AI visibility scorecard">
+            @for (metric of metrics(); track metric.id) {
+              <article class="aiv-card">
+                <span class="aiv-card__label">{{ metric.label }}</span>
+                <strong>{{ metric.value }}</strong>
+                <p>{{ metric.hint }}</p>
+              </article>
+            }
+          </section>
+
+          <h3 class="bus-subhead">Markets</h3>
+          <dl class="bus-dl">
+            @for (market of overviewMarketRows(); track market.scope) {
+              <div class="bus-dl__row">
+                <dt>{{ market.scope === 'local' ? 'Local' : 'National' }}</dt>
+                <dd>
+                  {{ market.label }} · {{ market.snapshotCount }} live captures ·
+                  {{ market.aiOverviewCount }} AI Overviews from rankings
+                </dd>
+              </div>
+            }
+          </dl>
+
+          <h3 class="bus-subhead">Models by market</h3>
+          <dl class="bus-dl">
+            @for (market of overviewMarketRows(); track market.scope + '-models') {
+              @for (model of modelOptions; track market.scope + model.id) {
+                <div class="bus-dl__row">
+                  <dt>{{ market.scope === 'local' ? 'Local' : 'National' }} · {{ model.label }}</dt>
+                  <dd>
+                    @if (!model.available) {
+                      Coming soon
+                    } @else if (modelCaptureCount(market.scope, model.id) > 0) {
+                      {{ modelCaptureCount(market.scope, model.id) }} captured
+                    } @else {
+                      Not captured yet
+                    }
+                  </dd>
+                </div>
+              }
+            }
+          </dl>
+        } @else {
+          <div class="aiv">
+            <section class="aiv__metrics aiv__metrics--market" aria-label="AI visibility market scorecard">
+              @for (metric of marketMetrics(); track metric.id) {
+                <article class="aiv-card">
+                  <span class="aiv-card__label">{{ metric.label }}</span>
+                  <strong>{{ metric.value }}</strong>
+                  <p>{{ metric.hint }}</p>
+                </article>
+              }
+            </section>
   @if (isActiveModelLocked()) {
     <section class="aiv-panel aiv-panel--locked" aria-label="Model coming soon">
       <div class="aiv-panel__head">
@@ -619,6 +699,11 @@
         </div>
       </div>
     </section>
+  }
+          </div>
+        }
+      </div>
+    </div>
   }
 
   @if (answerDrawerOpen()) {

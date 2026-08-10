@@ -7,6 +7,9 @@ import {
   signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
+import { Button } from 'primeng/button';
+import { Message } from 'primeng/message';
+import { ProgressSpinner } from 'primeng/progressspinner';
 import type {
   AiVisibilitySnapshot,
   AiVisibilitySource,
@@ -114,6 +117,7 @@ const DEFAULT_NATIONAL_MARKET: CaptureMarketTarget = {
   selector: 'app-protopipe-ai-visibility',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [Button, Message, ProgressSpinner],
   templateUrl: './protopipe-ai-visibility.component.html',
   styleUrl: './protopipe-ai-visibility.component.scss',
 })
@@ -137,6 +141,7 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   readonly selectedSnapshotId = signal<string | null>(null);
   readonly selectedMarketScope = signal<CaptureMarketScope>('national');
   readonly activeModelId = signal<AiVisibilityModelId>('google_ai_mode');
+  readonly binderSectionId = signal<string>('overview');
   readonly answerDrawerOpen = signal(false);
   readonly modelOptions = AI_VISIBILITY_MODELS;
 
@@ -371,6 +376,25 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
     return model.available && model.dataSource ? model.dataSource : null;
   });
   readonly isActiveModelLocked = computed(() => !this.activeModel().available);
+  readonly isOverviewSection = computed(() => this.binderSectionId() === 'overview');
+  readonly overviewMarketRows = computed(() => [
+    {
+      scope: 'national' as const,
+      label: this.nationalCaptureTarget().locationName,
+      snapshotCount: this.nationalSnapshots().length,
+      aiOverviewCount: this.marketAiRowsForScope('national').length,
+    },
+    ...(this.localCaptureTarget()
+      ? [
+          {
+            scope: 'local' as const,
+            label: this.localCaptureTarget()!.locationName,
+            snapshotCount: this.localSnapshots().length,
+            aiOverviewCount: this.marketAiRowsForScope('local').length,
+          },
+        ]
+      : []),
+  ]);
 
   readonly activePersistedSource = computed(() => {
     const source = this.activeDataSource();
@@ -422,8 +446,56 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   }
 
   selectModel(modelId: AiVisibilityModelId): void {
-    this.activeModelId.set(modelId);
+    this.selectBinderSection(binderSectionKey(this.selectedMarketScope(), modelId));
+  }
+
+  selectBinderSection(sectionId: string): void {
+    this.binderSectionId.set(sectionId);
+    if (sectionId === 'overview') {
+      this.closeAnswerDrawer();
+      return;
+    }
+
+    const parsed = parseBinderSectionKey(sectionId);
+    if (!parsed) return;
+
+    this.selectedMarketScope.set(parsed.scope);
+    this.activeModelId.set(parsed.modelId);
+    const snapshots =
+      parsed.scope === 'local' ? this.localSnapshots() : this.nationalSnapshots();
+    this.selectedSnapshotId.set(snapshots[0]?.id ?? null);
     this.closeAnswerDrawer();
+  }
+
+  binderSectionKey(scope: CaptureMarketScope, modelId: AiVisibilityModelId): string {
+    return `${scope}:${modelId}`;
+  }
+
+  isBinderSectionActive(scope: CaptureMarketScope, modelId: AiVisibilityModelId): boolean {
+    return this.binderSectionId() === this.binderSectionKey(scope, modelId);
+  }
+
+  modelCaptureCount(scope: CaptureMarketScope, modelId: AiVisibilityModelId): number {
+    const model = AI_VISIBILITY_MODELS.find((item) => item.id === modelId);
+    if (!model?.available) return 0;
+    if (model.dataSource === 'keyword_overview') {
+      return this.marketAiRowsForScope(scope).length;
+    }
+    if (!model.dataSource) return 0;
+    const snapshots = scope === 'local' ? this.localSnapshots() : this.nationalSnapshots();
+    return snapshots.filter((snapshot) =>
+      snapshot.sources.some(
+        (source) => source.source === model.dataSource && source.status === 'complete',
+      ),
+    ).length;
+  }
+
+  modelNavStatus(scope: CaptureMarketScope, modelId: AiVisibilityModelId): string {
+    const model = AI_VISIBILITY_MODELS.find((item) => item.id === modelId);
+    if (!model?.available) return 'Soon';
+    const count = this.modelCaptureCount(scope, modelId);
+    if (count === 0) return 'Not captured';
+    return String(count);
   }
 
   selectSnapshot(snapshotId: string): void {
@@ -436,6 +508,9 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
     const snapshots =
       scope === 'local' ? this.localSnapshots() : this.nationalSnapshots();
     this.selectedSnapshotId.set(snapshots[0]?.id ?? null);
+    if (this.binderSectionId() !== 'overview') {
+      this.binderSectionId.set(binderSectionKey(scope, this.activeModelId()));
+    }
     this.closeAnswerDrawer();
   }
 
@@ -495,6 +570,7 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
     this.capturing.set(true);
     this.captureMode.set(options.mode);
     this.selectedMarketScope.set(options.mode);
+    this.binderSectionId.set(binderSectionKey(options.mode, this.activeModelId()));
     this.error.set(null);
     const captured: AiVisibilitySnapshot[] = [];
     const failures: string[] = [];
@@ -700,7 +776,21 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   }
 
   private marketAiRows(): KeywordRankingRow[] {
-    return this.marketRankingRows().filter((row) => hasAiOverview(row));
+    return this.marketAiRowsForScope(this.selectedMarketScope());
+  }
+
+  private marketAiRowsForScope(scope: CaptureMarketScope): KeywordRankingRow[] {
+    return this.rows().filter((row) => {
+      if (!hasAiOverview(row)) return false;
+      if (scope === 'local') {
+        const localCode = this.localCaptureTarget()?.locationCode;
+        return (
+          row.latest.marketTier === 'local' ||
+          Boolean(localCode && row.latest.locationCode === localCode)
+        );
+      }
+      return row.latest.marketTier !== 'local';
+    });
   }
 
   private rowMatchesSelectedMarket(row: KeywordRankingRow): boolean {
@@ -776,6 +866,19 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
       .sort((a, b) => b.count - a.count || a.domain.localeCompare(b.domain))
       .slice(0, 8);
   }
+}
+
+function binderSectionKey(scope: CaptureMarketScope, modelId: AiVisibilityModelId): string {
+  return `${scope}:${modelId}`;
+}
+
+function parseBinderSectionKey(
+  sectionId: string,
+): { scope: CaptureMarketScope; modelId: AiVisibilityModelId } | null {
+  const [scope, modelId] = sectionId.split(':');
+  if (scope !== 'national' && scope !== 'local') return null;
+  if (!AI_VISIBILITY_MODELS.some((model) => model.id === modelId)) return null;
+  return { scope, modelId: modelId as AiVisibilityModelId };
 }
 
 function hasAiOverview(row: KeywordRankingRow): boolean {

@@ -52,10 +52,10 @@ describe('buildAgencySitePortfolioStatus', () => {
       site({
         id: '3',
         displayName: 'Sparky',
-        url: 'https://sparky3.pages.dev',
-        hostname: 'sparky3.pages.dev',
+        url: 'https://sparkyelectrichawaii.com',
+        hostname: 'sparkyelectrichawaii.com',
         clientSitesSlug: 'sparky3',
-        previewBaseUrl: 'https://sparky3.pages.dev',
+        previewBaseUrl: 'https://sparkyelectrichawaii.com',
       }),
       signals,
     );

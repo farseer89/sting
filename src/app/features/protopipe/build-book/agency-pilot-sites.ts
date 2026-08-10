@@ -31,9 +31,9 @@ export const AGENCY_PILOT_SITES: readonly AgencyPilotSiteSpec[] = [
   {
     id: 'sparky',
     displayName: 'Sparky Electric',
-    url: 'https://sparky3.pages.dev',
+    url: 'https://sparkyelectrichawaii.com',
     clientSitesSlug: 'sparky3',
-    previewBaseUrl: 'https://sparky3.pages.dev',
+    previewBaseUrl: 'https://sparkyelectrichawaii.com',
     buildBookTemplateId: 'sparky-electric-trades-v1',
     seedKeywords: ['electrician near me', 'panel upgrade', 'EV charger install'],
   },

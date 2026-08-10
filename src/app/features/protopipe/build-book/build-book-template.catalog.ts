@@ -13,7 +13,7 @@ export const BUILD_BOOK_TEMPLATE_DEFINITIONS: BuildBookTemplateDefinition[] = [
     seoPurpose: 'Service + location visibility with crawlable services, proof, reviews, and FAQ targets.',
     conversionGoal: 'Drive calls, quote requests, and emergency dispatch paths.',
     visualTone: 'High-contrast, direct, urgent, local proof-heavy.',
-    previewUrl: 'https://sparky3.pages.dev/',
+    previewUrl: 'https://sparkyelectrichawaii.com/',
     previewDescription: 'Local service template for emergency calls, quote requests, reviews, and service-area SEO.',
     previewKicker: 'Licensed electrical service',
     previewHeadline: 'Fast electrical help when the job cannot wait.',

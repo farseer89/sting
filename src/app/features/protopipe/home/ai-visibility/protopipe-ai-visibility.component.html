@@ -187,7 +187,7 @@
           <h3 class="bus-subhead">Models by market</h3>
           <dl class="bus-dl">
             @for (market of overviewMarketRows(); track market.scope + '-models') {
-              @for (model of modelOptions; track market.scope + model.id) {
+              @for (model of modelOptions; track model.id) {
                 <div class="bus-dl__row">
                   <dt>{{ market.scope === 'local' ? 'Local' : 'National' }} · {{ model.label }}</dt>
                   <dd>

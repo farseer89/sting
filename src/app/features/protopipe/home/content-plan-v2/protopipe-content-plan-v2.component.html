@@ -1,352 +1,588 @@
-<div class="cpv2" aria-label="Content Plan V2 evidence inspector">
-  <header class="cpv2__hero">
-    <div>
-      <p class="cpv2__eyebrow">Content Plan V2</p>
-      <h1>Evidence Inspector</h1>
-      <p class="cpv2__lede">
-        The planning substrate before calendar generation: identity, keywords, SERP evidence,
-        site health, AI visibility, and content inventory.
+<div class="bus-shell" aria-label="Content Plan V2 evidence book">
+  <header class="bus-masthead">
+    <div class="bus-masthead__left">
+      <h1 class="bus-masthead__title">Content Plan V2</h1>
+      <p class="bus-masthead__deck">
+        Planning substrate before calendar generation — identity, keywords, SERP evidence, site health, and AI visibility.
       </p>
-      <p class="cpv2__meta">
-        {{ runStatusLabel() }} · {{ clientIdentity().hostname || 'No hostname' }}
-      </p>
+      <p class="bus-masthead__meta">{{ runStatusLabel() }} · {{ clientIdentity().hostname || 'No hostname' }}</p>
     </div>
-    <div class="cpv2__actions">
-      <span class="cpv2__status" [class]="'cpv2__status--' + readinessStatus()">
-        {{ label(readinessStatus()) }}
-      </span>
-      <button type="button" class="cpv2__button" [disabled]="loadingEvidence()" (click)="refresh()">
-        {{ loadingEvidence() ? 'Refreshing…' : 'Refresh' }}
-      </button>
+    <div class="bus-masthead__actions">
+      <span class="bus-status" [class]="'bus-status--' + readinessStatus()">{{ label(readinessStatus()) }}</span>
+      <p-button
+        [label]="loadingEvidence() ? 'Refreshing…' : 'Refresh'"
+        icon="pi pi-refresh"
+        severity="secondary"
+        size="small"
+        [disabled]="loadingEvidence()"
+        (onClick)="refresh()"
+      />
       @if (!thought() && !runSession.isActive()) {
-        <button type="button" class="cpv2__button cpv2__button--primary" (click)="startEvidenceRun()">
-          Build evidence
-        </button>
+        <p-button
+          label="Build evidence"
+          icon="pi pi-play"
+          size="small"
+          (onClick)="startEvidenceRun()"
+        />
       }
     </div>
   </header>
 
-  @if (evidenceError()) {
-    <p class="cpv2__error">{{ evidenceError() }}</p>
+  @if (evidenceError(); as err) {
+    <p-message severity="error" [text]="err" styleClass="w-full" />
   }
 
   @if (runSession.isActive() && thought()?.thinkerKind === 'content_plan_v2_evidence') {
-    <section class="cpv2__progress" role="status" aria-live="polite">
-      <span class="cpv2__pulse" aria-hidden="true"></span>
+    <div class="bus-notice" role="status" aria-live="polite">
+      <span class="bus-notice__dot" aria-hidden="true"></span>
       <div>
         <strong>{{ runStatusLabel() }}</strong>
-        <p>Content Plan V2 evidence will update when the run completes.</p>
+        Evidence will update when the run completes.
       </div>
-    </section>
+    </div>
   }
 
-  <section class="cpv2__summary" aria-label="Evidence summary">
-    @for (check of readinessChecks(); track check.label) {
-      <article class="cpv2__check" [class.cpv2__check--missing]="!check.ok">
-        <span>{{ check.ok ? 'Ready' : check.required ? 'Needed' : 'Gap' }}</span>
-        <strong>{{ check.label }}</strong>
-        <p>{{ check.detail }}</p>
-      </article>
-    }
-  </section>
+  @if (loadingEvidence() && !thought()) {
+    <div class="bus-loading">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Loading evidence book" />
+    </div>
+  } @else {
+    <div class="bus-binder">
+      <nav class="bus-binder-nav" aria-label="Content Plan V2 evidence sections">
+        <div class="bus-binder-nav__label">Evidence</div>
+        <button
+          type="button"
+          class="bus-binder-nav__item"
+          [class.is-active]="binderSection() === 'readiness'"
+          [class.is-partial]="navItem('readiness')?.state === 'partial'"
+          [class.is-missing]="navItem('readiness')?.state === 'missing'"
+          (click)="selectSection('readiness')"
+        >
+          <svg class="bus-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M3 4.5h10M3 8h10M3 11.5h6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          </svg>
+          Readiness
+          <span class="bus-binder-nav__badge">{{ readyCheckCount() }}</span>
+        </button>
 
-  <div class="cpv2__tabs" role="tablist" aria-label="Content Plan V2 evidence tabs">
-    @for (tab of tabs(); track tab.id) {
-      <button
-        type="button"
-        role="tab"
-        class="cpv2-tab"
-        [class.cpv2-tab--active]="activeTab() === tab.id"
-        [class.cpv2-tab--ready]="tab.state === 'ready'"
-        [class.cpv2-tab--partial]="tab.state === 'partial'"
-        [class.cpv2-tab--missing]="tab.state === 'missing'"
-        [attr.aria-selected]="activeTab() === tab.id"
-        (click)="setTab(tab.id)"
-      >
-        <span>{{ tab.label }}</span>
-        <strong>{{ tab.count }}</strong>
-      </button>
-    }
-  </div>
+        <div class="bus-binder-nav__label" style="margin-top:0.75rem;">Identity</div>
+        <button
+          type="button"
+          class="bus-binder-nav__item"
+          [class.is-active]="binderSection() === 'business'"
+          [class.is-partial]="navItem('business')?.state === 'partial'"
+          [class.is-missing]="navItem('business')?.state === 'missing'"
+          (click)="selectSection('business')"
+        >
+          <svg class="bus-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" stroke="currentColor" stroke-width="1.1"/>
+            <path d="M5 6h6M5 8.5h4M5 11h5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          </svg>
+          Business
+        </button>
+        <button
+          type="button"
+          class="bus-binder-nav__item"
+          [class.is-active]="binderSection() === 'audience'"
+          [class.is-partial]="navItem('audience')?.state === 'partial'"
+          [class.is-missing]="navItem('audience')?.state === 'missing'"
+          (click)="selectSection('audience')"
+        >
+          <svg class="bus-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="6" cy="5.5" r="2" stroke="currentColor" stroke-width="1.1"/>
+            <path d="M2.5 13c0-2 1.6-3.5 3.5-3.5S9.5 11 9.5 13" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          </svg>
+          Audience
+          @if (navItem('audience')?.count; as count) {
+            <span class="bus-binder-nav__badge">{{ count }}</span>
+          }
+        </button>
 
-  <main class="cpv2__panel" [attr.aria-label]="selectedTab()?.label || 'Evidence panel'">
-    @switch (activeTab()) {
-      @case ('readiness') {
-        <section class="cpv2__section">
-          <div class="cpv2__section-head">
-            <h2>Readiness Report</h2>
-            <p>V2 should return a repair checklist instead of weak strategy when required inputs are missing.</p>
-          </div>
+        <div class="bus-binder-nav__label" style="margin-top:0.75rem;">Research</div>
+        <button
+          type="button"
+          class="bus-binder-nav__item"
+          [class.is-active]="binderSection() === 'keywords'"
+          [class.is-partial]="navItem('keywords')?.state === 'partial'"
+          [class.is-missing]="navItem('keywords')?.state === 'missing'"
+          (click)="selectSection('keywords')"
+        >
+          <svg class="bus-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M7 2.5l1.2 3.6h3.8l-3.1 2.2 1.2 3.6L7 9.7l-3.1 2.2 1.2-3.6-3.1-2.2h3.8L7 2.5z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+          </svg>
+          Keywords
+          @if (navItem('keywords')?.count; as count) {
+            <span class="bus-binder-nav__badge">{{ count }}</span>
+          }
+        </button>
+        <button
+          type="button"
+          class="bus-binder-nav__item"
+          [class.is-active]="binderSection() === 'rankings'"
+          [class.is-partial]="navItem('rankings')?.state === 'partial'"
+          [class.is-missing]="navItem('rankings')?.state === 'missing'"
+          (click)="selectSection('rankings')"
+        >
+          <svg class="bus-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M4 12V6M8 12V4M12 12V8" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          </svg>
+          Rankings
+          @if (navItem('rankings')?.count; as count) {
+            <span class="bus-binder-nav__badge">{{ count }}</span>
+          }
+        </button>
+        <button
+          type="button"
+          class="bus-binder-nav__item"
+          [class.is-active]="binderSection() === 'ai-visibility'"
+          [class.is-partial]="navItem('ai-visibility')?.state === 'partial'"
+          [class.is-missing]="navItem('ai-visibility')?.state === 'missing'"
+          (click)="selectSection('ai-visibility')"
+        >
+          <svg class="bus-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 1.5l1.6 4.8H14l-4 2.9 1.5 4.8L8 11.1 4.5 14l1.5-4.8-4-2.9h4.4L8 1.5z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+          </svg>
+          AI visibility
+          @if (navItem('ai-visibility')?.count; as count) {
+            <span class="bus-binder-nav__badge">{{ count }}</span>
+          }
+        </button>
 
-          <div class="cpv2__two-col">
-            <article>
-              <h3>Blockers</h3>
-              @if (blockers().length) {
+        <div class="bus-binder-nav__label" style="margin-top:0.75rem;">Site</div>
+        <button
+          type="button"
+          class="bus-binder-nav__item"
+          [class.is-active]="binderSection() === 'site-health'"
+          [class.is-partial]="navItem('site-health')?.state === 'partial'"
+          [class.is-missing]="navItem('site-health')?.state === 'missing'"
+          (click)="selectSection('site-health')"
+        >
+          <svg class="bus-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 1.5a4 4 0 00-4 4c0 3 4 8.5 4 8.5s4-5.5 4-8.5a4 4 0 00-4-4z" stroke="currentColor" stroke-width="1.1"/>
+            <circle cx="8" cy="5.5" r="1.25" fill="currentColor"/>
+          </svg>
+          Site health
+          @if (navItem('site-health')?.count; as count) {
+            <span class="bus-binder-nav__badge">{{ count }}</span>
+          }
+        </button>
+        <button
+          type="button"
+          class="bus-binder-nav__item"
+          [class.is-active]="binderSection() === 'optimization'"
+          [class.is-partial]="navItem('optimization')?.state === 'partial'"
+          [class.is-missing]="navItem('optimization')?.state === 'missing'"
+          (click)="selectSection('optimization')"
+        >
+          <svg class="bus-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M3 4.5h10M3 8h10M3 11.5h6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          </svg>
+          Optimization
+          @if (navItem('optimization')?.count; as count) {
+            <span class="bus-binder-nav__badge">{{ count }}</span>
+          }
+        </button>
+
+        <div class="bus-binder-nav__label" style="margin-top:0.75rem;">Plan</div>
+        <button
+          type="button"
+          class="bus-binder-nav__item"
+          [class.is-active]="binderSection() === 'inventory'"
+          [class.is-partial]="navItem('inventory')?.state === 'partial'"
+          [class.is-missing]="navItem('inventory')?.state === 'missing'"
+          (click)="selectSection('inventory')"
+        >
+          <svg class="bus-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M4 2.5h8l1 1.5v9.5H3V4l1-1.5z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+            <path d="M6 7.5h4M6 10h4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          </svg>
+          Inventory
+          @if (navItem('inventory')?.count; as count) {
+            <span class="bus-binder-nav__badge">{{ count }}</span>
+          }
+        </button>
+
+        <div class="bus-binder-nav__label" style="margin-top:0.75rem;">Developer</div>
+        <button
+          type="button"
+          class="bus-binder-nav__item"
+          [class.is-active]="binderSection() === 'raw'"
+          [class.is-partial]="navItem('raw')?.state === 'partial'"
+          [class.is-missing]="navItem('raw')?.state === 'missing'"
+          (click)="selectSection('raw')"
+        >
+          <svg class="bus-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M5 2.5h6v11H5V2.5z" stroke="currentColor" stroke-width="1.1"/>
+            <path d="M7 5.5h2M7 8h2M7 10.5h2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          </svg>
+          Raw keys
+          @if (navItem('raw')?.count; as count) {
+            <span class="bus-binder-nav__badge">{{ count }}</span>
+          }
+        </button>
+      </nav>
+
+      <div class="bus-binder-panel">
+        @switch (binderSection()) {
+          @case ('readiness') {
+            <div class="bus-panel-head">
+              <div class="bus-panel-kicker">{{ sectionKicker('readiness') }}</div>
+              <h2 class="bus-panel-title">Planning readiness</h2>
+              <p class="bus-panel-deck">
+                V2 should return a repair checklist instead of weak strategy when required inputs are missing.
+              </p>
+            </div>
+
+            <div class="bus-stat-grid">
+              <div class="bus-stat">
+                <span class="bus-stat__value">{{ readyCheckCount() }}</span>
+                <span class="bus-stat__label">Checks ready</span>
+              </div>
+              <div class="bus-stat">
+                <span class="bus-stat__value">{{ blockers().length }}</span>
+                <span class="bus-stat__label">Blockers</span>
+              </div>
+              <div class="bus-stat">
+                <span class="bus-stat__value">{{ warnings().length }}</span>
+                <span class="bus-stat__label">Warnings</span>
+              </div>
+              <div class="bus-stat">
+                <span class="bus-stat__value">{{ thought()?.steps?.length ?? 0 }}</span>
+                <span class="bus-stat__label">Run steps</span>
+              </div>
+            </div>
+
+            <h3 class="bus-subhead">Blockers</h3>
+            @if (blockers().length) {
+              <ul class="bus-fact-list">
                 @for (blocker of blockers(); track blocker.label) {
-                  <p class="cpv2__line cpv2__line--bad">{{ blocker.label }} — {{ blocker.detail }}</p>
+                  <li class="bus-fact">
+                    <div class="bus-fact__question">{{ blocker.label }}</div>
+                    <div class="bus-fact__answer">{{ blocker.detail }}</div>
+                  </li>
                 }
-              } @else {
-                <p class="cpv2__line cpv2__line--good">No required blockers.</p>
-              }
-            </article>
-            <article>
-              <h3>Warnings</h3>
-              @if (warnings().length) {
+              </ul>
+            } @else {
+              <p class="bus-empty">No required blockers.</p>
+            }
+
+            <h3 class="bus-subhead">Warnings</h3>
+            @if (warnings().length) {
+              <ul class="bus-fact-list">
                 @for (warning of warnings(); track warning.label) {
-                  <p class="cpv2__line">{{ warning.label }} — {{ warning.detail }}</p>
+                  <li class="bus-fact">
+                    <div class="bus-fact__question">{{ warning.label }}</div>
+                    <div class="bus-fact__answer">{{ warning.detail }}</div>
+                  </li>
                 }
+              </ul>
+            } @else {
+              <p class="bus-empty">All optional evidence is present.</p>
+            }
+
+            <h3 class="bus-subhead">Evidence run steps</h3>
+            @if (thought(); as run) {
+              @if (run.steps.length) {
+                <ul class="bus-step-list">
+                  @for (step of run.steps; track step.id) {
+                    <li class="bus-step" [class]="'bus-step--' + step.status">
+                      <span class="bus-step__status">{{ step.status }}</span>
+                      <span class="bus-step__label">{{ step.label }}</span>
+                      @if (step.summary || step.description) {
+                        <p class="bus-step__detail">{{ step.summary || step.description }}</p>
+                      }
+                    </li>
+                  }
+                </ul>
               } @else {
-                <p class="cpv2__line cpv2__line--good">All optional evidence is present.</p>
+                <p class="bus-empty">No evidence run steps yet.</p>
               }
-            </article>
-          </div>
+            } @else {
+              <p class="bus-empty">No evidence run steps yet.</p>
+            }
+          }
 
-          <div class="cpv2__steps">
-            @for (step of thought()?.steps ?? []; track step.id) {
-              <article class="cpv2__step" [class]="'cpv2__step--' + step.status">
-                <span>{{ step.status }}</span>
-                <strong>{{ step.label }}</strong>
-                <p>{{ step.summary || step.description || step.id }}</p>
-              </article>
-            } @empty {
-              <p class="cpv2__empty">No content-plan run steps yet.</p>
-            }
-          </div>
-        </section>
-      }
+          @case ('business') {
+            <div class="bus-panel-head">
+              <div class="bus-panel-kicker">{{ sectionKicker('business') }}</div>
+              <h2 class="bus-panel-title">Business identity</h2>
+              <p class="bus-panel-deck">Canonical identity and aliases used for brand visibility matching.</p>
+            </div>
 
-      @case ('business') {
-        <section class="cpv2__section">
-          <div class="cpv2__section-head">
-            <h2>Business Identity</h2>
-            <p>Canonical identity and aliases used for brand visibility matching.</p>
-          </div>
-          <div class="cpv2__identity">
-            <article>
-              <span>Hostname</span>
-              <strong>{{ clientIdentity().hostname || 'Not captured' }}</strong>
-            </article>
-            <article>
-              <span>Market</span>
-              <strong>{{ field(business(), 'marketScope') }}</strong>
-              <p>{{ field(business(), 'serviceArea') }}</p>
-            </article>
-            <article>
-              <span>Location</span>
-              <strong>{{ field(business(), 'serpLocationName') }}</strong>
-              <p>{{ field(business(), 'city') }} {{ field(business(), 'state', '') }}</p>
-            </article>
-          </div>
-          <div class="cpv2__chips">
-            @for (alias of clientIdentity().aliases; track alias) {
-              <span>{{ alias }}</span>
-            } @empty {
-              <span>No brand aliases found</span>
-            }
-          </div>
-        </section>
-      }
+            <div class="bus-card bus-card--hero">
+              <div class="bus-card__label">Site</div>
+              <div class="bus-card__title">{{ clientIdentity().aliases[0] || 'Untitled site' }}</div>
+              <div class="bus-card__meta">{{ clientIdentity().hostname || 'No hostname captured' }}</div>
+            </div>
 
-      @case ('audience') {
-        <section class="cpv2__section">
-          <div class="cpv2__section-head">
-            <h2>Audience Inputs</h2>
-            <p>Confirmed avatars and example searches available to shape briefs.</p>
-          </div>
-          <div class="cpv2__cards">
-            @for (avatar of confirmedAvatars(); track field(avatar, 'id', $index.toString())) {
-              <article>
-                <span>{{ field(avatar, 'intentCluster') }}</span>
-                <strong>{{ field(avatar, 'description') }}</strong>
-                <p>{{ field(avatar, 'exampleQueries') }}</p>
-              </article>
-            } @empty {
-              <p class="cpv2__empty">No confirmed avatars in the current substrate.</p>
-            }
-          </div>
-        </section>
-      }
+            <dl class="bus-dl">
+              <div class="bus-dl__row">
+                <dt>Market scope</dt>
+                <dd>{{ field(business(), 'marketScope') }}</dd>
+              </div>
+              <div class="bus-dl__row">
+                <dt>Service area</dt>
+                <dd>{{ field(business(), 'serviceArea') }}</dd>
+              </div>
+              <div class="bus-dl__row">
+                <dt>SERP location</dt>
+                <dd>{{ field(business(), 'serpLocationName') }}</dd>
+              </div>
+              <div class="bus-dl__row">
+                <dt>City / state</dt>
+                <dd>{{ field(business(), 'city', '') }} {{ field(business(), 'state', '') }}</dd>
+              </div>
+            </dl>
 
-      @case ('keywords') {
-        <section class="cpv2__section">
-          <div class="cpv2__section-head">
-            <h2>Keyword Evidence</h2>
-            <p>Confirmed keywords plus scored/tiered rows from the content-plan run.</p>
-          </div>
-          <div class="cpv2__table">
-            @for (keyword of scoredKeywords().slice(0, 18); track field(keyword, 'phrase', $index.toString())) {
-              <article>
-                <strong>{{ field(keyword, 'phrase') }}</strong>
-                <span>{{ field(keyword, 'intent') }} · {{ field(keyword, 'priority') }}</span>
-                <span>Score {{ field(keyword, 'score', 'n/a') }}</span>
-              </article>
-            } @empty {
-              @for (keyword of strategy.keywords().slice(0, 18); track keyword.id) {
-                <article>
-                  <strong>{{ keyword.phrase }}</strong>
-                  <span>{{ keyword.intent || 'intent pending' }} · {{ keyword.priority || 'priority pending' }}</span>
-                  <span>Confirmed keyword</span>
-                </article>
-              } @empty {
-                <p class="cpv2__empty">No keywords confirmed yet.</p>
-              }
+            <h3 class="bus-subhead">Brand aliases</h3>
+            @if (clientIdentity().aliases.length) {
+              <ul class="bus-chip-list">
+                @for (alias of clientIdentity().aliases; track alias) {
+                  <li class="bus-chip">{{ alias }}</li>
+                }
+              </ul>
+            } @else {
+              <p class="bus-empty">No brand aliases found.</p>
             }
-          </div>
-        </section>
-      }
+          }
 
-      @case ('rankings') {
-        <section class="cpv2__section">
-          <div class="cpv2__section-head">
-            <h2>Rankings / SERP Evidence</h2>
-            <p>Ranking snapshots and focus strategies that explain what the plan should support.</p>
-          </div>
-          <div class="cpv2__cards">
-            @for (focus of focusStrategies().slice(0, 12); track field(focus, 'phrase', $index.toString())) {
-              <article>
-                <span>Focus strategy</span>
-                <strong>{{ field(focus, 'phrase') }}</strong>
-                <p>{{ field(focus, 'recommendedPillarAngle') }}</p>
-              </article>
-            } @empty {
-              @for (row of rankings().slice(0, 12); track row.keywordId + row.latest.capturedAt) {
-                <article>
-                  <span>{{ row.latest.marketTier }} · {{ row.latest.locationName || 'Default market' }}</span>
-                  <strong>{{ row.phrase }}</strong>
-                  <p>Current rank: {{ row.latest.position ?? 'not ranking' }}</p>
-                </article>
-              } @empty {
-                <p class="cpv2__empty">No ranking or SERP evidence loaded.</p>
-              }
-            }
-          </div>
-        </section>
-      }
+          @case ('audience') {
+            <div class="bus-panel-head">
+              <div class="bus-panel-kicker">{{ sectionKicker('audience') }}</div>
+              <h2 class="bus-panel-title">Audience inputs</h2>
+              <p class="bus-panel-deck">Confirmed avatars and example searches available to shape briefs.</p>
+            </div>
 
-      @case ('site-health') {
-        <section class="cpv2__section">
-          <div class="cpv2__section-head">
-            <h2>Site Health</h2>
-            <p>Existing pages, refresh candidates, and already-ranking pages consumed by planning.</p>
-          </div>
-          <div class="cpv2__identity">
-            <article>
-              <span>Pages scanned</span>
-              <strong>{{ field(audit(), 'scannedCount', '0') }}</strong>
-            </article>
-            <article>
-              <span>Source</span>
-              <strong>{{ field(audit(), 'source') }}</strong>
-            </article>
-            <article>
-              <span>Captured</span>
-              <strong>{{ formatDate(latestAudit() ? undefined : thought()?.finishedAt) }}</strong>
-            </article>
-          </div>
-          <div class="cpv2__cards">
-            @for (fix of clientSiteFixes().slice(0, 9); track field(fix, 'url', $index.toString())) {
-              <article>
-                <span>{{ field(fix, 'pageRole') }}</span>
-                <strong>{{ field(fix, 'title') }}</strong>
-                <p>{{ field(fix, 'url') }}</p>
-              </article>
-            } @empty {
-              <p class="cpv2__empty">No site fix rows found.</p>
+            @if (confirmedAvatars().length) {
+              <ul class="bus-fact-list">
+                @for (avatar of confirmedAvatars(); track field(avatar, 'id', $index.toString())) {
+                  <li class="bus-fact">
+                    <div class="bus-fact__meta">{{ field(avatar, 'intentCluster') }}</div>
+                    <div class="bus-fact__question">{{ field(avatar, 'description') }}</div>
+                    <div class="bus-fact__answer">{{ field(avatar, 'exampleQueries') }}</div>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="bus-empty">No confirmed avatars in the current substrate.</p>
             }
-          </div>
-        </section>
-      }
+          }
 
-      @case ('optimization') {
-        <section class="cpv2__section">
-          <div class="cpv2__section-head">
-            <h2>Page Optimization Signals</h2>
-            <p>Existing pages that should be supported, refreshed, or protected from cannibalization.</p>
-          </div>
-          <div class="cpv2__cards">
-            @for (signal of pageOptimizationSignals().slice(0, 12); track field(signal, 'supportTargetUrl', $index.toString())) {
-              <article>
-                <span>{{ field(signal, 'calendarKind') }}</span>
-                <strong>{{ field(signal, 'supportTargetKeyword') }}</strong>
-                <p>{{ field(signal, 'supportTargetUrl') }}</p>
-              </article>
-            } @empty {
-              <p class="cpv2__empty">No page optimization signals loaded.</p>
-            }
-          </div>
-          <div class="cpv2__cards">
-            @for (page of performanceSignals().slice(0, 6); track field(page, 'url', $index.toString())) {
-              <article>
-                <span>Performance</span>
-                <strong>{{ field(page, 'status') }}</strong>
-                <p>{{ field(page, 'url') }}</p>
-              </article>
-            }
-          </div>
-        </section>
-      }
+          @case ('keywords') {
+            <div class="bus-panel-head">
+              <div class="bus-panel-kicker">{{ sectionKicker('keywords') }}</div>
+              <h2 class="bus-panel-title">Keyword evidence</h2>
+              <p class="bus-panel-deck">Confirmed keywords plus scored rows from the evidence run.</p>
+            </div>
 
-      @case ('ai-visibility') {
-        <section class="cpv2__section">
-          <div class="cpv2__section-head">
-            <h2>AI Visibility</h2>
-            <p>Prompts, cited domains, brand/domain citation state, and answer gaps for V2 planning.</p>
-          </div>
-          <div class="cpv2__cards">
-            @for (snapshot of aiVisibilitySnapshots().slice(0, 12); track snapshot.id) {
-              <article>
-                <span>{{ snapshot.locationName || 'Default market' }}</span>
-                <strong>{{ snapshot.keyword }}</strong>
-                <p>
-                  {{ snapshot.summary.clientCitedSourceCount }} cited source(s) ·
-                  {{ snapshot.summary.topCitedDomains.slice(0, 3).join(', ') || 'No domains' }}
-                </p>
-              </article>
-            } @empty {
-              <p class="cpv2__empty">No AI visibility snapshots loaded yet.</p>
+            @if (scoredKeywords().length) {
+              <ul class="bus-fact-list">
+                @for (keyword of scoredKeywords().slice(0, 24); track field(keyword, 'phrase', $index.toString())) {
+                  <li class="bus-fact">
+                    <div class="bus-fact__question">{{ field(keyword, 'phrase') }}</div>
+                    <div class="bus-fact__answer">
+                      {{ field(keyword, 'intent') }} · {{ field(keyword, 'priority') }}
+                    </div>
+                    <div class="bus-fact__meta">Score {{ field(keyword, 'score', 'n/a') }}</div>
+                  </li>
+                }
+              </ul>
+            } @else if (strategy.keywords().length) {
+              <ul class="bus-chip-list">
+                @for (keyword of strategy.keywords().slice(0, 24); track keyword.id) {
+                  <li class="bus-chip bus-chip--muted">{{ keyword.phrase }}</li>
+                }
+              </ul>
+            } @else {
+              <p class="bus-empty">No keywords confirmed yet.</p>
             }
-          </div>
-        </section>
-      }
+          }
 
-      @case ('inventory') {
-        <section class="cpv2__section">
-          <div class="cpv2__section-head">
-            <h2>Content Inventory</h2>
-            <p>Calendar, backlog, and publishing candidates produced by the latest content-plan run.</p>
-          </div>
-          <div class="cpv2__table">
-            @for (item of calendar().slice(0, 16); track field(item, 'workingTitle', $index.toString())) {
-              <article>
-                <strong>{{ field(item, 'editorialTitle', field(item, 'workingTitle')) }}</strong>
-                <span>{{ field(item, 'suggestedKeyword') }} · {{ field(item, 'clusterRole') }}</span>
-                <span>{{ field(item, 'proposedPublishAt') }}</span>
-              </article>
-            } @empty {
-              <p class="cpv2__empty">No calendar rows generated yet.</p>
-            }
-          </div>
-        </section>
-      }
+          @case ('rankings') {
+            <div class="bus-panel-head">
+              <div class="bus-panel-kicker">{{ sectionKicker('rankings') }}</div>
+              <h2 class="bus-panel-title">Rankings / SERP evidence</h2>
+              <p class="bus-panel-deck">Ranking snapshots and focus strategies that explain what the plan should support.</p>
+            </div>
 
-      @case ('raw') {
-        <section class="cpv2__section">
-          <div class="cpv2__section-head">
-            <h2>Raw Evidence Keys</h2>
-            <p>Developer-facing artifact inventory from the latest `content_plan` Thought.</p>
-          </div>
-          <div class="cpv2__raw">
-            @for (key of artifactKeys(); track key) {
-              <article>
-                <strong>{{ key }}</strong>
-                <span>{{ label(typeof artifacts()[key]) }}</span>
-              </article>
-            } @empty {
-              <p class="cpv2__empty">No run artifacts found.</p>
+            @if (focusStrategies().length) {
+              <ul class="bus-fact-list">
+                @for (focus of focusStrategies().slice(0, 16); track field(focus, 'phrase', $index.toString())) {
+                  <li class="bus-fact">
+                    <div class="bus-fact__meta">Focus strategy</div>
+                    <div class="bus-fact__question">{{ field(focus, 'phrase') }}</div>
+                    <div class="bus-fact__answer">{{ field(focus, 'recommendedPillarAngle') }}</div>
+                  </li>
+                }
+              </ul>
+            } @else if (rankings().length) {
+              <ul class="bus-fact-list">
+                @for (row of rankings().slice(0, 16); track row.keywordId + row.latest.capturedAt) {
+                  <li class="bus-fact">
+                    <div class="bus-fact__meta">
+                      {{ row.latest.marketTier }} · {{ row.latest.locationName || 'Default market' }}
+                    </div>
+                    <div class="bus-fact__question">{{ row.phrase }}</div>
+                    <div class="bus-fact__answer">
+                      Current rank: {{ row.latest.position ?? 'not ranking' }}
+                    </div>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="bus-empty">No ranking or SERP evidence loaded.</p>
             }
-          </div>
-        </section>
-      }
-    }
-  </main>
+          }
+
+          @case ('site-health') {
+            <div class="bus-panel-head">
+              <div class="bus-panel-kicker">{{ sectionKicker('site-health') }}</div>
+              <h2 class="bus-panel-title">Site health</h2>
+              <p class="bus-panel-deck">Existing pages, refresh candidates, and already-ranking pages consumed by planning.</p>
+            </div>
+
+            <div class="bus-stat-grid">
+              <div class="bus-stat">
+                <span class="bus-stat__value">{{ field(audit(), 'scannedCount', '0') }}</span>
+                <span class="bus-stat__label">Pages scanned</span>
+              </div>
+              <div class="bus-stat">
+                <span class="bus-stat__value">{{ field(audit(), 'source', '—') }}</span>
+                <span class="bus-stat__label">Audit source</span>
+              </div>
+              <div class="bus-stat">
+                <span class="bus-stat__value">{{ clientSiteFixes().length }}</span>
+                <span class="bus-stat__label">Fix targets</span>
+              </div>
+              <div class="bus-stat">
+                <span class="bus-stat__value">{{ formatDate(thought()?.finishedAt) }}</span>
+                <span class="bus-stat__label">Captured</span>
+              </div>
+            </div>
+
+            @if (clientSiteFixes().length) {
+              <ul class="bus-fact-list">
+                @for (fix of clientSiteFixes().slice(0, 12); track field(fix, 'url', $index.toString())) {
+                  <li class="bus-fact">
+                    <div class="bus-fact__meta">{{ field(fix, 'pageRole') }}</div>
+                    <div class="bus-fact__question">{{ field(fix, 'title') }}</div>
+                    <div class="bus-fact__answer">{{ field(fix, 'url') }}</div>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="bus-empty">No site fix rows found.</p>
+            }
+          }
+
+          @case ('optimization') {
+            <div class="bus-panel-head">
+              <div class="bus-panel-kicker">{{ sectionKicker('optimization') }}</div>
+              <h2 class="bus-panel-title">Page optimization signals</h2>
+              <p class="bus-panel-deck">Existing pages that should be supported, refreshed, or protected from cannibalization.</p>
+            </div>
+
+            @if (pageOptimizationSignals().length) {
+              <ul class="bus-fact-list">
+                @for (signal of pageOptimizationSignals().slice(0, 16); track field(signal, 'supportTargetUrl', $index.toString())) {
+                  <li class="bus-fact">
+                    <div class="bus-fact__meta">{{ field(signal, 'calendarKind') }}</div>
+                    <div class="bus-fact__question">{{ field(signal, 'supportTargetKeyword') }}</div>
+                    <div class="bus-fact__answer">{{ field(signal, 'supportTargetUrl') }}</div>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="bus-empty">No page optimization signals loaded.</p>
+            }
+
+            @if (performanceSignals().length) {
+              <h3 class="bus-subhead">Performance signals</h3>
+              <ul class="bus-fact-list">
+                @for (page of performanceSignals().slice(0, 8); track field(page, 'url', $index.toString())) {
+                  <li class="bus-fact">
+                    <div class="bus-fact__meta">Performance</div>
+                    <div class="bus-fact__question">{{ field(page, 'status') }}</div>
+                    <div class="bus-fact__answer">{{ field(page, 'url') }}</div>
+                  </li>
+                }
+              </ul>
+            }
+          }
+
+          @case ('ai-visibility') {
+            <div class="bus-panel-head">
+              <div class="bus-panel-kicker">{{ sectionKicker('ai-visibility') }}</div>
+              <h2 class="bus-panel-title">AI visibility</h2>
+              <p class="bus-panel-deck">Prompts, cited domains, brand/domain citation state, and answer gaps for V2 planning.</p>
+            </div>
+
+            @if (aiVisibilitySnapshots().length) {
+              <ul class="bus-fact-list">
+                @for (snapshot of aiVisibilitySnapshots().slice(0, 16); track snapshot.id) {
+                  <li class="bus-fact">
+                    <div class="bus-fact__meta">{{ snapshot.locationName || 'Default market' }}</div>
+                    <div class="bus-fact__question">{{ snapshot.keyword }}</div>
+                    <div class="bus-fact__answer">
+                      {{ snapshot.summary.clientCitedSourceCount }} cited source(s) ·
+                      {{ snapshot.summary.topCitedDomains.slice(0, 3).join(', ') || 'No domains' }}
+                    </div>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="bus-empty">No AI visibility snapshots loaded yet.</p>
+            }
+          }
+
+          @case ('inventory') {
+            <div class="bus-panel-head">
+              <div class="bus-panel-kicker">{{ sectionKicker('inventory') }}</div>
+              <h2 class="bus-panel-title">Content inventory</h2>
+              <p class="bus-panel-deck">Calendar and backlog candidates from prior planning runs, if present.</p>
+            </div>
+
+            @if (calendar().length) {
+              <ul class="bus-fact-list">
+                @for (item of calendar().slice(0, 20); track field(item, 'workingTitle', $index.toString())) {
+                  <li class="bus-fact">
+                    <div class="bus-fact__meta">
+                      {{ field(item, 'suggestedKeyword') }} · {{ field(item, 'clusterRole') }}
+                    </div>
+                    <div class="bus-fact__question">
+                      {{ field(item, 'editorialTitle', field(item, 'workingTitle')) }}
+                    </div>
+                    <div class="bus-fact__answer">{{ field(item, 'proposedPublishAt') }}</div>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="bus-empty">No calendar rows generated yet.</p>
+            }
+          }
+
+          @case ('raw') {
+            <div class="bus-panel-head">
+              <div class="bus-panel-kicker">{{ sectionKicker('raw') }}</div>
+              <h2 class="bus-panel-title">Raw evidence keys</h2>
+              <p class="bus-panel-deck">Developer-facing artifact inventory from the latest evidence run.</p>
+            </div>
+
+            @if (artifactKeys().length) {
+              <dl class="bus-dl">
+                @for (key of artifactKeys(); track key) {
+                  <div class="bus-dl__row">
+                    <dt>{{ key }}</dt>
+                    <dd>{{ label(typeof artifacts()[key]) }}</dd>
+                  </div>
+                }
+              </dl>
+            } @else {
+              <p class="bus-empty">No run artifacts found.</p>
+            }
+          }
+        }
+      </div>
+    </div>
+  }
 </div>

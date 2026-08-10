@@ -1,5 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { Button } from 'primeng/button';
+import { Message } from 'primeng/message';
+import { ProgressSpinner } from 'primeng/progressspinner';
 import type {
   AiVisibilitySnapshot,
   KeywordRankingRow,
@@ -14,7 +17,7 @@ import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { ThoughtRunSession } from '../../runs/thought-run-session.service';
 import { ShireApiService } from '../../shire/shire-api.service';
 
-type ContentPlanV2Tab =
+type BinderSection =
   | 'readiness'
   | 'business'
   | 'audience'
@@ -26,8 +29,8 @@ type ContentPlanV2Tab =
   | 'inventory'
   | 'raw';
 
-interface EvidenceTab {
-  id: ContentPlanV2Tab;
+interface BinderNavItem {
+  id: BinderSection;
   label: string;
   count: number;
   state: 'ready' | 'partial' | 'missing';
@@ -49,6 +52,7 @@ interface ClientIdentity {
   selector: 'app-protopipe-content-plan-v2',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [Button, Message, ProgressSpinner],
   templateUrl: './protopipe-content-plan-v2.component.html',
   styleUrl: './protopipe-content-plan-v2.component.scss',
 })
@@ -57,7 +61,7 @@ export class ProtopipeContentPlanV2Component implements OnInit {
   readonly strategy = inject(ProtopipeStrategyService);
   readonly runSession = inject(ThoughtRunSession);
 
-  readonly activeTab = signal<ContentPlanV2Tab>('readiness');
+  readonly binderSection = signal<BinderSection>('readiness');
   readonly loadingEvidence = signal(false);
   readonly evidenceError = signal<string | null>(null);
   readonly autoStartAttempted = signal(false);
@@ -188,26 +192,26 @@ export class ProtopipeContentPlanV2Component implements OnInit {
     this.readinessChecks().filter((check) => !check.required && !check.ok),
   );
 
-  readonly tabs = computed<EvidenceTab[]>(() => [
-    tab('readiness', 'Readiness', this.readinessChecks().filter((check) => check.ok).length, this.blockers().length === 0),
-    tab('business', 'Business', this.clientIdentity().aliases.length + (this.clientIdentity().hostname ? 1 : 0), Boolean(this.clientIdentity().hostname)),
-    tab('audience', 'Audience', this.confirmedAvatars().length, this.confirmedAvatars().length > 0),
-    tab('keywords', 'Keywords', this.scoredKeywords().length || this.strategy.keywords().length, this.strategy.keywords().length > 0),
-    tab('rankings', 'Rankings / SERP', this.focusStrategies().length || this.rankings().length, this.focusStrategies().length > 0 || this.rankings().length > 0),
-    tab('site-health', 'Site Health', numberValue(recordValue(this.audit(), 'scannedCount')) ?? 0, Boolean(this.audit())),
-    tab('optimization', 'Optimization', this.pageOptimizationSignals().length, this.pageOptimizationSignals().length > 0),
-    tab('ai-visibility', 'AI Visibility', this.aiVisibilitySnapshots().length, this.aiVisibilitySnapshots().length > 0),
-    tab('inventory', 'Content Inventory', this.calendar().length + this.backlog().length, this.calendar().length > 0 || this.backlog().length > 0),
-    tab('raw', 'Raw Evidence', this.artifactKeys().length, this.artifactKeys().length > 0),
+  readonly navItems = computed<BinderNavItem[]>(() => [
+    navItem('readiness', 'Readiness', this.readinessChecks().filter((check) => check.ok).length, this.blockers().length === 0),
+    navItem('business', 'Business', this.clientIdentity().aliases.length + (this.clientIdentity().hostname ? 1 : 0), Boolean(this.clientIdentity().hostname)),
+    navItem('audience', 'Audience', this.confirmedAvatars().length, this.confirmedAvatars().length > 0),
+    navItem('keywords', 'Keywords', this.scoredKeywords().length || this.strategy.keywords().length, this.strategy.keywords().length > 0),
+    navItem('rankings', 'Rankings', this.focusStrategies().length || this.rankings().length, this.focusStrategies().length > 0 || this.rankings().length > 0),
+    navItem('site-health', 'Site health', numberValue(recordValue(this.audit(), 'scannedCount')) ?? 0, Boolean(this.audit())),
+    navItem('optimization', 'Optimization', this.pageOptimizationSignals().length, this.pageOptimizationSignals().length > 0),
+    navItem('ai-visibility', 'AI visibility', this.aiVisibilitySnapshots().length, this.aiVisibilitySnapshots().length > 0),
+    navItem('inventory', 'Inventory', this.calendar().length + this.backlog().length, this.calendar().length > 0 || this.backlog().length > 0),
+    navItem('raw', 'Raw keys', this.artifactKeys().length, this.artifactKeys().length > 0),
   ]);
+
+  readonly readyCheckCount = computed(() => this.readinessChecks().filter((check) => check.ok).length);
 
   readonly confirmedAvatars = computed(() => {
     const businessAvatars = asRecordArray(recordValue(this.business(), 'confirmedAvatars'));
     if (businessAvatars.length > 0) return businessAvatars;
     return asRecordArray(recordValue(this.strategyContext(), 'confirmedAvatars'));
   });
-
-  readonly selectedTab = computed(() => this.tabs().find((item) => item.id === this.activeTab()) ?? this.tabs()[0]);
 
   constructor() {
     effect(() => {
@@ -222,8 +226,37 @@ export class ProtopipeContentPlanV2Component implements OnInit {
     void this.loadInitial();
   }
 
-  setTab(tabId: ContentPlanV2Tab): void {
-    this.activeTab.set(tabId);
+  selectSection(section: BinderSection): void {
+    this.binderSection.set(section);
+  }
+
+  navItem(id: BinderSection): BinderNavItem | undefined {
+    return this.navItems().find((item) => item.id === id);
+  }
+
+  sectionKicker(section: BinderSection): string {
+    switch (section) {
+      case 'readiness':
+        return 'Evidence · Readiness';
+      case 'business':
+        return 'Identity · Business';
+      case 'audience':
+        return 'Identity · Audience';
+      case 'keywords':
+        return 'Research · Keywords';
+      case 'rankings':
+        return 'Research · Rankings';
+      case 'ai-visibility':
+        return 'Research · AI visibility';
+      case 'site-health':
+        return 'Site · Health';
+      case 'optimization':
+        return 'Site · Optimization';
+      case 'inventory':
+        return 'Plan · Inventory';
+      case 'raw':
+        return 'Developer · Raw keys';
+    }
   }
 
   async refresh(): Promise<void> {
@@ -246,10 +279,6 @@ export class ProtopipeContentPlanV2Component implements OnInit {
     if (!run && this.runSession.loadError()) {
       this.evidenceError.set(this.runSession.loadError());
     }
-  }
-
-  statusClass(state: EvidenceTab['state']): string {
-    return `cpv2-tab--${state}`;
   }
 
   field(record: Record<string, unknown> | null, key: string, fallback = 'Not captured'): string {
@@ -325,12 +354,12 @@ export class ProtopipeContentPlanV2Component implements OnInit {
   }
 }
 
-function tab(
-  id: ContentPlanV2Tab,
+function navItem(
+  id: BinderSection,
   label: string,
   count: number,
   ready: boolean,
-): EvidenceTab {
+): BinderNavItem {
   return {
     id,
     label,

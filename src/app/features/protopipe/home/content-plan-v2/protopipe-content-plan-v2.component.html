@@ -5,7 +5,9 @@
       <p class="bus-masthead__deck">
         Planning substrate before calendar generation — identity, keywords, SERP evidence, site health, and AI visibility.
       </p>
-      <p class="bus-masthead__meta">{{ runStatusLabel() }} · {{ clientIdentity().hostname || 'No hostname' }}</p>
+      <p class="bus-masthead__meta">
+        Evidence: {{ runStatusLabel() }} · Plan: {{ planRunStatusLabel() }} · {{ clientIdentity().hostname || 'No hostname' }}
+      </p>
     </div>
     <div class="bus-masthead__actions">
       <span class="bus-status" [class]="'bus-status--' + readinessStatus()">{{ label(readinessStatus()) }}</span>
@@ -25,10 +27,21 @@
           (onClick)="startEvidenceRun()"
         />
       }
+      <p-button
+        [label]="planRunSession.isActive() ? 'Building plan…' : 'Build content plan'"
+        icon="pi pi-sparkles"
+        size="small"
+        [disabled]="!canBuildPlan()"
+        (onClick)="startContentPlanRun()"
+      />
     </div>
   </header>
 
   @if (evidenceError(); as err) {
+    <p-message severity="error" [text]="err" styleClass="w-full" />
+  }
+
+  @if (planError(); as err) {
     <p-message severity="error" [text]="err" styleClass="w-full" />
   }
 
@@ -38,6 +51,16 @@
       <div>
         <strong>{{ runStatusLabel() }}</strong>
         Evidence will update when the run completes.
+      </div>
+    </div>
+  }
+
+  @if (planRunSession.isActive() && planThought()?.thinkerKind === 'content_plan_v2') {
+    <div class="bus-notice" role="status" aria-live="polite">
+      <span class="bus-notice__dot" aria-hidden="true"></span>
+      <div>
+        <strong>{{ planRunStatusLabel() }}</strong>
+        Content Plan V2 results will appear in Inventory when complete.
       </div>
     </div>
   }
@@ -517,7 +540,74 @@
               <p class="bus-panel-deck">Prompts, cited domains, brand/domain citation state, and answer gaps for V2 planning.</p>
             </div>
 
+            @if (aiVisibilityActionCount()) {
+              <div class="bus-stat-grid">
+                <div class="bus-stat">
+                  <span class="bus-stat__value">{{ notMentionedActions().length }}</span>
+                  <span class="bus-stat__label">Not mentioned</span>
+                </div>
+                <div class="bus-stat">
+                  <span class="bus-stat__value">{{ mentionedNotCitedActions().length }}</span>
+                  <span class="bus-stat__label">Mentioned, not cited</span>
+                </div>
+                <div class="bus-stat">
+                  <span class="bus-stat__value">{{ citedWins().length }}</span>
+                  <span class="bus-stat__label">Cited wins</span>
+                </div>
+                <div class="bus-stat">
+                  <span class="bus-stat__value">{{ competitorCitationGaps().length }}</span>
+                  <span class="bus-stat__label">Competitor gaps</span>
+                </div>
+              </div>
+
+              <h3 class="bus-subhead">Not mentioned</h3>
+              @if (notMentionedActions().length) {
+                <ul class="bus-fact-list">
+                  @for (action of notMentionedActions().slice(0, 8); track field(action, 'prompt', $index.toString())) {
+                    <li class="bus-fact">
+                      <div class="bus-fact__meta">{{ field(action, 'recommendedAction') }} · {{ field(action, 'promptOrigin') }}</div>
+                      <div class="bus-fact__question">{{ field(action, 'prompt') }}</div>
+                      <div class="bus-fact__answer">{{ field(action, 'rationale') }}</div>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="bus-empty">No not-mentioned AI Visibility actions.</p>
+              }
+
+              <h3 class="bus-subhead bus-subhead--spaced">Mentioned, not cited</h3>
+              @if (mentionedNotCitedActions().length) {
+                <ul class="bus-fact-list">
+                  @for (action of mentionedNotCitedActions().slice(0, 8); track field(action, 'prompt', $index.toString())) {
+                    <li class="bus-fact">
+                      <div class="bus-fact__meta">{{ field(action, 'recommendedAction') }} · {{ field(action, 'promptOrigin') }}</div>
+                      <div class="bus-fact__question">{{ field(action, 'prompt') }}</div>
+                      <div class="bus-fact__answer">{{ field(action, 'rationale') }}</div>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="bus-empty">No mentioned-not-cited AI Visibility actions.</p>
+              }
+
+              <h3 class="bus-subhead bus-subhead--spaced">Cited wins</h3>
+              @if (citedWins().length) {
+                <ul class="bus-fact-list">
+                  @for (action of citedWins().slice(0, 8); track field(action, 'prompt', $index.toString())) {
+                    <li class="bus-fact">
+                      <div class="bus-fact__meta">{{ field(action, 'recommendedAction') }} · {{ field(action, 'promptOrigin') }}</div>
+                      <div class="bus-fact__question">{{ field(action, 'prompt') }}</div>
+                      <div class="bus-fact__answer">{{ field(action, 'rationale') }}</div>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="bus-empty">No cited-win AI Visibility actions.</p>
+              }
+            }
+
             @if (aiVisibilitySnapshots().length) {
+              <h3 class="bus-subhead bus-subhead--spaced">Raw snapshots</h3>
               <ul class="bus-fact-list">
                 @for (snapshot of aiVisibilitySnapshots().slice(0, 16); track snapshot.id) {
                   <li class="bus-fact">
@@ -530,7 +620,7 @@
                   </li>
                 }
               </ul>
-            } @else {
+            } @else if (!aiVisibilityActionCount()) {
               <p class="bus-empty">No AI visibility snapshots loaded yet.</p>
             }
           }
@@ -539,10 +629,19 @@
             <div class="bus-panel-head">
               <div class="bus-panel-kicker">{{ sectionKicker('inventory') }}</div>
               <h2 class="bus-panel-title">Content inventory</h2>
-              <p class="bus-panel-deck">Calendar and backlog candidates from prior planning runs, if present.</p>
+              <p class="bus-panel-deck">Calendar and backlog candidates from the completed Content Plan V2 run.</p>
             </div>
 
+            @if (planThought()) {
+              <div class="bus-card">
+                <div class="bus-card__label">Plan run</div>
+                <div class="bus-card__title">{{ planRunStatusLabel() }}</div>
+                <div class="bus-card__meta">{{ planThought()?.steps?.length ?? 0 }} step(s) · {{ formatDate(planThought()?.finishedAt) }}</div>
+              </div>
+            }
+
             @if (calendar().length) {
+              <h3 class="bus-subhead">Calendar</h3>
               <ul class="bus-fact-list">
                 @for (item of calendar().slice(0, 20); track field(item, 'workingTitle', $index.toString())) {
                   <li class="bus-fact">
@@ -558,6 +657,19 @@
               </ul>
             } @else {
               <p class="bus-empty">No calendar rows generated yet.</p>
+            }
+
+            @if (backlog().length) {
+              <h3 class="bus-subhead bus-subhead--spaced">Backlog</h3>
+              <ul class="bus-fact-list">
+                @for (item of backlog().slice(0, 12); track field(item, 'workingTitle', $index.toString())) {
+                  <li class="bus-fact">
+                    <div class="bus-fact__meta">{{ field(item, 'suggestedKeyword') }} · {{ field(item, 'clusterRole') }}</div>
+                    <div class="bus-fact__question">{{ field(item, 'editorialTitle', field(item, 'workingTitle')) }}</div>
+                    <div class="bus-fact__answer">{{ field(item, 'rationale') }}</div>
+                  </li>
+                }
+              </ul>
             }
           }
 

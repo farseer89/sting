@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { Button } from 'primeng/button';
 import { Message } from 'primeng/message';
 import { ProgressSpinner } from 'primeng/progressspinner';
@@ -58,13 +58,19 @@ interface ClientIdentity {
 })
 export class ProtopipeContentPlanV2Component implements OnInit {
   private readonly api = inject(ShireApiService);
+  private readonly injector = inject(Injector);
   readonly strategy = inject(ProtopipeStrategyService);
   readonly runSession = inject(ThoughtRunSession);
+  readonly planRunSession = Injector.create({
+    providers: [ThoughtRunSession],
+    parent: this.injector,
+  }).get(ThoughtRunSession);
 
   readonly binderSection = signal<BinderSection>('readiness');
   readonly loadingEvidence = signal(false);
   readonly evidenceError = signal<string | null>(null);
   readonly autoStartAttempted = signal(false);
+  readonly planError = signal<string | null>(null);
   readonly rankings = signal<KeywordRankingRow[]>([]);
   readonly aiVisibilitySnapshots = signal<AiVisibilitySnapshot[]>([]);
   readonly latestAudit = signal<SiteAuditLatestResponse['audit'] | null>(null);
@@ -72,9 +78,24 @@ export class ProtopipeContentPlanV2Component implements OnInit {
   readonly pageSpeed = signal<PageSpeedSnapshot | null>(null);
 
   readonly thought = computed(() => this.contentPlanThought(this.runSession.thought()));
-  readonly artifacts = computed(() => asRecord(this.thought()?.artifacts) ?? {});
+  readonly planThought = computed(() => this.planRunSession.thought()?.thinkerKind === 'content_plan_v2' ? this.planRunSession.thought() : null);
+  readonly evidenceArtifacts = computed(() => asRecord(this.thought()?.artifacts) ?? {});
+  readonly planArtifacts = computed(() => asRecord(this.planThought()?.artifacts) ?? {});
+  readonly artifacts = computed(() =>
+    Object.keys(this.planArtifacts()).length > 0 ? this.planArtifacts() : this.evidenceArtifacts(),
+  );
   readonly business = computed(() => asRecord(this.artifacts()['business']));
   readonly strategyContext = computed(() => asRecord(this.artifacts()['strategyContext']));
+  readonly audienceEvidence = computed(() => asRecord(this.artifacts()['audienceEvidence']));
+  readonly aiVisibilityEvidence = computed(() => asRecord(this.artifacts()['aiVisibilityEvidence']));
+  readonly notMentionedActions = computed(() => asRecordArray(recordValue(this.aiVisibilityEvidence(), 'notMentionedActions')));
+  readonly mentionedNotCitedActions = computed(() =>
+    asRecordArray(recordValue(this.aiVisibilityEvidence(), 'mentionedNotCitedActions')),
+  );
+  readonly citedWins = computed(() => asRecordArray(recordValue(this.aiVisibilityEvidence(), 'citedWins')));
+  readonly competitorCitationGaps = computed(() =>
+    asRecordArray(recordValue(this.aiVisibilityEvidence(), 'competitorCitationGaps')),
+  );
   readonly audit = computed(() => asRecord(this.artifacts()['audit']) ?? asRecord(this.latestAudit()));
   readonly scoredKeywords = computed(() => asRecordArray(this.artifacts()['scored']));
   readonly clusters = computed(() => asRecordArray(this.artifacts()['clusters']));
@@ -135,6 +156,26 @@ export class ProtopipeContentPlanV2Component implements OnInit {
     return thought.status;
   });
 
+  readonly planRunStatusLabel = computed(() => {
+    const thought = this.planThought();
+    if (!thought) return 'No plan run yet';
+    if (thought.status === 'pending') return 'Plan queued';
+    if (thought.status === 'running') return `Planning ${thought.currentStepId ?? 'content plan'}`;
+    if (thought.status === 'complete') return 'Plan ready';
+    if (thought.status === 'failed') return 'Plan failed';
+    return thought.status;
+  });
+
+  readonly canBuildPlan = computed(() => {
+    const thought = this.thought();
+    return Boolean(
+      this.blockers().length === 0 &&
+        thought?.status === 'complete' &&
+        !this.runSession.isActive() &&
+        !this.planRunSession.isActive(),
+    );
+  });
+
   readonly readinessChecks = computed<ReadinessCheck[]>(() => {
     const identity = this.clientIdentity();
     const keywordCount = this.strategy.keywords().length;
@@ -184,8 +225,8 @@ export class ProtopipeContentPlanV2Component implements OnInit {
       },
       {
         label: 'AI visibility evidence',
-        ok: this.aiVisibilitySnapshots().length > 0,
-        detail: `${this.aiVisibilitySnapshots().length} AI visibility snapshot(s)`,
+        ok: this.aiVisibilitySnapshots().length > 0 || this.aiVisibilityActionCount() > 0,
+        detail: `${this.aiVisibilitySnapshots().length} AI visibility snapshot(s), ${this.aiVisibilityActionCount()} planning action(s)`,
       },
     ];
   });
@@ -213,12 +254,16 @@ export class ProtopipeContentPlanV2Component implements OnInit {
     navItem('rankings', 'Rankings', this.focusStrategies().length || this.rankings().length, this.focusStrategies().length > 0 || this.rankings().length > 0),
     navItem('site-health', 'Site health', numberValue(recordValue(this.audit(), 'scannedCount')) ?? 0, Boolean(this.audit())),
     navItem('optimization', 'Optimization', this.pageOptimizationSignals().length, this.pageOptimizationSignals().length > 0),
-    navItem('ai-visibility', 'AI visibility', this.aiVisibilitySnapshots().length, this.aiVisibilitySnapshots().length > 0),
+    navItem('ai-visibility', 'AI visibility', this.aiVisibilitySnapshots().length + this.aiVisibilityActionCount(), this.aiVisibilitySnapshots().length > 0 || this.aiVisibilityActionCount() > 0),
     navItem('inventory', 'Inventory', this.calendar().length + this.backlog().length, this.calendar().length > 0 || this.backlog().length > 0),
     navItem('raw', 'Raw keys', this.artifactKeys().length, this.artifactKeys().length > 0),
   ]);
 
   readonly readyCheckCount = computed(() => this.readinessChecks().filter((check) => check.ok).length);
+
+  readonly aiVisibilityActionCount = computed(
+    () => this.notMentionedActions().length + this.mentionedNotCitedActions().length + this.citedWins().length,
+  );
 
   readonly confirmedAvatars = computed(() => {
     const businessAvatars = asRecordArray(recordValue(this.business(), 'confirmedAvatars'));
@@ -231,6 +276,11 @@ export class ProtopipeContentPlanV2Component implements OnInit {
       const thought = this.thought();
       if (thought?.status === 'complete') {
         void this.loadEvidence();
+      }
+    });
+    effect(() => {
+      if (this.planThought()?.status === 'complete' && this.binderSection() !== 'inventory') {
+        queueMicrotask(() => this.binderSection.set('inventory'));
       }
     });
   }
@@ -294,6 +344,23 @@ export class ProtopipeContentPlanV2Component implements OnInit {
     }
   }
 
+  async startContentPlanRun(): Promise<void> {
+    const siteId = this.strategy.siteId();
+    if (!siteId || !this.canBuildPlan()) return;
+    this.planError.set(null);
+    const evidenceRunId = this.thought()?.id;
+    const run = await this.planRunSession.enqueueRun(siteId, {
+      thinkerKind: 'content_plan_v2',
+      params: {
+        source: 'contentPlanV2',
+        ...(evidenceRunId ? { evidenceRunId } : {}),
+      },
+    });
+    if (!run && this.planRunSession.loadError()) {
+      this.planError.set(this.planRunSession.loadError());
+    }
+  }
+
   field(record: Record<string, unknown> | null, key: string, fallback = 'Not captured'): string {
     const value = recordValue(record, key);
     if (typeof value === 'string' && value.trim()) return value.trim();
@@ -317,11 +384,14 @@ export class ProtopipeContentPlanV2Component implements OnInit {
   }
 
   private async loadInitial(options: { allowAutoStart?: boolean } = {}): Promise<void> {
-    await this.attachLatestContentPlanRun(options.allowAutoStart ?? true);
+    await Promise.all([
+      this.attachLatestEvidenceRun(options.allowAutoStart ?? true),
+      this.attachLatestPlanRun(),
+    ]);
     await this.loadEvidence();
   }
 
-  private async attachLatestContentPlanRun(allowAutoStart: boolean): Promise<void> {
+  private async attachLatestEvidenceRun(allowAutoStart: boolean): Promise<void> {
     const siteId = this.strategy.siteId();
     if (!siteId) return;
     const current = this.runSession.thought();
@@ -337,6 +407,22 @@ export class ProtopipeContentPlanV2Component implements OnInit {
       }
       if (!(err instanceof HttpErrorResponse && err.status === 404)) {
         this.evidenceError.set(parseProtopipeApiError(err, 'Could not load latest content plan run.'));
+      }
+    }
+  }
+
+  private async attachLatestPlanRun(): Promise<void> {
+    const siteId = this.strategy.siteId();
+    if (!siteId) return;
+    const current = this.planRunSession.thought();
+    if (current?.thinkerKind === 'content_plan_v2') return;
+
+    try {
+      const { run } = await firstValueFrom(this.api.getLatestRun$(siteId, 'content_plan_v2'));
+      this.planRunSession.attach(siteId, run.id, run);
+    } catch (err) {
+      if (!(err instanceof HttpErrorResponse && err.status === 404)) {
+        this.planError.set(parseProtopipeApiError(err, 'Could not load latest Content Plan V2 run.'));
       }
     }
   }

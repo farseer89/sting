@@ -88,6 +88,23 @@
           <span class="bus-binder-nav__badge">{{ readyCheckCount() }}</span>
         </button>
 
+        <button
+          type="button"
+          class="bus-binder-nav__item"
+          [class.is-active]="binderSection() === 'topology'"
+          [class.is-partial]="navItem('topology')?.state === 'partial'"
+          [class.is-missing]="navItem('topology')?.state === 'missing'"
+          (click)="selectSection('topology')"
+        >
+          <svg class="bus-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M3 4h10M4 8h8M5.5 12h5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          </svg>
+          Topology
+          @if (navItem('topology')?.count; as count) {
+            <span class="bus-binder-nav__badge">{{ count }}</span>
+          }
+        </button>
+
         <div class="bus-binder-nav__label" style="margin-top:0.75rem;">Identity</div>
         <button
           type="button"
@@ -322,6 +339,81 @@
               }
             } @else {
               <p class="bus-empty">No evidence run steps yet.</p>
+            }
+          }
+
+          @case ('topology') {
+            <div class="bus-panel-head">
+              <div class="bus-panel-kicker">{{ sectionKicker('topology') }}</div>
+              <h2 class="bus-panel-title">Planning topology</h2>
+              <p class="bus-panel-deck">
+                The market structure the system understands before calendar dates are assigned.
+              </p>
+            </div>
+
+            <div class="bus-stat-grid">
+              <div class="bus-stat">
+                <span class="bus-stat__value">{{ topologyRows().length }}</span>
+                <span class="bus-stat__label">Keyword rows</span>
+              </div>
+              <div class="bus-stat">
+                <span class="bus-stat__value">{{ clusters().length }}</span>
+                <span class="bus-stat__label">Clusters</span>
+              </div>
+              <div class="bus-stat">
+                <span class="bus-stat__value">{{ pillars().length }}</span>
+                <span class="bus-stat__label">Pillars</span>
+              </div>
+              <div class="bus-stat">
+                <span class="bus-stat__value">{{ aiVisibilityActionCount() }}</span>
+                <span class="bus-stat__label">AI visibility actions</span>
+              </div>
+            </div>
+
+            @if (clusters().length) {
+              <h3 class="bus-subhead">Clusters and pillar roles</h3>
+              <ul class="bus-fact-list">
+                @for (cluster of clusters().slice(0, 12); track field(cluster, 'name', $index.toString())) {
+                  <li class="bus-fact">
+                    <div class="bus-fact__meta">{{ field(cluster, 'dominantIntent') }} · {{ field(cluster, 'audienceLabel', 'No audience label') }}</div>
+                    <div class="bus-fact__question">{{ field(cluster, 'name') }}</div>
+                    <div class="bus-fact__answer">Pillar: {{ field(cluster, 'pillarKeyword') }}</div>
+                  </li>
+                }
+              </ul>
+            }
+
+            <h3 class="bus-subhead bus-subhead--spaced">Keyword topology</h3>
+            @if (topologyRows().length) {
+              <ul class="bus-fact-list">
+                @for (row of topologyRows().slice(0, 24); track field(row, 'phrase', $index.toString())) {
+                  <li class="bus-fact">
+                    <div class="bus-fact__meta">
+                      {{ field(row, 'tier', 'unscored') }} · {{ field(row, 'funnelStage', 'funnel pending') }}
+                    </div>
+                    <div class="bus-fact__question">{{ field(row, 'phrase') }}</div>
+                    <div class="bus-fact__answer">
+                      {{ field(row, 'intent') }} · {{ field(row, 'priority') }} ·
+                      {{ field(row, 'clusterName', 'cluster pending') }}
+                    </div>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="bus-empty">Confirm keywords to see topology.</p>
+            }
+
+            @if (pageOptimizationSignals().length) {
+              <h3 class="bus-subhead bus-subhead--spaced">Existing-page relationships</h3>
+              <ul class="bus-fact-list">
+                @for (signal of pageOptimizationSignals().slice(0, 8); track field(signal, 'supportTargetUrl', $index.toString())) {
+                  <li class="bus-fact">
+                    <div class="bus-fact__meta">{{ field(signal, 'calendarKind') }}</div>
+                    <div class="bus-fact__question">{{ field(signal, 'supportTargetKeyword') }}</div>
+                    <div class="bus-fact__answer">{{ field(signal, 'rationale') }}</div>
+                  </li>
+                }
+              </ul>
             }
           }
 
@@ -646,12 +738,32 @@
                 @for (item of calendar().slice(0, 20); track field(item, 'workingTitle', $index.toString())) {
                   <li class="bus-fact">
                     <div class="bus-fact__meta">
-                      {{ field(item, 'suggestedKeyword') }} · {{ field(item, 'clusterRole') }}
+                      {{ field(item, 'funnelStage', rationaleField(item, 'funnelStage', 'funnel pending')) }} ·
+                      {{ aiVisibilityOpportunityLabel(item) }}
                     </div>
                     <div class="bus-fact__question">
                       {{ field(item, 'editorialTitle', field(item, 'workingTitle')) }}
                     </div>
-                    <div class="bus-fact__answer">{{ field(item, 'proposedPublishAt') }}</div>
+                    <div class="bus-fact__answer">
+                      <strong>Why publish this:</strong> {{ rationaleField(item, 'userFacingWhy', field(item, 'rationale')) }}
+                    </div>
+                    <div class="bus-fact__answer">
+                      <strong>Business why:</strong> {{ rationaleField(item, 'businessWhy', field(item, 'strategyNarrative')) }}
+                    </div>
+                    <div class="bus-fact__meta">
+                      {{ field(item, 'suggestedKeyword') }} · {{ field(item, 'clusterRole') }} ·
+                      {{ field(item, 'proposedPublishAt') }}
+                    </div>
+                    <div class="bus-fact__meta">
+                      Sequence: {{ rationaleField(item, 'sequencingReason', 'Sequenced by opportunity score') }}
+                    </div>
+                    @if (rationaleList(item, 'proofNeeded').length) {
+                      <ul class="bus-chip-list bus-chip-list--inline">
+                        @for (proof of rationaleList(item, 'proofNeeded').slice(0, 4); track proof) {
+                          <li class="bus-chip bus-chip--muted">{{ proof }}</li>
+                        }
+                      </ul>
+                    }
                   </li>
                 }
               </ul>
@@ -664,9 +776,18 @@
               <ul class="bus-fact-list">
                 @for (item of backlog().slice(0, 12); track field(item, 'workingTitle', $index.toString())) {
                   <li class="bus-fact">
-                    <div class="bus-fact__meta">{{ field(item, 'suggestedKeyword') }} · {{ field(item, 'clusterRole') }}</div>
+                    <div class="bus-fact__meta">
+                      {{ field(item, 'funnelStage', rationaleField(item, 'funnelStage', 'funnel pending')) }} ·
+                      {{ aiVisibilityOpportunityLabel(item) }}
+                    </div>
                     <div class="bus-fact__question">{{ field(item, 'editorialTitle', field(item, 'workingTitle')) }}</div>
-                    <div class="bus-fact__answer">{{ field(item, 'rationale') }}</div>
+                    <div class="bus-fact__answer">
+                      <strong>Why publish this:</strong> {{ rationaleField(item, 'userFacingWhy', field(item, 'rationale')) }}
+                    </div>
+                    <div class="bus-fact__meta">
+                      {{ field(item, 'suggestedKeyword') }} · {{ field(item, 'clusterRole') }} ·
+                      Sequence: {{ rationaleField(item, 'sequencingReason', 'Backlog after higher-urgency items') }}
+                    </div>
                   </li>
                 }
               </ul>

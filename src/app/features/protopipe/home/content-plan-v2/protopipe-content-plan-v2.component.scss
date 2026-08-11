@@ -373,6 +373,10 @@ $bus-accent: #059669;
   gap: 0.5rem;
 }
 
+.bus-chip-list--inline {
+  margin-top: 0.45rem;
+}
+
 .bus-chip {
   display: inline-flex;
   align-items: center;

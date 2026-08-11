@@ -19,6 +19,7 @@ import { ShireApiService } from '../../shire/shire-api.service';
 
 type BinderSection =
   | 'readiness'
+  | 'topology'
   | 'business'
   | 'audience'
   | 'keywords'
@@ -84,6 +85,7 @@ export class ProtopipeContentPlanV2Component implements OnInit {
   readonly artifacts = computed(() =>
     Object.keys(this.planArtifacts()).length > 0 ? this.planArtifacts() : this.evidenceArtifacts(),
   );
+  readonly topology = computed(() => asRecord(this.artifacts()['topology']));
   readonly business = computed(() => asRecord(this.artifacts()['business']));
   readonly strategyContext = computed(() => asRecord(this.artifacts()['strategyContext']));
   readonly audienceEvidence = computed(() => asRecord(this.artifacts()['audienceEvidence']));
@@ -99,6 +101,20 @@ export class ProtopipeContentPlanV2Component implements OnInit {
   readonly audit = computed(() => asRecord(this.artifacts()['audit']) ?? asRecord(this.latestAudit()));
   readonly scoredKeywords = computed(() => asRecordArray(this.artifacts()['scored']));
   readonly clusters = computed(() => asRecordArray(this.artifacts()['clusters']));
+  readonly pillars = computed(() => asRecordArray(this.artifacts()['pillars']));
+  readonly topologyRows = computed(() => {
+    if (this.scoredKeywords().length) return this.scoredKeywords();
+    return this.strategy.keywords().map((keyword) => {
+      const strategyMeta = asRecord((keyword as { strategyMeta?: unknown }).strategyMeta);
+      return {
+        phrase: keyword.phrase,
+        intent: keyword.intent,
+        priority: keyword.priority,
+        funnelStage: stringValue(recordValue(strategyMeta, 'funnelStage')),
+        discoverySource: stringValue(recordValue(strategyMeta, 'discoverySource')),
+      };
+    });
+  });
   readonly calendar = computed(() => asRecordArray(this.artifacts()['calendar']));
   readonly backlog = computed(() => asRecordArray(this.artifacts()['backlog']));
   readonly focusStrategies = computed(() => asRecordArray(this.artifacts()['focusStrategies']));
@@ -248,6 +264,7 @@ export class ProtopipeContentPlanV2Component implements OnInit {
 
   readonly navItems = computed<BinderNavItem[]>(() => [
     navItem('readiness', 'Readiness', this.readinessChecks().filter((check) => check.ok).length, this.blockers().length === 0),
+    navItem('topology', 'Topology', this.clusters().length || this.topologyRows().length, this.topologyRows().length > 0),
     navItem('business', 'Business', this.clientIdentity().aliases.length + (this.clientIdentity().hostname ? 1 : 0), Boolean(this.clientIdentity().hostname)),
     navItem('audience', 'Audience', this.confirmedAvatars().length, this.confirmedAvatars().length > 0),
     navItem('keywords', 'Keywords', this.scoredKeywords().length || this.strategy.keywords().length, this.strategy.keywords().length > 0),
@@ -301,6 +318,8 @@ export class ProtopipeContentPlanV2Component implements OnInit {
     switch (section) {
       case 'readiness':
         return 'Evidence · Readiness';
+      case 'topology':
+        return 'Strategy · Topology';
       case 'business':
         return 'Identity · Business';
       case 'audience':
@@ -381,6 +400,21 @@ export class ProtopipeContentPlanV2Component implements OnInit {
     const parsed = Date.parse(value);
     if (!Number.isFinite(parsed)) return value;
     return new Date(parsed).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+
+  rationaleField(item: Record<string, unknown>, key: string, fallback = 'Not captured'): string {
+    return this.field(asRecord(recordValue(item, 'contentRationale')), key, fallback);
+  }
+
+  rationaleList(item: Record<string, unknown>, key: string): string[] {
+    return asStringArray(recordValue(asRecord(recordValue(item, 'contentRationale')), key));
+  }
+
+  aiVisibilityOpportunityLabel(item: Record<string, unknown>): string {
+    const rationale = asRecord(recordValue(item, 'contentRationale'));
+    const opportunity = asRecord(recordValue(rationale, 'aiVisibilityOpportunity'));
+    if (!opportunity) return 'No AI Visibility signal';
+    return `${this.label(this.field(opportunity, 'state'))} · ${this.label(this.field(opportunity, 'recommendedAction'))}`;
   }
 
   private async loadInitial(options: { allowAutoStart?: boolean } = {}): Promise<void> {

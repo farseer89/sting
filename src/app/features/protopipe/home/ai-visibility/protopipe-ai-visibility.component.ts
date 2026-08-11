@@ -11,6 +11,7 @@ import { Button } from 'primeng/button';
 import { Message } from 'primeng/message';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import type {
+  AiVisibilityCustomPrompt,
   AiVisibilitySnapshot,
   AiVisibilitySource,
   AiVisibilitySourceSnapshot,
@@ -52,11 +53,19 @@ interface CaptureMarketTarget {
 
 type CaptureMarketScope = 'national' | 'local';
 
+interface PaaSuggestion {
+  question: string;
+  parentKeyword: string;
+}
+
 type AiVisibilityModelId =
   | AiVisibilitySource
   | 'gemini'
   | 'claude'
   | 'perplexity';
+
+const MAX_CUSTOM_PROMPTS = 24;
+const MAX_PAA_SUGGESTIONS = 24;
 
 interface AiVisibilityModelOption {
   id: AiVisibilityModelId;
@@ -129,6 +138,7 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   readonly loading = signal(false);
   readonly capturing = signal(false);
   readonly captureMode = signal<CaptureMarketScope | null>(null);
+  readonly captureKind = signal<'keywords' | 'prompts' | null>(null);
   readonly captureProgress = signal<{
     current: number;
     total: number;
@@ -138,6 +148,10 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   readonly error = signal<string | null>(null);
   readonly rows = signal<KeywordRankingRow[]>([]);
   readonly persistedSnapshots = signal<AiVisibilitySnapshot[]>([]);
+  readonly nationalPrompts = signal<AiVisibilityCustomPrompt[]>([]);
+  readonly localPrompts = signal<AiVisibilityCustomPrompt[]>([]);
+  readonly promptDraft = signal('');
+  readonly savingPrompts = signal(false);
   readonly selectedSnapshotId = signal<string | null>(null);
   readonly selectedMarketScope = signal<CaptureMarketScope>('national');
   readonly activeModelId = signal<AiVisibilityModelId>('google_ai_mode');
@@ -388,6 +402,36 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   });
   readonly isActiveModelLocked = computed(() => !this.activeModel().available);
   readonly isOverviewSection = computed(() => this.binderSectionId() === 'overview');
+  readonly isPromptsSection = computed(() => {
+    const sectionId = this.binderSectionId();
+    return sectionId === 'national:prompts' || sectionId === 'local:prompts';
+  });
+  readonly activePrompts = computed(() =>
+    this.selectedMarketScope() === 'local' ? this.localPrompts() : this.nationalPrompts(),
+  );
+  readonly paaSuggestions = computed<PaaSuggestion[]>(() => {
+    const existing = new Set(
+      this.activePrompts().map((prompt) => normalizePromptKey(prompt.text)),
+    );
+    const suggestions: PaaSuggestion[] = [];
+    const seen = new Set<string>();
+
+    for (const row of this.marketRankingRows()) {
+      const questions = rankingSerpDetail(row)?.peopleAlsoAsk ?? [];
+      for (const paa of questions) {
+        const question = paa.question?.trim();
+        if (!question) continue;
+        const key = normalizePromptKey(question);
+        if (!key || existing.has(key) || seen.has(key)) continue;
+        seen.add(key);
+        suggestions.push({ question, parentKeyword: row.phrase });
+        if (suggestions.length >= MAX_PAA_SUGGESTIONS) {
+          return suggestions;
+        }
+      }
+    }
+    return suggestions;
+  });
   readonly overviewMarketRows = computed(() => [
     {
       scope: 'national' as const,
@@ -427,7 +471,7 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const [rankingsResponse, aiVisibilityResponse] = await Promise.all([
+      const [rankingsResponse, aiVisibilityResponse, promptsResponse] = await Promise.all([
         firstValueFrom(this.api.listRankings$(siteId)).catch((err) => {
           if (isRankingsNotReadyError(err)) return { rankings: [] };
           throw err;
@@ -437,10 +481,16 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
             snapshots: snapshot ? [snapshot] : [],
           })),
         ),
+        firstValueFrom(this.api.getAiVisibilityPrompts$(siteId)).catch(() => ({
+          national: [],
+          local: [],
+        })),
       ]);
       this.rows.set(rankingsResponse.rankings);
       const snapshots = this.mergeSnapshots([], aiVisibilityResponse.snapshots);
       this.persistedSnapshots.set(snapshots);
+      this.nationalPrompts.set(promptsResponse.national ?? []);
+      this.localPrompts.set(promptsResponse.local ?? []);
       if (snapshots[0]) {
         this.selectedMarketScope.set(this.snapshotMarketScope(snapshots[0]));
       }
@@ -467,6 +517,13 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
       return;
     }
 
+    if (sectionId === 'national:prompts' || sectionId === 'local:prompts') {
+      this.selectedMarketScope.set(sectionId.startsWith('local') ? 'local' : 'national');
+      this.promptDraft.set('');
+      this.closeAnswerDrawer();
+      return;
+    }
+
     const parsed = parseBinderSectionKey(sectionId);
     if (!parsed) return;
 
@@ -482,8 +539,163 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
     return `${scope}:${modelId}`;
   }
 
+  promptsSectionKey(scope: CaptureMarketScope): string {
+    return `${scope}:prompts`;
+  }
+
   isBinderSectionActive(scope: CaptureMarketScope, modelId: AiVisibilityModelId): boolean {
     return this.binderSectionId() === this.binderSectionKey(scope, modelId);
+  }
+
+  isPromptsSectionActive(scope: CaptureMarketScope): boolean {
+    return this.binderSectionId() === this.promptsSectionKey(scope);
+  }
+
+  promptCount(scope: CaptureMarketScope): number {
+    return scope === 'local' ? this.localPrompts().length : this.nationalPrompts().length;
+  }
+
+  onPromptDraftInput(event: Event): void {
+    const target = event.target as HTMLTextAreaElement | null;
+    this.promptDraft.set(target?.value ?? '');
+  }
+
+  async addCustomPrompt(): Promise<void> {
+    const text = this.promptDraft().trim();
+    if (!text) return;
+    const next: AiVisibilityCustomPrompt = {
+      id: crypto.randomUUID(),
+      text: text.slice(0, 200),
+      origin: 'custom',
+      createdAt: new Date().toISOString(),
+    };
+    const updated = dedupePrompts([next, ...this.activePrompts()]).slice(0, MAX_CUSTOM_PROMPTS);
+    await this.persistPrompts(this.selectedMarketScope(), updated);
+    this.promptDraft.set('');
+  }
+
+  async addPaaSuggestion(suggestion: PaaSuggestion): Promise<void> {
+    const next: AiVisibilityCustomPrompt = {
+      id: crypto.randomUUID(),
+      text: suggestion.question.slice(0, 200),
+      origin: 'paa',
+      parentKeyword: suggestion.parentKeyword,
+      createdAt: new Date().toISOString(),
+    };
+    const updated = dedupePrompts([next, ...this.activePrompts()]).slice(0, MAX_CUSTOM_PROMPTS);
+    await this.persistPrompts(this.selectedMarketScope(), updated);
+  }
+
+  async removePrompt(promptId: string): Promise<void> {
+    const updated = this.activePrompts().filter((prompt) => prompt.id !== promptId);
+    await this.persistPrompts(this.selectedMarketScope(), updated);
+  }
+
+  async captureActivePrompts(): Promise<void> {
+    const scope = this.selectedMarketScope();
+    const target =
+      scope === 'local' ? this.localCaptureTarget() : this.nationalCaptureTarget();
+    if (!target) return;
+    const prompts = this.activePrompts();
+    if (prompts.length === 0) return;
+
+    const siteId = this.strategy.siteId();
+    if (!siteId) return;
+
+    this.capturing.set(true);
+    this.captureMode.set(scope);
+    this.captureKind.set('prompts');
+    this.error.set(null);
+    const captured: AiVisibilitySnapshot[] = [];
+    const failures: string[] = [];
+    const retainedSnapshots = this.persistedSnapshots().filter(
+      (snapshot) => this.snapshotMarketScope(snapshot) !== scope,
+    );
+
+    try {
+      for (let index = 0; index < prompts.length; index += 1) {
+        const prompt = prompts[index];
+        this.captureProgress.set({
+          current: index + 1,
+          total: prompts.length,
+          keyword: prompt.text,
+          locationName: target.locationName,
+        });
+        try {
+          const response = await firstValueFrom(
+            this.api.captureAiVisibility$(siteId, {
+              keyword: prompt.text,
+              locationCode: target.locationCode,
+              locationName: target.locationName,
+              includeChatGpt: true,
+              brandAliases: this.brandMentionTargets(),
+              promptOrigin: prompt.origin,
+              parentKeyword: prompt.parentKeyword,
+            }),
+          );
+          captured.push(response.snapshot);
+          this.persistedSnapshots.set(this.mergeSnapshots(retainedSnapshots, captured));
+          this.selectedSnapshotId.set(response.snapshot.id);
+        } catch (err) {
+          failures.push(`${prompt.text}: ${parseProtopipeApiError(err, 'Capture failed.')}`);
+        }
+      }
+
+      if (captured.length === 0) {
+        this.error.set(failures[0] ?? `Prompt capture failed for all ${scope} prompts.`);
+      } else if (failures.length > 0) {
+        this.error.set(
+          `Captured ${captured.length}/${prompts.length} prompts. ${failures.slice(0, 2).join(' ')}`,
+        );
+      } else {
+        this.selectBinderSection(this.binderSectionKey(scope, 'google_ai_mode'));
+      }
+    } finally {
+      this.captureProgress.set(null);
+      this.captureMode.set(null);
+      this.captureKind.set(null);
+      this.capturing.set(false);
+    }
+  }
+
+  private async persistPrompts(
+    scope: CaptureMarketScope,
+    prompts: AiVisibilityCustomPrompt[],
+  ): Promise<void> {
+    const siteId = this.strategy.siteId();
+    if (!siteId) return;
+    if (scope === 'local') {
+      this.localPrompts.set(prompts);
+    } else {
+      this.nationalPrompts.set(prompts);
+    }
+    this.savingPrompts.set(true);
+    this.error.set(null);
+    try {
+      const response = await firstValueFrom(
+        this.api.saveAiVisibilityPrompts$(siteId, {
+          marketScope: scope,
+          prompts,
+        }),
+      );
+      this.nationalPrompts.set(response.national ?? []);
+      this.localPrompts.set(response.local ?? []);
+    } catch (err) {
+      this.error.set(parseProtopipeApiError(err, 'Could not save prompts.'));
+      await this.reloadPromptsOnly(siteId);
+    } finally {
+      this.savingPrompts.set(false);
+    }
+  }
+
+  private async reloadPromptsOnly(siteId: string): Promise<void> {
+    try {
+      const response = await firstValueFrom(this.api.getAiVisibilityPrompts$(siteId));
+      this.nationalPrompts.set(response.national ?? []);
+      this.localPrompts.set(response.local ?? []);
+    } catch {
+      // Keep optimistic state if reload also fails.
+    }
   }
 
   modelCaptureCount(scope: CaptureMarketScope, modelId: AiVisibilityModelId): number {
@@ -580,6 +792,7 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
 
     this.capturing.set(true);
     this.captureMode.set(options.mode);
+    this.captureKind.set('keywords');
     this.selectedMarketScope.set(options.mode);
     this.binderSectionId.set(binderSectionKey(options.mode, this.activeModelId()));
     this.error.set(null);
@@ -610,6 +823,7 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
               locationName: options.locationName,
               includeChatGpt: true,
               brandAliases: this.brandMentionTargets(),
+              promptOrigin: 'keyword',
             }),
           );
           captured.push(response.snapshot);
@@ -630,6 +844,7 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
     } finally {
       this.captureProgress.set(null);
       this.captureMode.set(null);
+      this.captureKind.set(null);
       this.capturing.set(false);
     }
   }
@@ -797,7 +1012,7 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
     });
   }
 
-  private marketRankingRows(): KeywordRankingRow[] {
+  marketRankingRows(): KeywordRankingRow[] {
     return this.rows().filter((row) => this.rowMatchesSelectedMarket(row));
   }
 
@@ -1025,6 +1240,22 @@ function uniqueStrings(values: Array<string | undefined>): string[] {
     output.push(trimmed);
   }
   return output;
+}
+
+function normalizePromptKey(value: string): string {
+  return value.trim().toLowerCase().replace(/\?+$/, '').replace(/\s+/g, ' ');
+}
+
+function dedupePrompts(prompts: AiVisibilityCustomPrompt[]): AiVisibilityCustomPrompt[] {
+  const seen = new Set<string>();
+  const out: AiVisibilityCustomPrompt[] = [];
+  for (const prompt of prompts) {
+    const key = normalizePromptKey(prompt.text);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(prompt);
+  }
+  return out;
 }
 
 function rankValue(position: number | null): number {

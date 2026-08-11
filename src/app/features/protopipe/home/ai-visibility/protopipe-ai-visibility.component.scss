@@ -236,6 +236,146 @@ $bus-accent: #059669;
   line-height: 1.55;
 }
 
+.aiv-prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 48rem;
+}
+
+.aiv-prompts__composer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid $bus-border;
+  background: $bus-bg-subtle;
+}
+
+.aiv-prompts__label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: $bus-muted;
+}
+
+.aiv-prompts__textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 4.5rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid $bus-border;
+  background: $bus-bg;
+  color: $bus-text;
+  font: inherit;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.aiv-prompts__textarea:focus {
+  outline: 2px solid rgb(5 150 105 / 0.35);
+  outline-offset: 1px;
+}
+
+.aiv-prompts__composer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.aiv-prompts__list-wrap,
+.aiv-prompts__suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.aiv-prompts__list-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.aiv-prompts__list-head h3 {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: $bus-ink;
+}
+
+.aiv-prompts__list-head em {
+  font-style: normal;
+  font-size: 0.6875rem;
+  color: $bus-dim;
+}
+
+.aiv-prompts__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid $bus-border;
+}
+
+.aiv-prompts__item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 0.95rem;
+  border-bottom: 1px solid $bus-border-soft;
+}
+
+.aiv-prompts__item:last-child {
+  border-bottom: 0;
+}
+
+.aiv-prompts__item strong {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: $bus-ink;
+  line-height: 1.4;
+}
+
+.aiv-prompts__item span {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.6875rem;
+  color: $bus-muted;
+}
+
+.aiv-prompts__remove,
+.aiv-prompts__add {
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: $bus-muted;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.2rem 0.35rem;
+}
+
+.aiv-prompts__add {
+  color: $bus-accent;
+}
+
+.aiv-prompts__remove:hover,
+.aiv-prompts__add:hover {
+  color: $bus-ink;
+}
+
+.aiv-prompts__remove:disabled,
+.aiv-prompts__add:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .bus-stat-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

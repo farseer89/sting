@@ -4,6 +4,7 @@ import {
   ShireEndpoints,
   type AiVisibilityLatestResponse,
   type AiVisibilityListResponse,
+  type AiVisibilityPromptsResponse,
   type CaptureAiVisibilityRequest,
   type CaptureAiVisibilityResponse,
   type EnqueueRunRequest,
@@ -12,6 +13,7 @@ import {
   type PageOptimizationLatestResponse,
   type PageSpeedLatestResponse,
   type RunResponse,
+  type SaveAiVisibilityPromptsRequest,
   type SiteAuditLatestResponse,
   type ThinkerKind,
 } from '@hive/contracts';
@@ -85,6 +87,22 @@ export class ShireApiService {
   ): Observable<CaptureAiVisibilityResponse> {
     return this.http.post<CaptureAiVisibilityResponse>(
       shireApiUrl(ShireEndpoints.aiVisibility.capture(siteId)),
+      body,
+    );
+  }
+
+  getAiVisibilityPrompts$(siteId: string): Observable<AiVisibilityPromptsResponse> {
+    return this.http.get<AiVisibilityPromptsResponse>(
+      shireApiUrl(ShireEndpoints.aiVisibility.prompts(siteId)),
+    );
+  }
+
+  saveAiVisibilityPrompts$(
+    siteId: string,
+    body: SaveAiVisibilityPromptsRequest,
+  ): Observable<AiVisibilityPromptsResponse> {
+    return this.http.put<AiVisibilityPromptsResponse>(
+      shireApiUrl(ShireEndpoints.aiVisibility.prompts(siteId)),
       body,
     );
   }

@@ -92,6 +92,18 @@
 
         <div class="bus-binder-nav__label">National</div>
         <p class="bus-binder-nav__meta">{{ nationalCaptureTarget().locationName }}</p>
+        <button
+          type="button"
+          class="bus-binder-nav__item"
+          [class.is-active]="isPromptsSectionActive('national')"
+          [class.is-missing]="promptCount('national') === 0"
+          (click)="selectBinderSection(promptsSectionKey('national'))"
+        >
+          <span>Prompts</span>
+          @if (promptCount('national') > 0) {
+            <span class="bus-binder-nav__badge">{{ promptCount('national') }}</span>
+          }
+        </button>
         @for (model of modelOptions; track model.id) {
           <button
             type="button"
@@ -112,6 +124,18 @@
         @if (localCaptureTarget(); as localTarget) {
           <div class="bus-binder-nav__label">Local</div>
           <p class="bus-binder-nav__meta">{{ localTarget.locationName }}</p>
+          <button
+            type="button"
+            class="bus-binder-nav__item"
+            [class.is-active]="isPromptsSectionActive('local')"
+            [class.is-missing]="promptCount('local') === 0"
+            (click)="selectBinderSection(promptsSectionKey('local'))"
+          >
+            <span>Prompts</span>
+            @if (promptCount('local') > 0) {
+              <span class="bus-binder-nav__badge">{{ promptCount('local') }}</span>
+            }
+          </button>
           @for (model of modelOptions; track model.id + '-local') {
             <button
               type="button"
@@ -203,6 +227,123 @@
               }
             }
           </dl>
+        } @else if (isPromptsSection()) {
+          <div class="bus-panel-head">
+            <p class="bus-panel-kicker">
+              {{ selectedMarketScope() === 'local' ? 'Local' : 'National' }} prompts
+            </p>
+            <h2 class="bus-panel-title">Track custom AI prompts</h2>
+            <p class="bus-panel-deck">
+              Add buyer questions for {{ activeMarketLabel() }}. We capture Google AI and ChatGPT
+              answers for each prompt. People Also Ask from ranking research are suggested below.
+            </p>
+          </div>
+
+          <section class="aiv-prompts" aria-label="Custom AI visibility prompts">
+            <div class="aiv-prompts__composer">
+              <label class="aiv-prompts__label" for="aiv-prompt-draft">Your prompt</label>
+              <textarea
+                id="aiv-prompt-draft"
+                class="aiv-prompts__textarea"
+                rows="3"
+                maxlength="200"
+                placeholder="e.g. best wedding painter in Maui with reviews"
+                [value]="promptDraft()"
+                (input)="onPromptDraftInput($event)"
+              ></textarea>
+              <div class="aiv-prompts__composer-actions">
+                <p-button
+                  label="Add prompt"
+                  icon="pi pi-plus"
+                  size="small"
+                  [disabled]="!promptDraft().trim() || savingPrompts() || capturing()"
+                  (onClick)="addCustomPrompt()"
+                />
+                <p-button
+                  [label]="
+                    capturing() && captureKind() === 'prompts' ? 'Running prompts…' : 'Run prompts'
+                  "
+                  icon="pi pi-play"
+                  severity="secondary"
+                  size="small"
+                  [disabled]="capturing() || savingPrompts() || activePrompts().length === 0"
+                  (onClick)="captureActivePrompts()"
+                />
+              </div>
+            </div>
+
+            <div class="aiv-prompts__list-wrap">
+              <div class="aiv-prompts__list-head">
+                <h3>Your prompts</h3>
+                <em>{{ activePrompts().length }} / 24</em>
+              </div>
+              @if (activePrompts().length) {
+                <ul class="aiv-prompts__list">
+                  @for (prompt of activePrompts(); track prompt.id) {
+                    <li class="aiv-prompts__item">
+                      <div>
+                        <strong>{{ prompt.text }}</strong>
+                        <span>
+                          {{ prompt.origin === 'paa' ? 'From PAA' : 'Custom' }}
+                          @if (prompt.parentKeyword) {
+                            · {{ prompt.parentKeyword }}
+                          }
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        class="aiv-prompts__remove"
+                        [disabled]="savingPrompts() || capturing()"
+                        (click)="removePrompt(prompt.id)"
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="aiv-panel__empty">
+                  No custom prompts yet for {{ activeMarketLabel() }}. Add one above or accept a
+                  PAA suggestion.
+                </p>
+              }
+            </div>
+
+            <div class="aiv-prompts__suggestions">
+              <div class="aiv-prompts__list-head">
+                <h3>Suggested from rankings (PAA)</h3>
+                <em>{{ paaSuggestions().length }}</em>
+              </div>
+              @if (paaSuggestions().length) {
+                <ul class="aiv-prompts__list aiv-prompts__list--suggestions">
+                  @for (suggestion of paaSuggestions(); track suggestion.question) {
+                    <li class="aiv-prompts__item">
+                      <div>
+                        <strong>{{ suggestion.question }}</strong>
+                        <span>From {{ suggestion.parentKeyword }}</span>
+                      </div>
+                      <button
+                        type="button"
+                        class="aiv-prompts__add"
+                        [disabled]="savingPrompts() || capturing() || activePrompts().length >= 24"
+                        (click)="addPaaSuggestion(suggestion)"
+                      >
+                        Add
+                      </button>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="aiv-panel__empty">
+                  @if (marketRankingRows().length === 0) {
+                    Run ranking research to collect People Also Ask suggestions for this market.
+                  } @else {
+                    No unused PAA suggestions for this market right now.
+                  }
+                </p>
+              }
+            </div>
+          </section>
         } @else {
           <div class="aiv">
             <section class="aiv__metrics aiv__metrics--market" aria-label="AI visibility market scorecard">
@@ -561,7 +702,14 @@
                   (click)="selectSnapshot(snapshot.id)"
                 >
                   <strong>{{ snapshot.keyword }}</strong>
-                  <span>{{ snapshotStatusLabel(snapshot) }}</span>
+                  <span>
+                    {{ snapshotStatusLabel(snapshot) }}
+                    @if (snapshot.promptOrigin === 'paa') {
+                      · PAA
+                    } @else if (snapshot.promptOrigin === 'custom') {
+                      · Prompt
+                    }
+                  </span>
                   <em>{{ snapshotSourceSummary(snapshot) }}</em>
                 </button>
               }

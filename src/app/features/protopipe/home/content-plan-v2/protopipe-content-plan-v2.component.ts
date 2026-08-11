@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, Injector, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Message } from 'primeng/message';
 import { ProgressSpinner } from 'primeng/progressspinner';
@@ -60,9 +61,14 @@ interface ClientIdentity {
 export class ProtopipeContentPlanV2Component implements OnInit {
   private readonly api = inject(ShireApiService);
   private readonly injector = inject(Injector);
+  private readonly route = inject(ActivatedRoute);
   readonly strategy = inject(ProtopipeStrategyService);
   readonly runSession = inject(ThoughtRunSession);
   readonly planRunSession = Injector.create({
+    providers: [ThoughtRunSession],
+    parent: this.injector,
+  }).get(ThoughtRunSession);
+  readonly topologyRunSession = Injector.create({
     providers: [ThoughtRunSession],
     parent: this.injector,
   }).get(ThoughtRunSession);
@@ -72,6 +78,7 @@ export class ProtopipeContentPlanV2Component implements OnInit {
   readonly evidenceError = signal<string | null>(null);
   readonly autoStartAttempted = signal(false);
   readonly planError = signal<string | null>(null);
+  readonly topologyError = signal<string | null>(null);
   readonly rankings = signal<KeywordRankingRow[]>([]);
   readonly aiVisibilitySnapshots = signal<AiVisibilitySnapshot[]>([]);
   readonly latestAudit = signal<SiteAuditLatestResponse['audit'] | null>(null);
@@ -80,14 +87,36 @@ export class ProtopipeContentPlanV2Component implements OnInit {
 
   readonly thought = computed(() => this.contentPlanThought(this.runSession.thought()));
   readonly planThought = computed(() => this.planRunSession.thought()?.thinkerKind === 'content_plan_v2' ? this.planRunSession.thought() : null);
+  readonly topologyThought = computed(() =>
+    this.topologyRunSession.thought()?.thinkerKind === 'content_plan_v2_topology'
+      ? this.topologyRunSession.thought()
+      : null,
+  );
   readonly evidenceArtifacts = computed(() => asRecord(this.thought()?.artifacts) ?? {});
   readonly planArtifacts = computed(() => asRecord(this.planThought()?.artifacts) ?? {});
+  readonly topologyArtifacts = computed(() => asRecord(this.topologyThought()?.artifacts) ?? {});
   readonly artifacts = computed(() =>
     Object.keys(this.planArtifacts()).length > 0 ? this.planArtifacts() : this.evidenceArtifacts(),
   );
-  readonly topology = computed(() => asRecord(this.artifacts()['topology']));
-  readonly business = computed(() => asRecord(this.artifacts()['business']));
-  readonly strategyContext = computed(() => asRecord(this.artifacts()['strategyContext']));
+  readonly topology = computed(() => {
+    const fromPlan = asRecord(this.planArtifacts()['topology']);
+    if (fromPlan) return fromPlan;
+    return asRecord(this.topologyArtifacts()['topology']);
+  });
+  readonly business = computed(() => {
+    const fromPlan = asRecord(this.planArtifacts()['business']);
+    if (fromPlan) return fromPlan;
+    const fromTopology = asRecord(this.topologyArtifacts()['business']);
+    if (fromTopology) return fromTopology;
+    return asRecord(this.evidenceArtifacts()['business']);
+  });
+  readonly strategyContext = computed(() => {
+    const fromPlan = asRecord(this.planArtifacts()['strategyContext']);
+    if (fromPlan) return fromPlan;
+    const fromTopology = asRecord(this.topologyArtifacts()['strategyContext']);
+    if (fromTopology) return fromTopology;
+    return asRecord(this.evidenceArtifacts()['strategyContext']);
+  });
   readonly audienceEvidence = computed(() => asRecord(this.artifacts()['audienceEvidence']));
   readonly aiVisibilityEvidence = computed(() => asRecord(this.artifacts()['aiVisibilityEvidence']));
   readonly notMentionedActions = computed(() => asRecordArray(recordValue(this.aiVisibilityEvidence(), 'notMentionedActions')));
@@ -99,9 +128,23 @@ export class ProtopipeContentPlanV2Component implements OnInit {
     asRecordArray(recordValue(this.aiVisibilityEvidence(), 'competitorCitationGaps')),
   );
   readonly audit = computed(() => asRecord(this.artifacts()['audit']) ?? asRecord(this.latestAudit()));
-  readonly scoredKeywords = computed(() => asRecordArray(this.artifacts()['scored']));
-  readonly clusters = computed(() => asRecordArray(this.artifacts()['clusters']));
-  readonly pillars = computed(() => asRecordArray(this.artifacts()['pillars']));
+  readonly scoredKeywords = computed(() => {
+    const fromPlan = asRecordArray(this.planArtifacts()['scored']);
+    if (fromPlan.length) return fromPlan;
+    const fromTopology = asRecordArray(this.topologyArtifacts()['scored']);
+    if (fromTopology.length) return fromTopology;
+    return asRecordArray(this.evidenceArtifacts()['scored']);
+  });
+  readonly clusters = computed(() => {
+    const fromPlan = asRecordArray(this.planArtifacts()['clusters']);
+    if (fromPlan.length) return fromPlan;
+    return asRecordArray(this.topologyArtifacts()['clusters']);
+  });
+  readonly pillars = computed(() => {
+    const fromPlan = asRecordArray(this.planArtifacts()['pillars']);
+    if (fromPlan.length) return fromPlan;
+    return asRecordArray(this.topologyArtifacts()['pillars']);
+  });
   readonly topologyRows = computed(() => {
     if (this.scoredKeywords().length) return this.scoredKeywords();
     return this.strategy.keywords().map((keyword) => {
@@ -179,6 +222,18 @@ export class ProtopipeContentPlanV2Component implements OnInit {
     if (thought.status === 'running') return `Planning ${thought.currentStepId ?? 'content plan'}`;
     if (thought.status === 'complete') return 'Plan ready';
     if (thought.status === 'failed') return 'Plan failed';
+    return thought.status;
+  });
+
+  readonly topologyRunStatusLabel = computed(() => {
+    const thought = this.topologyThought();
+    if (!thought) {
+      return this.strategy.keywords().length > 0 ? 'Topology pending' : 'No topology run yet';
+    }
+    if (thought.status === 'pending') return 'Topology queued';
+    if (thought.status === 'running') return `Building ${thought.currentStepId ?? 'topology'}`;
+    if (thought.status === 'complete') return 'Topology ready';
+    if (thought.status === 'failed') return 'Topology failed';
     return thought.status;
   });
 
@@ -264,7 +319,7 @@ export class ProtopipeContentPlanV2Component implements OnInit {
 
   readonly navItems = computed<BinderNavItem[]>(() => [
     navItem('readiness', 'Readiness', this.readinessChecks().filter((check) => check.ok).length, this.blockers().length === 0),
-    navItem('topology', 'Topology', this.clusters().length || this.topologyRows().length, this.topologyRows().length > 0),
+    navItem('topology', 'Topology', this.clusters().length || this.topologyRows().length, this.clusters().length > 0 || this.topologyRows().length > 0),
     navItem('business', 'Business', this.clientIdentity().aliases.length + (this.clientIdentity().hostname ? 1 : 0), Boolean(this.clientIdentity().hostname)),
     navItem('audience', 'Audience', this.confirmedAvatars().length, this.confirmedAvatars().length > 0),
     navItem('keywords', 'Keywords', this.scoredKeywords().length || this.strategy.keywords().length, this.strategy.keywords().length > 0),
@@ -303,7 +358,13 @@ export class ProtopipeContentPlanV2Component implements OnInit {
   }
 
   ngOnInit(): void {
-    void this.loadInitial();
+    const section = this.route.snapshot.queryParamMap.get('section');
+    if (isBinderSection(section)) {
+      this.binderSection.set(section);
+    }
+    void this.loadInitial({
+      topologyRunId: this.route.snapshot.queryParamMap.get('topologyRunId') ?? undefined,
+    });
   }
 
   selectSection(section: BinderSection): void {
@@ -417,9 +478,12 @@ export class ProtopipeContentPlanV2Component implements OnInit {
     return `${this.label(this.field(opportunity, 'state'))} · ${this.label(this.field(opportunity, 'recommendedAction'))}`;
   }
 
-  private async loadInitial(options: { allowAutoStart?: boolean } = {}): Promise<void> {
+  private async loadInitial(
+    options: { allowAutoStart?: boolean; topologyRunId?: string } = {},
+  ): Promise<void> {
     await Promise.all([
       this.attachLatestEvidenceRun(options.allowAutoStart ?? true),
+      this.attachLatestTopologyRun(options.topologyRunId),
       this.attachLatestPlanRun(),
     ]);
     await this.loadEvidence();
@@ -441,6 +505,30 @@ export class ProtopipeContentPlanV2Component implements OnInit {
       }
       if (!(err instanceof HttpErrorResponse && err.status === 404)) {
         this.evidenceError.set(parseProtopipeApiError(err, 'Could not load latest content plan run.'));
+      }
+    }
+  }
+
+  private async attachLatestTopologyRun(preferredRunId?: string): Promise<void> {
+    const siteId = this.strategy.siteId();
+    if (!siteId) return;
+    const current = this.topologyRunSession.thought();
+    if (current?.thinkerKind === 'content_plan_v2_topology') return;
+
+    try {
+      if (preferredRunId) {
+        const { run } = await firstValueFrom(this.api.getRun$(siteId, preferredRunId));
+        if (run.thinkerKind === 'content_plan_v2_topology') {
+          this.topologyRunSession.attach(siteId, run.id, run);
+          return;
+        }
+      }
+
+      const { run } = await firstValueFrom(this.api.getLatestRun$(siteId, 'content_plan_v2_topology'));
+      this.topologyRunSession.attach(siteId, run.id, run);
+    } catch (err) {
+      if (!(err instanceof HttpErrorResponse && err.status === 404)) {
+        this.topologyError.set(parseProtopipeApiError(err, 'Could not load planning topology run.'));
       }
     }
   }
@@ -485,6 +573,22 @@ export class ProtopipeContentPlanV2Component implements OnInit {
   private contentPlanThought(thought: Thought | null): Thought | null {
     return thought?.thinkerKind === 'content_plan_v2_evidence' ? thought : null;
   }
+}
+
+function isBinderSection(value: string | null): value is BinderSection {
+  return (
+    value === 'readiness' ||
+    value === 'topology' ||
+    value === 'business' ||
+    value === 'audience' ||
+    value === 'keywords' ||
+    value === 'rankings' ||
+    value === 'site-health' ||
+    value === 'optimization' ||
+    value === 'ai-visibility' ||
+    value === 'inventory' ||
+    value === 'raw'
+  );
 }
 
 function navItem(

@@ -118,6 +118,8 @@ export class ProtopipeKeywordPickerStore {
   private readonly _searching = signal(false);
   private readonly _searchRelated = signal<KeywordPickerOption[]>([]);
   private readonly _searchPrimary = signal<KeywordPickerOption | null>(null);
+  private readonly _topologyRunId = signal<string | null>(null);
+  readonly topologyRunId = this._topologyRunId.asReadonly();
   private readonly _confirming = signal(false);
   private readonly _rerunningDiscovery = signal(false);
   private readonly _discoveryNote = signal<string | null>(null);
@@ -365,11 +367,12 @@ export class ProtopipeKeywordPickerStore {
     try {
       const confirmedKeywords = this.mapConfirmedKeywords();
 
-      await this.api.confirmKeywords(siteId, {
+      const response = await this.api.confirmKeywords(siteId, {
         discoveryRunId,
         confirmedKeywords,
       });
 
+      this._topologyRunId.set(response.topologyRunId);
       await this.strategy.reload();
       return true;
     } catch (err) {

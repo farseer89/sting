@@ -6,7 +6,7 @@
         Planning substrate before calendar generation — identity, keywords, SERP evidence, site health, and AI visibility.
       </p>
       <p class="bus-masthead__meta">
-        Evidence: {{ runStatusLabel() }} · Plan: {{ planRunStatusLabel() }} · {{ clientIdentity().hostname || 'No hostname' }}
+        Evidence: {{ runStatusLabel() }} · Topology: {{ topologyRunStatusLabel() }} · Plan: {{ planRunStatusLabel() }} · {{ clientIdentity().hostname || 'No hostname' }}
       </p>
     </div>
     <div class="bus-masthead__actions">
@@ -43,6 +43,20 @@
 
   @if (planError(); as err) {
     <p-message severity="error" [text]="err" styleClass="w-full" />
+  }
+
+  @if (topologyError(); as err) {
+    <p-message severity="error" [text]="err" styleClass="w-full" />
+  }
+
+  @if (topologyRunSession.isActive() && topologyThought()?.thinkerKind === 'content_plan_v2_topology') {
+    <div class="bus-notice" role="status" aria-live="polite">
+      <span class="bus-notice__dot" aria-hidden="true"></span>
+      <div>
+        <strong>{{ topologyRunStatusLabel() }}</strong>
+        Planning topology will update when clustering completes.
+      </div>
+    </div>
   }
 
   @if (runSession.isActive() && thought()?.thinkerKind === 'content_plan_v2_evidence') {

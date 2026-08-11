@@ -795,9 +795,15 @@ export class ProtopipeUserHomeComponent implements OnInit {
     this.leaveWriterFocus();
     this.leaveThinkerFocus();
     this.sidePanel.setOpen(false);
-    this.activeView.set('rankings');
-    this.activeNavId.set('seo-rankings');
-    void this.router.navigate([HOME_RANKINGS_PATH]);
+    this.activeView.set('content-plan-v2');
+    this.activeNavId.set('content-plan-v2');
+    const topologyRunId = this.keywordStore.topologyRunId();
+    void this.router.navigate([HOME_CONTENT_PLAN_V2_PATH], {
+      queryParams: {
+        section: 'topology',
+        ...(topologyRunId ? { topologyRunId } : {}),
+      },
+    });
   }
 
   onDashboardOpen(

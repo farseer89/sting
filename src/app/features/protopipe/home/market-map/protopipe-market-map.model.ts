@@ -150,7 +150,7 @@ export function buildFunnelSlices(rows: MarketMapKeywordRow[]): MarketMapFunnelS
     { id: 'decision' as const, label: 'Decision', count: counts.decision, percent: percent(counts.decision, total) },
     { id: 'retention' as const, label: 'Retention', count: counts.retention, percent: percent(counts.retention, total) },
     { id: 'unknown' as const, label: 'Unassigned', count: counts.unknown, percent: percent(counts.unknown, total) },
-  ].filter((slice) => slice.count > 0 || slice.id !== 'unknown');
+  ].filter((slice) => slice.count > 0);
 }
 
 export function buildTierSlices(rows: MarketMapKeywordRow[]): MarketMapTierSlice[] {

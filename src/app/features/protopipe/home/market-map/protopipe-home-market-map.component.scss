@@ -205,37 +205,64 @@
 }
 
 .mmap-funnel__shape {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: min(100%, 30rem);
   min-height: 3.2rem;
-  padding: 0.7rem 2.1rem;
+  padding: 0.7rem 3.2rem;
   color: #ffffff;
+  box-sizing: border-box;
+}
+
+.mmap-funnel__shape::before {
+  content: '';
+  position: absolute;
+  inset: 0;
   clip-path: polygon(6% 0, 94% 0, 86% 100%, 14% 100%);
   background: linear-gradient(135deg, #0f766e, #0a9396);
   box-shadow: 0 10px 24px rgba(10, 147, 150, 0.12);
+  z-index: 0;
 }
 
 .mmap-funnel__item--consideration .mmap-funnel__shape {
   width: min(86%, 25rem);
-  background: linear-gradient(135deg, #0a9396, #2a9d8f);
 }
 
 .mmap-funnel__item--decision .mmap-funnel__shape {
   width: min(70%, 20rem);
-  background: linear-gradient(135deg, #2a9d8f, #94d2bd);
 }
 
 .mmap-funnel__item--retention .mmap-funnel__shape,
 .mmap-funnel__item--unknown .mmap-funnel__shape {
   width: min(55%, 16rem);
+}
+
+.mmap-funnel__item--consideration .mmap-funnel__shape::before {
+  background: linear-gradient(135deg, #0a9396, #2a9d8f);
+}
+
+.mmap-funnel__item--decision .mmap-funnel__shape::before {
+  background: linear-gradient(135deg, #2a9d8f, #94d2bd);
+}
+
+.mmap-funnel__item--retention .mmap-funnel__shape::before,
+.mmap-funnel__item--unknown .mmap-funnel__shape::before {
   background: linear-gradient(135deg, #64748b, #94a3b8);
 }
 
 .mmap-funnel__shape .mmap-funnel__label,
 .mmap-funnel__shape .mmap-funnel__value {
+  position: relative;
+  z-index: 1;
   color: #ffffff;
+}
+
+.mmap-funnel__shape .mmap-funnel__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mmap-funnel__percent {

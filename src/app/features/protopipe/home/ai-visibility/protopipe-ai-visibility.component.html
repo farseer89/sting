@@ -557,6 +557,7 @@
                   class="aiv-keyword-item"
                   [class.aiv-keyword-item--active]="selectedSnapshotId() === snapshot.id"
                   [class.aiv-keyword-item--cited]="snapshotCited(snapshot)"
+                  [class.aiv-keyword-item--mentioned]="snapshotMentioned(snapshot) && !snapshotCited(snapshot)"
                   (click)="selectSnapshot(snapshot.id)"
                 >
                   <strong>{{ snapshot.keyword }}</strong>
@@ -584,7 +585,12 @@
                   {{ activeSnapshot()?.keyword }} · {{ activeMarketLabel() }}
                 </p>
               </div>
-              <span class="aiv-panel__count">{{ sourceStatusLabel(source) }}</span>
+              <span
+                class="aiv-panel__count"
+                [class.aiv-panel__count--cited]="sourceClientCited(source)"
+                [class.aiv-panel__count--mentioned]="!sourceClientCited(source) && sourceClientMentioned(source)"
+                [class.aiv-panel__count--uncited]="!sourceClientCited(source) && !sourceClientMentioned(source)"
+              >{{ sourceStatusLabel(source) }}</span>
             </div>
 
             <div class="aiv-source-panel__meta">
@@ -607,7 +613,11 @@
                   <div class="aiv-source-panel__grid">
                     <article>
                       <span>Your site</span>
-                      <strong>{{ sourceClientCited(source) ? 'Cited' : sourceClientMentioned(source) ? 'Mentioned' : 'Not cited' }}</strong>
+                      <strong
+                        [class.aiv-source-panel__status--cited]="sourceClientCited(source)"
+                        [class.aiv-source-panel__status--mentioned]="!sourceClientCited(source) && sourceClientMentioned(source)"
+                        [class.aiv-source-panel__status--uncited]="!sourceClientCited(source) && !sourceClientMentioned(source)"
+                      >{{ sourceClientCited(source) ? 'Cited' : sourceClientMentioned(source) ? 'Mentioned' : 'Not cited' }}</strong>
                       <p>
                         {{ sourceClientCited(source) ? 'This source links to your site.' : sourceClientMentioned(source) ? 'Your site appears in the answer text.' : 'The answer does not mention or cite your site.' }}
                       </p>

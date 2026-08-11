@@ -51,7 +51,7 @@ export class ProtopipeMarketMapStore {
   );
   readonly clusterViews = computed<MarketMapClusterView[]>(() => buildClusterViews(this.clusters()));
   readonly audienceViews = computed<MarketMapAudienceView[]>(() => {
-    const fromArtifacts = buildAudienceViews(this.confirmedAvatars());
+    const fromArtifacts = buildAudienceViews(this.confirmedAvatars(), this.keywordRows());
     if (fromArtifacts.length) return fromArtifacts;
     return this.strategy
       .keywords()
@@ -64,6 +64,7 @@ export class ProtopipeMarketMapStore {
           label: avatarId,
           description: `Keywords tagged for ${avatarId}`,
           intentCluster: avatarId,
+          keywords: this.keywordRows().filter((row) => row.avatarId === avatarId),
         };
       })
       .filter((row): row is MarketMapAudienceView => Boolean(row))
@@ -127,6 +128,20 @@ export class ProtopipeMarketMapStore {
       }
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  async rebuild(): Promise<void> {
+    const siteId = this.strategy.siteId();
+    if (!siteId || this.runSession.isActive() || !this.hasKeywords()) return;
+
+    this.error.set(null);
+    const run = await this.runSession.enqueueRun(siteId, {
+      thinkerKind: 'content_plan_v2_topology',
+      params: { source: 'marketMapRebuild' },
+    });
+    if (!run && this.runSession.loadError()) {
+      this.error.set(this.runSession.loadError());
     }
   }
 }

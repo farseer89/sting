@@ -13,6 +13,14 @@
       <button type="button" class="mmap__action" [disabled]="store.loading()" (click)="refresh()">
         {{ store.loading() ? 'Refreshing…' : 'Refresh map' }}
       </button>
+      <button
+        type="button"
+        class="mmap__action mmap__action--primary"
+        [disabled]="!store.hasKeywords() || store.runSession.isActive()"
+        (click)="rebuild()"
+      >
+        {{ store.runSession.isActive() ? 'Rebuilding…' : 'Rebuild map' }}
+      </button>
     </div>
   </header>
 
@@ -60,9 +68,15 @@
         @if (store.funnelSlices().length) {
           <div class="mmap-funnel">
             @for (slice of store.funnelSlices(); track slice.id) {
-              <article class="mmap-funnel__item">
-                <span class="mmap-funnel__label">{{ slice.label }}</span>
-                <strong class="mmap-funnel__value">{{ slice.count }}</strong>
+              <article
+                class="mmap-funnel__item"
+                [class]="'mmap-funnel__item mmap-funnel__item--' + slice.id"
+              >
+                <div class="mmap-funnel__shape">
+                  <span class="mmap-funnel__label">{{ slice.label }}</span>
+                  <strong class="mmap-funnel__value">{{ slice.count }}</strong>
+                </div>
+                <span class="mmap-funnel__percent">{{ slice.percent }}% of keywords</span>
               </article>
             }
           </div>
@@ -104,9 +118,24 @@
         <div class="mmap-audience-grid">
           @for (audience of store.audienceViews(); track audience.id) {
             <article class="mmap-audience">
-              <span class="mmap-audience__label">{{ audience.label }}</span>
+              <div class="mmap-audience__head">
+                <span class="mmap-audience__label">{{ audience.label }}</span>
+                <strong>{{ audience.keywords.length }}</strong>
+              </div>
               <p class="mmap-audience__description">{{ audience.description }}</p>
               <span class="mmap-audience__meta">{{ labelize(audience.intentCluster) }}</span>
+              @if (audience.keywords.length) {
+                <ul class="mmap-audience__keywords">
+                  @for (keyword of audience.keywords.slice(0, 8); track keyword.phrase) {
+                    <li>
+                      <span>{{ keyword.phrase }}</span>
+                      <em>{{ labelize(keyword.funnelStage) }}</em>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="mmap-audience__empty">No keywords are tied to this audience yet.</p>
+              }
             </article>
           }
         </div>

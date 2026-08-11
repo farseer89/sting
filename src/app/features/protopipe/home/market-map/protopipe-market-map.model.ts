@@ -12,6 +12,7 @@ export interface MarketMapFunnelSlice {
   id: FunnelStage;
   label: string;
   count: number;
+  percent: number;
 }
 
 export interface MarketMapTierSlice {
@@ -39,6 +40,8 @@ export interface MarketMapKeywordRow {
   intent: string;
   priority: string;
   clusterName: string;
+  avatarId?: string;
+  audienceLabel?: string;
   opportunityScore?: number;
 }
 
@@ -47,6 +50,7 @@ export interface MarketMapAudienceView {
   label: string;
   description: string;
   intentCluster: string;
+  keywords: MarketMapKeywordRow[];
 }
 
 export function asRecord(value: unknown): Record<string, unknown> | null {
@@ -129,6 +133,7 @@ export function buildSummaryCards(input: {
 }
 
 export function buildFunnelSlices(rows: MarketMapKeywordRow[]): MarketMapFunnelSlice[] {
+  const total = Math.max(rows.length, 1);
   const counts: Record<FunnelStage, number> = {
     awareness: 0,
     consideration: 0,
@@ -140,11 +145,11 @@ export function buildFunnelSlices(rows: MarketMapKeywordRow[]): MarketMapFunnelS
     counts[normalizeFunnelStage(row.funnelStage)] += 1;
   }
   return [
-    { id: 'awareness' as const, label: 'Awareness', count: counts.awareness },
-    { id: 'consideration' as const, label: 'Consideration', count: counts.consideration },
-    { id: 'decision' as const, label: 'Decision', count: counts.decision },
-    { id: 'retention' as const, label: 'Retention', count: counts.retention },
-    { id: 'unknown' as const, label: 'Unassigned', count: counts.unknown },
+    { id: 'awareness' as const, label: 'Awareness', count: counts.awareness, percent: percent(counts.awareness, total) },
+    { id: 'consideration' as const, label: 'Consideration', count: counts.consideration, percent: percent(counts.consideration, total) },
+    { id: 'decision' as const, label: 'Decision', count: counts.decision, percent: percent(counts.decision, total) },
+    { id: 'retention' as const, label: 'Retention', count: counts.retention, percent: percent(counts.retention, total) },
+    { id: 'unknown' as const, label: 'Unassigned', count: counts.unknown, percent: percent(counts.unknown, total) },
   ].filter((slice) => slice.count > 0 || slice.id !== 'unknown');
 }
 
@@ -202,6 +207,8 @@ export function buildKeywordRows(
       intent: stringValue(recordValue(row, 'intent')) || 'informational',
       priority: stringValue(recordValue(row, 'priority')) || 'medium',
       clusterName: stringValue(recordValue(row, 'clusterName')) || 'Pending cluster',
+      avatarId: stringValue(recordValue(row, 'avatarId')) || undefined,
+      audienceLabel: stringValue(recordValue(row, 'audienceLabel')) || undefined,
       opportunityScore: numberValue(recordValue(row, 'opportunityScore')),
     }));
   }
@@ -214,17 +221,46 @@ export function buildKeywordRows(
       intent: keyword.intent ?? 'informational',
       priority: keyword.priority ?? 'medium',
       clusterName: 'Pending cluster',
+      avatarId: stringValue(recordValue(strategyMeta, 'avatarId')) || undefined,
     };
   });
 }
 
 export function buildAudienceViews(
   confirmedAvatars: Record<string, unknown>[],
+  keywordRows: MarketMapKeywordRow[],
 ): MarketMapAudienceView[] {
-  return confirmedAvatars.map((avatar, index) => ({
-    id: stringValue(recordValue(avatar, 'id')) || `audience-${index + 1}`,
-    label: stringValue(recordValue(avatar, 'intentCluster')) || `Audience ${index + 1}`,
-    description: stringValue(recordValue(avatar, 'description')) || 'No description',
-    intentCluster: stringValue(recordValue(avatar, 'intentCluster')) || 'General',
-  }));
+  if (confirmedAvatars.length === 0) {
+    return keywordRows.length
+      ? [
+          {
+            id: 'general',
+            label: 'General audience',
+            description: 'Confirmed keywords without a selected audience tag.',
+            intentCluster: 'General',
+            keywords: keywordRows,
+          },
+        ]
+      : [];
+  }
+
+  return confirmedAvatars.map((avatar, index) => {
+    const id = stringValue(recordValue(avatar, 'id')) || `audience-${index + 1}`;
+    const label = stringValue(recordValue(avatar, 'intentCluster')) || `Audience ${index + 1}`;
+    const description = stringValue(recordValue(avatar, 'description')) || 'No description';
+    const keywords = keywordRows.filter(
+      (row) => row.avatarId === id || row.audienceLabel === label || row.audienceLabel === description,
+    );
+    return {
+      id,
+      label,
+      description,
+      intentCluster: stringValue(recordValue(avatar, 'intentCluster')) || 'General',
+      keywords,
+    };
+  });
+}
+
+function percent(count: number, total: number): number {
+  return Math.round((count / total) * 100);
 }

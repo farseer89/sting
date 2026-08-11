@@ -81,6 +81,11 @@
   opacity: 0.58;
 }
 
+.mmap__action--primary {
+  background: var(--void-ocean, #0a9396);
+  color: #ffffff;
+}
+
 .mmap__error {
   margin: 0;
   border: 1px solid rgba(220, 38, 38, 0.16);
@@ -185,12 +190,60 @@
 }
 
 .mmap-funnel {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr));
-  gap: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.28rem;
+  margin-top: 0.9rem;
 }
 
-.mmap-funnel__item,
+.mmap-funnel__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.mmap-funnel__shape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(100%, 30rem);
+  min-height: 3.2rem;
+  padding: 0.7rem 2.1rem;
+  color: #ffffff;
+  clip-path: polygon(6% 0, 94% 0, 86% 100%, 14% 100%);
+  background: linear-gradient(135deg, #0f766e, #0a9396);
+  box-shadow: 0 10px 24px rgba(10, 147, 150, 0.12);
+}
+
+.mmap-funnel__item--consideration .mmap-funnel__shape {
+  width: min(86%, 25rem);
+  background: linear-gradient(135deg, #0a9396, #2a9d8f);
+}
+
+.mmap-funnel__item--decision .mmap-funnel__shape {
+  width: min(70%, 20rem);
+  background: linear-gradient(135deg, #2a9d8f, #94d2bd);
+}
+
+.mmap-funnel__item--retention .mmap-funnel__shape,
+.mmap-funnel__item--unknown .mmap-funnel__shape {
+  width: min(55%, 16rem);
+  background: linear-gradient(135deg, #64748b, #94a3b8);
+}
+
+.mmap-funnel__shape .mmap-funnel__label,
+.mmap-funnel__shape .mmap-funnel__value {
+  color: #ffffff;
+}
+
+.mmap-funnel__percent {
+  margin-top: 0.2rem;
+  font-size: 0.62rem;
+  color: rgba(17, 24, 39, 0.46);
+}
+
 .mmap-tier {
   display: flex;
   flex-direction: column;
@@ -228,6 +281,25 @@
   padding: 0.85rem 0.9rem;
 }
 
+.mmap-audience__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.mmap-audience__head strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  background: rgba(var(--void-ocean-rgb, 10, 147, 150), 0.09);
+  color: var(--void-ocean, #0a9396);
+  font-size: 0.72rem;
+}
+
 .mmap-audience__label,
 .mmap-cluster h3 {
   font-size: 0.82rem;
@@ -240,6 +312,38 @@
   font-size: 0.72rem;
   line-height: 1.4;
   color: rgba(17, 24, 39, 0.58);
+}
+
+.mmap-audience__keywords {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.42rem;
+}
+
+.mmap-audience__keywords li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.7rem;
+}
+
+.mmap-audience__keywords span {
+  color: var(--void-ink-strong, #111827);
+}
+
+.mmap-audience__keywords em,
+.mmap-audience__empty {
+  color: rgba(17, 24, 39, 0.48);
+  font-style: normal;
+}
+
+.mmap-audience__empty {
+  margin: 0.75rem 0 0;
+  font-size: 0.7rem;
 }
 
 .mmap-cluster__head {

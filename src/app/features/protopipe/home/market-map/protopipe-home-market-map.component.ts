@@ -25,4 +25,8 @@ export class ProtopipeHomeMarketMapComponent implements OnInit {
   refresh(): void {
     void this.store.load();
   }
+
+  rebuild(): void {
+    void this.store.rebuild();
+  }
 }

@@ -146,6 +146,15 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   readonly modelOptions = AI_VISIBILITY_MODELS;
 
   readonly ownDomain = computed(() => normalizeDomain(this.strategy.site()?.hostname));
+  readonly brandMentionTargets = computed(() =>
+    uniqueStrings([
+      this.strategy.brandIdentity()?.primaryName,
+      ...(this.strategy.brandIdentity()?.aliases ?? [])
+        .filter((alias) => alias.status === 'confirmed')
+        .map((alias) => alias.value),
+      this.strategy.site()?.displayName,
+    ]),
+  );
   readonly trackedKeywordCount = computed(() => this.strategy.keywords().length);
   readonly nationalCaptureTarget = computed<CaptureMarketTarget>(() => {
     const nationalMarket = this.strategy.onboardingProfile()?.nationalMarket;
@@ -300,7 +309,9 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
       : [];
     const completeSources = sourceRows.filter((source) => source.status === 'complete');
     const citedAnswers = completeSources.filter((source) => this.sourceClientCited(source)).length;
-    const mentionedAnswers = completeSources.filter((source) => this.sourceClientMentioned(source)).length;
+    const mentionedAnswers = completeSources.filter((source) =>
+      this.sourceClientMentioned(source),
+    ).length;
     const citedDomains = new Set(completeSources.flatMap((source) => this.sourceCitationDomains(source)));
     const fullAnswers = completeSources.filter((source) => this.sourceAnswerText(source)).length;
     const modelLabel = this.activeModel().label;
@@ -322,7 +333,7 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
         id: 'site-mentioned',
         label: 'Site mentioned',
         value: percentLabel(mentionedAnswers, completeSources.length),
-        hint: `${mentionedAnswers} ${modelLabel} answers mention your brand or domain`,
+        hint: `${mentionedAnswers} ${modelLabel} answers mention your brand aliases or domain`,
       },
       {
         id: 'citation-map',
@@ -598,6 +609,7 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
               locationCode: options.locationCode,
               locationName: options.locationName,
               includeChatGpt: true,
+              brandAliases: this.brandMentionTargets(),
             }),
           );
           captured.push(response.snapshot);
@@ -685,8 +697,22 @@ export class ProtopipeAiVisibilityComponent implements OnInit {
   sourceClientMentioned(source: AiVisibilitySourceSnapshot): boolean {
     if (source.clientMentioned) return true;
     const own = this.ownDomain();
-    if (!own) return false;
-    return textMentionsDomain(this.sourceAnswerText(source), own);
+    const text = [
+      this.sourceAnswerText(source),
+      ...source.citations.flatMap((citation) => citationSearchText(citation)),
+      ...(source.links ?? []).flatMap((link) => citationSearchText(link)),
+      ...(source.answerSections ?? []).flatMap((section) => [
+        section.title,
+        section.text,
+        section.markdown,
+        ...section.citations.flatMap((citation) => citationSearchText(citation)),
+        ...section.links.flatMap((link) => citationSearchText(link)),
+      ]),
+    ].join('\n');
+    return (
+      Boolean(own && textMentionsDomain(text, own)) ||
+      textMentionsAnyAlias(text, this.brandMentionTargets())
+    );
   }
 
   sourceStatusLabel(source: AiVisibilitySourceSnapshot): string {
@@ -966,6 +992,18 @@ function citationDomain(citation: { domain?: string | null; url?: string | null 
   return preferCitationDomain(explicit, resolved);
 }
 
+function citationSearchText(citation: {
+  title?: string | null;
+  domain?: string | null;
+  source?: string | null;
+  text?: string | null;
+  url?: string | null;
+}): string[] {
+  return [citation.title, citation.domain, citation.source, citation.text, citation.url].filter(
+    (value): value is string => Boolean(value?.trim()),
+  );
+}
+
 function percentLabel(numerator: number, denominator: number): string {
   if (denominator <= 0) return '0%';
   return `${Math.round((numerator / denominator) * 100)}%`;
@@ -973,6 +1011,20 @@ function percentLabel(numerator: number, denominator: number): string {
 
 function plural(count: number, singular: string): string {
   return `${count} ${singular}${count === 1 ? '' : 's'}`;
+}
+
+function uniqueStrings(values: Array<string | undefined>): string[] {
+  const seen = new Set<string>();
+  const output: string[] = [];
+  for (const value of values) {
+    const trimmed = value?.trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    output.push(trimmed);
+  }
+  return output;
 }
 
 function rankValue(position: number | null): number {
@@ -1031,4 +1083,25 @@ function textMentionsDomain(text: string | undefined, domain: string): boolean {
   const normalized = text.toLowerCase();
   const target = domain.toLowerCase();
   return normalized.includes(target) || normalized.includes(`www.${target}`);
+}
+
+function textMentionsAnyAlias(text: string | undefined, aliases: string[]): boolean {
+  if (!text || aliases.length === 0) return false;
+  return aliases.some((alias) => textMentionsAlias(text, alias));
+}
+
+function textMentionsAlias(text: string, alias: string): boolean {
+  const normalizedAlias = normalizeAlias(alias);
+  if (!normalizedAlias || normalizedAlias.length < 3) return false;
+  return ` ${normalizeAlias(text)} `.includes(` ${normalizedAlias} `);
+}
+
+function normalizeAlias(value: string): string {
+  return value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }

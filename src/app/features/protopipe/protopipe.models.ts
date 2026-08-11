@@ -2,6 +2,8 @@
 export type {
   KeywordIntent,
   KeywordPriority,
+  ProtopipeBrandAlias,
+  ProtopipeBrandIdentity,
   ProtopipeKeyword,
   ProtopipeKeywordDto,
   ProtopipeKeywordMarket,

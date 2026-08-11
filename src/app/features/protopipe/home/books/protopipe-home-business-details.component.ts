@@ -7,6 +7,7 @@ import type {
   CustomerMarketScope,
   MarketLocationRef,
   MarketReachMode,
+  ProtopipeBrandAlias,
   ProtopipeContextCard,
   ProtopipeOnboardingProfile,
 } from '@hive/contracts';
@@ -21,7 +22,21 @@ import {
   resolveNationalMarket,
 } from './discovery-book-market.utils';
 
-type BinderSection = 'overview' | 'services' | 'market' | 'customers' | 'competitors' | 'facts';
+type BinderSection =
+  | 'overview'
+  | 'brand'
+  | 'services'
+  | 'market'
+  | 'customers'
+  | 'competitors'
+  | 'facts';
+
+type BrandAliasDraft = Pick<ProtopipeBrandAlias, 'id' | 'value' | 'source' | 'status' | 'notes'>;
+
+interface BrandIdentityDraft {
+  primaryName: string;
+  aliases: BrandAliasDraft[];
+}
 
 const MARKET_SCOPE_LABELS: Record<CustomerMarketScope, string> = {
   local: 'Local',
@@ -50,8 +65,12 @@ export class ProtopipeHomeBusinessDetailsComponent implements OnInit {
 
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
+  readonly saveError = signal<string | null>(null);
+  readonly saveStatus = signal<string | null>(null);
+  readonly savingBrand = signal(false);
   readonly answeredCards = signal<ProtopipeContextCard[]>([]);
   readonly binderSection = signal<BinderSection>('overview');
+  readonly brandDraft = signal<BrandIdentityDraft>({ primaryName: '', aliases: [] });
 
   readonly profile = () => this.strategy.onboardingProfile();
   readonly site = () => this.strategy.site();
@@ -60,6 +79,12 @@ export class ProtopipeHomeBusinessDetailsComponent implements OnInit {
   readonly avatarCount = computed(() => this.profile()?.customerAvatars.length ?? 0);
   readonly competitorCount = computed(() => this.profile()?.competitors.length ?? 0);
   readonly factCount = computed(() => this.answeredCards().length);
+  readonly brandAliasCount = computed(
+    () => this.brandDraft().aliases.filter((alias) => alias.status === 'confirmed').length,
+  );
+  readonly brandDirty = computed(
+    () => JSON.stringify(this.brandDraft()) !== JSON.stringify(this.persistedBrandDraft()),
+  );
 
   ngOnInit(): void {
     void this.init();
@@ -67,6 +92,87 @@ export class ProtopipeHomeBusinessDetailsComponent implements OnInit {
 
   selectSection(section: BinderSection): void {
     this.binderSection.set(section);
+  }
+
+  updatePrimaryName(value: string): void {
+    this.brandDraft.update((draft) => ({ ...draft, primaryName: value }));
+    this.saveStatus.set(null);
+  }
+
+  updateAlias(index: number, field: keyof BrandAliasDraft, value: string): void {
+    this.brandDraft.update((draft) => ({
+      ...draft,
+      aliases: draft.aliases.map((alias, aliasIndex) =>
+        aliasIndex === index ? { ...alias, [field]: value } : alias,
+      ),
+    }));
+    this.saveStatus.set(null);
+  }
+
+  addAlias(): void {
+    this.brandDraft.update((draft) => ({
+      ...draft,
+      aliases: [
+        ...draft.aliases,
+        {
+          id: `temp-${crypto.randomUUID()}`,
+          value: '',
+          source: 'manual',
+          status: 'confirmed',
+        },
+      ],
+    }));
+    this.saveStatus.set(null);
+  }
+
+  removeAlias(index: number): void {
+    this.brandDraft.update((draft) => ({
+      ...draft,
+      aliases: draft.aliases.filter((_, aliasIndex) => aliasIndex !== index),
+    }));
+    this.saveStatus.set(null);
+  }
+
+  resetBrandDraft(): void {
+    this.brandDraft.set(this.persistedBrandDraft());
+    this.saveError.set(null);
+    this.saveStatus.set(null);
+  }
+
+  async saveBrandIdentity(): Promise<void> {
+    const siteId = this.strategy.siteId();
+    if (!siteId) return;
+    const draft = this.brandDraft();
+    const primaryName = draft.primaryName.trim();
+    if (primaryName.length < 2) {
+      this.saveError.set('Add a primary brand name before saving.');
+      return;
+    }
+
+    this.savingBrand.set(true);
+    this.saveError.set(null);
+    this.saveStatus.set(null);
+    try {
+      const response = await this.api.saveBrandIdentity(siteId, {
+        brandIdentity: {
+          primaryName,
+          aliases: draft.aliases
+            .map((alias) => ({
+              ...alias,
+              value: alias.value.trim(),
+              notes: alias.notes?.trim() || undefined,
+            }))
+            .filter((alias) => alias.value.length > 0),
+        },
+      });
+      this.strategy.applyPlan(response.plan);
+      this.resetBrandDraft();
+      this.saveStatus.set('Brand identity saved.');
+    } catch (err) {
+      this.saveError.set(parseProtopipeApiError(err, 'Could not save brand identity.'));
+    } finally {
+      this.savingBrand.set(false);
+    }
   }
 
   marketScopeLabel(scope: CustomerMarketScope): string {
@@ -109,6 +215,7 @@ export class ProtopipeHomeBusinessDetailsComponent implements OnInit {
   private async init(): Promise<void> {
     await this.strategy.ensureLoaded();
     await this.strategy.refreshPlan();
+    this.resetBrandDraft();
     const siteId = this.strategy.siteId();
     if (!siteId) {
       this.loading.set(false);
@@ -123,5 +230,32 @@ export class ProtopipeHomeBusinessDetailsComponent implements OnInit {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  private persistedBrandDraft(): BrandIdentityDraft {
+    const site = this.strategy.site();
+    const brandIdentity = this.strategy.brandIdentity();
+    return {
+      primaryName: brandIdentity?.primaryName || site?.displayName || '',
+      aliases:
+        brandIdentity?.aliases?.length
+          ? brandIdentity.aliases.map((alias) => ({
+              id: alias.id,
+              value: alias.value,
+              source: alias.source,
+              status: alias.status,
+              notes: alias.notes,
+            }))
+          : site?.displayName
+            ? [
+                {
+                  id: 'site-display-name',
+                  value: site.displayName,
+                  source: 'site_display_name',
+                  status: 'confirmed',
+                },
+              ]
+            : [],
+    };
   }
 }

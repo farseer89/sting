@@ -10,6 +10,7 @@ import type { ProtopipeOnboardingProfile } from '@hive/contracts';
 import type {
   KeywordIntent,
   KeywordPriority,
+  ProtopipeBrandIdentity,
   ProtopipeKeywordDto,
   ProtopipeKeywordMetricPoint,
   ProtopipeSite,
@@ -38,6 +39,7 @@ export class ProtopipeStrategyService {
   private readonly _site = signal<ProtopipeSite | null>(null);
   private readonly _sites = signal<ProtopipeSite[]>([]);
   private readonly _summary = signal('');
+  private readonly _brandIdentity = signal<ProtopipeBrandIdentity | null>(null);
   private readonly _onboardingProfile = signal<ProtopipeOnboardingProfile | null>(null);
   private readonly _onboardingStepId = signal<DiscoveryBookOnboardingStepId | null>(null);
   private readonly _subscription = signal<SubscriptionState | null>(null);
@@ -70,6 +72,7 @@ export class ProtopipeStrategyService {
   readonly lastEnrichSummary = this._lastEnrichSummary.asReadonly();
   readonly site = this._site.asReadonly();
   readonly sites = this._sites.asReadonly();
+  readonly brandIdentity = this._brandIdentity.asReadonly();
   readonly onboardingProfile = this._onboardingProfile.asReadonly();
   readonly onboardingStepId = this._onboardingStepId.asReadonly();
   readonly subscription = this._subscription.asReadonly();
@@ -83,6 +86,7 @@ export class ProtopipeStrategyService {
       hostname: '',
     },
     summary: this._summary(),
+    brandIdentity: this._brandIdentity() ?? undefined,
     keywords: this._keywords(),
     updatedAt: this._updatedAt(),
     onboardingProfile: this._onboardingProfile() ?? undefined,
@@ -357,10 +361,11 @@ export class ProtopipeStrategyService {
     this._sites.set(boot.sites as ProtopipeSite[]);
   }
 
-  private applyPlan(plan: ProtopipeStrategySummary): void {
+  applyPlan(plan: ProtopipeStrategySummary): void {
     this._siteId.set(plan.site.id);
     this._site.set(plan.site);
     this._summary.set(plan.summary);
+    this._brandIdentity.set(plan.brandIdentity ?? null);
     this._onboardingProfile.set(plan.onboardingProfile ?? null);
     this._onboardingStepId.set(
       (plan.onboardingStepId as DiscoveryBookOnboardingStepId | null | undefined) ?? null,

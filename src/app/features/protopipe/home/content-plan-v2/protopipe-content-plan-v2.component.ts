@@ -102,13 +102,26 @@ export class ProtopipeContentPlanV2Component implements OnInit {
 
   readonly clientIdentity = computed<ClientIdentity>(() => {
     const site = this.strategy.site();
+    const savedIdentity = this.strategy.brandIdentity();
     const business = this.business();
+    const artifactIdentity = asRecord(recordValue(business, 'clientIdentity'));
     const hostname = stringValue(recordValue(business, 'hostname')) || site?.hostname || '';
     const displayName =
       stringValue(recordValue(business, 'displayName')) || site?.displayName || site?.hostname || '';
+    const artifactAliases = asStringArray(recordValue(artifactIdentity, 'aliases'));
+    const savedAliases =
+      savedIdentity?.aliases
+        .filter((alias) => alias.status === 'confirmed')
+        .map((alias) => alias.value) ?? [];
     return {
-      hostname,
-      aliases: uniqueStrings([displayName, site?.displayName]),
+      hostname: savedIdentity?.hostname || hostname,
+      aliases: uniqueStrings([
+        savedIdentity?.primaryName,
+        ...savedAliases,
+        ...artifactAliases,
+        displayName,
+        site?.displayName,
+      ]),
     };
   });
 
@@ -390,6 +403,10 @@ function recordValue(record: Record<string, unknown> | null | undefined, key: st
 
 function stringValue(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
 }
 
 function numberValue(value: unknown): number | undefined {

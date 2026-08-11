@@ -48,6 +48,21 @@
         <button
           type="button"
           class="bus-binder-nav__item"
+          [class.is-active]="binderSection() === 'brand'"
+          (click)="selectSection('brand')"
+        >
+          <svg class="bus-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M3 4.5h10M4.5 8h7M6 11.5h4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+            <path d="M2.5 2.5h11v11h-11z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+          </svg>
+          Brand ID
+          @if (brandAliasCount(); as count) {
+            <span class="bus-binder-nav__badge">{{ count }}</span>
+          }
+        </button>
+        <button
+          type="button"
+          class="bus-binder-nav__item"
           [class.is-active]="binderSection() === 'services'"
           (click)="selectSection('services')"
         >
@@ -202,6 +217,109 @@
             } @else {
               <p class="bus-empty">No onboarding profile yet. Complete Discovery book onboarding to fill this in.</p>
             }
+          }
+
+          @case ('brand') {
+            <div class="bus-panel-head">
+              <div class="bus-panel-kicker">Profile · Brand identification</div>
+              <h2 class="bus-panel-title">Names AI answers should recognize</h2>
+              <p class="bus-panel-deck">
+                Confirm the business and personal brand aliases used for AI visibility matching.
+                Website citations still match by hostname; these aliases identify brand mentions and source titles.
+              </p>
+            </div>
+
+            @if (saveError(); as err) {
+              <p-message severity="error" [text]="err" styleClass="w-full" />
+            }
+            @if (saveStatus(); as status) {
+              <p-message severity="success" [text]="status" styleClass="w-full" />
+            }
+
+            <section class="bus-form-card">
+              <label class="bus-field">
+                <span>Primary brand name</span>
+                <input
+                  type="text"
+                  [value]="brandDraft().primaryName"
+                  maxlength="120"
+                  placeholder="Ariel Quiroz"
+                  (input)="updatePrimaryName($any($event.target).value)"
+                />
+              </label>
+
+              <div class="bus-alias-head">
+                <div>
+                  <h3 class="bus-subhead">Brand aliases</h3>
+                  <p>Use confirmed business, owner, artist, or DBA names. Ignore generic or risky matches.</p>
+                </div>
+                <button type="button" class="bus-link-button" (click)="addAlias()">Add alias</button>
+              </div>
+
+              @if (brandDraft().aliases.length) {
+                <div class="bus-alias-list">
+                  @for (alias of brandDraft().aliases; track alias.id; let i = $index) {
+                    <article class="bus-alias-row">
+                      <label class="bus-field bus-field--alias">
+                        <span>Alias</span>
+                        <input
+                          type="text"
+                          [value]="alias.value"
+                          maxlength="120"
+                          placeholder="Brand, person, or public name"
+                          (input)="updateAlias(i, 'value', $any($event.target).value)"
+                        />
+                      </label>
+                      <label class="bus-field bus-field--small">
+                        <span>Source</span>
+                        <select
+                          [value]="alias.source"
+                          (change)="updateAlias(i, 'source', $any($event.target).value)"
+                        >
+                          <option value="site_display_name">Site name</option>
+                          <option value="onboarding">Onboarding</option>
+                          <option value="manual">Manual</option>
+                          <option value="site_knowledge">Site knowledge</option>
+                        </select>
+                      </label>
+                      <label class="bus-field bus-field--small">
+                        <span>Status</span>
+                        <select
+                          [value]="alias.status"
+                          (change)="updateAlias(i, 'status', $any($event.target).value)"
+                        >
+                          <option value="confirmed">Confirmed</option>
+                          <option value="ignored">Ignored</option>
+                        </select>
+                      </label>
+                      <button type="button" class="bus-row-remove" (click)="removeAlias(i)">
+                        Remove
+                      </button>
+                    </article>
+                  }
+                </div>
+              } @else {
+                <p class="bus-empty">No aliases yet. Add at least one confirmed brand name.</p>
+              }
+
+              <div class="bus-form-actions">
+                <p-button
+                  label="Reset"
+                  severity="secondary"
+                  size="small"
+                  [outlined]="true"
+                  [disabled]="savingBrand() || !brandDirty()"
+                  (onClick)="resetBrandDraft()"
+                />
+                <p-button
+                  [label]="savingBrand() ? 'Saving…' : 'Save brand identity'"
+                  icon="pi pi-save"
+                  size="small"
+                  [disabled]="savingBrand() || !brandDirty()"
+                  (onClick)="saveBrandIdentity()"
+                />
+              </div>
+            </section>
           }
 
           @case ('services') {

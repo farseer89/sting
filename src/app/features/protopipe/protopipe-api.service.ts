@@ -81,6 +81,8 @@ import type {
   ArticleGenerationStep,
   ProtopipeSerpLocationsResponse,
   PutUserContentHelperRequest,
+  SaveBrandIdentityRequest,
+  SaveBrandIdentityResponse,
   SaveKeywordsRequest,
   SaveKeywordsResponse,
   SiteKnowledgeListResponse,
@@ -241,6 +243,16 @@ export class ProtopipeApiService {
         body,
       ),
     );
+  }
+
+  saveBrandIdentity(
+    siteId: string,
+    body: SaveBrandIdentityRequest,
+  ): Promise<SaveBrandIdentityResponse> {
+    const url = isShirePrimary()
+      ? shireApiUrl(ShireEndpoints.sites.brandIdentity(siteId))
+      : protopipeApiUrl(ProtopipeEndpoints.saveBrandIdentity.path, { siteId });
+    return firstValueFrom(this.http.patch<SaveBrandIdentityResponse>(url, body));
   }
 
   completeOnboarding(

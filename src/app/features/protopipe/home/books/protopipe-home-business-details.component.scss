@@ -365,6 +365,108 @@ $bus-accent: #059669;
   margin: 0;
 }
 
+.bus-form-card {
+  max-width: 52rem;
+  border: 1px solid $bus-border;
+  border-radius: 0.625rem;
+  background: $bus-bg-subtle;
+  padding: 1rem;
+}
+
+.bus-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+
+  span {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: $bus-dim;
+  }
+
+  input,
+  select {
+    min-height: 2.15rem;
+    border: 1px solid $bus-border;
+    border-radius: 0.45rem;
+    background: $bus-bg;
+    color: $bus-text;
+    font: inherit;
+    font-size: 0.8125rem;
+    padding: 0.45rem 0.6rem;
+
+    &:focus {
+      border-color: rgb(5 150 105 / 0.45);
+      outline: 2px solid rgb(5 150 105 / 0.12);
+      outline-offset: 1px;
+    }
+  }
+}
+
+.bus-field--alias {
+  min-width: 14rem;
+  flex: 1;
+}
+
+.bus-field--small {
+  width: 9rem;
+}
+
+.bus-alias-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1.1rem 0 0.65rem;
+
+  p {
+    margin: -0.25rem 0 0;
+    color: $bus-muted;
+    font-size: 0.75rem;
+  }
+}
+
+.bus-link-button,
+.bus-row-remove {
+  border: none;
+  background: transparent;
+  color: $bus-accent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0;
+}
+
+.bus-row-remove {
+  color: #b91c1c;
+  align-self: center;
+}
+
+.bus-alias-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.bus-alias-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.65rem;
+  border-bottom: 1px solid $bus-border-soft;
+  padding-bottom: 0.55rem;
+}
+
+.bus-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
 @media (max-width: 720px) {
   .bus-binder {
     grid-template-columns: 1fr;
@@ -391,5 +493,15 @@ $bus-accent: #059669;
   .bus-dl__row {
     grid-template-columns: 1fr;
     gap: 0.25rem;
+  }
+
+  .bus-alias-row,
+  .bus-alias-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bus-field--small {
+    width: auto;
   }
 }

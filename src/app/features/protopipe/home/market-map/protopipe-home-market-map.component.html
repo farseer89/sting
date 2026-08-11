@@ -1,0 +1,209 @@
+<div class="mmap" aria-label="Market Map">
+  <header class="mmap__intro">
+    <div>
+      <p class="mmap__kicker">SEO · Planning</p>
+      <h1>Market Map</h1>
+      <p class="mmap__lede">
+        How your confirmed keywords cluster into topics, funnel stages, and audience needs before
+        content planning begins.
+      </p>
+      <p class="mmap__status">{{ store.statusLabel() }}</p>
+    </div>
+    <div class="mmap__actions">
+      <button type="button" class="mmap__action" [disabled]="store.loading()" (click)="refresh()">
+        {{ store.loading() ? 'Refreshing…' : 'Refresh map' }}
+      </button>
+    </div>
+  </header>
+
+  @if (store.error(); as err) {
+    <p class="mmap__error">{{ err }}</p>
+  }
+
+  @if (store.runSession.isActive()) {
+    <section class="mmap__notice" role="status" aria-live="polite">
+      <span class="mmap__notice-dot" aria-hidden="true"></span>
+      <div>
+        <strong>{{ store.statusLabel() }}</strong>
+        Clustering and tiering your confirmed keywords.
+      </div>
+    </section>
+  }
+
+  @if (!store.hasKeywords()) {
+    <section class="mmap__empty">
+      <h2>Confirm keywords first</h2>
+      <p>
+        Market Map is built from your confirmed keyword set. Choose keywords, confirm them, and the
+        map will appear here with clusters, funnel placement, and pillar roles.
+      </p>
+    </section>
+  } @else {
+    <section class="mmap__cards" aria-label="Market map summary">
+      @for (card of store.summaryCards(); track card.id) {
+        <article class="mmap-card">
+          <span class="mmap-card__label">{{ card.label }}</span>
+          <strong class="mmap-card__value">{{ card.value }}</strong>
+          <span class="mmap-card__hint">{{ card.hint }}</span>
+        </article>
+      }
+    </section>
+
+    <div class="mmap__grid">
+      <section class="mmap-panel" aria-label="Funnel coverage">
+        <div class="mmap-panel__head">
+          <div>
+            <p class="mmap-panel__kicker">Funnel</p>
+            <h2>Where demand sits</h2>
+          </div>
+        </div>
+        @if (store.funnelSlices().length) {
+          <div class="mmap-funnel">
+            @for (slice of store.funnelSlices(); track slice.id) {
+              <article class="mmap-funnel__item">
+                <span class="mmap-funnel__label">{{ slice.label }}</span>
+                <strong class="mmap-funnel__value">{{ slice.count }}</strong>
+              </article>
+            }
+          </div>
+        } @else {
+          <p class="mmap-panel__empty">Funnel placement appears once keywords are scored.</p>
+        }
+      </section>
+
+      <section class="mmap-panel" aria-label="Keyword tiers">
+        <div class="mmap-panel__head">
+          <div>
+            <p class="mmap-panel__kicker">Priority</p>
+            <h2>Keyword tiers</h2>
+          </div>
+        </div>
+        @if (store.tierSlices().length) {
+          <ul class="mmap-tier-list">
+            @for (slice of store.tierSlices(); track slice.id) {
+              <li class="mmap-tier">
+                <span>{{ slice.label }}</span>
+                <strong>{{ slice.count }}</strong>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="mmap-panel__empty">Tiers appear after the topology run completes.</p>
+        }
+      </section>
+    </div>
+
+    @if (store.audienceViews().length) {
+      <section class="mmap-panel" aria-label="Audiences">
+        <div class="mmap-panel__head">
+          <div>
+            <p class="mmap-panel__kicker">Audience</p>
+            <h2>Who each cluster serves</h2>
+          </div>
+        </div>
+        <div class="mmap-audience-grid">
+          @for (audience of store.audienceViews(); track audience.id) {
+            <article class="mmap-audience">
+              <span class="mmap-audience__label">{{ audience.label }}</span>
+              <p class="mmap-audience__description">{{ audience.description }}</p>
+              <span class="mmap-audience__meta">{{ labelize(audience.intentCluster) }}</span>
+            </article>
+          }
+        </div>
+      </section>
+    }
+
+    <section class="mmap-panel" aria-label="Topic clusters">
+      <div class="mmap-panel__head">
+        <div>
+          <p class="mmap-panel__kicker">Clusters</p>
+          <h2>Topical structure</h2>
+        </div>
+      </div>
+
+      @if (store.clusterViews().length) {
+        <div class="mmap-cluster-grid">
+          @for (cluster of store.clusterViews(); track cluster.id) {
+            <article class="mmap-cluster">
+              <div class="mmap-cluster__head">
+                <div>
+                  <h3>{{ cluster.name }}</h3>
+                  <p class="mmap-cluster__subtopic">{{ cluster.subtopic }}</p>
+                </div>
+                <span class="mmap-cluster__count">{{ cluster.memberCount }} keywords</span>
+              </div>
+              <dl class="mmap-cluster__meta">
+                <div>
+                  <dt>Pillar</dt>
+                  <dd>{{ cluster.pillarKeyword }}</dd>
+                </div>
+                <div>
+                  <dt>Intent</dt>
+                  <dd>{{ cluster.dominantIntent }}</dd>
+                </div>
+                <div>
+                  <dt>Audience</dt>
+                  <dd>{{ cluster.audienceLabel }}</dd>
+                </div>
+                <div>
+                  <dt>Supporting</dt>
+                  <dd>{{ cluster.supportingCount }}</dd>
+                </div>
+              </dl>
+              <ul class="mmap-cluster__members">
+                @for (member of cluster.members.slice(0, 6); track member.phrase) {
+                  <li>
+                    <span class="mmap-cluster__phrase">{{ member.phrase }}</span>
+                    <span class="mmap-cluster__role">{{ labelize(member.role) }}</span>
+                  </li>
+                }
+              </ul>
+            </article>
+          }
+        </div>
+      } @else {
+        <p class="mmap-panel__empty">
+          Clusters appear once keyword topology finishes building.
+        </p>
+      }
+    </section>
+
+    <section class="mmap-panel mmap-panel--table" aria-label="Keyword map">
+      <div class="mmap-panel__head">
+        <div>
+          <p class="mmap-panel__kicker">Keywords</p>
+          <h2>Full market map</h2>
+        </div>
+      </div>
+
+      @if (store.keywordRows().length) {
+        <div class="mmap-table-wrap">
+          <table class="mmap-table">
+            <thead>
+              <tr>
+                <th scope="col">Keyword</th>
+                <th scope="col">Tier</th>
+                <th scope="col">Funnel</th>
+                <th scope="col">Intent</th>
+                <th scope="col">Cluster</th>
+                <th scope="col">Priority</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of store.keywordRows(); track row.phrase) {
+                <tr>
+                  <th scope="row">{{ row.phrase }}</th>
+                  <td>{{ labelize(row.tier) }}</td>
+                  <td>{{ labelize(row.funnelStage) }}</td>
+                  <td>{{ labelize(row.intent) }}</td>
+                  <td>{{ row.clusterName }}</td>
+                  <td>{{ labelize(row.priority) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  }
+</div>

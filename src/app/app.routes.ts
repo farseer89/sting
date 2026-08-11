@@ -255,6 +255,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'home/market-map',
+    canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],
+    loadComponent: () =>
+      import('./features/protopipe/home/protopipe-user-home.component').then(
+        (m) => m.ProtopipeUserHomeComponent,
+      ),
+  },
+  {
     path: 'home/rankings',
     canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],
     loadComponent: () =>

@@ -478,6 +478,14 @@
                     <app-protopipe-home-keywords (confirmed)="onKeywordsConfirmed()" />
                   </section>
                 }
+                @case ('market-map') {
+                  <section
+                    class="glass glass--full glass--premiere home-market-map"
+                    aria-label="Market Map"
+                  >
+                    <app-protopipe-home-market-map />
+                  </section>
+                }
                 @case ('rankings') {
                   <section
                     class="glass glass--full glass--premiere home-rankings"

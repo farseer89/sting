@@ -69,6 +69,7 @@ import { ProtopipeHomeAnalyticsBinderComponent } from './analytics-binder/protop
 import { ProtopipeHomeAnalyticsComponent } from './analytics/protopipe-home-analytics.component';
 import { ProtopipeAiVisibilityComponent } from './ai-visibility/protopipe-ai-visibility.component';
 import { ProtopipeContentPlanV2Component } from './content-plan-v2/protopipe-content-plan-v2.component';
+import { ProtopipeHomeMarketMapComponent } from './market-map/protopipe-home-market-map.component';
 import { ProtopipeHomeDashboardComponent } from './dashboard/protopipe-home-dashboard.component';
 import { ProtopipeHomeRankingsComponent } from './rankings/protopipe-home-rankings.component';
 import { ProtopipeSiteHealthComponent } from './site-health/protopipe-site-health.component';
@@ -88,6 +89,7 @@ import {
   HOME_DASHBOARD_PATH,
   HOME_DISCOVERY_PATH,
   HOME_KEYWORDS_PATH,
+  HOME_MARKET_MAP_PATH,
   HOME_RANKINGS_PATH,
   HOME_AI_VISIBILITY_PATH,
   HOME_CONTENT_PLAN_V2_PATH,
@@ -111,6 +113,7 @@ export type ProtopipeHomeView =
   | 'dashboard'
   | 'discovery'
   | 'keywords'
+  | 'market-map'
   | 'rankings'
   | 'ai-visibility'
   | 'content-plan-v2'
@@ -219,6 +222,7 @@ interface MobileHomeTab {
     ProtopipeHomeAnalyticsBinderComponent,
     ProtopipeHomeAnalyticsComponent,
     ProtopipeAiVisibilityComponent,
+    ProtopipeHomeMarketMapComponent,
     ProtopipeContentPlanV2Component,
     ProtopipeHomeDashboardComponent,
     ProtopipeHomeRankingsComponent,
@@ -494,6 +498,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
       ]);
     } else if (item.id === 'seo-keywords') {
       this.openKeywordSelectionView();
+    } else if (item.id === 'seo-market-map') {
+      this.openMarketMapView();
     } else if (item.id === 'seo-rankings') {
       this.leaveWriterFocus();
       this.leaveThinkerFocus();
@@ -791,18 +797,24 @@ export class ProtopipeUserHomeComponent implements OnInit {
     void this.router.navigate([HOME_KEYWORDS_PATH]);
   }
 
+  openMarketMapView(): void {
+    this.leaveWriterFocus();
+    this.leaveThinkerFocus();
+    this.sidePanel.setOpen(false);
+    this.activeView.set('market-map');
+    this.activeNavId.set('seo-market-map');
+    void this.router.navigate([HOME_MARKET_MAP_PATH]);
+  }
+
   onKeywordsConfirmed(): void {
     this.leaveWriterFocus();
     this.leaveThinkerFocus();
     this.sidePanel.setOpen(false);
-    this.activeView.set('content-plan-v2');
-    this.activeNavId.set('content-plan-v2');
+    this.activeView.set('market-map');
+    this.activeNavId.set('seo-market-map');
     const topologyRunId = this.keywordStore.topologyRunId();
-    void this.router.navigate([HOME_CONTENT_PLAN_V2_PATH], {
-      queryParams: {
-        section: 'topology',
-        ...(topologyRunId ? { topologyRunId } : {}),
-      },
+    void this.router.navigate([HOME_MARKET_MAP_PATH], {
+      queryParams: topologyRunId ? { topologyRunId } : {},
     });
   }
 
@@ -1056,6 +1068,15 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.sidePanel.setOpen(false);
       this.activeView.set('keywords');
       this.activeNavId.set('seo-keywords');
+      return;
+    }
+
+    if (kind === 'market-map') {
+      this.leaveWriterFocus();
+      this.leaveThinkerFocus();
+      this.sidePanel.setOpen(false);
+      this.activeView.set('market-map');
+      this.activeNavId.set('seo-market-map');
       return;
     }
 

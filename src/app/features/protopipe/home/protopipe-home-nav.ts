@@ -57,6 +57,12 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
         capability: 'discovery',
       },
       {
+        id: 'seo-market-map',
+        label: 'Market Map',
+        icon: 'sitemap',
+        capability: 'discovery',
+      },
+      {
         id: 'seo-rankings',
         label: 'Rankings',
         icon: 'chart',

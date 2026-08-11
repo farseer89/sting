@@ -6,7 +6,7 @@
         Planning substrate before calendar generation — identity, keywords, SERP evidence, site health, and AI visibility.
       </p>
       <p class="bus-masthead__meta">
-        Evidence: {{ runStatusLabel() }} · Topology: {{ topologyRunStatusLabel() }} · Plan: {{ planRunStatusLabel() }} · {{ clientIdentity().hostname || 'No hostname' }}
+        Evidence: {{ runStatusLabel() }} · Plan: {{ planRunStatusLabel() }} · {{ clientIdentity().hostname || 'No hostname' }}
       </p>
     </div>
     <div class="bus-masthead__actions">
@@ -43,20 +43,6 @@
 
   @if (planError(); as err) {
     <p-message severity="error" [text]="err" styleClass="w-full" />
-  }
-
-  @if (topologyError(); as err) {
-    <p-message severity="error" [text]="err" styleClass="w-full" />
-  }
-
-  @if (topologyRunSession.isActive() && topologyThought()?.thinkerKind === 'content_plan_v2_topology') {
-    <div class="bus-notice" role="status" aria-live="polite">
-      <span class="bus-notice__dot" aria-hidden="true"></span>
-      <div>
-        <strong>{{ topologyRunStatusLabel() }}</strong>
-        Planning topology will update when clustering completes.
-      </div>
-    </div>
   }
 
   @if (runSession.isActive() && thought()?.thinkerKind === 'content_plan_v2_evidence') {
@@ -100,23 +86,6 @@
           </svg>
           Readiness
           <span class="bus-binder-nav__badge">{{ readyCheckCount() }}</span>
-        </button>
-
-        <button
-          type="button"
-          class="bus-binder-nav__item"
-          [class.is-active]="binderSection() === 'topology'"
-          [class.is-partial]="navItem('topology')?.state === 'partial'"
-          [class.is-missing]="navItem('topology')?.state === 'missing'"
-          (click)="selectSection('topology')"
-        >
-          <svg class="bus-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path d="M3 4h10M4 8h8M5.5 12h5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-          </svg>
-          Topology
-          @if (navItem('topology')?.count; as count) {
-            <span class="bus-binder-nav__badge">{{ count }}</span>
-          }
         </button>
 
         <div class="bus-binder-nav__label" style="margin-top:0.75rem;">Identity</div>
@@ -353,81 +322,6 @@
               }
             } @else {
               <p class="bus-empty">No evidence run steps yet.</p>
-            }
-          }
-
-          @case ('topology') {
-            <div class="bus-panel-head">
-              <div class="bus-panel-kicker">{{ sectionKicker('topology') }}</div>
-              <h2 class="bus-panel-title">Planning topology</h2>
-              <p class="bus-panel-deck">
-                The market structure the system understands before calendar dates are assigned.
-              </p>
-            </div>
-
-            <div class="bus-stat-grid">
-              <div class="bus-stat">
-                <span class="bus-stat__value">{{ topologyRows().length }}</span>
-                <span class="bus-stat__label">Keyword rows</span>
-              </div>
-              <div class="bus-stat">
-                <span class="bus-stat__value">{{ clusters().length }}</span>
-                <span class="bus-stat__label">Clusters</span>
-              </div>
-              <div class="bus-stat">
-                <span class="bus-stat__value">{{ pillars().length }}</span>
-                <span class="bus-stat__label">Pillars</span>
-              </div>
-              <div class="bus-stat">
-                <span class="bus-stat__value">{{ aiVisibilityActionCount() }}</span>
-                <span class="bus-stat__label">AI visibility actions</span>
-              </div>
-            </div>
-
-            @if (clusters().length) {
-              <h3 class="bus-subhead">Clusters and pillar roles</h3>
-              <ul class="bus-fact-list">
-                @for (cluster of clusters().slice(0, 12); track field(cluster, 'name', $index.toString())) {
-                  <li class="bus-fact">
-                    <div class="bus-fact__meta">{{ field(cluster, 'dominantIntent') }} · {{ field(cluster, 'audienceLabel', 'No audience label') }}</div>
-                    <div class="bus-fact__question">{{ field(cluster, 'name') }}</div>
-                    <div class="bus-fact__answer">Pillar: {{ field(cluster, 'pillarKeyword') }}</div>
-                  </li>
-                }
-              </ul>
-            }
-
-            <h3 class="bus-subhead bus-subhead--spaced">Keyword topology</h3>
-            @if (topologyRows().length) {
-              <ul class="bus-fact-list">
-                @for (row of topologyRows().slice(0, 24); track field(row, 'phrase', $index.toString())) {
-                  <li class="bus-fact">
-                    <div class="bus-fact__meta">
-                      {{ field(row, 'tier', 'unscored') }} · {{ field(row, 'funnelStage', 'funnel pending') }}
-                    </div>
-                    <div class="bus-fact__question">{{ field(row, 'phrase') }}</div>
-                    <div class="bus-fact__answer">
-                      {{ field(row, 'intent') }} · {{ field(row, 'priority') }} ·
-                      {{ field(row, 'clusterName', 'cluster pending') }}
-                    </div>
-                  </li>
-                }
-              </ul>
-            } @else {
-              <p class="bus-empty">Confirm keywords to see topology.</p>
-            }
-
-            @if (pageOptimizationSignals().length) {
-              <h3 class="bus-subhead bus-subhead--spaced">Existing-page relationships</h3>
-              <ul class="bus-fact-list">
-                @for (signal of pageOptimizationSignals().slice(0, 8); track field(signal, 'supportTargetUrl', $index.toString())) {
-                  <li class="bus-fact">
-                    <div class="bus-fact__meta">{{ field(signal, 'calendarKind') }}</div>
-                    <div class="bus-fact__question">{{ field(signal, 'supportTargetKeyword') }}</div>
-                    <div class="bus-fact__answer">{{ field(signal, 'rationale') }}</div>
-                  </li>
-                }
-              </ul>
             }
           }
 

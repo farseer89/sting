@@ -6,6 +6,7 @@ import {
   HOME_DASHBOARD_PATH,
   HOME_DISCOVERY_PATH,
   HOME_KEYWORDS_PATH,
+  HOME_MARKET_MAP_PATH,
   HOME_ONBOARDING_PATH,
   HOME_SITE_HEALTH_PATH,
   homeShellRouteKind,
@@ -17,6 +18,7 @@ describe('protopipe home routes', () => {
     expect(homeShellRouteKind(HOME_ONBOARDING_PATH)).toBe('onboarding');
     expect(homeShellRouteKind(HOME_DISCOVERY_PATH)).toBe('discovery');
     expect(homeShellRouteKind(HOME_KEYWORDS_PATH)).toBe('keywords');
+    expect(homeShellRouteKind(HOME_MARKET_MAP_PATH)).toBe('market-map');
     expect(homeShellRouteKind(HOME_AI_VISIBILITY_PATH)).toBe('ai-visibility');
     expect(homeShellRouteKind(HOME_CONTENT_PLAN_V2_PATH)).toBe('content-plan-v2');
     expect(homeShellRouteKind(HOME_SITE_HEALTH_PATH)).toBe('site-health');

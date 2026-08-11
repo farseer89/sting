@@ -45,6 +45,11 @@ export class ProtopipeMarketMapStore {
     if (fromContext.length) return fromContext;
     return asRecordArray(recordValue(business, 'confirmedAvatars'));
   });
+  readonly discoveryRunId = computed(() => {
+    const strategyContext = asRecord(this.topologyArtifacts()['strategyContext']);
+    const value = recordValue(strategyContext, 'discoveryRunId');
+    return typeof value === 'string' && value.trim() ? value.trim() : null;
+  });
 
   readonly keywordRows = computed<MarketMapKeywordRow[]>(() =>
     buildKeywordRows(asRecordArray(this.topologyArtifacts()['scored']), this.strategy.keywords()),
@@ -138,7 +143,10 @@ export class ProtopipeMarketMapStore {
     this.error.set(null);
     const run = await this.runSession.enqueueRun(siteId, {
       thinkerKind: 'content_plan_v2_topology',
-      params: { source: 'marketMapRebuild' },
+      params: {
+        source: 'marketMapRebuild',
+        ...(this.discoveryRunId() ? { discoveryRunId: this.discoveryRunId() } : {}),
+      },
     });
     if (!run && this.runSession.loadError()) {
       this.error.set(this.runSession.loadError());

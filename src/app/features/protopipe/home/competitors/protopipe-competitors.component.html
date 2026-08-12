@@ -133,7 +133,7 @@
       </article>
     </section>
 
-    @if (citationModes().length || serpLayout()) {
+    @if (citationModes().length || serpLayoutSummary()) {
       <section class="competitors__columns">
         <article class="competitors__panel">
           <div class="competitors__section-head">
@@ -172,26 +172,55 @@
               <h2>What Fills The Results Page</h2>
             </div>
           </div>
-          @if (serpLayout()) {
-            <p>
-              Organic positions:
-              {{ serpLayout()?.organicPositions?.join(', ') || 'none captured' }}
-            </p>
-            @if (serpLayout()?.missingOrganicPositions?.length) {
-              <p>Missing organic slots: {{ serpLayout()?.missingOrganicPositions?.join(', ') }}</p>
-            }
-            @if (serpLayout()?.occupiedSlots?.length) {
-              <div class="competitors__chips">
-                @for (slot of serpLayout()?.occupiedSlots || []; track slot.type + slot.label) {
-                  <span>{{ slot.position ? '#' + slot.position + ' ' : '' }}{{ slot.label }}</span>
+          @if (serpLayoutSummary(); as layoutSummary) {
+            <p>{{ layoutSummary.intro }}</p>
+
+            @if (layoutSummary.pageOneRows.length) {
+              <div class="competitors__serp-strip" aria-label="Page 1 result mix">
+                @for (row of layoutSummary.pageOneRows; track row.position) {
+                  <article
+                    class="competitors__serp-row"
+                    [class.is-organic]="row.kind === 'organic'"
+                    [class.is-feature]="row.kind === 'feature'"
+                  >
+                    <span class="competitors__serp-slot">#{{ row.position }}</span>
+                    <div>
+                      <strong>{{ row.label }}</strong>
+                      @if (row.detail) {
+                        <p>{{ row.detail }}</p>
+                      }
+                    </div>
+                  </article>
                 }
               </div>
             }
-            <ul>
-              @for (implication of serpLayout()?.writerImplications || []; track implication) {
-                <li>{{ implication }}</li>
-              }
-            </ul>
+
+            @if (layoutSummary.features.length) {
+              <div class="competitors__serp-features">
+                <strong>Features detected</strong>
+                <div class="competitors__chips">
+                  @for (feature of layoutSummary.features; track feature.label + (feature.position ?? '')) {
+                    <span>
+                      @if (feature.position) {
+                        #{{ feature.position }}
+                      }
+                      {{ feature.label }}
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (layoutSummary.writerImplications.length) {
+              <div class="competitors__serp-implications">
+                <strong>Write for this SERP</strong>
+                <ul>
+                  @for (implication of layoutSummary.writerImplications; track implication) {
+                    <li>{{ implication }}</li>
+                  }
+                </ul>
+              </div>
+            }
           } @else {
             <p>No SERP layout explanation has been packaged yet.</p>
           }

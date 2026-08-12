@@ -135,6 +135,20 @@ interface SerpLayout {
   writerImplications: string[];
 }
 
+interface SerpLayoutPageRow {
+  position: number;
+  kind: 'organic' | 'feature' | 'unknown';
+  label: string;
+  detail?: string;
+}
+
+interface SerpLayoutSummary {
+  intro: string;
+  pageOneRows: SerpLayoutPageRow[];
+  features: Array<{ label: string; position?: number }>;
+  writerImplications: string[];
+}
+
 interface SectionPattern {
   id: string;
   label: string;
@@ -328,6 +342,11 @@ export class ProtopipeCompetitorsComponent implements OnInit {
   readonly writerEvidence = computed(() => this.artifact()?.writerEvidence ?? null);
   readonly writerSerpIntent = computed(() => this.writerEvidence()?.serpIntent ?? this.serpIntent());
   readonly serpLayout = computed(() => this.writerEvidence()?.serpLayout ?? null);
+  readonly serpLayoutSummary = computed(() => {
+    const layout = this.serpLayout();
+    if (!layout) return null;
+    return buildSerpLayoutSummary(layout, this.serpCompetitors());
+  });
   readonly citationModes = computed(() => this.writerEvidence()?.citationModes ?? []);
   readonly proofChecklist = computed(() => this.writerEvidence()?.proofChecklist ?? []);
   readonly sectionOpportunities = computed(() => this.writerEvidence()?.sectionOpportunities ?? []);
@@ -462,4 +481,97 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
+}
+
+function buildSerpLayoutSummary(
+  layout: SerpLayout,
+  competitors: SerpCompetitor[],
+): SerpLayoutSummary {
+  const pageOneOrganic = new Set(
+    layout.organicPositions.filter((position) => position >= 1 && position <= 10),
+  );
+  const missingSlots = new Set(
+    layout.missingOrganicPositions.filter((position) => position >= 1 && position <= 10),
+  );
+  const slotByPosition = new Map<number, SerpLayout['occupiedSlots'][number]>();
+  for (const slot of layout.occupiedSlots) {
+    if (slot.position != null && slot.position >= 1 && slot.position <= 10) {
+      slotByPosition.set(slot.position, slot);
+    }
+  }
+  const competitorByPosition = new Map(competitors.map((row) => [row.position, row]));
+  const pageOneRows: SerpLayoutPageRow[] = [];
+
+  for (let position = 1; position <= 10; position += 1) {
+    if (pageOneOrganic.has(position)) {
+      const competitor = competitorByPosition.get(position);
+      pageOneRows.push({
+        position,
+        kind: 'organic',
+        label: 'Organic result',
+        detail: competitor?.domain || competitor?.title || undefined,
+      });
+      continue;
+    }
+
+    const slot = slotByPosition.get(position);
+    if (slot) {
+      pageOneRows.push({
+        position,
+        kind: 'feature',
+        label: slot.label,
+        detail: slot.domain,
+      });
+      continue;
+    }
+
+    if (missingSlots.has(position)) {
+      pageOneRows.push({
+        position,
+        kind: 'unknown',
+        label: 'Non-organic block',
+        detail: 'Ads or another SERP feature',
+      });
+    }
+  }
+
+  const features = layout.occupiedSlots.map((slot) => ({
+    label: slot.label,
+    position: slot.position,
+  }));
+  const featureLabels = features.map((feature) => featureLabel(feature.label));
+  const intro = serpLayoutIntro(featureLabels);
+
+  return {
+    intro,
+    pageOneRows,
+    features,
+    writerImplications: layout.writerImplications,
+  };
+}
+
+function featureLabel(label: string): string {
+  const normalized = label.toLowerCase();
+  if (normalized.includes('local pack')) return 'local pack';
+  if (normalized.includes('people also ask')) return 'People Also Ask';
+  if (normalized.includes('image pack')) return 'image pack';
+  if (normalized.includes('video pack')) return 'video pack';
+  if (normalized.includes('featured snippet')) return 'featured snippet';
+  if (normalized.includes('ai overview')) return 'AI Overview';
+  if (normalized.includes('knowledge graph')) return 'knowledge graph';
+  if (normalized.includes('ad')) return 'paid ads';
+  return label;
+}
+
+function serpLayoutIntro(featureLabels: string[]): string {
+  const unique = [...new Set(featureLabels.filter(Boolean))];
+  if (unique.length === 0) {
+    return 'Page 1 is mostly standard organic results for this keyword sample.';
+  }
+  if (unique.length === 1) {
+    return `Page 1 mixes organic links with ${unique[0]}.`;
+  }
+  const last = unique.at(-1);
+  const head = unique.slice(0, -1).join(', ');
+  return `Page 1 mixes organic links with ${head}, and ${last}.`;
 }

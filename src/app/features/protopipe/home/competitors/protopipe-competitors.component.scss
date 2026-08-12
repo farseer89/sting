@@ -284,6 +284,73 @@
   background: rgba(54, 92, 128, 0.16);
 }
 
+.competitors__serp-strip {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+}
+
+.competitors__serp-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+  border: 1px solid rgba(18, 32, 24, 0.08);
+  border-radius: 14px;
+  background: #fbfcf8;
+  padding: 0.55rem 0.7rem;
+}
+
+.competitors__serp-row.is-organic {
+  border-color: rgba(76, 148, 82, 0.18);
+  background: rgba(232, 246, 234, 0.55);
+}
+
+.competitors__serp-row.is-feature {
+  border-color: rgba(54, 92, 128, 0.16);
+  background: rgba(240, 246, 252, 0.85);
+}
+
+.competitors__serp-row strong {
+  display: block;
+  font-size: 0.84rem;
+}
+
+.competitors__serp-row p {
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+}
+
+.competitors__serp-slot {
+  min-width: 2rem;
+  border-radius: 999px;
+  background: rgba(18, 32, 24, 0.08);
+  color: rgba(18, 32, 24, 0.72);
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.28rem 0.45rem;
+  text-align: center;
+}
+
+.competitors__serp-features,
+.competitors__serp-implications {
+  margin-top: 0.85rem;
+}
+
+.competitors__serp-features strong,
+.competitors__serp-implications strong {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: rgba(18, 32, 24, 0.72);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.competitors__serp-implications ul {
+  margin-top: 0;
+}
+
 .competitors__gap {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

@@ -4,12 +4,15 @@
       <p class="competitors__eyebrow">Keyword Competition</p>
       <h1>Competitors for “{{ keyword }}”</h1>
       <p>
-        First-pass runner: top organic competitors, AI citations, competitor page profiles, and one
-        strategy conclusion. User-page comparison is intentionally excluded in this slice.
+        Planning-grade runner: organic competitors, AI citations, user-page comparison, proof gaps,
+        and source-backed reasons for the suggested content move.
       </p>
     </div>
     <div class="competitors__actions">
       <span class="competitors__status">{{ statusLabel() }}</span>
+      @if (thought() && totalCostUsd() != null) {
+        <span class="competitors__cost">Run cost {{ formatCost(totalCostUsd()) }}</span>
+      }
       @if (thought()) {
         <p-button
           [label]="exportingRunbook() ? 'Exporting…' : 'Download runbook'"
@@ -69,18 +72,33 @@
         <p class="competitors__eyebrow">Recommendation</p>
         <h2>
           {{
-            conclusion()?.suggestedStrategy?.primaryRecommendation ||
+            contentDecision()?.primaryAngle ||
+              conclusion()?.suggestedStrategy?.primaryRecommendation ||
               'Run complete. Review the evidence below.'
           }}
         </h2>
-        @if (conclusion()?.contentPlanInputs?.rationale) {
-          <p>{{ conclusion()?.contentPlanInputs?.rationale }}</p>
+        @if (contentDecision()?.sequencingHint || conclusion()?.contentPlanInputs?.rationale) {
+          <p>
+            {{ contentDecision()?.sequencingHint || conclusion()?.contentPlanInputs?.rationale }}
+          </p>
         }
         <div class="competitors__meta">
-          <span>Priority: {{ conclusion()?.suggestedStrategy?.priority || 'medium' }}</span>
-          <span>Confidence: {{ conclusion()?.confidence || 'medium' }}</span>
+          <span>Action: {{ formatLabel(contentDecision()?.recommendedAction || 'review') }}</span>
           <span
-            >Type: {{ conclusion()?.contentPlanInputs?.opportunityType || 'competitive_gap' }}</span
+            >Format:
+            {{ formatLabel(contentDecision()?.recommendedContentType || 'service_page') }}</span
+          >
+          <span
+            >Confidence:
+            {{ contentDecision()?.confidence || conclusion()?.confidence || 'medium' }}</span
+          >
+          <span
+            >Type:
+            {{
+              contentDecision()?.opportunityType ||
+                conclusion()?.contentPlanInputs?.opportunityType ||
+                'competitive_gap'
+            }}</span
           >
         </div>
       </article>
@@ -88,7 +106,16 @@
       <article class="competitors__panel">
         <p class="competitors__eyebrow">SERP</p>
         <h3>{{ serpCompetitors().length }} organic competitors</h3>
-        <p>Your current position: {{ artifactData.serp?.yourPosition || 'not found' }}</p>
+        <p>
+          Your current position:
+          {{ userRanking()?.position || artifactData.serp?.yourPosition || 'not found' }}
+        </p>
+        @if (serpIntent()) {
+          <p>
+            SERP intent: {{ formatLabel(serpIntent()?.dominantPageType) }} ·
+            {{ formatLabel(serpIntent()?.recommendedContentFormat) }}
+          </p>
+        }
       </article>
 
       <article class="competitors__panel">
@@ -100,6 +127,121 @@
         </p>
       </article>
     </section>
+
+    @if (reasonCards().length) {
+      <section class="competitors__panel">
+        <div class="competitors__section-head">
+          <div>
+            <p class="competitors__eyebrow">Reasoning</p>
+            <h2>Why We Recommend This</h2>
+          </div>
+          <span>{{ reasonCards().length }} reason(s)</span>
+        </div>
+
+        <div class="competitors__reason-grid">
+          @for (card of reasonCards(); track card.id) {
+            <article class="competitors__reason-card">
+              <div class="competitors__reason-top">
+                <span>{{ card.priority }}</span>
+                <span>{{ card.confidence }} confidence</span>
+              </div>
+              <h3>{{ card.title }}</h3>
+              <p>{{ card.userFacingSummary }}</p>
+              <p><strong>Why it matters:</strong> {{ card.whyItMatters }}</p>
+              <ul>
+                @for (fact of card.observedFacts; track fact) {
+                  <li>{{ fact }}</li>
+                }
+              </ul>
+              <p><strong>Recommendation:</strong> {{ card.recommendation }}</p>
+            </article>
+          }
+        </div>
+      </section>
+    }
+
+    <section class="competitors__columns">
+      <article class="competitors__panel">
+        <h2>Your Ranking Page</h2>
+        @if (userRanking()?.url) {
+          <p>
+            Position {{ userRanking()?.position || 'unknown' }} ·
+            <a [href]="userRanking()?.url" target="_blank" rel="noopener noreferrer">
+              {{ userRanking()?.domain || userRanking()?.url }}
+            </a>
+          </p>
+          @if (userPageProfile()) {
+            <div class="competitors__chips">
+              @for (signal of signalList(userPageProfile()!); track signal) {
+                <span>{{ signal }}</span>
+              }
+            </div>
+            <p>
+              {{ userPageProfile()?.profile?.wordCount || 0 }} words ·
+              {{ userPageProfile()?.profile?.imageCount || 0 }} images ·
+              {{ userPageProfile()?.fetchStatus }}
+            </p>
+          }
+        } @else {
+          <p>Your site was not found in the collected SERP results for this keyword.</p>
+        }
+      </article>
+
+      <article class="competitors__panel">
+        <h2>Content Decision</h2>
+        @if (contentDecision()) {
+          <p>{{ contentDecision()?.keyQuestionToAnswer }}</p>
+          <div class="competitors__meta">
+            <span>{{ formatLabel(contentDecision()?.recommendedAction) }}</span>
+            <span>{{ formatLabel(contentDecision()?.recommendedContentType) }}</span>
+          </div>
+          @if (contentDecision()?.suggestedSections?.length) {
+            <ul>
+              @for (section of contentDecision()?.suggestedSections || []; track section) {
+                <li>{{ section }}</li>
+              }
+            </ul>
+          }
+        } @else {
+          <p>No content decision has been packaged yet.</p>
+        }
+      </article>
+    </section>
+
+    @if (proofGaps().length) {
+      <section class="competitors__panel">
+        <div class="competitors__section-head">
+          <div>
+            <p class="competitors__eyebrow">Proof Gaps</p>
+            <h2>What Competitors Show That You Should Address</h2>
+          </div>
+          <span>{{ proofGaps().length }} signal(s)</span>
+        </div>
+
+        <div class="competitors__gap-list">
+          @for (gap of proofGaps(); track gap.proofType) {
+            <article class="competitors__gap">
+              <div>
+                <h3>{{ gap.label }}</h3>
+                <p>
+                  {{ gap.competitorCount }} competitor(s) show this ·
+                  {{ gap.userHasIt ? 'your page has some evidence' : 'not clear on your page' }}
+                </p>
+              </div>
+              <span class="competitors__rank">{{ gap.importance }}</span>
+              <p>{{ gap.recommendation }}</p>
+              @if (gap.competitorSnippets.length) {
+                <ul>
+                  @for (snippet of gap.competitorSnippets.slice(0, 2); track snippet) {
+                    <li>{{ snippet }}</li>
+                  }
+                </ul>
+              }
+            </article>
+          }
+        </div>
+      </section>
+    }
 
     <section class="competitors__columns">
       <article class="competitors__panel">

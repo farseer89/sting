@@ -64,6 +64,7 @@
 }
 
 .competitors__status,
+.competitors__cost,
 .competitors__meta span,
 .competitors__rank,
 .competitors__chips span {
@@ -73,6 +74,11 @@
   font-size: 0.78rem;
   font-weight: 700;
   padding: 0.35rem 0.6rem;
+}
+
+.competitors__cost {
+  background: rgba(18, 32, 24, 0.06);
+  color: rgba(18, 32, 24, 0.72);
 }
 
 .competitors__panel,
@@ -111,7 +117,7 @@
 
 .competitors__steps {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 0.5rem;
 }
 
@@ -166,11 +172,58 @@
   gap: 0.75rem;
 }
 
+.competitors__reason-grid,
+.competitors__gap-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
 .competitors__profile {
   border: 1px solid rgba(18, 32, 24, 0.08);
   border-radius: 18px;
   padding: 0.9rem;
   background: #fbfcf8;
+}
+
+.competitors__reason-card,
+.competitors__gap {
+  border: 1px solid rgba(18, 32, 24, 0.08);
+  border-radius: 18px;
+  padding: 0.9rem;
+  background: #fbfcf8;
+}
+
+.competitors__reason-card {
+  background: linear-gradient(180deg, rgba(246, 251, 242, 0.95), rgba(255, 255, 255, 0.92));
+}
+
+.competitors__reason-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.competitors__reason-top span {
+  border-radius: 999px;
+  background: rgba(91, 124, 91, 0.1);
+  color: #315332;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.3rem 0.55rem;
+  text-transform: capitalize;
+}
+
+.competitors__gap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+}
+
+.competitors__gap > p,
+.competitors__gap > ul {
+  grid-column: 1 / -1;
 }
 
 .competitors__profile a {
@@ -199,6 +252,8 @@
   .competitors__grid,
   .competitors__columns,
   .competitors__profiles,
+  .competitors__reason-grid,
+  .competitors__gap-list,
   .competitors__steps {
     grid-template-columns: 1fr;
   }

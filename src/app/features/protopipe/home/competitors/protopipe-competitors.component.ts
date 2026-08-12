@@ -28,7 +28,15 @@ interface KeywordCompetitionArtifact {
     citations: AiCitationRollup[];
   };
   competitorProfiles?: CompetitorPageProfile[];
+  userRanking?: UserRanking;
+  userPageProfile?: UserPageProfile | null;
+  serpIntent?: SerpIntent;
+  sectionPatterns?: SectionPattern[];
   comparison?: CompetitionComparison;
+  proofGaps?: ProofGap[];
+  aiCitationDiagnosis?: AiCitationDiagnosis[];
+  presentationEvidence?: PresentationEvidence;
+  contentDecision?: ContentDecision;
   conclusion?: CompetitionConclusion;
 }
 
@@ -68,10 +76,102 @@ interface CompetitorPageProfile {
   signals: Record<string, unknown>;
 }
 
+interface UserRanking {
+  position: number | null;
+  url?: string;
+  domain?: string;
+  title?: string;
+  snippet?: string;
+}
+
+interface UserPageProfile {
+  url: string;
+  domain: string;
+  fetchStatus: 'ok' | 'blocked' | 'error';
+  error?: string;
+  profile?: {
+    titleTag?: string;
+    h1?: string;
+    wordCount?: number;
+    schemaTypes?: string[];
+    imageCount?: number;
+    videoCount?: number;
+  };
+  signals: Record<string, unknown>;
+}
+
 interface CompetitionComparison {
   overlappingDomains?: string[];
   competitorContentPatterns?: string[];
   opportunityGaps?: string[];
+}
+
+interface SerpIntent {
+  dominantPageType?: string;
+  pageTypeCounts?: Record<string, number>;
+  recommendedContentFormat?: string;
+  rationale?: string;
+}
+
+interface SectionPattern {
+  id: string;
+  label: string;
+  count: number;
+  domains: string[];
+  exampleHeadings: string[];
+}
+
+interface ProofGap {
+  proofType: string;
+  label: string;
+  competitorCount: number;
+  competitorDomains: string[];
+  userHasIt: boolean;
+  importance: 'high' | 'medium' | 'low';
+  competitorSnippets: string[];
+  userSnippets: string[];
+  recommendation: string;
+}
+
+interface AiCitationDiagnosis {
+  url: string;
+  domain?: string;
+  title?: string;
+  sourceEngines: string[];
+  snippets: string[];
+  overlapsSerp: boolean;
+  pageType: string;
+  citedFor: string;
+}
+
+interface ReasonCard {
+  id: string;
+  title: string;
+  userFacingSummary: string;
+  whyItMatters: string;
+  observedFacts: string[];
+  recommendation: string;
+  proofNeeded: string[];
+  sourceFactIds: string[];
+  priority: 'high' | 'medium' | 'low';
+  confidence: 'high' | 'medium' | 'low';
+}
+
+interface PresentationEvidence {
+  reasonCards?: ReasonCard[];
+}
+
+interface ContentDecision {
+  recommendedAction?: string;
+  opportunityType?: string;
+  recommendedContentType?: string;
+  targetUrl?: string;
+  primaryAngle?: string;
+  keyQuestionToAnswer?: string;
+  suggestedSections?: string[];
+  proofNeeded?: string[];
+  sequencingHint?: string;
+  confidence?: 'high' | 'medium' | 'low';
 }
 
 interface CompetitionConclusion {
@@ -119,6 +219,12 @@ export class ProtopipeCompetitorsComponent implements OnInit {
   readonly artifact = computed(() => competitionArtifactFromThought(this.thought()));
   readonly conclusion = computed(() => this.artifact()?.conclusion ?? null);
   readonly profiles = computed(() => this.artifact()?.competitorProfiles ?? []);
+  readonly userRanking = computed(() => this.artifact()?.userRanking ?? null);
+  readonly userPageProfile = computed(() => this.artifact()?.userPageProfile ?? null);
+  readonly serpIntent = computed(() => this.artifact()?.serpIntent ?? null);
+  readonly proofGaps = computed(() => this.artifact()?.proofGaps ?? []);
+  readonly reasonCards = computed(() => this.artifact()?.presentationEvidence?.reasonCards ?? []);
+  readonly contentDecision = computed(() => this.artifact()?.contentDecision ?? null);
   readonly serpCompetitors = computed(() => this.artifact()?.serp?.competitors ?? []);
   readonly aiCitations = computed(() => this.artifact()?.aiVisibility?.citations ?? []);
   readonly comparison = computed(() => this.artifact()?.comparison ?? null);
@@ -139,6 +245,7 @@ export class ProtopipeCompetitorsComponent implements OnInit {
     if (thought.status === 'failed') return 'Analysis failed';
     return thought.status;
   });
+  readonly totalCostUsd = computed(() => this.thought()?.totalCostUsd);
 
   ngOnInit(): void {
     void this.attachLatestRun();
@@ -187,15 +294,17 @@ export class ProtopipeCompetitorsComponent implements OnInit {
     }
   }
 
-  signalList(profile: CompetitorPageProfile): string[] {
-    return [
-      signalLabel(profile, 'pricingLanguage', 'Pricing'),
-      signalLabel(profile, 'processLanguage', 'Process'),
-      signalLabel(profile, 'examplesOrPortfolio', 'Examples'),
-      signalLabel(profile, 'trustSignals', 'Trust'),
-      signalLabel(profile, 'bookingOrCta', 'CTA'),
-      signalLabel(profile, 'localLanguage', 'Local'),
-    ].filter((value): value is string => Boolean(value));
+  signalList(profile: { signals: Record<string, unknown> }): string[] {
+    return signalList(profile.signals);
+  }
+
+  formatLabel(value: string | undefined | null): string {
+    return value ? value.replace(/_/g, ' ') : 'Unknown';
+  }
+
+  formatCost(usd?: number): string {
+    if (usd == null) return '—';
+    return `$${usd.toFixed(3)}`;
   }
 
   stepTrack(_: number, step: ThoughtStep): string {
@@ -220,8 +329,19 @@ function competitionArtifactFromThought(
   return output ? (output as unknown as KeywordCompetitionArtifact) : null;
 }
 
-function signalLabel(profile: CompetitorPageProfile, key: string, label: string): string | null {
-  const signal = asRecord(profile.signals[key]);
+function signalList(signals: Record<string, unknown>): string[] {
+  return [
+    signalLabel(signals, 'pricingLanguage', 'Pricing'),
+    signalLabel(signals, 'processLanguage', 'Process'),
+    signalLabel(signals, 'examplesOrPortfolio', 'Examples'),
+    signalLabel(signals, 'trustSignals', 'Trust'),
+    signalLabel(signals, 'bookingOrCta', 'CTA'),
+    signalLabel(signals, 'localLanguage', 'Local'),
+  ].filter((value): value is string => Boolean(value));
+}
+
+function signalLabel(signals: Record<string, unknown>, key: string, label: string): string | null {
+  const signal = asRecord(signals[key]);
   return signal?.['present'] === true ? label : null;
 }
 

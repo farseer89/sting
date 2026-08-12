@@ -37,6 +37,7 @@ interface KeywordCompetitionArtifact {
   aiCitationDiagnosis?: AiCitationDiagnosis[];
   presentationEvidence?: PresentationEvidence;
   contentDecision?: ContentDecision;
+  writerEvidence?: WriterEvidence;
   conclusion?: CompetitionConclusion;
 }
 
@@ -108,9 +109,30 @@ interface CompetitionComparison {
 
 interface SerpIntent {
   dominantPageType?: string;
+  classification?: string;
+  confidence?: 'high' | 'medium' | 'low';
+  fallbackUsed?: boolean;
+  evidence?: {
+    dominantPageTypes?: Array<{ pageType: string; count: number }>;
+    topOrganicPositions?: number[];
+    sampledDomains?: string[];
+  };
   pageTypeCounts?: Record<string, number>;
   recommendedContentFormat?: string;
   rationale?: string;
+}
+
+interface SerpLayout {
+  organicPositions: number[];
+  missingOrganicPositions: number[];
+  occupiedSlots: Array<{
+    position?: number;
+    type: string;
+    label: string;
+    url?: string;
+    domain?: string;
+  }>;
+  writerImplications: string[];
 }
 
 interface SectionPattern {
@@ -153,12 +175,22 @@ interface ReasonCard {
   recommendation: string;
   proofNeeded: string[];
   sourceFactIds: string[];
+  sourceLinks?: EvidenceSourceLink[];
   priority: 'high' | 'medium' | 'low';
   confidence: 'high' | 'medium' | 'low';
 }
 
 interface PresentationEvidence {
   reasonCards?: ReasonCard[];
+}
+
+interface EvidenceSourceLink {
+  url: string;
+  label: string;
+  domain?: string;
+  source: string;
+  title?: string;
+  evidenceRefId?: string;
 }
 
 interface ContentDecision {
@@ -172,6 +204,74 @@ interface ContentDecision {
   proofNeeded?: string[];
   sequencingHint?: string;
   confidence?: 'high' | 'medium' | 'low';
+}
+
+interface WriterEvidence {
+  decisionCard?: {
+    keyword: string;
+    recommendedAction?: string;
+    targetUrl?: string;
+    recommendedContentType?: string;
+    primaryAngle?: string;
+    keyQuestionToAnswer?: string;
+    confidence?: 'high' | 'medium' | 'low';
+    reasonRefs?: string[];
+  };
+  serpIntent?: SerpIntent;
+  serpLayout?: SerpLayout;
+  citationModes?: Array<{
+    engine: string;
+    citationMode: 'content' | 'local_listing' | 'mixed';
+    citedUrls: string[];
+    citedDomains: string[];
+    actionImplication: string;
+  }>;
+  proofChecklist?: Array<{
+    id: string;
+    label: string;
+    userHasIt: boolean;
+    competitorCount: number;
+    competitorDomains: string[];
+    importance: 'high' | 'medium' | 'low';
+    recommendation: string;
+    snippets: string[];
+    evidenceRefs: string[];
+    sourceLinks: EvidenceSourceLink[];
+  }>;
+  competitorPatterns?: Array<{
+    patternId: string;
+    label: string;
+    seenOnDomains: string[];
+    exampleHeadings: string[];
+    exampleSnippets: string[];
+    useAs: string;
+    writerInstruction: string;
+  }>;
+  sectionOpportunities?: Array<{
+    sectionId: string;
+    suggestedH2: string;
+    reason: string;
+    addressesProofGaps: string[];
+    evidenceRefs: string[];
+    sourceLinks: EvidenceSourceLink[];
+    humanProofNeeded: string[];
+  }>;
+  humanResearchRequests?: Array<{
+    requestId: string;
+    type: string;
+    prompt: string;
+    usedForSections: string[];
+    priority: 'high' | 'medium' | 'low';
+    reasonEvidenceRefs: string[];
+  }>;
+  pageFetchSummary?: {
+    attempted: number;
+    cacheHits: number;
+    cacheMisses: number;
+    staleRefetches: number;
+    blocked: number;
+    errors: number;
+  };
 }
 
 interface CompetitionConclusion {
@@ -225,6 +325,14 @@ export class ProtopipeCompetitorsComponent implements OnInit {
   readonly proofGaps = computed(() => this.artifact()?.proofGaps ?? []);
   readonly reasonCards = computed(() => this.artifact()?.presentationEvidence?.reasonCards ?? []);
   readonly contentDecision = computed(() => this.artifact()?.contentDecision ?? null);
+  readonly writerEvidence = computed(() => this.artifact()?.writerEvidence ?? null);
+  readonly writerSerpIntent = computed(() => this.writerEvidence()?.serpIntent ?? this.serpIntent());
+  readonly serpLayout = computed(() => this.writerEvidence()?.serpLayout ?? null);
+  readonly citationModes = computed(() => this.writerEvidence()?.citationModes ?? []);
+  readonly proofChecklist = computed(() => this.writerEvidence()?.proofChecklist ?? []);
+  readonly sectionOpportunities = computed(() => this.writerEvidence()?.sectionOpportunities ?? []);
+  readonly humanResearchRequests = computed(() => this.writerEvidence()?.humanResearchRequests ?? []);
+  readonly pageFetchSummary = computed(() => this.writerEvidence()?.pageFetchSummary ?? null);
   readonly serpCompetitors = computed(() => this.artifact()?.serp?.competitors ?? []);
   readonly aiCitations = computed(() => this.artifact()?.aiVisibility?.citations ?? []);
   readonly comparison = computed(() => this.artifact()?.comparison ?? null);

@@ -110,11 +110,16 @@
           Your current position:
           {{ userRanking()?.position || artifactData.serp?.yourPosition || 'not found' }}
         </p>
-        @if (serpIntent()) {
+        @if (writerSerpIntent()) {
           <p>
-            SERP intent: {{ formatLabel(serpIntent()?.dominantPageType) }} ·
-            {{ formatLabel(serpIntent()?.recommendedContentFormat) }}
+            SERP intent:
+            {{ formatLabel(writerSerpIntent()?.classification || writerSerpIntent()?.dominantPageType) }}
+            · {{ formatLabel(writerSerpIntent()?.recommendedContentFormat) }} ·
+            {{ writerSerpIntent()?.confidence || 'medium' }} confidence
           </p>
+          @if (writerSerpIntent()?.fallbackUsed) {
+            <p>Intent fallback was used, so treat this recommendation as a lower-confidence default.</p>
+          }
         }
       </article>
 
@@ -127,6 +132,72 @@
         </p>
       </article>
     </section>
+
+    @if (citationModes().length || serpLayout()) {
+      <section class="competitors__columns">
+        <article class="competitors__panel">
+          <div class="competitors__section-head">
+            <div>
+              <p class="competitors__eyebrow">AI Engines</p>
+              <h2>Citation Behavior</h2>
+            </div>
+            <span>{{ citationModes().length }} engine(s)</span>
+          </div>
+          @if (citationModes().length) {
+            <div class="competitors__mode-list">
+              @for (mode of citationModes(); track mode.engine) {
+                <article class="competitors__mini-card">
+                  <strong>{{ formatLabel(mode.engine) }}</strong>
+                  <span>{{ formatLabel(mode.citationMode) }}</span>
+                  <p>{{ mode.actionImplication }}</p>
+                  @if (mode.citedDomains.length) {
+                    <div class="competitors__chips">
+                      @for (domain of mode.citedDomains.slice(0, 4); track domain) {
+                        <span>{{ domain }}</span>
+                      }
+                    </div>
+                  }
+                </article>
+              }
+            </div>
+          } @else {
+            <p>No per-engine citation behavior has been packaged yet.</p>
+          }
+        </article>
+
+        <article class="competitors__panel">
+          <div class="competitors__section-head">
+            <div>
+              <p class="competitors__eyebrow">SERP Layout</p>
+              <h2>What Fills The Results Page</h2>
+            </div>
+          </div>
+          @if (serpLayout()) {
+            <p>
+              Organic positions:
+              {{ serpLayout()?.organicPositions?.join(', ') || 'none captured' }}
+            </p>
+            @if (serpLayout()?.missingOrganicPositions?.length) {
+              <p>Missing organic slots: {{ serpLayout()?.missingOrganicPositions?.join(', ') }}</p>
+            }
+            @if (serpLayout()?.occupiedSlots?.length) {
+              <div class="competitors__chips">
+                @for (slot of serpLayout()?.occupiedSlots || []; track slot.type + slot.label) {
+                  <span>{{ slot.position ? '#' + slot.position + ' ' : '' }}{{ slot.label }}</span>
+                }
+              </div>
+            }
+            <ul>
+              @for (implication of serpLayout()?.writerImplications || []; track implication) {
+                <li>{{ implication }}</li>
+              }
+            </ul>
+          } @else {
+            <p>No SERP layout explanation has been packaged yet.</p>
+          }
+        </article>
+      </section>
+    }
 
     @if (reasonCards().length) {
       <section class="competitors__panel">
@@ -153,10 +224,90 @@
                   <li>{{ fact }}</li>
                 }
               </ul>
+              @if (card.sourceLinks?.length) {
+                <div class="competitors__source-links" aria-label="Evidence sources">
+                  <strong>Sources:</strong>
+                  @for (link of card.sourceLinks || []; track link.url) {
+                    <a [href]="link.url" target="_blank" rel="noopener noreferrer">
+                      {{ link.label || link.domain || link.url }}
+                    </a>
+                  }
+                </div>
+              }
               <p><strong>Recommendation:</strong> {{ card.recommendation }}</p>
             </article>
           }
         </div>
+      </section>
+    }
+
+    @if (sectionOpportunities().length || proofChecklist().length || humanResearchRequests().length) {
+      <section class="competitors__panel">
+        <div class="competitors__section-head">
+          <div>
+            <p class="competitors__eyebrow">Writer Evidence</p>
+            <h2>Use This While Writing</h2>
+          </div>
+          @if (pageFetchSummary()) {
+            <span>
+              Cache {{ pageFetchSummary()?.cacheHits || 0 }} hit(s) /
+              {{ pageFetchSummary()?.cacheMisses || 0 }} miss(es)
+            </span>
+          }
+        </div>
+
+        @if (sectionOpportunities().length) {
+          <h3>Section opportunities</h3>
+          <div class="competitors__reason-grid">
+            @for (section of sectionOpportunities(); track section.sectionId) {
+              <article class="competitors__mini-card">
+                <h3>{{ section.suggestedH2 }}</h3>
+                <p>{{ section.reason }}</p>
+                @if (section.humanProofNeeded.length) {
+                  <div class="competitors__chips">
+                    @for (proof of section.humanProofNeeded; track proof) {
+                      <span>{{ proof }}</span>
+                    }
+                  </div>
+                }
+                @if (section.sourceLinks.length) {
+                  <div class="competitors__source-links">
+                    @for (link of section.sourceLinks; track link.url) {
+                      <a [href]="link.url" target="_blank" rel="noopener noreferrer">
+                        {{ link.label || link.domain || link.url }}
+                      </a>
+                    }
+                  </div>
+                }
+              </article>
+            }
+          </div>
+        }
+
+        @if (proofChecklist().length) {
+          <h3>Proof checklist</h3>
+          <div class="competitors__checklist">
+            @for (item of proofChecklist(); track item.id) {
+              <article class="competitors__check">
+                <span class="competitors__rank">{{ item.importance }}</span>
+                <strong>{{ item.label }}</strong>
+                <p>
+                  {{ item.competitorCount }} competitor(s) show this ·
+                  {{ item.userHasIt ? 'present on your page' : 'missing or not clear' }}
+                </p>
+              </article>
+            }
+          </div>
+        }
+
+        @if (humanResearchRequests().length) {
+          <h3>Human proof requests</h3>
+          <ul>
+            @for (request of humanResearchRequests(); track request.requestId) {
+              <li>{{ request.prompt }}</li>
+            }
+          </ul>
+        }
       </section>
     }
 

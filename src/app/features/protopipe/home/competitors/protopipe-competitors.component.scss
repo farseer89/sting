@@ -179,6 +179,12 @@
   gap: 0.75rem;
 }
 
+.competitors__mode-list,
+.competitors__checklist {
+  display: grid;
+  gap: 0.65rem;
+}
+
 .competitors__profile {
   border: 1px solid rgba(18, 32, 24, 0.08);
   border-radius: 18px;
@@ -198,6 +204,38 @@
   background: linear-gradient(180deg, rgba(246, 251, 242, 0.95), rgba(255, 255, 255, 0.92));
 }
 
+.competitors__mini-card,
+.competitors__check {
+  border: 1px solid rgba(18, 32, 24, 0.08);
+  border-radius: 16px;
+  background: #fbfcf8;
+  padding: 0.8rem;
+}
+
+.competitors__mini-card > span {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 0.35rem;
+  border-radius: 999px;
+  background: rgba(91, 124, 91, 0.1);
+  color: #315332;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.3rem 0.55rem;
+  text-transform: capitalize;
+}
+
+.competitors__check {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.4rem 0.75rem;
+}
+
+.competitors__check strong,
+.competitors__check p {
+  grid-column: 1;
+}
+
 .competitors__reason-top {
   display: flex;
   flex-wrap: wrap;
@@ -213,6 +251,37 @@
   font-weight: 800;
   padding: 0.3rem 0.55rem;
   text-transform: capitalize;
+}
+
+.competitors__source-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+.competitors__source-links strong {
+  color: rgba(18, 32, 24, 0.7);
+  font-size: 0.78rem;
+}
+
+.competitors__source-links a {
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(54, 92, 128, 0.1);
+  color: #28506f;
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 0.32rem 0.58rem;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.competitors__source-links a:hover {
+  background: rgba(54, 92, 128, 0.16);
 }
 
 .competitors__gap {

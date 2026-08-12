@@ -10,6 +10,17 @@
     </div>
     <div class="competitors__actions">
       <span class="competitors__status">{{ statusLabel() }}</span>
+      @if (thought()) {
+        <p-button
+          [label]="exportingRunbook() ? 'Exporting…' : 'Download runbook'"
+          icon="pi pi-download"
+          severity="secondary"
+          [outlined]="true"
+          [loading]="exportingRunbook()"
+          [disabled]="!canExportRunbook()"
+          (onClick)="exportRunbook()"
+        />
+      }
       <p-button
         [label]="runSession.isActive() ? 'Running…' : artifact() ? 'Run again' : 'Run analysis'"
         icon="pi pi-bolt"
@@ -22,6 +33,10 @@
 
   @if (error() || runSession.loadError()) {
     <p-message severity="error" [text]="error() || runSession.loadError() || 'Run failed.'" />
+  }
+
+  @if (exportError()) {
+    <p-message severity="warn" [text]="exportError()!" />
   }
 
   @if (runSession.isActive()) {

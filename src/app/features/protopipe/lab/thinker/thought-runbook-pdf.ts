@@ -421,7 +421,9 @@ export async function exportThoughtRunbookPdf(
       ? 'Strategy Runbook'
       : thought.thinkerKind === 'mention_tracking'
         ? 'AI Mentions Runbook'
-        : 'Article Runbook';
+        : thought.thinkerKind === 'keyword_competition'
+          ? 'Keyword Competition Runbook'
+          : 'Article Runbook';
   writeHeading(w, coverTitle, 20);
   writeParagraph(w, thought.title);
   if (thought.summary) writeParagraph(w, thought.summary);

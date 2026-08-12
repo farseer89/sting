@@ -11,6 +11,7 @@ import { Message } from 'primeng/message';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { firstValueFrom } from 'rxjs';
 import type { Thought, ThoughtStep } from '@hive/contracts';
+import { exportThoughtRunbookPdf } from '../../lab/thinker/thought-runbook-pdf';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
 import { ThoughtRunSession } from '../../runs/thought-run-session.service';
 import { ShireApiService } from '../../shire/shire-api.service';
@@ -107,6 +108,8 @@ export class ProtopipeCompetitorsComponent implements OnInit {
   readonly runSession = inject(ThoughtRunSession);
 
   readonly error = signal<string | null>(null);
+  readonly exportError = signal<string | null>(null);
+  readonly exportingRunbook = signal(false);
   readonly keyword = HARDCODED_KEYWORD;
 
   readonly thought = computed(() => {
@@ -124,6 +127,9 @@ export class ProtopipeCompetitorsComponent implements OnInit {
   );
   readonly steps = computed(() => this.thought()?.steps ?? []);
   readonly canRun = computed(() => Boolean(this.strategy.siteId()) && !this.runSession.isActive());
+  readonly canExportRunbook = computed(
+    () => Boolean(this.thought()) && !this.exportingRunbook() && !this.runSession.isActive(),
+  );
   readonly statusLabel = computed(() => {
     const thought = this.thought();
     if (!thought) return 'No competition run yet';
@@ -148,6 +154,25 @@ export class ProtopipeCompetitorsComponent implements OnInit {
     });
     if (!run && this.runSession.loadError()) {
       this.error.set(this.runSession.loadError());
+    }
+  }
+
+  async exportRunbook(): Promise<void> {
+    const thought = this.thought();
+    const siteId = this.strategy.siteId();
+    if (!thought || !siteId || this.exportingRunbook()) return;
+
+    this.exportError.set(null);
+    this.exportingRunbook.set(true);
+    try {
+      await exportThoughtRunbookPdf(thought, {
+        runId: thought.id,
+        siteId,
+      });
+    } catch {
+      this.exportError.set('Could not export runbook PDF. Try again in a moment.');
+    } finally {
+      this.exportingRunbook.set(false);
     }
   }
 

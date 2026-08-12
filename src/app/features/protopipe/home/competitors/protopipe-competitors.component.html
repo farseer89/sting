@@ -1,0 +1,186 @@
+<div class="competitors">
+  <header class="competitors__hero">
+    <div>
+      <p class="competitors__eyebrow">Keyword Competition</p>
+      <h1>Competitors for “{{ keyword }}”</h1>
+      <p>
+        First-pass runner: top organic competitors, AI citations, competitor page profiles, and one
+        strategy conclusion. User-page comparison is intentionally excluded in this slice.
+      </p>
+    </div>
+    <div class="competitors__actions">
+      <span class="competitors__status">{{ statusLabel() }}</span>
+      <p-button
+        [label]="runSession.isActive() ? 'Running…' : artifact() ? 'Run again' : 'Run analysis'"
+        icon="pi pi-bolt"
+        [loading]="runSession.isActive()"
+        [disabled]="!canRun()"
+        (onClick)="runCompetition()"
+      />
+    </div>
+  </header>
+
+  @if (error() || runSession.loadError()) {
+    <p-message severity="error" [text]="error() || runSession.loadError() || 'Run failed.'" />
+  }
+
+  @if (runSession.isActive()) {
+    <section class="competitors__panel competitors__panel--running">
+      <p-progressSpinner strokeWidth="4" [style]="{ width: '1.25rem', height: '1.25rem' }" />
+      <div>
+        <strong>{{ completedSteps() }}/{{ steps().length }} steps complete</strong>
+        <p>{{ statusLabel() }}</p>
+      </div>
+    </section>
+  }
+
+  @if (steps().length) {
+    <section class="competitors__steps" aria-label="Competition runner steps">
+      @for (step of steps(); track step.id) {
+        <article class="competitors__step" [class.is-complete]="step.status === 'complete'">
+          <span>{{ step.status }}</span>
+          <strong>{{ step.label }}</strong>
+          @if (step.summary) {
+            <p>{{ step.summary }}</p>
+          }
+        </article>
+      }
+    </section>
+  }
+
+  @if (artifact(); as artifactData) {
+    <section class="competitors__grid">
+      <article class="competitors__panel competitors__panel--primary">
+        <p class="competitors__eyebrow">Recommendation</p>
+        <h2>
+          {{
+            conclusion()?.suggestedStrategy?.primaryRecommendation ||
+              'Run complete. Review the evidence below.'
+          }}
+        </h2>
+        @if (conclusion()?.contentPlanInputs?.rationale) {
+          <p>{{ conclusion()?.contentPlanInputs?.rationale }}</p>
+        }
+        <div class="competitors__meta">
+          <span>Priority: {{ conclusion()?.suggestedStrategy?.priority || 'medium' }}</span>
+          <span>Confidence: {{ conclusion()?.confidence || 'medium' }}</span>
+          <span
+            >Type: {{ conclusion()?.contentPlanInputs?.opportunityType || 'competitive_gap' }}</span
+          >
+        </div>
+      </article>
+
+      <article class="competitors__panel">
+        <p class="competitors__eyebrow">SERP</p>
+        <h3>{{ serpCompetitors().length }} organic competitors</h3>
+        <p>Your current position: {{ artifactData.serp?.yourPosition || 'not found' }}</p>
+      </article>
+
+      <article class="competitors__panel">
+        <p class="competitors__eyebrow">AI Citations</p>
+        <h3>{{ aiCitations().length }} cited URLs</h3>
+        <p>
+          {{ comparison()?.overlappingDomains?.length || 0 }} domain(s) overlap between SERP and AI
+          citations.
+        </p>
+      </article>
+    </section>
+
+    <section class="competitors__columns">
+      <article class="competitors__panel">
+        <h2>Observed Evidence</h2>
+        @if (conclusion()?.observedEvidence?.length) {
+          <ul>
+            @for (item of conclusion()?.observedEvidence || []; track item) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+        } @else {
+          <p>No observed-evidence notes returned yet.</p>
+        }
+      </article>
+
+      <article class="competitors__panel">
+        <h2>Inferred Strategy</h2>
+        @if (conclusion()?.inferredWhyCompetitorsWin?.length) {
+          <ul>
+            @for (item of conclusion()?.inferredWhyCompetitorsWin || []; track item) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+        } @else {
+          <p>No strategic inference returned yet.</p>
+        }
+      </article>
+    </section>
+
+    <section class="competitors__panel">
+      <div class="competitors__section-head">
+        <div>
+          <p class="competitors__eyebrow">Profiles</p>
+          <h2>Competitor Page Signals</h2>
+        </div>
+        <span>{{ profiles().length }} page(s)</span>
+      </div>
+
+      <div class="competitors__profiles">
+        @for (profile of profiles(); track profile.target.url) {
+          <article class="competitors__profile">
+            <div>
+              <span class="competitors__rank">
+                @if (profile.target.serpPosition) {
+                  #{{ profile.target.serpPosition }}
+                } @else {
+                  AI cited
+                }
+              </span>
+              <h3>
+                {{ profile.profile?.titleTag || profile.target.title || profile.target.domain }}
+              </h3>
+              <a [href]="profile.target.url" target="_blank" rel="noopener noreferrer">
+                {{ profile.target.domain }}
+              </a>
+            </div>
+            <p>
+              {{ profile.profile?.wordCount || 0 }} words ·
+              {{ profile.profile?.imageCount || 0 }} images · {{ profile.fetchStatus }}
+            </p>
+            <div class="competitors__chips">
+              @for (signal of signalList(profile); track signal) {
+                <span>{{ signal }}</span>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    </section>
+
+    <section class="competitors__columns">
+      <article class="competitors__panel">
+        <h2>Content Moves</h2>
+        <ul>
+          @for (item of conclusion()?.suggestedStrategy?.contentMoves || []; track item) {
+            <li>{{ item }}</li>
+          }
+        </ul>
+      </article>
+
+      <article class="competitors__panel">
+        <h2>Proof To Add</h2>
+        <ul>
+          @for (item of conclusion()?.suggestedStrategy?.proofToAdd || []; track item) {
+            <li>{{ item }}</li>
+          }
+        </ul>
+      </article>
+    </section>
+  } @else if (!runSession.isActive()) {
+    <section class="competitors__empty">
+      <h2>Run the first keyword competition pass</h2>
+      <p>
+        This will analyze “{{ keyword }}” only, so we can iterate on the shape before automating the
+        runner across all keywords.
+      </p>
+    </section>
+  }
+</div>

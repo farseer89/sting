@@ -78,7 +78,6 @@ export const PROTOPIPE_HOME_NAV: ProtopipeHomeNavItem[] = [
         id: 'seo-competitors',
         label: 'Competitors',
         icon: 'users',
-        disabled: true,
         capability: 'discovery',
       },
     ],

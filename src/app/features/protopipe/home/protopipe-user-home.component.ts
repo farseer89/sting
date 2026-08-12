@@ -68,6 +68,7 @@ import { ProtopipeHomeThinkerBinderComponent } from './thinker/protopipe-home-th
 import { ProtopipeHomeAnalyticsBinderComponent } from './analytics-binder/protopipe-home-analytics-binder.component';
 import { ProtopipeHomeAnalyticsComponent } from './analytics/protopipe-home-analytics.component';
 import { ProtopipeAiVisibilityComponent } from './ai-visibility/protopipe-ai-visibility.component';
+import { ProtopipeCompetitorsComponent } from './competitors/protopipe-competitors.component';
 import { ProtopipeContentPlanV2Component } from './content-plan-v2/protopipe-content-plan-v2.component';
 import { ProtopipeHomeMarketMapComponent } from './market-map/protopipe-home-market-map.component';
 import { ProtopipeHomeDashboardComponent } from './dashboard/protopipe-home-dashboard.component';
@@ -91,6 +92,7 @@ import {
   HOME_KEYWORDS_PATH,
   HOME_MARKET_MAP_PATH,
   HOME_RANKINGS_PATH,
+  HOME_COMPETITORS_PATH,
   HOME_AI_VISIBILITY_PATH,
   HOME_CONTENT_PLAN_V2_PATH,
   HOME_SITE_HEALTH_PATH,
@@ -115,6 +117,7 @@ export type ProtopipeHomeView =
   | 'keywords'
   | 'market-map'
   | 'rankings'
+  | 'competitors'
   | 'ai-visibility'
   | 'content-plan-v2'
   | 'site-health'
@@ -222,6 +225,7 @@ interface MobileHomeTab {
     ProtopipeHomeAnalyticsBinderComponent,
     ProtopipeHomeAnalyticsComponent,
     ProtopipeAiVisibilityComponent,
+    ProtopipeCompetitorsComponent,
     ProtopipeHomeMarketMapComponent,
     ProtopipeContentPlanV2Component,
     ProtopipeHomeDashboardComponent,
@@ -507,6 +511,13 @@ export class ProtopipeUserHomeComponent implements OnInit {
       this.activeNavId.set(item.id);
       this.activeView.set('rankings');
       void this.router.navigate([HOME_RANKINGS_PATH]);
+    } else if (item.id === 'seo-competitors') {
+      this.leaveWriterFocus();
+      this.leaveThinkerFocus();
+      this.sidePanel.setOpen(false);
+      this.activeNavId.set(item.id);
+      this.activeView.set('competitors');
+      void this.router.navigate([HOME_COMPETITORS_PATH]);
     } else if (item.id === 'website-site-health') {
       this.leaveWriterFocus();
       this.leaveThinkerFocus();
@@ -1089,6 +1100,15 @@ export class ProtopipeUserHomeComponent implements OnInit {
       return;
     }
 
+    if (kind === 'competitors') {
+      this.leaveWriterFocus();
+      this.leaveThinkerFocus();
+      this.sidePanel.setOpen(false);
+      this.activeView.set('competitors');
+      this.activeNavId.set('seo-competitors');
+      return;
+    }
+
     if (kind === 'ai-visibility') {
       this.leaveWriterFocus();
       this.leaveThinkerFocus();
@@ -1168,6 +1188,8 @@ export class ProtopipeUserHomeComponent implements OnInit {
         return 'Keywords';
       case 'rankings':
         return 'Rankings';
+      case 'competitors':
+        return 'Competitors';
       case 'ai-visibility':
         return 'AI Visibility';
       case 'mentions-book':

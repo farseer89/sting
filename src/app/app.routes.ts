@@ -271,6 +271,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'home/competitors',
+    canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],
+    loadComponent: () =>
+      import('./features/protopipe/home/protopipe-user-home.component').then(
+        (m) => m.ProtopipeUserHomeComponent,
+      ),
+  },
+  {
     path: 'home/ai-visibility',
     canActivate: [authGuard, operatorOnlyGuard, requireOnboardingCompleteGuard],
     loadComponent: () =>

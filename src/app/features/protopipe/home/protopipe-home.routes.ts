@@ -6,6 +6,7 @@ export const HOME_DISCOVERY_PATH = '/home/discovery';
 export const HOME_KEYWORDS_PATH = '/home/keywords';
 export const HOME_MARKET_MAP_PATH = '/home/market-map';
 export const HOME_RANKINGS_PATH = '/home/rankings';
+export const HOME_COMPETITORS_PATH = '/home/competitors';
 export const HOME_AI_VISIBILITY_PATH = '/home/ai-visibility';
 export const HOME_CONTENT_PLAN_V2_PATH = '/home/content-plan-v2';
 export const HOME_SITE_HEALTH_PATH = '/home/site-health';
@@ -19,6 +20,7 @@ export type HomeShellRouteKind =
   | 'keywords'
   | 'market-map'
   | 'rankings'
+  | 'competitors'
   | 'ai-visibility'
   | 'content-plan-v2'
   | 'site-health'
@@ -32,6 +34,7 @@ export function homeShellRouteKind(path: string): HomeShellRouteKind | null {
   if (normalized === HOME_KEYWORDS_PATH) return 'keywords';
   if (normalized === HOME_MARKET_MAP_PATH) return 'market-map';
   if (normalized === HOME_RANKINGS_PATH) return 'rankings';
+  if (normalized === HOME_COMPETITORS_PATH) return 'competitors';
   if (normalized === HOME_AI_VISIBILITY_PATH) return 'ai-visibility';
   if (normalized === HOME_CONTENT_PLAN_V2_PATH) return 'content-plan-v2';
   if (normalized === HOME_SITE_HEALTH_PATH) return 'site-health';

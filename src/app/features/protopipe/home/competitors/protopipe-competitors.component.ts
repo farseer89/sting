@@ -7,6 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { Button } from 'primeng/button';
+import { Drawer } from 'primeng/drawer';
 import { Message } from 'primeng/message';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { firstValueFrom } from 'rxjs';
@@ -17,6 +18,28 @@ import { ThoughtRunSession } from '../../runs/thought-run-session.service';
 import { ShireApiService } from '../../shire/shire-api.service';
 
 const HARDCODED_KEYWORD = 'live wedding painting';
+
+type PageFetchStatus = 'ok' | 'blocked' | 'error';
+type PageCacheStatus = 'hit' | 'miss' | 'stale';
+
+interface PageHeading {
+  level: 1 | 2 | 3;
+  text: string;
+}
+
+interface PageProfileSummary {
+  titleTag?: string;
+  metaDescription?: string;
+  h1?: string;
+  headingOutline?: PageHeading[];
+  wordCount?: number;
+  schemaTypes?: string[];
+  imageCount?: number;
+  videoCount?: number;
+  hasFaqSection?: boolean;
+  hasAuthorBio?: boolean;
+  notableCitationDomains?: string[];
+}
 
 interface KeywordCompetitionArtifact {
   keyword: string;
@@ -65,15 +88,13 @@ interface CompetitorPageProfile {
     serpPosition: number | null;
     sources: Array<'serp' | 'ai_citation'>;
   };
-  fetchStatus: 'ok' | 'blocked' | 'error';
-  profile?: {
-    titleTag?: string;
-    h1?: string;
-    wordCount?: number;
-    schemaTypes?: string[];
-    imageCount?: number;
-    videoCount?: number;
-  };
+  fetchStatus: PageFetchStatus;
+  httpStatus?: number;
+  error?: string;
+  cacheKey?: string;
+  cacheStatus?: PageCacheStatus;
+  cachedFetchedAt?: string;
+  profile?: PageProfileSummary;
   signals: Record<string, unknown>;
 }
 
@@ -88,17 +109,36 @@ interface UserRanking {
 interface UserPageProfile {
   url: string;
   domain: string;
-  fetchStatus: 'ok' | 'blocked' | 'error';
+  fetchStatus: PageFetchStatus;
+  httpStatus?: number;
   error?: string;
-  profile?: {
-    titleTag?: string;
-    h1?: string;
-    wordCount?: number;
-    schemaTypes?: string[];
-    imageCount?: number;
-    videoCount?: number;
-  };
+  cacheKey?: string;
+  cacheStatus?: PageCacheStatus;
+  cachedFetchedAt?: string;
+  profile?: PageProfileSummary;
   signals: Record<string, unknown>;
+}
+
+interface CachedPage {
+  id: string;
+  role: 'your_page' | 'competitor';
+  label: string;
+  url: string;
+  domain: string;
+  position?: number | null;
+  sources: string[];
+  fetchStatus: PageFetchStatus;
+  httpStatus?: number;
+  error?: string;
+  cacheStatus?: PageCacheStatus;
+  cachedFetchedAt?: string;
+  profile?: PageProfileSummary;
+  signals: Record<string, unknown>;
+}
+
+interface SignalEvidence {
+  label: string;
+  snippets: string[];
 }
 
 interface CompetitionComparison {
@@ -312,7 +352,7 @@ interface CompetitionConclusion {
   selector: 'app-protopipe-competitors',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Button, Message, ProgressSpinner],
+  imports: [Button, Drawer, Message, ProgressSpinner],
   templateUrl: './protopipe-competitors.component.html',
   styleUrl: './protopipe-competitors.component.scss',
 })
@@ -324,6 +364,8 @@ export class ProtopipeCompetitorsComponent implements OnInit {
   readonly error = signal<string | null>(null);
   readonly exportError = signal<string | null>(null);
   readonly exportingRunbook = signal(false);
+  readonly cachedPagesDrawerVisible = signal(false);
+  readonly selectedCachedPageId = signal<string | null>(null);
   readonly keyword = HARDCODED_KEYWORD;
 
   readonly thought = computed(() => {
@@ -355,6 +397,57 @@ export class ProtopipeCompetitorsComponent implements OnInit {
   readonly serpCompetitors = computed(() => this.artifact()?.serp?.competitors ?? []);
   readonly aiCitations = computed(() => this.artifact()?.aiVisibility?.citations ?? []);
   readonly comparison = computed(() => this.artifact()?.comparison ?? null);
+  readonly cachedPages = computed(() => {
+    const userPage = this.userPageProfile();
+    const pages: CachedPage[] = userPage
+      ? [
+          {
+            id: `user:${userPage.url}`,
+            role: 'your_page',
+            label: 'Your ranking page',
+            url: userPage.url,
+            domain: userPage.domain,
+            position: this.userRanking()?.position,
+            sources: ['serp'],
+            fetchStatus: userPage.fetchStatus,
+            httpStatus: userPage.httpStatus,
+            error: userPage.error,
+            cacheStatus: userPage.cacheStatus,
+            cachedFetchedAt: userPage.cachedFetchedAt,
+            profile: userPage.profile,
+            signals: userPage.signals,
+          },
+        ]
+      : [];
+
+    return [
+      ...pages,
+      ...this.profiles().map((profile) => ({
+        id: `competitor:${profile.target.url}`,
+        role: 'competitor' as const,
+        label: profile.target.serpPosition
+          ? `Competitor #${profile.target.serpPosition}`
+          : 'AI-cited competitor',
+        url: profile.target.url,
+        domain: profile.target.domain,
+        position: profile.target.serpPosition,
+        sources: profile.target.sources,
+        fetchStatus: profile.fetchStatus,
+        httpStatus: profile.httpStatus,
+        error: profile.error,
+        cacheStatus: profile.cacheStatus,
+        cachedFetchedAt: profile.cachedFetchedAt,
+        profile: profile.profile,
+        signals: profile.signals,
+      })),
+    ];
+  });
+  readonly selectedCachedPage = computed(() => {
+    const pages = this.cachedPages();
+    if (!pages.length) return null;
+    const selectedId = this.selectedCachedPageId();
+    return pages.find((page) => page.id === selectedId) ?? pages[0];
+  });
   readonly completedSteps = computed(
     () => this.steps().filter((step) => step.status === 'complete').length,
   );
@@ -425,6 +518,19 @@ export class ProtopipeCompetitorsComponent implements OnInit {
     return signalList(profile.signals);
   }
 
+  signalEvidence(profile: { signals: Record<string, unknown> }): SignalEvidence[] {
+    return signalEvidence(profile.signals);
+  }
+
+  openCachedPagesDrawer(pageId?: string): void {
+    this.selectedCachedPageId.set(pageId ?? this.cachedPages()[0]?.id ?? null);
+    this.cachedPagesDrawerVisible.set(true);
+  }
+
+  selectCachedPage(pageId: string): void {
+    this.selectedCachedPageId.set(pageId);
+  }
+
   formatLabel(value: string | undefined | null): string {
     return value ? value.replace(/_/g, ' ') : 'Unknown';
   }
@@ -432,6 +538,16 @@ export class ProtopipeCompetitorsComponent implements OnInit {
   formatCost(usd?: number): string {
     if (usd == null) return '—';
     return `$${usd.toFixed(3)}`;
+  }
+
+  formatDate(value?: string): string {
+    if (!value) return 'unknown';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
   }
 
   stepTrack(_: number, step: ThoughtStep): string {
@@ -467,9 +583,34 @@ function signalList(signals: Record<string, unknown>): string[] {
   ].filter((value): value is string => Boolean(value));
 }
 
+function signalEvidence(signals: Record<string, unknown>): SignalEvidence[] {
+  return [
+    signalEvidenceItem(signals, 'pricingLanguage', 'Pricing language'),
+    signalEvidenceItem(signals, 'processLanguage', 'Process language'),
+    signalEvidenceItem(signals, 'examplesOrPortfolio', 'Portfolio / examples'),
+    signalEvidenceItem(signals, 'trustSignals', 'Trust signals'),
+    signalEvidenceItem(signals, 'bookingOrCta', 'Booking / CTA'),
+    signalEvidenceItem(signals, 'localLanguage', 'Local language'),
+  ].filter((value): value is SignalEvidence => value !== null);
+}
+
 function signalLabel(signals: Record<string, unknown>, key: string, label: string): string | null {
   const signal = asRecord(signals[key]);
   return signal?.['present'] === true ? label : null;
+}
+
+function signalEvidenceItem(
+  signals: Record<string, unknown>,
+  key: string,
+  label: string,
+): SignalEvidence | null {
+  const signal = asRecord(signals[key]);
+  const snippets = Array.isArray(signal?.['snippets'])
+    ? signal['snippets'].filter((value): value is string => typeof value === 'string')
+    : [];
+  return signal?.['present'] === true || snippets.length > 0
+    ? { label, snippets: snippets.slice(0, 3) }
+    : null;
 }
 
 function stepLabel(stepId: string | undefined): string {

@@ -161,9 +161,18 @@
   margin-bottom: 0.85rem;
 }
 
-.competitors__section-head > span {
+.competitors__section-head > span,
+.competitors__section-actions > span {
   color: rgba(18, 32, 24, 0.56);
   font-weight: 700;
+}
+
+.competitors__section-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
 }
 
 .competitors__profiles {
@@ -368,6 +377,189 @@
   text-decoration: none;
 }
 
+.competitors__link-button {
+  width: fit-content;
+  margin-top: 0.75rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(54, 92, 128, 0.1);
+  color: #28506f;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 0.36rem 0.62rem;
+}
+
+.competitors__link-button:hover {
+  background: rgba(54, 92, 128, 0.16);
+}
+
+.cached-pages__header h2 {
+  margin: 0;
+}
+
+.cached-pages {
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.75fr) minmax(0, 1.5fr);
+  gap: 1rem;
+  min-height: 0;
+}
+
+.cached-pages__list,
+.cached-pages__detail {
+  min-height: 0;
+}
+
+.cached-pages__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cached-pages__item {
+  border: 1px solid rgba(18, 32, 24, 0.08);
+  border-radius: 16px;
+  background: #fbfcf8;
+  color: #122018;
+  cursor: pointer;
+  font: inherit;
+  padding: 0.75rem;
+  text-align: left;
+}
+
+.cached-pages__item.is-selected {
+  border-color: rgba(54, 92, 128, 0.28);
+  background: rgba(240, 246, 252, 0.95);
+}
+
+.cached-pages__item span,
+.cached-pages__item strong,
+.cached-pages__item small {
+  display: block;
+}
+
+.cached-pages__item span {
+  color: rgba(18, 32, 24, 0.55);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.cached-pages__item strong {
+  overflow: hidden;
+  margin-top: 0.2rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cached-pages__item small {
+  margin-top: 0.2rem;
+  color: rgba(18, 32, 24, 0.58);
+  text-transform: capitalize;
+}
+
+.cached-pages__detail {
+  overflow-wrap: anywhere;
+}
+
+.cached-pages__title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cached-pages__title-row h3 {
+  margin: 0;
+}
+
+.cached-pages__title-row a {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: rgba(54, 92, 128, 0.1);
+  color: #28506f;
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 0.36rem 0.62rem;
+  text-decoration: none;
+}
+
+.cached-pages__url {
+  font-size: 0.82rem;
+}
+
+.cached-pages__error {
+  border-radius: 12px;
+  background: rgba(176, 62, 62, 0.1);
+  color: #8e2f2f;
+  padding: 0.65rem;
+}
+
+.cached-pages__section {
+  margin-top: 1rem;
+}
+
+.cached-pages__section h4 {
+  margin: 0 0 0.55rem;
+  color: rgba(18, 32, 24, 0.76);
+}
+
+.cached-pages__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.cached-pages__stats span {
+  border-radius: 999px;
+  background: rgba(91, 124, 91, 0.1);
+  color: #315332;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.32rem 0.55rem;
+}
+
+.cached-pages__outline {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cached-pages__outline li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.5rem;
+  margin: 0;
+  border-radius: 12px;
+  background: rgba(18, 32, 24, 0.04);
+  padding: 0.5rem;
+}
+
+.cached-pages__outline span {
+  color: rgba(18, 32, 24, 0.5);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.cached-pages__evidence {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.cached-pages__evidence article {
+  border: 1px solid rgba(18, 32, 24, 0.08);
+  border-radius: 14px;
+  background: #fbfcf8;
+  padding: 0.75rem;
+}
+
+.cached-pages__evidence ul {
+  margin-top: 0.4rem;
+}
+
 .competitors ul {
   margin: 0.65rem 0 0;
   padding-left: 1.1rem;
@@ -390,7 +582,14 @@
   .competitors__profiles,
   .competitors__reason-grid,
   .competitors__gap-list,
-  .competitors__steps {
+  .competitors__steps,
+  .cached-pages {
     grid-template-columns: 1fr;
+  }
+
+  .competitors__section-actions,
+  .cached-pages__title-row {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

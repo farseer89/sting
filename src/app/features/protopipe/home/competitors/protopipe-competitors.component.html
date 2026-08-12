@@ -277,12 +277,23 @@
             <p class="competitors__eyebrow">Writer Evidence</p>
             <h2>Use This While Writing</h2>
           </div>
-          @if (pageFetchSummary()) {
-            <span>
-              Cache {{ pageFetchSummary()?.cacheHits || 0 }} hit(s) /
-              {{ pageFetchSummary()?.cacheMisses || 0 }} miss(es)
-            </span>
-          }
+          <div class="competitors__section-actions">
+            @if (pageFetchSummary()) {
+              <span>
+                Cache {{ pageFetchSummary()?.cacheHits || 0 }} hit(s) /
+                {{ pageFetchSummary()?.cacheMisses || 0 }} miss(es)
+              </span>
+            }
+            @if (cachedPages().length) {
+              <p-button
+                label="Cached pages"
+                icon="pi pi-database"
+                severity="secondary"
+                [outlined]="true"
+                (onClick)="openCachedPagesDrawer()"
+              />
+            }
+          </div>
         </div>
 
         @if (sectionOpportunities().length) {
@@ -361,6 +372,13 @@
               {{ userPageProfile()?.profile?.imageCount || 0 }} images ·
               {{ userPageProfile()?.fetchStatus }}
             </p>
+            <button
+              type="button"
+              class="competitors__link-button"
+              (click)="openCachedPagesDrawer('user:' + userPageProfile()!.url)"
+            >
+              View cached capture
+            </button>
           }
         } @else {
           <p>Your site was not found in the collected SERP results for this keyword.</p>
@@ -487,6 +505,13 @@
                 <span>{{ signal }}</span>
               }
             </div>
+            <button
+              type="button"
+              class="competitors__link-button"
+              (click)="openCachedPagesDrawer('competitor:' + profile.target.url)"
+            >
+              View cached capture
+            </button>
           </article>
         }
       </div>
@@ -520,4 +545,144 @@
       </p>
     </section>
   }
+
+  <p-drawer
+    [visible]="cachedPagesDrawerVisible()"
+    (visibleChange)="cachedPagesDrawerVisible.set($event)"
+    position="right"
+    [style]="{ width: 'min(100%, 48rem)' }"
+  >
+    <ng-template #header>
+      <div class="cached-pages__header">
+        <p class="competitors__eyebrow">Cached Pages</p>
+        <h2>Captured Page Evidence</h2>
+      </div>
+    </ng-template>
+
+    <div class="cached-pages">
+      @if (cachedPages().length) {
+        <aside class="cached-pages__list" aria-label="Cached page captures">
+          @for (page of cachedPages(); track page.id) {
+            <button
+              type="button"
+              class="cached-pages__item"
+              [class.is-selected]="selectedCachedPage()?.id === page.id"
+              (click)="selectCachedPage(page.id)"
+            >
+              <span>{{ page.label }}</span>
+              <strong>{{ page.domain }}</strong>
+              <small>
+                {{ page.cacheStatus || 'cache recorded' }} · {{ page.fetchStatus }}
+              </small>
+            </button>
+          }
+        </aside>
+
+        @if (selectedCachedPage(); as page) {
+          <article class="cached-pages__detail">
+            <div class="cached-pages__title-row">
+              <div>
+                <p class="competitors__eyebrow">{{ page.label }}</p>
+                <h3>{{ page.profile?.titleTag || page.profile?.h1 || page.domain }}</h3>
+              </div>
+              <a [href]="page.url" target="_blank" rel="noopener noreferrer">Open source</a>
+            </div>
+
+            <div class="competitors__meta">
+              <span>{{ page.cacheStatus || 'cache recorded' }}</span>
+              <span>{{ page.fetchStatus }}</span>
+              @if (page.position) {
+                <span>#{{ page.position }}</span>
+              }
+              @if (page.cachedFetchedAt) {
+                <span>Fetched {{ formatDate(page.cachedFetchedAt) }}</span>
+              }
+              @if (page.httpStatus) {
+                <span>HTTP {{ page.httpStatus }}</span>
+              }
+            </div>
+
+            <p class="cached-pages__url">{{ page.url }}</p>
+
+            @if (page.error) {
+              <p class="cached-pages__error">{{ page.error }}</p>
+            }
+
+            <section class="cached-pages__section">
+              <h4>Captured profile</h4>
+              <div class="cached-pages__stats">
+                <span>{{ page.profile?.wordCount || 0 }} words</span>
+                <span>{{ page.profile?.imageCount || 0 }} images</span>
+                <span>{{ page.profile?.videoCount || 0 }} videos</span>
+                @if (page.profile?.hasFaqSection) {
+                  <span>FAQ section</span>
+                }
+                @if (page.profile?.hasAuthorBio) {
+                  <span>Author bio</span>
+                }
+              </div>
+              @if (page.profile?.h1) {
+                <p><strong>H1:</strong> {{ page.profile?.h1 }}</p>
+              }
+              @if (page.profile?.metaDescription) {
+                <p><strong>Meta:</strong> {{ page.profile?.metaDescription }}</p>
+              }
+            </section>
+
+            @if (page.profile?.headingOutline?.length) {
+              <section class="cached-pages__section">
+                <h4>Heading outline</h4>
+                <ol class="cached-pages__outline">
+                  @for (heading of page.profile?.headingOutline?.slice(0, 12) || []; track heading.level + heading.text) {
+                    <li>
+                      <span>H{{ heading.level }}</span>
+                      {{ heading.text }}
+                    </li>
+                  }
+                </ol>
+              </section>
+            }
+
+            @if (signalEvidence(page).length) {
+              <section class="cached-pages__section">
+                <h4>Evidence snippets</h4>
+                <div class="cached-pages__evidence">
+                  @for (signal of signalEvidence(page); track signal.label) {
+                    <article>
+                      <strong>{{ signal.label }}</strong>
+                      @if (signal.snippets.length) {
+                        <ul>
+                          @for (snippet of signal.snippets; track snippet) {
+                            <li>{{ snippet }}</li>
+                          }
+                        </ul>
+                      } @else {
+                        <p>Detected on the page.</p>
+                      }
+                    </article>
+                  }
+                </div>
+              </section>
+            }
+
+            @if (page.profile?.schemaTypes?.length || page.profile?.notableCitationDomains?.length) {
+              <section class="cached-pages__section">
+                <h4>Technical proof</h4>
+                <div class="competitors__chips">
+                  @for (schema of page.profile?.schemaTypes || []; track schema) {
+                    <span>{{ schema }}</span>
+                  }
+                  @for (domain of page.profile?.notableCitationDomains || []; track domain) {
+                    <span>{{ domain }}</span>
+                  }
+                </div>
+              </section>
+            }
+          </article>
+        }
+      } @else {
+        <p>No cached page captures are available on this run.</p>
+      }
+    </div>
+  </p-drawer>
 </div>

@@ -1,5 +1,5 @@
 const microserviceBaseUrl = 'https://droppin.shop';
-const shireBaseUrl = 'https://shire.droppin.shop';
+const shireBaseUrl = 'https://api.searchclimber.io';
 
 export const environment = {
   production: true,

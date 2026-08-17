@@ -11,6 +11,7 @@
     "deploy:firebase": "npm run build:prod && firebase deploy --only hosting:sting --project sting-protopipe",
     "deploy:shire": "npm run deploy:firebase",
     "deploy:shire:app": "STING_SHIRE_URL=https://shire.droppin.shop STING_MICRO_URL=https://droppin.shop STING_APP_NAME=SearchClimber.io npm run build:prod && firebase deploy --only hosting:sting --project sting-protopipe",
+    "deploy:searchclimber": "STING_SHIRE_URL=https://api.searchclimber.io STING_MICRO_URL=https://droppin.shop STING_APP_NAME=SearchClimber.io npm run build:prod && firebase deploy --only hosting:sting --project sting-protopipe",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",

@@ -14,8 +14,10 @@ import type {
 import { firstValueFrom } from 'rxjs';
 import { parseProtopipeApiError } from '../../protopipe-http.util';
 import { ProtopipeStrategyService } from '../../protopipe-strategy.service';
+import { ProtopipeContentService } from '../../protopipe-content.service';
 import { ThoughtRunSession } from '../../runs/thought-run-session.service';
 import { ShireApiService } from '../../shire/shire-api.service';
+import { ProtopipeContentSchedulerComponent } from '../content-scheduler/protopipe-content-scheduler.component';
 
 type BinderSection =
   | 'readiness'
@@ -52,7 +54,7 @@ interface ClientIdentity {
   selector: 'app-protopipe-content-plan-v2',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Button, Message, ProgressSpinner],
+  imports: [Button, Message, ProgressSpinner, ProtopipeContentSchedulerComponent],
   templateUrl: './protopipe-content-plan-v2.component.html',
   styleUrl: './protopipe-content-plan-v2.component.scss',
 })
@@ -60,8 +62,13 @@ export class ProtopipeContentPlanV2Component implements OnInit {
   private readonly api = inject(ShireApiService);
   private readonly injector = inject(Injector);
   readonly strategy = inject(ProtopipeStrategyService);
+  readonly content = inject(ProtopipeContentService);
   readonly runSession = inject(ThoughtRunSession);
   readonly planRunSession = Injector.create({
+    providers: [ThoughtRunSession],
+    parent: this.injector,
+  }).get(ThoughtRunSession);
+  readonly prepRunSession = Injector.create({
     providers: [ThoughtRunSession],
     parent: this.injector,
   }).get(ThoughtRunSession);
@@ -71,6 +78,8 @@ export class ProtopipeContentPlanV2Component implements OnInit {
   readonly evidenceError = signal<string | null>(null);
   readonly autoStartAttempted = signal(false);
   readonly planError = signal<string | null>(null);
+  readonly prepError = signal<string | null>(null);
+  readonly prepReloadedRunId = signal<string | null>(null);
   readonly rankings = signal<KeywordRankingRow[]>([]);
   readonly aiVisibilitySnapshots = signal<AiVisibilitySnapshot[]>([]);
   readonly latestAudit = signal<SiteAuditLatestResponse['audit'] | null>(null);
@@ -79,6 +88,7 @@ export class ProtopipeContentPlanV2Component implements OnInit {
 
   readonly thought = computed(() => this.contentPlanThought(this.runSession.thought()));
   readonly planThought = computed(() => this.planRunSession.thought()?.thinkerKind === 'content_plan_v2' ? this.planRunSession.thought() : null);
+  readonly prepThought = computed(() => this.prepRunSession.thought()?.thinkerKind === 'competition_strategy_prep' ? this.prepRunSession.thought() : null);
   readonly evidenceArtifacts = computed(() => asRecord(this.thought()?.artifacts) ?? {});
   readonly planArtifacts = computed(() => asRecord(this.planThought()?.artifacts) ?? {});
   readonly artifacts = computed(() =>
@@ -176,6 +186,16 @@ export class ProtopipeContentPlanV2Component implements OnInit {
     if (thought.status === 'running') return `Planning ${thought.currentStepId ?? 'content plan'}`;
     if (thought.status === 'complete') return 'Plan ready';
     if (thought.status === 'failed') return 'Plan failed';
+    return thought.status;
+  });
+
+  readonly prepRunStatusLabel = computed(() => {
+    const thought = this.prepThought();
+    if (!thought) return 'No prep run yet';
+    if (thought.status === 'pending') return 'Prep queued';
+    if (thought.status === 'running') return `Preparing ${thought.currentStepId ?? 'competition strategy'}`;
+    if (thought.status === 'complete') return 'Briefs scheduled';
+    if (thought.status === 'failed') return 'Prep failed';
     return thought.status;
   });
 
@@ -296,6 +316,14 @@ export class ProtopipeContentPlanV2Component implements OnInit {
         queueMicrotask(() => this.binderSection.set('inventory'));
       }
     });
+    effect(() => {
+      const thought = this.prepThought();
+      if (thought?.status === 'complete' && this.prepReloadedRunId() !== thought.id) {
+        this.prepReloadedRunId.set(thought.id);
+        this.content.reload();
+        queueMicrotask(() => this.binderSection.set('inventory'));
+      }
+    });
   }
 
   ngOnInit(): void {
@@ -374,6 +402,23 @@ export class ProtopipeContentPlanV2Component implements OnInit {
     }
   }
 
+  async startCompetitionStrategyPrepRun(): Promise<void> {
+    const siteId = this.strategy.siteId();
+    if (!siteId || this.prepRunSession.isActive()) return;
+    if (this.strategy.keywords().length === 0) {
+      this.prepError.set('Confirm keywords before starting competition strategy prep.');
+      return;
+    }
+    this.prepError.set(null);
+    const run = await this.prepRunSession.enqueueRun(siteId, {
+      thinkerKind: 'competition_strategy_prep',
+      params: { source: 'contentPlanV2', hardStopBeforeGeneration: true },
+    });
+    if (!run && this.prepRunSession.loadError()) {
+      this.prepError.set(this.prepRunSession.loadError());
+    }
+  }
+
   field(record: Record<string, unknown> | null, key: string, fallback = 'Not captured'): string {
     const value = recordValue(record, key);
     if (typeof value === 'string' && value.trim()) return value.trim();
@@ -415,6 +460,7 @@ export class ProtopipeContentPlanV2Component implements OnInit {
     await Promise.all([
       this.attachLatestEvidenceRun(options.allowAutoStart ?? true),
       this.attachLatestPlanRun(),
+      this.attachLatestPrepRun(),
     ]);
     await this.loadEvidence();
   }
@@ -451,6 +497,22 @@ export class ProtopipeContentPlanV2Component implements OnInit {
     } catch (err) {
       if (!(err instanceof HttpErrorResponse && err.status === 404)) {
         this.planError.set(parseProtopipeApiError(err, 'Could not load latest Content Plan V2 run.'));
+      }
+    }
+  }
+
+  private async attachLatestPrepRun(): Promise<void> {
+    const siteId = this.strategy.siteId();
+    if (!siteId) return;
+    const current = this.prepRunSession.thought();
+    if (current?.thinkerKind === 'competition_strategy_prep') return;
+
+    try {
+      const { run } = await firstValueFrom(this.api.getLatestRun$(siteId, 'competition_strategy_prep'));
+      this.prepRunSession.attach(siteId, run.id, run);
+    } catch (err) {
+      if (!(err instanceof HttpErrorResponse && err.status === 404)) {
+        this.prepError.set(parseProtopipeApiError(err, 'Could not load latest competition strategy prep run.'));
       }
     }
   }

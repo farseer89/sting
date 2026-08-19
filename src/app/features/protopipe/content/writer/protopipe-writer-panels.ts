@@ -1,5 +1,5 @@
 /** MVP Writing book binder panels. */
-export type WritingBookPanelId = 'canvas' | 'behind' | 'seo' | 'facts';
+export type WritingBookPanelId = 'canvas' | 'brief' | 'behind' | 'seo' | 'facts';
 
 /** @deprecated Use WritingBookPanelId — retained for deferred tier panels. */
 export type WriterInspectorPanelId =
@@ -14,6 +14,7 @@ export type WriterInspectorPanelId =
 
 export const WRITING_BOOK_MVP_PANELS: { id: WritingBookPanelId; label: string }[] = [
   { id: 'canvas', label: 'Canvas' },
+  { id: 'brief', label: 'Brief' },
   { id: 'behind', label: 'Generation' },
   { id: 'seo', label: 'SEO & schedule' },
   { id: 'facts', label: 'Fact check' },

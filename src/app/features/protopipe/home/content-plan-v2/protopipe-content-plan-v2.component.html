@@ -34,6 +34,14 @@
         [disabled]="!canBuildPlan()"
         (onClick)="startContentPlanRun()"
       />
+      <p-button
+        [label]="prepRunSession.isActive() ? 'Preparing briefs…' : 'Process competition + schedule briefs'"
+        icon="pi pi-calendar-plus"
+        size="small"
+        severity="contrast"
+        [disabled]="prepRunSession.isActive() || strategy.keywords().length === 0"
+        (onClick)="startCompetitionStrategyPrepRun()"
+      />
     </div>
   </header>
 
@@ -42,6 +50,10 @@
   }
 
   @if (planError(); as err) {
+    <p-message severity="error" [text]="err" styleClass="w-full" />
+  }
+
+  @if (prepError(); as err) {
     <p-message severity="error" [text]="err" styleClass="w-full" />
   }
 
@@ -64,6 +76,26 @@
       </div>
     </div>
   }
+
+  @if (prepRunSession.isActive() && prepThought()?.thinkerKind === 'competition_strategy_prep') {
+    <div class="bus-notice" role="status" aria-live="polite">
+      <span class="bus-notice__dot" aria-hidden="true"></span>
+      <div>
+        <strong>{{ prepRunStatusLabel() }}</strong>
+        Competition is being processed for selected keywords. This stops after briefs are scheduled.
+      </div>
+    </div>
+  } @else if (prepThought()?.status === 'complete') {
+    <div class="bus-notice bus-notice--success" role="status">
+      <span class="bus-notice__dot" aria-hidden="true"></span>
+      <div>
+        <strong>{{ prepRunStatusLabel() }}</strong>
+        Briefs scheduled, generation not started. Open any article bar to review the brief.
+      </div>
+    </div>
+  }
+
+  <app-protopipe-content-scheduler />
 
   @if (loadingEvidence() && !thought()) {
     <div class="bus-loading">

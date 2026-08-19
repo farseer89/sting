@@ -469,6 +469,31 @@ export class ProtopipeWriterComponent implements OnDestroy {
     return b?.sourceClusterName?.trim() || b?.primaryKeywordPhrase?.trim() || 'the content plan';
   });
 
+  readonly competitionEvidenceGeneratedAt = computed(() => {
+    const value = this.briefRecord()['competitionGeneratedAt'];
+    return typeof value === 'string' && value ? new Date(value).toLocaleString() : '';
+  });
+
+  readonly competitionRecommendedAction = computed(() =>
+    this.briefString('recommendedAction')?.replace(/_/g, ' ') ?? '',
+  );
+
+  readonly briefProofChecklist = computed(() =>
+    this.briefList('proofChecklist', ['label', 'title', 'item']),
+  );
+
+  readonly briefSuggestedSections = computed(() =>
+    this.briefList('suggestedSections', ['title', 'heading', 'opportunity', 'summary']),
+  );
+
+  readonly briefCitationSources = computed(() =>
+    this.briefList('citationSources', ['title', 'url', 'label']),
+  );
+
+  readonly briefHumanProofNeeded = computed(() =>
+    this.briefList('humanProofNeeded', ['question', 'label', 'request', 'summary']),
+  );
+
   readonly topicLabel = computed(() => {
     const s = this.session();
     if (!s) return null;
@@ -1307,6 +1332,33 @@ export class ProtopipeWriterComponent implements OnDestroy {
 
   openInspectorPanel(panel: BookPanel): void {
     this.selectBookPanel(panel);
+  }
+
+  private briefRecord(): Record<string, unknown> {
+    return (this.brief() ?? {}) as Record<string, unknown>;
+  }
+
+  private briefString(key: string): string | null {
+    const value = this.briefRecord()[key];
+    return typeof value === 'string' && value.trim() ? value.trim() : null;
+  }
+
+  private briefList(key: string, preferredKeys: string[] = []): string[] {
+    const value = this.briefRecord()[key];
+    const rows = Array.isArray(value) ? value : [];
+    const values = rows
+      .map((row) => {
+        if (typeof row === 'string') return row.trim();
+        if (!row || typeof row !== 'object') return '';
+        const record = row as Record<string, unknown>;
+        for (const field of preferredKeys) {
+          const candidate = record[field];
+          if (typeof candidate === 'string' && candidate.trim()) return candidate.trim();
+        }
+        return '';
+      })
+      .filter(Boolean);
+    return Array.from(new Set(values)).slice(0, 12);
   }
 
   enterPreviewTakeover(): void {

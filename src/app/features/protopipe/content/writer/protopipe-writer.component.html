@@ -136,6 +136,20 @@
         Canvas
       </button>
 
+      <div class="wb-binder-nav__label" style="margin-top:0.75rem;">Research</div>
+      <button
+        type="button"
+        class="wb-binder-nav__item"
+        [class.is-active]="activeBookPanel() === 'brief'"
+        (click)="selectBookPanel('brief')"
+      >
+        <svg class="wb-binder-nav__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect x="2.5" y="2" width="11" height="12" rx="1.5" stroke="currentColor" stroke-width="1.1"/>
+          <path d="M5 5.5h6M5 8h6M5 10.5h4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+        </svg>
+        Brief
+      </button>
+
       <div class="wb-binder-nav__label" style="margin-top:0.75rem;">Generate</div>
       <button
         type="button"
@@ -301,6 +315,10 @@
           }
         }
 
+        @case ('brief') {
+          <ng-container *ngTemplateOutlet="briefPanel" />
+        }
+
         @case ('behind') {
           <ng-container *ngTemplateOutlet="generationPanel" />
         }
@@ -366,6 +384,16 @@
           type="button"
           class="wb-immersive-bar__tab"
           role="tab"
+          [class.is-active]="activeBookPanel() === 'brief'"
+          [attr.aria-selected]="activeBookPanel() === 'brief'"
+          (click)="selectBookPanel('brief')"
+        >
+          Brief
+        </button>
+        <button
+          type="button"
+          class="wb-immersive-bar__tab"
+          role="tab"
           [class.is-active]="activeBookPanel() === 'behind'"
           [attr.aria-selected]="activeBookPanel() === 'behind'"
           (click)="selectBookPanel('behind')"
@@ -405,6 +433,129 @@
     </footer>
   }
 </div>
+
+<ng-template #briefPanel>
+  <div class="wb-panel-head">
+    <div class="wb-panel-kicker">Research · Brief</div>
+    <h2 class="wb-panel-title">Article brief</h2>
+    <p class="wb-panel-deck">Competition-backed notes for reviewing the scheduled article before generation.</p>
+  </div>
+
+  @if (brief(); as b) {
+    <section class="pw__panel pw__panel--brief">
+      <dl class="pw__brief-grid">
+        <div>
+          <dt>Target keyword</dt>
+          <dd>{{ b.primaryKeywordPhrase || topicLabel() || 'No keyword set' }}</dd>
+        </div>
+        <div>
+          <dt>Article type</dt>
+          <dd>{{ articleTypeDisplay() || b.articleType || 'Article' }}</dd>
+        </div>
+        @if (competitionRecommendedAction()) {
+          <div>
+            <dt>Recommended action</dt>
+            <dd>{{ competitionRecommendedAction() }}</dd>
+          </div>
+        }
+        @if (competitionEvidenceGeneratedAt()) {
+          <div>
+            <dt>Evidence freshness</dt>
+            <dd>{{ competitionEvidenceGeneratedAt() }}</dd>
+          </div>
+        }
+      </dl>
+
+      @if (b.recommendedAngle || b.positioningSummary || b.keyQuestionToAnswer) {
+        <div class="pw__brief-section">
+          <h3>Angle</h3>
+          <p>{{ b.recommendedAngle || b.positioningSummary || b.keyQuestionToAnswer }}</p>
+        </div>
+      }
+
+      @if (briefSuggestedSections().length || b.mandatorySections?.length) {
+        <div class="pw__brief-section">
+          <h3>Suggested sections</h3>
+          <ul>
+            @for (item of (briefSuggestedSections().length ? briefSuggestedSections() : b.mandatorySections); track item) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      @if (briefProofChecklist().length || b.mustCoverTerms?.length) {
+        <div class="pw__brief-section">
+          <h3>Proof checklist</h3>
+          <ul>
+            @for (item of (briefProofChecklist().length ? briefProofChecklist() : b.mustCoverTerms); track item) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      @if (briefHumanProofNeeded().length) {
+        <div class="pw__brief-section pw__brief-section--needs-human">
+          <h3>Human proof needed</h3>
+          <ul>
+            @for (item of briefHumanProofNeeded(); track item) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      @if (briefCitationSources().length) {
+        <div class="pw__brief-section">
+          <h3>Citation sources</h3>
+          <ul>
+            @for (item of briefCitationSources(); track item) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      @if (b.contentGaps?.length || b.competitorHeadings?.length || b.peopleAlsoAskQuestions?.length) {
+        <div class="pw__brief-columns">
+          @if (b.contentGaps?.length) {
+            <div class="pw__brief-section">
+              <h3>Content gaps</h3>
+              <ul>
+                @for (item of b.contentGaps; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+          }
+          @if (b.competitorHeadings?.length) {
+            <div class="pw__brief-section">
+              <h3>Competitor patterns</h3>
+              <ul>
+                @for (item of b.competitorHeadings; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+          }
+          @if (b.peopleAlsoAskQuestions?.length) {
+            <div class="pw__brief-section">
+              <h3>People also ask</h3>
+              <ul>
+                @for (item of b.peopleAlsoAskQuestions; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  } @else {
+    <p class="wb-panel-empty">No brief is attached to this article yet.</p>
+  }
+</ng-template>
 
 <ng-template #generationPanel>
   <div class="wb-panel-head">

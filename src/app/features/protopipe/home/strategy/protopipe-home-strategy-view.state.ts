@@ -237,6 +237,14 @@ export class ProtopipeHomeStrategyViewState {
     }
   }
 
+  /** Open an already materialized scheduled post to the brief panel without starting generation. */
+  openPostBrief(postId: string): void {
+    const id = postId.trim();
+    if (!id) return;
+    this.writerView.openPostBrief(id);
+    this.enterWriterFocus?.();
+  }
+
   /** Materialize draft post if needed, then open Thinker (generation) or Writer (completed draft). */
   async openInWriter(article: ProtopipeContentPlanCalendarItem): Promise<void> {
     if (this._openingWriter()) return;

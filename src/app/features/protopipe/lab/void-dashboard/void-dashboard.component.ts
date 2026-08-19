@@ -9,7 +9,9 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import type { KeywordIntent, KeywordPriority } from '../../protopipe.models';
 import {
   VOID_ARTICLES,
@@ -44,6 +46,10 @@ interface BackgroundOption {
   label: string;
 }
 
+const VOID_WINDOW_ALIASES: Record<string, VoidWindowId> = {
+  'content-calendar': 'scheduler',
+};
+
 @Component({
   selector: 'app-void-dashboard',
   standalone: true,
@@ -60,6 +66,8 @@ interface BackgroundOption {
 })
 export class VoidDashboardComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly aiInput = viewChild<ElementRef<HTMLInputElement>>('aiInput');
 
   constructor() {
@@ -123,6 +131,15 @@ export class VoidDashboardComponent implements OnInit {
   private readonly openNavGroups = new Set<string>([...VOID_NAV_DEFAULT_OPEN, ...VOID_PREMIERE_DEFAULT_OPEN]);
 
   ngOnInit(): void {
+    this.applyRouteParams(this.route.snapshot.queryParamMap);
+
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const windowId = this.resolveWindowParam(params.get('window'));
+      if (windowId && windowId !== this.activeWindow()) {
+        this.activateWindow(windowId, { syncUrl: false });
+      }
+    });
+
     const trafficTick = window.setInterval(() => this.driftTraffic(), 2400);
     const clockTick = window.setInterval(() => this.clock.set(this.formatClock()), 1000);
     this.destroyRef.onDestroy(() => {
@@ -184,17 +201,25 @@ export class VoidDashboardComponent implements OnInit {
   }
 
   selectWindow(id: string): void {
+    this.activateWindow(id as VoidWindowId);
+  }
+
+  private activateWindow(id: VoidWindowId, options?: { syncUrl?: boolean }): void {
     if (id === this.activeWindow() || this.aiOpen()) {
       return;
     }
     this.loadingWindow.set(true);
     window.setTimeout(() => {
-      this.activeWindow.set(id as VoidWindowId);
-      const navId = this.navIdForWindow(id as VoidWindowId);
+      this.activeWindow.set(id);
+      const navId = this.navIdForWindow(id);
       if (navId) {
         this.activeNavId.set(navId);
+        this.ensureNavGroupOpenForNavId(navId);
       }
       this.loadingWindow.set(false);
+      if (options?.syncUrl !== false) {
+        this.syncWindowQueryParam(id);
+      }
     }, 280);
   }
 
@@ -331,5 +356,52 @@ export class VoidDashboardComponent implements OnInit {
       }
     }
     return undefined;
+  }
+
+  private applyRouteParams(params: ParamMap): void {
+    const bg = params.get('bg');
+    if (bg && this.backgrounds.some((option) => option.id === bg)) {
+      this.backgroundId.set(bg);
+      this.syncThemeClass(bg);
+    }
+
+    const windowId = this.resolveWindowParam(params.get('window'));
+    if (!windowId) {
+      return;
+    }
+
+    this.activeWindow.set(windowId);
+    const navId = this.navIdForWindow(windowId);
+    if (navId) {
+      this.activeNavId.set(navId);
+      this.ensureNavGroupOpenForNavId(navId);
+    }
+  }
+
+  private resolveWindowParam(param: string | null): VoidWindowId | null {
+    if (!param) {
+      return null;
+    }
+    const id = VOID_WINDOW_ALIASES[param] ?? param;
+    return VOID_WINDOWS.some((win) => win.id === id) ? (id as VoidWindowId) : null;
+  }
+
+  private ensureNavGroupOpenForNavId(navId: string): void {
+    const groups = this.isShellMode() ? VOID_PREMIERE_NAV : VOID_NAV;
+    for (const group of groups) {
+      if (group.children?.some((child) => child.id === navId)) {
+        this.openNavGroups.add(group.id);
+        return;
+      }
+    }
+  }
+
+  private syncWindowQueryParam(window: VoidWindowId): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { window },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 }

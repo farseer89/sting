@@ -110,6 +110,79 @@
   font-style: italic;
 }
 
+.pw__panel--brief {
+  display: grid;
+  gap: 1rem;
+  max-width: 58rem;
+}
+
+.pw__brief-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+
+  div {
+    border: 1px solid #e4e4e7;
+    border-radius: 0.75rem;
+    background: #ffffff;
+    padding: 0.8rem;
+  }
+
+  dt {
+    color: #71717a;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  dd {
+    margin: 0.25rem 0 0;
+    color: #09090b;
+    font-size: 0.92rem;
+    font-weight: 650;
+    text-transform: capitalize;
+  }
+}
+
+.pw__brief-section {
+  border: 1px solid #e4e4e7;
+  border-radius: 0.85rem;
+  background: #ffffff;
+  padding: 1rem;
+
+  h3 {
+    margin: 0 0 0.55rem;
+    color: #18181b;
+    font-size: 0.86rem;
+  }
+
+  p {
+    margin: 0;
+    color: #3f3f46;
+    line-height: 1.55;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: #3f3f46;
+    line-height: 1.55;
+  }
+}
+
+.pw__brief-section--needs-human {
+  border-color: rgba(217, 119, 6, 0.32);
+  background: #fffbeb;
+}
+
+.pw__brief-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
 .wb-canvas {
   max-width: none;
 }

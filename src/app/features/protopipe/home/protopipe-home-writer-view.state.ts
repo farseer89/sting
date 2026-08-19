@@ -43,6 +43,15 @@ export class ProtopipeHomeWriterViewState {
     this._activePanel.set('canvas');
   }
 
+  /** Open a scheduled/content-strategy post for brief review without generation. */
+  openPostBrief(postId: string): void {
+    this._createMode.set(false);
+    this._activePostId.set(postId);
+    this._autoStartPipeline.set(false);
+    this._pendingPublish.set(false);
+    this._activePanel.set('brief');
+  }
+
   /** Open a plan-backed post and start the article pipeline once the writer loads. */
   openPostForWriting(postId: string): void {
     this._createMode.set(false);
